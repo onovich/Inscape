@@ -13,7 +13,8 @@
 5. [编辑器设计草案](editor-design.md)
 6. [运行时与 Unity 宿主](runtime-unity.md)
 7. [路线图](roadmap.md)
-8. [待确认问题](open-questions.md)
+8. [TODO](todo.md)
+9. [待确认问题](open-questions.md)
 
 ## 文档状态标记
 
@@ -34,6 +35,7 @@ docs/
   hash-localization.md   隐式哈希锚点、本地化与文本修订策略
   runtime-unity.md       Unity 宿主、IR 执行与运行时边界
   roadmap.md             阶段规划与阶段验收门槛
+  todo.md                当前可执行任务与调研项
   open-questions.md      当前最重要的待确认问题
   adr/                   架构决策记录
 ```

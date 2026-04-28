@@ -10,6 +10,7 @@
 
 - 文即代码：剧本行即逻辑行，减少剧本与配置之间的跳转。
 - 确定性哈希：解析阶段为文本生成持久化锚点，用于本地化、存档与热重载定位。
+- 图叙事优先：块级叙事单元使用显式节点名组织图结构，行级文本使用隐式哈希锚点。
 - 单流控制：运行时状态通过单向数据流更新，降低全局单例和隐式副作用。
 - 先 Unity，后独立：前期适配 Unity 宿主，后期保留迁移到独立渲染层或 Bevy 等技术栈的空间。
 
@@ -30,6 +31,7 @@
 - [运行时与 Unity 宿主](docs/runtime-unity.md)
 - [哈希锚点与本地化](docs/hash-localization.md)
 - [路线图](docs/roadmap.md)
+- [TODO](docs/todo.md)
 - [待确认问题](docs/open-questions.md)
 - [架构决策记录](docs/adr/README.md)
 
