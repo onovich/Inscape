@@ -8,6 +8,10 @@ namespace Inscape.Core.Analysis {
 
         public void Validate(InscapeDocument document, List<Diagnostic> diagnostics) {
             Dictionary<string, NarrativeNode> nodesByName = new Dictionary<string, NarrativeNode>();
+
+            AnchorValidator anchorValidator = new AnchorValidator();
+            anchorValidator.Validate(document, diagnostics);
+
             for (int i = 0; i < document.Nodes.Count; i += 1) {
                 NarrativeNode node = document.Nodes[i];
                 if (!nodesByName.ContainsKey(node.Name)) {

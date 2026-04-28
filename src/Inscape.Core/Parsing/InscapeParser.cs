@@ -18,6 +18,7 @@ namespace Inscape.Core.Parsing {
 
             NarrativeNode? currentNode = null;
             ChoiceGroup? currentChoice = null;
+            Dictionary<string, int>? currentAnchorOccurrences = null;
             string[] lines = SplitLines(source);
 
             for (int i = 0; i < lines.Length; i += 1) {
@@ -31,6 +32,7 @@ namespace Inscape.Core.Parsing {
 
                 if (trimmed.StartsWith("::", StringComparison.Ordinal)) {
                     currentNode = ParseNode(document, diagnostics, nodesByName, sourcePath, lineNumber, raw, trimmed);
+                    currentAnchorOccurrences = currentNode == null ? null : new Dictionary<string, int>(StringComparer.Ordinal);
                     currentChoice = null;
                     continue;
                 }
@@ -57,12 +59,12 @@ namespace Inscape.Core.Parsing {
                 }
 
                 if (trimmed.StartsWith("-", StringComparison.Ordinal)) {
-                    currentChoice = ParseChoiceOption(document, diagnostics, currentNode, currentChoice, sourcePath, lineNumber, raw, trimmed);
+                    currentChoice = ParseChoiceOption(document, diagnostics, currentNode, currentChoice, currentAnchorOccurrences!, sourcePath, lineNumber, raw, trimmed);
                     continue;
                 }
 
                 currentChoice = null;
-                currentNode.Lines.Add(ParseLine(currentNode, sourcePath, lineNumber, raw, trimmed));
+                currentNode.Lines.Add(ParseLine(currentNode, currentAnchorOccurrences!, sourcePath, lineNumber, raw, trimmed));
             }
 
             if (document.Nodes.Count == 0) {
@@ -138,6 +140,7 @@ namespace Inscape.Core.Parsing {
                                              List<Diagnostic> diagnostics,
                                              NarrativeNode currentNode,
                                              ChoiceGroup? currentChoice,
+                                             Dictionary<string, int> anchorOccurrences,
                                              string sourcePath,
                                              int lineNumber,
                                              string raw,
@@ -177,7 +180,7 @@ namespace Inscape.Core.Parsing {
                 }
             }
 
-            option.Anchor = StableHash.ForLine(sourcePath, currentNode.Name, lineNumber, option.Text);
+            option.Anchor = CreateAnchor(currentNode.Name, "ChoiceOption", string.Empty, option.Text, anchorOccurrences);
             group.Options.Add(option);
 
             if (option.Target.Length > 0) {
@@ -248,6 +251,7 @@ namespace Inscape.Core.Parsing {
         }
 
         static NarrativeLine ParseLine(NarrativeNode currentNode,
+                                       Dictionary<string, int> anchorOccurrences,
                                        string sourcePath,
                                        int lineNumber,
                                        string raw,
@@ -272,8 +276,19 @@ namespace Inscape.Core.Parsing {
                 line.Text = trimmed;
             }
 
-            line.Anchor = StableHash.ForLine(sourcePath, currentNode.Name, lineNumber, line.Text);
+            line.Anchor = CreateAnchor(currentNode.Name, line.Kind.ToString(), line.Speaker, line.Text, anchorOccurrences);
             return line;
+        }
+
+        static string CreateAnchor(string nodeName,
+                                   string kind,
+                                   string speaker,
+                                   string text,
+                                   Dictionary<string, int> anchorOccurrences) {
+            string occurrenceKey = StableHash.ForOccurrenceKey(kind, speaker, text);
+            anchorOccurrences.TryGetValue(occurrenceKey, out int occurrence);
+            anchorOccurrences[occurrenceKey] = occurrence + 1;
+            return StableHash.ForContent(nodeName, kind, speaker, text, occurrence);
         }
 
         static bool IsMetadata(string trimmed) {

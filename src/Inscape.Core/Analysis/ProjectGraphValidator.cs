@@ -11,6 +11,9 @@ namespace Inscape.Core.Analysis {
                              List<Diagnostic> diagnostics) {
             Dictionary<string, NarrativeNode> nodesByName = new Dictionary<string, NarrativeNode>(System.StringComparer.Ordinal);
 
+            AnchorValidator anchorValidator = new AnchorValidator();
+            anchorValidator.Validate(graph, diagnostics);
+
             for (int i = 0; i < graph.Nodes.Count; i += 1) {
                 NarrativeNode node = graph.Nodes[i];
                 if (nodesByName.TryGetValue(node.Name, out NarrativeNode? previous)) {

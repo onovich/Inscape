@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using Inscape.Core.Analysis;
 using Inscape.Core.Compilation;
 using Inscape.Core.Diagnostics;
 using Inscape.Core.Model;
@@ -15,6 +16,10 @@ namespace Inscape.Tests {
                 ("diagnose missing target", DiagnoseMissingTarget),
                 ("diagnose invalid node names", DiagnoseInvalidNodeNames),
                 ("hashes are stable", HashesAreStable),
+                ("hash ignores file path", HashIgnoresFilePath),
+                ("hash ignores line movement", HashIgnoresLineMovement),
+                ("hash distinguishes duplicate text", HashDistinguishesDuplicateText),
+                ("anchor validator detects collisions", AnchorValidatorDetectsCollisions),
                 ("cli diagnose emits json", CliDiagnoseEmitsJson),
                 ("project compiler resolves cross-file targets", ProjectCompilerResolvesCrossFileTargets),
                 ("project compiler diagnoses duplicate nodes", ProjectCompilerDiagnosesDuplicateNodes),
@@ -112,6 +117,93 @@ namespace Inscape.Tests {
 
             AssertFalse(string.IsNullOrWhiteSpace(a), "Anchor should be present.");
             AssertEqual(a, b, "Anchor should be deterministic.");
+            AssertTrue(a.StartsWith("l1_"), "Anchor should expose hash version.");
+        }
+
+        static void HashIgnoresFilePath() {
+            string source = """
+:: start
+旁白：同一句文本。
+""";
+
+            InscapeCompiler compiler = new InscapeCompiler();
+            CompilationResult first = compiler.Compile(source, "memory://first.inscape");
+            CompilationResult second = compiler.Compile(source, "memory://moved/second.inscape");
+
+            AssertEqual(first.Document.Nodes[0].Lines[0].Anchor,
+                        second.Document.Nodes[0].Lines[0].Anchor,
+                        "Anchor should not change when source path changes.");
+        }
+
+        static void HashIgnoresLineMovement() {
+            string first = """
+:: start
+旁白：同一句文本。
+""";
+            string second = """
+:: start
+
+@entry
+// comment
+旁白：同一句文本。
+""";
+
+            CompilationResult a = Compile(first);
+            CompilationResult b = Compile(second);
+
+            AssertEqual(a.Document.Nodes[0].Lines[0].Anchor,
+                        b.Document.Nodes[0].Lines[1].Anchor,
+                        "Anchor should not change when non-translatable lines move text.");
+        }
+
+        static void HashDistinguishesDuplicateText() {
+            string source = """
+:: start
+旁白：重复文本。
+旁白：重复文本。
+""";
+
+            CompilationResult result = Compile(source);
+            string first = result.Document.Nodes[0].Lines[0].Anchor;
+            string second = result.Document.Nodes[0].Lines[1].Anchor;
+
+            AssertFalse(first == second, "Duplicate text in the same node should receive distinct anchors.");
+        }
+
+        static void AnchorValidatorDetectsCollisions() {
+            InscapeDocument document = new InscapeDocument();
+
+            NarrativeNode firstNode = new NarrativeNode {
+                Name = "first.node",
+                Source = new SourceSpan("memory://collision.inscape", 1, 1),
+            };
+            firstNode.Lines.Add(new NarrativeLine {
+                Kind = NarrativeLineKind.Narration,
+                Text = "First",
+                Raw = "First",
+                Anchor = "l1_collision",
+                Source = new SourceSpan("memory://collision.inscape", 2, 1),
+            });
+
+            NarrativeNode secondNode = new NarrativeNode {
+                Name = "second.node",
+                Source = new SourceSpan("memory://collision.inscape", 4, 1),
+            };
+            secondNode.Lines.Add(new NarrativeLine {
+                Kind = NarrativeLineKind.Narration,
+                Text = "Second",
+                Raw = "Second",
+                Anchor = "l1_collision",
+                Source = new SourceSpan("memory://collision.inscape", 5, 1),
+            });
+
+            document.Nodes.Add(firstNode);
+            document.Nodes.Add(secondNode);
+
+            List<Diagnostic> diagnostics = new List<Diagnostic>();
+            new AnchorValidator().Validate(document, diagnostics);
+
+            AssertTrue(ContainsCode(diagnostics, "INS040"), "Expected INS040 anchor collision diagnostic.");
         }
 
         static void CliDiagnoseEmitsJson() {
@@ -385,6 +477,15 @@ namespace Inscape.Tests {
         static bool ContainsCode(ProjectCompilationResult result, string code) {
             for (int i = 0; i < result.Diagnostics.Count; i += 1) {
                 if (result.Diagnostics[i].Code == code && result.Diagnostics[i].Severity == DiagnosticSeverity.Error) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        static bool ContainsCode(List<Diagnostic> diagnostics, string code) {
+            for (int i = 0; i < diagnostics.Count; i += 1) {
+                if (diagnostics[i].Code == code && diagnostics[i].Severity == DiagnosticSeverity.Error) {
                     return true;
                 }
             }
