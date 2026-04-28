@@ -1,0 +1,43 @@
+{
+  "name": "inscape-vscode",
+  "displayName": "Inscape DSL",
+  "description": "Syntax highlighting and authoring helpers for Inscape narrative scripts.",
+  "version": "0.1.0",
+  "publisher": "onovich",
+  "license": "UNLICENSED",
+  "engines": {
+    "vscode": "^1.92.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Snippets"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "inscape",
+        "aliases": [
+          "Inscape",
+          "inscape"
+        ],
+        "extensions": [
+          ".inscape"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "inscape",
+        "scopeName": "source.inscape",
+        "path": "./syntaxes/inscape.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "inscape",
+        "path": "./snippets/inscape.code-snippets"
+      }
+    ]
+  }
+}

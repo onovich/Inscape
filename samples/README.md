@@ -17,3 +17,9 @@ dotnet run --project src\Inscape.Cli -- check samples\court-loop.inscape
 dotnet run --project src\Inscape.Cli -- compile samples\court-loop.inscape -o artifacts\court-loop.json
 dotnet run --project src\Inscape.Cli -- preview samples\court-loop.inscape -o artifacts\court-loop.html
 ```
+
+如需在 VSCode 中验证 `.inscape` 高亮，可从仓库根目录加载本地扩展：
+
+```powershell
+code --extensionDevelopmentPath=tools\vscode-inscape .
+```

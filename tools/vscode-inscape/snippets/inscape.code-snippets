@@ -1,0 +1,49 @@
+{
+  "Node": {
+    "prefix": "node",
+    "body": [
+      ":: ${1:chapter.scene}",
+      "",
+      "$0"
+    ],
+    "description": "Create an Inscape node."
+  },
+  "Dialogue": {
+    "prefix": "say",
+    "body": [
+      "${1:角色}：${2:对白}",
+      "$0"
+    ],
+    "description": "Create a dialogue line."
+  },
+  "Choice": {
+    "prefix": "choice",
+    "body": [
+      "? ${1:选择行动}",
+      "  - ${2:选项文本} -> ${3:target.node}",
+      "$0"
+    ],
+    "description": "Create a choice group."
+  },
+  "Jump": {
+    "prefix": "jump",
+    "body": [
+      "-> ${1:target.node}"
+    ],
+    "description": "Jump to another node."
+  },
+  "Metadata": {
+    "prefix": "meta",
+    "body": [
+      "@${1:key} ${2:value}"
+    ],
+    "description": "Create a metadata line."
+  },
+  "Inline Tag": {
+    "prefix": "tag",
+    "body": [
+      "[${1:key}: ${2:value}]"
+    ],
+    "description": "Insert an inline metadata tag."
+  }
+}

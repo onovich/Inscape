@@ -1,0 +1,207 @@
+{
+  "name": "Inscape",
+  "scopeName": "source.inscape",
+  "patterns": [
+    {
+      "include": "#comments"
+    },
+    {
+      "include": "#nodes"
+    },
+    {
+      "include": "#choices"
+    },
+    {
+      "include": "#jumps"
+    },
+    {
+      "include": "#metadataLines"
+    },
+    {
+      "include": "#dialogue"
+    },
+    {
+      "include": "#narration"
+    }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.inscape",
+          "match": "//.*$"
+        }
+      ]
+    },
+    "nodes": {
+      "patterns": [
+        {
+          "name": "meta.node.header.inscape",
+          "match": "^(\\s*)(::)(\\s*)([a-z][a-z0-9_-]*(?:\\.[a-z][a-z0-9_-]*)*)\\s*$",
+          "captures": {
+            "2": {
+              "name": "keyword.control.node.inscape"
+            },
+            "4": {
+              "name": "entity.name.section.node.inscape"
+            }
+          }
+        },
+        {
+          "name": "meta.node.header.invalid.inscape",
+          "match": "^(\\s*)(::)(\\s*)(.*)$",
+          "captures": {
+            "2": {
+              "name": "keyword.control.node.inscape"
+            },
+            "4": {
+              "name": "invalid.illegal.node-name.inscape"
+            }
+          }
+        }
+      ]
+    },
+    "choices": {
+      "patterns": [
+        {
+          "name": "meta.choice.option.inscape",
+          "match": "^(\\s*)(-)(\\s*)(.*?)(\\s+)(->)(\\s*)([a-z][a-z0-9_-]*(?:\\.[a-z][a-z0-9_-]*)*)\\s*$",
+          "captures": {
+            "2": {
+              "name": "punctuation.definition.list.inscape"
+            },
+            "4": {
+              "name": "string.unquoted.option.inscape"
+            },
+            "6": {
+              "name": "keyword.control.jump.inscape"
+            },
+            "8": {
+              "name": "entity.name.function.target.inscape"
+            }
+          }
+        },
+        {
+          "name": "meta.choice.option.invalid.inscape",
+          "match": "^(\\s*)(-)(\\s*)(.*?)(\\s+)(->)(\\s*)(.*)$",
+          "captures": {
+            "2": {
+              "name": "punctuation.definition.list.inscape"
+            },
+            "4": {
+              "name": "string.unquoted.option.inscape"
+            },
+            "6": {
+              "name": "keyword.control.jump.inscape"
+            },
+            "8": {
+              "name": "invalid.illegal.target.inscape"
+            }
+          }
+        },
+        {
+          "name": "meta.choice.prompt.inscape",
+          "begin": "^(\\s*)(\\?)(\\s*)",
+          "beginCaptures": {
+            "2": {
+              "name": "keyword.control.choice.inscape"
+            }
+          },
+          "end": "$",
+          "contentName": "string.unquoted.choice-prompt.inscape",
+          "patterns": [
+            {
+              "include": "#inlineTags"
+            }
+          ]
+        }
+      ]
+    },
+    "jumps": {
+      "patterns": [
+        {
+          "name": "meta.jump.inscape",
+          "match": "^(\\s*)(->)(\\s*)([a-z][a-z0-9_-]*(?:\\.[a-z][a-z0-9_-]*)*)\\s*$",
+          "captures": {
+            "2": {
+              "name": "keyword.control.jump.inscape"
+            },
+            "4": {
+              "name": "entity.name.function.target.inscape"
+            }
+          }
+        },
+        {
+          "name": "meta.jump.invalid.inscape",
+          "match": "^(\\s*)(->)(\\s*)(.*)$",
+          "captures": {
+            "2": {
+              "name": "keyword.control.jump.inscape"
+            },
+            "4": {
+              "name": "invalid.illegal.target.inscape"
+            }
+          }
+        }
+      ]
+    },
+    "metadataLines": {
+      "patterns": [
+        {
+          "name": "comment.line.metadata.inscape",
+          "match": "^\\s*@[A-Za-z_][A-Za-z0-9_-]*(?:\\s+.*)?$"
+        },
+        {
+          "name": "comment.line.metadata.bracket.inscape",
+          "match": "^\\s*\\[[^\\]\\r\\n]*\\]\\s*$"
+        }
+      ]
+    },
+    "dialogue": {
+      "patterns": [
+        {
+          "name": "meta.dialogue.inscape",
+          "begin": "^(\\s*)([^\\s:：][^:：]*)([:：])",
+          "beginCaptures": {
+            "2": {
+              "name": "entity.name.tag.speaker.inscape"
+            },
+            "3": {
+              "name": "punctuation.separator.dialogue.inscape"
+            }
+          },
+          "end": "$",
+          "contentName": "string.unquoted.dialogue.inscape",
+          "patterns": [
+            {
+              "include": "#inlineTags"
+            }
+          ]
+        }
+      ]
+    },
+    "narration": {
+      "patterns": [
+        {
+          "name": "meta.narration.inscape",
+          "begin": "^(\\s*)(?=\\S)",
+          "end": "$",
+          "contentName": "string.unquoted.narration.inscape",
+          "patterns": [
+            {
+              "include": "#inlineTags"
+            }
+          ]
+        }
+      ]
+    },
+    "inlineTags": {
+      "patterns": [
+        {
+          "name": "comment.block.inline-tag.inscape",
+          "match": "\\[[^\\]\\r\\n]*\\]"
+        }
+      ]
+    }
+  }
+}

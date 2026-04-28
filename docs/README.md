@@ -11,12 +11,13 @@
 3. [代码结构规划](code-structure.md)
 4. [语法样例对比](syntax-comparison.md)
 5. [DSL 语言设计草案](dsl-language.md)
-6. [哈希锚点与本地化](hash-localization.md)
-7. [编辑器设计草案](editor-design.md)
-8. [运行时与 Unity 宿主](runtime-unity.md)
-9. [路线图](roadmap.md)
-10. [TODO](todo.md)
-11. [待确认问题](open-questions.md)
+6. [VSCode 轻工具链](vscode-tooling.md)
+7. [哈希锚点与本地化](hash-localization.md)
+8. [编辑器设计草案](editor-design.md)
+9. [运行时与 Unity 宿主](runtime-unity.md)
+10. [路线图](roadmap.md)
+11. [TODO](todo.md)
+12. [待确认问题](open-questions.md)
 
 ## 文档状态标记
 
@@ -35,6 +36,7 @@ docs/
   code-structure.md      代码目录规划与分层原则
   syntax-comparison.md   同一剧情在多种叙事 DSL 风格下的对比
   dsl-language.md        DSL 语言设计草案与语法待确认项
+  vscode-tooling.md      VSCode 阶段的轻工具链设计与使用方式
   editor-design.md       独立编辑器交互草案与待验证工作流
   hash-localization.md   隐式哈希锚点、本地化与文本修订策略
   runtime-unity.md       Unity 宿主、IR 执行与运行时边界

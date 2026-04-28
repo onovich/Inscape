@@ -14,6 +14,8 @@ tests/
   Inscape.Tests/         无第三方依赖的轻量回归测试
 samples/
   court-loop.inscape     图叙事与回环样例
+tools/
+  vscode-inscape/        VSCode 轻量语言扩展：高亮、语言配置、snippets
 docs/
   code-structure.md      代码结构规划
 ```
@@ -22,6 +24,7 @@ docs/
 
 - `Inscape.Core` 不依赖 Unity、不依赖 VSCode、不依赖 HTML 渲染，也不依赖外部包。
 - `Inscape.Cli` 是开发工具层，可以输出 JSON IR 和轻量 HTML 预览。
+- `tools/vscode-inscape` 当前只承载声明式 VSCode 语言支持，不包含另一份解析逻辑。
 - VSCode Language Server 后续应复用 `Inscape.Core`，而不是重新实现解析器。
 - Unity Adapter 后续应消费 Narrative Graph IR，并决定是否转换为 Bird `Talking/L10N` 数据或直接运行 IR。
 - Timeline / DirectorSystem 暂不进入 Core 的第一版模型，先作为后续调研与 Adapter 层问题。

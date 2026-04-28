@@ -29,6 +29,7 @@
 - [代码结构规划](docs/code-structure.md)
 - [语法样例对比](docs/syntax-comparison.md)
 - [DSL 语言设计草案](docs/dsl-language.md)
+- [VSCode 轻工具链](docs/vscode-tooling.md)
 - [编辑器设计草案](docs/editor-design.md)
 - [运行时与 Unity 宿主](docs/runtime-unity.md)
 - [哈希锚点与本地化](docs/hash-localization.md)
@@ -49,6 +50,7 @@ dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj --no-build
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- check samples\court-loop.inscape
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- compile samples\court-loop.inscape -o artifacts\court-loop.json
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- preview samples\court-loop.inscape -o artifacts\court-loop.html
+code --extensionDevelopmentPath=tools\vscode-inscape .
 ```
 
 ## 仓库约定
