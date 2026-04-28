@@ -35,6 +35,12 @@ namespace Inscape.Cli {
                 return result.HasErrors ? 1 : 0;
             }
 
+            if (command == "diagnose") {
+                string json = JsonSerializer.Serialize(ToOutput(result), JsonOptions);
+                WriteOrPrint(outputPath, json);
+                return 0;
+            }
+
             if (command == "compile") {
                 string json = JsonSerializer.Serialize(ToOutput(result), JsonOptions);
                 WriteOrPrint(outputPath, json);
@@ -107,6 +113,7 @@ namespace Inscape.Cli {
             Console.WriteLine();
             Console.WriteLine("Usage:");
             Console.WriteLine("  inscape check <file.inscape>");
+            Console.WriteLine("  inscape diagnose <file.inscape> [-o diagnostics.json]");
             Console.WriteLine("  inscape compile <file.inscape> [-o output.json]");
             Console.WriteLine("  inscape preview <file.inscape> [-o preview.html]");
         }

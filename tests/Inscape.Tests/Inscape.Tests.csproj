@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Inscape.Core\Inscape.Core.csproj" />
+    <ProjectReference Include="..\..\src\Inscape.Cli\Inscape.Cli.csproj" />
   </ItemGroup>
 
 </Project>

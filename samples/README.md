@@ -14,6 +14,7 @@
 
 ```powershell
 dotnet run --project src\Inscape.Cli -- check samples\court-loop.inscape
+dotnet run --project src\Inscape.Cli -- diagnose samples\court-loop.inscape
 dotnet run --project src\Inscape.Cli -- compile samples\court-loop.inscape -o artifacts\court-loop.json
 dotnet run --project src\Inscape.Cli -- preview samples\court-loop.inscape -o artifacts\court-loop.html
 ```

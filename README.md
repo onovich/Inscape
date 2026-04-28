@@ -48,6 +48,7 @@ dotnet restore tests\Inscape.Tests\Inscape.Tests.csproj --configfile NuGet.Confi
 dotnet build Inscape.slnx --no-restore
 dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj --no-build
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- check samples\court-loop.inscape
+dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- diagnose samples\court-loop.inscape
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- compile samples\court-loop.inscape -o artifacts\court-loop.json
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- preview samples\court-loop.inscape -o artifacts\court-loop.html
 code --extensionDevelopmentPath=tools\vscode-inscape .

@@ -5,9 +5,13 @@
   "version": "0.1.0",
   "publisher": "onovich",
   "license": "UNLICENSED",
+  "main": "./extension.js",
   "engines": {
     "vscode": "^1.92.0"
   },
+  "activationEvents": [
+    "onLanguage:inscape"
+  ],
   "categories": [
     "Programming Languages",
     "Snippets"
@@ -38,6 +42,42 @@
         "language": "inscape",
         "path": "./snippets/inscape.code-snippets"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "Inscape",
+      "properties": {
+        "inscape.diagnostics.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable compiler-backed diagnostics for .inscape files."
+        },
+        "inscape.diagnostics.debounceMs": {
+          "type": "number",
+          "default": 450,
+          "minimum": 100,
+          "description": "Delay before refreshing diagnostics after document changes."
+        },
+        "inscape.compiler.command": {
+          "type": "string",
+          "default": "dotnet",
+          "description": "Command used by the VSCode extension to invoke the Inscape compiler."
+        },
+        "inscape.compiler.args": {
+          "type": "array",
+          "default": [
+            "run",
+            "--project",
+            "${workspaceFolder}/src/Inscape.Cli/Inscape.Cli.csproj",
+            "--",
+            "diagnose",
+            "${file}"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "description": "Arguments used to invoke the Inscape compiler. Supported variables: ${workspaceFolder}, ${extensionPath}, ${file}, ${documentFile}."
+        }
+      }
+    }
   }
 }

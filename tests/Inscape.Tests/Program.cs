@@ -1,6 +1,9 @@
+using System.Text;
+using System.Text.Json;
 using Inscape.Core.Compilation;
 using Inscape.Core.Diagnostics;
 using Inscape.Core.Model;
+using CliProgram = Inscape.Cli.Program;
 
 namespace Inscape.Tests {
 
@@ -12,6 +15,7 @@ namespace Inscape.Tests {
                 ("diagnose missing target", DiagnoseMissingTarget),
                 ("diagnose invalid node names", DiagnoseInvalidNodeNames),
                 ("hashes are stable", HashesAreStable),
+                ("cli diagnose emits json", CliDiagnoseEmitsJson),
             };
 
             int failed = 0;
@@ -100,6 +104,43 @@ namespace Inscape.Tests {
 
             AssertFalse(string.IsNullOrWhiteSpace(a), "Anchor should be present.");
             AssertEqual(a, b, "Anchor should be deterministic.");
+        }
+
+        static void CliDiagnoseEmitsJson() {
+            string directory = Path.Combine(Path.GetTempPath(), "inscape-tests");
+            Directory.CreateDirectory(directory);
+
+            string path = Path.Combine(directory, "diagnose-" + Guid.NewGuid().ToString("N") + ".inscape");
+            File.WriteAllText(path, """
+:: start
+旁白：开始。
+-> missing.node
+""", Encoding.UTF8);
+
+            TextWriter originalOut = Console.Out;
+            TextWriter originalError = Console.Error;
+            StringWriter output = new StringWriter();
+            StringWriter error = new StringWriter();
+
+            int exitCode;
+            try {
+                Console.SetOut(output);
+                Console.SetError(error);
+                exitCode = CliProgram.Main(new[] { "diagnose", path });
+            } finally {
+                Console.SetOut(originalOut);
+                Console.SetError(originalError);
+                File.Delete(path);
+            }
+
+            AssertEqual(0, exitCode, "Diagnose command exit code");
+            AssertEqual("", error.ToString().Trim(), "Diagnose command stderr");
+
+            using JsonDocument document = JsonDocument.Parse(output.ToString());
+            JsonElement root = document.RootElement;
+            AssertEqual("inscape.graph-ir", root.GetProperty("format").GetString(), "Diagnose format");
+            AssertTrue(root.GetProperty("hasErrors").GetBoolean(), "Diagnose output should preserve script errors.");
+            AssertTrue(root.GetProperty("diagnostics").GetArrayLength() > 0, "Diagnose output should contain diagnostics.");
         }
 
         static CompilationResult Compile(string source) {
