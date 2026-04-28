@@ -11,9 +11,9 @@
 - 原型位置：`tools/vscode-inscape/`
 - 当前形态：TextMate grammar + snippets + VSCode extension runtime。
 
-高亮、括号配置、注释和 snippets 保持声明式。实时诊断通过 CLI 的 `diagnose-project` 命令调用 `Inscape.Core`，避免在 VSCode 插件里重写解析器。工作区节点补全、跳转定义、引用查找和大纲先使用轻量行扫描，它们只做写作提示，不作为语法真相来源。
+高亮、括号配置、注释和 snippets 保持声明式。实时诊断通过 CLI 的 `diagnose-project` 命令调用 `Inscape.Core`，避免在 VSCode 插件里重写解析器。工作区节点补全、跳转定义、引用查找、悬浮说明和大纲先使用轻量行扫描，它们只做写作提示，不作为语法真相来源。
 
-后续更完整的项目语义能力和悬浮说明，应通过 Language Server 复用 `Inscape.Core`。
+后续更完整的项目语义能力应通过 Language Server 复用 `Inscape.Core`。
 
 ## 高亮哲学
 
@@ -43,12 +43,12 @@ Inscape 的默认阅读优先级应当是：
 - 在 `->` 跳转目标位置补全工作区内的节点名。
 - 在 `->` 跳转目标上支持 Go to Definition / Ctrl+Click。
 - 在节点声明或 `->` 跳转目标上支持 Find All References。
+- 在节点声明或 `->` 跳转目标上显示 Hover 摘要：定义位置、引用数量和出边目标。
 - 为 VSCode Outline 提供当前文件节点列表。
 
 ## 尚未实现
 
 - 正式 Language Server。
-- 悬浮说明。
 - VSCode WebView 预览；当前 HTML 预览仍通过 CLI 生成静态文件。
 - 角色表、资源别名、宿主 Schema 驱动的智能提示。
 

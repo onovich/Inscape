@@ -12,6 +12,7 @@ This is the first lightweight authoring layer for `.inscape` scripts. It keeps s
 - Provides workspace node completions in jump target positions.
 - Supports Go to Definition / Ctrl+Click from jump targets to node declarations.
 - Supports Find All References from node declarations and jump targets.
+- Shows hover summaries for node declarations and jump targets.
 - Provides an outline view backed by visible node headers.
 
 ## Development Use

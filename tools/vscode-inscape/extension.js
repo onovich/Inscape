@@ -27,7 +27,8 @@ function activate(context) {
         vscode.languages.registerCompletionItemProvider(languageSelector, new InscapeCompletionProvider(), ">", "."),
         vscode.languages.registerDocumentSymbolProvider(languageSelector, new InscapeDocumentSymbolProvider()),
         vscode.languages.registerDefinitionProvider(languageSelector, new InscapeDefinitionProvider()),
-        vscode.languages.registerReferenceProvider(languageSelector, new InscapeReferenceProvider())
+        vscode.languages.registerReferenceProvider(languageSelector, new InscapeReferenceProvider()),
+        vscode.languages.registerHoverProvider(languageSelector, new InscapeHoverProvider())
     );
 
     refreshVisibleDocuments(scheduler);
@@ -201,6 +202,27 @@ class InscapeReferenceProvider {
 
         locations = uniqueLocations(locations);
         return locations.length > 0 ? locations : undefined;
+    }
+}
+
+class InscapeHoverProvider {
+
+    async provideHover(document, position) {
+        if (!isInscapeDocument(document)) {
+            return undefined;
+        }
+
+        const node = getNodeDeclarationAtPosition(document, position) || getJumpTargetAtPositionInfo(document, position);
+        if (!node) {
+            return undefined;
+        }
+
+        const declarations = (await collectWorkspaceNodes(document)).filter((candidate) => candidate.name === node.name);
+        const references = await collectWorkspaceJumpReferences(document, node.name);
+        const outgoingTargets = await collectWorkspaceOutgoingTargets(document, node.name);
+        const markdown = createNodeHoverMarkdown(node.name, declarations, references, outgoingTargets);
+
+        return new vscode.Hover(markdown, node.range);
     }
 }
 
@@ -395,6 +417,26 @@ async function collectWorkspaceJumpReferences(document, targetName) {
     });
 }
 
+async function collectWorkspaceOutgoingTargets(document, nodeName) {
+    const targets = [];
+    const sources = await collectWorkspaceTextSources(document);
+
+    for (const source of sources) {
+        collectOutgoingTargetsFromText(source.text, source.sourcePath, nodeName, targets);
+    }
+
+    return targets.sort((left, right) => {
+        const pathCompare = left.sourcePath.localeCompare(right.sourcePath);
+        if (pathCompare !== 0) {
+            return pathCompare;
+        }
+        if (left.line !== right.line) {
+            return left.line - right.line;
+        }
+        return left.character - right.character;
+    });
+}
+
 async function collectWorkspaceTextSources(document) {
     const sources = [];
     const seen = new Set();
@@ -485,7 +527,46 @@ function collectJumpReferencesFromText(text, sourcePath, targetName, references)
     }
 }
 
+function collectOutgoingTargetsFromText(text, sourcePath, nodeName, targets) {
+    const nodePattern = /^\s*::\s+([a-z][a-z0-9_-]*(?:\.[a-z][a-z0-9_-]*)*)\s*$/;
+    const jumpPattern = /->\s*([A-Za-z0-9_.-]+)/g;
+    const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+    let currentNode = "";
+
+    for (let line = 0; line < lines.length; line += 1) {
+        const nodeMatch = nodePattern.exec(lines[line]);
+        if (nodeMatch) {
+            currentNode = nodeMatch[1];
+            continue;
+        }
+
+        if (currentNode !== nodeName || !isJumpReferenceLine(lines[line])) {
+            continue;
+        }
+
+        jumpPattern.lastIndex = 0;
+        let jumpMatch = jumpPattern.exec(lines[line]);
+        while (jumpMatch) {
+            const target = jumpMatch[1];
+            const character = jumpMatch.index + jumpMatch[0].length - target.length;
+            targets.push({
+                name: target,
+                sourcePath,
+                line,
+                character,
+                length: target.length
+            });
+            jumpMatch = jumpPattern.exec(lines[line]);
+        }
+    }
+}
+
 function getNodeNameAtDeclarationPosition(document, position) {
+    const node = getNodeDeclarationAtPosition(document, position);
+    return node ? node.name : undefined;
+}
+
+function getNodeDeclarationAtPosition(document, position) {
     const line = document.lineAt(position).text;
     const match = /^\s*::\s+([a-z][a-z0-9_-]*(?:\.[a-z][a-z0-9_-]*)*)\s*$/.exec(line);
     if (!match) {
@@ -495,13 +576,21 @@ function getNodeNameAtDeclarationPosition(document, position) {
     const start = line.indexOf(match[1]);
     const end = start + match[1].length;
     if (position.character >= start && position.character <= end) {
-        return match[1];
+        return {
+            name: match[1],
+            range: new vscode.Range(position.line, start, position.line, end)
+        };
     }
 
     return undefined;
 }
 
 function getJumpTargetAtPosition(document, position) {
+    const target = getJumpTargetAtPositionInfo(document, position);
+    return target ? target.name : undefined;
+}
+
+function getJumpTargetAtPositionInfo(document, position) {
     const line = document.lineAt(position).text;
     if (!isJumpReferenceLine(line)) {
         return undefined;
@@ -515,7 +604,12 @@ function getJumpTargetAtPosition(document, position) {
         const targetStart = match.index + match[0].length - target.length;
         const targetEnd = targetStart + target.length;
         if (position.character >= targetStart && position.character <= targetEnd) {
-            return target.length > 0 ? target : undefined;
+            return target.length > 0
+                ? {
+                    name: target,
+                    range: new vscode.Range(position.line, targetStart, position.line, targetEnd)
+                }
+                : undefined;
         }
         match = jumpPattern.exec(line);
     }
@@ -526,6 +620,40 @@ function getJumpTargetAtPosition(document, position) {
 function isJumpReferenceLine(line) {
     const trimmed = line.trim();
     return trimmed.startsWith("->") || trimmed.startsWith("-");
+}
+
+function createNodeHoverMarkdown(nodeName, declarations, references, outgoingTargets) {
+    const markdown = new vscode.MarkdownString(undefined, true);
+    markdown.isTrusted = false;
+    markdown.appendMarkdown("**Inscape Node** `" + nodeName + "`\n\n");
+
+    if (declarations.length === 0) {
+        markdown.appendMarkdown("Declaration: not found\n\n");
+    } else if (declarations.length === 1) {
+        markdown.appendMarkdown("Defined: `" + formatSourceLocation(declarations[0]) + "`\n\n");
+    } else {
+        markdown.appendMarkdown("Definitions: " + declarations.length + "\n\n");
+        for (const declaration of declarations.slice(0, 5)) {
+            markdown.appendMarkdown("- `" + formatSourceLocation(declaration) + "`\n");
+        }
+        if (declarations.length > 5) {
+            markdown.appendMarkdown("- ...\n");
+        }
+        markdown.appendMarkdown("\n");
+    }
+
+    markdown.appendMarkdown("References: " + references.length + "\n\n");
+
+    const outgoingNames = uniqueNames(outgoingTargets.map((target) => target.name));
+    if (outgoingNames.length === 0) {
+        markdown.appendMarkdown("Outgoing: none");
+    } else {
+        const displayed = outgoingNames.slice(0, 8).map((name) => "`" + name + "`").join(", ");
+        const suffix = outgoingNames.length > 8 ? ", ..." : "";
+        markdown.appendMarkdown("Outgoing: " + displayed + suffix);
+    }
+
+    return markdown;
 }
 
 function createLocation(item) {
@@ -553,6 +681,35 @@ function uniqueLocations(locations) {
     }
 
     return result;
+}
+
+function uniqueNames(names) {
+    const seen = new Set();
+    const result = [];
+
+    for (const name of names) {
+        if (seen.has(name)) {
+            continue;
+        }
+        seen.add(name);
+        result.push(name);
+    }
+
+    return result;
+}
+
+function formatSourceLocation(item) {
+    return formatDisplayPath(item.sourcePath) + ":" + (item.line + 1);
+}
+
+function formatDisplayPath(sourcePath) {
+    const uri = vscode.Uri.file(sourcePath);
+    const folder = vscode.workspace.getWorkspaceFolder(uri);
+    if (!folder) {
+        return sourcePath;
+    }
+
+    return path.relative(folder.uri.fsPath, sourcePath).replace(/\\/g, "/");
 }
 
 function normalizePath(value) {
