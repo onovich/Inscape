@@ -1,0 +1,79 @@
+# 架构草案
+
+状态：草案
+
+## 总体结构
+
+Inscape 采用三层解耦架构：
+
+- Compiler Core：负责 DSL 解析、诊断、哈希锚点、IR 生成和本地化提取。
+- Editor Environment：负责文本编辑、项目索引、逻辑可视化、状态检查和实时预览通信。
+- Runtime Host：负责加载 IR、推进执行流、管理状态、调度渲染和素材系统。
+
+```mermaid
+flowchart LR
+  Script["Inscape DSL Script"] --> Compiler["Compiler Core"]
+  Compiler --> IR["Intermediate Representation"]
+  Compiler --> L10N["Localization Catalog"]
+  Editor["Editor Environment"] --> Compiler
+  Editor <--> Preview["Live Preview Channel"]
+  IR --> Runtime["Runtime Host"]
+  Preview <--> Runtime
+  Runtime --> Store["Deterministic State Store"]
+  Runtime --> Renderer["Unity or Future Renderer"]
+```
+
+## 核心约束
+
+- 文本是主要源数据，配置应尽量作为文本标签或项目级资源索引出现。
+- 编译结果应可序列化、可比较、可缓存。
+- 运行时只消费 IR 与资源引用，不直接解析原始脚本。
+- 状态变更通过 Action 或 Command 进入 Store，不允许任意系统直接改写叙事状态。
+- 本地化、存档和热重载都必须能追溯到同一套锚点机制。
+
+## 技术选型状态
+
+### Compiler Core
+
+- 开发语言：C#，目标为 .NET 8 与 Unity 兼容层。
+- 解析器：Antlr4 与 Superpower 均为候选，需要通过 DSL 复杂度与错误恢复需求决定。
+- 哈希算法：MurmurHash3 与 XXHash 为候选，需要比较跨平台实现、速度、碰撞概率和版本稳定性。
+
+### Editor Environment
+
+- 外壳：Tauri 候选，理由是轻量、跨平台、Rust 后端适合文件索引。
+- 前端：React + Tailwind CSS 候选。
+- 编辑器内核：Monaco Editor 候选。
+- 通信：WebSocket 或 Socket.io 候选。是否需要 Socket.io 的协议能力待确认。
+
+### Runtime Host
+
+- 前期宿主：Unity。具体版本需确认，当前材料中“Unity 6”和“2023 LTS”存在版本表达不一致。
+- 数据流：Command Pattern Pipeline 为优先候选；Entitas ECS 保留为复杂项目候选。
+- 资产管理：Addressables 候选，用于立绘、背景、音频和视频加载。
+
+## 编译数据流
+
+1. 编辑器或命令行读取脚本文件。
+2. Compiler Core 进行词法和语法分析。
+3. 解析阶段生成诊断、AST 和可定位的源映射。
+4. 语义阶段解析角色、标签、变量、分支与资源引用。
+5. 锚点阶段为可持久化文本和节点生成哈希 ID。
+6. 输出 IR、源映射、本地化提取表和诊断结果。
+
+## 运行数据流
+
+1. Runtime Host 加载 IR。
+2. 执行器按顺序读取 Command。
+3. Command 发出状态 Action 或渲染请求。
+4. Reducer 更新叙事 Store。
+5. 渲染适配层根据 Command 与 Store 调用 Unity 资源和 UI。
+6. 存档记录当前锚点、执行偏移、状态快照与必要的历史 Action。
+
+## 需要尽早验证的架构问题
+
+- 源映射是否能同时支撑错误提示、热重载、存档定位和本地化回查。
+- 哈希锚点是否应该分为文本锚点、节点锚点和语义锚点。
+- IR 是否需要保持人类可读，还是优先二进制体积和加载速度。
+- Unity 插件和独立编辑器之间如何共享 Compiler Core。
+- 扩展指令是编译期注册、运行时注册，还是两者都支持。
