@@ -11,6 +11,7 @@ This is the first lightweight authoring layer for `.inscape` scripts. It keeps s
 - Refreshes diagnostics by invoking `dotnet run --project src/Inscape.Cli/Inscape.Cli.csproj -- diagnose-project <workspace> --override <source> <temp-file>`.
 - Provides workspace node completions in jump target positions.
 - Supports Go to Definition / Ctrl+Click from jump targets to node declarations.
+- Supports Find All References from node declarations and jump targets.
 - Provides an outline view backed by visible node headers.
 
 ## Development Use

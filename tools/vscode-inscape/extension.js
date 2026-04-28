@@ -26,7 +26,8 @@ function activate(context) {
         }),
         vscode.languages.registerCompletionItemProvider(languageSelector, new InscapeCompletionProvider(), ">", "."),
         vscode.languages.registerDocumentSymbolProvider(languageSelector, new InscapeDocumentSymbolProvider()),
-        vscode.languages.registerDefinitionProvider(languageSelector, new InscapeDefinitionProvider())
+        vscode.languages.registerDefinitionProvider(languageSelector, new InscapeDefinitionProvider()),
+        vscode.languages.registerReferenceProvider(languageSelector, new InscapeReferenceProvider())
     );
 
     refreshVisibleDocuments(scheduler);
@@ -172,6 +173,33 @@ class InscapeDefinitionProvider {
                 new vscode.Position(node.line, node.character)
             ));
 
+        return locations.length > 0 ? locations : undefined;
+    }
+}
+
+class InscapeReferenceProvider {
+
+    async provideReferences(document, position, context) {
+        if (!isInscapeDocument(document)) {
+            return undefined;
+        }
+
+        const target = getNodeNameAtDeclarationPosition(document, position) || getJumpTargetAtPosition(document, position);
+        if (!target) {
+            return undefined;
+        }
+
+        const references = await collectWorkspaceJumpReferences(document, target);
+        let locations = references.map((reference) => createLocation(reference));
+
+        if (context && context.includeDeclaration) {
+            const declarations = await collectWorkspaceNodes(document);
+            locations = declarations.filter((node) => node.name === target)
+                .map((node) => createLocation(node))
+                .concat(locations);
+        }
+
+        locations = uniqueLocations(locations);
         return locations.length > 0 ? locations : undefined;
     }
 }
@@ -338,28 +366,71 @@ function isJumpTargetContext(linePrefix) {
 async function collectWorkspaceNodes(document) {
     const nodes = [];
     const seen = new Set();
-    const openPaths = new Set(vscode.workspace.textDocuments
-        .filter((textDocument) => isInscapeDocument(textDocument))
-        .map((textDocument) => normalizePath(textDocument.uri.fsPath)));
+    const sources = await collectWorkspaceTextSources(document);
+
+    for (const source of sources) {
+        collectNodesFromText(source.text, source.sourcePath, seen, nodes);
+    }
+
+    return nodes.sort((left, right) => left.name.localeCompare(right.name));
+}
+
+async function collectWorkspaceJumpReferences(document, targetName) {
+    const references = [];
+    const sources = await collectWorkspaceTextSources(document);
+
+    for (const source of sources) {
+        collectJumpReferencesFromText(source.text, source.sourcePath, targetName, references);
+    }
+
+    return references.sort((left, right) => {
+        const pathCompare = left.sourcePath.localeCompare(right.sourcePath);
+        if (pathCompare !== 0) {
+            return pathCompare;
+        }
+        if (left.line !== right.line) {
+            return left.line - right.line;
+        }
+        return left.character - right.character;
+    });
+}
+
+async function collectWorkspaceTextSources(document) {
+    const sources = [];
+    const seen = new Set();
+
+    addWorkspaceTextSource(sources, seen, document.uri.fsPath, document.getText());
+
+    for (const textDocument of vscode.workspace.textDocuments) {
+        if (isInscapeDocument(textDocument)) {
+            addWorkspaceTextSource(sources, seen, textDocument.uri.fsPath, textDocument.getText());
+        }
+    }
 
     const files = await vscode.workspace.findFiles("**/*.inscape", "{**/.git/**,**/bin/**,**/obj/**,**/node_modules/**,**/artifacts/**}", 2000);
     for (const file of files) {
-        if (openPaths.has(normalizePath(file.fsPath))) {
+        if (seen.has(normalizePath(file.fsPath))) {
             continue;
         }
 
         const text = await readWorkspaceFileText(file);
-        collectNodesFromText(text, file.fsPath, seen, nodes);
+        addWorkspaceTextSource(sources, seen, file.fsPath, text);
     }
 
-    for (const textDocument of vscode.workspace.textDocuments) {
-        if (isInscapeDocument(textDocument)) {
-            collectNodesFromText(textDocument.getText(), textDocument.uri.fsPath, seen, nodes);
-        }
+    return sources;
+}
+
+function addWorkspaceTextSource(sources, seen, sourcePath, text) {
+    const key = normalizePath(sourcePath);
+    if (seen.has(key)) {
+        return;
     }
 
-    collectNodesFromText(document.getText(), document.uri.fsPath, seen, nodes);
-    return nodes.sort((left, right) => left.name.localeCompare(right.name));
+    seen.add(key);
+    sources.push({
+        sourcePath,
+        text
+    });
 }
 
 async function readWorkspaceFileText(uri) {
@@ -379,14 +450,63 @@ function collectNodesFromText(text, sourcePath, seen, nodes) {
                 name: match[1],
                 sourcePath,
                 line,
-                character: Math.max(0, lines[line].indexOf(match[1]))
+                character: Math.max(0, lines[line].indexOf(match[1])),
+                length: match[1].length
             });
         }
     }
 }
 
+function collectJumpReferencesFromText(text, sourcePath, targetName, references) {
+    const pattern = /->\s*([A-Za-z0-9_.-]+)/g;
+    const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+
+    for (let line = 0; line < lines.length; line += 1) {
+        if (!isJumpReferenceLine(lines[line])) {
+            continue;
+        }
+
+        pattern.lastIndex = 0;
+        let match = pattern.exec(lines[line]);
+        while (match) {
+            const target = match[1];
+            if (target === targetName) {
+                const character = match.index + match[0].length - target.length;
+                references.push({
+                    name: target,
+                    sourcePath,
+                    line,
+                    character,
+                    length: target.length
+                });
+            }
+            match = pattern.exec(lines[line]);
+        }
+    }
+}
+
+function getNodeNameAtDeclarationPosition(document, position) {
+    const line = document.lineAt(position).text;
+    const match = /^\s*::\s+([a-z][a-z0-9_-]*(?:\.[a-z][a-z0-9_-]*)*)\s*$/.exec(line);
+    if (!match) {
+        return undefined;
+    }
+
+    const start = line.indexOf(match[1]);
+    const end = start + match[1].length;
+    if (position.character >= start && position.character <= end) {
+        return match[1];
+    }
+
+    return undefined;
+}
+
 function getJumpTargetAtPosition(document, position) {
     const line = document.lineAt(position).text;
+    if (!isJumpReferenceLine(line)) {
+        return undefined;
+    }
+
     const jumpPattern = /->\s*([A-Za-z0-9_.-]*)/g;
     let match = jumpPattern.exec(line);
 
@@ -401,6 +521,38 @@ function getJumpTargetAtPosition(document, position) {
     }
 
     return undefined;
+}
+
+function isJumpReferenceLine(line) {
+    const trimmed = line.trim();
+    return trimmed.startsWith("->") || trimmed.startsWith("-");
+}
+
+function createLocation(item) {
+    return new vscode.Location(
+        vscode.Uri.file(item.sourcePath),
+        new vscode.Range(item.line, item.character, item.line, item.character + (item.length || 0))
+    );
+}
+
+function uniqueLocations(locations) {
+    const seen = new Set();
+    const result = [];
+
+    for (const location of locations) {
+        const key = normalizePath(location.uri.fsPath)
+            + ":" + location.range.start.line
+            + ":" + location.range.start.character
+            + ":" + location.range.end.character;
+        if (seen.has(key)) {
+            continue;
+        }
+
+        seen.add(key);
+        result.push(location);
+    }
+
+    return result;
 }
 
 function normalizePath(value) {
