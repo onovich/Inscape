@@ -14,6 +14,10 @@ namespace Inscape.Core.Localization {
 
         public string Text { get; set; }
 
+        public string Translation { get; set; }
+
+        public string Status { get; set; }
+
         public SourceSpan Source { get; set; }
 
         public LocalizationEntry() {
@@ -22,6 +26,8 @@ namespace Inscape.Core.Localization {
             Kind = string.Empty;
             Speaker = string.Empty;
             Text = string.Empty;
+            Translation = string.Empty;
+            Status = string.Empty;
             Source = SourceSpan.Empty;
         }
 

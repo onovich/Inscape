@@ -21,6 +21,7 @@ namespace Inscape.Cli {
             string command = args[0];
             string inputPath = args[1];
             string? outputPath = ReadOption(args, "-o");
+            string? previousLocalizationPath = ReadOption(args, "--from");
 
             if (IsProjectCommand(command)) {
                 return RunProjectCommand(command, inputPath, args, outputPath);
@@ -62,6 +63,17 @@ namespace Inscape.Cli {
 
             if (command == "extract-l10n") {
                 string csv = ExtractLocalizationCsv(result.Document);
+                WriteOrPrint(outputPath, csv);
+                PrintDiagnostics(result.Diagnostics);
+                return result.HasErrors ? 1 : 0;
+            }
+
+            if (command == "update-l10n") {
+                if (!TryReadPreviousLocalization(previousLocalizationPath, out List<LocalizationEntry> previousEntries)) {
+                    return 1;
+                }
+
+                string csv = UpdateLocalizationCsv(result.Document, previousEntries);
                 WriteOrPrint(outputPath, csv);
                 PrintDiagnostics(result.Diagnostics);
                 return result.HasErrors ? 1 : 0;
@@ -142,6 +154,17 @@ namespace Inscape.Cli {
                 return result.HasErrors ? 1 : 0;
             }
 
+            if (command == "update-l10n-project") {
+                if (!TryReadPreviousLocalization(ReadOption(args, "--from"), out List<LocalizationEntry> previousEntries)) {
+                    return 1;
+                }
+
+                string csv = UpdateLocalizationCsv(result.Graph, previousEntries);
+                WriteOrPrint(outputPath, csv);
+                PrintDiagnostics(result.Diagnostics);
+                return result.HasErrors ? 1 : 0;
+            }
+
             Console.Error.WriteLine("Unknown command: " + command);
             PrintUsage();
             return 1;
@@ -205,13 +228,39 @@ namespace Inscape.Cli {
                 || command == "diagnose-project"
                 || command == "compile-project"
                 || command == "preview-project"
-                || command == "extract-l10n-project";
+                || command == "extract-l10n-project"
+                || command == "update-l10n-project";
         }
 
         static string ExtractLocalizationCsv(Inscape.Core.Model.InscapeDocument document) {
             LocalizationExtractor extractor = new LocalizationExtractor();
             LocalizationCsvWriter writer = new LocalizationCsvWriter();
             return writer.Write(extractor.Extract(document));
+        }
+
+        static string UpdateLocalizationCsv(Inscape.Core.Model.InscapeDocument document,
+                                            IReadOnlyList<LocalizationEntry> previousEntries) {
+            LocalizationExtractor extractor = new LocalizationExtractor();
+            LocalizationMerger merger = new LocalizationMerger();
+            LocalizationCsvWriter writer = new LocalizationCsvWriter();
+            return writer.Write(merger.Merge(extractor.Extract(document), previousEntries), true);
+        }
+
+        static bool TryReadPreviousLocalization(string? previousLocalizationPath, out List<LocalizationEntry> entries) {
+            entries = new List<LocalizationEntry>();
+            if (string.IsNullOrWhiteSpace(previousLocalizationPath)) {
+                Console.Error.WriteLine("Missing required option: --from <old.csv>");
+                return false;
+            }
+
+            if (!File.Exists(previousLocalizationPath)) {
+                Console.Error.WriteLine("Previous localization CSV not found: " + previousLocalizationPath);
+                return false;
+            }
+
+            LocalizationCsvReader reader = new LocalizationCsvReader();
+            entries = reader.Read(File.ReadAllText(previousLocalizationPath, Encoding.UTF8));
+            return true;
         }
 
         static bool IsSamePath(string left, string right) {
@@ -263,9 +312,11 @@ namespace Inscape.Cli {
             Console.WriteLine("  inscape check <file.inscape>");
             Console.WriteLine("  inscape diagnose <file.inscape> [-o diagnostics.json]");
             Console.WriteLine("  inscape extract-l10n <file.inscape> [-o strings.csv]");
+            Console.WriteLine("  inscape update-l10n <file.inscape> --from old.csv [-o strings.csv]");
             Console.WriteLine("  inscape check-project <root>");
             Console.WriteLine("  inscape diagnose-project <root> [--override source.inscape temp.inscape] [-o diagnostics.json]");
             Console.WriteLine("  inscape extract-l10n-project <root> [--override source.inscape temp.inscape] [-o strings.csv]");
+            Console.WriteLine("  inscape update-l10n-project <root> --from old.csv [--override source.inscape temp.inscape] [-o strings.csv]");
             Console.WriteLine("  inscape compile-project <root> [-o output.json]");
             Console.WriteLine("  inscape preview-project <root> [-o preview.html]");
             Console.WriteLine("  inscape compile <file.inscape> [-o output.json]");

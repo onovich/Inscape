@@ -31,6 +31,8 @@ namespace Inscape.Tests {
                 ("cli preview-project emits html", CliPreviewProjectEmitsHtml),
                 ("cli extract-l10n emits csv", CliExtractL10nEmitsCsv),
                 ("cli extract-l10n-project emits csv", CliExtractL10nProjectEmitsCsv),
+                ("cli update-l10n preserves translations", CliUpdateL10nPreservesTranslations),
+                ("cli update-l10n-project preserves translations", CliUpdateL10nProjectPreservesTranslations),
             };
 
             int failed = 0;
@@ -544,6 +546,76 @@ Project second line.
             AssertEqual(5, CountCsvLines(csv), "Project CSV line count");
         }
 
+        static void CliUpdateL10nPreservesTranslations() {
+            string directory = Path.Combine(Path.GetTempPath(), "inscape-tests", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory);
+            string path = Path.Combine(directory, "story.inscape");
+            string oldCsvPath = Path.Combine(directory, "old.csv");
+
+            File.WriteAllText(path, """
+:: start
+Narrator: Hello.
+""", Encoding.UTF8);
+            string initialCsv = RunCliForOutput(new[] { "extract-l10n", path });
+            string anchor = FirstDataAnchor(initialCsv);
+
+            File.WriteAllText(oldCsvPath,
+                              "anchor,node,kind,speaker,text,translation,sourcePath,line,column\n"
+                              + anchor + ",start,Dialogue,Narrator,Hello.,你好,old.inscape,2,1\n"
+                              + "l1_removed,old.node,Narration,,Removed.,旧译文,old.inscape,8,1\n",
+                              Encoding.UTF8);
+            File.WriteAllText(path, """
+:: start
+Narrator: Hello.
+A new line.
+""", Encoding.UTF8);
+
+            string csv;
+            try {
+                csv = RunCliForOutput(new[] { "update-l10n", path, "--from", oldCsvPath });
+            } finally {
+                Directory.Delete(directory, true);
+            }
+
+            AssertTrue(csv.Contains("anchor,node,kind,speaker,text,translation,status,sourcePath,line,column"), "Updated CSV should include status header.");
+            AssertTrue(csv.Contains("你好,current"), "Updated CSV should preserve existing translation.");
+            AssertTrue(csv.Contains("A new line."), "Updated CSV should include new text.");
+            AssertTrue(csv.Contains(",new,"), "Updated CSV should mark new rows.");
+            AssertTrue(csv.Contains("l1_removed"), "Updated CSV should keep removed rows for review.");
+            AssertTrue(csv.Contains(",removed,"), "Updated CSV should mark removed rows.");
+            AssertEqual(4, CountCsvLines(csv), "Updated CSV line count");
+        }
+
+        static void CliUpdateL10nProjectPreservesTranslations() {
+            string directory = Path.Combine(Path.GetTempPath(), "inscape-tests", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory);
+            string storyPath = Path.Combine(directory, "00-start.inscape");
+            string oldCsvPath = Path.Combine(directory, "old.csv");
+
+            File.WriteAllText(storyPath, """
+:: start
+@entry
+Narrator: Project start.
+""", Encoding.UTF8);
+            string initialCsv = RunCliForOutput(new[] { "extract-l10n-project", directory });
+            string anchor = FirstDataAnchor(initialCsv);
+
+            File.WriteAllText(oldCsvPath,
+                              "anchor,node,kind,speaker,text,translation,sourcePath,line,column\n"
+                              + anchor + ",start,Dialogue,Narrator,Project start.,项目开始,old.inscape,3,1\n",
+                              Encoding.UTF8);
+
+            string csv;
+            try {
+                csv = RunCliForOutput(new[] { "update-l10n-project", directory, "--from", oldCsvPath });
+            } finally {
+                Directory.Delete(directory, true);
+            }
+
+            AssertTrue(csv.Contains("项目开始,current"), "Project update should preserve existing translation.");
+            AssertEqual(2, CountCsvLines(csv), "Project update CSV line count");
+        }
+
         static CompilationResult Compile(string source) {
             InscapeCompiler compiler = new InscapeCompiler();
             return compiler.Compile(source, "memory://test.inscape");
@@ -605,6 +677,43 @@ Project second line.
                 }
             }
             return count;
+        }
+
+        static string FirstDataAnchor(string csv) {
+            using StringReader reader = new StringReader(csv);
+            reader.ReadLine();
+            string? line = reader.ReadLine();
+            if (string.IsNullOrEmpty(line)) {
+                throw new InvalidOperationException("CSV does not contain a data row.");
+            }
+
+            int comma = line.IndexOf(',');
+            if (comma < 0) {
+                throw new InvalidOperationException("CSV data row does not contain fields.");
+            }
+
+            return line.Substring(0, comma);
+        }
+
+        static string RunCliForOutput(string[] args) {
+            TextWriter originalOut = Console.Out;
+            TextWriter originalError = Console.Error;
+            StringWriter output = new StringWriter();
+            StringWriter error = new StringWriter();
+
+            int exitCode;
+            try {
+                Console.SetOut(output);
+                Console.SetError(error);
+                exitCode = CliProgram.Main(args);
+            } finally {
+                Console.SetOut(originalOut);
+                Console.SetError(originalError);
+            }
+
+            AssertEqual(0, exitCode, "CLI command exit code");
+            AssertEqual("", error.ToString().Trim(), "CLI command stderr");
+            return output.ToString();
         }
 
         static void AssertTrue(bool value, string message) {

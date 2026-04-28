@@ -7,8 +7,16 @@ namespace Inscape.Core.Localization {
     public sealed class LocalizationCsvWriter {
 
         public string Write(IReadOnlyList<LocalizationEntry> entries) {
+            return Write(entries, false);
+        }
+
+        public string Write(IReadOnlyList<LocalizationEntry> entries, bool includeStatus) {
             StringBuilder builder = new StringBuilder();
-            builder.AppendLine("anchor,node,kind,speaker,text,translation,sourcePath,line,column");
+            if (includeStatus) {
+                builder.AppendLine("anchor,node,kind,speaker,text,translation,status,sourcePath,line,column");
+            } else {
+                builder.AppendLine("anchor,node,kind,speaker,text,translation,sourcePath,line,column");
+            }
 
             for (int i = 0; i < entries.Count; i += 1) {
                 LocalizationEntry entry = entries[i];
@@ -22,7 +30,11 @@ namespace Inscape.Core.Localization {
                 builder.Append(',');
                 AppendField(builder, entry.Text);
                 builder.Append(',');
-                AppendField(builder, string.Empty);
+                AppendField(builder, entry.Translation);
+                if (includeStatus) {
+                    builder.Append(',');
+                    AppendField(builder, entry.Status);
+                }
                 builder.Append(',');
                 AppendField(builder, entry.Source.SourcePath);
                 builder.Append(',');
