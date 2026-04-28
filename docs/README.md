@@ -8,13 +8,14 @@
 
 1. [项目立项说明](project-brief.md)
 2. [架构草案](architecture.md)
-3. [DSL 语言设计草案](dsl-language.md)
-4. [哈希锚点与本地化](hash-localization.md)
-5. [编辑器设计草案](editor-design.md)
-6. [运行时与 Unity 宿主](runtime-unity.md)
-7. [路线图](roadmap.md)
-8. [TODO](todo.md)
-9. [待确认问题](open-questions.md)
+3. [代码结构规划](code-structure.md)
+4. [DSL 语言设计草案](dsl-language.md)
+5. [哈希锚点与本地化](hash-localization.md)
+6. [编辑器设计草案](editor-design.md)
+7. [运行时与 Unity 宿主](runtime-unity.md)
+8. [路线图](roadmap.md)
+9. [TODO](todo.md)
+10. [待确认问题](open-questions.md)
 
 ## 文档状态标记
 
@@ -30,6 +31,7 @@ docs/
   README.md              文档索引与维护规则
   project-brief.md       项目定位、目标、非目标、成功标准
   architecture.md        三层架构、数据流与关键约束
+  code-structure.md      代码目录规划与分层原则
   dsl-language.md        DSL 语言设计草案与语法待确认项
   editor-design.md       独立编辑器交互草案与待验证工作流
   hash-localization.md   隐式哈希锚点、本地化与文本修订策略

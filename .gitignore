@@ -4,8 +4,10 @@ obj/
 dist/
 build/
 out/
+artifacts/
 
 # .NET
+.dotnet-home/
 *.user
 *.suo
 *.userosscache
@@ -22,8 +24,6 @@ TestResult*/
 [Uu]ser[Ss]ettings/
 MemoryCaptures/
 Recordings/
-*.csproj
-*.sln
 *.unityproj
 *.pidb
 *.booproj

@@ -26,6 +26,7 @@
 - [文档索引](docs/README.md)
 - [项目立项说明](docs/project-brief.md)
 - [架构草案](docs/architecture.md)
+- [代码结构规划](docs/code-structure.md)
 - [DSL 语言设计草案](docs/dsl-language.md)
 - [编辑器设计草案](docs/editor-design.md)
 - [运行时与 Unity 宿主](docs/runtime-unity.md)
@@ -34,6 +35,20 @@
 - [TODO](docs/todo.md)
 - [待确认问题](docs/open-questions.md)
 - [架构决策记录](docs/adr/README.md)
+
+## 开发入口
+
+当前第一版代码提供 DSL 解析、图 IR 输出、诊断、CLI 和轻量 HTML 预览。
+
+```powershell
+dotnet restore src\Inscape.Cli\Inscape.Cli.csproj --configfile NuGet.Config
+dotnet restore tests\Inscape.Tests\Inscape.Tests.csproj --configfile NuGet.Config
+dotnet build Inscape.slnx --no-restore
+dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj --no-build
+dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- check samples\court-loop.inscape
+dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- compile samples\court-loop.inscape -o artifacts\court-loop.json
+dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- preview samples\court-loop.inscape -o artifacts\court-loop.html
+```
 
 ## 仓库约定
 
