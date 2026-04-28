@@ -23,7 +23,7 @@ docs/
 ## 分层原则
 
 - `Inscape.Core` 不依赖 Unity、不依赖 VSCode、不依赖 HTML 渲染，也不依赖外部包。
-- `Inscape.Cli` 是开发工具层，可以输出单文件 JSON IR、项目级 JSON IR、项目级诊断 JSON 和轻量 HTML 预览。
+- `Inscape.Cli` 是开发工具层，可以输出单文件 JSON IR、项目级 JSON IR、项目级诊断 JSON，以及单文件/项目级轻量 HTML 预览。
 - `tools/vscode-inscape` 可以承载 VSCode 写作体验代码，但语法诊断必须通过 `Inscape.Core` 或 CLI 桥接获得。
 - VSCode Language Server 后续应复用 `Inscape.Core`，而不是重新实现解析器。
 - Unity Adapter 后续应消费 Narrative Graph IR，并决定是否转换为 Bird `Talking/L10N` 数据或直接运行 IR。

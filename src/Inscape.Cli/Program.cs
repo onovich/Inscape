@@ -120,6 +120,13 @@ namespace Inscape.Cli {
                 return result.HasErrors ? 1 : 0;
             }
 
+            if (command == "preview-project") {
+                string html = PreviewHtmlRenderer.Render(ToProjectOutput(result), JsonOptions);
+                WriteOrPrint(outputPath, html);
+                PrintDiagnostics(result.Diagnostics);
+                return result.HasErrors ? 1 : 0;
+            }
+
             Console.Error.WriteLine("Unknown command: " + command);
             PrintUsage();
             return 1;
@@ -179,7 +186,10 @@ namespace Inscape.Cli {
         }
 
         static bool IsProjectCommand(string command) {
-            return command == "check-project" || command == "diagnose-project" || command == "compile-project";
+            return command == "check-project"
+                || command == "diagnose-project"
+                || command == "compile-project"
+                || command == "preview-project";
         }
 
         static bool IsSamePath(string left, string right) {
@@ -233,6 +243,7 @@ namespace Inscape.Cli {
             Console.WriteLine("  inscape check-project <root>");
             Console.WriteLine("  inscape diagnose-project <root> [--override source.inscape temp.inscape] [-o diagnostics.json]");
             Console.WriteLine("  inscape compile-project <root> [-o output.json]");
+            Console.WriteLine("  inscape preview-project <root> [-o preview.html]");
             Console.WriteLine("  inscape compile <file.inscape> [-o output.json]");
             Console.WriteLine("  inscape preview <file.inscape> [-o preview.html]");
         }

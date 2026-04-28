@@ -52,6 +52,7 @@ dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- diagnose samples\cour
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- check-project samples
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- diagnose-project samples
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- compile-project samples -o artifacts\samples-project.json
+dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- preview-project samples -o artifacts\samples-project.html
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- compile samples\court-loop.inscape -o artifacts\court-loop.json
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- preview samples\court-loop.inscape -o artifacts\court-loop.html
 code --extensionDevelopmentPath=tools\vscode-inscape .

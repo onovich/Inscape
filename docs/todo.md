@@ -40,6 +40,7 @@
 - [x] 定义第一版预览输入：读取 Compiler Core 输出的 IR。
 - [x] 支持节点回环、重开、返回上一步和路径记录。
 - [x] 显示行级 hash 和源位置，方便调试本地化与存档定位。
+- [x] 支持项目级 HTML 预览，读取 `compile-project` 同结构的项目 IR。
 
 ## Unity / Bird 适配调研
 

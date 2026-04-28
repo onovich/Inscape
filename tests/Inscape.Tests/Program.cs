@@ -23,6 +23,7 @@ namespace Inscape.Tests {
                 ("project compiler uses entry metadata", ProjectCompilerUsesEntryMetadata),
                 ("project compiler diagnoses multiple entries", ProjectCompilerDiagnosesMultipleEntries),
                 ("project compiler reports fallback entry", ProjectCompilerReportsFallbackEntry),
+                ("cli preview-project emits html", CliPreviewProjectEmitsHtml),
             };
 
             int failed = 0;
@@ -325,6 +326,46 @@ namespace Inscape.Tests {
 
             AssertFalse(result.HasErrors, "Fallback entry should not be an error.");
             AssertTrue(ContainsAnyCode(result, "INS032"), "Expected INS032 fallback entry diagnostic.");
+        }
+
+        static void CliPreviewProjectEmitsHtml() {
+            string directory = Path.Combine(Path.GetTempPath(), "inscape-tests", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory);
+
+            File.WriteAllText(Path.Combine(directory, "00-start.inscape"), """
+:: start
+@entry
+旁白：开始。
+-> second.node
+""", Encoding.UTF8);
+            File.WriteAllText(Path.Combine(directory, "01-second.inscape"), """
+:: second.node
+旁白：第二页。
+""", Encoding.UTF8);
+
+            TextWriter originalOut = Console.Out;
+            TextWriter originalError = Console.Error;
+            StringWriter output = new StringWriter();
+            StringWriter error = new StringWriter();
+
+            int exitCode;
+            try {
+                Console.SetOut(output);
+                Console.SetError(error);
+                exitCode = CliProgram.Main(new[] { "preview-project", directory });
+            } finally {
+                Console.SetOut(originalOut);
+                Console.SetError(originalError);
+                Directory.Delete(directory, true);
+            }
+
+            string html = output.ToString();
+            AssertEqual(0, exitCode, "Preview-project command exit code");
+            AssertEqual("", error.ToString().Trim(), "Preview-project command stderr");
+            AssertTrue(html.Contains("<!doctype html>"), "Preview-project should emit HTML.");
+            AssertTrue(html.Contains("inscape.project-ir"), "Preview-project should embed project IR.");
+            AssertTrue(html.Contains("second.node"), "Preview-project should include project nodes.");
+            AssertTrue(html.Contains("const graph = data.graph ?? data.document;"), "Preview-project should use graph fallback.");
         }
 
         static CompilationResult Compile(string source) {

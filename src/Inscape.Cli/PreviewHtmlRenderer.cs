@@ -6,6 +6,14 @@ namespace Inscape.Cli {
     public static class PreviewHtmlRenderer {
 
         public static string Render(CompileOutput output, JsonSerializerOptions jsonOptions) {
+            return RenderSerializedOutput(output, jsonOptions);
+        }
+
+        public static string Render(ProjectCompileOutput output, JsonSerializerOptions jsonOptions) {
+            return RenderSerializedOutput(output, jsonOptions);
+        }
+
+        static string RenderSerializedOutput(object output, JsonSerializerOptions jsonOptions) {
             string json = JsonSerializer.Serialize(output, jsonOptions).Replace("</", "<\\/");
             StringBuilder html = new StringBuilder();
 
@@ -55,16 +63,18 @@ namespace Inscape.Cli {
             html.AppendLine("  </main>");
             html.AppendLine("  <script>");
             html.AppendLine("    const data = " + json + ";");
-            html.AppendLine("    const nodes = new Map(data.document.nodes.map(node => [node.name, node]));");
-            html.AppendLine("    let current = data.document.nodes[0]?.name ?? '';");
+            html.AppendLine("    const graph = data.graph ?? data.document;");
+            html.AppendLine("    const entry = graph.nodes.find(node => node.lines.some(line => line.kind === 'Metadata' && (line.text ?? '').trim() === '@entry'));");
+            html.AppendLine("    const nodes = new Map(graph.nodes.map(node => [node.name, node]));");
+            html.AppendLine("    let current = entry?.name ?? graph.nodes[0]?.name ?? '';");
             html.AppendLine("    let path = current ? [current] : [];");
             html.AppendLine("    const text = value => document.createTextNode(value ?? '');");
             html.AppendLine("    function clear(element) { while (element.firstChild) element.removeChild(element.firstChild); }");
             html.AppendLine("    function go(name) { if (!nodes.has(name)) return; current = name; path.push(name); render(); }");
-            html.AppendLine("    function renderNodes() { const el = document.getElementById('nodes'); clear(el); data.document.nodes.forEach(node => { const button = document.createElement('button'); button.className = 'node-button'; button.textContent = node.name; button.onclick = () => go(node.name); el.appendChild(button); }); }");
+            html.AppendLine("    function renderNodes() { const el = document.getElementById('nodes'); clear(el); graph.nodes.forEach(node => { const button = document.createElement('button'); button.className = 'node-button'; button.textContent = node.name; button.onclick = () => go(node.name); el.appendChild(button); }); }");
             html.AppendLine("    function renderDiagnostics() { const el = document.getElementById('diagnostics'); clear(el); data.diagnostics.forEach(d => { const row = document.createElement('div'); row.className = 'diagnostic'; row.textContent = `${d.severity} ${d.code} (${d.line}:${d.column}) ${d.message}`; el.appendChild(row); }); }");
             html.AppendLine("    function render() { const node = nodes.get(current); document.getElementById('node-title').textContent = node ? node.name : '(empty)'; const content = document.getElementById('content'); clear(content); const choices = document.getElementById('choices'); clear(choices); if (!node) return; node.lines.forEach(line => { const p = document.createElement('p'); p.className = line.kind === 'Metadata' ? 'line meta' : 'line'; if (line.speaker) { const speaker = document.createElement('span'); speaker.className = 'speaker'; speaker.textContent = line.speaker + '：'; p.appendChild(speaker); } p.appendChild(text(line.text)); if (line.anchor) { const anchor = document.createElement('div'); anchor.className = 'meta'; anchor.textContent = `#${line.anchor}`; p.appendChild(anchor); } content.appendChild(p); }); node.choices.forEach(group => { if (group.prompt) { const prompt = document.createElement('p'); prompt.className = 'meta'; prompt.textContent = group.prompt; choices.appendChild(prompt); } group.options.forEach(option => { const button = document.createElement('button'); button.className = 'choice'; button.textContent = option.text + ' -> ' + option.target; button.onclick = () => go(option.target); choices.appendChild(button); }); }); if (node.defaultNext) { const button = document.createElement('button'); button.className = 'choice'; button.textContent = 'Continue -> ' + node.defaultNext; button.onclick = () => go(node.defaultNext); choices.appendChild(button); } document.getElementById('path').textContent = path.join(' / '); }");
-            html.AppendLine("    document.getElementById('restart').onclick = () => { current = data.document.nodes[0]?.name ?? ''; path = current ? [current] : []; render(); };");
+            html.AppendLine("    document.getElementById('restart').onclick = () => { current = entry?.name ?? graph.nodes[0]?.name ?? ''; path = current ? [current] : []; render(); };");
             html.AppendLine("    document.getElementById('back').onclick = () => { if (path.length > 1) { path.pop(); current = path[path.length - 1]; render(); } };");
             html.AppendLine("    renderNodes(); renderDiagnostics(); render();");
             html.AppendLine("  </script>");
