@@ -10,6 +10,7 @@ This is the first lightweight authoring layer for `.inscape` scripts. It keeps s
 - Keeps metadata and inline tags on comment-like scopes so themes can visually soften them while prose remains readable.
 - Refreshes diagnostics by invoking `dotnet run --project src/Inscape.Cli/Inscape.Cli.csproj -- diagnose-project <workspace> --override <source> <temp-file>`.
 - Provides workspace node completions in jump target positions.
+- Supports Go to Definition / Ctrl+Click from jump targets to node declarations.
 - Provides an outline view backed by visible node headers.
 
 ## Development Use

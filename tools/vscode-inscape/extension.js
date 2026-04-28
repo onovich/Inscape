@@ -25,7 +25,8 @@ function activate(context) {
             }
         }),
         vscode.languages.registerCompletionItemProvider(languageSelector, new InscapeCompletionProvider(), ">", "."),
-        vscode.languages.registerDocumentSymbolProvider(languageSelector, new InscapeDocumentSymbolProvider())
+        vscode.languages.registerDocumentSymbolProvider(languageSelector, new InscapeDocumentSymbolProvider()),
+        vscode.languages.registerDefinitionProvider(languageSelector, new InscapeDefinitionProvider())
     );
 
     refreshVisibleDocuments(scheduler);
@@ -136,7 +137,7 @@ class InscapeCompletionProvider {
 
         const linePrefix = document.lineAt(position).text.slice(0, position.character);
         if (isJumpTargetContext(linePrefix)) {
-            const nodes = await collectWorkspaceNodeNames(document);
+            const nodes = await collectWorkspaceNodes(document);
             return nodes.map((node) => {
                 const name = node.name;
                 const item = new vscode.CompletionItem(name, vscode.CompletionItemKind.Reference);
@@ -149,6 +150,29 @@ class InscapeCompletionProvider {
         }
 
         return undefined;
+    }
+}
+
+class InscapeDefinitionProvider {
+
+    async provideDefinition(document, position) {
+        if (!isInscapeDocument(document)) {
+            return undefined;
+        }
+
+        const target = getJumpTargetAtPosition(document, position);
+        if (!target) {
+            return undefined;
+        }
+
+        const nodes = await collectWorkspaceNodes(document);
+        const locations = nodes.filter((node) => node.name === target)
+            .map((node) => new vscode.Location(
+                vscode.Uri.file(node.sourcePath),
+                new vscode.Position(node.line, node.character)
+            ));
+
+        return locations.length > 0 ? locations : undefined;
     }
 }
 
@@ -311,23 +335,30 @@ function isJumpTargetContext(linePrefix) {
     return /(?:^|\s)->\s*[A-Za-z0-9_.-]*$/.test(linePrefix);
 }
 
-async function collectWorkspaceNodeNames(document) {
+async function collectWorkspaceNodes(document) {
     const nodes = [];
     const seen = new Set();
+    const openPaths = new Set(vscode.workspace.textDocuments
+        .filter((textDocument) => isInscapeDocument(textDocument))
+        .map((textDocument) => normalizePath(textDocument.uri.fsPath)));
 
     const files = await vscode.workspace.findFiles("**/*.inscape", "{**/.git/**,**/bin/**,**/obj/**,**/node_modules/**,**/artifacts/**}", 2000);
     for (const file of files) {
+        if (openPaths.has(normalizePath(file.fsPath))) {
+            continue;
+        }
+
         const text = await readWorkspaceFileText(file);
-        collectNodeNamesFromText(text, file.fsPath, seen, nodes);
+        collectNodesFromText(text, file.fsPath, seen, nodes);
     }
 
     for (const textDocument of vscode.workspace.textDocuments) {
         if (isInscapeDocument(textDocument)) {
-            collectNodeNamesFromText(textDocument.getText(), textDocument.uri.fsPath, seen, nodes);
+            collectNodesFromText(textDocument.getText(), textDocument.uri.fsPath, seen, nodes);
         }
     }
 
-    collectNodeNamesFromText(document.getText(), document.uri.fsPath, seen, nodes);
+    collectNodesFromText(document.getText(), document.uri.fsPath, seen, nodes);
     return nodes.sort((left, right) => left.name.localeCompare(right.name));
 }
 
@@ -336,7 +367,7 @@ async function readWorkspaceFileText(uri) {
     return Buffer.from(bytes).toString("utf8");
 }
 
-function collectNodeNamesFromText(text, sourcePath, seen, nodes) {
+function collectNodesFromText(text, sourcePath, seen, nodes) {
     const pattern = /^\s*::\s+([a-z][a-z0-9_-]*(?:\.[a-z][a-z0-9_-]*)*)\s*$/;
     const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
 
@@ -346,10 +377,30 @@ function collectNodeNamesFromText(text, sourcePath, seen, nodes) {
             seen.add(match[1]);
             nodes.push({
                 name: match[1],
-                sourcePath
+                sourcePath,
+                line,
+                character: Math.max(0, lines[line].indexOf(match[1]))
             });
         }
     }
+}
+
+function getJumpTargetAtPosition(document, position) {
+    const line = document.lineAt(position).text;
+    const jumpPattern = /->\s*([A-Za-z0-9_.-]*)/g;
+    let match = jumpPattern.exec(line);
+
+    while (match) {
+        const target = match[1];
+        const targetStart = match.index + match[0].length - target.length;
+        const targetEnd = targetStart + target.length;
+        if (position.character >= targetStart && position.character <= targetEnd) {
+            return target.length > 0 ? target : undefined;
+        }
+        match = jumpPattern.exec(line);
+    }
+
+    return undefined;
 }
 
 function normalizePath(value) {
