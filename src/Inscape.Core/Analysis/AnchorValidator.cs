@@ -18,6 +18,7 @@ namespace Inscape.Core.Analysis {
 
                 for (int choiceIndex = 0; choiceIndex < node.Choices.Count; choiceIndex += 1) {
                     ChoiceGroup choice = node.Choices[choiceIndex];
+                    AddAnchor(choice.Anchor, choice.Source, anchors, diagnostics);
                     for (int optionIndex = 0; optionIndex < choice.Options.Count; optionIndex += 1) {
                         ChoiceOption option = choice.Options[optionIndex];
                         AddAnchor(option.Anchor, option.Source, anchors, diagnostics);

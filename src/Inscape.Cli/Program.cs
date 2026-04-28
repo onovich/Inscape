@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Inscape.Core.Compilation;
 using Inscape.Core.Diagnostics;
+using Inscape.Core.Localization;
 
 namespace Inscape.Cli {
 
@@ -55,6 +56,13 @@ namespace Inscape.Cli {
             if (command == "preview") {
                 string html = PreviewHtmlRenderer.Render(ToOutput(result), JsonOptions);
                 WriteOrPrint(outputPath, html);
+                PrintDiagnostics(result.Diagnostics);
+                return result.HasErrors ? 1 : 0;
+            }
+
+            if (command == "extract-l10n") {
+                string csv = ExtractLocalizationCsv(result.Document);
+                WriteOrPrint(outputPath, csv);
                 PrintDiagnostics(result.Diagnostics);
                 return result.HasErrors ? 1 : 0;
             }
@@ -127,6 +135,13 @@ namespace Inscape.Cli {
                 return result.HasErrors ? 1 : 0;
             }
 
+            if (command == "extract-l10n-project") {
+                string csv = ExtractLocalizationCsv(result.Graph);
+                WriteOrPrint(outputPath, csv);
+                PrintDiagnostics(result.Diagnostics);
+                return result.HasErrors ? 1 : 0;
+            }
+
             Console.Error.WriteLine("Unknown command: " + command);
             PrintUsage();
             return 1;
@@ -189,7 +204,14 @@ namespace Inscape.Cli {
             return command == "check-project"
                 || command == "diagnose-project"
                 || command == "compile-project"
-                || command == "preview-project";
+                || command == "preview-project"
+                || command == "extract-l10n-project";
+        }
+
+        static string ExtractLocalizationCsv(Inscape.Core.Model.InscapeDocument document) {
+            LocalizationExtractor extractor = new LocalizationExtractor();
+            LocalizationCsvWriter writer = new LocalizationCsvWriter();
+            return writer.Write(extractor.Extract(document));
         }
 
         static bool IsSamePath(string left, string right) {
@@ -240,8 +262,10 @@ namespace Inscape.Cli {
             Console.WriteLine("Usage:");
             Console.WriteLine("  inscape check <file.inscape>");
             Console.WriteLine("  inscape diagnose <file.inscape> [-o diagnostics.json]");
+            Console.WriteLine("  inscape extract-l10n <file.inscape> [-o strings.csv]");
             Console.WriteLine("  inscape check-project <root>");
             Console.WriteLine("  inscape diagnose-project <root> [--override source.inscape temp.inscape] [-o diagnostics.json]");
+            Console.WriteLine("  inscape extract-l10n-project <root> [--override source.inscape temp.inscape] [-o strings.csv]");
             Console.WriteLine("  inscape compile-project <root> [-o output.json]");
             Console.WriteLine("  inscape preview-project <root> [-o preview.html]");
             Console.WriteLine("  inscape compile <file.inscape> [-o output.json]");

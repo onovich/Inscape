@@ -48,7 +48,7 @@ namespace Inscape.Core.Parsing {
                 }
 
                 if (trimmed.StartsWith("?", StringComparison.Ordinal)) {
-                    currentChoice = ParseChoiceGroup(currentNode, sourcePath, lineNumber, raw, trimmed);
+                    currentChoice = ParseChoiceGroup(currentNode, currentAnchorOccurrences!, sourcePath, lineNumber, raw, trimmed);
                     continue;
                 }
 
@@ -125,6 +125,7 @@ namespace Inscape.Core.Parsing {
         }
 
         static ChoiceGroup ParseChoiceGroup(NarrativeNode currentNode,
+                                            Dictionary<string, int> anchorOccurrences,
                                             string sourcePath,
                                             int lineNumber,
                                             string raw,
@@ -132,6 +133,9 @@ namespace Inscape.Core.Parsing {
             ChoiceGroup group = new ChoiceGroup();
             group.Prompt = trimmed.Substring(1).Trim();
             group.Source = new SourceSpan(sourcePath, lineNumber, FirstNonWhitespaceColumn(raw));
+            if (group.Prompt.Length > 0) {
+                group.Anchor = CreateAnchor(currentNode.Name, "ChoicePrompt", string.Empty, group.Prompt, anchorOccurrences);
+            }
             currentNode.Choices.Add(group);
             return group;
         }

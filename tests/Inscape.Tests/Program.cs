@@ -29,6 +29,8 @@ namespace Inscape.Tests {
                 ("project compiler diagnoses multiple entries", ProjectCompilerDiagnosesMultipleEntries),
                 ("project compiler reports fallback entry", ProjectCompilerReportsFallbackEntry),
                 ("cli preview-project emits html", CliPreviewProjectEmitsHtml),
+                ("cli extract-l10n emits csv", CliExtractL10nEmitsCsv),
+                ("cli extract-l10n-project emits csv", CliExtractL10nProjectEmitsCsv),
             };
 
             int failed = 0;
@@ -460,6 +462,88 @@ namespace Inscape.Tests {
             AssertTrue(html.Contains("const graph = data.graph ?? data.document;"), "Preview-project should use graph fallback.");
         }
 
+        static void CliExtractL10nEmitsCsv() {
+            string directory = Path.Combine(Path.GetTempPath(), "inscape-tests", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory);
+            string path = Path.Combine(directory, "story.inscape");
+            File.WriteAllText(path, """
+:: start
+Narrator: Hello, "world".
+? Choose path
+  - Ask again -> second.node
+
+:: second.node
+A quiet line.
+""", Encoding.UTF8);
+
+            TextWriter originalOut = Console.Out;
+            TextWriter originalError = Console.Error;
+            StringWriter output = new StringWriter();
+            StringWriter error = new StringWriter();
+
+            int exitCode;
+            try {
+                Console.SetOut(output);
+                Console.SetError(error);
+                exitCode = CliProgram.Main(new[] { "extract-l10n", path });
+            } finally {
+                Console.SetOut(originalOut);
+                Console.SetError(originalError);
+                Directory.Delete(directory, true);
+            }
+
+            string csv = output.ToString();
+            AssertEqual(0, exitCode, "Extract-l10n command exit code");
+            AssertEqual("", error.ToString().Trim(), "Extract-l10n command stderr");
+            AssertTrue(csv.Contains("anchor,node,kind,speaker,text,translation,sourcePath,line,column"), "CSV should include header.");
+            AssertTrue(csv.Contains("Dialogue"), "CSV should include dialogue rows.");
+            AssertTrue(csv.Contains("\"Hello, \"\"world\"\".\""), "CSV should escape commas and quotes.");
+            AssertTrue(csv.Contains("ChoicePrompt"), "CSV should include choice prompts.");
+            AssertTrue(csv.Contains("ChoiceOption"), "CSV should include choice options.");
+            AssertEqual(5, CountCsvLines(csv), "CSV line count");
+        }
+
+        static void CliExtractL10nProjectEmitsCsv() {
+            string directory = Path.Combine(Path.GetTempPath(), "inscape-tests", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory);
+
+            File.WriteAllText(Path.Combine(directory, "00-start.inscape"), """
+:: start
+@entry
+Narrator: Project start.
+? Next
+  - Continue -> second.node
+""", Encoding.UTF8);
+            File.WriteAllText(Path.Combine(directory, "01-second.inscape"), """
+:: second.node
+Project second line.
+""", Encoding.UTF8);
+
+            TextWriter originalOut = Console.Out;
+            TextWriter originalError = Console.Error;
+            StringWriter output = new StringWriter();
+            StringWriter error = new StringWriter();
+
+            int exitCode;
+            try {
+                Console.SetOut(output);
+                Console.SetError(error);
+                exitCode = CliProgram.Main(new[] { "extract-l10n-project", directory });
+            } finally {
+                Console.SetOut(originalOut);
+                Console.SetError(originalError);
+                Directory.Delete(directory, true);
+            }
+
+            string csv = output.ToString();
+            AssertEqual(0, exitCode, "Extract-l10n-project command exit code");
+            AssertEqual("", error.ToString().Trim(), "Extract-l10n-project command stderr");
+            AssertTrue(csv.Contains("Project start."), "Project CSV should include first file text.");
+            AssertTrue(csv.Contains("Project second line."), "Project CSV should include second file text.");
+            AssertFalse(csv.Contains("@entry"), "Project CSV should not include metadata.");
+            AssertEqual(5, CountCsvLines(csv), "Project CSV line count");
+        }
+
         static CompilationResult Compile(string source) {
             InscapeCompiler compiler = new InscapeCompiler();
             return compiler.Compile(source, "memory://test.inscape");
@@ -505,6 +589,18 @@ namespace Inscape.Tests {
             int count = 0;
             foreach (JsonElement diagnostic in root.GetProperty("diagnostics").EnumerateArray()) {
                 if (diagnostic.TryGetProperty("code", out JsonElement codeElement) && codeElement.GetString() == code) {
+                    count += 1;
+                }
+            }
+            return count;
+        }
+
+        static int CountCsvLines(string csv) {
+            int count = 0;
+            using StringReader reader = new StringReader(csv);
+            string? line;
+            while ((line = reader.ReadLine()) != null) {
+                if (line.Length > 0) {
                     count += 1;
                 }
             }
