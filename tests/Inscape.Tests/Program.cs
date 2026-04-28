@@ -16,6 +16,10 @@ namespace Inscape.Tests {
                 ("diagnose invalid node names", DiagnoseInvalidNodeNames),
                 ("hashes are stable", HashesAreStable),
                 ("cli diagnose emits json", CliDiagnoseEmitsJson),
+                ("project compiler resolves cross-file targets", ProjectCompilerResolvesCrossFileTargets),
+                ("project compiler diagnoses duplicate nodes", ProjectCompilerDiagnosesDuplicateNodes),
+                ("cli diagnose-project applies override", CliDiagnoseProjectAppliesOverride),
+                ("cli compile-project emits project ir", CliCompileProjectEmitsProjectIr),
             };
 
             int failed = 0;
@@ -143,6 +147,130 @@ namespace Inscape.Tests {
             AssertTrue(root.GetProperty("diagnostics").GetArrayLength() > 0, "Diagnose output should contain diagnostics.");
         }
 
+        static void ProjectCompilerResolvesCrossFileTargets() {
+            ProjectCompiler compiler = new ProjectCompiler();
+            ProjectCompilationResult result = compiler.Compile(new List<ProjectSource> {
+                new ProjectSource("memory://a.inscape", """
+:: start
+旁白：开始。
+-> second.node
+"""),
+                new ProjectSource("memory://b.inscape", """
+:: second.node
+旁白：第二页。
+"""),
+            }, "memory://project");
+
+            AssertFalse(ContainsCode(result, "INS020"), "Cross-file target should be resolved.");
+            AssertEqual(2, result.Graph.Nodes.Count, "Project graph node count");
+            AssertEqual(1, result.Graph.Edges.Count, "Project graph edge count");
+        }
+
+        static void ProjectCompilerDiagnosesDuplicateNodes() {
+            ProjectCompiler compiler = new ProjectCompiler();
+            ProjectCompilationResult result = compiler.Compile(new List<ProjectSource> {
+                new ProjectSource("memory://a.inscape", """
+:: same.node
+旁白：第一处。
+"""),
+                new ProjectSource("memory://b.inscape", """
+:: same.node
+旁白：第二处。
+"""),
+            }, "memory://project");
+
+            AssertTrue(result.HasErrors, "Project duplicate node should be an error.");
+            AssertTrue(ContainsCode(result, "INS030"), "Expected INS030 duplicate project node diagnostic.");
+        }
+
+        static void CliDiagnoseProjectAppliesOverride() {
+            string directory = Path.Combine(Path.GetTempPath(), "inscape-tests", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory);
+
+            string startPath = Path.Combine(directory, "start.inscape");
+            string targetPath = Path.Combine(directory, "target.inscape");
+            string overridePath = Path.Combine(directory, "target.override.inscape");
+
+            File.WriteAllText(startPath, """
+:: start
+旁白：开始。
+-> target.node
+""", Encoding.UTF8);
+            File.WriteAllText(targetPath, """
+:: old.node
+旁白：旧节点。
+""", Encoding.UTF8);
+            File.WriteAllText(overridePath, """
+:: target.node
+旁白：新节点。
+""", Encoding.UTF8);
+
+            TextWriter originalOut = Console.Out;
+            TextWriter originalError = Console.Error;
+            StringWriter output = new StringWriter();
+            StringWriter error = new StringWriter();
+
+            int exitCode;
+            try {
+                Console.SetOut(output);
+                Console.SetError(error);
+                exitCode = CliProgram.Main(new[] { "diagnose-project", directory, "--override", targetPath, overridePath });
+            } finally {
+                Console.SetOut(originalOut);
+                Console.SetError(originalError);
+                Directory.Delete(directory, true);
+            }
+
+            AssertEqual(0, exitCode, "Diagnose-project command exit code");
+            AssertEqual("", error.ToString().Trim(), "Diagnose-project command stderr");
+
+            using JsonDocument document = JsonDocument.Parse(output.ToString());
+            JsonElement root = document.RootElement;
+            AssertEqual("inscape.project-ir", root.GetProperty("format").GetString(), "Diagnose-project format");
+            AssertFalse(root.GetProperty("hasErrors").GetBoolean(), "Override should resolve the project target.");
+            AssertEqual(0, CountDiagnostics(root, "INS020"), "Override should remove missing target diagnostics.");
+        }
+
+        static void CliCompileProjectEmitsProjectIr() {
+            string directory = Path.Combine(Path.GetTempPath(), "inscape-tests", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory);
+
+            File.WriteAllText(Path.Combine(directory, "00-start.inscape"), """
+:: start
+旁白：开始。
+-> second.node
+""", Encoding.UTF8);
+            File.WriteAllText(Path.Combine(directory, "01-second.inscape"), """
+:: second.node
+旁白：第二页。
+""", Encoding.UTF8);
+
+            TextWriter originalOut = Console.Out;
+            TextWriter originalError = Console.Error;
+            StringWriter output = new StringWriter();
+            StringWriter error = new StringWriter();
+
+            int exitCode;
+            try {
+                Console.SetOut(output);
+                Console.SetError(error);
+                exitCode = CliProgram.Main(new[] { "compile-project", directory });
+            } finally {
+                Console.SetOut(originalOut);
+                Console.SetError(originalError);
+                Directory.Delete(directory, true);
+            }
+
+            AssertEqual(0, exitCode, "Compile-project command exit code");
+            AssertEqual("", error.ToString().Trim(), "Compile-project command stderr");
+
+            using JsonDocument document = JsonDocument.Parse(output.ToString());
+            JsonElement root = document.RootElement;
+            AssertEqual("inscape.project-ir", root.GetProperty("format").GetString(), "Compile-project format");
+            AssertFalse(root.GetProperty("hasErrors").GetBoolean(), "Compile-project hasErrors");
+            AssertEqual(2, root.GetProperty("graph").GetProperty("nodes").GetArrayLength(), "Compile-project graph node count");
+        }
+
         static CompilationResult Compile(string source) {
             InscapeCompiler compiler = new InscapeCompiler();
             return compiler.Compile(source, "memory://test.inscape");
@@ -155,6 +283,25 @@ namespace Inscape.Tests {
                 }
             }
             return false;
+        }
+
+        static bool ContainsCode(ProjectCompilationResult result, string code) {
+            for (int i = 0; i < result.Diagnostics.Count; i += 1) {
+                if (result.Diagnostics[i].Code == code && result.Diagnostics[i].Severity == DiagnosticSeverity.Error) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        static int CountDiagnostics(JsonElement root, string code) {
+            int count = 0;
+            foreach (JsonElement diagnostic in root.GetProperty("diagnostics").EnumerateArray()) {
+                if (diagnostic.TryGetProperty("code", out JsonElement codeElement) && codeElement.GetString() == code) {
+                    count += 1;
+                }
+            }
+            return count;
         }
 
         static void AssertTrue(bool value, string message) {

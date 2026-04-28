@@ -109,8 +109,7 @@ class DiagnosticScheduler {
 
             try {
                 const payload = JSON.parse(stdout);
-                const mapped = mapDiagnostics(document, payload.diagnostics || []);
-                this.diagnostics.set(document.uri, mapped);
+                applyDiagnostics(this.diagnostics, document, payload.diagnostics || []);
             } catch (parseError) {
                 this.diagnostics.set(document.uri, [
                     createExtensionDiagnostic(document, "Unable to parse Inscape diagnostics: " + parseError.message)
@@ -130,17 +129,20 @@ class DiagnosticScheduler {
 
 class InscapeCompletionProvider {
 
-    provideCompletionItems(document, position) {
+    async provideCompletionItems(document, position) {
         if (!isInscapeDocument(document)) {
             return undefined;
         }
 
         const linePrefix = document.lineAt(position).text.slice(0, position.character);
         if (isJumpTargetContext(linePrefix)) {
-            return collectNodeNames(document).map((name) => {
+            const nodes = await collectWorkspaceNodeNames(document);
+            return nodes.map((node) => {
+                const name = node.name;
                 const item = new vscode.CompletionItem(name, vscode.CompletionItemKind.Reference);
                 item.insertText = name;
-                item.detail = "Inscape node";
+                item.detail = node.sourcePath === document.uri.fsPath ? "Inscape node in this file" : "Inscape project node";
+                item.documentation = node.sourcePath;
                 item.sortText = "0_" + name;
                 return item;
             });
@@ -240,8 +242,24 @@ function replaceVariables(value, variables) {
     return result;
 }
 
-function mapDiagnostics(document, diagnostics) {
-    return diagnostics.map((diagnostic) => {
+function applyDiagnostics(collection, currentDocument, diagnostics) {
+    const documents = vscode.workspace.textDocuments.filter((document) => isInscapeDocument(document));
+    const mappedUris = new Set();
+
+    for (const document of documents) {
+        const mapped = mapDiagnosticsForDocument(document, diagnostics);
+        collection.set(document.uri, mapped);
+        mappedUris.add(document.uri.toString());
+    }
+
+    if (!mappedUris.has(currentDocument.uri.toString())) {
+        collection.set(currentDocument.uri, mapDiagnosticsForDocument(currentDocument, diagnostics));
+    }
+}
+
+function mapDiagnosticsForDocument(document, diagnostics) {
+    return diagnostics.filter((diagnostic) => diagnosticMatchesDocument(diagnostic, document))
+        .map((diagnostic) => {
         const line = clamp((diagnostic.line || 1) - 1, 0, Math.max(0, document.lineCount - 1));
         const textLine = document.lineAt(line);
         const column = clamp((diagnostic.column || 1) - 1, 0, textLine.text.length);
@@ -257,6 +275,14 @@ function mapDiagnostics(document, diagnostics) {
         vscodeDiagnostic.source = "Inscape";
         return vscodeDiagnostic;
     });
+}
+
+function diagnosticMatchesDocument(diagnostic, document) {
+    if (!diagnostic || !diagnostic.sourcePath) {
+        return true;
+    }
+
+    return normalizePath(diagnostic.sourcePath) === normalizePath(document.uri.fsPath);
 }
 
 function createExtensionDiagnostic(document, message) {
@@ -285,20 +311,49 @@ function isJumpTargetContext(linePrefix) {
     return /(?:^|\s)->\s*[A-Za-z0-9_.-]*$/.test(linePrefix);
 }
 
-function collectNodeNames(document) {
-    const names = [];
+async function collectWorkspaceNodeNames(document) {
+    const nodes = [];
     const seen = new Set();
-    const pattern = /^\s*::\s+([a-z][a-z0-9_-]*(?:\.[a-z][a-z0-9_-]*)*)\s*$/;
 
-    for (let line = 0; line < document.lineCount; line += 1) {
-        const match = pattern.exec(document.lineAt(line).text);
-        if (match && !seen.has(match[1])) {
-            seen.add(match[1]);
-            names.push(match[1]);
+    const files = await vscode.workspace.findFiles("**/*.inscape", "{**/.git/**,**/bin/**,**/obj/**,**/node_modules/**,**/artifacts/**}", 2000);
+    for (const file of files) {
+        const text = await readWorkspaceFileText(file);
+        collectNodeNamesFromText(text, file.fsPath, seen, nodes);
+    }
+
+    for (const textDocument of vscode.workspace.textDocuments) {
+        if (isInscapeDocument(textDocument)) {
+            collectNodeNamesFromText(textDocument.getText(), textDocument.uri.fsPath, seen, nodes);
         }
     }
 
-    return names;
+    collectNodeNamesFromText(document.getText(), document.uri.fsPath, seen, nodes);
+    return nodes.sort((left, right) => left.name.localeCompare(right.name));
+}
+
+async function readWorkspaceFileText(uri) {
+    const bytes = await vscode.workspace.fs.readFile(uri);
+    return Buffer.from(bytes).toString("utf8");
+}
+
+function collectNodeNamesFromText(text, sourcePath, seen, nodes) {
+    const pattern = /^\s*::\s+([a-z][a-z0-9_-]*(?:\.[a-z][a-z0-9_-]*)*)\s*$/;
+    const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+
+    for (let line = 0; line < lines.length; line += 1) {
+        const match = pattern.exec(lines[line]);
+        if (match && !seen.has(match[1])) {
+            seen.add(match[1]);
+            nodes.push({
+                name: match[1],
+                sourcePath
+            });
+        }
+    }
+}
+
+function normalizePath(value) {
+    return path.resolve(value).toLowerCase();
 }
 
 function clamp(value, minimum, maximum) {

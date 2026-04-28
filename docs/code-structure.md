@@ -9,7 +9,7 @@
 ```text
 src/
   Inscape.Core/          DSL 解析、诊断、图模型、哈希与 IR 生成
-  Inscape.Cli/           命令行工具：check、diagnose、compile、preview
+  Inscape.Cli/           命令行工具：check、diagnose、compile、preview 与项目级命令
 tests/
   Inscape.Tests/         无第三方依赖的轻量回归测试
 samples/
@@ -23,7 +23,7 @@ docs/
 ## 分层原则
 
 - `Inscape.Core` 不依赖 Unity、不依赖 VSCode、不依赖 HTML 渲染，也不依赖外部包。
-- `Inscape.Cli` 是开发工具层，可以输出 JSON IR 和轻量 HTML 预览。
+- `Inscape.Cli` 是开发工具层，可以输出单文件 JSON IR、项目级 JSON IR、项目级诊断 JSON 和轻量 HTML 预览。
 - `tools/vscode-inscape` 可以承载 VSCode 写作体验代码，但语法诊断必须通过 `Inscape.Core` 或 CLI 桥接获得。
 - VSCode Language Server 后续应复用 `Inscape.Core`，而不是重新实现解析器。
 - Unity Adapter 后续应消费 Narrative Graph IR，并决定是否转换为 Bird `Talking/L10N` 数据或直接运行 IR。
@@ -38,6 +38,7 @@ docs/
 - 保留 `@...` 和 `[...]` 元信息为不可执行 metadata。
 - 生成行级稳定 hash。
 - 诊断重复节点、非法节点名、缺失目标、空节点、不可达节点和选项语法问题。
+- 项目级编译合并多个 `.inscape` 文件，第一版要求节点名在项目内全局唯一。
 
 ## 后续预留目录
 

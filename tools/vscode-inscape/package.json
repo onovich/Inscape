@@ -69,7 +69,10 @@
             "--project",
             "${workspaceFolder}/src/Inscape.Cli/Inscape.Cli.csproj",
             "--",
-            "diagnose",
+            "diagnose-project",
+            "${workspaceFolder}",
+            "--override",
+            "${documentFile}",
             "${file}"
           ],
           "items": {
