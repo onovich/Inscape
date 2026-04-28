@@ -1,0 +1,14 @@
+=== court_intro ===
+旁白：法庭里很安静。
+成步堂：现在开始吧。
+
+* [询问证言] -> court_cross_exam_loop
+* [查看证物] -> evidence_menu
+
+=== court_cross_exam_loop ===
+证人：我什么都不知道。
+-> court_intro
+
+=== evidence_menu ===
+旁白：证物袋里只有一枚旧怀表。
+-> court_intro

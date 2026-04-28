@@ -10,6 +10,7 @@ namespace Inscape.Tests {
             List<(string Name, Action Body)> tests = new List<(string Name, Action Body)> {
                 ("parse graph with loop", ParseGraphWithLoop),
                 ("diagnose missing target", DiagnoseMissingTarget),
+                ("diagnose invalid node names", DiagnoseInvalidNodeNames),
                 ("hashes are stable", HashesAreStable),
             };
 
@@ -71,6 +72,19 @@ namespace Inscape.Tests {
             CompilationResult result = Compile(source);
             AssertTrue(result.HasErrors, "Missing target should be an error.");
             AssertTrue(ContainsCode(result, "INS020"), "Expected INS020 missing target diagnostic.");
+        }
+
+        static void DiagnoseInvalidNodeNames() {
+            string source = """
+:: Court Intro
+旁白：开始。
+-> missing/target
+""";
+
+            CompilationResult result = Compile(source);
+            AssertTrue(result.HasErrors, "Invalid node names should be errors.");
+            AssertTrue(ContainsCode(result, "INS009"), "Expected INS009 invalid node diagnostic.");
+            AssertTrue(ContainsCode(result, "INS010"), "Expected INS010 invalid target diagnostic.");
         }
 
         static void HashesAreStable() {

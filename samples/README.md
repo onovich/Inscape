@@ -8,6 +8,8 @@
 - 回环：节点可以跳回已经访问过的节点
 - 元信息：`@scene court` 暂作为不可执行 metadata 保留
 
+`variants/` 目录保存同一剧情的 Yarn-like、Ink-like、Ren'Py-like 风格草案，用于比较语法哲学和映射成本。
+
 运行示例：
 
 ```powershell

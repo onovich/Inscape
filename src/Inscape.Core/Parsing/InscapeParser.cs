@@ -94,6 +94,14 @@ namespace Inscape.Core.Parsing {
                                                FirstNonWhitespaceColumn(raw)));
                 return null;
             }
+            if (!NodeNameRules.IsValid(name)) {
+                diagnostics.Add(new Diagnostic("INS009",
+                                               DiagnosticSeverity.Error,
+                                               "Invalid node name '" + name + "'. " + NodeNameRules.Description,
+                                               sourcePath,
+                                               lineNumber,
+                                               FirstNonWhitespaceColumn(raw) + 2));
+            }
 
             NarrativeNode node = new NarrativeNode();
             node.Name = name;
@@ -159,6 +167,13 @@ namespace Inscape.Core.Parsing {
                                                    sourcePath,
                                                    lineNumber,
                                                    raw.IndexOf("->", StringComparison.Ordinal) + 3));
+                } else if (!NodeNameRules.IsValid(option.Target)) {
+                    diagnostics.Add(new Diagnostic("INS010",
+                                                   DiagnosticSeverity.Error,
+                                                   "Invalid jump target '" + option.Target + "'. " + NodeNameRules.Description,
+                                                   sourcePath,
+                                                   lineNumber,
+                                                   raw.IndexOf("->", StringComparison.Ordinal) + 3));
                 }
             }
 
@@ -212,6 +227,14 @@ namespace Inscape.Core.Parsing {
                                                lineNumber,
                                                FirstNonWhitespaceColumn(raw)));
                 return;
+            }
+            if (!NodeNameRules.IsValid(target)) {
+                diagnostics.Add(new Diagnostic("INS010",
+                                               DiagnosticSeverity.Error,
+                                               "Invalid jump target '" + target + "'. " + NodeNameRules.Description,
+                                               sourcePath,
+                                               lineNumber,
+                                               raw.IndexOf("->", StringComparison.Ordinal) + 3));
             }
 
             currentNode.DefaultNext = target;

@@ -1,0 +1,22 @@
+title: court.intro
+---
+旁白: 法庭里很安静。
+成步堂: 现在开始吧。
+
+-> 询问证言
+    <<jump court.cross_exam.loop>>
+-> 查看证物
+    <<jump evidence.menu>>
+===
+
+title: court.cross_exam.loop
+---
+证人: 我什么都不知道。
+<<jump court.intro>>
+===
+
+title: evidence.menu
+---
+旁白: 证物袋里只有一枚旧怀表。
+<<jump court.intro>>
+===

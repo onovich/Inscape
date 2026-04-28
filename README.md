@@ -27,6 +27,7 @@
 - [项目立项说明](docs/project-brief.md)
 - [架构草案](docs/architecture.md)
 - [代码结构规划](docs/code-structure.md)
+- [语法样例对比](docs/syntax-comparison.md)
 - [DSL 语言设计草案](docs/dsl-language.md)
 - [编辑器设计草案](docs/editor-design.md)
 - [运行时与 Unity 宿主](docs/runtime-unity.md)
