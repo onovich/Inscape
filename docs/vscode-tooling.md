@@ -62,7 +62,7 @@ dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- diagnose-project <wor
 
 `diagnose-project` 输出项目级 JSON payload，合并工作区内所有 `.inscape` 文件，并用临时文件内容覆盖当前正在编辑的源文件。它不向 stderr 打印人类可读诊断，并且只要 CLI 正常执行就返回 `0`。这样编辑器可以区分“脚本里有语法错误”和“编译器进程不可用”。
 
-项目扫描会忽略 `.git`、`bin`、`obj`、`node_modules` 和 `artifacts` 目录。第一版项目规则是节点名在项目内全局唯一，跨文件跳转不需要 `include`。项目入口暂时沿用编译器规则：按文件路径排序后的第一个节点。
+项目扫描会忽略 `.git`、`bin`、`obj`、`node_modules` 和 `artifacts` 目录。第一版项目规则是节点名在项目内全局唯一，跨文件跳转不需要 `include`。项目入口使用节点内 `@entry` 声明；未声明时编译器会兼容回退到按文件路径排序后的第一个节点。
 
 可通过以下 VSCode 设置调整：
 

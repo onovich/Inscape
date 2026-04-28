@@ -20,6 +20,9 @@ namespace Inscape.Tests {
                 ("project compiler diagnoses duplicate nodes", ProjectCompilerDiagnosesDuplicateNodes),
                 ("cli diagnose-project applies override", CliDiagnoseProjectAppliesOverride),
                 ("cli compile-project emits project ir", CliCompileProjectEmitsProjectIr),
+                ("project compiler uses entry metadata", ProjectCompilerUsesEntryMetadata),
+                ("project compiler diagnoses multiple entries", ProjectCompilerDiagnosesMultipleEntries),
+                ("project compiler reports fallback entry", ProjectCompilerReportsFallbackEntry),
             };
 
             int failed = 0;
@@ -237,6 +240,7 @@ namespace Inscape.Tests {
 
             File.WriteAllText(Path.Combine(directory, "00-start.inscape"), """
 :: start
+@entry
 旁白：开始。
 -> second.node
 """, Encoding.UTF8);
@@ -271,6 +275,58 @@ namespace Inscape.Tests {
             AssertEqual(2, root.GetProperty("graph").GetProperty("nodes").GetArrayLength(), "Compile-project graph node count");
         }
 
+        static void ProjectCompilerUsesEntryMetadata() {
+            ProjectCompiler compiler = new ProjectCompiler();
+            ProjectCompilationResult result = compiler.Compile(new List<ProjectSource> {
+                new ProjectSource("memory://00-orphan.inscape", """
+:: orphan.node
+旁白：它在文件顺序上更靠前。
+"""),
+                new ProjectSource("memory://01-start.inscape", """
+:: start
+@entry
+旁白：真正入口。
+-> orphan.node
+"""),
+            }, "memory://project");
+
+            AssertFalse(result.HasErrors, "@entry project should not have errors.");
+            AssertFalse(ContainsAnyCode(result, "INS021"), "@entry should be used for reachability.");
+            AssertFalse(ContainsAnyCode(result, "INS032"), "Explicit @entry should suppress fallback diagnostic.");
+        }
+
+        static void ProjectCompilerDiagnosesMultipleEntries() {
+            ProjectCompiler compiler = new ProjectCompiler();
+            ProjectCompilationResult result = compiler.Compile(new List<ProjectSource> {
+                new ProjectSource("memory://a.inscape", """
+:: first.entry
+@entry
+旁白：入口一。
+"""),
+                new ProjectSource("memory://b.inscape", """
+:: second.entry
+@entry
+旁白：入口二。
+"""),
+            }, "memory://project");
+
+            AssertTrue(result.HasErrors, "Multiple entries should be an error.");
+            AssertTrue(ContainsCode(result, "INS031"), "Expected INS031 multiple entry diagnostic.");
+        }
+
+        static void ProjectCompilerReportsFallbackEntry() {
+            ProjectCompiler compiler = new ProjectCompiler();
+            ProjectCompilationResult result = compiler.Compile(new List<ProjectSource> {
+                new ProjectSource("memory://a.inscape", """
+:: start
+旁白：没有显式入口。
+"""),
+            }, "memory://project");
+
+            AssertFalse(result.HasErrors, "Fallback entry should not be an error.");
+            AssertTrue(ContainsAnyCode(result, "INS032"), "Expected INS032 fallback entry diagnostic.");
+        }
+
         static CompilationResult Compile(string source) {
             InscapeCompiler compiler = new InscapeCompiler();
             return compiler.Compile(source, "memory://test.inscape");
@@ -288,6 +344,15 @@ namespace Inscape.Tests {
         static bool ContainsCode(ProjectCompilationResult result, string code) {
             for (int i = 0; i < result.Diagnostics.Count; i += 1) {
                 if (result.Diagnostics[i].Code == code && result.Diagnostics[i].Severity == DiagnosticSeverity.Error) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        static bool ContainsAnyCode(ProjectCompilationResult result, string code) {
+            for (int i = 0; i < result.Diagnostics.Count; i += 1) {
+                if (result.Diagnostics[i].Code == code) {
                     return true;
                 }
             }

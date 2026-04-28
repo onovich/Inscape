@@ -50,14 +50,16 @@ namespace Inscape.Core.Analysis {
                 }
             }
 
-            WarnUnreachableNodes(documents, graph, diagnostics, nodesByName);
+            NarrativeNode? entry = FindEntryNode(documents, diagnostics);
+            WarnUnreachableNodes(documents, graph, diagnostics, nodesByName, entry);
         }
 
         static void WarnUnreachableNodes(List<InscapeDocument> documents,
                                          InscapeDocument graph,
                                          List<Diagnostic> diagnostics,
-                                         Dictionary<string, NarrativeNode> nodesByName) {
-            NarrativeNode? entry = FindFirstNode(documents);
+                                         Dictionary<string, NarrativeNode> nodesByName,
+                                         NarrativeNode? entry) {
+            entry ??= FindFirstNode(documents);
             if (entry == null) {
                 return;
             }
@@ -88,12 +90,63 @@ namespace Inscape.Core.Analysis {
                 if (!visited.Contains(node.Name)) {
                     diagnostics.Add(new Diagnostic("INS021",
                                                    DiagnosticSeverity.Warning,
-                                                   "Node '" + node.Name + "' is not reachable from the first project node.",
+                                                   "Node '" + node.Name + "' is not reachable from project entry '" + entry.Name + "'.",
                                                    node.Source.SourcePath,
                                                    node.Source.Line,
                                                    node.Source.Column));
                 }
             }
+        }
+
+        static NarrativeNode? FindEntryNode(List<InscapeDocument> documents, List<Diagnostic> diagnostics) {
+            NarrativeNode? entry = null;
+            SourceSpan entrySource = SourceSpan.Empty;
+
+            for (int i = 0; i < documents.Count; i += 1) {
+                InscapeDocument document = documents[i];
+                for (int nodeIndex = 0; nodeIndex < document.Nodes.Count; nodeIndex += 1) {
+                    NarrativeNode node = document.Nodes[nodeIndex];
+                    for (int lineIndex = 0; lineIndex < node.Lines.Count; lineIndex += 1) {
+                        NarrativeLine line = node.Lines[lineIndex];
+                        if (!IsEntryMetadata(line)) {
+                            continue;
+                        }
+
+                        if (entry == null) {
+                            entry = node;
+                            entrySource = line.Source;
+                            continue;
+                        }
+
+                        diagnostics.Add(new Diagnostic("INS031",
+                                                       DiagnosticSeverity.Error,
+                                                       "Multiple project entries are declared. First entry is '" + entry.Name + "' at "
+                                                       + entrySource.SourcePath + "(" + entrySource.Line + "," + entrySource.Column + ").",
+                                                       line.Source.SourcePath,
+                                                       line.Source.Line,
+                                                       line.Source.Column));
+                    }
+                }
+            }
+
+            if (entry == null) {
+                NarrativeNode? fallback = FindFirstNode(documents);
+                if (fallback != null) {
+                    diagnostics.Add(new Diagnostic("INS032",
+                                                   DiagnosticSeverity.Info,
+                                                   "Project entry is not declared with '@entry'; falling back to first project node '" + fallback.Name + "'.",
+                                                   fallback.Source.SourcePath,
+                                                   fallback.Source.Line,
+                                                   fallback.Source.Column));
+                }
+            }
+
+            return entry;
+        }
+
+        static bool IsEntryMetadata(NarrativeLine line) {
+            return line.Kind == NarrativeLineKind.Metadata
+                && string.Equals(line.Text.Trim(), "@entry", System.StringComparison.Ordinal);
         }
 
         static NarrativeNode? FindFirstNode(List<InscapeDocument> documents) {
