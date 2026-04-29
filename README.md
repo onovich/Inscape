@@ -13,6 +13,7 @@
 - 图叙事优先：块级叙事单元使用显式节点名组织图结构，行级文本使用隐式哈希锚点。
 - 单流控制：运行时状态通过单向数据流更新，降低全局单例和隐式副作用。
 - 先 Unity，后独立：前期适配 Unity 宿主，后期保留迁移到独立渲染层或 Bevy 等技术栈的空间。
+- 编辑器方向：DSL 阶段先在 VSCode 建立工作闭环，后续独立编辑器围绕脚本视图、节点图视图和 CSV 视图组织。
 
 当前已经实现：
 
@@ -22,7 +23,7 @@
 - VSCode 轻工具链：高亮、snippets、诊断桥接、节点补全、Outline、跳转定义、引用查找和 Hover。
 - VSCode 本地化命令：导出项目 CSV，基于旧 CSV 更新项目本地化表。
 - HTML 调试预览：单文件/项目级预览、节点跳转、选择、回环、路径、Restart/Back 和锚点显示。
-- 本地化工具：CSV 提取、旧表按锚点精确继承、`current/new/removed` 状态标记。
+- 本地化工具：CSV 提取、旧表按锚点精确继承、`current/new/removed` 状态标记，并与宿主配置 CSV 分离。
 - Bird 导出原型：生成 `bird-manifest.json`、Bird 兼容 `L10N_Talking.csv`、锚点映射表和导出报告，支持角色 / 宿主资源绑定 CSV 与 Timeline Hook manifest。
 
 以下内容尚未定稿，需要在后续设计讨论中明确：
@@ -74,6 +75,7 @@ dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- preview-project sampl
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- extract-l10n-project samples -o artifacts\l10n.csv
 Copy-Item artifacts\l10n.csv artifacts\old-l10n.csv
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- update-l10n-project samples --from artifacts\old-l10n.csv -o artifacts\l10n.updated.csv
+dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-role-template samples -o artifacts\bird-roles.template.csv
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-binding-template samples --bird-existing-timeline-root D:\UnityProjects\Bird\Assets\Resources_Runtime\Timeline -o artifacts\bird-bindings.template.csv
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-project samples -o artifacts\bird-export
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- compile samples\court-loop.inscape -o artifacts\court-loop.json

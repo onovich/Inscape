@@ -11,8 +11,8 @@
 1. 将 Unity Editor Importer 原型复制到 Bird 项目，先执行 Dry Run，再验证 `TalkingSO`、选项和 Timeline Hook 的 `.asset` 结果。
 2. 明确 Timeline Hook 的 phase 语义，尤其是 Bird 当前 `TalkingEffectTM` 在 talking exit 触发的关系。
 3. 设计本地化模糊匹配与人工确认报告，不要直接自动复用相似文本译文。
-4. 收敛 Language Server 能力范围，再决定是否创建 `src/Inscape.LanguageServer/`。
-5. 设计 `timelineId` 自动避让策略，扫描现有 Bird Timeline 资源避免冲突。
+4. 收敛第一版块语法：继续使用 `:: node.name`，还是转向 `# 标题` + 空行分块。
+5. 收敛 Language Server 能力范围，再决定是否创建 `src/Inscape.LanguageServer/`。
 
 ## 文档与接手效率
 
@@ -77,8 +77,8 @@
 - [x] 设计 `bird-manifest.json` 的字段、版本、兼容策略和最小样例。
 - [x] 设计 `talkingId` 分配策略第一版：默认从 `100000` 顺序分配，并支持 `--bird-talking-start` 覆盖。
 - [x] 实现 `talkingId` 自动避让策略第一版：`--bird-existing-talking-root` 扫描现有 `.asset` 的 `talkingId:`。
-- [ ] 设计 `timelineId` 自动避让策略，扫描现有 Bird Timeline 资源避免冲突。
 - [x] 设计并实现角色名到 Bird `roleId` 的第一版 CSV 绑定：`--bird-role-map speaker,roleId`。
+- [x] 增加 `export-bird-role-template`，从项目对白 speaker 自动生成待补全的 `speaker,roleId` 模板。
 - [x] 设计并实现资源别名、Timeline 名称到 Bird 整数 ID / Unity 资源引用的第一版 CSV 绑定：`--bird-binding-map kind,alias,birdId,unityGuid,addressableKey,assetPath`。
 - [x] 增加 `export-bird-binding-template`，从项目内 Timeline Hook 生成待补全的 Bird 绑定表模板。
 - [x] 为 `export-bird-binding-template` 增加 `--bird-existing-timeline-root`，扫描现有 Bird Timeline `.asset` / `.meta` 辅助填表。
@@ -98,3 +98,4 @@
 - [ ] 设计表达式只表达数据查询的模型，不在 DSL 中绑定具体业务实体或服务端。
 - [ ] 设计宿主查询 Schema：谓词名、参数类型、返回类型、同步/异步、错误策略。
 - [ ] 明确查询表达式是否允许副作用。当前倾向是不允许。
+- [ ] 设计宿主查询 / 回调 / 事件清单的注册或代码生成策略，避免 DSL 直接控制反转进业务层。

@@ -13,6 +13,7 @@
 - 已完成行级 `line-v1` hash、锚点碰撞诊断、本地化 CSV 提取和旧表精确继承。
 - 已完成 VSCode 轻工具原型：高亮、snippets、诊断桥接、补全、Outline、定义、引用、Hover 和本地化导出/更新命令。
 - 已完成无引擎 HTML 预览：单文件/项目级图调试、回环、路径、Back/Restart 和锚点显示。
+- 已完成 Bird 导出侧原型：binding template、role map、host binding、Timeline Hook、warning/report 和 Unity Editor Importer dry run。
 - 尚未完成 Unity/Bird Adapter 和 Language Server。
 
 计划内容：
@@ -23,8 +24,9 @@
 - 提供 VSCode 语法高亮、补全、诊断、跳转定义和大纲能力。
 - 提供轻量 HTML 调试预览，支持节点跳转、选项、回环和路径记录。
 - 在 VSCode 中接入本地化导出/更新命令。
+- 明确第一版是否继续使用 `:: node.name`，还是转向 `# 标题` 风格块分隔；在定稿前保留候选语法并避免大规模重写。
 - 开发 Unity 宿主解释执行器。
-- 支持基础对话、背景切换、立绘切换、简单条件和分支。
+- 支持基础对话、背景切换、立绘切换与简单分支。
 - 调研 Bird 项目中 StorySystem/DirectorSystem 的映射边界，确认第一版是否只映射 Talking/L10N，还是包含 Timeline 引用。
 
 阶段门槛：
@@ -43,13 +45,16 @@
 
 - 推出 Tauri 编辑器 Alpha。
 - 集成 Monaco Editor 语法高亮、诊断和大纲视图。
+- 建立三视图基础：脚本视图、节点图视图、CSV 视图。
 - 实现编辑器与 Unity 的实时同步预览。
 - 实现变量与状态监视器。
 - 探索 Time Travel 调试。
+- 设计从预览/图视图/CSV 视图跳回脚本源位置的统一定位协议。
 
 阶段门槛：
 
 - 作者可以在编辑器中完成脚本编写、诊断和预览。
+- 作者可以在脚本、节点图和 CSV 之间切换，而不会破坏同一份源数据。
 - Unity 预览窗口可接收局部修改并刷新安全区域。
 - 状态监视器能解释当前变量和执行位置。
 
@@ -64,6 +69,8 @@
 - 移动端和 WebGL 的执行效率与资源加载优化。
 - 完善开发者手册。
 - 研究从 Ink 或 Yarn Spinner 迁移脚本的自动化工具。
+- 拆出更成熟的本地化工具工作流，支持翻译表审校、历史追溯和 Git 协作约定。
+- 研究 AI、Skill、GitHub 集成如何服务写作与审校，而不是干扰主编辑体验。
 
 阶段门槛：
 
@@ -80,6 +87,7 @@
 - 适配 Bevy 或自研轻量级渲染层。
 - 抽象 Runtime Host 接口。
 - 探索 AI 辅助创作流，包括分支建议、文本润色和翻译对齐。
+- 评估 Timeline 最终属于 Inscape 主引擎、Presentation IR，还是以姊妹工具形式存在。
 
 阶段门槛：
 

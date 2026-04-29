@@ -37,6 +37,7 @@ namespace Inscape.Tests {
                 ("cli update-l10n preserves translations", CliUpdateL10nPreservesTranslations),
                 ("cli update-l10n-project preserves translations", CliUpdateL10nProjectPreservesTranslations),
                 ("cli export-bird-binding-template emits csv", CliExportBirdBindingTemplateEmitsCsv),
+                ("cli export-bird-role-template emits csv", CliExportBirdRoleTemplateEmitsCsv),
                 ("cli export-bird-project emits manifest and csv", CliExportBirdProjectEmitsManifestAndCsv),
                 ("cli export-bird-project reports unresolved host hooks", CliExportBirdProjectReportsUnresolvedHostHooks),
             };
@@ -744,6 +745,48 @@ guid: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
             AssertTrue(csv.Contains("timeline,court.close,,,,"), "Binding template should include inline timeline alias.");
             AssertTrue(csv.Contains("timeline,court.opening,101,aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa,,Assets/Resources_Runtime/Timeline/SO_Timeline_Court_Opening.asset"), "Binding template should fill matching timeline asset metadata.");
             AssertEqual(3, CountCsvLines(csv), "Binding template CSV line count");
+        }
+
+        static void CliExportBirdRoleTemplateEmitsCsv() {
+            string directory = Path.Combine(Path.GetTempPath(), "inscape-tests", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory);
+
+            File.WriteAllText(Path.Combine(directory, "story.inscape"), """
+:: start
+@entry
+Narrator: Hello.
+成步堂：异议あり。
+Narrator: Again.
+"Role,Quoted": Needs escaping.
+A quiet narration line.
+""", Encoding.UTF8);
+
+            TextWriter originalOut = Console.Out;
+            TextWriter originalError = Console.Error;
+            StringWriter output = new StringWriter();
+            StringWriter error = new StringWriter();
+
+            int exitCode;
+            try {
+                Console.SetOut(output);
+                Console.SetError(error);
+                exitCode = CliProgram.Main(new[] { "export-bird-role-template", directory });
+            } finally {
+                Console.SetOut(originalOut);
+                Console.SetError(originalError);
+                Directory.Delete(directory, true);
+            }
+
+            string csv = output.ToString();
+            AssertEqual(0, exitCode, "Export-bird-role-template command exit code");
+            AssertEqual("", error.ToString().Trim(), "Export-bird-role-template stderr");
+            AssertTrue(csv.Contains("speaker,roleId"), "Role template should include header.");
+            AssertTrue(csv.Contains("Narrator,"), "Role template should include narrator speaker.");
+            AssertTrue(csv.Contains("成步堂,"), "Role template should include Chinese speaker.");
+            AssertTrue(csv.Contains("\"\"\"Role,Quoted\"\"\","),
+                       "Role template should escape commas and quotes.");
+            AssertFalse(csv.Contains("quiet narration"), "Role template should not include narration text.");
+            AssertEqual(4, CountCsvLines(csv), "Role template CSV line count");
         }
 
         static void CliExportBirdProjectEmitsManifestAndCsv() {

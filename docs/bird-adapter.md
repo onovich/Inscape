@@ -24,6 +24,12 @@ dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-project s
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-project samples --bird-role-map config\bird-roles.csv -o artifacts\bird-export
 ```
 
+如果想先从脚本里自动收集 speaker，再补角色表，可以先生成角色模板：
+
+```powershell
+dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-role-template samples -o config\bird-roles.csv
+```
+
 可选扫描现有 Bird `TalkingSO` 资源，避开已使用的 `talkingId`：
 
 ```powershell
@@ -70,6 +76,8 @@ Narrator,0
 ```
 
 未出现在映射表中的 speaker 会保留在 manifest 的 `roles` 列表中，但 `roleId` 为 `null`，等待后续绑定。
+
+`export-bird-role-template` 会扫描项目内所有对白 speaker，去重后输出同一格式的 CSV，便于先由编剧写作、后由 Unity/Bird 侧补 `roleId`。
 
 宿主绑定 CSV 第一版格式：
 
