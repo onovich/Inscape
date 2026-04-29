@@ -33,7 +33,7 @@ dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-role-temp
 也可以读取 Bird 现有 `L10N_RoleName.csv`，自动填入能唯一匹配的 `roleId`：
 
 ```powershell
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-role-template samples --bird-existing-role-name-csv D:\UnityProjects\Bird\Assets\Resources_Runtime\Localization\L10N_RoleName.csv -o config\bird-roles.csv
+dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-role-template samples --bird-existing-role-name-csv D:\UnityProjects\Bird\Assets\Resources_Runtime\Localization\L10N_RoleName.csv --report artifacts\bird-export\bird-roles.report.csv -o config\bird-roles.csv
 ```
 
 可选扫描现有 Bird `TalkingSO` 资源，避开已使用的 `talkingId`：
@@ -84,6 +84,25 @@ Narrator,0
 未出现在映射表中的 speaker 会保留在 manifest 的 `roles` 列表中，但 `roleId` 为 `null`，等待后续绑定。
 
 `export-bird-role-template` 会扫描项目内所有对白 speaker，去重后输出同一格式的 CSV，便于先由编剧写作、后由 Unity/Bird 侧补 `roleId`。配合 `--bird-existing-role-name-csv` 时，会读取 Bird `L10N_RoleName.csv` 的各语言列并做精确匹配；只有唯一匹配时才自动填入 `roleId`，例如重复出现的 `旁白` 会保持空白，避免误绑定。
+
+如果传入 `--report path`，会额外输出角色绑定审查报告：
+
+```text
+speaker,status,roleId,candidateRoleIds,candidateDescriptions,candidateLanguages
+```
+
+状态含义：
+
+- `unique`：在 Bird `L10N_RoleName.csv` 中唯一匹配，已自动填入 `roleId`。
+- `ambiguous`：匹配到多个候选，模板保持空白，由人决定。
+- `missing`：未匹配到候选，模板保持空白。
+- `unscanned`：未提供 `--bird-existing-role-name-csv`，未扫描 Bird 角色表。
+
+2026-04-30 用当前样例和 Bird 真实角色表试跑：
+
+- `旁白`：`ambiguous`，候选 `1050|10001`。
+- `成步堂`：`missing`。
+- `证人`：`missing`。
 
 宿主绑定 CSV 第一版格式：
 

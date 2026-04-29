@@ -377,7 +377,6 @@ namespace Inscape.Tests {
             } finally {
                 Console.SetOut(originalOut);
                 Console.SetError(originalError);
-                Directory.Delete(directory, true);
             }
 
             AssertEqual(0, exitCode, "Diagnose-project command exit code");
@@ -418,7 +417,6 @@ namespace Inscape.Tests {
             } finally {
                 Console.SetOut(originalOut);
                 Console.SetError(originalError);
-                Directory.Delete(directory, true);
             }
 
             AssertEqual(0, exitCode, "Compile-project command exit code");
@@ -547,7 +545,6 @@ namespace Inscape.Tests {
             } finally {
                 Console.SetOut(originalOut);
                 Console.SetError(originalError);
-                Directory.Delete(directory, true);
             }
 
             string html = output.ToString();
@@ -846,12 +843,14 @@ A quiet narration line.
             Directory.CreateDirectory(directory);
 
             string roleNameCsvPath = Path.Combine(directory, "L10N_RoleName.csv");
+            string reportPath = Path.Combine(directory, "bird-roles.report.csv");
             File.WriteAllText(Path.Combine(directory, "story.inscape"), """
 :: start
 @entry
 Narrator: Hello.
 利亚姆：你好。
 旁白：重复角色名不应自动填。
+未知角色：需要人工补。
 """, Encoding.UTF8);
             File.WriteAllText(roleNameCsvPath, """
 ID,Desc,ZH_CN,EN_US,ES_ES
@@ -869,11 +868,10 @@ ID,Desc,ZH_CN,EN_US,ES_ES
             try {
                 Console.SetOut(output);
                 Console.SetError(error);
-                exitCode = CliProgram.Main(new[] { "export-bird-role-template", directory, "--bird-existing-role-name-csv", roleNameCsvPath });
+                exitCode = CliProgram.Main(new[] { "export-bird-role-template", directory, "--bird-existing-role-name-csv", roleNameCsvPath, "--report", reportPath });
             } finally {
                 Console.SetOut(originalOut);
                 Console.SetError(originalError);
-                Directory.Delete(directory, true);
             }
 
             string csv = output.ToString();
@@ -884,6 +882,15 @@ ID,Desc,ZH_CN,EN_US,ES_ES
             AssertTrue(csv.Contains("旁白,"), "Ambiguous role name should stay unfilled.");
             AssertFalse(csv.Contains("旁白,1050"), "Ambiguous role name should not pick first match.");
             AssertFalse(csv.Contains("旁白,10001"), "Ambiguous role name should not pick second match.");
+            AssertTrue(csv.Contains("未知角色,"), "Missing role name should stay unfilled.");
+
+            string report = File.ReadAllText(reportPath, Encoding.UTF8);
+            AssertTrue(report.Contains("Narrator,unique,1050"), "Role report should mark unique matches.");
+            AssertTrue(report.Contains("利亚姆,unique,10011"), "Role report should mark unique Chinese matches.");
+            AssertTrue(report.Contains("旁白,ambiguous,"), "Role report should mark ambiguous matches.");
+            AssertTrue(report.Contains("1050|10001"), "Role report should include ambiguous candidate IDs.");
+            AssertTrue(report.Contains("未知角色,missing,"), "Role report should mark missing names.");
+            Directory.Delete(directory, true);
         }
 
         static void CliExportBirdProjectEmitsManifestAndCsv() {
