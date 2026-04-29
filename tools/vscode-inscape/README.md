@@ -12,8 +12,8 @@ This is the first lightweight authoring layer for `.inscape` scripts. It keeps s
 - Provides workspace node completions in jump target positions.
 - Provides dialogue speaker completions from `inscape.config.json` `bird.roleMap`, with workspace speaker fallback.
 - Provides host binding alias completions from `inscape.config.json` `bird.bindingMap` for `@timeline ...` and `[kind: ...]` inline tag positions.
-- Supports Go to Definition / Ctrl+Click from jump targets to node declarations.
-- Supports Find All References from node declarations and jump targets.
+- Supports Go to Definition / Ctrl+Click from jump targets to node declarations, and from dialogue speakers to configured role-map rows.
+- Supports Find All References from node declarations, jump targets, and dialogue speakers.
 - Shows hover summaries for node declarations, jump targets, dialogue speakers, and host binding aliases.
 - Provides an outline view backed by visible node headers.
 - Exposes command palette actions for localization:
@@ -47,6 +47,8 @@ speaker,roleId
 ```
 
 When no configured role map exists, the extension still scans open and workspace `.inscape` files for existing dialogue speakers.
+
+Ctrl+Click on a dialogue speaker jumps to the matching `speaker` row in the configured role map. Find All References on a speaker lists all matching dialogue lines in the workspace and includes the role-map row when VSCode requests declarations.
 
 Host binding completion reads `bird.bindingMap` from the same project config. The binding map format is:
 

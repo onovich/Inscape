@@ -44,7 +44,8 @@ Inscape 的默认阅读优先级应当是：
 - 在对白行开头补全角色名，优先读取 `inscape.config.json` 中 `bird.roleMap` 指向的 `speaker,roleId` 表；未配置时回退扫描工作区已有对白 speaker。
 - 在 `@timeline ...` 和 `[kind: ...]` 位置补全宿主绑定别名，优先读取 `inscape.config.json` 中 `bird.bindingMap` 指向的 `kind,alias,birdId,unityGuid,addressableKey,assetPath` 表；未配置时回退扫描工作区已有 hook / inline tag。
 - 在 `->` 跳转目标上支持 Go to Definition / Ctrl+Click。
-- 在节点声明或 `->` 跳转目标上支持 Find All References。
+- 在对白 speaker 上支持 Go to Definition / Ctrl+Click 到 `bird.roleMap` 中对应的 `speaker` 行。
+- 在节点声明、`->` 跳转目标或对白 speaker 上支持 Find All References。
 - 在节点声明或 `->` 跳转目标上显示 Hover 摘要：定义位置、引用数量和出边目标。
 - 在对白 speaker 上显示 Hover 摘要：角色名、Bird `roleId` 绑定状态和来源表。
 - 在宿主绑定别名上显示 Hover 摘要：`kind:alias`、Bird id、Addressable、Unity guid、Asset path 和来源表。
@@ -83,6 +84,8 @@ speaker,roleId
 ```
 
 在对白行开头输入时，补全项会插入 `角色：`。如果 `roleId` 已绑定，补全详情显示 Bird `roleId`；如果为空，则显示未绑定状态。Hover 同样展示绑定状态和来源路径。
+
+对白 speaker 也支持导航：Ctrl+Click 会跳到配置的 `bird.roleMap` 中对应 `speaker` 行；Find All References 会返回工作区内该 speaker 的全部对白行，并在 VSCode 请求 declaration 时包含角色表行。如果未配置角色表，引用查找仍可基于工作区对白扫描运行，但定义跳转不会返回结果。
 
 这项能力只是写作提示，不改变编译结果。真正的 Bird 导出仍由 CLI 的 `export-bird-project` 读取同一份 `roleMap` 完成。
 

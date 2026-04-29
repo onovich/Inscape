@@ -175,6 +175,12 @@ class InscapeDefinitionProvider {
             return undefined;
         }
 
+        const speakerInfo = getDialogueSpeakerAtPosition(document, position);
+        if (speakerInfo) {
+            const definitions = await collectConfiguredRoleMapSpeakerDefinitions(document, speakerInfo.name);
+            return definitions.length > 0 ? definitions.map((definition) => createLocation(definition)) : undefined;
+        }
+
         const target = getJumpTargetAtPosition(document, position);
         if (!target) {
             return undefined;
@@ -196,6 +202,20 @@ class InscapeReferenceProvider {
     async provideReferences(document, position, context) {
         if (!isInscapeDocument(document)) {
             return undefined;
+        }
+
+        const speakerInfo = getDialogueSpeakerAtPosition(document, position);
+        if (speakerInfo) {
+            const references = await collectWorkspaceDialogueSpeakerReferences(document, speakerInfo.name);
+            let locations = references.map((reference) => createLocation(reference));
+
+            if (context && context.includeDeclaration) {
+                const definitions = await collectConfiguredRoleMapSpeakerDefinitions(document, speakerInfo.name);
+                locations = definitions.map((definition) => createLocation(definition)).concat(locations);
+            }
+
+            locations = uniqueLocations(locations);
+            return locations.length > 0 ? locations : undefined;
         }
 
         const target = getNodeNameAtDeclarationPosition(document, position) || getJumpTargetAtPosition(document, position);
@@ -795,7 +815,7 @@ async function collectWorkspaceSpeakers(document) {
     const speakers = [];
     const seen = new Set();
 
-    const configured = await readConfiguredRoleMapSpeakers(document);
+    const configured = await readConfiguredRoleMapSpeakerRows(document);
     for (const speaker of configured) {
         addSpeaker(speakers, seen, speaker);
     }
@@ -813,44 +833,139 @@ async function collectWorkspaceSpeakers(document) {
     });
 }
 
-async function readConfiguredRoleMapSpeakers(document) {
-    const projectConfig = await readProjectConfig(document);
-    if (!projectConfig || !projectConfig.configPath || !projectConfig.config || !projectConfig.config.bird) {
-        return [];
-    }
+async function collectConfiguredRoleMapSpeakerDefinitions(document, speakerName) {
+    const speakers = await readConfiguredRoleMapSpeakerRows(document);
+    return speakers.filter((speaker) => speaker.name === speakerName && typeof speaker.line === "number");
+}
 
-    const roleMap = projectConfig.config.bird.roleMap;
-    if (!roleMap) {
-        return [];
-    }
-
-    const roleMapPath = resolveProjectConfigPath(projectConfig.configPath, roleMap);
-    if (!fs.existsSync(roleMapPath)) {
+async function readConfiguredRoleMapSpeakerRows(document) {
+    const roleMapPath = await getConfiguredRoleMapPath(document);
+    if (!roleMapPath) {
         return [];
     }
 
     const text = await fs.promises.readFile(roleMapPath, "utf8");
-    const rows = parseCsvRows(text);
-    if (rows.length === 0) {
-        return [];
+    return parseRoleMapSpeakerRows(text, roleMapPath);
+}
+
+async function getConfiguredRoleMapPath(document) {
+    const projectConfig = await readProjectConfig(document);
+    if (!projectConfig || !projectConfig.configPath || !projectConfig.config || !projectConfig.config.bird) {
+        return undefined;
     }
 
-    const headers = rows[0].map((header) => header.trim());
+    const roleMap = projectConfig.config.bird.roleMap;
+    if (!roleMap) {
+        return undefined;
+    }
+
+    const roleMapPath = resolveProjectConfigPath(projectConfig.configPath, roleMap);
+    if (!fs.existsSync(roleMapPath)) {
+        return undefined;
+    }
+
+    return roleMapPath;
+}
+
+function parseRoleMapSpeakerRows(text, roleMapPath) {
+    const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+    let headerLine = -1;
+    let headers = [];
+
+    for (let line = 0; line < lines.length; line += 1) {
+        const trimmed = lines[line].trim();
+        if (!trimmed || trimmed.startsWith("#")) {
+            continue;
+        }
+
+        const parsed = parseCsvRows(lines[line]);
+        if (parsed.length === 0) {
+            continue;
+        }
+
+        headers = parsed[0].map((header) => header.trim());
+        headerLine = line;
+        break;
+    }
+
     const speakerIndex = headers.indexOf("speaker");
     const roleIdIndex = headers.indexOf("roleId");
-    if (speakerIndex < 0) {
+    if (headerLine < 0 || speakerIndex < 0) {
         return [];
     }
 
-    return rows.slice(1)
-        .map((row) => ({
-            name: (row[speakerIndex] || "").trim(),
+    const speakers = [];
+    for (let line = headerLine + 1; line < lines.length; line += 1) {
+        const trimmed = lines[line].trim();
+        if (!trimmed || trimmed.startsWith("#")) {
+            continue;
+        }
+
+        const parsed = parseCsvRows(lines[line]);
+        if (parsed.length === 0) {
+            continue;
+        }
+
+        const row = parsed[0];
+        const name = (row[speakerIndex] || "").trim();
+        if (!name) {
+            continue;
+        }
+
+        speakers.push({
+            name,
             roleId: roleIdIndex >= 0 ? (row[roleIdIndex] || "").trim() : "",
             sourcePath: roleMapPath,
             sourceLabel: "Bird role map",
-            sourceRank: 0
-        }))
-        .filter((speaker) => speaker.name.length > 0);
+            sourceRank: 0,
+            line,
+            character: findCsvFieldValueStart(lines[line], speakerIndex, name),
+            length: name.length
+        });
+    }
+
+    return speakers;
+}
+
+function findCsvFieldValueStart(line, fieldIndex, fallbackValue) {
+    let currentField = 0;
+    let fieldStart = 0;
+    let inQuotes = false;
+
+    for (let index = 0; index <= line.length; index += 1) {
+        const character = index < line.length ? line[index] : ",";
+        if (inQuotes) {
+            if (character === "\"") {
+                if (line[index + 1] === "\"") {
+                    index += 1;
+                } else {
+                    inQuotes = false;
+                }
+            }
+            continue;
+        }
+
+        if (character === "\"") {
+            inQuotes = true;
+        } else if (character === ",") {
+            if (currentField === fieldIndex) {
+                let start = fieldStart;
+                while (start < index && /\s/.test(line[start])) {
+                    start += 1;
+                }
+                if (line[start] === "\"") {
+                    start += 1;
+                }
+                return start;
+            }
+
+            currentField += 1;
+            fieldStart = index + 1;
+        }
+    }
+
+    const fallback = line.indexOf(fallbackValue);
+    return Math.max(0, fallback);
 }
 
 async function readProjectConfig(document) {
@@ -944,9 +1059,61 @@ function collectSpeakersFromText(text, sourcePath, speakers, seen) {
             roleId: "",
             sourcePath,
             sourceLabel: "Workspace speaker",
-            sourceRank: 1
+            sourceRank: 1,
+            line,
+            character: getTrimmedMatchStart(lines[line], match[1], name),
+            length: name.length
         });
     }
+}
+
+async function collectWorkspaceDialogueSpeakerReferences(document, speakerName) {
+    const references = [];
+    const sources = await collectWorkspaceTextSources(document);
+
+    for (const source of sources) {
+        collectDialogueSpeakerReferencesFromText(source.text, source.sourcePath, speakerName, references);
+    }
+
+    return references.sort((left, right) => {
+        const pathCompare = left.sourcePath.localeCompare(right.sourcePath);
+        if (pathCompare !== 0) {
+            return pathCompare;
+        }
+        if (left.line !== right.line) {
+            return left.line - right.line;
+        }
+        return left.character - right.character;
+    });
+}
+
+function collectDialogueSpeakerReferencesFromText(text, sourcePath, speakerName, references) {
+    const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+    for (let line = 0; line < lines.length; line += 1) {
+        const match = /^\s*([^:\uFF1A\s][^:\uFF1A]{0,80}?)[ \t]*[:\uFF1A]/.exec(lines[line]);
+        if (!match) {
+            continue;
+        }
+
+        const name = match[1].trim();
+        if (name !== speakerName || !isLikelyDialogueSpeaker(name)) {
+            continue;
+        }
+
+        references.push({
+            name,
+            sourcePath,
+            line,
+            character: getTrimmedMatchStart(lines[line], match[1], name),
+            length: name.length
+        });
+    }
+}
+
+function getTrimmedMatchStart(line, rawMatch, trimmedMatch) {
+    const rawStart = Math.max(0, line.indexOf(rawMatch));
+    const trimOffset = Math.max(0, rawMatch.indexOf(trimmedMatch));
+    return rawStart + trimOffset;
 }
 
 function isLikelyDialogueSpeaker(name) {

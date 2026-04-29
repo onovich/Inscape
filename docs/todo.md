@@ -55,6 +55,7 @@
 - [x] 添加 VSCode 命令：导出项目本地化 CSV。
 - [x] 添加 VSCode 命令：基于旧 CSV 更新项目本地化表。
 - [x] 接入 `bird.bindingMap` 的宿主绑定别名补全和 Hover，覆盖 `@timeline ...` 与 `[kind: ...]` 位置。
+- [x] 添加对白 speaker 的 Go to Definition 与 Find All References，连接脚本对白和 `bird.roleMap`。
 - [ ] 设计 Language Server 能力范围：补全、诊断、跳转定义、引用查找、大纲、悬浮说明。
 - [x] 设计补全数据来源：当前文件节点、项目节点、角色表、宿主绑定表、宿主 Schema 查询 / 事件清单。
 - [ ] 将 `hostSchema` 中的查询 / 事件清单接入 VSCode 补全与 Hover，但不改变当前 DSL 编译语义。
