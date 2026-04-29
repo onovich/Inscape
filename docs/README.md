@@ -17,25 +17,26 @@
 2. [项目立项说明](project-brief.md)
 3. [架构草案](architecture.md)
 4. [代码结构规划](code-structure.md)
-5. [语法样例对比](syntax-comparison.md)
-6. [DSL 语言设计草案](dsl-language.md)
-7. [VSCode 轻工具链](vscode-tooling.md)
-8. [哈希锚点与本地化](hash-localization.md)
-9. [本地化提取](l10n-extraction.md)
-10. [编辑器设计草案](editor-design.md)
-11. [运行时与 Unity 宿主](runtime-unity.md)
-12. [Bird / Unity 调研记录](bird-unity-research.md)
-13. [Bird Adapter 原型](bird-adapter.md)
-14. [路线图](roadmap.md)
-15. [TODO](todo.md)
-16. [待确认问题](open-questions.md)
+5. [DSL 生态定位对比](dsl-ecosystem-positioning.md)
+6. [语法样例对比](syntax-comparison.md)
+7. [DSL 语言设计草案](dsl-language.md)
+8. [VSCode 轻工具链](vscode-tooling.md)
+9. [哈希锚点与本地化](hash-localization.md)
+10. [本地化提取](l10n-extraction.md)
+11. [编辑器设计草案](editor-design.md)
+12. [运行时与 Unity 宿主](runtime-unity.md)
+13. [Bird / Unity 调研记录](bird-unity-research.md)
+14. [Bird Adapter 原型](bird-adapter.md)
+15. [路线图](roadmap.md)
+16. [TODO](todo.md)
+17. [待确认问题](open-questions.md)
 
 ## 按任务检索
 
 ```text
 任务类型             建议读取
 接手/恢复上下文      agent-handoff.md, todo.md, roadmap.md
-DSL 语法             dsl-language.md, syntax-comparison.md, open-questions.md
+DSL 定位/语法        dsl-ecosystem-positioning.md, dsl-language.md, syntax-comparison.md, open-questions.md
 VSCode 工具          vscode-tooling.md, tools/vscode-inscape/README.md
 本地化               hash-localization.md, l10n-extraction.md, ADR 0006
 Unity/Bird 适配      bird-adapter.md, bird-unity-research.md, runtime-unity.md, architecture.md, todo.md
@@ -59,6 +60,7 @@ docs/
   project-brief.md       项目定位、目标、非目标、成功标准
   architecture.md        三层架构、数据流与关键约束
   code-structure.md      代码目录规划与分层原则
+  dsl-ecosystem-positioning.md  DSL 生态、竞品差异和分层参照
   syntax-comparison.md   同一剧情在多种叙事 DSL 风格下的对比
   dsl-language.md        DSL 语言设计草案与语法待确认项
   vscode-tooling.md      VSCode 阶段的轻工具链设计与使用方式

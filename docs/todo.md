@@ -18,12 +18,14 @@
 
 - [x] 建立 Agent 接手指南，记录当前快照、检索地图、工作方法和验证命令。
 - [x] 建立根目录 `AGENTS.md`，为未来 agent 提供最短入口。
+- [x] 沉淀 DSL 生态定位对比，明确 Yarn / Ink / Ren'Py / Arcweave / articy 等方案的分层参照关系。
 - [ ] 每次完成阶段性提交后，同步更新 [Agent 接手指南](agent-handoff.md) 的当前快照。
 
 ## 阶段 1：DSL 与轻工具链
 
 - [x] 准备一个图叙事样例，包含复入、回环和多出口选择。
 - [x] 用 Yarn-like、Ink-like、Ren'Py-like、Inscape-like 四种写法重写同一片段，比较阅读感、解析复杂度和 IR 映射成本。
+- [x] 再次对比 Yarn Spinner、Ink/Inky、Ren'Py、Twine、ChoiceScript、Narrat、Arcweave 和 articy:draft，明确 Inscape 最接近 Yarn 的工程定位、Ink/Inky 的写作体验和 Ren'Py 的长期引擎目标。
 - [x] 定义第一版最小语法：显式节点、对白、旁白、选项、跳转、注释、元信息。
 - [x] 定义第一版节点名规范：字符集、层级分隔符和基础诊断。
 - [x] 定义第一版跨文件节点唯一性：项目内节点名全局唯一。
@@ -78,6 +80,7 @@
 - [ ] 设计 `timelineId` 自动避让策略，扫描现有 Bird Timeline 资源避免冲突。
 - [x] 设计并实现角色名到 Bird `roleId` 的第一版 CSV 绑定：`--bird-role-map speaker,roleId`。
 - [ ] 设计资源别名、Timeline 名称到 Bird 整数 ID / Unity 资源引用的绑定方式。
+- [ ] 结合 `docs/dsl-ecosystem-positioning.md` 设计 Timeline hook：只表达宿主引用，不引入通用命令宏系统。
 - [x] 设计 Bird 兼容 `L10N_Talking.csv` 导出，并保留 Inscape `anchor` 审校表。
 - [x] 原型实现 `export-bird-project`：从项目 IR 生成 manifest 与 Bird L10N CSV。
 - [ ] 设计 Unity Editor Importer：读取 manifest 并生成或更新 `TalkingSO`，不让 Core 依赖 Unity。

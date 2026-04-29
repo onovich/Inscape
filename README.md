@@ -39,6 +39,7 @@
 - [项目立项说明](docs/project-brief.md)
 - [架构草案](docs/architecture.md)
 - [代码结构规划](docs/code-structure.md)
+- [DSL 生态定位对比](docs/dsl-ecosystem-positioning.md)
 - [语法样例对比](docs/syntax-comparison.md)
 - [DSL 语言设计草案](docs/dsl-language.md)
 - [VSCode 轻工具链](docs/vscode-tooling.md)
