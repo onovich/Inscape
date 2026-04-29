@@ -168,6 +168,13 @@ namespace Inscape.Cli {
                 return result.HasErrors ? 1 : 0;
             }
 
+            if (command == "export-bird-binding-template") {
+                BirdBindingTemplateWriter writer = new BirdBindingTemplateWriter();
+                WriteOrPrint(outputPath, writer.Write(result.Graph));
+                PrintDiagnostics(result.Diagnostics);
+                return result.HasErrors ? 1 : 0;
+            }
+
             if (command == "export-bird-project") {
                 if (string.IsNullOrWhiteSpace(outputPath)) {
                     Console.Error.WriteLine("Missing required option: -o <output-directory>");
@@ -249,6 +256,7 @@ namespace Inscape.Cli {
                 || command == "preview-project"
                 || command == "extract-l10n-project"
                 || command == "update-l10n-project"
+                || command == "export-bird-binding-template"
                 || command == "export-bird-project";
         }
 
@@ -554,6 +562,7 @@ namespace Inscape.Cli {
             Console.WriteLine("  inscape diagnose-project <root> [--entry node.name] [--override source.inscape temp.inscape] [-o diagnostics.json]");
             Console.WriteLine("  inscape extract-l10n-project <root> [--entry node.name] [--override source.inscape temp.inscape] [-o strings.csv]");
             Console.WriteLine("  inscape update-l10n-project <root> --from old.csv [--entry node.name] [--override source.inscape temp.inscape] [-o strings.csv]");
+            Console.WriteLine("  inscape export-bird-binding-template <root> [--entry node.name] [--override source.inscape temp.inscape] [-o bindings.csv]");
             Console.WriteLine("  inscape export-bird-project <root> [--entry node.name] [--bird-talking-start 100000] [--bird-role-map roles.csv] [--bird-binding-map bindings.csv] [--bird-existing-talking-root path] -o output-dir");
             Console.WriteLine("  inscape compile-project <root> [--entry node.name] [-o output.json]");
             Console.WriteLine("  inscape preview-project <root> [--entry node.name] [-o preview.html]");

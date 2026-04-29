@@ -36,6 +36,21 @@ dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-project s
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-project samples --bird-binding-map config\bird-bindings.csv -o artifacts\bird-export
 ```
 
+如果项目里已经写了 `@timeline alias` 或 `[timeline: alias]`，可以先生成绑定模板：
+
+```powershell
+dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-binding-template samples -o config\bird-bindings.csv
+```
+
+该命令会扫描项目内 Timeline Hook，输出去重后的 CSV：
+
+```text
+kind,alias,birdId,unityGuid,addressableKey,assetPath
+timeline,court.opening,,,,
+```
+
+之后由人补齐 `birdId`、`unityGuid`、`addressableKey` 或 `assetPath`。
+
 项目级入口仍可用 `--entry node.name` 临时覆盖。
 
 角色映射 CSV 第一版格式：
@@ -123,6 +138,7 @@ anchor,node,kind,speaker,text,talkingId,talkingIndex,birdField,sourcePath,line,c
 - 如果节点没有文本但有选项，会生成一个 `ChoiceHost` talking 用来承载选项。
 - `--bird-role-map` 会把对白 speaker 映射为 Bird `roleId`，并写入 `roles` 和对应 `talkings`。
 - `--bird-binding-map` 会把资源别名、Timeline 名称和 Unity 资源坐标写入 manifest 的 `hostBindings`，供后续 Unity Editor Importer 和 Timeline hook 使用。
+- `export-bird-binding-template` 会从项目 metadata 中收集 Timeline Hook，并生成待补全的 `--bird-binding-map` 模板。
 - `@timeline alias` 和 `[timeline: alias]` 会写入 manifest 的 `hostHooks`，当前导出为 `kind=timeline`、`phase=talking.exit`，并尽量通过 `hostBindings` 解析 `birdId` / Unity 坐标。
 - `--bird-existing-talking-root` 会递归扫描 `.asset` 文件中的 `talkingId:`，顺序分配新 ID 时自动跳过已占用值。
 - 重复 `kind + alias` 的 host binding 会产生 `BIRD001` warning。

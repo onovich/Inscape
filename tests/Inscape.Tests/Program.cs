@@ -36,6 +36,7 @@ namespace Inscape.Tests {
                 ("cli extract-l10n-project emits csv", CliExtractL10nProjectEmitsCsv),
                 ("cli update-l10n preserves translations", CliUpdateL10nPreservesTranslations),
                 ("cli update-l10n-project preserves translations", CliUpdateL10nProjectPreservesTranslations),
+                ("cli export-bird-binding-template emits csv", CliExportBirdBindingTemplateEmitsCsv),
                 ("cli export-bird-project emits manifest and csv", CliExportBirdProjectEmitsManifestAndCsv),
                 ("cli export-bird-project reports unresolved host hooks", CliExportBirdProjectReportsUnresolvedHostHooks),
             };
@@ -693,6 +694,44 @@ Narrator: Project start.
 
             AssertTrue(csv.Contains("项目开始,current"), "Project update should preserve existing translation.");
             AssertEqual(2, CountCsvLines(csv), "Project update CSV line count");
+        }
+
+        static void CliExportBirdBindingTemplateEmitsCsv() {
+            string directory = Path.Combine(Path.GetTempPath(), "inscape-tests", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory);
+
+            File.WriteAllText(Path.Combine(directory, "story.inscape"), """
+:: start
+@entry
+Narrator: Hello.
+@timeline court.opening
+[timeline: court.close]
+@timeline court.opening
+""", Encoding.UTF8);
+
+            TextWriter originalOut = Console.Out;
+            TextWriter originalError = Console.Error;
+            StringWriter output = new StringWriter();
+            StringWriter error = new StringWriter();
+
+            int exitCode;
+            try {
+                Console.SetOut(output);
+                Console.SetError(error);
+                exitCode = CliProgram.Main(new[] { "export-bird-binding-template", directory });
+            } finally {
+                Console.SetOut(originalOut);
+                Console.SetError(originalError);
+                Directory.Delete(directory, true);
+            }
+
+            string csv = output.ToString();
+            AssertEqual(0, exitCode, "Export-bird-binding-template command exit code");
+            AssertEqual("", error.ToString().Trim(), "Export-bird-binding-template stderr");
+            AssertTrue(csv.Contains("kind,alias,birdId,unityGuid,addressableKey,assetPath"), "Binding template should include header.");
+            AssertTrue(csv.Contains("timeline,court.close,,,,"), "Binding template should include inline timeline alias.");
+            AssertTrue(csv.Contains("timeline,court.opening,,,,"), "Binding template should include metadata timeline alias.");
+            AssertEqual(3, CountCsvLines(csv), "Binding template CSV line count");
         }
 
         static void CliExportBirdProjectEmitsManifestAndCsv() {
