@@ -47,6 +47,7 @@
 - [运行时与 Unity 宿主](docs/runtime-unity.md)
 - [Bird / Unity 调研记录](docs/bird-unity-research.md)
 - [Bird Adapter 原型](docs/bird-adapter.md)
+- [Unity Editor Importer 草案](docs/unity-editor-importer.md)
 - [哈希锚点与本地化](docs/hash-localization.md)
 - [本地化提取](docs/l10n-extraction.md)
 - [路线图](docs/roadmap.md)

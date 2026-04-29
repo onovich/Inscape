@@ -24,6 +24,7 @@ samples/
   court-loop.inscape     图叙事与回环样例
 tools/
   vscode-inscape/        VSCode 轻量语言扩展：高亮、诊断桥接、补全、snippets
+  unity-bird-importer/   可复制到 Bird Unity 项目的 Editor Importer 原型
 docs/
   code-structure.md      代码结构规划
 ```
@@ -72,7 +73,9 @@ docs/
 
 项目级命令支持 `--entry node.name` 临时覆盖项目入口，用于从任意节点编译、诊断和预览。它不修改源文件中的 `@entry`。
 
-`export-bird-project` 会输出 `bird-manifest.json`、`L10N_Talking.csv` 和 `inscape-bird-l10n-map.csv`，用于后续 Unity Editor Importer 原型。它支持 `--bird-role-map roles.csv` 将 speaker 绑定到 Bird `roleId`，也支持 `--bird-existing-talking-root path` 扫描现有 `TalkingSO` 资源并避让 `talkingId` 冲突。
+`export-bird-project` 会输出 `bird-manifest.json`、`L10N_Talking.csv` 和 `inscape-bird-l10n-map.csv`，用于后续 Unity Editor Importer 原型。它支持 `--bird-role-map roles.csv` 将 speaker 绑定到 Bird `roleId`，支持 `--bird-binding-map bindings.csv` 绑定资源 / Timeline 别名，也支持 `--bird-existing-talking-root path` 扫描现有 `TalkingSO` 资源并避让 `talkingId` 冲突。
+
+`tools/unity-bird-importer` 提供 Unity Editor Importer 原型脚本。该脚本不进入 .NET solution；使用时复制到 Bird 项目的 `Assets/Editor/`，读取 `bird-manifest.json` 并生成或更新 `TalkingSO`。
 
 项目级扫描会忽略 `.git`、`bin`、`obj`、`node_modules` 和 `artifacts`。VSCode 诊断桥接依赖 `diagnose-project --override source temp`，未来 WebView 和本地化命令也应优先复用项目级 CLI。
 

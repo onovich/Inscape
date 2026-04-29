@@ -135,7 +135,7 @@ anchor,node,kind,speaker,text,talkingId,talkingIndex,birdField,sourcePath,line,c
 
 ## 下一步
 
-- 设计 Unity Editor Importer：读取 manifest，创建或更新 `TalkingSO`。
+- 将 Unity Editor Importer 原型复制到 Bird 项目中试跑，验证 `TalkingSO` 和 Timeline Hook 落地效果。
 - 明确 Timeline Hook 的 phase 是否继续沿用 `talking.exit`，或扩展为 node enter/exit。
 - 决定选择项文本长期如何本地化：保留在 `TalkingOptionTM.optionText`，还是扩展 Bird L10N。
 - 评估是否把连续同配置文本合并为 `<pr>`，减少 `TalkingSO` 数量。

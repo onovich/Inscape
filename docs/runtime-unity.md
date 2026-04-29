@@ -47,6 +47,8 @@ Inscape Project
 
 当前已经有 CLI 原型：`export-bird-project <root> -o <output-dir>`。细节见 [Bird Adapter 原型](bird-adapter.md)。
 
+Unity Editor Importer 的可复制原型位于 `tools/unity-bird-importer/`，设计说明见 [Unity Editor Importer 草案](unity-editor-importer.md)。它读取 `bird-manifest.json` 并生成 / 更新 Bird `TalkingSO`，但不让 `Inscape.Core` 依赖 Unity。
+
 关键原则：
 
 - Inscape 的行级 hash 仍是源文本和翻译流转的稳定锚点。
