@@ -72,7 +72,7 @@ docs/
 
 项目级命令支持 `--entry node.name` 临时覆盖项目入口，用于从任意节点编译、诊断和预览。它不修改源文件中的 `@entry`。
 
-`export-bird-project` 会输出 `bird-manifest.json`、`L10N_Talking.csv` 和 `inscape-bird-l10n-map.csv`，用于后续 Unity Editor Importer 原型。
+`export-bird-project` 会输出 `bird-manifest.json`、`L10N_Talking.csv` 和 `inscape-bird-l10n-map.csv`，用于后续 Unity Editor Importer 原型。它支持 `--bird-role-map roles.csv` 将 speaker 绑定到 Bird `roleId`。
 
 项目级扫描会忽略 `.git`、`bin`、`obj`、`node_modules` 和 `artifacts`。VSCode 诊断桥接依赖 `diagnose-project --override source temp`，未来 WebView 和本地化命令也应优先复用项目级 CLI。
 

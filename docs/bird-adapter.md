@@ -18,7 +18,23 @@ dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-project s
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-project samples --bird-talking-start 100000 -o artifacts\bird-export
 ```
 
+可选提供角色映射：
+
+```powershell
+dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-project samples --bird-role-map config\bird-roles.csv -o artifacts\bird-export
+```
+
 项目级入口仍可用 `--entry node.name` 临时覆盖。
+
+角色映射 CSV 第一版格式：
+
+```text
+speaker,roleId
+Narrator,0
+证人,8
+```
+
+未出现在映射表中的 speaker 会保留在 manifest 的 `roles` 列表中，但 `roleId` 为 `null`，等待后续绑定。
 
 ## 输出文件
 
@@ -67,11 +83,12 @@ anchor,node,kind,speaker,text,talkingId,talkingIndex,birdField,sourcePath,line,c
 - 选项映射为末尾 talking 的 `options`，每个选项包含原文、锚点、目标节点和目标 `talkingId`。
 - 节点入口使用该节点第一条 talking 的 `talkingId`。
 - 如果节点没有文本但有选项，会生成一个 `ChoiceHost` talking 用来承载选项。
+- `--bird-role-map` 会把对白 speaker 映射为 Bird `roleId`，并写入 `roles` 和对应 `talkings`。
 
 ## 当前限制
 
 - 尚未生成 Unity `.asset` 或 ScriptableObject；这一步留给 Unity Editor Importer。
-- `roleId` 暂为 `null`，只收集 speaker alias 到 `roles` 列表。
+- `roleId` 仅支持通过 CSV 手工绑定，尚不能从 Bird 资源自动扫描。
 - `textAnchorIndex` 暂固定为 `0`，`textDisplayType` 暂固定为 `Instant`。
 - 选择项文本目前进入 manifest 和锚点映射表，但不进入 `L10N_Talking.csv`，因为 Bird 当前 `TalkingOptionTM.optionText` 是结构字段，不是 `L10N.Talking_Get` 坐标。
 - 尚未合并多段文本到同一个 `talkingId + <pr>` 单元格。
@@ -80,8 +97,8 @@ anchor,node,kind,speaker,text,talkingId,talkingIndex,birdField,sourcePath,line,c
 
 ## 下一步
 
-- 设计角色名到 Bird `roleId` 的绑定表。
 - 设计 Timeline Hook 的语法和 manifest 字段。
 - 设计 Unity Editor Importer：读取 manifest，创建或更新 `TalkingSO`。
+- 设计资源别名到 Bird / Unity 资源引用的绑定表。
 - 决定选择项文本长期如何本地化：保留在 `TalkingOptionTM.optionText`，还是扩展 Bird L10N。
 - 评估是否把连续同配置文本合并为 `<pr>`，减少 `TalkingSO` 数量。

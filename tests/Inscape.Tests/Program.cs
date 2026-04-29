@@ -697,6 +697,7 @@ Narrator: Project start.
         static void CliExportBirdProjectEmitsManifestAndCsv() {
             string directory = Path.Combine(Path.GetTempPath(), "inscape-tests", Guid.NewGuid().ToString("N"));
             string outputDirectory = Path.Combine(directory, "bird-export");
+            string roleMapPath = Path.Combine(directory, "bird-roles.csv");
             Directory.CreateDirectory(directory);
 
             File.WriteAllText(Path.Combine(directory, "00-start.inscape"), """
@@ -710,6 +711,7 @@ Narrator: Hello, "Bird".
 :: second.node
 A quiet line.
 """, Encoding.UTF8);
+            File.WriteAllText(roleMapPath, "speaker,roleId\nNarrator,7\n", Encoding.UTF8);
 
             TextWriter originalOut = Console.Out;
             TextWriter originalError = Console.Error;
@@ -720,7 +722,7 @@ A quiet line.
             try {
                 Console.SetOut(output);
                 Console.SetError(error);
-                exitCode = CliProgram.Main(new[] { "export-bird-project", directory, "--bird-talking-start", "500", "-o", outputDirectory });
+                exitCode = CliProgram.Main(new[] { "export-bird-project", directory, "--bird-talking-start", "500", "--bird-role-map", roleMapPath, "-o", outputDirectory });
             } finally {
                 Console.SetOut(originalOut);
                 Console.SetError(originalError);
@@ -746,9 +748,13 @@ A quiet line.
                 AssertEqual(500, root.GetProperty("talkingIdStart").GetInt32(), "Bird talking start id");
                 AssertEqual(2, root.GetProperty("nodes").GetArrayLength(), "Bird node count");
                 AssertEqual(3, root.GetProperty("talkings").GetArrayLength(), "Bird talking count");
+                AssertEqual(1, root.GetProperty("roles").GetArrayLength(), "Bird role count");
+                AssertEqual("Narrator", root.GetProperty("roles")[0].GetProperty("speaker").GetString(), "Bird role speaker");
+                AssertEqual(7, root.GetProperty("roles")[0].GetProperty("roleId").GetInt32(), "Bird role id");
 
                 JsonElement firstTalking = root.GetProperty("talkings")[0];
                 AssertEqual(500, firstTalking.GetProperty("talkingId").GetInt32(), "First talking id");
+                AssertEqual(7, firstTalking.GetProperty("roleId").GetInt32(), "First talking role id");
                 AssertEqual(501, firstTalking.GetProperty("nextTalkingId").GetInt32(), "First talking next id");
 
                 JsonElement choiceTalking = root.GetProperty("talkings")[1];

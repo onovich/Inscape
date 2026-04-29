@@ -52,7 +52,7 @@ namespace Inscape.Core.Bird {
                         Kind = segment.Kind,
                         Anchor = segment.Anchor,
                         Speaker = segment.Speaker,
-                        RoleId = null,
+                        RoleId = ResolveRoleId(options, segment.Speaker),
                         TextAnchorIndex = 0,
                         TextDisplayType = "Instant",
                         TalkingIndex = 0,
@@ -95,7 +95,7 @@ namespace Inscape.Core.Bird {
             foreach (string speaker in speakers) {
                 manifest.Roles.Add(new BirdRoleBinding {
                     Speaker = speaker,
-                    RoleId = null,
+                    RoleId = ResolveRoleId(options, speaker),
                 });
             }
             manifest.Roles.Sort((left, right) => string.CompareOrdinal(left.Speaker, right.Speaker));
@@ -133,6 +133,17 @@ namespace Inscape.Core.Bird {
                 }
             }
             return false;
+        }
+
+        static int? ResolveRoleId(BirdExportOptions options, string speaker) {
+            if (string.IsNullOrWhiteSpace(speaker)) {
+                return null;
+            }
+
+            if (options.RoleIdsBySpeaker.TryGetValue(speaker, out int roleId)) {
+                return roleId;
+            }
+            return null;
         }
 
         static void LinkTalkings(InscapeDocument graph,

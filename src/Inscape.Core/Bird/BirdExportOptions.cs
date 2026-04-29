@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace Inscape.Core.Bird {
 
     public sealed class BirdExportOptions {
@@ -6,9 +8,12 @@ namespace Inscape.Core.Bird {
 
         public string[] Languages { get; set; }
 
+        public Dictionary<string, int> RoleIdsBySpeaker { get; set; }
+
         public BirdExportOptions() {
             TalkingIdStart = 100000;
             Languages = new[] { "ZH_CN", "EN_US", "ES_ES" };
+            RoleIdsBySpeaker = new Dictionary<string, int>();
         }
 
     }

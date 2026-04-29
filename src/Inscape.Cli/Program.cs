@@ -175,9 +175,9 @@ namespace Inscape.Cli {
                 }
 
                 BirdProjectExporter exporter = new BirdProjectExporter();
-                BirdExportOptions options = new BirdExportOptions {
-                    TalkingIdStart = ReadIntOption(args, "--bird-talking-start", 100000),
-                };
+                if (!TryReadBirdExportOptions(args, out BirdExportOptions options)) {
+                    return 1;
+                }
                 BirdExportResult export = exporter.Export(result, options);
                 WriteBirdExport(outputPath, export);
                 PrintDiagnostics(result.Diagnostics);
@@ -322,6 +322,57 @@ namespace Inscape.Cli {
             File.WriteAllText(Path.Combine(fullDirectory, "inscape-bird-l10n-map.csv"), export.AnchorMapCsv, Encoding.UTF8);
         }
 
+        static bool TryReadBirdExportOptions(string[] args, out BirdExportOptions options) {
+            options = new BirdExportOptions {
+                TalkingIdStart = ReadIntOption(args, "--bird-talking-start", 100000),
+            };
+
+            string? roleMapPath = ReadOption(args, "--bird-role-map");
+            if (string.IsNullOrWhiteSpace(roleMapPath)) {
+                return true;
+            }
+
+            if (!File.Exists(roleMapPath)) {
+                Console.Error.WriteLine("Bird role map not found: " + roleMapPath);
+                return false;
+            }
+
+            string[] lines = File.ReadAllLines(roleMapPath, Encoding.UTF8);
+            for (int i = 0; i < lines.Length; i += 1) {
+                string line = lines[i].Trim();
+                if (line.Length == 0 || line.StartsWith("#", StringComparison.Ordinal)) {
+                    continue;
+                }
+                if (i == 0 && line.Equals("speaker,roleId", StringComparison.OrdinalIgnoreCase)) {
+                    continue;
+                }
+
+                int commaIndex = line.LastIndexOf(',');
+                if (commaIndex <= 0 || commaIndex == line.Length - 1) {
+                    Console.Error.WriteLine("Invalid Bird role map row at line " + (i + 1) + ": " + lines[i]);
+                    return false;
+                }
+
+                string speaker = UnquoteCsvField(line.Substring(0, commaIndex).Trim());
+                string roleIdText = UnquoteCsvField(line.Substring(commaIndex + 1).Trim());
+                if (speaker.Length == 0 || !int.TryParse(roleIdText, out int roleId)) {
+                    Console.Error.WriteLine("Invalid Bird role map row at line " + (i + 1) + ": " + lines[i]);
+                    return false;
+                }
+
+                options.RoleIdsBySpeaker[speaker] = roleId;
+            }
+
+            return true;
+        }
+
+        static string UnquoteCsvField(string value) {
+            if (value.Length >= 2 && value[0] == '"' && value[value.Length - 1] == '"') {
+                return value.Substring(1, value.Length - 2).Replace("\"\"", "\"");
+            }
+            return value;
+        }
+
         static string? ReadOption(string[] args, string optionName) {
             for (int i = 0; i < args.Length - 1; i += 1) {
                 if (args[i] == optionName) {
@@ -358,7 +409,7 @@ namespace Inscape.Cli {
             Console.WriteLine("  inscape diagnose-project <root> [--entry node.name] [--override source.inscape temp.inscape] [-o diagnostics.json]");
             Console.WriteLine("  inscape extract-l10n-project <root> [--entry node.name] [--override source.inscape temp.inscape] [-o strings.csv]");
             Console.WriteLine("  inscape update-l10n-project <root> --from old.csv [--entry node.name] [--override source.inscape temp.inscape] [-o strings.csv]");
-            Console.WriteLine("  inscape export-bird-project <root> [--entry node.name] [--bird-talking-start 100000] -o output-dir");
+            Console.WriteLine("  inscape export-bird-project <root> [--entry node.name] [--bird-talking-start 100000] [--bird-role-map roles.csv] -o output-dir");
             Console.WriteLine("  inscape compile-project <root> [--entry node.name] [-o output.json]");
             Console.WriteLine("  inscape preview-project <root> [--entry node.name] [-o preview.html]");
             Console.WriteLine("  inscape compile <file.inscape> [-o output.json]");
