@@ -132,6 +132,13 @@ node -e "JSON.parse(require('fs').readFileSync('tools/vscode-inscape/package.jso
 
 CLI 样例：
 
+完整清单见 [CLI 命令速查](cli-command-reference.md)。终端内可用：
+
+```powershell
+dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- commands
+dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- help export-bird-project
+```
+
 ```powershell
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- check-project samples
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- preview-project samples -o artifacts\samples-project.html

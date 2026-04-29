@@ -44,6 +44,7 @@
 - [语法样例对比](docs/syntax-comparison.md)
 - [DSL 语言设计草案](docs/dsl-language.md)
 - [VSCode 轻工具链](docs/vscode-tooling.md)
+- [CLI 命令速查](docs/cli-command-reference.md)
 - [编辑器设计草案](docs/editor-design.md)
 - [运行时与 Unity 宿主](docs/runtime-unity.md)
 - [Bird / Unity 调研记录](docs/bird-unity-research.md)
@@ -59,6 +60,13 @@
 ## 开发入口
 
 当前第一版代码提供 DSL 解析、图 IR 输出、诊断、CLI 和轻量 HTML 预览。
+
+完整命令清单见 [CLI 命令速查](docs/cli-command-reference.md)。终端内可用 `commands` 和 `help <command>` 快速查看：
+
+```powershell
+dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- commands
+dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- help export-bird-project
+```
 
 ```powershell
 dotnet restore src\Inscape.Cli\Inscape.Cli.csproj --configfile NuGet.Config

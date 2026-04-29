@@ -21,6 +21,8 @@ namespace Inscape.Tests {
                 ("hash distinguishes duplicate text", HashDistinguishesDuplicateText),
                 ("anchor validator detects collisions", AnchorValidatorDetectsCollisions),
                 ("cli diagnose emits json", CliDiagnoseEmitsJson),
+                ("cli commands lists command reference", CliCommandsListsCommandReference),
+                ("cli help emits command details", CliHelpEmitsCommandDetails),
                 ("project compiler resolves cross-file targets", ProjectCompilerResolvesCrossFileTargets),
                 ("project compiler diagnoses duplicate nodes", ProjectCompilerDiagnosesDuplicateNodes),
                 ("cli diagnose-project applies override", CliDiagnoseProjectAppliesOverride),
@@ -252,6 +254,54 @@ namespace Inscape.Tests {
             AssertEqual("inscape.graph-ir", root.GetProperty("format").GetString(), "Diagnose format");
             AssertTrue(root.GetProperty("hasErrors").GetBoolean(), "Diagnose output should preserve script errors.");
             AssertTrue(root.GetProperty("diagnostics").GetArrayLength() > 0, "Diagnose output should contain diagnostics.");
+        }
+
+        static void CliCommandsListsCommandReference() {
+            TextWriter originalOut = Console.Out;
+            TextWriter originalError = Console.Error;
+            StringWriter output = new StringWriter();
+            StringWriter error = new StringWriter();
+
+            int exitCode;
+            try {
+                Console.SetOut(output);
+                Console.SetError(error);
+                exitCode = CliProgram.Main(new[] { "commands" });
+            } finally {
+                Console.SetOut(originalOut);
+                Console.SetError(originalError);
+            }
+
+            string text = output.ToString();
+            AssertEqual(0, exitCode, "Commands command exit code");
+            AssertEqual("", error.ToString().Trim(), "Commands command stderr");
+            AssertTrue(text.Contains("Single-file:"), "Commands should list single-file group.");
+            AssertTrue(text.Contains("export-bird-role-template"), "Commands should list Bird role template command.");
+            AssertTrue(text.Contains("Run `inscape help <command>`"), "Commands should explain command help.");
+        }
+
+        static void CliHelpEmitsCommandDetails() {
+            TextWriter originalOut = Console.Out;
+            TextWriter originalError = Console.Error;
+            StringWriter output = new StringWriter();
+            StringWriter error = new StringWriter();
+
+            int exitCode;
+            try {
+                Console.SetOut(output);
+                Console.SetError(error);
+                exitCode = CliProgram.Main(new[] { "help", "export-bird-project" });
+            } finally {
+                Console.SetOut(originalOut);
+                Console.SetError(originalError);
+            }
+
+            string text = output.ToString();
+            AssertEqual(0, exitCode, "Help command exit code");
+            AssertEqual("", error.ToString().Trim(), "Help command stderr");
+            AssertTrue(text.Contains("export-bird-project"), "Help should include command name.");
+            AssertTrue(text.Contains("--bird-role-map"), "Help should include Bird role map option.");
+            AssertTrue(text.Contains("bird-manifest.json"), "Help should include output file names.");
         }
 
         static void ProjectCompilerResolvesCrossFileTargets() {

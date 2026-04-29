@@ -14,9 +14,27 @@ namespace Inscape.Cli {
         static readonly JsonSerializerOptions JsonOptions = CreateJsonOptions();
 
         public static int Main(string[] args) {
-            if (args.Length < 2 || IsHelp(args[0])) {
+            if (args.Length == 0) {
                 PrintUsage();
-                return args.Length == 0 ? 1 : 0;
+                return 1;
+            }
+
+            if (IsHelp(args[0])) {
+                if (args.Length >= 2 && !IsHelp(args[1])) {
+                    return PrintCommandHelp(args[1]) ? 0 : 1;
+                }
+                PrintUsage();
+                return 0;
+            }
+
+            if (args[0] == "commands") {
+                PrintCommandList();
+                return 0;
+            }
+
+            if (args.Length < 2) {
+                PrintUsage();
+                return 1;
             }
 
             string command = args[0];
@@ -676,6 +694,8 @@ namespace Inscape.Cli {
             Console.WriteLine("Inscape CLI");
             Console.WriteLine();
             Console.WriteLine("Usage:");
+            Console.WriteLine("  inscape commands");
+            Console.WriteLine("  inscape help <command>");
             Console.WriteLine("  inscape check <file.inscape>");
             Console.WriteLine("  inscape diagnose <file.inscape> [-o diagnostics.json]");
             Console.WriteLine("  inscape extract-l10n <file.inscape> [-o strings.csv]");
@@ -691,6 +711,151 @@ namespace Inscape.Cli {
             Console.WriteLine("  inscape preview-project <root> [--entry node.name] [-o preview.html]");
             Console.WriteLine("  inscape compile <file.inscape> [-o output.json]");
             Console.WriteLine("  inscape preview <file.inscape> [-o preview.html]");
+        }
+
+        static void PrintCommandList() {
+            Console.WriteLine("Inscape CLI commands");
+            Console.WriteLine();
+            Console.WriteLine("Single-file:");
+            Console.WriteLine("  check");
+            Console.WriteLine("  diagnose");
+            Console.WriteLine("  compile");
+            Console.WriteLine("  preview");
+            Console.WriteLine("  extract-l10n");
+            Console.WriteLine("  update-l10n");
+            Console.WriteLine();
+            Console.WriteLine("Project:");
+            Console.WriteLine("  check-project");
+            Console.WriteLine("  diagnose-project");
+            Console.WriteLine("  compile-project");
+            Console.WriteLine("  preview-project");
+            Console.WriteLine("  extract-l10n-project");
+            Console.WriteLine("  update-l10n-project");
+            Console.WriteLine();
+            Console.WriteLine("Bird:");
+            Console.WriteLine("  export-bird-role-template");
+            Console.WriteLine("  export-bird-binding-template");
+            Console.WriteLine("  export-bird-project");
+            Console.WriteLine();
+            Console.WriteLine("Run `inscape help <command>` for details.");
+        }
+
+        static bool PrintCommandHelp(string command) {
+            switch (command) {
+                case "check":
+                    PrintCommandHelpBlock("check",
+                                          "Validate one .inscape file and print diagnostics.",
+                                          "inscape check <file.inscape>",
+                                          "dotnet run --project src\\Inscape.Cli\\Inscape.Cli.csproj -- check samples\\court-loop.inscape");
+                    return true;
+                case "diagnose":
+                    PrintCommandHelpBlock("diagnose",
+                                          "Compile one .inscape file and write graph IR plus diagnostics as JSON.",
+                                          "inscape diagnose <file.inscape> [-o diagnostics.json]",
+                                          "dotnet run --project src\\Inscape.Cli\\Inscape.Cli.csproj -- diagnose samples\\court-loop.inscape -o artifacts\\court-loop.diagnostics.json");
+                    return true;
+                case "compile":
+                    PrintCommandHelpBlock("compile",
+                                          "Compile one .inscape file and write graph IR as JSON.",
+                                          "inscape compile <file.inscape> [-o output.json]",
+                                          "dotnet run --project src\\Inscape.Cli\\Inscape.Cli.csproj -- compile samples\\court-loop.inscape -o artifacts\\court-loop.json");
+                    return true;
+                case "preview":
+                    PrintCommandHelpBlock("preview",
+                                          "Render one .inscape file to a static HTML debug preview.",
+                                          "inscape preview <file.inscape> [-o preview.html]",
+                                          "dotnet run --project src\\Inscape.Cli\\Inscape.Cli.csproj -- preview samples\\court-loop.inscape -o artifacts\\court-loop.html");
+                    return true;
+                case "extract-l10n":
+                    PrintCommandHelpBlock("extract-l10n",
+                                          "Extract localizable text from one .inscape file to CSV.",
+                                          "inscape extract-l10n <file.inscape> [-o strings.csv]",
+                                          "dotnet run --project src\\Inscape.Cli\\Inscape.Cli.csproj -- extract-l10n samples\\court-loop.inscape -o artifacts\\court-loop.l10n.csv");
+                    return true;
+                case "update-l10n":
+                    PrintCommandHelpBlock("update-l10n",
+                                          "Update a one-file localization CSV from a previous CSV by exact anchor match.",
+                                          "inscape update-l10n <file.inscape> --from old.csv [-o strings.csv]",
+                                          "dotnet run --project src\\Inscape.Cli\\Inscape.Cli.csproj -- update-l10n samples\\court-loop.inscape --from artifacts\\old-l10n.csv -o artifacts\\court-loop.l10n.csv");
+                    return true;
+                case "check-project":
+                    PrintCommandHelpBlock("check-project",
+                                          "Validate all .inscape files under a project root.",
+                                          "inscape check-project <root> [--entry node.name]",
+                                          "dotnet run --project src\\Inscape.Cli\\Inscape.Cli.csproj -- check-project samples");
+                    return true;
+                case "diagnose-project":
+                    PrintCommandHelpBlock("diagnose-project",
+                                          "Compile a project and write project IR plus diagnostics as JSON.",
+                                          "inscape diagnose-project <root> [--entry node.name] [--override source.inscape temp.inscape] [-o diagnostics.json]",
+                                          "dotnet run --project src\\Inscape.Cli\\Inscape.Cli.csproj -- diagnose-project samples -o artifacts\\samples.diagnostics.json");
+                    return true;
+                case "compile-project":
+                    PrintCommandHelpBlock("compile-project",
+                                          "Compile a project and write project IR as JSON.",
+                                          "inscape compile-project <root> [--entry node.name] [-o output.json]",
+                                          "dotnet run --project src\\Inscape.Cli\\Inscape.Cli.csproj -- compile-project samples -o artifacts\\samples-project.json");
+                    return true;
+                case "preview-project":
+                    PrintCommandHelpBlock("preview-project",
+                                          "Render a project to a static HTML debug preview.",
+                                          "inscape preview-project <root> [--entry node.name] [-o preview.html]",
+                                          "dotnet run --project src\\Inscape.Cli\\Inscape.Cli.csproj -- preview-project samples --entry court.cross_exam.loop -o artifacts\\samples-project.html");
+                    return true;
+                case "extract-l10n-project":
+                    PrintCommandHelpBlock("extract-l10n-project",
+                                          "Extract project localizable text to CSV.",
+                                          "inscape extract-l10n-project <root> [--entry node.name] [--override source.inscape temp.inscape] [-o strings.csv]",
+                                          "dotnet run --project src\\Inscape.Cli\\Inscape.Cli.csproj -- extract-l10n-project samples -o artifacts\\l10n.csv");
+                    return true;
+                case "update-l10n-project":
+                    PrintCommandHelpBlock("update-l10n-project",
+                                          "Update a project localization CSV from a previous CSV by exact anchor match.",
+                                          "inscape update-l10n-project <root> --from old.csv [--entry node.name] [--override source.inscape temp.inscape] [-o strings.csv]",
+                                          "dotnet run --project src\\Inscape.Cli\\Inscape.Cli.csproj -- update-l10n-project samples --from artifacts\\old-l10n.csv -o artifacts\\l10n.updated.csv");
+                    return true;
+                case "export-bird-role-template":
+                    PrintCommandHelpBlock("export-bird-role-template",
+                                          "Scan project dialogue speakers and write a Bird role binding template.",
+                                          "inscape export-bird-role-template <root> [--entry node.name] [--override source.inscape temp.inscape] [-o roles.csv]",
+                                          "dotnet run --project src\\Inscape.Cli\\Inscape.Cli.csproj -- export-bird-role-template samples -o config\\bird-roles.csv",
+                                          "Output CSV: speaker,roleId");
+                    return true;
+                case "export-bird-binding-template":
+                    PrintCommandHelpBlock("export-bird-binding-template",
+                                          "Scan Timeline hooks and write a Bird host binding template.",
+                                          "inscape export-bird-binding-template <root> [--entry node.name] [--override source.inscape temp.inscape] [--bird-existing-timeline-root path] [-o bindings.csv]",
+                                          "dotnet run --project src\\Inscape.Cli\\Inscape.Cli.csproj -- export-bird-binding-template samples --bird-existing-timeline-root D:\\UnityProjects\\Bird\\Assets\\Resources_Runtime\\Timeline -o config\\bird-bindings.csv",
+                                          "Output CSV: kind,alias,birdId,unityGuid,addressableKey,assetPath");
+                    return true;
+                case "export-bird-project":
+                    PrintCommandHelpBlock("export-bird-project",
+                                          "Export project IR to Bird manifest, Bird L10N CSV, anchor map, and report.",
+                                          "inscape export-bird-project <root> [--entry node.name] [--bird-talking-start 100000] [--bird-role-map roles.csv] [--bird-binding-map bindings.csv] [--bird-existing-talking-root path] -o output-dir",
+                                          "dotnet run --project src\\Inscape.Cli\\Inscape.Cli.csproj -- export-bird-project samples --bird-role-map config\\bird-roles.csv --bird-binding-map config\\bird-bindings.csv -o artifacts\\bird-export",
+                                          "Output files: bird-manifest.json, L10N_Talking.csv, inscape-bird-l10n-map.csv, bird-export-report.txt");
+                    return true;
+                default:
+                    Console.Error.WriteLine("Unknown command: " + command);
+                    Console.Error.WriteLine("Run `inscape commands` to list available commands.");
+                    return false;
+            }
+        }
+
+        static void PrintCommandHelpBlock(string command, string description, string usage, string example, string? note = null) {
+            Console.WriteLine(command);
+            Console.WriteLine();
+            Console.WriteLine(description);
+            Console.WriteLine();
+            Console.WriteLine("Usage:");
+            Console.WriteLine("  " + usage);
+            Console.WriteLine();
+            Console.WriteLine("Example:");
+            Console.WriteLine("  " + example);
+            if (!string.IsNullOrWhiteSpace(note)) {
+                Console.WriteLine();
+                Console.WriteLine(note);
+            }
         }
 
         static JsonSerializerOptions CreateJsonOptions() {

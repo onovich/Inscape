@@ -19,6 +19,7 @@
 - [x] 建立 Agent 接手指南，记录当前快照、检索地图、工作方法和验证命令。
 - [x] 建立根目录 `AGENTS.md`，为未来 agent 提供最短入口。
 - [x] 沉淀 DSL 生态定位对比，明确 Yarn / Ink / Ren'Py / Arcweave / articy 等方案的分层参照关系。
+- [x] 建立 CLI 命令速查清单，并让 CLI 支持 `commands` / `help <command>` 终端查询。
 - [ ] 每次完成阶段性提交后，同步更新 [Agent 接手指南](agent-handoff.md) 的当前快照。
 
 ## 阶段 1：DSL 与轻工具链
