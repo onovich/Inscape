@@ -46,6 +46,7 @@ Inscape 的默认阅读优先级应当是：
 - 在 `->` 跳转目标上支持 Go to Definition / Ctrl+Click。
 - 在对白 speaker 上支持 Go to Definition / Ctrl+Click 到 `bird.roleMap` 中对应的 `speaker` 行。
 - 在节点声明、`->` 跳转目标或对白 speaker 上支持 Find All References。
+- 在节点标题上显示 CodeLens：`入边 N` 用于追溯跳到当前 block 的调用方，`出边 N` 用于查看当前 block 跳向的被调用方。
 - 在节点声明或 `->` 跳转目标上显示 Hover 摘要：定义位置、引用数量和出边目标。
 - 在对白 speaker 上显示 Hover 摘要：角色名、Bird `roleId` 绑定状态和来源表。
 - 在宿主绑定别名上显示 Hover 摘要：`kind:alias`、Bird id、Addressable、Unity guid、Asset path 和来源表。
@@ -88,6 +89,16 @@ speaker,roleId
 对白 speaker 也支持导航：Ctrl+Click 会跳到配置的 `bird.roleMap` 中对应 `speaker` 行；Find All References 会返回工作区内该 speaker 的全部对白行，并在 VSCode 请求 declaration 时包含角色表行。如果未配置角色表，引用查找仍可基于工作区对白扫描运行，但定义跳转不会返回结果。
 
 这项能力只是写作提示，不改变编译结果。真正的 Bird 导出仍由 CLI 的 `export-bird-project` 读取同一份 `roleMap` 完成。
+
+## Block 双向导航
+
+Inscape 的 block 之间是图关系，不应只能顺着 `-> target` 单向跳转。VSCode 原型因此提供两层导航：
+
+- `-> target` 上 Ctrl+Click：跳到被调用方，也就是目标 block。
+- block 标题上 CodeLens `入边 N`：查看所有跳到当前 block 的调用方。
+- block 标题上 CodeLens `出边 N`：列出当前 block 跳向的目标，并可直接打开目标 block。
+
+这对应编程体验中的“Go to Definition / Find References”，但在领域语言里显示为入边和出边。当前实现仍是轻量行扫描，后续 Language Server 应复用 Core 的项目 IR 来提供更稳定的图导航。
 
 ## 宿主绑定提示
 

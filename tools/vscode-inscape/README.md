@@ -14,6 +14,7 @@ This is the first lightweight authoring layer for `.inscape` scripts. It keeps s
 - Provides host binding alias completions from `inscape.config.json` `bird.bindingMap` for `@timeline ...` and `[kind: ...]` inline tag positions.
 - Supports Go to Definition / Ctrl+Click from jump targets to node declarations, and from dialogue speakers to configured role-map rows.
 - Supports Find All References from node declarations, jump targets, and dialogue speakers.
+- Shows node CodeLens entries for incoming and outgoing graph edges. Incoming edges open callers; outgoing edges jump to callees.
 - Shows hover summaries for node declarations, jump targets, dialogue speakers, and host binding aliases.
 - Provides an outline view backed by visible node headers.
 - Exposes command palette actions for localization:
