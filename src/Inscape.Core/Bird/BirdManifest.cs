@@ -20,6 +20,8 @@ namespace Inscape.Core.Bird {
 
         public List<BirdRoleBinding> Roles { get; set; }
 
+        public List<BirdHostBinding> HostBindings { get; set; }
+
         public List<BirdNodeEntry> Nodes { get; set; }
 
         public List<BirdTalkingEntry> Talkings { get; set; }
@@ -35,6 +37,7 @@ namespace Inscape.Core.Bird {
             TalkingIdStart = 100000;
             Languages = new List<string>();
             Roles = new List<BirdRoleBinding>();
+            HostBindings = new List<BirdHostBinding>();
             Nodes = new List<BirdNodeEntry>();
             Talkings = new List<BirdTalkingEntry>();
             Localization = new List<BirdLocalizationMapping>();

@@ -328,10 +328,23 @@ namespace Inscape.Cli {
             };
 
             string? roleMapPath = ReadOption(args, "--bird-role-map");
-            if (string.IsNullOrWhiteSpace(roleMapPath)) {
-                return TryReadReservedTalkingIds(args, options);
+            if (!string.IsNullOrWhiteSpace(roleMapPath)) {
+                if (!TryReadBirdRoleMap(roleMapPath, options)) {
+                    return false;
+                }
             }
 
+            string? bindingMapPath = ReadOption(args, "--bird-binding-map");
+            if (!string.IsNullOrWhiteSpace(bindingMapPath)) {
+                if (!TryReadBirdBindingMap(bindingMapPath, options)) {
+                    return false;
+                }
+            }
+
+            return TryReadReservedTalkingIds(args, options);
+        }
+
+        static bool TryReadBirdRoleMap(string roleMapPath, BirdExportOptions options) {
             if (!File.Exists(roleMapPath)) {
                 Console.Error.WriteLine("Bird role map not found: " + roleMapPath);
                 return false;
@@ -363,7 +376,108 @@ namespace Inscape.Cli {
                 options.RoleIdsBySpeaker[speaker] = roleId;
             }
 
-            return TryReadReservedTalkingIds(args, options);
+            return true;
+        }
+
+        static bool TryReadBirdBindingMap(string bindingMapPath, BirdExportOptions options) {
+            if (!File.Exists(bindingMapPath)) {
+                Console.Error.WriteLine("Bird binding map not found: " + bindingMapPath);
+                return false;
+            }
+
+            string[] lines = File.ReadAllLines(bindingMapPath, Encoding.UTF8);
+            for (int i = 0; i < lines.Length; i += 1) {
+                string line = lines[i].Trim();
+                if (line.Length == 0 || line.StartsWith("#", StringComparison.Ordinal)) {
+                    continue;
+                }
+
+                List<string> fields = ParseCsvRow(lines[i]);
+                if (IsBirdBindingHeader(fields)) {
+                    continue;
+                }
+
+                if (fields.Count != 6) {
+                    Console.Error.WriteLine("Invalid Bird binding map row at line " + (i + 1) + ": " + lines[i]);
+                    return false;
+                }
+
+                string kind = fields[0].Trim();
+                string alias = fields[1].Trim();
+                string birdIdText = fields[2].Trim();
+                string unityGuid = fields[3].Trim();
+                string addressableKey = fields[4].Trim();
+                string assetPath = fields[5].Trim();
+
+                if (kind.Length == 0 || alias.Length == 0) {
+                    Console.Error.WriteLine("Invalid Bird binding map row at line " + (i + 1) + ": kind and alias are required.");
+                    return false;
+                }
+
+                int? birdId = null;
+                if (birdIdText.Length > 0) {
+                    if (!int.TryParse(birdIdText, out int parsedBirdId)) {
+                        Console.Error.WriteLine("Invalid Bird binding map row at line " + (i + 1) + ": birdId must be an integer.");
+                        return false;
+                    }
+                    birdId = parsedBirdId;
+                }
+
+                if (birdId == null
+                    && unityGuid.Length == 0
+                    && addressableKey.Length == 0
+                    && assetPath.Length == 0) {
+                    Console.Error.WriteLine("Invalid Bird binding map row at line " + (i + 1) + ": at least one binding target is required.");
+                    return false;
+                }
+
+                options.HostBindings.Add(new BirdHostBinding {
+                    Kind = kind,
+                    Alias = alias,
+                    BirdId = birdId,
+                    UnityGuid = unityGuid,
+                    AddressableKey = addressableKey,
+                    AssetPath = assetPath,
+                });
+            }
+
+            return true;
+        }
+
+        static bool IsBirdBindingHeader(List<string> fields) {
+            return fields.Count == 6
+                && fields[0].Equals("kind", StringComparison.OrdinalIgnoreCase)
+                && fields[1].Equals("alias", StringComparison.OrdinalIgnoreCase)
+                && fields[2].Equals("birdId", StringComparison.OrdinalIgnoreCase)
+                && fields[3].Equals("unityGuid", StringComparison.OrdinalIgnoreCase)
+                && fields[4].Equals("addressableKey", StringComparison.OrdinalIgnoreCase)
+                && fields[5].Equals("assetPath", StringComparison.OrdinalIgnoreCase);
+        }
+
+        static List<string> ParseCsvRow(string line) {
+            List<string> fields = new List<string>();
+            StringBuilder field = new StringBuilder();
+            bool inQuotes = false;
+
+            for (int i = 0; i < line.Length; i += 1) {
+                char c = line[i];
+                if (c == '"') {
+                    if (inQuotes && i + 1 < line.Length && line[i + 1] == '"') {
+                        field.Append('"');
+                        i += 1;
+                    } else {
+                        inQuotes = !inQuotes;
+                    }
+                } else if (c == ',' && !inQuotes) {
+                    fields.Add(field.ToString());
+                    field.Clear();
+                } else {
+                    field.Append(c);
+                }
+            }
+
+            fields.Add(field.ToString());
+            return fields;
         }
 
         static string UnquoteCsvField(string value) {
@@ -439,7 +553,7 @@ namespace Inscape.Cli {
             Console.WriteLine("  inscape diagnose-project <root> [--entry node.name] [--override source.inscape temp.inscape] [-o diagnostics.json]");
             Console.WriteLine("  inscape extract-l10n-project <root> [--entry node.name] [--override source.inscape temp.inscape] [-o strings.csv]");
             Console.WriteLine("  inscape update-l10n-project <root> --from old.csv [--entry node.name] [--override source.inscape temp.inscape] [-o strings.csv]");
-            Console.WriteLine("  inscape export-bird-project <root> [--entry node.name] [--bird-talking-start 100000] [--bird-role-map roles.csv] [--bird-existing-talking-root path] -o output-dir");
+            Console.WriteLine("  inscape export-bird-project <root> [--entry node.name] [--bird-talking-start 100000] [--bird-role-map roles.csv] [--bird-binding-map bindings.csv] [--bird-existing-talking-root path] -o output-dir");
             Console.WriteLine("  inscape compile-project <root> [--entry node.name] [-o output.json]");
             Console.WriteLine("  inscape preview-project <root> [--entry node.name] [-o preview.html]");
             Console.WriteLine("  inscape compile <file.inscape> [-o output.json]");

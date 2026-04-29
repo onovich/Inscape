@@ -26,6 +26,7 @@ namespace Inscape.Core.Bird {
             manifest.EntryNodeName = project.EntryNodeName;
             manifest.TalkingIdStart = options.TalkingIdStart;
             manifest.Languages.AddRange(options.Languages);
+            manifest.HostBindings.AddRange(options.HostBindings);
 
             Dictionary<string, BirdNodeEntry> nodesByName = new Dictionary<string, BirdNodeEntry>(StringComparer.Ordinal);
             Dictionary<string, int> entryTalkingIdsByNodeName = new Dictionary<string, int>(StringComparer.Ordinal);

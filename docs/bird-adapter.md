@@ -30,6 +30,12 @@ dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-project s
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-project samples --bird-existing-talking-root D:\UnityProjects\Bird\Assets\Resources_Runtime\Talking -o artifacts\bird-export
 ```
 
+可选提供宿主绑定表，把 Inscape 使用的资源别名 / Timeline 名称映射到 Bird 整数 ID 与 Unity 资源引用：
+
+```powershell
+dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-project samples --bird-binding-map config\bird-bindings.csv -o artifacts\bird-export
+```
+
 项目级入口仍可用 `--entry node.name` 临时覆盖。
 
 角色映射 CSV 第一版格式：
@@ -41,6 +47,26 @@ Narrator,0
 ```
 
 未出现在映射表中的 speaker 会保留在 manifest 的 `roles` 列表中，但 `roleId` 为 `null`，等待后续绑定。
+
+宿主绑定 CSV 第一版格式：
+
+```text
+kind,alias,birdId,unityGuid,addressableKey,assetPath
+timeline,court.opening,101,aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa,,Assets/Resources_Runtime/Timeline/SO_Timeline_Ch1_01.asset
+background,bg.court,,bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb,BG/Court,Assets/Art/Court.png
+portrait,naruhodo.normal,,cccccccccccccccccccccccccccccccc,Portrait/Naruhodo/Normal,Assets/Art/Portraits/Naruhodo_Normal.png
+```
+
+字段说明：
+
+- `kind`：绑定类型。当前不做枚举锁死，建议使用 `timeline`、`background`、`portrait`、`item`、`audio` 等小写类型。
+- `alias`：Inscape 侧稳定别名，后续 Timeline hook 或资源 hook 会引用它。
+- `birdId`：Bird 侧整数 ID。对 `timeline` 来说对应 `TimelineTM.timelineId`；对其他资源类型可按 Bird 现有模板含义填写。
+- `unityGuid`：Unity `.meta` guid，用于未来 Importer 定位 ScriptableObject 或资源。
+- `addressableKey`：Addressables key，适合运行时按 key 加载的资源。
+- `assetPath`：Unity 工程内路径，主要用于导入器、人类审查和迁移。
+
+绑定表至少需要 `kind`、`alias`，并且 `birdId`、`unityGuid`、`addressableKey`、`assetPath` 至少填写一项。该表只进入 manifest，不让 Core 依赖 Unity 类型。
 
 ## 输出文件
 
@@ -60,6 +86,7 @@ inscape-bird-l10n-map.csv
 - `talkingIdStart`
 - `languages`
 - `roles`
+- `hostBindings`
 - `nodes`
 - `talkings`
 - `localization`
@@ -90,6 +117,7 @@ anchor,node,kind,speaker,text,talkingId,talkingIndex,birdField,sourcePath,line,c
 - 节点入口使用该节点第一条 talking 的 `talkingId`。
 - 如果节点没有文本但有选项，会生成一个 `ChoiceHost` talking 用来承载选项。
 - `--bird-role-map` 会把对白 speaker 映射为 Bird `roleId`，并写入 `roles` 和对应 `talkings`。
+- `--bird-binding-map` 会把资源别名、Timeline 名称和 Unity 资源坐标写入 manifest 的 `hostBindings`，供后续 Unity Editor Importer 和 Timeline hook 使用。
 - `--bird-existing-talking-root` 会递归扫描 `.asset` 文件中的 `talkingId:`，顺序分配新 ID 时自动跳过已占用值。
 
 ## 当前限制
@@ -99,13 +127,12 @@ anchor,node,kind,speaker,text,talkingId,talkingIndex,birdField,sourcePath,line,c
 - `textAnchorIndex` 暂固定为 `0`，`textDisplayType` 暂固定为 `Instant`。
 - 选择项文本目前进入 manifest 和锚点映射表，但不进入 `L10N_Talking.csv`，因为 Bird 当前 `TalkingOptionTM.optionText` 是结构字段，不是 `L10N.Talking_Get` 坐标。
 - 尚未合并多段文本到同一个 `talkingId + <pr>` 单元格。
-- 尚未设计角色、资源、Timeline 的项目配置或宿主 Schema。
+- 角色、资源、Timeline 目前仅有 CSV 绑定表，还没有项目配置文件或正式宿主 Schema。
 - `talkingId` 只支持给定起点后顺序分配；可以扫描现有 Talking 资源避让冲突，但还没有全项目 ID 范围配置。
 
 ## 下一步
 
-- 设计 Timeline Hook 的语法和 manifest 字段。
+- 设计 Timeline Hook 的语法和 manifest 字段，让 hook 引用 `hostBindings.alias`，而不是直接写 Unity 对象。
 - 设计 Unity Editor Importer：读取 manifest，创建或更新 `TalkingSO`。
-- 设计资源别名到 Bird / Unity 资源引用的绑定表。
 - 决定选择项文本长期如何本地化：保留在 `TalkingOptionTM.optionText`，还是扩展 Bird L10N。
 - 评估是否把连续同配置文本合并为 `<pr>`，减少 `TalkingSO` 数量。

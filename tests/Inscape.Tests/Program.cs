@@ -698,6 +698,7 @@ Narrator: Project start.
             string directory = Path.Combine(Path.GetTempPath(), "inscape-tests", Guid.NewGuid().ToString("N"));
             string outputDirectory = Path.Combine(directory, "bird-export");
             string roleMapPath = Path.Combine(directory, "bird-roles.csv");
+            string bindingMapPath = Path.Combine(directory, "bird-bindings.csv");
             string existingTalkingDirectory = Path.Combine(directory, "existing-talking");
             Directory.CreateDirectory(directory);
             Directory.CreateDirectory(existingTalkingDirectory);
@@ -714,6 +715,11 @@ Narrator: Hello, "Bird".
 A quiet line.
 """, Encoding.UTF8);
             File.WriteAllText(roleMapPath, "speaker,roleId\nNarrator,7\n", Encoding.UTF8);
+            File.WriteAllText(bindingMapPath,
+                              "kind,alias,birdId,unityGuid,addressableKey,assetPath\n"
+                              + "timeline,court.opening,101,aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa,,Assets/Resources_Runtime/Timeline/SO_Timeline_Ch1_01.asset\n"
+                              + "background,bg.court,,bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb,BG/Court,\"Assets/Art/Court, Main.png\"\n",
+                              Encoding.UTF8);
             File.WriteAllText(Path.Combine(existingTalkingDirectory, "SO_Talking_Existing.asset"), """
 %YAML 1.1
 MonoBehaviour:
@@ -730,7 +736,7 @@ MonoBehaviour:
             try {
                 Console.SetOut(output);
                 Console.SetError(error);
-                exitCode = CliProgram.Main(new[] { "export-bird-project", directory, "--bird-talking-start", "500", "--bird-role-map", roleMapPath, "--bird-existing-talking-root", existingTalkingDirectory, "-o", outputDirectory });
+                exitCode = CliProgram.Main(new[] { "export-bird-project", directory, "--bird-talking-start", "500", "--bird-role-map", roleMapPath, "--bird-binding-map", bindingMapPath, "--bird-existing-talking-root", existingTalkingDirectory, "-o", outputDirectory });
             } finally {
                 Console.SetOut(originalOut);
                 Console.SetError(originalError);
@@ -759,6 +765,15 @@ MonoBehaviour:
                 AssertEqual(1, root.GetProperty("roles").GetArrayLength(), "Bird role count");
                 AssertEqual("Narrator", root.GetProperty("roles")[0].GetProperty("speaker").GetString(), "Bird role speaker");
                 AssertEqual(7, root.GetProperty("roles")[0].GetProperty("roleId").GetInt32(), "Bird role id");
+                AssertEqual(2, root.GetProperty("hostBindings").GetArrayLength(), "Bird host binding count");
+                JsonElement timelineBinding = root.GetProperty("hostBindings")[0];
+                AssertEqual("timeline", timelineBinding.GetProperty("kind").GetString(), "Bird timeline binding kind");
+                AssertEqual("court.opening", timelineBinding.GetProperty("alias").GetString(), "Bird timeline binding alias");
+                AssertEqual(101, timelineBinding.GetProperty("birdId").GetInt32(), "Bird timeline binding id");
+                JsonElement backgroundBinding = root.GetProperty("hostBindings")[1];
+                AssertEqual("background", backgroundBinding.GetProperty("kind").GetString(), "Bird background binding kind");
+                AssertEqual("BG/Court", backgroundBinding.GetProperty("addressableKey").GetString(), "Bird background binding addressable key");
+                AssertEqual("Assets/Art/Court, Main.png", backgroundBinding.GetProperty("assetPath").GetString(), "Bird binding CSV should support quoted commas");
 
                 JsonElement firstTalking = root.GetProperty("talkings")[0];
                 AssertEqual(501, firstTalking.GetProperty("talkingId").GetInt32(), "First talking id");

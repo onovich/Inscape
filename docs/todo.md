@@ -8,11 +8,11 @@
 
 下一位接手者建议按以下顺序推进：
 
-1. 设计资源别名、Timeline 名称到 Bird 整数 ID / Unity 资源引用的绑定方式。
-2. 设计 Timeline Hook 的最小表达方式，但只做引用，不把 DSL 变成演出时间轴语言。
-3. 设计 Unity Editor Importer：读取 `bird-manifest.json` 并生成或更新 `TalkingSO`。
-4. 设计本地化模糊匹配与人工确认报告，不要直接自动复用相似文本译文。
-5. 收敛 Language Server 能力范围，再决定是否创建 `src/Inscape.LanguageServer/`。
+1. 设计 Timeline Hook 的最小表达方式，但只做引用，不把 DSL 变成演出时间轴语言。
+2. 设计 Unity Editor Importer：读取 `bird-manifest.json` 并生成或更新 `TalkingSO`。
+3. 设计本地化模糊匹配与人工确认报告，不要直接自动复用相似文本译文。
+4. 收敛 Language Server 能力范围，再决定是否创建 `src/Inscape.LanguageServer/`。
+5. 设计 `timelineId` 自动避让策略，扫描现有 Bird Timeline 资源避免冲突。
 
 ## 文档与接手效率
 
@@ -79,7 +79,7 @@
 - [x] 实现 `talkingId` 自动避让策略第一版：`--bird-existing-talking-root` 扫描现有 `.asset` 的 `talkingId:`。
 - [ ] 设计 `timelineId` 自动避让策略，扫描现有 Bird Timeline 资源避免冲突。
 - [x] 设计并实现角色名到 Bird `roleId` 的第一版 CSV 绑定：`--bird-role-map speaker,roleId`。
-- [ ] 设计资源别名、Timeline 名称到 Bird 整数 ID / Unity 资源引用的绑定方式。
+- [x] 设计并实现资源别名、Timeline 名称到 Bird 整数 ID / Unity 资源引用的第一版 CSV 绑定：`--bird-binding-map kind,alias,birdId,unityGuid,addressableKey,assetPath`。
 - [ ] 结合 `docs/dsl-ecosystem-positioning.md` 设计 Timeline hook：只表达宿主引用，不引入通用命令宏系统。
 - [x] 设计 Bird 兼容 `L10N_Talking.csv` 导出，并保留 Inscape `anchor` 审校表。
 - [x] 原型实现 `export-bird-project`：从项目 IR 生成 manifest 与 Bird L10N CSV。
