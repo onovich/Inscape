@@ -77,3 +77,20 @@ anchor,node,kind,speaker,text,translation,status,sourcePath,line,column
 - 选择组提示是否最终保留为用户可见文本，还是变成编辑器辅助信息。
 - 是否需要给角色显示名、资源别名和 UI 文案建立独立提取源。
 - 当前 CSV 字段和列顺序只是第一版工具格式，后续需要结合 Bird 项目的 `L10N` 真实格式再评估。
+
+## Bird L10N 兼容认知
+
+Bird 当前 `L10N_Talking.csv` 不是按行级 hash 存储，而是按运行时对话坐标存储：
+
+```text
+ID,ZH_CN,EN_US,ES_ES
+```
+
+其中 `ID` 对应 `talkingId`，单元格文本可用 `<pr>` 切分为多个 `talkingIndex`。运行时最终通过 `L10N.Talking_Get(talkingId, talkingIndex)` 查询文本。
+
+因此，Inscape 后续需要区分两种表：
+
+- Inscape 源本地化表：服务翻译流转、文本修订和审校，核心键是 `anchor`。
+- Bird 运行时本地化表：服务 Bird 当前运行时读取，核心键是 `talkingId + talkingIndex`。
+
+建议后续 Bird Adapter 生成一个 manifest，记录 `anchor -> talkingId/index`，避免为了兼容 Bird 而牺牲 Inscape 行级 hash 的长期稳定性。

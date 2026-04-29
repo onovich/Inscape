@@ -22,8 +22,8 @@
 5. Unity 目标版本到底是什么？
    - 当前材料同时出现 Unity 6 与 2023 LTS，需要统一表达和兼容策略。
 
-6. StorySystem 和 DirectorSystem 的映射边界是什么？
-   - 当前倾向是第一阶段编译到 StoryGraph IR，并优先映射 Talking/L10N；Timeline 是否由 DSL 直接生成仍需调研。
+6. Bird Adapter 的第一版输出协议是什么？
+   - 初步确认第一版优先映射 Talking/L10N，Timeline 只做外部引用；仍需确认 manifest 字段、ID 分配、角色/资源绑定和 Unity Editor Importer 边界。
 
 ## 语法设计
 
@@ -63,7 +63,9 @@
 - 随机数和异步加载如何保证可回放。
 - 自定义指令如何注册、验证和调试。第一版暂不做。
 - Unity Addressables 是否作为第一版强依赖。
-- Timeline 是 DSL 直接输出，还是作为外部资源引用。
+- Timeline 第一版作为外部资源引用；后续仍需确认是否演化为 Presentation IR。
+- Bird 的 `talkingId` / `timelineId` 如何分配，是否需要项目级 ID 范围。
+- 角色名、资源别名和 Timeline 名称如何绑定到宿主 ID 或 Unity 资源引用。
 
 ## 本地化
 
