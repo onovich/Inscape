@@ -12,7 +12,8 @@
   "activationEvents": [
     "onLanguage:inscape",
     "onCommand:inscape.extractLocalization",
-    "onCommand:inscape.updateLocalization"
+    "onCommand:inscape.updateLocalization",
+    "onCommand:inscape.showHostSchemaCapabilities"
   ],
   "categories": [
     "Programming Languages",
@@ -55,6 +56,22 @@
         "command": "inscape.updateLocalization",
         "title": "Inscape: Update Localization CSV From Previous Table",
         "category": "Inscape"
+      },
+      {
+        "command": "inscape.showHostSchemaCapabilities",
+        "title": "Inscape: Show Host Schema Capabilities",
+        "category": "Inscape"
+      }
+    ],
+    "jsonValidation": [
+      {
+        "fileMatch": [
+          "inscape.host.schema.json",
+          "*.host.schema.json",
+          "**/inscape.host.schema.json",
+          "**/*.host.schema.json"
+        ],
+        "url": "./schemas/host-schema.schema.json"
       }
     ],
     "configuration": {

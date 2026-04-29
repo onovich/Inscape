@@ -1,0 +1,149 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Inscape Host Schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "formatVersion"
+  ],
+  "properties": {
+    "format": {
+      "const": "inscape.host-schema",
+      "description": "Identifies this file as an Inscape host capability schema."
+    },
+    "formatVersion": {
+      "type": "integer",
+      "const": 1,
+      "description": "Host schema format version."
+    },
+    "queries": {
+      "type": "array",
+      "description": "Pure host queries that future DSL expressions may reference.",
+      "items": {
+        "$ref": "#/$defs/query"
+      },
+      "default": []
+    },
+    "events": {
+      "type": "array",
+      "description": "Host events or callbacks that future DSL event expressions may reference.",
+      "items": {
+        "$ref": "#/$defs/event"
+      },
+      "default": []
+    }
+  },
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_\\-.]*$"
+    },
+    "typeName": {
+      "type": "string",
+      "enum": [
+        "bool",
+        "int",
+        "float",
+        "string",
+        "asset",
+        "void"
+      ]
+    },
+    "parameter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "type"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/identifier",
+          "description": "Parameter name."
+        },
+        "type": {
+          "$ref": "#/$defs/typeName",
+          "description": "Host-neutral parameter type."
+        },
+        "required": {
+          "type": "boolean",
+          "default": true
+        },
+        "description": {
+          "type": "string"
+        }
+      }
+    },
+    "query": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "returnType"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/identifier",
+          "description": "Query name referenced by future expression syntax."
+        },
+        "description": {
+          "type": "string"
+        },
+        "returnType": {
+          "$ref": "#/$defs/typeName",
+          "description": "Query return type. Queries should not use void."
+        },
+        "isAsync": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether the host may need asynchronous evaluation."
+        },
+        "parameters": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/parameter"
+          },
+          "default": []
+        }
+      }
+    },
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/identifier",
+          "description": "Event or callback name referenced by future event syntax."
+        },
+        "description": {
+          "type": "string"
+        },
+        "delivery": {
+          "type": "string",
+          "enum": [
+            "fire-and-forget",
+            "blocking",
+            "queued"
+          ],
+          "default": "fire-and-forget"
+        },
+        "sideEffects": {
+          "type": "boolean",
+          "default": true,
+          "description": "Events are allowed to mutate host state; queries are not."
+        },
+        "parameters": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/parameter"
+          },
+          "default": []
+        }
+      }
+    }
+  }
+}

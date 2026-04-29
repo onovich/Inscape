@@ -12,7 +12,7 @@
 2. 明确 Timeline Hook 的 phase 语义，尤其是 Bird 当前 `TalkingEffectTM` 在 talking exit 触发的关系。
 3. 设计本地化模糊匹配与人工确认报告，不要直接自动复用相似文本译文。
 4. 收敛第一版块语法：继续使用 `:: node.name`，还是转向 `# 标题` + 空行分块。
-5. 将宿主 Schema 接入 VSCode 查询 / 事件补全，但暂不设计正式条件语法。
+5. 等条件 / 事件语法更明确后，将宿主 Schema query / event 接入 `.inscape` 脚本内补全与 Hover。
 
 ## 文档与接手效率
 
@@ -57,9 +57,10 @@
 - [x] 接入 `bird.bindingMap` 的宿主绑定别名补全和 Hover，覆盖 `@timeline ...` 与 `[kind: ...]` 位置。
 - [x] 添加对白 speaker 的 Go to Definition 与 Find All References，连接脚本对白和 `bird.roleMap`。
 - [x] 添加 block 级 CodeLens 双向导航：`入边` 追溯调用方，`出边` 跳转被调用方。
+- [x] 为宿主 Schema 文件提供 VSCode JSON Schema 校验，并增加命令查看当前 query / event 清单。
 - [ ] 设计 Language Server 能力范围：补全、诊断、跳转定义、引用查找、大纲、悬浮说明。
 - [x] 设计补全数据来源：当前文件节点、项目节点、角色表、宿主绑定表、宿主 Schema 查询 / 事件清单。
-- [ ] 将 `hostSchema` 中的查询 / 事件清单接入 VSCode 补全与 Hover，但不改变当前 DSL 编译语义。
+- [ ] 将 `hostSchema` 中的查询 / 事件清单接入 `.inscape` 脚本补全与 Hover，但不改变当前 DSL 编译语义。
 - [x] 定义第一版诊断清单：重复节点、非法节点名、缺失目标、不可达节点、空节点、选项语法问题。
 
 ## HTML 调试预览

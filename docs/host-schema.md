@@ -38,6 +38,25 @@ dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-host-schema-te
 
 该命令只输出草案 JSON，不扫描宿主项目，不改变当前 DSL 解析或 Bird 导出行为。
 
+## VSCode 支持
+
+VSCode 扩展会为以下文件名应用内置 JSON Schema：
+
+```text
+inscape.host.schema.json
+*.host.schema.json
+```
+
+这会在编辑宿主能力清单时提供字段补全、类型校验和基础枚举约束，例如 `returnType`、`delivery`、`parameters[].type`。
+
+命令面板提供：
+
+```text
+Inscape: Show Host Schema Capabilities
+```
+
+该命令读取工作区 `inscape.config.json` 的 `hostSchema` 字段，列出当前可用 query / event，并可跳转到 schema 文件中对应的 `name`。这只是配置检查与浏览能力，不代表 `.inscape` 脚本中已经有正式查询或事件语法。
+
 ## 格式草案
 
 ```json

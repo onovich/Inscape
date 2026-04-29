@@ -51,12 +51,14 @@ Inscape 的默认阅读优先级应当是：
 - 在对白 speaker 上显示 Hover 摘要：角色名、Bird `roleId` 绑定状态和来源表。
 - 在宿主绑定别名上显示 Hover 摘要：`kind:alias`、Bird id、Addressable、Unity guid、Asset path 和来源表。
 - 为 VSCode Outline 提供当前文件节点列表。
+- 为 `inscape.host.schema.json` / `*.host.schema.json` 提供 JSON Schema 校验。
+- 提供命令 `Inscape: Show Host Schema Capabilities`，读取 `inscape.config.json` 的 `hostSchema` 并列出 query / event。
 
 ## 尚未实现
 
 - 正式 Language Server。
 - VSCode WebView 预览；当前 HTML 预览仍通过 CLI 生成静态文件。
-- 宿主 Schema 查询 / 事件清单驱动的智能提示。
+- 宿主 Schema 查询 / 事件清单驱动的脚本内补全。
 
 ## 角色提示
 
@@ -128,6 +130,23 @@ bg,classroom,,,BG/Classroom,Assets/Art/BG/classroom.png
 补全按 `kind` 过滤，Hover 显示绑定表中的 Bird id、Addressable、Unity guid 和 asset path。未配置绑定表时，扩展会从工作区已有 `@timeline` 和 inline tag 中扫描别名作为轻量回退。
 
 注意：这仍然只是作者体验层。当前 Bird 导出只对已支持的 hook 赋予宿主意义，例如 `timeline`；其他 `kind` 的 inline tag 补全用于减少写作记忆成本，不代表 Core 已经承诺资源系统语义。
+
+## 宿主 Schema 提示
+
+VSCode 扩展会为以下文件名提供 JSON Schema 校验：
+
+```text
+inscape.host.schema.json
+*.host.schema.json
+```
+
+字段约束覆盖 `format`、`formatVersion`、`queries`、`events` 和 `parameters`。这让手写宿主能力清单时能获得 JSON 级别的错误提示和字段补全。
+
+命令面板提供：
+
+- `Inscape: Show Host Schema Capabilities`
+
+该命令读取工作区根目录 `inscape.config.json` 的 `hostSchema` 字段，列出当前配置的 query / event，并可跳转到 schema 文件里的对应 `name` 字段。当前它只验证数据通路，不把 query / event 注入 `.inscape` 脚本补全，因为条件语法和事件语法还未定稿。
 
 ## 诊断桥接
 

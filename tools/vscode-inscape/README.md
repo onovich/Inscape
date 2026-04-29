@@ -17,9 +17,12 @@ This is the first lightweight authoring layer for `.inscape` scripts. It keeps s
 - Shows node CodeLens entries for incoming and outgoing graph edges. Incoming edges open callers; outgoing edges jump to callees.
 - Shows hover summaries for node declarations, jump targets, dialogue speakers, and host binding aliases.
 - Provides an outline view backed by visible node headers.
+- Provides JSON validation for `inscape.host.schema.json` / `*.host.schema.json`.
 - Exposes command palette actions for localization:
   - `Inscape: Export Localization CSV`
   - `Inscape: Update Localization CSV From Previous Table`
+- Exposes command palette action for host schema inspection:
+  - `Inscape: Show Host Schema Capabilities`
 
 ## Development Use
 
@@ -59,6 +62,8 @@ timeline,court_intro,12,,Timeline/CourtIntro,Assets/Resources_Runtime/Timeline/S
 ```
 
 The first supported contexts are `@timeline court_intro` and inline tags such as `[timeline: court_intro]` or `[bg: classroom]`. For inline tags, completion is generic by `kind`, but the compiler still only gives special Bird export meaning to supported hooks such as `timeline`.
+
+Host schema files named `inscape.host.schema.json` or `*.host.schema.json` are validated by the bundled JSON Schema. The command `Inscape: Show Host Schema Capabilities` reads `inscape.config.json` `hostSchema`, lists configured queries/events, and opens the selected capability in the schema file.
 
 ## Settings
 

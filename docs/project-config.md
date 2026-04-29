@@ -39,6 +39,7 @@ inscape.config.json
 - `export-bird-binding-template`：读取 `existingTimelineRoot`。
 - `export-bird-project`：读取 `talkingIdStart`、`roleMap`、`bindingMap`、`existingTalkingRoot`。
 - VSCode 扩展：读取 `roleMap`，在对白行开头提供 speaker 补全，并在 speaker 上显示 Bird `roleId` Hover；读取 `bindingMap`，在 `@timeline ...` 和 `[kind: ...]` 位置提供宿主别名补全与 Hover。
+- VSCode 扩展：读取 `hostSchema`，通过命令面板列出宿主 query / event，并为 `inscape.host.schema.json` / `*.host.schema.json` 提供 JSON Schema 校验。
 
 仍未放进配置的内容：
 
