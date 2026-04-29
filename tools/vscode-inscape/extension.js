@@ -24,7 +24,7 @@ function activate(context) {
                 refreshVisibleDocuments(scheduler);
             }
         }),
-        vscode.languages.registerCompletionItemProvider(languageSelector, new InscapeCompletionProvider(), ">", "."),
+        vscode.languages.registerCompletionItemProvider(languageSelector, new InscapeCompletionProvider(), ">", ".", ":", "："),
         vscode.languages.registerDocumentSymbolProvider(languageSelector, new InscapeDocumentSymbolProvider()),
         vscode.languages.registerDefinitionProvider(languageSelector, new InscapeDefinitionProvider()),
         vscode.languages.registerReferenceProvider(languageSelector, new InscapeReferenceProvider()),
@@ -153,6 +153,11 @@ class InscapeCompletionProvider {
             });
         }
 
+        if (isSpeakerCompletionContext(linePrefix)) {
+            const speakers = await collectWorkspaceSpeakers(document);
+            return speakers.map((speaker) => createSpeakerCompletionItem(speaker));
+        }
+
         return undefined;
     }
 }
@@ -212,6 +217,15 @@ class InscapeHoverProvider {
     async provideHover(document, position) {
         if (!isInscapeDocument(document)) {
             return undefined;
+        }
+
+        const speakerInfo = getDialogueSpeakerAtPosition(document, position);
+        if (speakerInfo) {
+            const speakers = await collectWorkspaceSpeakers(document);
+            const speaker = speakers.find((candidate) => candidate.name === speakerInfo.name);
+            if (speaker) {
+                return new vscode.Hover(createSpeakerHoverMarkdown(speaker), speakerInfo.range);
+            }
         }
 
         const node = getNodeDeclarationAtPosition(document, position) || getJumpTargetAtPositionInfo(document, position);
@@ -576,6 +590,217 @@ function isJumpTargetContext(linePrefix) {
     return /(?:^|\s)->\s*[A-Za-z0-9_.-]*$/.test(linePrefix);
 }
 
+function isSpeakerCompletionContext(linePrefix) {
+    const trimmed = linePrefix.trimStart();
+    if (!trimmed) {
+        return true;
+    }
+
+    if (trimmed.startsWith("::")
+        || trimmed.startsWith("@")
+        || trimmed.startsWith("//")
+        || trimmed.startsWith("->")
+        || trimmed.startsWith("?")
+        || trimmed.startsWith("-")
+        || trimmed.startsWith("[")
+        || trimmed.includes(":")
+        || trimmed.includes("：")) {
+        return false;
+    }
+
+    return !/\s/.test(trimmed);
+}
+
+async function collectWorkspaceSpeakers(document) {
+    const speakers = [];
+    const seen = new Set();
+
+    const configured = await readConfiguredRoleMapSpeakers(document);
+    for (const speaker of configured) {
+        addSpeaker(speakers, seen, speaker);
+    }
+
+    const sources = await collectWorkspaceTextSources(document);
+    for (const source of sources) {
+        collectSpeakersFromText(source.text, source.sourcePath, speakers, seen);
+    }
+
+    return speakers.sort((left, right) => {
+        if (left.sourceRank !== right.sourceRank) {
+            return left.sourceRank - right.sourceRank;
+        }
+        return left.name.localeCompare(right.name, "zh-Hans-CN");
+    });
+}
+
+async function readConfiguredRoleMapSpeakers(document) {
+    const projectConfig = await readProjectConfig(document);
+    if (!projectConfig || !projectConfig.configPath || !projectConfig.config || !projectConfig.config.bird) {
+        return [];
+    }
+
+    const roleMap = projectConfig.config.bird.roleMap;
+    if (!roleMap) {
+        return [];
+    }
+
+    const roleMapPath = resolveProjectConfigPath(projectConfig.configPath, roleMap);
+    if (!fs.existsSync(roleMapPath)) {
+        return [];
+    }
+
+    const text = await fs.promises.readFile(roleMapPath, "utf8");
+    const rows = parseCsvRows(text);
+    if (rows.length === 0) {
+        return [];
+    }
+
+    const headers = rows[0].map((header) => header.trim());
+    const speakerIndex = headers.indexOf("speaker");
+    const roleIdIndex = headers.indexOf("roleId");
+    if (speakerIndex < 0) {
+        return [];
+    }
+
+    return rows.slice(1)
+        .map((row) => ({
+            name: (row[speakerIndex] || "").trim(),
+            roleId: roleIdIndex >= 0 ? (row[roleIdIndex] || "").trim() : "",
+            sourcePath: roleMapPath,
+            sourceLabel: "Bird role map",
+            sourceRank: 0
+        }))
+        .filter((speaker) => speaker.name.length > 0);
+}
+
+async function readProjectConfig(document) {
+    const folder = vscode.workspace.getWorkspaceFolder(document.uri);
+    if (!folder) {
+        return undefined;
+    }
+
+    const configPath = path.join(folder.uri.fsPath, "inscape.config.json");
+    if (!fs.existsSync(configPath)) {
+        return undefined;
+    }
+
+    try {
+        const text = await fs.promises.readFile(configPath, "utf8");
+        return {
+            configPath,
+            config: JSON.parse(text)
+        };
+    } catch {
+        return undefined;
+    }
+}
+
+function resolveProjectConfigPath(configPath, value) {
+    return path.isAbsolute(value)
+        ? value
+        : path.resolve(path.dirname(configPath), value);
+}
+
+function parseCsvRows(text) {
+    const rows = [];
+    let row = [];
+    let field = "";
+    let inQuotes = false;
+
+    for (let index = 0; index < text.length; index += 1) {
+        const character = text[index];
+        if (inQuotes) {
+            if (character === "\"") {
+                if (text[index + 1] === "\"") {
+                    field += "\"";
+                    index += 1;
+                } else {
+                    inQuotes = false;
+                }
+            } else {
+                field += character;
+            }
+            continue;
+        }
+
+        if (character === "\"") {
+            inQuotes = true;
+        } else if (character === ",") {
+            row.push(field);
+            field = "";
+        } else if (character === "\n") {
+            row.push(field);
+            rows.push(row);
+            row = [];
+            field = "";
+        } else if (character !== "\r") {
+            field += character;
+        }
+    }
+
+    if (field.length > 0 || row.length > 0) {
+        row.push(field);
+        rows.push(row);
+    }
+
+    return rows.filter((csvRow) => csvRow.some((fieldValue) => fieldValue.trim().length > 0));
+}
+
+function collectSpeakersFromText(text, sourcePath, speakers, seen) {
+    const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+    for (let line = 0; line < lines.length; line += 1) {
+        const match = /^\s*([^:：\s][^:：]{0,80}?)[ \t]*[:：]/.exec(lines[line]);
+        if (!match) {
+            continue;
+        }
+
+        const name = match[1].trim();
+        if (!isLikelyDialogueSpeaker(name)) {
+            continue;
+        }
+
+        addSpeaker(speakers, seen, {
+            name,
+            roleId: "",
+            sourcePath,
+            sourceLabel: "Workspace speaker",
+            sourceRank: 1
+        });
+    }
+}
+
+function isLikelyDialogueSpeaker(name) {
+    return name.length > 0
+        && !name.startsWith("::")
+        && !name.startsWith("@")
+        && !name.startsWith("//")
+        && !name.startsWith("->")
+        && !name.startsWith("?")
+        && !name.startsWith("-")
+        && !name.startsWith("[");
+}
+
+function addSpeaker(speakers, seen, speaker) {
+    const key = speaker.name;
+    if (seen.has(key)) {
+        return;
+    }
+
+    seen.add(key);
+    speakers.push(speaker);
+}
+
+function createSpeakerCompletionItem(speaker) {
+    const item = new vscode.CompletionItem(speaker.name, vscode.CompletionItemKind.Class);
+    item.insertText = speaker.name + "：";
+    item.detail = speaker.roleId
+        ? "Bird roleId " + speaker.roleId
+        : speaker.sourceLabel + " (unbound)";
+    item.documentation = speaker.sourcePath;
+    item.sortText = (speaker.sourceRank || 0) + "_" + speaker.name;
+    return item;
+}
+
 async function collectWorkspaceNodes(document) {
     const nodes = [];
     const seen = new Set();
@@ -808,6 +1033,30 @@ function getJumpTargetAtPositionInfo(document, position) {
     return undefined;
 }
 
+function getDialogueSpeakerAtPosition(document, position) {
+    const line = document.lineAt(position).text;
+    const match = /^\s*([^:：]+?)[ \t]*[:：]/.exec(line);
+    if (!match) {
+        return undefined;
+    }
+
+    const name = match[1].trim();
+    if (!isLikelyDialogueSpeaker(name)) {
+        return undefined;
+    }
+
+    const start = line.indexOf(match[1]);
+    const end = start + match[1].length;
+    if (position.character >= start && position.character <= end) {
+        return {
+            name,
+            range: new vscode.Range(position.line, start, position.line, end)
+        };
+    }
+
+    return undefined;
+}
+
 function isJumpReferenceLine(line) {
     const trimmed = line.trim();
     return trimmed.startsWith("->") || trimmed.startsWith("-");
@@ -844,6 +1093,21 @@ function createNodeHoverMarkdown(nodeName, declarations, references, outgoingTar
         markdown.appendMarkdown("Outgoing: " + displayed + suffix);
     }
 
+    return markdown;
+}
+
+function createSpeakerHoverMarkdown(speaker) {
+    const markdown = new vscode.MarkdownString(undefined, true);
+    markdown.isTrusted = false;
+    markdown.appendMarkdown("**Inscape Speaker** `" + speaker.name + "`\n\n");
+
+    if (speaker.roleId) {
+        markdown.appendMarkdown("Bird roleId: `" + speaker.roleId + "`\n\n");
+    } else {
+        markdown.appendMarkdown("Bird roleId: unbound\n\n");
+    }
+
+    markdown.appendMarkdown("Source: `" + formatDisplayPath(speaker.sourcePath) + "`");
     return markdown;
 }
 

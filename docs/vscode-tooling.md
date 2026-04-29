@@ -41,16 +41,48 @@ Inscape 的默认阅读优先级应当是：
 - 提供基础 snippets：节点、对白、选择组、跳转、元信息、Timeline Hook、行内标签。
 - 通过 `dotnet run --project src/Inscape.Cli/Inscape.Cli.csproj -- diagnose-project <workspace> --override <source> <temp-file>` 刷新实时诊断。
 - 在 `->` 跳转目标位置补全工作区内的节点名。
+- 在对白行开头补全角色名，优先读取 `inscape.config.json` 中 `bird.roleMap` 指向的 `speaker,roleId` 表；未配置时回退扫描工作区已有对白 speaker。
 - 在 `->` 跳转目标上支持 Go to Definition / Ctrl+Click。
 - 在节点声明或 `->` 跳转目标上支持 Find All References。
 - 在节点声明或 `->` 跳转目标上显示 Hover 摘要：定义位置、引用数量和出边目标。
+- 在对白 speaker 上显示 Hover 摘要：角色名、Bird `roleId` 绑定状态和来源表。
 - 为 VSCode Outline 提供当前文件节点列表。
 
 ## 尚未实现
 
 - 正式 Language Server。
 - VSCode WebView 预览；当前 HTML 预览仍通过 CLI 生成静态文件。
-- 角色表、资源别名、宿主 Schema 驱动的智能提示。
+- 资源别名、Timeline 别名、宿主 Schema 驱动的智能提示。
+
+## 角色提示
+
+角色提示是第一版宿主配置接入 VSCode 的试点。扩展会读取工作区根目录的：
+
+```text
+inscape.config.json
+```
+
+并按配置文件所在目录解析 `bird.roleMap`：
+
+```json
+{
+  "bird": {
+    "roleMap": "config/bird-roles.csv"
+  }
+}
+```
+
+角色表格式为：
+
+```csv
+speaker,roleId
+旁白,1050
+成步堂,
+```
+
+在对白行开头输入时，补全项会插入 `角色：`。如果 `roleId` 已绑定，补全详情显示 Bird `roleId`；如果为空，则显示未绑定状态。Hover 同样展示绑定状态和来源路径。
+
+这项能力只是写作提示，不改变编译结果。真正的 Bird 导出仍由 CLI 的 `export-bird-project` 读取同一份 `roleMap` 完成。
 
 ## 诊断桥接
 

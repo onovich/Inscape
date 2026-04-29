@@ -10,9 +10,10 @@ This is the first lightweight authoring layer for `.inscape` scripts. It keeps s
 - Keeps metadata and inline tags on comment-like scopes so themes can visually soften them while prose remains readable.
 - Refreshes diagnostics by invoking `dotnet run --project src/Inscape.Cli/Inscape.Cli.csproj -- diagnose-project <workspace> --override <source> <temp-file>`.
 - Provides workspace node completions in jump target positions.
+- Provides dialogue speaker completions from `inscape.config.json` `bird.roleMap`, with workspace speaker fallback.
 - Supports Go to Definition / Ctrl+Click from jump targets to node declarations.
 - Supports Find All References from node declarations and jump targets.
-- Shows hover summaries for node declarations and jump targets.
+- Shows hover summaries for node declarations, jump targets, and dialogue speakers.
 - Provides an outline view backed by visible node headers.
 - Exposes command palette actions for localization:
   - `Inscape: Export Localization CSV`
@@ -36,6 +37,15 @@ dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- update-l10n-project <
 ```
 
 If the active `.inscape` document is unsaved and belongs to the selected workspace, the extension passes it to the CLI with `--override` so the generated CSV reflects editor contents.
+
+Speaker completion reads `inscape.config.json` from the workspace root and resolves `bird.roleMap` relative to that file. The role map format is:
+
+```csv
+speaker,roleId
+旁白,1050
+```
+
+When no configured role map exists, the extension still scans open and workspace `.inscape` files for existing dialogue speakers.
 
 ## Settings
 

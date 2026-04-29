@@ -31,11 +31,12 @@ inscape.config.json
 
 相对路径按配置文件所在目录解析。
 
-当前读取这些字段的命令：
+当前读取这些字段的工具：
 
 - `export-bird-role-template`：读取 `existingRoleNameCsv`。
 - `export-bird-binding-template`：读取 `existingTimelineRoot`。
 - `export-bird-project`：读取 `talkingIdStart`、`roleMap`、`bindingMap`、`existingTalkingRoot`。
+- VSCode 扩展：读取 `roleMap`，在对白行开头提供 speaker 补全，并在 speaker 上显示 Bird `roleId` Hover。
 
 仍未放进配置的内容：
 
