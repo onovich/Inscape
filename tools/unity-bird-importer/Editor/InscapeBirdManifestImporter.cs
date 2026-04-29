@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using Bird;
 using Bird.Templates;
 using Newtonsoft.Json;
@@ -38,17 +39,32 @@ namespace Inscape.Unity.BirdImporter {
             ImportManifest(manifestPath, outputFolder);
         }
 
+        [MenuItem("Inscape/Bird/Dry Run Import Manifest...")]
+        public static void DryRunImportManifestMenu() {
+            string manifestPath = EditorUtility.OpenFilePanel("Dry Run Inscape Bird Manifest", "", "json");
+            if (string.IsNullOrEmpty(manifestPath)) {
+                return;
+            }
+
+            string selectedFolder = EditorUtility.OpenFolderPanel("Select TalkingSO Output Folder", DefaultOutputFolder, "");
+            if (string.IsNullOrEmpty(selectedFolder)) {
+                return;
+            }
+
+            string outputFolder = ToAssetPath(selectedFolder);
+            if (string.IsNullOrEmpty(outputFolder)) {
+                EditorUtility.DisplayDialog("Inscape Bird Importer", "Output folder must be inside this Unity project's Assets directory.", "OK");
+                return;
+            }
+
+            string report = CreateImportReport(manifestPath, outputFolder);
+            Debug.Log(report);
+            EditorUtility.DisplayDialog("Inscape Bird Importer", "Dry run complete. See Unity Console for the import plan.", "OK");
+        }
+
         public static void ImportManifest(string manifestPath, string outputFolder) {
-            if (!File.Exists(manifestPath)) {
-                throw new FileNotFoundException("Bird manifest not found.", manifestPath);
-            }
-
             EnsureFolder(outputFolder);
-            BirdManifest manifest = JsonConvert.DeserializeObject<BirdManifest>(File.ReadAllText(manifestPath));
-            if (manifest == null || manifest.talkings == null) {
-                throw new InvalidOperationException("Invalid Inscape Bird manifest.");
-            }
-
+            BirdManifest manifest = LoadManifest(manifestPath);
             Dictionary<int, TalkingSO> talkingsById = LoadTalkingAssetsById();
             Dictionary<int, TimelineSO> timelinesById = LoadTimelineAssetsById();
 
@@ -71,6 +87,107 @@ namespace Inscape.Unity.BirdImporter {
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
             EditorUtility.DisplayDialog("Inscape Bird Importer", "Imported " + manifest.talkings.Length + " TalkingSO assets.", "OK");
+        }
+
+        public static string CreateImportReport(string manifestPath, string outputFolder) {
+            BirdManifest manifest = LoadManifest(manifestPath);
+            Dictionary<int, TalkingSO> talkingsById = LoadTalkingAssetsById();
+            Dictionary<int, TimelineSO> timelinesById = LoadTimelineAssetsById();
+            HashSet<int> knownTalkingIds = new HashSet<int>(talkingsById.Keys);
+            for (int i = 0; i < manifest.talkings.Length; i += 1) {
+                knownTalkingIds.Add(manifest.talkings[i].talkingId);
+            }
+
+            int createCount = 0;
+            int updateCount = 0;
+            int timelineHookCount = 0;
+            int unresolvedTimelineHookCount = 0;
+            int warningCount = 0;
+
+            StringBuilder builder = new StringBuilder();
+            builder.AppendLine("Inscape Bird Import Dry Run");
+            builder.AppendLine("Manifest: " + manifestPath);
+            builder.AppendLine("Output: " + outputFolder);
+            builder.AppendLine();
+            builder.AppendLine("TalkingSO plan:");
+
+            for (int i = 0; i < manifest.talkings.Length; i += 1) {
+                BirdTalkingEntry entry = manifest.talkings[i];
+                bool exists = talkingsById.TryGetValue(entry.talkingId, out TalkingSO talkingSO) && talkingSO != null;
+                if (exists) {
+                    updateCount += 1;
+                    builder.AppendLine("  UPDATE " + entry.talkingId + " -> " + AssetDatabase.GetAssetPath(talkingSO));
+                } else {
+                    createCount += 1;
+                    builder.AppendLine("  CREATE " + entry.talkingId + " -> " + outputFolder + "/SO_Talking_Inscape_" + entry.talkingId + ".asset");
+                }
+
+                if (entry.nextTalkingId.HasValue && !knownTalkingIds.Contains(entry.nextTalkingId.Value)) {
+                    warningCount += 1;
+                    builder.AppendLine("    WARNING missing nextTalkingId " + entry.nextTalkingId.Value);
+                }
+
+                if (entry.options == null) {
+                    continue;
+                }
+
+                for (int optionIndex = 0; optionIndex < entry.options.Length; optionIndex += 1) {
+                    BirdChoiceOptionEntry option = entry.options[optionIndex];
+                    if (option.nextTalkingId.HasValue && !knownTalkingIds.Contains(option.nextTalkingId.Value)) {
+                        warningCount += 1;
+                        builder.AppendLine("    WARNING option '" + option.text + "' targets missing talkingId " + option.nextTalkingId.Value);
+                    }
+                }
+            }
+
+            builder.AppendLine();
+            builder.AppendLine("Timeline hook plan:");
+            if (manifest.hostHooks == null || manifest.hostHooks.Length == 0) {
+                builder.AppendLine("  none");
+            } else {
+                for (int i = 0; i < manifest.hostHooks.Length; i += 1) {
+                    BirdHostHook hook = manifest.hostHooks[i];
+                    if (hook.kind != "timeline") {
+                        continue;
+                    }
+
+                    timelineHookCount += 1;
+                    TimelineSO timelineSO = ResolveTimeline(hook, timelinesById);
+                    if (timelineSO == null) {
+                        unresolvedTimelineHookCount += 1;
+                        warningCount += 1;
+                        builder.AppendLine("  UNRESOLVED " + hook.alias + " -> talkingId " + NullableIntText(hook.targetTalkingId));
+                    } else {
+                        builder.AppendLine("  RESOLVE " + hook.alias + " -> " + AssetDatabase.GetAssetPath(timelineSO) + " -> talkingId " + NullableIntText(hook.targetTalkingId));
+                    }
+                }
+            }
+
+            builder.AppendLine();
+            builder.AppendLine("Summary:");
+            builder.AppendLine("  create TalkingSO: " + createCount);
+            builder.AppendLine("  update TalkingSO: " + updateCount);
+            builder.AppendLine("  timeline hooks: " + timelineHookCount);
+            builder.AppendLine("  unresolved timeline hooks: " + unresolvedTimelineHookCount);
+            builder.AppendLine("  warnings: " + warningCount);
+            return builder.ToString();
+        }
+
+        static BirdManifest LoadManifest(string manifestPath) {
+            if (!File.Exists(manifestPath)) {
+                throw new FileNotFoundException("Bird manifest not found.", manifestPath);
+            }
+
+            BirdManifest manifest = JsonConvert.DeserializeObject<BirdManifest>(File.ReadAllText(manifestPath));
+            if (manifest == null || manifest.talkings == null) {
+                throw new InvalidOperationException("Invalid Inscape Bird manifest.");
+            }
+
+            if (manifest.hostHooks == null) {
+                manifest.hostHooks = Array.Empty<BirdHostHook>();
+            }
+
+            return manifest;
         }
 
         static TalkingTM BuildTalkingTM(BirdTalkingEntry entry,
@@ -236,6 +353,10 @@ namespace Inscape.Unity.BirdImporter {
                 return string.Empty;
             }
             return normalized.Substring(projectRoot.Length + 1);
+        }
+
+        static string NullableIntText(int? value) {
+            return value.HasValue ? value.Value.ToString() : "(none)";
         }
 
         [Serializable]

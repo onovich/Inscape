@@ -64,14 +64,23 @@ Timeline 解析优先级：
 将脚本复制到 Bird 项目的 `Assets/Editor/` 下，然后在 Unity 菜单执行：
 
 ```text
+Inscape > Bird > Dry Run Import Manifest...
 Inscape > Bird > Import Manifest...
 ```
 
-选择 `bird-manifest.json` 后，再选择生成 `TalkingSO` 的目录，例如：
+建议先执行 Dry Run。选择 `bird-manifest.json` 后，再选择生成 `TalkingSO` 的目录，例如：
 
 ```text
 Assets/Resources_Runtime/Talking/InscapeGenerated
 ```
+
+Dry Run 会在 Unity Console 输出：
+
+- 将创建的 `TalkingSO`。
+- 将更新的 `TalkingSO`。
+- 缺失的 `nextTalkingId` 或选项目标。
+- Timeline Hook 的解析结果。
+- 总 warning 数。
 
 ## 当前边界
 
@@ -79,12 +88,12 @@ Assets/Resources_Runtime/Talking/InscapeGenerated
 - 原型不自动修改 Addressables 分组。
 - 原型不自动合并 `L10N_Talking.csv`。
 - 原型只支持 Timeline Hook，不处理背景、立绘、音频等其他 host binding。
-- 原型没有 dry-run、冲突报告 UI 和回滚机制。
+- Dry Run 已有 Console 文本报告，但还没有独立报告文件、字段级 diff UI 和回滚机制。
 
 ## 后续建议
 
-1. 增加 dry-run：列出将创建、更新、跳过和冲突的资源。
-2. 增加导入报告：输出 `talkingId`、asset path、source node、source anchor。
+1. 增强导入报告：输出 `talkingId`、asset path、source node、source anchor，并支持写入文件。
+2. 增加字段级 diff UI：展示每个 `TalkingTM` 即将改动的字段。
 3. 设计 `L10N_Talking.csv` 合并策略，避免覆盖人工译文。
 4. 接入 Addressables：生成后自动加入 Bird 的 `TM_TALKING` 分组。
 5. 明确 Timeline Hook phase，决定是否需要 talking enter、node enter、node exit。
