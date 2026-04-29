@@ -329,7 +329,7 @@ namespace Inscape.Cli {
 
             string? roleMapPath = ReadOption(args, "--bird-role-map");
             if (string.IsNullOrWhiteSpace(roleMapPath)) {
-                return true;
+                return TryReadReservedTalkingIds(args, options);
             }
 
             if (!File.Exists(roleMapPath)) {
@@ -363,7 +363,7 @@ namespace Inscape.Cli {
                 options.RoleIdsBySpeaker[speaker] = roleId;
             }
 
-            return true;
+            return TryReadReservedTalkingIds(args, options);
         }
 
         static string UnquoteCsvField(string value) {
@@ -371,6 +371,36 @@ namespace Inscape.Cli {
                 return value.Substring(1, value.Length - 2).Replace("\"\"", "\"");
             }
             return value;
+        }
+
+        static bool TryReadReservedTalkingIds(string[] args, BirdExportOptions options) {
+            string? talkingRoot = ReadOption(args, "--bird-existing-talking-root");
+            if (string.IsNullOrWhiteSpace(talkingRoot)) {
+                return true;
+            }
+
+            if (!Directory.Exists(talkingRoot)) {
+                Console.Error.WriteLine("Bird existing talking root not found: " + talkingRoot);
+                return false;
+            }
+
+            foreach (string assetPath in Directory.EnumerateFiles(talkingRoot, "*.asset", SearchOption.AllDirectories)) {
+                string[] lines = File.ReadAllLines(assetPath, Encoding.UTF8);
+                for (int i = 0; i < lines.Length; i += 1) {
+                    string line = lines[i].Trim();
+                    if (!line.StartsWith("talkingId:", StringComparison.Ordinal)) {
+                        continue;
+                    }
+
+                    string value = line.Substring("talkingId:".Length).Trim();
+                    if (int.TryParse(value, out int talkingId)) {
+                        options.ReservedTalkingIds.Add(talkingId);
+                    }
+                    break;
+                }
+            }
+
+            return true;
         }
 
         static string? ReadOption(string[] args, string optionName) {
@@ -409,7 +439,7 @@ namespace Inscape.Cli {
             Console.WriteLine("  inscape diagnose-project <root> [--entry node.name] [--override source.inscape temp.inscape] [-o diagnostics.json]");
             Console.WriteLine("  inscape extract-l10n-project <root> [--entry node.name] [--override source.inscape temp.inscape] [-o strings.csv]");
             Console.WriteLine("  inscape update-l10n-project <root> --from old.csv [--entry node.name] [--override source.inscape temp.inscape] [-o strings.csv]");
-            Console.WriteLine("  inscape export-bird-project <root> [--entry node.name] [--bird-talking-start 100000] [--bird-role-map roles.csv] -o output-dir");
+            Console.WriteLine("  inscape export-bird-project <root> [--entry node.name] [--bird-talking-start 100000] [--bird-role-map roles.csv] [--bird-existing-talking-root path] -o output-dir");
             Console.WriteLine("  inscape compile-project <root> [--entry node.name] [-o output.json]");
             Console.WriteLine("  inscape preview-project <root> [--entry node.name] [-o preview.html]");
             Console.WriteLine("  inscape compile <file.inscape> [-o output.json]");

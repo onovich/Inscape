@@ -698,7 +698,9 @@ Narrator: Project start.
             string directory = Path.Combine(Path.GetTempPath(), "inscape-tests", Guid.NewGuid().ToString("N"));
             string outputDirectory = Path.Combine(directory, "bird-export");
             string roleMapPath = Path.Combine(directory, "bird-roles.csv");
+            string existingTalkingDirectory = Path.Combine(directory, "existing-talking");
             Directory.CreateDirectory(directory);
+            Directory.CreateDirectory(existingTalkingDirectory);
 
             File.WriteAllText(Path.Combine(directory, "00-start.inscape"), """
 :: start
@@ -712,6 +714,12 @@ Narrator: Hello, "Bird".
 A quiet line.
 """, Encoding.UTF8);
             File.WriteAllText(roleMapPath, "speaker,roleId\nNarrator,7\n", Encoding.UTF8);
+            File.WriteAllText(Path.Combine(existingTalkingDirectory, "SO_Talking_Existing.asset"), """
+%YAML 1.1
+MonoBehaviour:
+  tm:
+    talkingId: 500
+""", Encoding.UTF8);
 
             TextWriter originalOut = Console.Out;
             TextWriter originalError = Console.Error;
@@ -722,7 +730,7 @@ A quiet line.
             try {
                 Console.SetOut(output);
                 Console.SetError(error);
-                exitCode = CliProgram.Main(new[] { "export-bird-project", directory, "--bird-talking-start", "500", "--bird-role-map", roleMapPath, "-o", outputDirectory });
+                exitCode = CliProgram.Main(new[] { "export-bird-project", directory, "--bird-talking-start", "500", "--bird-role-map", roleMapPath, "--bird-existing-talking-root", existingTalkingDirectory, "-o", outputDirectory });
             } finally {
                 Console.SetOut(originalOut);
                 Console.SetError(originalError);
@@ -753,19 +761,19 @@ A quiet line.
                 AssertEqual(7, root.GetProperty("roles")[0].GetProperty("roleId").GetInt32(), "Bird role id");
 
                 JsonElement firstTalking = root.GetProperty("talkings")[0];
-                AssertEqual(500, firstTalking.GetProperty("talkingId").GetInt32(), "First talking id");
+                AssertEqual(501, firstTalking.GetProperty("talkingId").GetInt32(), "First talking id");
                 AssertEqual(7, firstTalking.GetProperty("roleId").GetInt32(), "First talking role id");
-                AssertEqual(501, firstTalking.GetProperty("nextTalkingId").GetInt32(), "First talking next id");
+                AssertEqual(502, firstTalking.GetProperty("nextTalkingId").GetInt32(), "First talking next id");
 
                 JsonElement choiceTalking = root.GetProperty("talkings")[1];
-                AssertEqual(501, choiceTalking.GetProperty("talkingId").GetInt32(), "Choice talking id");
+                AssertEqual(502, choiceTalking.GetProperty("talkingId").GetInt32(), "Choice talking id");
                 AssertEqual(1, choiceTalking.GetProperty("options").GetArrayLength(), "Choice option count");
-                AssertEqual(502, choiceTalking.GetProperty("options")[0].GetProperty("nextTalkingId").GetInt32(), "Choice target talking id");
+                AssertEqual(503, choiceTalking.GetProperty("options")[0].GetProperty("nextTalkingId").GetInt32(), "Choice target talking id");
 
                 string l10n = File.ReadAllText(l10nPath, Encoding.UTF8);
                 AssertTrue(l10n.Contains("ID,ZH_CN,EN_US,ES_ES"), "Bird L10N should include language header.");
-                AssertTrue(l10n.Contains("500,Hello` %Bird%."), "Bird L10N should apply Bird text escaping.");
-                AssertTrue(l10n.Contains("501,Choose"), "Bird L10N should include choice prompt.");
+                AssertTrue(l10n.Contains("501,Hello` %Bird%."), "Bird L10N should apply Bird text escaping.");
+                AssertTrue(l10n.Contains("502,Choose"), "Bird L10N should include choice prompt.");
                 AssertFalse(l10n.Contains("Continue"), "Bird L10N should not put option text into L10N_Talking yet.");
 
                 string map = File.ReadAllText(mapPath, Encoding.UTF8);

@@ -10,10 +10,13 @@ namespace Inscape.Core.Bird {
 
         public Dictionary<string, int> RoleIdsBySpeaker { get; set; }
 
+        public HashSet<int> ReservedTalkingIds { get; set; }
+
         public BirdExportOptions() {
             TalkingIdStart = 100000;
             Languages = new[] { "ZH_CN", "EN_US", "ES_ES" };
             RoleIdsBySpeaker = new Dictionary<string, int>();
+            ReservedTalkingIds = new HashSet<int>();
         }
 
     }

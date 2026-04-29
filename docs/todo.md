@@ -74,7 +74,8 @@
 - [x] 深入调研 `DirectorSystem` / `TimelineEffectTM`：判断 Timeline 是外部演出资源、节点 Hook，还是未来 Presentation IR。
 - [x] 设计 `bird-manifest.json` 的字段、版本、兼容策略和最小样例。
 - [x] 设计 `talkingId` 分配策略第一版：默认从 `100000` 顺序分配，并支持 `--bird-talking-start` 覆盖。
-- [ ] 设计 `talkingId` / `timelineId` 自动避让策略，扫描现有 Bird 资源避免冲突。
+- [x] 实现 `talkingId` 自动避让策略第一版：`--bird-existing-talking-root` 扫描现有 `.asset` 的 `talkingId:`。
+- [ ] 设计 `timelineId` 自动避让策略，扫描现有 Bird Timeline 资源避免冲突。
 - [x] 设计并实现角色名到 Bird `roleId` 的第一版 CSV 绑定：`--bird-role-map speaker,roleId`。
 - [ ] 设计资源别名、Timeline 名称到 Bird 整数 ID / Unity 资源引用的绑定方式。
 - [x] 设计 Bird 兼容 `L10N_Talking.csv` 导出，并保留 Inscape `anchor` 审校表。

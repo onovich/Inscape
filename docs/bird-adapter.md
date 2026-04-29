@@ -24,6 +24,12 @@ dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-project s
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-project samples --bird-role-map config\bird-roles.csv -o artifacts\bird-export
 ```
 
+可选扫描现有 Bird `TalkingSO` 资源，避开已使用的 `talkingId`：
+
+```powershell
+dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-project samples --bird-existing-talking-root D:\UnityProjects\Bird\Assets\Resources_Runtime\Talking -o artifacts\bird-export
+```
+
 项目级入口仍可用 `--entry node.name` 临时覆盖。
 
 角色映射 CSV 第一版格式：
@@ -84,6 +90,7 @@ anchor,node,kind,speaker,text,talkingId,talkingIndex,birdField,sourcePath,line,c
 - 节点入口使用该节点第一条 talking 的 `talkingId`。
 - 如果节点没有文本但有选项，会生成一个 `ChoiceHost` talking 用来承载选项。
 - `--bird-role-map` 会把对白 speaker 映射为 Bird `roleId`，并写入 `roles` 和对应 `talkings`。
+- `--bird-existing-talking-root` 会递归扫描 `.asset` 文件中的 `talkingId:`，顺序分配新 ID 时自动跳过已占用值。
 
 ## 当前限制
 
@@ -93,7 +100,7 @@ anchor,node,kind,speaker,text,talkingId,talkingIndex,birdField,sourcePath,line,c
 - 选择项文本目前进入 manifest 和锚点映射表，但不进入 `L10N_Talking.csv`，因为 Bird 当前 `TalkingOptionTM.optionText` 是结构字段，不是 `L10N.Talking_Get` 坐标。
 - 尚未合并多段文本到同一个 `talkingId + <pr>` 单元格。
 - 尚未设计角色、资源、Timeline 的项目配置或宿主 Schema。
-- `talkingId` 只支持给定起点后顺序分配；还没有扫描 Bird 现有资源自动避让冲突。
+- `talkingId` 只支持给定起点后顺序分配；可以扫描现有 Talking 资源避让冲突，但还没有全项目 ID 范围配置。
 
 ## 下一步
 

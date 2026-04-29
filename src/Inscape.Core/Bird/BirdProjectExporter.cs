@@ -45,8 +45,9 @@ namespace Inscape.Core.Bird {
                 List<Segment> segments = CollectSegments(node);
                 for (int segmentIndex = 0; segmentIndex < segments.Count; segmentIndex += 1) {
                     Segment segment = segments[segmentIndex];
+                    int talkingId = TakeNextTalkingId(options, ref nextTalkingId);
                     BirdTalkingEntry talking = new BirdTalkingEntry {
-                        TalkingId = nextTalkingId,
+                        TalkingId = talkingId,
                         NodeName = node.Name,
                         NodeOrder = segmentIndex,
                         Kind = segment.Kind,
@@ -71,12 +72,12 @@ namespace Inscape.Core.Bird {
                         entryTalkingIdsByNodeName[node.Name] = talking.TalkingId;
                     }
 
-                    nextTalkingId += 1;
                 }
 
                 if (segments.Count == 0 && HasChoices(node)) {
+                    int talkingId = TakeNextTalkingId(options, ref nextTalkingId);
                     BirdTalkingEntry talking = new BirdTalkingEntry {
-                        TalkingId = nextTalkingId,
+                        TalkingId = talkingId,
                         NodeName = node.Name,
                         NodeOrder = 0,
                         Kind = "ChoiceHost",
@@ -88,7 +89,6 @@ namespace Inscape.Core.Bird {
                     manifest.Talkings.Add(talking);
                     nodeEntry.EntryTalkingId = talking.TalkingId;
                     entryTalkingIdsByNodeName[node.Name] = talking.TalkingId;
-                    nextTalkingId += 1;
                 }
             }
 
@@ -144,6 +144,16 @@ namespace Inscape.Core.Bird {
                 return roleId;
             }
             return null;
+        }
+
+        static int TakeNextTalkingId(BirdExportOptions options, ref int nextTalkingId) {
+            while (options.ReservedTalkingIds.Contains(nextTalkingId)) {
+                nextTalkingId += 1;
+            }
+
+            int talkingId = nextTalkingId;
+            nextTalkingId += 1;
+            return talkingId;
         }
 
         static void LinkTalkings(InscapeDocument graph,
