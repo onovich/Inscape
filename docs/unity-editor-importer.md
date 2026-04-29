@@ -90,17 +90,25 @@ Dry Run 会在 Unity Console 输出：
 - Timeline Hook 的解析结果。
 - 总 warning 数。
 
+同时会在 `bird-manifest.json` 同目录写入：
+
+```text
+bird-import-dry-run-report.txt
+```
+
+该文件用于留存导入计划，方便在真正 Import 前做审查或提交给其他人确认。
+
 ## 当前边界
 
 - 原型会覆盖生成资源的 `TalkingTM` 字段，不做字段级人工合并。
 - 原型不自动修改 Addressables 分组。
 - 原型不自动合并 `L10N_Talking.csv`。
 - 原型只支持 Timeline Hook，不处理背景、立绘、音频等其他 host binding。
-- Dry Run 已有 Console 文本报告，但还没有独立报告文件、字段级 diff UI 和回滚机制。
+- Dry Run 已有 Console 文本报告和独立报告文件，但还没有字段级 diff UI 和回滚机制。
 
 ## 后续建议
 
-1. 增强导入报告：输出 `talkingId`、asset path、source node、source anchor，并支持写入文件。
+1. 增强导入报告：输出 source node、source anchor 和更细的字段变化。
 2. 增加字段级 diff UI：展示每个 `TalkingTM` 即将改动的字段。
 3. 设计 `L10N_Talking.csv` 合并策略，避免覆盖人工译文。
 4. 接入 Addressables：生成后自动加入 Bird 的 `TM_TALKING` 分组。

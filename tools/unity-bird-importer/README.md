@@ -36,7 +36,7 @@ Inscape > Bird > Import Manifest...
 Assets/Resources_Runtime/Talking/InscapeGenerated
 ```
 
-5. 在 Unity Console 查看将创建、更新和缺失引用的计划。
+5. 在 Unity Console 查看将创建、更新和缺失引用的计划；Dry Run 也会在 manifest 同目录写入 `bird-import-dry-run-report.txt`。
 6. 计划确认后再执行 `Import Manifest...`。
 
 ## 当前行为
@@ -47,7 +47,7 @@ Assets/Resources_Runtime/Talking/InscapeGenerated
 - 通过 `hostHooks` 中的 `kind=timeline` 生成 `TalkingEffectTM.PlayTimeline`。
 - Timeline 资源优先按 `unityGuid` 查找，其次按 `assetPath`，最后按 `birdId` 扫描现有 `TimelineSO.tm.timelineId`。
 - 生成的资源文件名为 `SO_Talking_Inscape_<talkingId>.asset`。
-- Dry Run 会输出创建 / 更新计划、缺失 `nextTalkingId`、Timeline Hook 解析结果和 warning 计数，不修改 `.asset`。
+- Dry Run 会输出创建 / 更新计划、缺失 `nextTalkingId`、Timeline Hook 解析结果和 warning 计数，并在 manifest 同目录写入 `bird-import-dry-run-report.txt`，不修改 `.asset`。
 
 ## 当前限制
 
@@ -55,4 +55,4 @@ Assets/Resources_Runtime/Talking/InscapeGenerated
 - 只生成 Talking 结构，不自动合并或覆盖 Bird 的 `L10N_Talking.csv`。
 - 只处理 Timeline Hook，不处理背景、立绘、音频等其他 host binding。
 - 没有 Addressables 自动分组；生成后可用 Bird 现有 `TalkingSO.ApplyAA()` 或后续 Importer 扩展处理。
-- Dry Run 只有 Console 文本报告，还没有独立报告文件、字段级 diff UI 和回滚能力。
+- Dry Run 已有 Console 文本报告和独立报告文件，还没有字段级 diff UI 和回滚能力。

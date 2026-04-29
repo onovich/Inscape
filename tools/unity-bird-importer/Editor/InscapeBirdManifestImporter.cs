@@ -58,8 +58,11 @@ namespace Inscape.Unity.BirdImporter {
             }
 
             string report = CreateImportReport(manifestPath, outputFolder);
+            string reportPath = WriteDryRunReport(manifestPath, report);
             Debug.Log(report);
-            EditorUtility.DisplayDialog("Inscape Bird Importer", "Dry run complete. See Unity Console for the import plan.", "OK");
+            EditorUtility.DisplayDialog("Inscape Bird Importer",
+                                        "Dry run complete. See Unity Console and report file:\n" + reportPath,
+                                        "OK");
         }
 
         public static void ImportManifest(string manifestPath, string outputFolder) {
@@ -171,6 +174,17 @@ namespace Inscape.Unity.BirdImporter {
             builder.AppendLine("  unresolved timeline hooks: " + unresolvedTimelineHookCount);
             builder.AppendLine("  warnings: " + warningCount);
             return builder.ToString();
+        }
+
+        static string WriteDryRunReport(string manifestPath, string report) {
+            string directory = Path.GetDirectoryName(manifestPath);
+            if (string.IsNullOrEmpty(directory)) {
+                directory = Directory.GetCurrentDirectory();
+            }
+
+            string reportPath = Path.Combine(directory, "bird-import-dry-run-report.txt");
+            File.WriteAllText(reportPath, report, Encoding.UTF8);
+            return reportPath;
         }
 
         static BirdManifest LoadManifest(string manifestPath) {
