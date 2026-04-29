@@ -23,6 +23,7 @@ namespace Inscape.Tests {
                 ("cli diagnose emits json", CliDiagnoseEmitsJson),
                 ("cli commands lists command reference", CliCommandsListsCommandReference),
                 ("cli help emits command details", CliHelpEmitsCommandDetails),
+                ("cli export-host-schema-template emits json", CliExportHostSchemaTemplateEmitsJson),
                 ("project compiler resolves cross-file targets", ProjectCompilerResolvesCrossFileTargets),
                 ("project compiler diagnoses duplicate nodes", ProjectCompilerDiagnosesDuplicateNodes),
                 ("cli diagnose-project applies override", CliDiagnoseProjectAppliesOverride),
@@ -279,6 +280,8 @@ namespace Inscape.Tests {
             AssertEqual(0, exitCode, "Commands command exit code");
             AssertEqual("", error.ToString().Trim(), "Commands command stderr");
             AssertTrue(text.Contains("Single-file:"), "Commands should list single-file group.");
+            AssertTrue(text.Contains("Host schema:"), "Commands should list host schema group.");
+            AssertTrue(text.Contains("export-host-schema-template"), "Commands should list host schema template command.");
             AssertTrue(text.Contains("export-bird-role-template"), "Commands should list Bird role template command.");
             AssertTrue(text.Contains("Run `inscape help <command>`"), "Commands should explain command help.");
         }
@@ -305,6 +308,35 @@ namespace Inscape.Tests {
             AssertTrue(text.Contains("export-bird-project"), "Help should include command name.");
             AssertTrue(text.Contains("--bird-role-map"), "Help should include Bird role map option.");
             AssertTrue(text.Contains("bird-manifest.json"), "Help should include output file names.");
+        }
+
+        static void CliExportHostSchemaTemplateEmitsJson() {
+            TextWriter originalOut = Console.Out;
+            TextWriter originalError = Console.Error;
+            StringWriter output = new StringWriter();
+            StringWriter error = new StringWriter();
+
+            int exitCode;
+            try {
+                Console.SetOut(output);
+                Console.SetError(error);
+                exitCode = CliProgram.Main(new[] { "export-host-schema-template" });
+            } finally {
+                Console.SetOut(originalOut);
+                Console.SetError(originalError);
+            }
+
+            AssertEqual(0, exitCode, "Host schema template command exit code");
+            AssertEqual("", error.ToString().Trim(), "Host schema template command stderr");
+
+            using JsonDocument document = JsonDocument.Parse(output.ToString());
+            JsonElement root = document.RootElement;
+            AssertEqual("inscape.host-schema", root.GetProperty("format").GetString(), "Host schema format");
+            AssertEqual(1, root.GetProperty("formatVersion").GetInt32(), "Host schema version");
+            AssertTrue(root.GetProperty("queries").GetArrayLength() > 0, "Host schema should include query examples.");
+            AssertTrue(root.GetProperty("events").GetArrayLength() > 0, "Host schema should include event examples.");
+            AssertEqual("has_item", root.GetProperty("queries")[0].GetProperty("name").GetString(), "Host schema query example name");
+            AssertEqual("open_window", root.GetProperty("events")[0].GetProperty("name").GetString(), "Host schema event example name");
         }
 
         static void ProjectCompilerResolvesCrossFileTargets() {

@@ -18,6 +18,7 @@ inscape.config.json
 
 ```json
 {
+  "hostSchema": "config/inscape.host.schema.json",
   "bird": {
     "talkingIdStart": 100000,
     "roleMap": "config/bird-roles.csv",
@@ -33,6 +34,7 @@ inscape.config.json
 
 当前读取这些字段的工具：
 
+- `export-host-schema-template`：可生成 `hostSchema` 的起始模板，但不会自动写入配置。
 - `export-bird-role-template`：读取 `existingRoleNameCsv`。
 - `export-bird-binding-template`：读取 `existingTimelineRoot`。
 - `export-bird-project`：读取 `talkingIdStart`、`roleMap`、`bindingMap`、`existingTalkingRoot`。
@@ -47,3 +49,5 @@ inscape.config.json
 ## 设计边界
 
 这份配置不是最终宿主 Schema。它只是第一版“项目级默认值”，用于把当前 CSV 和 Bird 项目路径稳定下来。后续如果引入宿主 Schema，应考虑把角色、资源、Timeline、查询函数、回调事件等统一纳入更正式的配置或生成流程。
+
+当前 `hostSchema` 是这个方向的第一步，详见 [宿主 Schema 草案](host-schema.md)。它用于描述查询函数和宿主事件清单，不替代 Bird 的 `roleMap` / `bindingMap`。

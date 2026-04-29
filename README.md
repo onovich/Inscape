@@ -43,6 +43,7 @@
 - [DSL 生态定位对比](docs/dsl-ecosystem-positioning.md)
 - [语法样例对比](docs/syntax-comparison.md)
 - [DSL 语言设计草案](docs/dsl-language.md)
+- [宿主 Schema 草案](docs/host-schema.md)
 - [VSCode 轻工具链](docs/vscode-tooling.md)
 - [CLI 命令速查](docs/cli-command-reference.md)
 - [编辑器设计草案](docs/editor-design.md)
@@ -83,6 +84,7 @@ dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- preview-project sampl
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- extract-l10n-project samples -o artifacts\l10n.csv
 Copy-Item artifacts\l10n.csv artifacts\old-l10n.csv
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- update-l10n-project samples --from artifacts\old-l10n.csv -o artifacts\l10n.updated.csv
+dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-host-schema-template -o config\inscape.host.schema.json
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-role-template samples -o artifacts\bird-roles.template.csv
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-role-template samples --bird-existing-role-name-csv D:\UnityProjects\Bird\Assets\Resources_Runtime\Localization\L10N_RoleName.csv -o artifacts\bird-roles.template.csv
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-binding-template samples --bird-existing-timeline-root D:\UnityProjects\Bird\Assets\Resources_Runtime\Timeline -o artifacts\bird-bindings.template.csv

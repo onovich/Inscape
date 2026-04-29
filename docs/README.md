@@ -26,12 +26,13 @@
 11. [本地化提取](l10n-extraction.md)
 12. [编辑器设计草案](editor-design.md)
 13. [运行时与 Unity 宿主](runtime-unity.md)
-14. [Bird / Unity 调研记录](bird-unity-research.md)
-15. [Bird Adapter 原型](bird-adapter.md)
-16. [Unity Editor Importer 草案](unity-editor-importer.md)
-17. [路线图](roadmap.md)
-18. [TODO](todo.md)
-19. [待确认问题](open-questions.md)
+14. [宿主 Schema 草案](host-schema.md)
+15. [Bird / Unity 调研记录](bird-unity-research.md)
+16. [Bird Adapter 原型](bird-adapter.md)
+17. [Unity Editor Importer 草案](unity-editor-importer.md)
+18. [路线图](roadmap.md)
+19. [TODO](todo.md)
+20. [待确认问题](open-questions.md)
 
 ## 按任务检索
 
@@ -42,6 +43,7 @@ DSL 定位/语法        dsl-ecosystem-positioning.md, dsl-language.md, syntax-c
 VSCode 工具          vscode-tooling.md, tools/vscode-inscape/README.md
 CLI 命令速查         cli-command-reference.md, README.md
 本地化               hash-localization.md, l10n-extraction.md, ADR 0006
+宿主 Schema/查询事件 host-schema.md, dsl-language.md, open-questions.md, todo.md
 Unity/Bird 适配      bird-adapter.md, unity-editor-importer.md, bird-unity-research.md, runtime-unity.md, architecture.md, todo.md
 编辑器阶段           editor-design.md, roadmap.md
 长期设计决策         adr/README.md
@@ -66,6 +68,7 @@ docs/
   dsl-ecosystem-positioning.md  DSL 生态、竞品差异和分层参照
   syntax-comparison.md   同一剧情在多种叙事 DSL 风格下的对比
   dsl-language.md        DSL 语言设计草案与语法待确认项
+  host-schema.md         宿主查询、事件清单与连接层 Schema 草案
   vscode-tooling.md      VSCode 阶段的轻工具链设计与使用方式
   cli-command-reference.md CLI 命令、参数、产物和验证命令速查
   l10n-extraction.md     CSV 本地化提取命令与字段说明

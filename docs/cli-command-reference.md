@@ -2,7 +2,7 @@
 
 状态：基线
 
-最后更新：2026-04-29
+最后更新：2026-04-30
 
 本文集中记录 Inscape CLI 的常用命令。README 只保留开发入口示例；具体命令、产物和用途以后优先维护本文。
 
@@ -34,6 +34,18 @@ dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-project s
 ```
 
 命令行参数优先级高于配置文件。配置格式见 [项目配置草案](project-config.md)。
+
+## 宿主 Schema 命令
+
+| 命令 | 用途 | 常用输出 |
+| --- | --- | --- |
+| `export-host-schema-template` | 生成第一版宿主查询 / 事件清单 JSON 模板 | JSON |
+
+```powershell
+dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-host-schema-template -o config\inscape.host.schema.json
+```
+
+该命令不需要输入脚本，也不会改变当前 DSL 编译行为。它只是把未来宿主查询和事件清单的格式落成可版本化文件，详见 [宿主 Schema 草案](host-schema.md)。
 
 ## 单文件命令
 

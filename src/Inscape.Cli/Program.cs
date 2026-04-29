@@ -33,6 +33,11 @@ namespace Inscape.Cli {
                 return 0;
             }
 
+            if (args[0] == "export-host-schema-template") {
+                WriteOrPrint(ReadOption(args, "-o"), CreateHostSchemaTemplateJson());
+                return 0;
+            }
+
             if (args.Length < 2) {
                 PrintUsage();
                 return 1;
@@ -317,6 +322,7 @@ namespace Inscape.Cli {
 
         static void NormalizeProjectConfigPaths(ProjectConfig config, string configPath) {
             string configDirectory = Path.GetDirectoryName(configPath) ?? Directory.GetCurrentDirectory();
+            config.HostSchema = ResolveConfigPath(configDirectory, config.HostSchema);
             config.Bird.RoleMap = ResolveConfigPath(configDirectory, config.Bird.RoleMap);
             config.Bird.BindingMap = ResolveConfigPath(configDirectory, config.Bird.BindingMap);
             config.Bird.ExistingRoleNameCsv = ResolveConfigPath(configDirectory, config.Bird.ExistingRoleNameCsv);
@@ -941,6 +947,45 @@ namespace Inscape.Cli {
             builder.Append('"');
         }
 
+        static string CreateHostSchemaTemplateJson() {
+            HostSchemaTemplate template = new HostSchemaTemplate {
+                Queries = new List<HostSchemaQuery> {
+                    new HostSchemaQuery {
+                        Name = "has_item",
+                        Description = "Pure query example. The DSL may reference it later, but the host owns execution.",
+                        ReturnType = "bool",
+                        IsAsync = false,
+                        Parameters = new List<HostSchemaParameter> {
+                            new HostSchemaParameter {
+                                Name = "itemId",
+                                Type = "string",
+                                Required = true,
+                                Description = "Stable item identifier owned by the host."
+                            }
+                        }
+                    }
+                },
+                Events = new List<HostSchemaEvent> {
+                    new HostSchemaEvent {
+                        Name = "open_window",
+                        Description = "Host event example. Inscape only records the intent; the host decides behavior.",
+                        Delivery = "fire-and-forget",
+                        SideEffects = true,
+                        Parameters = new List<HostSchemaParameter> {
+                            new HostSchemaParameter {
+                                Name = "windowId",
+                                Type = "string",
+                                Required = true,
+                                Description = "Stable UI window identifier owned by the host."
+                            }
+                        }
+                    }
+                }
+            };
+
+            return JsonSerializer.Serialize(template, JsonOptions);
+        }
+
         static bool TryReadReservedTalkingIds(string[] args, ProjectConfig config, BirdExportOptions options) {
             string? talkingRoot = ReadOption(args, "--bird-existing-talking-root") ?? config.Bird.ExistingTalkingRoot;
             if (string.IsNullOrWhiteSpace(talkingRoot)) {
@@ -1001,6 +1046,7 @@ namespace Inscape.Cli {
             Console.WriteLine("Usage:");
             Console.WriteLine("  inscape commands");
             Console.WriteLine("  inscape help <command>");
+            Console.WriteLine("  inscape export-host-schema-template [-o inscape.host.schema.json]");
             Console.WriteLine("  inscape check <file.inscape>");
             Console.WriteLine("  inscape diagnose <file.inscape> [-o diagnostics.json]");
             Console.WriteLine("  inscape extract-l10n <file.inscape> [-o strings.csv]");
@@ -1029,6 +1075,9 @@ namespace Inscape.Cli {
             Console.WriteLine("  preview");
             Console.WriteLine("  extract-l10n");
             Console.WriteLine("  update-l10n");
+            Console.WriteLine();
+            Console.WriteLine("Host schema:");
+            Console.WriteLine("  export-host-schema-template");
             Console.WriteLine();
             Console.WriteLine("Project:");
             Console.WriteLine("  check-project");
@@ -1084,6 +1133,13 @@ namespace Inscape.Cli {
                                           "Update a one-file localization CSV from a previous CSV by exact anchor match.",
                                           "inscape update-l10n <file.inscape> --from old.csv [-o strings.csv]",
                                           "dotnet run --project src\\Inscape.Cli\\Inscape.Cli.csproj -- update-l10n samples\\court-loop.inscape --from artifacts\\old-l10n.csv -o artifacts\\court-loop.l10n.csv");
+                    return true;
+                case "export-host-schema-template":
+                    PrintCommandHelpBlock("export-host-schema-template",
+                                          "Write a first host schema template for pure queries and host events.",
+                                          "inscape export-host-schema-template [-o inscape.host.schema.json]",
+                                          "dotnet run --project src\\Inscape.Cli\\Inscape.Cli.csproj -- export-host-schema-template -o config\\inscape.host.schema.json",
+                                          "The template is a versioned design scaffold. It does not change current DSL parsing or Bird export behavior.");
                     return true;
                 case "check-project":
                     PrintCommandHelpBlock("check-project",
@@ -1213,6 +1269,8 @@ namespace Inscape.Cli {
 
         sealed class ProjectConfig {
 
+            public string? HostSchema { get; set; }
+
             public BirdProjectConfig Bird { get; set; } = new BirdProjectConfig();
 
         }
@@ -1230,6 +1288,58 @@ namespace Inscape.Cli {
             public string? ExistingTalkingRoot { get; set; }
 
             public int? TalkingIdStart { get; set; }
+
+        }
+
+        sealed class HostSchemaTemplate {
+
+            public string Format { get; set; } = "inscape.host-schema";
+
+            public int FormatVersion { get; set; } = 1;
+
+            public List<HostSchemaQuery> Queries { get; set; } = new List<HostSchemaQuery>();
+
+            public List<HostSchemaEvent> Events { get; set; } = new List<HostSchemaEvent>();
+
+        }
+
+        sealed class HostSchemaQuery {
+
+            public string Name { get; set; } = string.Empty;
+
+            public string Description { get; set; } = string.Empty;
+
+            public string ReturnType { get; set; } = string.Empty;
+
+            public bool IsAsync { get; set; }
+
+            public List<HostSchemaParameter> Parameters { get; set; } = new List<HostSchemaParameter>();
+
+        }
+
+        sealed class HostSchemaEvent {
+
+            public string Name { get; set; } = string.Empty;
+
+            public string Description { get; set; } = string.Empty;
+
+            public string Delivery { get; set; } = string.Empty;
+
+            public bool SideEffects { get; set; }
+
+            public List<HostSchemaParameter> Parameters { get; set; } = new List<HostSchemaParameter>();
+
+        }
+
+        sealed class HostSchemaParameter {
+
+            public string Name { get; set; } = string.Empty;
+
+            public string Type { get; set; } = string.Empty;
+
+            public bool Required { get; set; }
+
+            public string Description { get; set; } = string.Empty;
 
         }
 
