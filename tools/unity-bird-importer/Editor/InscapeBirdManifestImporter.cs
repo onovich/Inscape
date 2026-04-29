@@ -120,9 +120,11 @@ namespace Inscape.Unity.BirdImporter {
                 if (exists) {
                     updateCount += 1;
                     builder.AppendLine("  UPDATE " + entry.talkingId + " -> " + AssetDatabase.GetAssetPath(talkingSO) + FormatTalkingContext(entry));
+                    AppendTalkingDiff(builder, entry, talkingSO);
                 } else {
                     createCount += 1;
                     builder.AppendLine("  CREATE " + entry.talkingId + " -> " + outputFolder + "/SO_Talking_Inscape_" + entry.talkingId + ".asset" + FormatTalkingContext(entry));
+                    AppendCreateDetails(builder, entry);
                 }
 
                 if (entry.nextTalkingId.HasValue && !knownTalkingIds.Contains(entry.nextTalkingId.Value)) {
@@ -371,6 +373,80 @@ namespace Inscape.Unity.BirdImporter {
 
         static string NullableIntText(int? value) {
             return value.HasValue ? value.Value.ToString() : "(none)";
+        }
+
+        static void AppendCreateDetails(StringBuilder builder, BirdTalkingEntry entry) {
+            BirdChoiceOptionEntry[] options = entry.options ?? Array.Empty<BirdChoiceOptionEntry>();
+            builder.AppendLine("    roleId: " + (entry.roleId ?? 0));
+            builder.AppendLine("    nextTalking: " + NullableIntText(entry.nextTalkingId));
+            builder.AppendLine("    textAnchorIndex: " + entry.textAnchorIndex);
+            builder.AppendLine("    textDisplayType: " + ParseTextDisplayType(entry.textDisplayType));
+            builder.AppendLine("    options: " + options.Length);
+            for (int i = 0; i < options.Length; i += 1) {
+                builder.AppendLine("      option[" + i + "].text: " + TextValue(options[i].text));
+                builder.AppendLine("      option[" + i + "].nextTalking: " + NullableIntText(options[i].nextTalkingId));
+            }
+        }
+
+        static void AppendTalkingDiff(StringBuilder builder, BirdTalkingEntry entry, TalkingSO talkingSO) {
+            int changes = 0;
+            TalkingOptionTM[] currentOptions = talkingSO.tm.options ?? Array.Empty<TalkingOptionTM>();
+            BirdChoiceOptionEntry[] expectedOptions = entry.options ?? Array.Empty<BirdChoiceOptionEntry>();
+            TextDisplayType expectedTextDisplayType = ParseTextDisplayType(entry.textDisplayType);
+
+            AppendFieldChange(builder, ref changes, "roleId", talkingSO.tm.roleId.ToString(), (entry.roleId ?? 0).ToString());
+            AppendFieldChange(builder, ref changes, "nextTalking", NullableIntText(TalkingIdOf(talkingSO.tm.nextTalking)), NullableIntText(entry.nextTalkingId));
+            AppendFieldChange(builder, ref changes, "textAnchorIndex", talkingSO.tm.textAnchorIndex.ToString(), entry.textAnchorIndex.ToString());
+            AppendFieldChange(builder, ref changes, "textDisplayType", talkingSO.tm.textDisplayType.ToString(), expectedTextDisplayType.ToString());
+            AppendFieldChange(builder, ref changes, "isOption", talkingSO.tm.isOption.ToString(), (expectedOptions.Length > 0).ToString());
+            AppendFieldChange(builder, ref changes, "options.length", currentOptions.Length.ToString(), expectedOptions.Length.ToString());
+
+            int sharedOptionCount = Math.Min(currentOptions.Length, expectedOptions.Length);
+            for (int i = 0; i < sharedOptionCount; i += 1) {
+                AppendFieldChange(builder,
+                                  ref changes,
+                                  "options[" + i + "].text",
+                                  TextValue(currentOptions[i].optionText),
+                                  TextValue(expectedOptions[i].text ?? string.Empty));
+                AppendFieldChange(builder,
+                                  ref changes,
+                                  "options[" + i + "].nextTalking",
+                                  NullableIntText(TalkingIdOf(currentOptions[i].nextTalking)),
+                                  NullableIntText(expectedOptions[i].nextTalkingId));
+            }
+
+            if (changes == 0) {
+                builder.AppendLine("    no field changes detected");
+            }
+        }
+
+        static int? TalkingIdOf(TalkingSO talkingSO) {
+            if (talkingSO == null) {
+                return null;
+            }
+
+            return talkingSO.tm.talkingId;
+        }
+
+        static string TextValue(string value) {
+            if (value == null) {
+                return "(null)";
+            }
+
+            if (value.Length == 0) {
+                return "\"\"";
+            }
+
+            return "\"" + value.Replace("\r", "\\r").Replace("\n", "\\n") + "\"";
+        }
+
+        static void AppendFieldChange(StringBuilder builder, ref int changes, string field, string currentValue, string expectedValue) {
+            if (currentValue == expectedValue) {
+                return;
+            }
+
+            builder.AppendLine("    CHANGE " + field + ": " + currentValue + " -> " + expectedValue);
+            changes += 1;
         }
 
         static string FormatTalkingContext(BirdTalkingEntry entry) {

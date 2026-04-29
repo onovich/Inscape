@@ -92,6 +92,7 @@
 - [x] 为 Unity Editor Importer 原型增加 Dry Run 报告，先输出创建 / 更新 / 缺失引用计划，不修改 `.asset`。
 - [x] 为 Unity Editor Importer Dry Run 增加独立报告文件 `bird-import-dry-run-report.txt`，便于试跑后留痕审查。
 - [x] 为 Unity Editor Importer Dry Run 报告补充 Inscape `node`、`kind`、`anchor`、`source` 等追溯信息。
+- [x] 为 Unity Editor Importer Dry Run 报告补充字段级文本 diff，覆盖 `roleId`、`nextTalking`、`textAnchorIndex`、`textDisplayType` 和选项变化。
 - [ ] 在 Bird Unity 项目内试跑 Unity Editor Importer 原型，并记录生成 `.asset` 的差异与风险。
 - [x] 设计 Timeline 引用的第一版最小表达方式，但不让 DSL 直接变成演出时间轴语言。
 - [ ] 明确 Timeline Hook 的 phase 是否继续沿用 `talking.exit`，或扩展为 node enter/exit。

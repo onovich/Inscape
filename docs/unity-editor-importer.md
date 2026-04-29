@@ -86,6 +86,7 @@ Dry Run 会在 Unity Console 输出：
 
 - 将创建的 `TalkingSO`。
 - 将更新的 `TalkingSO`。
+- 既有 `TalkingSO` 即将变化的字段，例如 `roleId`、`nextTalking`、`textAnchorIndex`、`textDisplayType` 和选项。
 - 缺失的 `nextTalkingId` 或选项目标。
 - Timeline Hook 的解析结果。
 - 总 warning 数。
@@ -110,6 +111,7 @@ Timeline Hook 计划会附带 `node`、`phase` 和源位置，便于确认 hook 
 ## 当前边界
 
 - 原型会覆盖生成资源的 `TalkingTM` 字段，不做字段级人工合并。
+- Dry Run 文本报告已经能列出既有 `TalkingTM` 的字段级变化，但仍然只是审查辅助，不提供交互式选择性合并。
 - 原型不自动修改 Addressables 分组。
 - 原型不自动合并 `L10N_Talking.csv`。
 - 原型只支持 Timeline Hook，不处理背景、立绘、音频等其他 host binding。
@@ -117,8 +119,7 @@ Timeline Hook 计划会附带 `node`、`phase` 和源位置，便于确认 hook 
 
 ## 后续建议
 
-1. 增强导入报告：输出更细的字段变化。
-2. 增加字段级 diff UI：展示每个 `TalkingTM` 即将改动的字段。
-3. 设计 `L10N_Talking.csv` 合并策略，避免覆盖人工译文。
-4. 接入 Addressables：生成后自动加入 Bird 的 `TM_TALKING` 分组。
-5. 明确 Timeline Hook phase，决定是否需要 talking enter、node enter、node exit。
+1. 增加字段级 diff UI：展示每个 `TalkingTM` 即将改动的字段，并允许人工确认。
+2. 设计 `L10N_Talking.csv` 合并策略，避免覆盖人工译文。
+3. 接入 Addressables：生成后自动加入 Bird 的 `TM_TALKING` 分组。
+4. 明确 Timeline Hook phase，决定是否需要 talking enter、node enter、node exit。
