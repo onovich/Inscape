@@ -41,6 +41,7 @@ namespace Inscape.Tests {
                 ("cli export-bird-binding-template emits csv", CliExportBirdBindingTemplateEmitsCsv),
                 ("cli export-bird-role-template emits csv", CliExportBirdRoleTemplateEmitsCsv),
                 ("cli export-bird-role-template fills existing role ids", CliExportBirdRoleTemplateFillsExistingRoleIds),
+                ("cli bird commands read project config", CliBirdCommandsReadProjectConfig),
                 ("cli export-bird-project emits manifest and csv", CliExportBirdProjectEmitsManifestAndCsv),
                 ("cli export-bird-project reports unresolved host hooks", CliExportBirdProjectReportsUnresolvedHostHooks),
                 ("cli merge-bird-l10n preserves and clears safely", CliMergeBirdL10nPreservesAndClearsSafely),
@@ -891,6 +892,77 @@ ID,Desc,ZH_CN,EN_US,ES_ES
             AssertTrue(report.Contains("1050|10001"), "Role report should include ambiguous candidate IDs.");
             AssertTrue(report.Contains("未知角色,missing,"), "Role report should mark missing names.");
             Directory.Delete(directory, true);
+        }
+
+        static void CliBirdCommandsReadProjectConfig() {
+            string directory = Path.Combine(Path.GetTempPath(), "inscape-tests", Guid.NewGuid().ToString("N"));
+            string configDirectory = Path.Combine(directory, "config");
+            string outputDirectory = Path.Combine(directory, "bird-export");
+            string existingTalkingDirectory = Path.Combine(directory, "existing-talking");
+            Directory.CreateDirectory(directory);
+            Directory.CreateDirectory(configDirectory);
+            Directory.CreateDirectory(existingTalkingDirectory);
+
+            File.WriteAllText(Path.Combine(directory, "story.inscape"), """
+:: start
+@entry
+Narrator: Hello.
+@timeline court.opening
+""", Encoding.UTF8);
+            File.WriteAllText(Path.Combine(configDirectory, "bird-roles.csv"), "speaker,roleId\nNarrator,42\n", Encoding.UTF8);
+            File.WriteAllText(Path.Combine(configDirectory, "bird-bindings.csv"),
+                              "kind,alias,birdId,unityGuid,addressableKey,assetPath\n"
+                              + "timeline,court.opening,77,aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa,,Assets/Resources_Runtime/Timeline/SO_Timeline_Court_Opening.asset\n",
+                              Encoding.UTF8);
+            File.WriteAllText(Path.Combine(existingTalkingDirectory, "SO_Talking_Existing.asset"), """
+%YAML 1.1
+MonoBehaviour:
+  tm:
+    talkingId: 900
+""", Encoding.UTF8);
+            File.WriteAllText(Path.Combine(directory, "inscape.config.json"), """
+{
+  "bird": {
+    "talkingIdStart": 900,
+    "roleMap": "config/bird-roles.csv",
+    "bindingMap": "config/bird-bindings.csv",
+    "existingTalkingRoot": "existing-talking"
+  }
+}
+""", Encoding.UTF8);
+
+            TextWriter originalOut = Console.Out;
+            TextWriter originalError = Console.Error;
+            StringWriter output = new StringWriter();
+            StringWriter error = new StringWriter();
+
+            int exitCode;
+            try {
+                Console.SetOut(output);
+                Console.SetError(error);
+                exitCode = CliProgram.Main(new[] { "export-bird-project", directory, "-o", outputDirectory });
+            } finally {
+                Console.SetOut(originalOut);
+                Console.SetError(originalError);
+            }
+
+            try {
+                AssertEqual(0, exitCode, "Export-bird-project with config command exit code");
+                AssertEqual("", output.ToString().Trim(), "Export-bird-project with config stdout");
+                AssertEqual("", error.ToString().Trim(), "Export-bird-project with config stderr");
+
+                string manifestPath = Path.Combine(outputDirectory, "bird-manifest.json");
+                using JsonDocument manifest = JsonDocument.Parse(File.ReadAllText(manifestPath, Encoding.UTF8));
+                JsonElement root = manifest.RootElement;
+                AssertEqual(900, root.GetProperty("talkingIdStart").GetInt32(), "Config talking start id");
+                JsonElement firstTalking = root.GetProperty("talkings")[0];
+                AssertEqual(901, firstTalking.GetProperty("talkingId").GetInt32(), "Config existing talking root should reserve id");
+                AssertEqual(42, firstTalking.GetProperty("roleId").GetInt32(), "Config role map should apply role id");
+                JsonElement hook = root.GetProperty("hostHooks")[0];
+                AssertEqual(77, hook.GetProperty("birdId").GetInt32(), "Config binding map should resolve timeline id");
+            } finally {
+                Directory.Delete(directory, true);
+            }
         }
 
         static void CliExportBirdProjectEmitsManifestAndCsv() {

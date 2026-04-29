@@ -27,6 +27,14 @@ dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- commands
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- help export-bird-project
 ```
 
+项目级命令会自动读取项目根目录下的 `inscape.config.json`。也可以显式指定：
+
+```powershell
+dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-project samples --config samples\inscape.config.json -o artifacts\bird-export
+```
+
+命令行参数优先级高于配置文件。配置格式见 [项目配置草案](project-config.md)。
+
 ## 单文件命令
 
 | 命令 | 用途 | 常用输出 |
@@ -93,6 +101,14 @@ dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-binding-t
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-binding-template samples --bird-existing-timeline-root D:\UnityProjects\Bird\Assets\Resources_Runtime\Timeline -o config\bird-bindings.csv
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-project samples --bird-role-map config\bird-roles.csv --bird-binding-map config\bird-bindings.csv -o artifacts\bird-export
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- merge-bird-l10n artifacts\bird-export\L10N_Talking.csv --from D:\UnityProjects\Bird\Assets\Resources_Runtime\Localization\L10N_Talking.csv --report artifacts\bird-export\L10N_Talking.merge-report.csv -o artifacts\bird-export\L10N_Talking.merged.csv
+```
+
+如果项目根目录有 `inscape.config.json`，可以省略常用 Bird 路径参数：
+
+```powershell
+dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-role-template samples --report artifacts\bird-export\bird-roles.report.csv -o config\bird-roles.csv
+dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-binding-template samples -o config\bird-bindings.csv
+dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-project samples -o artifacts\bird-export
 ```
 
 `export-bird-project` 输出：

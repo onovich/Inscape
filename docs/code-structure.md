@@ -78,6 +78,8 @@ docs/
 
 `export-bird-project` 会输出 `bird-manifest.json`、`L10N_Talking.csv`、`inscape-bird-l10n-map.csv` 和 `bird-export-report.txt`，用于后续 Unity Editor Importer 原型。它支持 `--bird-role-map roles.csv` 将 speaker 绑定到 Bird `roleId`，支持 `--bird-binding-map bindings.csv` 绑定资源 / Timeline 别名，也支持 `--bird-existing-talking-root path` 扫描现有 `TalkingSO` 资源并避让 `talkingId` 冲突。
 
+项目级 Bird 命令会自动读取项目根目录的 `inscape.config.json`，用于提供 `roleMap`、`bindingMap`、`existingRoleNameCsv`、`existingTimelineRoot`、`existingTalkingRoot` 和 `talkingIdStart` 默认值。命令行参数仍可覆盖配置值。配置读取暂放在 CLI 层，避免 `Inscape.Core` 过早承担工程环境路径管理。
+
 `tools/unity-bird-importer` 提供 Unity Editor Importer 原型脚本。该脚本不进入 .NET solution；使用时复制到 Bird 项目的 `Assets/Editor/`，读取 `bird-manifest.json` 并生成或更新 `TalkingSO`。
 
 项目级扫描会忽略 `.git`、`bin`、`obj`、`node_modules` 和 `artifacts`。VSCode 诊断桥接依赖 `diagnose-project --override source temp`，未来 WebView 和本地化命令也应优先复用项目级 CLI。

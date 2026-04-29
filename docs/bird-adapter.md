@@ -73,6 +73,23 @@ timeline,court.opening,,,,
 
 项目级入口仍可用 `--entry node.name` 临时覆盖。
 
+Bird 常用路径也可以写入项目根目录的 `inscape.config.json`，减少重复命令参数：
+
+```json
+{
+  "bird": {
+    "talkingIdStart": 100000,
+    "roleMap": "config/bird-roles.csv",
+    "bindingMap": "config/bird-bindings.csv",
+    "existingRoleNameCsv": "D:/UnityProjects/Bird/Assets/Resources_Runtime/Localization/L10N_RoleName.csv",
+    "existingTimelineRoot": "D:/UnityProjects/Bird/Assets/Resources_Runtime/Timeline",
+    "existingTalkingRoot": "D:/UnityProjects/Bird/Assets/Resources_Runtime/Talking"
+  }
+}
+```
+
+命令行参数优先级高于配置文件。详见 [项目配置草案](project-config.md)。
+
 角色映射 CSV 第一版格式：
 
 ```text

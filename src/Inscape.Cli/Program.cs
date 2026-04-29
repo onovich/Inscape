@@ -137,6 +137,9 @@ namespace Inscape.Cli {
                 return 1;
             }
 
+            if (!TryReadProjectConfig(rootPath, args, out ProjectConfig config)) {
+                return 1;
+            }
             ProjectOverride? projectOverride = ReadProjectOverride(args);
             string? entryOverrideName = ReadOption(args, "--entry");
             List<ProjectSource> sources = ReadProjectSources(rootPath, projectOverride);
@@ -192,7 +195,7 @@ namespace Inscape.Cli {
             }
 
             if (command == "export-bird-binding-template") {
-                if (!TryReadBirdTimelineBindingsForTemplate(args, out Dictionary<string, BirdTimelineAssetBinding> timelineBindingsByAlias)) {
+                if (!TryReadBirdTimelineBindingsForTemplate(args, config, out Dictionary<string, BirdTimelineAssetBinding> timelineBindingsByAlias)) {
                     return 1;
                 }
 
@@ -204,6 +207,7 @@ namespace Inscape.Cli {
 
             if (command == "export-bird-role-template") {
                 if (!TryReadBirdRoleNameBindingsForTemplate(args,
+                                                            config,
                                                             out Dictionary<string, int> roleIdsBySpeaker,
                                                             out Dictionary<string, List<BirdRoleNameCandidate>> candidatesBySpeaker,
                                                             out bool scannedRoleNameCsv)) {
@@ -227,7 +231,7 @@ namespace Inscape.Cli {
                 }
 
                 BirdProjectExporter exporter = new BirdProjectExporter();
-                if (!TryReadBirdExportOptions(args, out BirdExportOptions options)) {
+                if (!TryReadBirdExportOptions(args, config, out BirdExportOptions options)) {
                     return 1;
                 }
                 BirdExportResult export = exporter.Export(result, options);
@@ -283,6 +287,53 @@ namespace Inscape.Cli {
                 }
             }
             return false;
+        }
+
+        static bool TryReadProjectConfig(string rootPath, string[] args, out ProjectConfig config) {
+            config = new ProjectConfig();
+            string? configuredPath = ReadOption(args, "--config");
+            string configPath = string.IsNullOrWhiteSpace(configuredPath)
+                ? Path.Combine(Path.GetFullPath(rootPath), "inscape.config.json")
+                : Path.GetFullPath(configuredPath);
+            if (!File.Exists(configPath)) {
+                if (string.IsNullOrWhiteSpace(configuredPath)) {
+                    return true;
+                }
+
+                Console.Error.WriteLine("Project config not found: " + configPath);
+                return false;
+            }
+
+            try {
+                ProjectConfig? parsed = JsonSerializer.Deserialize<ProjectConfig>(File.ReadAllText(configPath, Encoding.UTF8), JsonOptions);
+                config = parsed ?? new ProjectConfig();
+                NormalizeProjectConfigPaths(config, configPath);
+                return true;
+            } catch (Exception ex) {
+                Console.Error.WriteLine("Invalid project config '" + configPath + "': " + ex.Message);
+                return false;
+            }
+        }
+
+        static void NormalizeProjectConfigPaths(ProjectConfig config, string configPath) {
+            string configDirectory = Path.GetDirectoryName(configPath) ?? Directory.GetCurrentDirectory();
+            config.Bird.RoleMap = ResolveConfigPath(configDirectory, config.Bird.RoleMap);
+            config.Bird.BindingMap = ResolveConfigPath(configDirectory, config.Bird.BindingMap);
+            config.Bird.ExistingRoleNameCsv = ResolveConfigPath(configDirectory, config.Bird.ExistingRoleNameCsv);
+            config.Bird.ExistingTimelineRoot = ResolveConfigPath(configDirectory, config.Bird.ExistingTimelineRoot);
+            config.Bird.ExistingTalkingRoot = ResolveConfigPath(configDirectory, config.Bird.ExistingTalkingRoot);
+        }
+
+        static string? ResolveConfigPath(string configDirectory, string? value) {
+            if (string.IsNullOrWhiteSpace(value)) {
+                return null;
+            }
+
+            if (Path.IsPathRooted(value)) {
+                return value;
+            }
+
+            return Path.GetFullPath(Path.Combine(configDirectory, value));
         }
 
         static ProjectOverride? ReadProjectOverride(string[] args) {
@@ -408,26 +459,26 @@ namespace Inscape.Cli {
             File.WriteAllText(Path.Combine(fullDirectory, "bird-export-report.txt"), export.ReportText, Encoding.UTF8);
         }
 
-        static bool TryReadBirdExportOptions(string[] args, out BirdExportOptions options) {
+        static bool TryReadBirdExportOptions(string[] args, ProjectConfig config, out BirdExportOptions options) {
             options = new BirdExportOptions {
-                TalkingIdStart = ReadIntOption(args, "--bird-talking-start", 100000),
+                TalkingIdStart = ReadIntOption(args, "--bird-talking-start", config.Bird.TalkingIdStart ?? 100000),
             };
 
-            string? roleMapPath = ReadOption(args, "--bird-role-map");
+            string? roleMapPath = ReadOption(args, "--bird-role-map") ?? config.Bird.RoleMap;
             if (!string.IsNullOrWhiteSpace(roleMapPath)) {
                 if (!TryReadBirdRoleMap(roleMapPath, options)) {
                     return false;
                 }
             }
 
-            string? bindingMapPath = ReadOption(args, "--bird-binding-map");
+            string? bindingMapPath = ReadOption(args, "--bird-binding-map") ?? config.Bird.BindingMap;
             if (!string.IsNullOrWhiteSpace(bindingMapPath)) {
                 if (!TryReadBirdBindingMap(bindingMapPath, options)) {
                     return false;
                 }
             }
 
-            return TryReadReservedTalkingIds(args, options);
+            return TryReadReservedTalkingIds(args, config, options);
         }
 
         static bool TryReadBirdRoleMap(string roleMapPath, BirdExportOptions options) {
@@ -530,9 +581,9 @@ namespace Inscape.Cli {
             return true;
         }
 
-        static bool TryReadBirdTimelineBindingsForTemplate(string[] args, out Dictionary<string, BirdTimelineAssetBinding> bindingsByAlias) {
+        static bool TryReadBirdTimelineBindingsForTemplate(string[] args, ProjectConfig config, out Dictionary<string, BirdTimelineAssetBinding> bindingsByAlias) {
             bindingsByAlias = new Dictionary<string, BirdTimelineAssetBinding>(StringComparer.Ordinal);
-            string? timelineRoot = ReadOption(args, "--bird-existing-timeline-root");
+            string? timelineRoot = ReadOption(args, "--bird-existing-timeline-root") ?? config.Bird.ExistingTimelineRoot;
             if (string.IsNullOrWhiteSpace(timelineRoot)) {
                 return true;
             }
@@ -572,13 +623,14 @@ namespace Inscape.Cli {
         }
 
         static bool TryReadBirdRoleNameBindingsForTemplate(string[] args,
+                                                           ProjectConfig config,
                                                            out Dictionary<string, int> roleIdsBySpeaker,
                                                            out Dictionary<string, List<BirdRoleNameCandidate>> candidatesBySpeaker,
                                                            out bool scannedRoleNameCsv) {
             roleIdsBySpeaker = new Dictionary<string, int>(StringComparer.Ordinal);
             candidatesBySpeaker = new Dictionary<string, List<BirdRoleNameCandidate>>(StringComparer.Ordinal);
             scannedRoleNameCsv = false;
-            string? roleNameCsvPath = ReadOption(args, "--bird-existing-role-name-csv");
+            string? roleNameCsvPath = ReadOption(args, "--bird-existing-role-name-csv") ?? config.Bird.ExistingRoleNameCsv;
             if (string.IsNullOrWhiteSpace(roleNameCsvPath)) {
                 return true;
             }
@@ -889,8 +941,8 @@ namespace Inscape.Cli {
             builder.Append('"');
         }
 
-        static bool TryReadReservedTalkingIds(string[] args, BirdExportOptions options) {
-            string? talkingRoot = ReadOption(args, "--bird-existing-talking-root");
+        static bool TryReadReservedTalkingIds(string[] args, ProjectConfig config, BirdExportOptions options) {
+            string? talkingRoot = ReadOption(args, "--bird-existing-talking-root") ?? config.Bird.ExistingTalkingRoot;
             if (string.IsNullOrWhiteSpace(talkingRoot)) {
                 return true;
             }
@@ -957,9 +1009,9 @@ namespace Inscape.Cli {
             Console.WriteLine("  inscape diagnose-project <root> [--entry node.name] [--override source.inscape temp.inscape] [-o diagnostics.json]");
             Console.WriteLine("  inscape extract-l10n-project <root> [--entry node.name] [--override source.inscape temp.inscape] [-o strings.csv]");
             Console.WriteLine("  inscape update-l10n-project <root> --from old.csv [--entry node.name] [--override source.inscape temp.inscape] [-o strings.csv]");
-            Console.WriteLine("  inscape export-bird-binding-template <root> [--entry node.name] [--override source.inscape temp.inscape] [--bird-existing-timeline-root path] [-o bindings.csv]");
-            Console.WriteLine("  inscape export-bird-role-template <root> [--entry node.name] [--override source.inscape temp.inscape] [--bird-existing-role-name-csv path] [--report report.csv] [-o roles.csv]");
-            Console.WriteLine("  inscape export-bird-project <root> [--entry node.name] [--bird-talking-start 100000] [--bird-role-map roles.csv] [--bird-binding-map bindings.csv] [--bird-existing-talking-root path] -o output-dir");
+            Console.WriteLine("  inscape export-bird-binding-template <root> [--config inscape.config.json] [--entry node.name] [--override source.inscape temp.inscape] [--bird-existing-timeline-root path] [-o bindings.csv]");
+            Console.WriteLine("  inscape export-bird-role-template <root> [--config inscape.config.json] [--entry node.name] [--override source.inscape temp.inscape] [--bird-existing-role-name-csv path] [--report report.csv] [-o roles.csv]");
+            Console.WriteLine("  inscape export-bird-project <root> [--config inscape.config.json] [--entry node.name] [--bird-talking-start 100000] [--bird-role-map roles.csv] [--bird-binding-map bindings.csv] [--bird-existing-talking-root path] -o output-dir");
             Console.WriteLine("  inscape merge-bird-l10n <generated-L10N_Talking.csv> --from existing-L10N_Talking.csv [--report report.csv] [-o merged.csv]");
             Console.WriteLine("  inscape compile-project <root> [--entry node.name] [-o output.json]");
             Console.WriteLine("  inscape preview-project <root> [--entry node.name] [-o preview.html]");
@@ -1072,21 +1124,21 @@ namespace Inscape.Cli {
                 case "export-bird-role-template":
                     PrintCommandHelpBlock("export-bird-role-template",
                                           "Scan project dialogue speakers and write a Bird role binding template.",
-                                          "inscape export-bird-role-template <root> [--entry node.name] [--override source.inscape temp.inscape] [--bird-existing-role-name-csv path] [--report report.csv] [-o roles.csv]",
+                                          "inscape export-bird-role-template <root> [--config inscape.config.json] [--entry node.name] [--override source.inscape temp.inscape] [--bird-existing-role-name-csv path] [--report report.csv] [-o roles.csv]",
                                           "dotnet run --project src\\Inscape.Cli\\Inscape.Cli.csproj -- export-bird-role-template samples --bird-existing-role-name-csv D:\\UnityProjects\\Bird\\Assets\\Resources_Runtime\\Localization\\L10N_RoleName.csv --report artifacts\\bird-export\\bird-roles.report.csv -o config\\bird-roles.csv",
                                           "Output CSV: speaker,roleId. Optional report statuses: unique, ambiguous, missing, unscanned.");
                     return true;
                 case "export-bird-binding-template":
                     PrintCommandHelpBlock("export-bird-binding-template",
                                           "Scan Timeline hooks and write a Bird host binding template.",
-                                          "inscape export-bird-binding-template <root> [--entry node.name] [--override source.inscape temp.inscape] [--bird-existing-timeline-root path] [-o bindings.csv]",
+                                          "inscape export-bird-binding-template <root> [--config inscape.config.json] [--entry node.name] [--override source.inscape temp.inscape] [--bird-existing-timeline-root path] [-o bindings.csv]",
                                           "dotnet run --project src\\Inscape.Cli\\Inscape.Cli.csproj -- export-bird-binding-template samples --bird-existing-timeline-root D:\\UnityProjects\\Bird\\Assets\\Resources_Runtime\\Timeline -o config\\bird-bindings.csv",
                                           "Output CSV: kind,alias,birdId,unityGuid,addressableKey,assetPath");
                     return true;
                 case "export-bird-project":
                     PrintCommandHelpBlock("export-bird-project",
                                           "Export project IR to Bird manifest, Bird L10N CSV, anchor map, and report.",
-                                          "inscape export-bird-project <root> [--entry node.name] [--bird-talking-start 100000] [--bird-role-map roles.csv] [--bird-binding-map bindings.csv] [--bird-existing-talking-root path] -o output-dir",
+                                          "inscape export-bird-project <root> [--config inscape.config.json] [--entry node.name] [--bird-talking-start 100000] [--bird-role-map roles.csv] [--bird-binding-map bindings.csv] [--bird-existing-talking-root path] -o output-dir",
                                           "dotnet run --project src\\Inscape.Cli\\Inscape.Cli.csproj -- export-bird-project samples --bird-role-map config\\bird-roles.csv --bird-binding-map config\\bird-bindings.csv -o artifacts\\bird-export",
                                           "Output files: bird-manifest.json, L10N_Talking.csv, inscape-bird-l10n-map.csv, bird-export-report.txt");
                     return true;
@@ -1156,6 +1208,28 @@ namespace Inscape.Cli {
                 Description = description;
                 Language = language;
             }
+
+        }
+
+        sealed class ProjectConfig {
+
+            public BirdProjectConfig Bird { get; set; } = new BirdProjectConfig();
+
+        }
+
+        sealed class BirdProjectConfig {
+
+            public string? RoleMap { get; set; }
+
+            public string? BindingMap { get; set; }
+
+            public string? ExistingRoleNameCsv { get; set; }
+
+            public string? ExistingTimelineRoot { get; set; }
+
+            public string? ExistingTalkingRoot { get; set; }
+
+            public int? TalkingIdStart { get; set; }
 
         }
 
