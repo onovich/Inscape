@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Inscape.Core.Diagnostics;
 using Inscape.Core.Model;
+using Inscape.Core.Parsing;
 
 namespace Inscape.Core.Analysis {
 
@@ -9,6 +10,13 @@ namespace Inscape.Core.Analysis {
         public void Validate(List<InscapeDocument> documents,
                              InscapeDocument graph,
                              List<Diagnostic> diagnostics) {
+            Validate(documents, graph, diagnostics, string.Empty);
+        }
+
+        public string Validate(List<InscapeDocument> documents,
+                               InscapeDocument graph,
+                               List<Diagnostic> diagnostics,
+                               string entryOverrideName) {
             Dictionary<string, NarrativeNode> nodesByName = new Dictionary<string, NarrativeNode>(System.StringComparer.Ordinal);
 
             AnchorValidator anchorValidator = new AnchorValidator();
@@ -53,16 +61,20 @@ namespace Inscape.Core.Analysis {
                 }
             }
 
-            NarrativeNode? entry = FindEntryNode(documents, diagnostics);
-            WarnUnreachableNodes(documents, graph, diagnostics, nodesByName, entry);
+            bool hasEntryOverride = !string.IsNullOrWhiteSpace(entryOverrideName);
+            NarrativeNode? declaredEntry = FindEntryNode(documents, diagnostics, !hasEntryOverride);
+            NarrativeNode? entry = hasEntryOverride
+                ? FindEntryOverride(graph, diagnostics, nodesByName, entryOverrideName)
+                : declaredEntry;
+            WarnUnreachableNodes(graph, diagnostics, nodesByName, entry);
+
+            return entry == null ? string.Empty : entry.Name;
         }
 
-        static void WarnUnreachableNodes(List<InscapeDocument> documents,
-                                         InscapeDocument graph,
+        static void WarnUnreachableNodes(InscapeDocument graph,
                                          List<Diagnostic> diagnostics,
                                          Dictionary<string, NarrativeNode> nodesByName,
                                          NarrativeNode? entry) {
-            entry ??= FindFirstNode(documents);
             if (entry == null) {
                 return;
             }
@@ -101,7 +113,37 @@ namespace Inscape.Core.Analysis {
             }
         }
 
-        static NarrativeNode? FindEntryNode(List<InscapeDocument> documents, List<Diagnostic> diagnostics) {
+        static NarrativeNode? FindEntryOverride(InscapeDocument graph,
+                                                List<Diagnostic> diagnostics,
+                                                Dictionary<string, NarrativeNode> nodesByName,
+                                                string entryOverrideName) {
+            string entryName = entryOverrideName.Trim();
+            if (!NodeNameRules.IsValid(entryName)) {
+                diagnostics.Add(new Diagnostic("INS033",
+                                               DiagnosticSeverity.Error,
+                                               "Invalid project entry override '" + entryName + "'. " + NodeNameRules.Description,
+                                               graph.SourcePath,
+                                               1,
+                                               1));
+                return null;
+            }
+
+            if (nodesByName.TryGetValue(entryName, out NarrativeNode? entry)) {
+                return entry;
+            }
+
+            diagnostics.Add(new Diagnostic("INS034",
+                                           DiagnosticSeverity.Error,
+                                           "Project entry override references missing node '" + entryName + "'.",
+                                           graph.SourcePath,
+                                           1,
+                                           1));
+            return null;
+        }
+
+        static NarrativeNode? FindEntryNode(List<InscapeDocument> documents,
+                                            List<Diagnostic> diagnostics,
+                                            bool reportFallback) {
             NarrativeNode? entry = null;
             SourceSpan entrySource = SourceSpan.Empty;
 
@@ -132,7 +174,7 @@ namespace Inscape.Core.Analysis {
                 }
             }
 
-            if (entry == null) {
+            if (entry == null && reportFallback) {
                 NarrativeNode? fallback = FindFirstNode(documents);
                 if (fallback != null) {
                     diagnostics.Add(new Diagnostic("INS032",
@@ -141,6 +183,7 @@ namespace Inscape.Core.Analysis {
                                                    fallback.Source.SourcePath,
                                                    fallback.Source.Line,
                                                    fallback.Source.Column));
+                    return fallback;
                 }
             }
 

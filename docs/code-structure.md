@@ -68,6 +68,8 @@ docs/
   update-l10n-project
 ```
 
+项目级命令支持 `--entry node.name` 临时覆盖项目入口，用于从任意节点编译、诊断和预览。它不修改源文件中的 `@entry`。
+
 项目级扫描会忽略 `.git`、`bin`、`obj`、`node_modules` 和 `artifacts`。VSCode 诊断桥接依赖 `diagnose-project --override source temp`，未来 WebView 和本地化命令也应优先复用项目级 CLI。
 
 ## 后续预留目录

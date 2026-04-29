@@ -12,6 +12,8 @@ namespace Inscape.Core.Compilation {
 
         public InscapeDocument Graph { get; set; }
 
+        public string EntryNodeName { get; set; }
+
         public List<Diagnostic> Diagnostics { get; set; }
 
         public bool HasErrors {
@@ -28,10 +30,12 @@ namespace Inscape.Core.Compilation {
         public ProjectCompilationResult(string rootPath,
                                         List<InscapeDocument> documents,
                                         InscapeDocument graph,
+                                        string entryNodeName,
                                         List<Diagnostic> diagnostics) {
             RootPath = rootPath;
             Documents = documents;
             Graph = graph;
+            EntryNodeName = entryNodeName;
             Diagnostics = diagnostics;
         }
 

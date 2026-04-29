@@ -20,6 +20,7 @@ dotnet run --project src\Inscape.Cli -- check-project samples
 dotnet run --project src\Inscape.Cli -- diagnose-project samples
 dotnet run --project src\Inscape.Cli -- compile-project samples -o artifacts\samples-project.json
 dotnet run --project src\Inscape.Cli -- preview-project samples -o artifacts\samples-project.html
+dotnet run --project src\Inscape.Cli -- preview-project samples --entry court.cross_exam.loop -o artifacts\samples-project.entry.html
 dotnet run --project src\Inscape.Cli -- extract-l10n-project samples -o artifacts\l10n.csv
 Copy-Item artifacts\l10n.csv artifacts\old-l10n.csv
 dotnet run --project src\Inscape.Cli -- update-l10n-project samples --from artifacts\old-l10n.csv -o artifacts\l10n.updated.csv

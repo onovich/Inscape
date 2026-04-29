@@ -15,6 +15,8 @@ namespace Inscape.Cli {
 
         public InscapeDocument Graph { get; set; } = new InscapeDocument();
 
+        public string EntryNodeName { get; set; } = string.Empty;
+
         public List<Diagnostic> Diagnostics { get; set; } = new List<Diagnostic>();
 
         public bool HasErrors { get; set; }

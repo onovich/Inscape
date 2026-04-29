@@ -9,6 +9,12 @@ namespace Inscape.Core.Compilation {
     public sealed class ProjectCompiler {
 
         public ProjectCompilationResult Compile(IReadOnlyList<ProjectSource> sources, string rootPath) {
+            return Compile(sources, rootPath, string.Empty);
+        }
+
+        public ProjectCompilationResult Compile(IReadOnlyList<ProjectSource> sources,
+                                                string rootPath,
+                                                string entryOverrideName) {
             InscapeParser parser = new InscapeParser();
             List<InscapeDocument> documents = new List<InscapeDocument>();
             List<Diagnostic> diagnostics = new List<Diagnostic>();
@@ -22,9 +28,9 @@ namespace Inscape.Core.Compilation {
 
             InscapeDocument graph = MergeDocuments(documents, rootPath);
             ProjectGraphValidator validator = new ProjectGraphValidator();
-            validator.Validate(documents, graph, diagnostics);
+            string entryNodeName = validator.Validate(documents, graph, diagnostics, entryOverrideName);
 
-            return new ProjectCompilationResult(rootPath, documents, graph, diagnostics);
+            return new ProjectCompilationResult(rootPath, documents, graph, entryNodeName, diagnostics);
         }
 
         static InscapeDocument MergeDocuments(List<InscapeDocument> documents, string rootPath) {

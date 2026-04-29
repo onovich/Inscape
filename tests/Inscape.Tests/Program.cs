@@ -26,9 +26,12 @@ namespace Inscape.Tests {
                 ("cli diagnose-project applies override", CliDiagnoseProjectAppliesOverride),
                 ("cli compile-project emits project ir", CliCompileProjectEmitsProjectIr),
                 ("project compiler uses entry metadata", ProjectCompilerUsesEntryMetadata),
+                ("project compiler applies entry override", ProjectCompilerAppliesEntryOverride),
+                ("project compiler diagnoses missing entry override", ProjectCompilerDiagnosesMissingEntryOverride),
                 ("project compiler diagnoses multiple entries", ProjectCompilerDiagnosesMultipleEntries),
                 ("project compiler reports fallback entry", ProjectCompilerReportsFallbackEntry),
                 ("cli preview-project emits html", CliPreviewProjectEmitsHtml),
+                ("cli preview-project applies entry override", CliPreviewProjectAppliesEntryOverride),
                 ("cli extract-l10n emits csv", CliExtractL10nEmitsCsv),
                 ("cli extract-l10n-project emits csv", CliExtractL10nProjectEmitsCsv),
                 ("cli update-l10n preserves translations", CliUpdateL10nPreservesTranslations),
@@ -370,6 +373,7 @@ namespace Inscape.Tests {
             AssertEqual("inscape.project-ir", root.GetProperty("format").GetString(), "Compile-project format");
             AssertFalse(root.GetProperty("hasErrors").GetBoolean(), "Compile-project hasErrors");
             AssertEqual(2, root.GetProperty("graph").GetProperty("nodes").GetArrayLength(), "Compile-project graph node count");
+            AssertEqual("start", root.GetProperty("entryNodeName").GetString(), "Compile-project entry node");
         }
 
         static void ProjectCompilerUsesEntryMetadata() {
@@ -390,6 +394,41 @@ namespace Inscape.Tests {
             AssertFalse(result.HasErrors, "@entry project should not have errors.");
             AssertFalse(ContainsAnyCode(result, "INS021"), "@entry should be used for reachability.");
             AssertFalse(ContainsAnyCode(result, "INS032"), "Explicit @entry should suppress fallback diagnostic.");
+            AssertEqual("start", result.EntryNodeName, "@entry node name");
+        }
+
+        static void ProjectCompilerAppliesEntryOverride() {
+            ProjectCompiler compiler = new ProjectCompiler();
+            ProjectCompilationResult result = compiler.Compile(new List<ProjectSource> {
+                new ProjectSource("memory://00-orphan.inscape", """
+:: orphan.node
+旁白：文件顺序上的第一个节点。
+"""),
+                new ProjectSource("memory://01-start.inscape", """
+:: start
+旁白：临时调试入口。
+-> orphan.node
+"""),
+            }, "memory://project", "start");
+
+            AssertFalse(result.HasErrors, "Entry override project should not have errors.");
+            AssertEqual("start", result.EntryNodeName, "Entry override node name");
+            AssertFalse(ContainsAnyCode(result, "INS021"), "Entry override should be used for reachability.");
+            AssertFalse(ContainsAnyCode(result, "INS032"), "Entry override should suppress fallback diagnostic.");
+        }
+
+        static void ProjectCompilerDiagnosesMissingEntryOverride() {
+            ProjectCompiler compiler = new ProjectCompiler();
+            ProjectCompilationResult result = compiler.Compile(new List<ProjectSource> {
+                new ProjectSource("memory://a.inscape", """
+:: start
+旁白：开始。
+"""),
+            }, "memory://project", "missing.node");
+
+            AssertTrue(result.HasErrors, "Missing entry override should be an error.");
+            AssertTrue(ContainsCode(result, "INS034"), "Expected INS034 missing entry override diagnostic.");
+            AssertEqual("", result.EntryNodeName, "Missing entry override should not resolve an entry.");
         }
 
         static void ProjectCompilerDiagnosesMultipleEntries() {
@@ -462,6 +501,44 @@ namespace Inscape.Tests {
             AssertTrue(html.Contains("inscape.project-ir"), "Preview-project should embed project IR.");
             AssertTrue(html.Contains("second.node"), "Preview-project should include project nodes.");
             AssertTrue(html.Contains("const graph = data.graph ?? data.document;"), "Preview-project should use graph fallback.");
+            AssertTrue(html.Contains("const entryName = data.entryNodeName ?? '';"), "Preview-project should read project entry.");
+        }
+
+        static void CliPreviewProjectAppliesEntryOverride() {
+            string directory = Path.Combine(Path.GetTempPath(), "inscape-tests", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory);
+
+            File.WriteAllText(Path.Combine(directory, "00-start.inscape"), """
+:: start
+@entry
+旁白：默认入口。
+""", Encoding.UTF8);
+            File.WriteAllText(Path.Combine(directory, "01-second.inscape"), """
+:: second.node
+旁白：临时入口。
+-> start
+""", Encoding.UTF8);
+
+            TextWriter originalOut = Console.Out;
+            TextWriter originalError = Console.Error;
+            StringWriter output = new StringWriter();
+            StringWriter error = new StringWriter();
+
+            int exitCode;
+            try {
+                Console.SetOut(output);
+                Console.SetError(error);
+                exitCode = CliProgram.Main(new[] { "preview-project", directory, "--entry", "second.node" });
+            } finally {
+                Console.SetOut(originalOut);
+                Console.SetError(originalError);
+                Directory.Delete(directory, true);
+            }
+
+            string html = output.ToString();
+            AssertEqual(0, exitCode, "Preview-project entry override command exit code");
+            AssertEqual("", error.ToString().Trim(), "Preview-project entry override stderr");
+            AssertTrue(html.Contains("\"entryNodeName\": \"second.node\""), "Preview-project should serialize entry override.");
         }
 
         static void CliExtractL10nEmitsCsv() {

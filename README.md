@@ -18,6 +18,7 @@
 
 - C# Compiler Core：解析 `.inscape`，输出 Narrative Graph IR 与诊断。
 - 项目级编译：跨文件节点合并、全局节点唯一性、`@entry` 项目入口、跨文件跳转诊断。
+- 项目级入口覆盖：`--entry node.name` 可临时从任意节点编译或预览。
 - VSCode 轻工具链：高亮、snippets、诊断桥接、节点补全、Outline、跳转定义、引用查找和 Hover。
 - VSCode 本地化命令：导出项目 CSV，基于旧 CSV 更新项目本地化表。
 - HTML 调试预览：单文件/项目级预览、节点跳转、选择、回环、路径、Restart/Back 和锚点显示。
@@ -64,6 +65,7 @@ dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- check-project samples
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- diagnose-project samples
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- compile-project samples -o artifacts\samples-project.json
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- preview-project samples -o artifacts\samples-project.html
+dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- preview-project samples --entry court.cross_exam.loop -o artifacts\samples-project.entry.html
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- extract-l10n-project samples -o artifacts\l10n.csv
 Copy-Item artifacts\l10n.csv artifacts\old-l10n.csv
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- update-l10n-project samples --from artifacts\old-l10n.csv -o artifacts\l10n.updated.csv

@@ -101,6 +101,7 @@ namespace Inscape.Cli {
                 RootPath = result.RootPath,
                 Documents = result.Documents,
                 Graph = result.Graph,
+                EntryNodeName = result.EntryNodeName,
                 Diagnostics = result.Diagnostics,
                 HasErrors = result.HasErrors,
             };
@@ -113,6 +114,7 @@ namespace Inscape.Cli {
             }
 
             ProjectOverride? projectOverride = ReadProjectOverride(args);
+            string? entryOverrideName = ReadOption(args, "--entry");
             List<ProjectSource> sources = ReadProjectSources(rootPath, projectOverride);
             if (sources.Count == 0) {
                 Console.Error.WriteLine("No .inscape files found under: " + rootPath);
@@ -120,7 +122,7 @@ namespace Inscape.Cli {
             }
 
             ProjectCompiler compiler = new ProjectCompiler();
-            ProjectCompilationResult result = compiler.Compile(sources, Path.GetFullPath(rootPath));
+            ProjectCompilationResult result = compiler.Compile(sources, Path.GetFullPath(rootPath), entryOverrideName ?? string.Empty);
 
             if (command == "check-project") {
                 PrintDiagnostics(result.Diagnostics);
@@ -313,12 +315,12 @@ namespace Inscape.Cli {
             Console.WriteLine("  inscape diagnose <file.inscape> [-o diagnostics.json]");
             Console.WriteLine("  inscape extract-l10n <file.inscape> [-o strings.csv]");
             Console.WriteLine("  inscape update-l10n <file.inscape> --from old.csv [-o strings.csv]");
-            Console.WriteLine("  inscape check-project <root>");
-            Console.WriteLine("  inscape diagnose-project <root> [--override source.inscape temp.inscape] [-o diagnostics.json]");
-            Console.WriteLine("  inscape extract-l10n-project <root> [--override source.inscape temp.inscape] [-o strings.csv]");
-            Console.WriteLine("  inscape update-l10n-project <root> --from old.csv [--override source.inscape temp.inscape] [-o strings.csv]");
-            Console.WriteLine("  inscape compile-project <root> [-o output.json]");
-            Console.WriteLine("  inscape preview-project <root> [-o preview.html]");
+            Console.WriteLine("  inscape check-project <root> [--entry node.name]");
+            Console.WriteLine("  inscape diagnose-project <root> [--entry node.name] [--override source.inscape temp.inscape] [-o diagnostics.json]");
+            Console.WriteLine("  inscape extract-l10n-project <root> [--entry node.name] [--override source.inscape temp.inscape] [-o strings.csv]");
+            Console.WriteLine("  inscape update-l10n-project <root> --from old.csv [--entry node.name] [--override source.inscape temp.inscape] [-o strings.csv]");
+            Console.WriteLine("  inscape compile-project <root> [--entry node.name] [-o output.json]");
+            Console.WriteLine("  inscape preview-project <root> [--entry node.name] [-o preview.html]");
             Console.WriteLine("  inscape compile <file.inscape> [-o output.json]");
             Console.WriteLine("  inscape preview <file.inscape> [-o preview.html]");
         }

@@ -64,8 +64,10 @@ namespace Inscape.Cli {
             html.AppendLine("  <script>");
             html.AppendLine("    const data = " + json + ";");
             html.AppendLine("    const graph = data.graph ?? data.document;");
-            html.AppendLine("    const entry = graph.nodes.find(node => node.lines.some(line => line.kind === 'Metadata' && (line.text ?? '').trim() === '@entry'));");
             html.AppendLine("    const nodes = new Map(graph.nodes.map(node => [node.name, node]));");
+            html.AppendLine("    const entryName = data.entryNodeName ?? '';");
+            html.AppendLine("    const metadataEntry = graph.nodes.find(node => node.lines.some(line => line.kind === 'Metadata' && (line.text ?? '').trim() === '@entry'));");
+            html.AppendLine("    const entry = entryName ? nodes.get(entryName) : metadataEntry;");
             html.AppendLine("    let current = entry?.name ?? graph.nodes[0]?.name ?? '';");
             html.AppendLine("    let path = current ? [current] : [];");
             html.AppendLine("    const text = value => document.createTextNode(value ?? '');");
