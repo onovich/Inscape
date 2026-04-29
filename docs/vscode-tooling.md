@@ -38,7 +38,7 @@ Inscape 的默认阅读优先级应当是：
 - 高亮对白：`角色：对白`
 - 高亮旁白、选择提示、选项、跳转、元信息和行内标签。
 - 标记明显非法的节点名或跳转目标。
-- 提供基础 snippets：节点、对白、选择组、跳转、元信息、行内标签。
+- 提供基础 snippets：节点、对白、选择组、跳转、元信息、Timeline Hook、行内标签。
 - 通过 `dotnet run --project src/Inscape.Cli/Inscape.Cli.csproj -- diagnose-project <workspace> --override <source> <temp-file>` 刷新实时诊断。
 - 在 `->` 跳转目标位置补全工作区内的节点名。
 - 在 `->` 跳转目标上支持 Go to Definition / Ctrl+Click。

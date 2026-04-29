@@ -102,6 +102,7 @@ namespace Inscape.Core.Bird {
             manifest.Roles.Sort((left, right) => string.CompareOrdinal(left.Speaker, right.Speaker));
 
             LinkTalkings(project.Graph, entryTalkingIdsByNodeName, nodesByName, manifest);
+            ExtractHostHooks(project.Graph, manifest);
             return manifest;
         }
 
@@ -249,6 +250,114 @@ namespace Inscape.Core.Bird {
                 BirdField = "L10N_Talking.ZH_CN",
                 Source = segment.Source,
             });
+        }
+
+        static void ExtractHostHooks(InscapeDocument graph, BirdManifest manifest) {
+            Dictionary<string, List<BirdTalkingEntry>> talkingsByNodeName = BuildTalkingsByNodeName(manifest);
+
+            for (int nodeIndex = 0; nodeIndex < graph.Nodes.Count; nodeIndex += 1) {
+                NarrativeNode node = graph.Nodes[nodeIndex];
+                for (int lineIndex = 0; lineIndex < node.Lines.Count; lineIndex += 1) {
+                    NarrativeLine line = node.Lines[lineIndex];
+                    if (line.Kind != NarrativeLineKind.Metadata) {
+                        continue;
+                    }
+
+                    if (!TryParseTimelineHook(line.Text, out string alias)) {
+                        continue;
+                    }
+
+                    BirdHostBinding? binding = ResolveHostBinding(manifest.HostBindings, "timeline", alias);
+                    BirdTalkingEntry? targetTalking = FindHookTargetTalking(node.Name, line.Source.Line, talkingsByNodeName);
+                    manifest.HostHooks.Add(new BirdHostHook {
+                        Kind = "timeline",
+                        Alias = alias,
+                        Phase = "talking.exit",
+                        NodeName = node.Name,
+                        TargetTalkingId = targetTalking == null ? (int?)null : targetTalking.TalkingId,
+                        BirdId = binding == null ? null : binding.BirdId,
+                        UnityGuid = binding == null ? string.Empty : binding.UnityGuid,
+                        AddressableKey = binding == null ? string.Empty : binding.AddressableKey,
+                        AssetPath = binding == null ? string.Empty : binding.AssetPath,
+                        Source = line.Source,
+                    });
+                }
+            }
+        }
+
+        static Dictionary<string, List<BirdTalkingEntry>> BuildTalkingsByNodeName(BirdManifest manifest) {
+            Dictionary<string, List<BirdTalkingEntry>> talkingsByNodeName = new Dictionary<string, List<BirdTalkingEntry>>(StringComparer.Ordinal);
+            for (int i = 0; i < manifest.Talkings.Count; i += 1) {
+                BirdTalkingEntry talking = manifest.Talkings[i];
+                if (!talkingsByNodeName.TryGetValue(talking.NodeName, out List<BirdTalkingEntry>? nodeTalkings)) {
+                    nodeTalkings = new List<BirdTalkingEntry>();
+                    talkingsByNodeName.Add(talking.NodeName, nodeTalkings);
+                }
+                nodeTalkings.Add(talking);
+            }
+            return talkingsByNodeName;
+        }
+
+        static BirdTalkingEntry? FindHookTargetTalking(string nodeName,
+                                                       int hookLine,
+                                                       Dictionary<string, List<BirdTalkingEntry>> talkingsByNodeName) {
+            if (!talkingsByNodeName.TryGetValue(nodeName, out List<BirdTalkingEntry>? nodeTalkings) || nodeTalkings.Count == 0) {
+                return null;
+            }
+
+            BirdTalkingEntry? previousTalking = null;
+            for (int i = 0; i < nodeTalkings.Count; i += 1) {
+                BirdTalkingEntry talking = nodeTalkings[i];
+                if (talking.Source.Line < hookLine) {
+                    previousTalking = talking;
+                    continue;
+                }
+
+                break;
+            }
+
+            return previousTalking ?? nodeTalkings[0];
+        }
+
+        static BirdHostBinding? ResolveHostBinding(IReadOnlyList<BirdHostBinding> bindings, string kind, string alias) {
+            for (int i = 0; i < bindings.Count; i += 1) {
+                BirdHostBinding binding = bindings[i];
+                if (binding.Kind == kind && binding.Alias == alias) {
+                    return binding;
+                }
+            }
+            return null;
+        }
+
+        static bool TryParseTimelineHook(string metadataText, out string alias) {
+            alias = string.Empty;
+            string trimmed = metadataText.Trim();
+
+            if (trimmed.StartsWith("@timeline", StringComparison.Ordinal)) {
+                alias = trimmed.Substring("@timeline".Length).Trim();
+                if (alias.StartsWith(":", StringComparison.Ordinal)) {
+                    alias = alias.Substring(1).Trim();
+                }
+                return alias.Length > 0;
+            }
+
+            if (!trimmed.StartsWith("[", StringComparison.Ordinal) || !trimmed.EndsWith("]", StringComparison.Ordinal)) {
+                return false;
+            }
+
+            string body = trimmed.Substring(1, trimmed.Length - 2);
+            int separator = body.IndexOf(':');
+            if (separator < 0) {
+                return false;
+            }
+
+            string key = body.Substring(0, separator).Trim();
+            if (key != "timeline") {
+                return false;
+            }
+
+            alias = body.Substring(separator + 1).Trim();
+            return alias.Length > 0;
         }
 
         static string WriteL10nTalkingCsv(BirdManifest manifest, BirdExportOptions options) {

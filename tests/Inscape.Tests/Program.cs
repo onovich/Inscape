@@ -707,6 +707,7 @@ Narrator: Project start.
 :: start
 @entry
 Narrator: Hello, "Bird".
+@timeline court.opening
 ? Choose
   - Continue -> second.node
 """, Encoding.UTF8);
@@ -774,6 +775,13 @@ MonoBehaviour:
                 AssertEqual("background", backgroundBinding.GetProperty("kind").GetString(), "Bird background binding kind");
                 AssertEqual("BG/Court", backgroundBinding.GetProperty("addressableKey").GetString(), "Bird background binding addressable key");
                 AssertEqual("Assets/Art/Court, Main.png", backgroundBinding.GetProperty("assetPath").GetString(), "Bird binding CSV should support quoted commas");
+                AssertEqual(1, root.GetProperty("hostHooks").GetArrayLength(), "Bird host hook count");
+                JsonElement timelineHook = root.GetProperty("hostHooks")[0];
+                AssertEqual("timeline", timelineHook.GetProperty("kind").GetString(), "Bird timeline hook kind");
+                AssertEqual("court.opening", timelineHook.GetProperty("alias").GetString(), "Bird timeline hook alias");
+                AssertEqual("talking.exit", timelineHook.GetProperty("phase").GetString(), "Bird timeline hook phase");
+                AssertEqual(501, timelineHook.GetProperty("targetTalkingId").GetInt32(), "Bird timeline hook target talking id");
+                AssertEqual(101, timelineHook.GetProperty("birdId").GetInt32(), "Bird timeline hook resolved Bird id");
 
                 JsonElement firstTalking = root.GetProperty("talkings")[0];
                 AssertEqual(501, firstTalking.GetProperty("talkingId").GetInt32(), "First talking id");

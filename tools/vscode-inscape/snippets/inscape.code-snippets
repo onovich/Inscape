@@ -39,6 +39,13 @@
     ],
     "description": "Create a metadata line."
   },
+  "Timeline Hook": {
+    "prefix": "timeline",
+    "body": [
+      "@timeline ${1:timeline.alias}"
+    ],
+    "description": "Reference a host timeline alias."
+  },
   "Inline Tag": {
     "prefix": "tag",
     "body": [

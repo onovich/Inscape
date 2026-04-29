@@ -87,6 +87,7 @@ inscape-bird-l10n-map.csv
 - `languages`
 - `roles`
 - `hostBindings`
+- `hostHooks`
 - `nodes`
 - `talkings`
 - `localization`
@@ -118,11 +119,13 @@ anchor,node,kind,speaker,text,talkingId,talkingIndex,birdField,sourcePath,line,c
 - 如果节点没有文本但有选项，会生成一个 `ChoiceHost` talking 用来承载选项。
 - `--bird-role-map` 会把对白 speaker 映射为 Bird `roleId`，并写入 `roles` 和对应 `talkings`。
 - `--bird-binding-map` 会把资源别名、Timeline 名称和 Unity 资源坐标写入 manifest 的 `hostBindings`，供后续 Unity Editor Importer 和 Timeline hook 使用。
+- `@timeline alias` 和 `[timeline: alias]` 会写入 manifest 的 `hostHooks`，当前导出为 `kind=timeline`、`phase=talking.exit`，并尽量通过 `hostBindings` 解析 `birdId` / Unity 坐标。
 - `--bird-existing-talking-root` 会递归扫描 `.asset` 文件中的 `talkingId:`，顺序分配新 ID 时自动跳过已占用值。
 
 ## 当前限制
 
 - 尚未生成 Unity `.asset` 或 ScriptableObject；这一步留给 Unity Editor Importer。
+- Timeline Hook 目前只进入 manifest，不直接生成 `TalkingEffectTM.PlayTimeline`；这一步留给 Unity Editor Importer。
 - `roleId` 仅支持通过 CSV 手工绑定，尚不能从 Bird 资源自动扫描。
 - `textAnchorIndex` 暂固定为 `0`，`textDisplayType` 暂固定为 `Instant`。
 - 选择项文本目前进入 manifest 和锚点映射表，但不进入 `L10N_Talking.csv`，因为 Bird 当前 `TalkingOptionTM.optionText` 是结构字段，不是 `L10N.Talking_Get` 坐标。
@@ -132,7 +135,7 @@ anchor,node,kind,speaker,text,talkingId,talkingIndex,birdField,sourcePath,line,c
 
 ## 下一步
 
-- 设计 Timeline Hook 的语法和 manifest 字段，让 hook 引用 `hostBindings.alias`，而不是直接写 Unity 对象。
 - 设计 Unity Editor Importer：读取 manifest，创建或更新 `TalkingSO`。
+- 明确 Timeline Hook 的 phase 是否继续沿用 `talking.exit`，或扩展为 node enter/exit。
 - 决定选择项文本长期如何本地化：保留在 `TalkingOptionTM.optionText`，还是扩展 Bird L10N。
 - 评估是否把连续同配置文本合并为 `<pr>`，减少 `TalkingSO` 数量。
