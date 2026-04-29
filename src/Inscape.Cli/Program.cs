@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Inscape.Core.Bird;
 using Inscape.Core.Compilation;
 using Inscape.Core.Diagnostics;
 using Inscape.Core.Localization;
@@ -167,6 +168,22 @@ namespace Inscape.Cli {
                 return result.HasErrors ? 1 : 0;
             }
 
+            if (command == "export-bird-project") {
+                if (string.IsNullOrWhiteSpace(outputPath)) {
+                    Console.Error.WriteLine("Missing required option: -o <output-directory>");
+                    return 1;
+                }
+
+                BirdProjectExporter exporter = new BirdProjectExporter();
+                BirdExportOptions options = new BirdExportOptions {
+                    TalkingIdStart = ReadIntOption(args, "--bird-talking-start", 100000),
+                };
+                BirdExportResult export = exporter.Export(result, options);
+                WriteBirdExport(outputPath, export);
+                PrintDiagnostics(result.Diagnostics);
+                return result.HasErrors ? 1 : 0;
+            }
+
             Console.Error.WriteLine("Unknown command: " + command);
             PrintUsage();
             return 1;
@@ -231,7 +248,8 @@ namespace Inscape.Cli {
                 || command == "compile-project"
                 || command == "preview-project"
                 || command == "extract-l10n-project"
-                || command == "update-l10n-project";
+                || command == "update-l10n-project"
+                || command == "export-bird-project";
         }
 
         static string ExtractLocalizationCsv(Inscape.Core.Model.InscapeDocument document) {
@@ -294,6 +312,16 @@ namespace Inscape.Cli {
             File.WriteAllText(fullPath, content, Encoding.UTF8);
         }
 
+        static void WriteBirdExport(string outputDirectory, BirdExportResult export) {
+            string fullDirectory = Path.GetFullPath(outputDirectory);
+            Directory.CreateDirectory(fullDirectory);
+            File.WriteAllText(Path.Combine(fullDirectory, "bird-manifest.json"),
+                              JsonSerializer.Serialize(export.Manifest, JsonOptions),
+                              Encoding.UTF8);
+            File.WriteAllText(Path.Combine(fullDirectory, "L10N_Talking.csv"), export.L10nTalkingCsv, Encoding.UTF8);
+            File.WriteAllText(Path.Combine(fullDirectory, "inscape-bird-l10n-map.csv"), export.AnchorMapCsv, Encoding.UTF8);
+        }
+
         static string? ReadOption(string[] args, string optionName) {
             for (int i = 0; i < args.Length - 1; i += 1) {
                 if (args[i] == optionName) {
@@ -301,6 +329,17 @@ namespace Inscape.Cli {
                 }
             }
             return null;
+        }
+
+        static int ReadIntOption(string[] args, string optionName, int fallback) {
+            string? value = ReadOption(args, optionName);
+            if (string.IsNullOrWhiteSpace(value)) {
+                return fallback;
+            }
+            if (int.TryParse(value, out int parsed)) {
+                return parsed;
+            }
+            return fallback;
         }
 
         static bool IsHelp(string value) {
@@ -319,6 +358,7 @@ namespace Inscape.Cli {
             Console.WriteLine("  inscape diagnose-project <root> [--entry node.name] [--override source.inscape temp.inscape] [-o diagnostics.json]");
             Console.WriteLine("  inscape extract-l10n-project <root> [--entry node.name] [--override source.inscape temp.inscape] [-o strings.csv]");
             Console.WriteLine("  inscape update-l10n-project <root> --from old.csv [--entry node.name] [--override source.inscape temp.inscape] [-o strings.csv]");
+            Console.WriteLine("  inscape export-bird-project <root> [--entry node.name] [--bird-talking-start 100000] -o output-dir");
             Console.WriteLine("  inscape compile-project <root> [--entry node.name] [-o output.json]");
             Console.WriteLine("  inscape preview-project <root> [--entry node.name] [-o preview.html]");
             Console.WriteLine("  inscape compile <file.inscape> [-o output.json]");

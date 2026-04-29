@@ -25,9 +25,10 @@
 10. [编辑器设计草案](editor-design.md)
 11. [运行时与 Unity 宿主](runtime-unity.md)
 12. [Bird / Unity 调研记录](bird-unity-research.md)
-13. [路线图](roadmap.md)
-14. [TODO](todo.md)
-15. [待确认问题](open-questions.md)
+13. [Bird Adapter 原型](bird-adapter.md)
+14. [路线图](roadmap.md)
+15. [TODO](todo.md)
+16. [待确认问题](open-questions.md)
 
 ## 按任务检索
 
@@ -37,7 +38,7 @@
 DSL 语法             dsl-language.md, syntax-comparison.md, open-questions.md
 VSCode 工具          vscode-tooling.md, tools/vscode-inscape/README.md
 本地化               hash-localization.md, l10n-extraction.md, ADR 0006
-Unity/Bird 适配      bird-unity-research.md, runtime-unity.md, architecture.md, todo.md
+Unity/Bird 适配      bird-adapter.md, bird-unity-research.md, runtime-unity.md, architecture.md, todo.md
 编辑器阶段           editor-design.md, roadmap.md
 长期设计决策         adr/README.md
 ```
@@ -66,6 +67,7 @@ docs/
   hash-localization.md   隐式哈希锚点、本地化与文本修订策略
   runtime-unity.md       Unity 宿主、IR 执行与运行时边界
   bird-unity-research.md Bird 现有 Story/L10N/Director 数据结构调研
+  bird-adapter.md        Bird manifest/L10N 导出原型
   roadmap.md             阶段规划与阶段验收门槛
   todo.md                当前可执行任务与调研项
   open-questions.md      当前最重要的待确认问题

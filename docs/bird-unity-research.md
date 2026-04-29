@@ -251,9 +251,9 @@ timeline hook              -> TalkingEffectTM.PlayTimeline, by timelineId
 
 优先做可验证、低侵入的导出，而不是立即改 Bird 运行时代码：
 
-1. 设计 `bird-manifest.json`，记录节点名、生成 ID、anchor 映射、角色映射和资源引用。
-2. 设计 ID 分配策略，避免与 Bird 现有 `talkingId` / `timelineId` 冲突。
-3. 生成 Bird 兼容的 `L10N_Talking.csv`，但保留 Inscape 原始 `anchor` 表。
+1. 设计 `bird-manifest.json`，记录节点名、生成 ID、anchor 映射、角色映射和资源引用。已由 `export-bird-project` 原型落地最小版本。
+2. 设计 ID 分配策略，避免与 Bird 现有 `talkingId` / `timelineId` 冲突。当前原型支持 `--bird-talking-start`，但还不会扫描 Bird 现有资源。
+3. 生成 Bird 兼容的 `L10N_Talking.csv`，但保留 Inscape 原始 `anchor` 表。当前原型会额外生成 `inscape-bird-l10n-map.csv`。
 4. 暂不直接写 Unity `.asset` YAML；后续通过 Unity Editor Importer 创建或更新 `TalkingSO`。
 5. Timeline 只做引用，不做生成；语法上先使用 metadata 或明确的 hook 草案承载。
 
@@ -266,4 +266,3 @@ timeline hook              -> TalkingEffectTM.PlayTimeline, by timelineId
 - Bird 兼容 CSV 是否要完全沿用 `L10N_Talking.csv` 的列，还是生成额外审校表。
 - Timeline Hook 第一版应该使用 metadata、inline tag，还是独立的块级语法。
 - 长期是否让 StorySystem 直接消费 Inscape IR，还是保持 Unity Importer 生成 Bird 原生数据。
-

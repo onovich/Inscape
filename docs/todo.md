@@ -8,10 +8,11 @@
 
 下一位接手者建议按以下顺序推进：
 
-1. 设计 Bird Adapter 第一版输出协议：`bird-manifest.json`、Bird 兼容 `L10N_Talking.csv`、ID 分配和角色/资源绑定。
+1. 设计角色名、资源别名、Timeline 名称到 Bird 整数 ID / Unity 资源引用的绑定方式。
 2. 设计 Timeline Hook 的最小表达方式，但只做引用，不把 DSL 变成演出时间轴语言。
-3. 设计本地化模糊匹配与人工确认报告，不要直接自动复用相似文本译文。
-4. 收敛 Language Server 能力范围，再决定是否创建 `src/Inscape.LanguageServer/`。
+3. 设计 Unity Editor Importer：读取 `bird-manifest.json` 并生成或更新 `TalkingSO`。
+4. 设计本地化模糊匹配与人工确认报告，不要直接自动复用相似文本译文。
+5. 收敛 Language Server 能力范围，再决定是否创建 `src/Inscape.LanguageServer/`。
 
 ## 文档与接手效率
 
@@ -71,11 +72,12 @@
 - [x] 调研 `StorySystem` 是否可以直接消费 Narrative Graph IR，而不是必须生成 ScriptableObject。
 - [x] 调研 Unity Adapter 输出格式：JSON、二进制、ScriptableObject、CSV，或多格式。
 - [x] 深入调研 `DirectorSystem` / `TimelineEffectTM`：判断 Timeline 是外部演出资源、节点 Hook，还是未来 Presentation IR。
-- [ ] 设计 `bird-manifest.json` 的字段、版本、兼容策略和最小样例。
-- [ ] 设计 `talkingId` / `timelineId` 分配策略，避免与现有 Bird 资源冲突。
+- [x] 设计 `bird-manifest.json` 的字段、版本、兼容策略和最小样例。
+- [x] 设计 `talkingId` 分配策略第一版：默认从 `100000` 顺序分配，并支持 `--bird-talking-start` 覆盖。
+- [ ] 设计 `talkingId` / `timelineId` 自动避让策略，扫描现有 Bird 资源避免冲突。
 - [ ] 设计角色名、资源别名、Timeline 名称到 Bird 整数 ID / Unity 资源引用的绑定方式。
-- [ ] 设计 Bird 兼容 `L10N_Talking.csv` 导出，并保留 Inscape `anchor` 审校表。
-- [ ] 原型实现 `export-bird-project`：从项目 IR 生成 manifest 与 Bird L10N CSV。
+- [x] 设计 Bird 兼容 `L10N_Talking.csv` 导出，并保留 Inscape `anchor` 审校表。
+- [x] 原型实现 `export-bird-project`：从项目 IR 生成 manifest 与 Bird L10N CSV。
 - [ ] 设计 Unity Editor Importer：读取 manifest 并生成或更新 `TalkingSO`，不让 Core 依赖 Unity。
 - [ ] 设计 Timeline 引用的第一版最小表达方式，但不让 DSL 直接变成演出时间轴语言。
 

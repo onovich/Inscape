@@ -45,6 +45,8 @@ Inscape Project
 - `L10N_Talking.csv`：生成 Bird 当前 `L10N` 可读取的对话文本表。
 - 可选审校表：保留 Inscape `anchor,node,kind,speaker,text` 等字段，服务翻译和迁移。
 
+当前已经有 CLI 原型：`export-bird-project <root> -o <output-dir>`。细节见 [Bird Adapter 原型](bird-adapter.md)。
+
 关键原则：
 
 - Inscape 的行级 hash 仍是源文本和翻译流转的稳定锚点。

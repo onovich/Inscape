@@ -94,3 +94,9 @@ ID,ZH_CN,EN_US,ES_ES
 - Bird 运行时本地化表：服务 Bird 当前运行时读取，核心键是 `talkingId + talkingIndex`。
 
 建议后续 Bird Adapter 生成一个 manifest，记录 `anchor -> talkingId/index`，避免为了兼容 Bird 而牺牲 Inscape 行级 hash 的长期稳定性。
+
+当前 `export-bird-project` 原型已经生成：
+
+- `L10N_Talking.csv`：Bird 运行时读取表。
+- `inscape-bird-l10n-map.csv`：Inscape `anchor` 到 Bird 坐标的审校映射。
+- `bird-manifest.json`：包含同样的 localization 映射，供 Unity Editor Importer 使用。

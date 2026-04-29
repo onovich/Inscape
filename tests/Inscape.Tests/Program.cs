@@ -36,6 +36,7 @@ namespace Inscape.Tests {
                 ("cli extract-l10n-project emits csv", CliExtractL10nProjectEmitsCsv),
                 ("cli update-l10n preserves translations", CliUpdateL10nPreservesTranslations),
                 ("cli update-l10n-project preserves translations", CliUpdateL10nProjectPreservesTranslations),
+                ("cli export-bird-project emits manifest and csv", CliExportBirdProjectEmitsManifestAndCsv),
             };
 
             int failed = 0;
@@ -691,6 +692,82 @@ Narrator: Project start.
 
             AssertTrue(csv.Contains("项目开始,current"), "Project update should preserve existing translation.");
             AssertEqual(2, CountCsvLines(csv), "Project update CSV line count");
+        }
+
+        static void CliExportBirdProjectEmitsManifestAndCsv() {
+            string directory = Path.Combine(Path.GetTempPath(), "inscape-tests", Guid.NewGuid().ToString("N"));
+            string outputDirectory = Path.Combine(directory, "bird-export");
+            Directory.CreateDirectory(directory);
+
+            File.WriteAllText(Path.Combine(directory, "00-start.inscape"), """
+:: start
+@entry
+Narrator: Hello, "Bird".
+? Choose
+  - Continue -> second.node
+""", Encoding.UTF8);
+            File.WriteAllText(Path.Combine(directory, "01-second.inscape"), """
+:: second.node
+A quiet line.
+""", Encoding.UTF8);
+
+            TextWriter originalOut = Console.Out;
+            TextWriter originalError = Console.Error;
+            StringWriter output = new StringWriter();
+            StringWriter error = new StringWriter();
+
+            int exitCode;
+            try {
+                Console.SetOut(output);
+                Console.SetError(error);
+                exitCode = CliProgram.Main(new[] { "export-bird-project", directory, "--bird-talking-start", "500", "-o", outputDirectory });
+            } finally {
+                Console.SetOut(originalOut);
+                Console.SetError(originalError);
+            }
+
+            try {
+                AssertEqual(0, exitCode, "Export-bird-project command exit code");
+                AssertEqual("", output.ToString().Trim(), "Export-bird-project stdout");
+                AssertEqual("", error.ToString().Trim(), "Export-bird-project stderr");
+
+                string manifestPath = Path.Combine(outputDirectory, "bird-manifest.json");
+                string l10nPath = Path.Combine(outputDirectory, "L10N_Talking.csv");
+                string mapPath = Path.Combine(outputDirectory, "inscape-bird-l10n-map.csv");
+                AssertTrue(File.Exists(manifestPath), "Bird manifest should be written.");
+                AssertTrue(File.Exists(l10nPath), "Bird L10N csv should be written.");
+                AssertTrue(File.Exists(mapPath), "Bird anchor map should be written.");
+
+                using JsonDocument manifest = JsonDocument.Parse(File.ReadAllText(manifestPath, Encoding.UTF8));
+                JsonElement root = manifest.RootElement;
+                AssertEqual("inscape.bird-manifest", root.GetProperty("format").GetString(), "Bird manifest format");
+                AssertEqual(1, root.GetProperty("formatVersion").GetInt32(), "Bird manifest version");
+                AssertEqual("start", root.GetProperty("entryNodeName").GetString(), "Bird manifest entry node");
+                AssertEqual(500, root.GetProperty("talkingIdStart").GetInt32(), "Bird talking start id");
+                AssertEqual(2, root.GetProperty("nodes").GetArrayLength(), "Bird node count");
+                AssertEqual(3, root.GetProperty("talkings").GetArrayLength(), "Bird talking count");
+
+                JsonElement firstTalking = root.GetProperty("talkings")[0];
+                AssertEqual(500, firstTalking.GetProperty("talkingId").GetInt32(), "First talking id");
+                AssertEqual(501, firstTalking.GetProperty("nextTalkingId").GetInt32(), "First talking next id");
+
+                JsonElement choiceTalking = root.GetProperty("talkings")[1];
+                AssertEqual(501, choiceTalking.GetProperty("talkingId").GetInt32(), "Choice talking id");
+                AssertEqual(1, choiceTalking.GetProperty("options").GetArrayLength(), "Choice option count");
+                AssertEqual(502, choiceTalking.GetProperty("options")[0].GetProperty("nextTalkingId").GetInt32(), "Choice target talking id");
+
+                string l10n = File.ReadAllText(l10nPath, Encoding.UTF8);
+                AssertTrue(l10n.Contains("ID,ZH_CN,EN_US,ES_ES"), "Bird L10N should include language header.");
+                AssertTrue(l10n.Contains("500,Hello` %Bird%."), "Bird L10N should apply Bird text escaping.");
+                AssertTrue(l10n.Contains("501,Choose"), "Bird L10N should include choice prompt.");
+                AssertFalse(l10n.Contains("Continue"), "Bird L10N should not put option text into L10N_Talking yet.");
+
+                string map = File.ReadAllText(mapPath, Encoding.UTF8);
+                AssertTrue(map.Contains("TalkingOptionTM.optionText"), "Anchor map should include option text mapping.");
+                AssertTrue(map.Contains("Continue"), "Anchor map should preserve option source text.");
+            } finally {
+                Directory.Delete(directory, true);
+            }
         }
 
         static CompilationResult Compile(string source) {

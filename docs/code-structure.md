@@ -10,6 +10,7 @@
 src/
   Inscape.Core/          DSL 解析、诊断、图模型、哈希、IR 生成与本地化提取
     Analysis/            图校验、项目级校验、锚点碰撞诊断
+    Bird/                Bird manifest、L10N_Talking 和锚点映射导出原型
     Compilation/         单文件与项目级编译入口
     Diagnostics/         诊断模型
     Localization/        CSV 提取、读取、写入与旧表合并
@@ -66,9 +67,12 @@ docs/
   preview-project
   extract-l10n-project
   update-l10n-project
+  export-bird-project
 ```
 
 项目级命令支持 `--entry node.name` 临时覆盖项目入口，用于从任意节点编译、诊断和预览。它不修改源文件中的 `@entry`。
+
+`export-bird-project` 会输出 `bird-manifest.json`、`L10N_Talking.csv` 和 `inscape-bird-l10n-map.csv`，用于后续 Unity Editor Importer 原型。
 
 项目级扫描会忽略 `.git`、`bin`、`obj`、`node_modules` 和 `artifacts`。VSCode 诊断桥接依赖 `diagnose-project --override source temp`，未来 WebView 和本地化命令也应优先复用项目级 CLI。
 

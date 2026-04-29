@@ -6,7 +6,7 @@
 
 ## 当前状态
 
-项目处于第一阶段：DSL 与轻工具链已经形成可运行原型，Unity/Bird 适配尚未开始编码。以下方向已经作为项目基线记录：
+项目处于第一阶段：DSL 与轻工具链已经形成可运行原型，Unity/Bird 适配已有无 Unity 依赖的导出原型。以下方向已经作为项目基线记录：
 
 - 文即代码：剧本行即逻辑行，减少剧本与配置之间的跳转。
 - 确定性哈希：解析阶段为文本生成持久化锚点，用于本地化、存档与热重载定位。
@@ -23,6 +23,7 @@
 - VSCode 本地化命令：导出项目 CSV，基于旧 CSV 更新项目本地化表。
 - HTML 调试预览：单文件/项目级预览、节点跳转、选择、回环、路径、Restart/Back 和锚点显示。
 - 本地化工具：CSV 提取、旧表按锚点精确继承、`current/new/removed` 状态标记。
+- Bird 导出原型：生成 `bird-manifest.json`、Bird 兼容 `L10N_Talking.csv` 和锚点映射表。
 
 以下内容尚未定稿，需要在后续设计讨论中明确：
 
@@ -43,6 +44,8 @@
 - [VSCode 轻工具链](docs/vscode-tooling.md)
 - [编辑器设计草案](docs/editor-design.md)
 - [运行时与 Unity 宿主](docs/runtime-unity.md)
+- [Bird / Unity 调研记录](docs/bird-unity-research.md)
+- [Bird Adapter 原型](docs/bird-adapter.md)
 - [哈希锚点与本地化](docs/hash-localization.md)
 - [本地化提取](docs/l10n-extraction.md)
 - [路线图](docs/roadmap.md)
@@ -69,6 +72,7 @@ dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- preview-project sampl
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- extract-l10n-project samples -o artifacts\l10n.csv
 Copy-Item artifacts\l10n.csv artifacts\old-l10n.csv
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- update-l10n-project samples --from artifacts\old-l10n.csv -o artifacts\l10n.updated.csv
+dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-project samples -o artifacts\bird-export
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- compile samples\court-loop.inscape -o artifacts\court-loop.json
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- preview samples\court-loop.inscape -o artifacts\court-loop.html
 code --extensionDevelopmentPath=tools\vscode-inscape .
