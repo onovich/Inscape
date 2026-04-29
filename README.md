@@ -23,7 +23,7 @@
 - VSCode 本地化命令：导出项目 CSV，基于旧 CSV 更新项目本地化表。
 - HTML 调试预览：单文件/项目级预览、节点跳转、选择、回环、路径、Restart/Back 和锚点显示。
 - 本地化工具：CSV 提取、旧表按锚点精确继承、`current/new/removed` 状态标记。
-- Bird 导出原型：生成 `bird-manifest.json`、Bird 兼容 `L10N_Talking.csv` 和锚点映射表，支持角色 / 宿主资源绑定 CSV 与 Timeline Hook manifest。
+- Bird 导出原型：生成 `bird-manifest.json`、Bird 兼容 `L10N_Talking.csv`、锚点映射表和导出报告，支持角色 / 宿主资源绑定 CSV 与 Timeline Hook manifest。
 
 以下内容尚未定稿，需要在后续设计讨论中明确：
 

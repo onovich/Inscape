@@ -20,6 +20,14 @@ Importer 读取 `export-bird-project` 生成的：
 bird-manifest.json
 ```
 
+导入前建议同时查看：
+
+```text
+bird-export-report.txt
+```
+
+该报告会列出宿主绑定 warning，例如缺失 Timeline alias 或重复 binding。Unity Dry Run 会再结合当前项目实际资源状态生成导入计划。
+
 当前使用字段：
 
 - `talkings[].talkingId`

@@ -30,6 +30,8 @@ namespace Inscape.Core.Bird {
 
         public List<BirdLocalizationMapping> Localization { get; set; }
 
+        public List<BirdExportWarning> Warnings { get; set; }
+
         public BirdManifest() {
             Format = "inscape.bird-manifest";
             FormatVersion = 1;
@@ -44,6 +46,7 @@ namespace Inscape.Core.Bird {
             Nodes = new List<BirdNodeEntry>();
             Talkings = new List<BirdTalkingEntry>();
             Localization = new List<BirdLocalizationMapping>();
+            Warnings = new List<BirdExportWarning>();
         }
 
     }

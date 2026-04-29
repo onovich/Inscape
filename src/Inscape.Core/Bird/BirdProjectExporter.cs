@@ -17,7 +17,8 @@ namespace Inscape.Core.Bird {
             BirdManifest manifest = CreateManifest(project, options);
             string l10nTalkingCsv = WriteL10nTalkingCsv(manifest, options);
             string anchorMapCsv = WriteAnchorMapCsv(manifest.Localization);
-            return new BirdExportResult(manifest, l10nTalkingCsv, anchorMapCsv);
+            string reportText = WriteExportReport(manifest);
+            return new BirdExportResult(manifest, l10nTalkingCsv, anchorMapCsv, reportText);
         }
 
         static BirdManifest CreateManifest(ProjectCompilationResult project, BirdExportOptions options) {
@@ -27,6 +28,7 @@ namespace Inscape.Core.Bird {
             manifest.TalkingIdStart = options.TalkingIdStart;
             manifest.Languages.AddRange(options.Languages);
             manifest.HostBindings.AddRange(options.HostBindings);
+            ValidateHostBindings(manifest);
 
             Dictionary<string, BirdNodeEntry> nodesByName = new Dictionary<string, BirdNodeEntry>(StringComparer.Ordinal);
             Dictionary<string, int> entryTalkingIdsByNodeName = new Dictionary<string, int>(StringComparer.Ordinal);
@@ -104,6 +106,19 @@ namespace Inscape.Core.Bird {
             LinkTalkings(project.Graph, entryTalkingIdsByNodeName, nodesByName, manifest);
             ExtractHostHooks(project.Graph, manifest);
             return manifest;
+        }
+
+        static void ValidateHostBindings(BirdManifest manifest) {
+            HashSet<string> seenKeys = new HashSet<string>(StringComparer.Ordinal);
+            for (int i = 0; i < manifest.HostBindings.Count; i += 1) {
+                BirdHostBinding binding = manifest.HostBindings[i];
+                string key = binding.Kind + "\n" + binding.Alias;
+                if (!seenKeys.Add(key)) {
+                    manifest.Warnings.Add(new BirdExportWarning("BIRD001",
+                                                                "Duplicate host binding '" + binding.Kind + ":" + binding.Alias + "'. The first matching binding will be used.",
+                                                                SourceSpan.Empty));
+                }
+            }
         }
 
         static List<Segment> CollectSegments(NarrativeNode node) {
@@ -269,6 +284,17 @@ namespace Inscape.Core.Bird {
 
                     BirdHostBinding? binding = ResolveHostBinding(manifest.HostBindings, "timeline", alias);
                     BirdTalkingEntry? targetTalking = FindHookTargetTalking(node.Name, line.Source.Line, talkingsByNodeName);
+                    if (binding == null) {
+                        manifest.Warnings.Add(new BirdExportWarning("BIRD002",
+                                                                    "Timeline hook '" + alias + "' has no matching host binding. Add a 'timeline," + alias + ",...' row to --bird-binding-map.",
+                                                                    line.Source));
+                    }
+                    if (targetTalking == null) {
+                        manifest.Warnings.Add(new BirdExportWarning("BIRD003",
+                                                                    "Timeline hook '" + alias + "' could not be attached to a generated talking entry.",
+                                                                    line.Source));
+                    }
+
                     manifest.HostHooks.Add(new BirdHostHook {
                         Kind = "timeline",
                         Alias = alias,
@@ -358,6 +384,46 @@ namespace Inscape.Core.Bird {
 
             alias = body.Substring(separator + 1).Trim();
             return alias.Length > 0;
+        }
+
+        static string WriteExportReport(BirdManifest manifest) {
+            StringBuilder builder = new StringBuilder();
+            builder.AppendLine("Inscape Bird Export Report");
+            builder.AppendLine("format: " + manifest.Format);
+            builder.AppendLine("entryNodeName: " + manifest.EntryNodeName);
+            builder.AppendLine("nodes: " + manifest.Nodes.Count.ToString(CultureInfo.InvariantCulture));
+            builder.AppendLine("talkings: " + manifest.Talkings.Count.ToString(CultureInfo.InvariantCulture));
+            builder.AppendLine("hostBindings: " + manifest.HostBindings.Count.ToString(CultureInfo.InvariantCulture));
+            builder.AppendLine("hostHooks: " + manifest.HostHooks.Count.ToString(CultureInfo.InvariantCulture));
+            builder.AppendLine("localizationRows: " + manifest.Localization.Count.ToString(CultureInfo.InvariantCulture));
+            builder.AppendLine("warnings: " + manifest.Warnings.Count.ToString(CultureInfo.InvariantCulture));
+            builder.AppendLine();
+            builder.AppendLine("Warnings:");
+
+            if (manifest.Warnings.Count == 0) {
+                builder.AppendLine("  none");
+                return builder.ToString();
+            }
+
+            for (int i = 0; i < manifest.Warnings.Count; i += 1) {
+                BirdExportWarning warning = manifest.Warnings[i];
+                builder.Append("  ");
+                builder.Append(warning.Code);
+                builder.Append(": ");
+                builder.Append(warning.Message);
+                if (!string.IsNullOrWhiteSpace(warning.Source.SourcePath)) {
+                    builder.Append(" (");
+                    builder.Append(warning.Source.SourcePath);
+                    builder.Append(":");
+                    builder.Append(warning.Source.Line.ToString(CultureInfo.InvariantCulture));
+                    builder.Append(":");
+                    builder.Append(warning.Source.Column.ToString(CultureInfo.InvariantCulture));
+                    builder.Append(")");
+                }
+                builder.AppendLine();
+            }
+
+            return builder.ToString();
         }
 
         static string WriteL10nTalkingCsv(BirdManifest manifest, BirdExportOptions options) {

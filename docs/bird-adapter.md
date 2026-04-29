@@ -70,12 +70,13 @@ portrait,naruhodo.normal,,cccccccccccccccccccccccccccccccc,Portrait/Naruhodo/Nor
 
 ## 输出文件
 
-命令会写入三个文件：
+命令会写入四个文件：
 
 ```text
 bird-manifest.json
 L10N_Talking.csv
 inscape-bird-l10n-map.csv
+bird-export-report.txt
 ```
 
 `bird-manifest.json` 是 Unity Editor Importer 的候选输入，包含：
@@ -91,6 +92,7 @@ inscape-bird-l10n-map.csv
 - `nodes`
 - `talkings`
 - `localization`
+- `warnings`
 
 `L10N_Talking.csv` 使用 Bird 当前运行时格式：
 
@@ -105,6 +107,8 @@ ID,ZH_CN,EN_US,ES_ES
 ```text
 anchor,node,kind,speaker,text,talkingId,talkingIndex,birdField,sourcePath,line,column
 ```
+
+`bird-export-report.txt` 是面向人类和 CI 的轻量报告，包含节点、talking、host binding、host hook、本地化行数和 warning 汇总。当前 warning 不会阻断导出，主要用于在 Unity 导入前发现宿主绑定问题。
 
 ## 当前映射规则
 
@@ -121,6 +125,9 @@ anchor,node,kind,speaker,text,talkingId,talkingIndex,birdField,sourcePath,line,c
 - `--bird-binding-map` 会把资源别名、Timeline 名称和 Unity 资源坐标写入 manifest 的 `hostBindings`，供后续 Unity Editor Importer 和 Timeline hook 使用。
 - `@timeline alias` 和 `[timeline: alias]` 会写入 manifest 的 `hostHooks`，当前导出为 `kind=timeline`、`phase=talking.exit`，并尽量通过 `hostBindings` 解析 `birdId` / Unity 坐标。
 - `--bird-existing-talking-root` 会递归扫描 `.asset` 文件中的 `talkingId:`，顺序分配新 ID 时自动跳过已占用值。
+- 重复 `kind + alias` 的 host binding 会产生 `BIRD001` warning。
+- 找不到绑定表行的 Timeline Hook 会产生 `BIRD002` warning。
+- 找不到可挂载 talking 的 Timeline Hook 会产生 `BIRD003` warning。
 
 ## 当前限制
 

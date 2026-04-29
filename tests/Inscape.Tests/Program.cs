@@ -37,6 +37,7 @@ namespace Inscape.Tests {
                 ("cli update-l10n preserves translations", CliUpdateL10nPreservesTranslations),
                 ("cli update-l10n-project preserves translations", CliUpdateL10nProjectPreservesTranslations),
                 ("cli export-bird-project emits manifest and csv", CliExportBirdProjectEmitsManifestAndCsv),
+                ("cli export-bird-project reports unresolved host hooks", CliExportBirdProjectReportsUnresolvedHostHooks),
             };
 
             int failed = 0;
@@ -751,9 +752,11 @@ MonoBehaviour:
                 string manifestPath = Path.Combine(outputDirectory, "bird-manifest.json");
                 string l10nPath = Path.Combine(outputDirectory, "L10N_Talking.csv");
                 string mapPath = Path.Combine(outputDirectory, "inscape-bird-l10n-map.csv");
+                string reportPath = Path.Combine(outputDirectory, "bird-export-report.txt");
                 AssertTrue(File.Exists(manifestPath), "Bird manifest should be written.");
                 AssertTrue(File.Exists(l10nPath), "Bird L10N csv should be written.");
                 AssertTrue(File.Exists(mapPath), "Bird anchor map should be written.");
+                AssertTrue(File.Exists(reportPath), "Bird export report should be written.");
 
                 using JsonDocument manifest = JsonDocument.Parse(File.ReadAllText(manifestPath, Encoding.UTF8));
                 JsonElement root = manifest.RootElement;
@@ -763,6 +766,7 @@ MonoBehaviour:
                 AssertEqual(500, root.GetProperty("talkingIdStart").GetInt32(), "Bird talking start id");
                 AssertEqual(2, root.GetProperty("nodes").GetArrayLength(), "Bird node count");
                 AssertEqual(3, root.GetProperty("talkings").GetArrayLength(), "Bird talking count");
+                AssertEqual(0, root.GetProperty("warnings").GetArrayLength(), "Bird warning count");
                 AssertEqual(1, root.GetProperty("roles").GetArrayLength(), "Bird role count");
                 AssertEqual("Narrator", root.GetProperty("roles")[0].GetProperty("speaker").GetString(), "Bird role speaker");
                 AssertEqual(7, root.GetProperty("roles")[0].GetProperty("roleId").GetInt32(), "Bird role id");
@@ -802,6 +806,66 @@ MonoBehaviour:
                 string map = File.ReadAllText(mapPath, Encoding.UTF8);
                 AssertTrue(map.Contains("TalkingOptionTM.optionText"), "Anchor map should include option text mapping.");
                 AssertTrue(map.Contains("Continue"), "Anchor map should preserve option source text.");
+
+                string report = File.ReadAllText(reportPath, Encoding.UTF8);
+                AssertTrue(report.Contains("warnings: 0"), "Bird report should include warning summary.");
+                AssertTrue(report.Contains("hostHooks: 1"), "Bird report should include host hook summary.");
+            } finally {
+                Directory.Delete(directory, true);
+            }
+        }
+
+        static void CliExportBirdProjectReportsUnresolvedHostHooks() {
+            string directory = Path.Combine(Path.GetTempPath(), "inscape-tests", Guid.NewGuid().ToString("N"));
+            string outputDirectory = Path.Combine(directory, "bird-export");
+            string bindingMapPath = Path.Combine(directory, "bird-bindings.csv");
+            Directory.CreateDirectory(directory);
+
+            File.WriteAllText(Path.Combine(directory, "story.inscape"), """
+:: start
+@entry
+Narrator: Hello.
+@timeline missing.timeline
+""", Encoding.UTF8);
+            File.WriteAllText(bindingMapPath,
+                              "kind,alias,birdId,unityGuid,addressableKey,assetPath\n"
+                              + "timeline,unused.timeline,101,,,\n"
+                              + "timeline,unused.timeline,102,,,\n",
+                              Encoding.UTF8);
+
+            TextWriter originalOut = Console.Out;
+            TextWriter originalError = Console.Error;
+            StringWriter output = new StringWriter();
+            StringWriter error = new StringWriter();
+
+            int exitCode;
+            try {
+                Console.SetOut(output);
+                Console.SetError(error);
+                exitCode = CliProgram.Main(new[] { "export-bird-project", directory, "--bird-binding-map", bindingMapPath, "-o", outputDirectory });
+            } finally {
+                Console.SetOut(originalOut);
+                Console.SetError(originalError);
+            }
+
+            try {
+                AssertEqual(0, exitCode, "Export-bird-project unresolved hook command exit code");
+                AssertEqual("", output.ToString().Trim(), "Export-bird-project unresolved hook stdout");
+                AssertEqual("", error.ToString().Trim(), "Export-bird-project unresolved hook stderr");
+
+                string manifestPath = Path.Combine(outputDirectory, "bird-manifest.json");
+                string reportPath = Path.Combine(outputDirectory, "bird-export-report.txt");
+                using JsonDocument manifest = JsonDocument.Parse(File.ReadAllText(manifestPath, Encoding.UTF8));
+                JsonElement warnings = manifest.RootElement.GetProperty("warnings");
+                AssertEqual(2, warnings.GetArrayLength(), "Bird unresolved hook warning count");
+                AssertEqual("BIRD001", warnings[0].GetProperty("code").GetString(), "Duplicate binding warning code");
+                AssertEqual("BIRD002", warnings[1].GetProperty("code").GetString(), "Unresolved timeline warning code");
+
+                string report = File.ReadAllText(reportPath, Encoding.UTF8);
+                AssertTrue(report.Contains("warnings: 2"), "Bird report should summarize warnings.");
+                AssertTrue(report.Contains("BIRD001"), "Bird report should include duplicate binding warning.");
+                AssertTrue(report.Contains("BIRD002"), "Bird report should include unresolved timeline warning.");
+                AssertTrue(report.Contains("missing.timeline"), "Bird report should include missing alias.");
             } finally {
                 Directory.Delete(directory, true);
             }

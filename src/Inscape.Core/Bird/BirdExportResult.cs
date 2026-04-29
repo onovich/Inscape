@@ -8,10 +8,13 @@ namespace Inscape.Core.Bird {
 
         public string AnchorMapCsv { get; set; }
 
-        public BirdExportResult(BirdManifest manifest, string l10nTalkingCsv, string anchorMapCsv) {
+        public string ReportText { get; set; }
+
+        public BirdExportResult(BirdManifest manifest, string l10nTalkingCsv, string anchorMapCsv, string reportText) {
             Manifest = manifest;
             L10nTalkingCsv = l10nTalkingCsv;
             AnchorMapCsv = anchorMapCsv;
+            ReportText = reportText;
         }
 
     }

@@ -320,6 +320,7 @@ namespace Inscape.Cli {
                               Encoding.UTF8);
             File.WriteAllText(Path.Combine(fullDirectory, "L10N_Talking.csv"), export.L10nTalkingCsv, Encoding.UTF8);
             File.WriteAllText(Path.Combine(fullDirectory, "inscape-bird-l10n-map.csv"), export.AnchorMapCsv, Encoding.UTF8);
+            File.WriteAllText(Path.Combine(fullDirectory, "bird-export-report.txt"), export.ReportText, Encoding.UTF8);
         }
 
         static bool TryReadBirdExportOptions(string[] args, out BirdExportOptions options) {
