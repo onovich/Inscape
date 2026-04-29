@@ -36,7 +36,7 @@ inscape.config.json
 - `export-bird-role-template`：读取 `existingRoleNameCsv`。
 - `export-bird-binding-template`：读取 `existingTimelineRoot`。
 - `export-bird-project`：读取 `talkingIdStart`、`roleMap`、`bindingMap`、`existingTalkingRoot`。
-- VSCode 扩展：读取 `roleMap`，在对白行开头提供 speaker 补全，并在 speaker 上显示 Bird `roleId` Hover。
+- VSCode 扩展：读取 `roleMap`，在对白行开头提供 speaker 补全，并在 speaker 上显示 Bird `roleId` Hover；读取 `bindingMap`，在 `@timeline ...` 和 `[kind: ...]` 位置提供宿主别名补全与 Hover。
 
 仍未放进配置的内容：
 

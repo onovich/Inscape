@@ -11,9 +11,10 @@ This is the first lightweight authoring layer for `.inscape` scripts. It keeps s
 - Refreshes diagnostics by invoking `dotnet run --project src/Inscape.Cli/Inscape.Cli.csproj -- diagnose-project <workspace> --override <source> <temp-file>`.
 - Provides workspace node completions in jump target positions.
 - Provides dialogue speaker completions from `inscape.config.json` `bird.roleMap`, with workspace speaker fallback.
+- Provides host binding alias completions from `inscape.config.json` `bird.bindingMap` for `@timeline ...` and `[kind: ...]` inline tag positions.
 - Supports Go to Definition / Ctrl+Click from jump targets to node declarations.
 - Supports Find All References from node declarations and jump targets.
-- Shows hover summaries for node declarations, jump targets, and dialogue speakers.
+- Shows hover summaries for node declarations, jump targets, dialogue speakers, and host binding aliases.
 - Provides an outline view backed by visible node headers.
 - Exposes command palette actions for localization:
   - `Inscape: Export Localization CSV`
@@ -46,6 +47,15 @@ speaker,roleId
 ```
 
 When no configured role map exists, the extension still scans open and workspace `.inscape` files for existing dialogue speakers.
+
+Host binding completion reads `bird.bindingMap` from the same project config. The binding map format is:
+
+```csv
+kind,alias,birdId,unityGuid,addressableKey,assetPath
+timeline,court_intro,12,,Timeline/CourtIntro,Assets/Resources_Runtime/Timeline/SO_Timeline_CourtIntro.asset
+```
+
+The first supported contexts are `@timeline court_intro` and inline tags such as `[timeline: court_intro]` or `[bg: classroom]`. For inline tags, completion is generic by `kind`, but the compiler still only gives special Bird export meaning to supported hooks such as `timeline`.
 
 ## Settings
 

@@ -24,7 +24,7 @@ function activate(context) {
                 refreshVisibleDocuments(scheduler);
             }
         }),
-        vscode.languages.registerCompletionItemProvider(languageSelector, new InscapeCompletionProvider(), ">", ".", ":", "："),
+        vscode.languages.registerCompletionItemProvider(languageSelector, new InscapeCompletionProvider(), ">", ".", ":", "\uFF1A", "[", " "),
         vscode.languages.registerDocumentSymbolProvider(languageSelector, new InscapeDocumentSymbolProvider()),
         vscode.languages.registerDefinitionProvider(languageSelector, new InscapeDefinitionProvider()),
         vscode.languages.registerReferenceProvider(languageSelector, new InscapeReferenceProvider()),
@@ -153,6 +153,12 @@ class InscapeCompletionProvider {
             });
         }
 
+        const hostBindingContext = getHostBindingCompletionContext(linePrefix);
+        if (hostBindingContext) {
+            const bindings = await collectWorkspaceHostBindings(document, hostBindingContext.kind);
+            return bindings.map((binding) => createHostBindingCompletionItem(binding));
+        }
+
         if (isSpeakerCompletionContext(linePrefix)) {
             const speakers = await collectWorkspaceSpeakers(document);
             return speakers.map((speaker) => createSpeakerCompletionItem(speaker));
@@ -225,6 +231,15 @@ class InscapeHoverProvider {
             const speaker = speakers.find((candidate) => candidate.name === speakerInfo.name);
             if (speaker) {
                 return new vscode.Hover(createSpeakerHoverMarkdown(speaker), speakerInfo.range);
+            }
+        }
+
+        const hostBindingInfo = getHostBindingAtPosition(document, position);
+        if (hostBindingInfo) {
+            const bindings = await collectWorkspaceHostBindings(document, hostBindingInfo.kind);
+            const binding = bindings.find((candidate) => candidate.alias === hostBindingInfo.alias);
+            if (binding) {
+                return new vscode.Hover(createHostBindingHoverMarkdown(binding), hostBindingInfo.range);
             }
         }
 
@@ -604,11 +619,176 @@ function isSpeakerCompletionContext(linePrefix) {
         || trimmed.startsWith("-")
         || trimmed.startsWith("[")
         || trimmed.includes(":")
-        || trimmed.includes("：")) {
+        || trimmed.includes("\uFF1A")) {
         return false;
     }
 
     return !/\s/.test(trimmed);
+}
+
+function getHostBindingCompletionContext(linePrefix) {
+    if (/^\s*@timeline(?::|\s+)\s*[^\s\]]*$/.test(linePrefix)) {
+        return { kind: "timeline" };
+    }
+
+    const openBracket = linePrefix.lastIndexOf("[");
+    const closeBracket = linePrefix.lastIndexOf("]");
+    if (openBracket <= closeBracket) {
+        return undefined;
+    }
+
+    const body = linePrefix.slice(openBracket + 1);
+    const match = /^([A-Za-z_][A-Za-z0-9_-]*)\s*:\s*[^\]]*$/.exec(body);
+    return match ? { kind: match[1] } : undefined;
+}
+
+async function collectWorkspaceHostBindings(document, kind) {
+    const bindings = [];
+    const seen = new Set();
+
+    const configured = await readConfiguredHostBindings(document);
+    for (const binding of configured) {
+        if (binding.kind === kind) {
+            addHostBinding(bindings, seen, binding);
+        }
+    }
+
+    const sources = await collectWorkspaceTextSources(document);
+    for (const source of sources) {
+        collectHostBindingsFromText(source.text, source.sourcePath, kind, bindings, seen);
+    }
+
+    return bindings.sort((left, right) => {
+        if (left.sourceRank !== right.sourceRank) {
+            return left.sourceRank - right.sourceRank;
+        }
+        return left.alias.localeCompare(right.alias, "zh-Hans-CN");
+    });
+}
+
+async function readConfiguredHostBindings(document) {
+    const projectConfig = await readProjectConfig(document);
+    if (!projectConfig || !projectConfig.configPath || !projectConfig.config || !projectConfig.config.bird) {
+        return [];
+    }
+
+    const bindingMap = projectConfig.config.bird.bindingMap;
+    if (!bindingMap) {
+        return [];
+    }
+
+    const bindingMapPath = resolveProjectConfigPath(projectConfig.configPath, bindingMap);
+    if (!fs.existsSync(bindingMapPath)) {
+        return [];
+    }
+
+    const text = await fs.promises.readFile(bindingMapPath, "utf8");
+    const rows = parseCsvRows(text).filter((row) => !(row[0] || "").trim().startsWith("#"));
+    if (rows.length === 0) {
+        return [];
+    }
+
+    const headers = rows[0].map((header) => header.trim());
+    const hasHeader = headers.includes("kind") && headers.includes("alias");
+    const kindIndex = hasHeader ? headers.indexOf("kind") : 0;
+    const aliasIndex = hasHeader ? headers.indexOf("alias") : 1;
+    const birdIdIndex = hasHeader ? headers.indexOf("birdId") : 2;
+    const unityGuidIndex = hasHeader ? headers.indexOf("unityGuid") : 3;
+    const addressableKeyIndex = hasHeader ? headers.indexOf("addressableKey") : 4;
+    const assetPathIndex = hasHeader ? headers.indexOf("assetPath") : 5;
+    const dataRows = hasHeader ? rows.slice(1) : rows;
+
+    return dataRows
+        .map((row) => ({
+            kind: (row[kindIndex] || "").trim(),
+            alias: (row[aliasIndex] || "").trim(),
+            birdId: readOptionalCsvField(row, birdIdIndex),
+            unityGuid: readOptionalCsvField(row, unityGuidIndex),
+            addressableKey: readOptionalCsvField(row, addressableKeyIndex),
+            assetPath: readOptionalCsvField(row, assetPathIndex),
+            sourcePath: bindingMapPath,
+            sourceLabel: "Bird binding map",
+            sourceRank: 0
+        }))
+        .filter((binding) => binding.kind.length > 0 && binding.alias.length > 0);
+}
+
+function readOptionalCsvField(row, index) {
+    return index >= 0 && index < row.length ? (row[index] || "").trim() : "";
+}
+
+function collectHostBindingsFromText(text, sourcePath, requestedKind, bindings, seen) {
+    const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+    for (const line of lines) {
+        const metadataMatch = /^\s*@timeline(?::|\s+)\s*([^\s\]]+)/.exec(line);
+        if (requestedKind === "timeline" && metadataMatch) {
+            addHostBinding(bindings, seen, {
+                kind: "timeline",
+                alias: metadataMatch[1].trim(),
+                birdId: "",
+                unityGuid: "",
+                addressableKey: "",
+                assetPath: "",
+                sourcePath,
+                sourceLabel: "Workspace timeline hook",
+                sourceRank: 1
+            });
+        }
+
+        const inlinePattern = /\[([A-Za-z_][A-Za-z0-9_-]*)\s*:\s*([^\]\s]+)\]/g;
+        let inlineMatch = inlinePattern.exec(line);
+        while (inlineMatch) {
+            const kind = inlineMatch[1].trim();
+            const alias = inlineMatch[2].trim();
+            if (kind === requestedKind && alias.length > 0) {
+                addHostBinding(bindings, seen, {
+                    kind,
+                    alias,
+                    birdId: "",
+                    unityGuid: "",
+                    addressableKey: "",
+                    assetPath: "",
+                    sourcePath,
+                    sourceLabel: "Workspace inline tag",
+                    sourceRank: 1
+                });
+            }
+            inlineMatch = inlinePattern.exec(line);
+        }
+    }
+}
+
+function addHostBinding(bindings, seen, binding) {
+    const key = binding.kind + "\n" + binding.alias;
+    if (seen.has(key)) {
+        return;
+    }
+
+    seen.add(key);
+    bindings.push(binding);
+}
+
+function createHostBindingCompletionItem(binding) {
+    const item = new vscode.CompletionItem(binding.alias, vscode.CompletionItemKind.Reference);
+    item.insertText = binding.alias;
+    item.detail = createHostBindingDetail(binding);
+    item.documentation = createHostBindingMarkdown(binding);
+    item.sortText = (binding.sourceRank || 0) + "_" + binding.alias;
+    return item;
+}
+
+function createHostBindingDetail(binding) {
+    const pieces = [binding.kind];
+    if (binding.birdId) {
+        pieces.push("Bird " + binding.birdId);
+    }
+    if (binding.addressableKey) {
+        pieces.push(binding.addressableKey);
+    }
+    if (pieces.length === 1) {
+        pieces.push(binding.sourceLabel + " (unbound)");
+    }
+    return pieces.join(" / ");
 }
 
 async function collectWorkspaceSpeakers(document) {
@@ -749,7 +929,7 @@ function parseCsvRows(text) {
 function collectSpeakersFromText(text, sourcePath, speakers, seen) {
     const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
     for (let line = 0; line < lines.length; line += 1) {
-        const match = /^\s*([^:：\s][^:：]{0,80}?)[ \t]*[:：]/.exec(lines[line]);
+        const match = /^\s*([^:\uFF1A\s][^:\uFF1A]{0,80}?)[ \t]*[:\uFF1A]/.exec(lines[line]);
         if (!match) {
             continue;
         }
@@ -792,7 +972,7 @@ function addSpeaker(speakers, seen, speaker) {
 
 function createSpeakerCompletionItem(speaker) {
     const item = new vscode.CompletionItem(speaker.name, vscode.CompletionItemKind.Class);
-    item.insertText = speaker.name + "：";
+    item.insertText = speaker.name + "\uFF1A";
     item.detail = speaker.roleId
         ? "Bird roleId " + speaker.roleId
         : speaker.sourceLabel + " (unbound)";
@@ -1035,7 +1215,7 @@ function getJumpTargetAtPositionInfo(document, position) {
 
 function getDialogueSpeakerAtPosition(document, position) {
     const line = document.lineAt(position).text;
-    const match = /^\s*([^:：]+?)[ \t]*[:：]/.exec(line);
+    const match = /^\s*([^:\uFF1A]+?)[ \t]*[:\uFF1A]/.exec(line);
     if (!match) {
         return undefined;
     }
@@ -1052,6 +1232,42 @@ function getDialogueSpeakerAtPosition(document, position) {
             name,
             range: new vscode.Range(position.line, start, position.line, end)
         };
+    }
+
+    return undefined;
+}
+
+function getHostBindingAtPosition(document, position) {
+    const line = document.lineAt(position).text;
+    const metadataMatch = /^\s*@timeline(?::|\s+)\s*([^\s\]]+)/.exec(line);
+    if (metadataMatch) {
+        const alias = metadataMatch[1].trim();
+        const aliasStart = line.indexOf(metadataMatch[1], metadataMatch.index);
+        const aliasEnd = aliasStart + metadataMatch[1].length;
+        if (position.character >= aliasStart && position.character <= aliasEnd) {
+            return {
+                kind: "timeline",
+                alias,
+                range: new vscode.Range(position.line, aliasStart, position.line, aliasEnd)
+            };
+        }
+    }
+
+    const inlinePattern = /\[([A-Za-z_][A-Za-z0-9_-]*)\s*:\s*([^\]\s]+)\]/g;
+    let inlineMatch = inlinePattern.exec(line);
+    while (inlineMatch) {
+        const kind = inlineMatch[1].trim();
+        const alias = inlineMatch[2].trim();
+        const aliasStart = inlineMatch.index + inlineMatch[0].lastIndexOf(inlineMatch[2]);
+        const aliasEnd = aliasStart + inlineMatch[2].length;
+        if (position.character >= aliasStart && position.character <= aliasEnd) {
+            return {
+                kind,
+                alias,
+                range: new vscode.Range(position.line, aliasStart, position.line, aliasEnd)
+            };
+        }
+        inlineMatch = inlinePattern.exec(line);
     }
 
     return undefined;
@@ -1109,6 +1325,30 @@ function createSpeakerHoverMarkdown(speaker) {
 
     markdown.appendMarkdown("Source: `" + formatDisplayPath(speaker.sourcePath) + "`");
     return markdown;
+}
+
+function createHostBindingHoverMarkdown(binding) {
+    return createHostBindingMarkdown(binding);
+}
+
+function createHostBindingMarkdown(binding) {
+    const markdown = new vscode.MarkdownString(undefined, true);
+    markdown.isTrusted = false;
+    markdown.appendMarkdown("**Inscape Host Binding** `" + binding.kind + ":" + binding.alias + "`\n\n");
+    appendHostBindingField(markdown, "Bird id", binding.birdId);
+    appendHostBindingField(markdown, "Addressable", binding.addressableKey);
+    appendHostBindingField(markdown, "Asset", binding.assetPath);
+    appendHostBindingField(markdown, "Unity guid", binding.unityGuid);
+    markdown.appendMarkdown("Source: `" + formatDisplayPath(binding.sourcePath) + "`");
+    return markdown;
+}
+
+function appendHostBindingField(markdown, label, value) {
+    if (!value) {
+        return;
+    }
+
+    markdown.appendMarkdown(label + ": `" + value + "`\n\n");
 }
 
 function createLocation(item) {
