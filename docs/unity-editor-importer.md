@@ -98,6 +98,15 @@ bird-import-dry-run-report.txt
 
 该文件用于留存导入计划，方便在真正 Import 前做审查或提交给其他人确认。
 
+报告中的 TalkingSO 计划会尽量附带 Inscape 上下文：
+
+- `node`：来源节点名。
+- `kind`：来源类型，例如 `Dialogue`、`Narration`、`ChoicePrompt`。
+- `anchor`：Inscape 行级锚点。
+- `source`：源文件、行、列。
+
+Timeline Hook 计划会附带 `node`、`phase` 和源位置，便于确认 hook 是否挂到了预期 talking 上。
+
 ## 当前边界
 
 - 原型会覆盖生成资源的 `TalkingTM` 字段，不做字段级人工合并。
@@ -108,7 +117,7 @@ bird-import-dry-run-report.txt
 
 ## 后续建议
 
-1. 增强导入报告：输出 source node、source anchor 和更细的字段变化。
+1. 增强导入报告：输出更细的字段变化。
 2. 增加字段级 diff UI：展示每个 `TalkingTM` 即将改动的字段。
 3. 设计 `L10N_Talking.csv` 合并策略，避免覆盖人工译文。
 4. 接入 Addressables：生成后自动加入 Bird 的 `TM_TALKING` 分组。

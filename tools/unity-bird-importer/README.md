@@ -48,6 +48,7 @@ Assets/Resources_Runtime/Talking/InscapeGenerated
 - Timeline 资源优先按 `unityGuid` 查找，其次按 `assetPath`，最后按 `birdId` 扫描现有 `TimelineSO.tm.timelineId`。
 - 生成的资源文件名为 `SO_Talking_Inscape_<talkingId>.asset`。
 - Dry Run 会输出创建 / 更新计划、缺失 `nextTalkingId`、Timeline Hook 解析结果和 warning 计数，并在 manifest 同目录写入 `bird-import-dry-run-report.txt`，不修改 `.asset`。
+- Dry Run 报告会尽量附带 Inscape `node`、`kind`、`anchor` 和 `source`，方便从 Unity 导入计划追溯回 DSL 源文本。
 
 ## 当前限制
 

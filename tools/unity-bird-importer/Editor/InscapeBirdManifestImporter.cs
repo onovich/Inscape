@@ -119,10 +119,10 @@ namespace Inscape.Unity.BirdImporter {
                 bool exists = talkingsById.TryGetValue(entry.talkingId, out TalkingSO talkingSO) && talkingSO != null;
                 if (exists) {
                     updateCount += 1;
-                    builder.AppendLine("  UPDATE " + entry.talkingId + " -> " + AssetDatabase.GetAssetPath(talkingSO));
+                    builder.AppendLine("  UPDATE " + entry.talkingId + " -> " + AssetDatabase.GetAssetPath(talkingSO) + FormatTalkingContext(entry));
                 } else {
                     createCount += 1;
-                    builder.AppendLine("  CREATE " + entry.talkingId + " -> " + outputFolder + "/SO_Talking_Inscape_" + entry.talkingId + ".asset");
+                    builder.AppendLine("  CREATE " + entry.talkingId + " -> " + outputFolder + "/SO_Talking_Inscape_" + entry.talkingId + ".asset" + FormatTalkingContext(entry));
                 }
 
                 if (entry.nextTalkingId.HasValue && !knownTalkingIds.Contains(entry.nextTalkingId.Value)) {
@@ -138,7 +138,7 @@ namespace Inscape.Unity.BirdImporter {
                     BirdChoiceOptionEntry option = entry.options[optionIndex];
                     if (option.nextTalkingId.HasValue && !knownTalkingIds.Contains(option.nextTalkingId.Value)) {
                         warningCount += 1;
-                        builder.AppendLine("    WARNING option '" + option.text + "' targets missing talkingId " + option.nextTalkingId.Value);
+                        builder.AppendLine("    WARNING option '" + option.text + "' targets missing talkingId " + option.nextTalkingId.Value + FormatOptionContext(option));
                     }
                 }
             }
@@ -159,9 +159,9 @@ namespace Inscape.Unity.BirdImporter {
                     if (timelineSO == null) {
                         unresolvedTimelineHookCount += 1;
                         warningCount += 1;
-                        builder.AppendLine("  UNRESOLVED " + hook.alias + " -> talkingId " + NullableIntText(hook.targetTalkingId));
+                        builder.AppendLine("  UNRESOLVED " + hook.alias + " -> talkingId " + NullableIntText(hook.targetTalkingId) + FormatHookContext(hook));
                     } else {
-                        builder.AppendLine("  RESOLVE " + hook.alias + " -> " + AssetDatabase.GetAssetPath(timelineSO) + " -> talkingId " + NullableIntText(hook.targetTalkingId));
+                        builder.AppendLine("  RESOLVE " + hook.alias + " -> " + AssetDatabase.GetAssetPath(timelineSO) + " -> talkingId " + NullableIntText(hook.targetTalkingId) + FormatHookContext(hook));
                     }
                 }
             }
@@ -373,6 +373,69 @@ namespace Inscape.Unity.BirdImporter {
             return value.HasValue ? value.Value.ToString() : "(none)";
         }
 
+        static string FormatTalkingContext(BirdTalkingEntry entry) {
+            StringBuilder builder = new StringBuilder();
+            if (!string.IsNullOrEmpty(entry.nodeName)) {
+                builder.Append(" node=");
+                builder.Append(entry.nodeName);
+            }
+            if (!string.IsNullOrEmpty(entry.kind)) {
+                builder.Append(" kind=");
+                builder.Append(entry.kind);
+            }
+            if (!string.IsNullOrEmpty(entry.anchor)) {
+                builder.Append(" anchor=");
+                builder.Append(entry.anchor);
+            }
+            AppendSourceContext(builder, entry.source);
+            return builder.ToString();
+        }
+
+        static string FormatOptionContext(BirdChoiceOptionEntry option) {
+            StringBuilder builder = new StringBuilder();
+            if (!string.IsNullOrEmpty(option.targetNodeName)) {
+                builder.Append(" targetNode=");
+                builder.Append(option.targetNodeName);
+            }
+            if (!string.IsNullOrEmpty(option.anchor)) {
+                builder.Append(" anchor=");
+                builder.Append(option.anchor);
+            }
+            AppendSourceContext(builder, option.source);
+            return builder.ToString();
+        }
+
+        static string FormatHookContext(BirdHostHook hook) {
+            StringBuilder builder = new StringBuilder();
+            if (!string.IsNullOrEmpty(hook.nodeName)) {
+                builder.Append(" node=");
+                builder.Append(hook.nodeName);
+            }
+            if (!string.IsNullOrEmpty(hook.phase)) {
+                builder.Append(" phase=");
+                builder.Append(hook.phase);
+            }
+            AppendSourceContext(builder, hook.source);
+            return builder.ToString();
+        }
+
+        static void AppendSourceContext(StringBuilder builder, BirdSourceSpan source) {
+            if (source == null || string.IsNullOrEmpty(source.sourcePath)) {
+                return;
+            }
+
+            builder.Append(" source=");
+            builder.Append(source.sourcePath);
+            if (source.line > 0) {
+                builder.Append(":");
+                builder.Append(source.line);
+                if (source.column > 0) {
+                    builder.Append(":");
+                    builder.Append(source.column);
+                }
+            }
+        }
+
         [Serializable]
         sealed class BirdManifest {
             public BirdTalkingEntry[] talkings;
@@ -382,27 +445,46 @@ namespace Inscape.Unity.BirdImporter {
         [Serializable]
         sealed class BirdTalkingEntry {
             public int talkingId;
+            public string nodeName;
+            public int nodeOrder;
+            public string kind;
+            public string anchor;
+            public string speaker;
             public string textDisplayType;
             public int? nextTalkingId;
             public int? roleId;
             public int textAnchorIndex;
             public BirdChoiceOptionEntry[] options;
+            public BirdSourceSpan source;
         }
 
         [Serializable]
         sealed class BirdChoiceOptionEntry {
             public string text;
+            public string anchor;
+            public string targetNodeName;
             public int? nextTalkingId;
+            public BirdSourceSpan source;
         }
 
         [Serializable]
         sealed class BirdHostHook {
             public string kind;
             public string alias;
+            public string phase;
+            public string nodeName;
             public int? targetTalkingId;
             public int? birdId;
             public string unityGuid;
             public string assetPath;
+            public BirdSourceSpan source;
+        }
+
+        [Serializable]
+        sealed class BirdSourceSpan {
+            public string sourcePath;
+            public int line;
+            public int column;
         }
 
     }
