@@ -698,7 +698,9 @@ Narrator: Project start.
 
         static void CliExportBirdBindingTemplateEmitsCsv() {
             string directory = Path.Combine(Path.GetTempPath(), "inscape-tests", Guid.NewGuid().ToString("N"));
+            string timelineDirectory = Path.Combine(directory, "Assets", "Resources_Runtime", "Timeline");
             Directory.CreateDirectory(directory);
+            Directory.CreateDirectory(timelineDirectory);
 
             File.WriteAllText(Path.Combine(directory, "story.inscape"), """
 :: start
@@ -707,6 +709,16 @@ Narrator: Hello.
 @timeline court.opening
 [timeline: court.close]
 @timeline court.opening
+""", Encoding.UTF8);
+            File.WriteAllText(Path.Combine(timelineDirectory, "SO_Timeline_Court_Opening.asset"), """
+%YAML 1.1
+MonoBehaviour:
+  tm:
+    timelineId: 101
+""", Encoding.UTF8);
+            File.WriteAllText(Path.Combine(timelineDirectory, "SO_Timeline_Court_Opening.asset.meta"), """
+fileFormatVersion: 2
+guid: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 """, Encoding.UTF8);
 
             TextWriter originalOut = Console.Out;
@@ -718,7 +730,7 @@ Narrator: Hello.
             try {
                 Console.SetOut(output);
                 Console.SetError(error);
-                exitCode = CliProgram.Main(new[] { "export-bird-binding-template", directory });
+                exitCode = CliProgram.Main(new[] { "export-bird-binding-template", directory, "--bird-existing-timeline-root", timelineDirectory });
             } finally {
                 Console.SetOut(originalOut);
                 Console.SetError(originalError);
@@ -730,7 +742,7 @@ Narrator: Hello.
             AssertEqual("", error.ToString().Trim(), "Export-bird-binding-template stderr");
             AssertTrue(csv.Contains("kind,alias,birdId,unityGuid,addressableKey,assetPath"), "Binding template should include header.");
             AssertTrue(csv.Contains("timeline,court.close,,,,"), "Binding template should include inline timeline alias.");
-            AssertTrue(csv.Contains("timeline,court.opening,,,,"), "Binding template should include metadata timeline alias.");
+            AssertTrue(csv.Contains("timeline,court.opening,101,aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa,,Assets/Resources_Runtime/Timeline/SO_Timeline_Court_Opening.asset"), "Binding template should fill matching timeline asset metadata.");
             AssertEqual(3, CountCsvLines(csv), "Binding template CSV line count");
         }
 

@@ -169,8 +169,12 @@ namespace Inscape.Cli {
             }
 
             if (command == "export-bird-binding-template") {
+                if (!TryReadBirdTimelineBindingsForTemplate(args, out Dictionary<string, BirdTimelineAssetBinding> timelineBindingsByAlias)) {
+                    return 1;
+                }
+
                 BirdBindingTemplateWriter writer = new BirdBindingTemplateWriter();
-                WriteOrPrint(outputPath, writer.Write(result.Graph));
+                WriteOrPrint(outputPath, writer.Write(result.Graph, timelineBindingsByAlias));
                 PrintDiagnostics(result.Diagnostics);
                 return result.HasErrors ? 1 : 0;
             }
@@ -453,6 +457,116 @@ namespace Inscape.Cli {
             return true;
         }
 
+        static bool TryReadBirdTimelineBindingsForTemplate(string[] args, out Dictionary<string, BirdTimelineAssetBinding> bindingsByAlias) {
+            bindingsByAlias = new Dictionary<string, BirdTimelineAssetBinding>(StringComparer.Ordinal);
+            string? timelineRoot = ReadOption(args, "--bird-existing-timeline-root");
+            if (string.IsNullOrWhiteSpace(timelineRoot)) {
+                return true;
+            }
+
+            if (!Directory.Exists(timelineRoot)) {
+                Console.Error.WriteLine("Bird existing timeline root not found: " + timelineRoot);
+                return false;
+            }
+
+            HashSet<string> ambiguousAliases = new HashSet<string>(StringComparer.Ordinal);
+            foreach (string assetPath in Directory.EnumerateFiles(timelineRoot, "*.asset", SearchOption.AllDirectories)) {
+                if (!TryReadTimelineId(assetPath, out int timelineId)) {
+                    continue;
+                }
+
+                BirdTimelineAssetBinding binding = new BirdTimelineAssetBinding {
+                    TimelineId = timelineId,
+                    UnityGuid = ReadUnityMetaGuid(assetPath + ".meta"),
+                    AssetPath = ToUnityAssetPath(assetPath),
+                };
+
+                foreach (string candidate in CreateTimelineAliasCandidates(assetPath)) {
+                    if (ambiguousAliases.Contains(candidate)) {
+                        continue;
+                    }
+
+                    if (bindingsByAlias.ContainsKey(candidate)) {
+                        bindingsByAlias.Remove(candidate);
+                        ambiguousAliases.Add(candidate);
+                    } else {
+                        bindingsByAlias.Add(candidate, binding);
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        static bool TryReadTimelineId(string assetPath, out int timelineId) {
+            timelineId = 0;
+            foreach (string rawLine in File.ReadLines(assetPath, Encoding.UTF8)) {
+                string line = rawLine.Trim();
+                if (!line.StartsWith("timelineId:", StringComparison.Ordinal)) {
+                    continue;
+                }
+
+                string value = line.Substring("timelineId:".Length).Trim();
+                return int.TryParse(value, out timelineId);
+            }
+
+            return false;
+        }
+
+        static string ReadUnityMetaGuid(string metaPath) {
+            if (!File.Exists(metaPath)) {
+                return string.Empty;
+            }
+
+            foreach (string rawLine in File.ReadLines(metaPath, Encoding.UTF8)) {
+                string line = rawLine.Trim();
+                if (line.StartsWith("guid:", StringComparison.Ordinal)) {
+                    return line.Substring("guid:".Length).Trim();
+                }
+            }
+
+            return string.Empty;
+        }
+
+        static string ToUnityAssetPath(string assetPath) {
+            string normalized = Path.GetFullPath(assetPath).Replace('\\', '/');
+            int marker = normalized.IndexOf("/Assets/", StringComparison.OrdinalIgnoreCase);
+            if (marker >= 0) {
+                return normalized.Substring(marker + 1);
+            }
+
+            if (normalized.StartsWith("Assets/", StringComparison.OrdinalIgnoreCase)) {
+                return normalized;
+            }
+
+            return normalized;
+        }
+
+        static SortedSet<string> CreateTimelineAliasCandidates(string assetPath) {
+            SortedSet<string> candidates = new SortedSet<string>(StringComparer.Ordinal);
+            string name = Path.GetFileNameWithoutExtension(assetPath);
+            AddTimelineAliasCandidate(candidates, name);
+
+            const string prefix = "SO_Timeline_";
+            if (name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) {
+                AddTimelineAliasCandidate(candidates, name.Substring(prefix.Length));
+            }
+
+            return candidates;
+        }
+
+        static void AddTimelineAliasCandidate(SortedSet<string> candidates, string value) {
+            if (string.IsNullOrWhiteSpace(value)) {
+                return;
+            }
+
+            candidates.Add(value);
+            candidates.Add(value.ToLowerInvariant());
+            string dotted = value.Replace('_', '.').Replace('-', '.');
+            candidates.Add(dotted);
+            candidates.Add(dotted.ToLowerInvariant());
+        }
+
         static bool IsBirdBindingHeader(List<string> fields) {
             return fields.Count == 6
                 && fields[0].Equals("kind", StringComparison.OrdinalIgnoreCase)
@@ -562,7 +676,7 @@ namespace Inscape.Cli {
             Console.WriteLine("  inscape diagnose-project <root> [--entry node.name] [--override source.inscape temp.inscape] [-o diagnostics.json]");
             Console.WriteLine("  inscape extract-l10n-project <root> [--entry node.name] [--override source.inscape temp.inscape] [-o strings.csv]");
             Console.WriteLine("  inscape update-l10n-project <root> --from old.csv [--entry node.name] [--override source.inscape temp.inscape] [-o strings.csv]");
-            Console.WriteLine("  inscape export-bird-binding-template <root> [--entry node.name] [--override source.inscape temp.inscape] [-o bindings.csv]");
+            Console.WriteLine("  inscape export-bird-binding-template <root> [--entry node.name] [--override source.inscape temp.inscape] [--bird-existing-timeline-root path] [-o bindings.csv]");
             Console.WriteLine("  inscape export-bird-project <root> [--entry node.name] [--bird-talking-start 100000] [--bird-role-map roles.csv] [--bird-binding-map bindings.csv] [--bird-existing-talking-root path] -o output-dir");
             Console.WriteLine("  inscape compile-project <root> [--entry node.name] [-o output.json]");
             Console.WriteLine("  inscape preview-project <root> [--entry node.name] [-o preview.html]");

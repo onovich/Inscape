@@ -74,7 +74,7 @@ docs/
 
 项目级命令支持 `--entry node.name` 临时覆盖项目入口，用于从任意节点编译、诊断和预览。它不修改源文件中的 `@entry`。
 
-`export-bird-binding-template` 会扫描项目内 Timeline Hook，生成 `--bird-binding-map` 模板。
+`export-bird-binding-template` 会扫描项目内 Timeline Hook，生成 `--bird-binding-map` 模板；可用 `--bird-existing-timeline-root` 扫描 Bird Timeline `.asset` 与 `.meta`，辅助填入 `timelineId`、Unity guid 和 asset path。
 
 `export-bird-project` 会输出 `bird-manifest.json`、`L10N_Talking.csv`、`inscape-bird-l10n-map.csv` 和 `bird-export-report.txt`，用于后续 Unity Editor Importer 原型。它支持 `--bird-role-map roles.csv` 将 speaker 绑定到 Bird `roleId`，支持 `--bird-binding-map bindings.csv` 绑定资源 / Timeline 别名，也支持 `--bird-existing-talking-root path` 扫描现有 `TalkingSO` 资源并避让 `talkingId` 冲突。
 
