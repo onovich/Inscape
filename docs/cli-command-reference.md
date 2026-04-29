@@ -141,6 +141,18 @@ Dry Run 成功后会生成：
 artifacts\bird-trial\export\bird-import-dry-run-report.txt
 ```
 
+确认 Dry Run 报告后执行真实 Import：
+
+```powershell
+& "D:\UnityEditors\Unity 2023.2.22f1\Editor\Unity.exe" `
+  -batchmode -quit `
+  -projectPath "D:\UnityProjects\Bird" `
+  -executeMethod Inscape.Unity.BirdImporter.InscapeBirdManifestImporter.ImportManifestFromCommandLine `
+  -inscapeManifest "D:\LabProjects\Inscape\artifacts\bird-trial\export\bird-manifest.json" `
+  -inscapeOutputFolder "Assets/Resources_Runtime/Talking/InscapeGenerated" `
+  -logFile "D:\LabProjects\Inscape\artifacts\bird-trial\unity-import.log"
+```
+
 ## 验证命令
 
 每次修改 CLI、Core、VSCode 工具或文档链接后，建议运行：

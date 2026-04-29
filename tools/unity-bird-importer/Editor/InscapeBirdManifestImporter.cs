@@ -90,6 +90,33 @@ namespace Inscape.Unity.BirdImporter {
         }
 
         public static void ImportManifest(string manifestPath, string outputFolder) {
+            int importedCount = ImportManifestCore(manifestPath, outputFolder);
+            EditorUtility.DisplayDialog("Inscape Bird Importer", "Imported " + importedCount + " TalkingSO assets.", "OK");
+        }
+
+        public static void ImportManifestFromCommandLine() {
+            try {
+                string manifestPath = ReadCommandLineArgument("-inscapeManifest");
+                string outputFolder = ResolveOutputFolderArgument(ReadCommandLineArgument("-inscapeOutputFolder"));
+
+                if (string.IsNullOrEmpty(manifestPath)) {
+                    throw new InvalidOperationException("Missing required argument: -inscapeManifest <path>");
+                }
+
+                if (string.IsNullOrEmpty(outputFolder)) {
+                    throw new InvalidOperationException("Missing or invalid required argument: -inscapeOutputFolder <Assets/... or absolute project path>");
+                }
+
+                int importedCount = ImportManifestCore(manifestPath, outputFolder);
+                Debug.Log("Inscape Bird Importer imported " + importedCount + " TalkingSO assets.");
+                EditorApplication.Exit(0);
+            } catch (Exception ex) {
+                Debug.LogException(ex);
+                EditorApplication.Exit(1);
+            }
+        }
+
+        static int ImportManifestCore(string manifestPath, string outputFolder) {
             EnsureFolder(outputFolder);
             BirdManifest manifest = LoadManifest(manifestPath);
             Dictionary<int, TalkingSO> talkingsById = LoadTalkingAssetsById();
@@ -113,7 +140,7 @@ namespace Inscape.Unity.BirdImporter {
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
-            EditorUtility.DisplayDialog("Inscape Bird Importer", "Imported " + manifest.talkings.Length + " TalkingSO assets.", "OK");
+            return manifest.talkings.Length;
         }
 
         public static string CreateImportReport(string manifestPath, string outputFolder) {
