@@ -39,6 +39,18 @@ Assets/Resources_Runtime/Talking/InscapeGenerated
 5. 在 Unity Console 查看将创建、更新和缺失引用的计划；Dry Run 也会在 manifest 同目录写入 `bird-import-dry-run-report.txt`。
 6. 计划确认后再执行 `Import Manifest...`。
 
+也可以用 Unity batchmode 执行 Dry Run，便于之后接入 CI 或本地脚本：
+
+```powershell
+& "D:\UnityEditors\Unity 2023.2.22f1\Editor\Unity.exe" `
+  -batchmode -quit `
+  -projectPath "D:\UnityProjects\Bird" `
+  -executeMethod Inscape.Unity.BirdImporter.InscapeBirdManifestImporter.DryRunImportManifestFromCommandLine `
+  -inscapeManifest "D:\LabProjects\Inscape\artifacts\bird-trial\export\bird-manifest.json" `
+  -inscapeOutputFolder "Assets/Resources_Runtime/Talking/InscapeGenerated" `
+  -logFile "D:\LabProjects\Inscape\artifacts\bird-trial\unity-dry-run.log"
+```
+
 ## 当前行为
 
 - 通过 manifest 的 `talkings` 创建或更新 `TalkingSO`。
@@ -49,6 +61,7 @@ Assets/Resources_Runtime/Talking/InscapeGenerated
 - 生成的资源文件名为 `SO_Talking_Inscape_<talkingId>.asset`。
 - Dry Run 会输出创建 / 更新计划、既有 `TalkingTM` 的字段级变化、缺失 `nextTalkingId`、Timeline Hook 解析结果和 warning 计数，并在 manifest 同目录写入 `bird-import-dry-run-report.txt`，不修改 `.asset`。
 - Dry Run 报告会尽量附带 Inscape `node`、`kind`、`anchor` 和 `source`，方便从 Unity 导入计划追溯回 DSL 源文本。
+- `DryRunImportManifestFromCommandLine` 支持 `-inscapeManifest` 和 `-inscapeOutputFolder` 参数，`-inscapeOutputFolder` 可传 `Assets/...` 或 Unity 项目内绝对路径。
 
 ## 当前限制
 

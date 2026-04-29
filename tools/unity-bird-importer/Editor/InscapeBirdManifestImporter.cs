@@ -65,6 +65,30 @@ namespace Inscape.Unity.BirdImporter {
                                         "OK");
         }
 
+        public static void DryRunImportManifestFromCommandLine() {
+            try {
+                string manifestPath = ReadCommandLineArgument("-inscapeManifest");
+                string outputFolder = ResolveOutputFolderArgument(ReadCommandLineArgument("-inscapeOutputFolder"));
+
+                if (string.IsNullOrEmpty(manifestPath)) {
+                    throw new InvalidOperationException("Missing required argument: -inscapeManifest <path>");
+                }
+
+                if (string.IsNullOrEmpty(outputFolder)) {
+                    throw new InvalidOperationException("Missing or invalid required argument: -inscapeOutputFolder <Assets/... or absolute project path>");
+                }
+
+                string report = CreateImportReport(manifestPath, outputFolder);
+                string reportPath = WriteDryRunReport(manifestPath, report);
+                Debug.Log(report);
+                Debug.Log("Inscape Bird Importer dry run report: " + reportPath);
+                EditorApplication.Exit(0);
+            } catch (Exception ex) {
+                Debug.LogException(ex);
+                EditorApplication.Exit(1);
+            }
+        }
+
         public static void ImportManifest(string manifestPath, string outputFolder) {
             EnsureFolder(outputFolder);
             BirdManifest manifest = LoadManifest(manifestPath);
@@ -369,6 +393,35 @@ namespace Inscape.Unity.BirdImporter {
                 return string.Empty;
             }
             return normalized.Substring(projectRoot.Length + 1);
+        }
+
+        static string ResolveOutputFolderArgument(string value) {
+            if (string.IsNullOrEmpty(value)) {
+                return string.Empty;
+            }
+
+            string normalized = value.Replace('\\', '/');
+            if (normalized == "Assets" || normalized.StartsWith("Assets/", StringComparison.OrdinalIgnoreCase)) {
+                return normalized;
+            }
+
+            return ToAssetPath(value);
+        }
+
+        static string ReadCommandLineArgument(string name) {
+            string[] args = Environment.GetCommandLineArgs();
+            for (int i = 0; i < args.Length; i += 1) {
+                if (args[i] == name && i + 1 < args.Length) {
+                    return args[i + 1];
+                }
+
+                string prefix = name + "=";
+                if (args[i].StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) {
+                    return args[i].Substring(prefix.Length);
+                }
+            }
+
+            return string.Empty;
         }
 
         static string NullableIntText(int? value) {

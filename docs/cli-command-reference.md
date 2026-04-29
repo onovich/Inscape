@@ -111,6 +111,36 @@ bird-export-report.txt
 - `--bird-existing-talking-root path`：扫描现有 Talking `.asset`，避让已使用的 `talkingId`。
 - `--bird-existing-timeline-root path`：仅用于 `export-bird-binding-template`，扫描现有 Timeline `.asset` / `.meta` 辅助填表。
 
+## Unity / Bird Importer 命令
+
+这些命令在 Unity 项目中执行，不属于 Inscape CLI。先将 `tools\unity-bird-importer\Editor\InscapeBirdManifestImporter.cs` 复制到 Bird 项目的 `Assets\Editor\`。
+
+生成一份可用于 Bird dry-run 的最小导出包：
+
+```powershell
+dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-role-template samples --bird-existing-role-name-csv D:\UnityProjects\Bird\Assets\Resources_Runtime\Localization\L10N_RoleName.csv -o artifacts\bird-trial\bird-roles.csv
+dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-binding-template samples --bird-existing-timeline-root D:\UnityProjects\Bird\Assets\Resources_Runtime\Timeline -o artifacts\bird-trial\bird-bindings.csv
+dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-project samples --bird-existing-talking-root D:\UnityProjects\Bird\Assets\Resources_Runtime\Talking --bird-binding-map artifacts\bird-trial\bird-bindings.csv -o artifacts\bird-trial\export
+```
+
+用 Unity batchmode 执行 Importer Dry Run：
+
+```powershell
+& "D:\UnityEditors\Unity 2023.2.22f1\Editor\Unity.exe" `
+  -batchmode -quit `
+  -projectPath "D:\UnityProjects\Bird" `
+  -executeMethod Inscape.Unity.BirdImporter.InscapeBirdManifestImporter.DryRunImportManifestFromCommandLine `
+  -inscapeManifest "D:\LabProjects\Inscape\artifacts\bird-trial\export\bird-manifest.json" `
+  -inscapeOutputFolder "Assets/Resources_Runtime/Talking/InscapeGenerated" `
+  -logFile "D:\LabProjects\Inscape\artifacts\bird-trial\unity-dry-run.log"
+```
+
+Dry Run 成功后会生成：
+
+```text
+artifacts\bird-trial\export\bird-import-dry-run-report.txt
+```
+
 ## 验证命令
 
 每次修改 CLI、Core、VSCode 工具或文档链接后，建议运行：

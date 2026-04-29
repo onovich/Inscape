@@ -8,7 +8,7 @@
 
 下一位接手者建议按以下顺序推进：
 
-1. 将 Unity Editor Importer 原型复制到 Bird 项目，先执行 Dry Run，再验证 `TalkingSO`、选项和 Timeline Hook 的 `.asset` 结果。
+1. 在 Bird Unity 项目内执行一次真实 Import，验证 `TalkingSO`、选项和 Timeline Hook 的 `.asset` 结果，并确认是否需要 Import 命令行入口。
 2. 明确 Timeline Hook 的 phase 语义，尤其是 Bird 当前 `TalkingEffectTM` 在 talking exit 触发的关系。
 3. 设计本地化模糊匹配与人工确认报告，不要直接自动复用相似文本译文。
 4. 收敛第一版块语法：继续使用 `:: node.name`，还是转向 `# 标题` + 空行分块。
@@ -93,7 +93,9 @@
 - [x] 为 Unity Editor Importer Dry Run 增加独立报告文件 `bird-import-dry-run-report.txt`，便于试跑后留痕审查。
 - [x] 为 Unity Editor Importer Dry Run 报告补充 Inscape `node`、`kind`、`anchor`、`source` 等追溯信息。
 - [x] 为 Unity Editor Importer Dry Run 报告补充字段级文本 diff，覆盖 `roleId`、`nextTalking`、`textAnchorIndex`、`textDisplayType` 和选项变化。
-- [ ] 在 Bird Unity 项目内试跑 Unity Editor Importer 原型，并记录生成 `.asset` 的差异与风险。
+- [x] 为 Unity Editor Importer Dry Run 增加 batchmode 命令行入口，便于本地自动化和未来 CI。
+- [x] 在 Bird Unity 项目内执行 batchmode Dry Run，并记录创建计划、日志风险和当前未改动 `.asset` 的边界。
+- [ ] 在 Bird Unity 项目内执行真实 Import，记录生成 `.asset` 的差异、Addressables 风险和 L10N 合并风险。
 - [x] 设计 Timeline 引用的第一版最小表达方式，但不让 DSL 直接变成演出时间轴语言。
 - [ ] 明确 Timeline Hook 的 phase 是否继续沿用 `talking.exit`，或扩展为 node enter/exit。
 

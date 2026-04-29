@@ -99,6 +99,20 @@ bird-import-dry-run-report.txt
 
 该文件用于留存导入计划，方便在真正 Import 前做审查或提交给其他人确认。
 
+Dry Run 也提供命令行入口，方便之后接入 CI 或本地自动化：
+
+```powershell
+& "D:\UnityEditors\Unity 2023.2.22f1\Editor\Unity.exe" `
+  -batchmode -quit `
+  -projectPath "D:\UnityProjects\Bird" `
+  -executeMethod Inscape.Unity.BirdImporter.InscapeBirdManifestImporter.DryRunImportManifestFromCommandLine `
+  -inscapeManifest "D:\LabProjects\Inscape\artifacts\bird-trial\export\bird-manifest.json" `
+  -inscapeOutputFolder "Assets/Resources_Runtime/Talking/InscapeGenerated" `
+  -logFile "D:\LabProjects\Inscape\artifacts\bird-trial\unity-dry-run.log"
+```
+
+其中 `-inscapeOutputFolder` 可传 `Assets/...` 或 Unity 项目内绝对路径。
+
 报告中的 TalkingSO 计划会尽量附带 Inscape 上下文：
 
 - `node`：来源节点名。
@@ -107,6 +121,31 @@ bird-import-dry-run-report.txt
 - `source`：源文件、行、列。
 
 Timeline Hook 计划会附带 `node`、`phase` 和源位置，便于确认 hook 是否挂到了预期 talking 上。
+
+## Bird 项目试跑记录
+
+2026-04-29 已在本机 `D:\UnityProjects\Bird` 执行一次 batchmode Dry Run：
+
+```text
+Unity: D:\UnityEditors\Unity 2023.2.22f1\Editor\Unity.exe
+Manifest: D:\LabProjects\Inscape\artifacts\bird-trial\export\bird-manifest.json
+Output folder: Assets/Resources_Runtime/Talking/InscapeGenerated
+Report: D:\LabProjects\Inscape\artifacts\bird-trial\export\bird-import-dry-run-report.txt
+```
+
+结果：
+
+- Unity 成功执行 `DryRunImportManifestFromCommandLine`。
+- 计划创建 `TalkingSO` 5 个，更新 0 个。
+- Timeline Hook 0 个。
+- Warning 0 个。
+- 报告能正确展示 `roleId`、`nextTalking`、`textDisplayType` 和选项目标。
+
+注意：
+
+- Bird 项目当前新增了 `Assets/Editor/InscapeBirdManifestImporter.cs` 及 Unity 生成的 `.meta`，尚未在 Bird 仓库提交。
+- Unity 日志中出现过 Bird 既有脚本 `Assets\Scripts_Editor\MenuTool\CommonMenuTool.cs` 的一次增量编译错误记录，以及一次 Unity 网络 ping 异常；随后 `Assembly-CSharp` / `Assembly-CSharp-Editor` 构建成功，Importer Dry Run 正常执行。
+- 本次只执行 Dry Run，没有创建 `TalkingSO` `.asset`，也没有改动 `L10N_Talking.csv` 或 Addressables。
 
 ## 当前边界
 
