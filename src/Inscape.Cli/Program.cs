@@ -42,6 +42,10 @@ namespace Inscape.Cli {
             string? outputPath = ReadOption(args, "-o");
             string? previousLocalizationPath = ReadOption(args, "--from");
 
+            if (command == "merge-bird-l10n") {
+                return RunMergeBirdL10n(inputPath, previousLocalizationPath, ReadOption(args, "--report"), outputPath);
+            }
+
             if (IsProjectCommand(command)) {
                 return RunProjectCommand(command, inputPath, args, outputPath);
             }
@@ -323,6 +327,37 @@ namespace Inscape.Cli {
             LocalizationCsvReader reader = new LocalizationCsvReader();
             entries = reader.Read(File.ReadAllText(previousLocalizationPath, Encoding.UTF8));
             return true;
+        }
+
+        static int RunMergeBirdL10n(string generatedPath, string? existingPath, string? reportPath, string? outputPath) {
+            if (!File.Exists(generatedPath)) {
+                Console.Error.WriteLine("Generated Bird L10N CSV not found: " + generatedPath);
+                return 1;
+            }
+
+            if (string.IsNullOrWhiteSpace(existingPath)) {
+                Console.Error.WriteLine("Missing required option: --from <existing-L10N_Talking.csv>");
+                return 1;
+            }
+
+            if (!File.Exists(existingPath)) {
+                Console.Error.WriteLine("Existing Bird L10N CSV not found: " + existingPath);
+                return 1;
+            }
+
+            try {
+                BirdL10nMergePlanner planner = new BirdL10nMergePlanner();
+                BirdL10nMergeResult result = planner.Merge(File.ReadAllText(existingPath, Encoding.UTF8),
+                                                           File.ReadAllText(generatedPath, Encoding.UTF8));
+                WriteOrPrint(outputPath, result.MergedCsv);
+                if (!string.IsNullOrWhiteSpace(reportPath)) {
+                    WriteOrPrint(reportPath, result.ReportCsv);
+                }
+                return 0;
+            } catch (Exception ex) {
+                Console.Error.WriteLine(ex.Message);
+                return 1;
+            }
         }
 
         static bool IsSamePath(string left, string right) {
@@ -776,6 +811,7 @@ namespace Inscape.Cli {
             Console.WriteLine("  inscape export-bird-binding-template <root> [--entry node.name] [--override source.inscape temp.inscape] [--bird-existing-timeline-root path] [-o bindings.csv]");
             Console.WriteLine("  inscape export-bird-role-template <root> [--entry node.name] [--override source.inscape temp.inscape] [--bird-existing-role-name-csv path] [-o roles.csv]");
             Console.WriteLine("  inscape export-bird-project <root> [--entry node.name] [--bird-talking-start 100000] [--bird-role-map roles.csv] [--bird-binding-map bindings.csv] [--bird-existing-talking-root path] -o output-dir");
+            Console.WriteLine("  inscape merge-bird-l10n <generated-L10N_Talking.csv> --from existing-L10N_Talking.csv [--report report.csv] [-o merged.csv]");
             Console.WriteLine("  inscape compile-project <root> [--entry node.name] [-o output.json]");
             Console.WriteLine("  inscape preview-project <root> [--entry node.name] [-o preview.html]");
             Console.WriteLine("  inscape compile <file.inscape> [-o output.json]");
@@ -805,6 +841,7 @@ namespace Inscape.Cli {
             Console.WriteLine("  export-bird-role-template");
             Console.WriteLine("  export-bird-binding-template");
             Console.WriteLine("  export-bird-project");
+            Console.WriteLine("  merge-bird-l10n");
             Console.WriteLine();
             Console.WriteLine("Run `inscape help <command>` for details.");
         }
@@ -903,6 +940,13 @@ namespace Inscape.Cli {
                                           "inscape export-bird-project <root> [--entry node.name] [--bird-talking-start 100000] [--bird-role-map roles.csv] [--bird-binding-map bindings.csv] [--bird-existing-talking-root path] -o output-dir",
                                           "dotnet run --project src\\Inscape.Cli\\Inscape.Cli.csproj -- export-bird-project samples --bird-role-map config\\bird-roles.csv --bird-binding-map config\\bird-bindings.csv -o artifacts\\bird-export",
                                           "Output files: bird-manifest.json, L10N_Talking.csv, inscape-bird-l10n-map.csv, bird-export-report.txt");
+                    return true;
+                case "merge-bird-l10n":
+                    PrintCommandHelpBlock("merge-bird-l10n",
+                                          "Merge generated Inscape Bird L10N_Talking.csv into an existing Bird L10N_Talking.csv without silently reusing stale translations.",
+                                          "inscape merge-bird-l10n <generated-L10N_Talking.csv> --from existing-L10N_Talking.csv [--report report.csv] [-o merged.csv]",
+                                          "dotnet run --project src\\Inscape.Cli\\Inscape.Cli.csproj -- merge-bird-l10n artifacts\\bird-export\\L10N_Talking.csv --from D:\\UnityProjects\\Bird\\Assets\\Resources_Runtime\\Localization\\L10N_Talking.csv --report artifacts\\bird-export\\L10N_Talking.merge-report.csv -o artifacts\\bird-export\\L10N_Talking.merged.csv",
+                                          "Preserves unrelated rows and existing translations when source text is unchanged. If source text changed, target-language cells are cleared and old values are written to the report.");
                     return true;
                 default:
                     Console.Error.WriteLine("Unknown command: " + command);

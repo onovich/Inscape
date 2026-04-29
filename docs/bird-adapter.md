@@ -147,6 +147,30 @@ anchor,node,kind,speaker,text,talkingId,talkingIndex,birdField,sourcePath,line,c
 
 `bird-export-report.txt` 是面向人类和 CI 的轻量报告，包含节点、talking、host binding、host hook、本地化行数和 warning 汇总。当前 warning 不会阻断导出，主要用于在 Unity 导入前发现宿主绑定问题。
 
+## Bird L10N 合并预览
+
+`export-bird-project` 生成的 `L10N_Talking.csv` 不应直接覆盖 Bird 项目的正式本地化表。当前提供独立命令做合并预览：
+
+```powershell
+dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- merge-bird-l10n artifacts\bird-export\L10N_Talking.csv --from D:\UnityProjects\Bird\Assets\Resources_Runtime\Localization\L10N_Talking.csv --report artifacts\bird-export\L10N_Talking.merge-report.csv -o artifacts\bird-export\L10N_Talking.merged.csv
+```
+
+合并规则：
+
+- 以 `ID` 为键。
+- Bird 现有但当前 Inscape 导出未涉及的行会原样保留。
+- 当前 Inscape 新增行会追加到表尾。
+- 同 ID 且源文本未变时，保留现有翻译。
+- 同 ID 但源文本变化时，写入新源文本并清空目标语言列，避免旧翻译误套到新文本。
+- 旧源文本和旧译文会写入 `--report` 指定的审查 CSV，用于追溯和人工参考。
+
+2026-04-29 已用 Bird 当前 `L10N_Talking.csv` 和 `artifacts\bird-trial\export\L10N_Talking.csv` 试跑：
+
+- Bird 原表 270 行。
+- 合并预览表 275 行。
+- 审查报告只包含 5 个 `added` 行。
+- 未改动 Bird 项目正式 `L10N_Talking.csv`。
+
 ## 当前映射规则
 
 第一版采用保守的一行一 `TalkingTM` 思路，便于验证：

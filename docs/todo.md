@@ -9,7 +9,7 @@
 下一位接手者建议按以下顺序推进：
 
 1. 决定 Bird 项目内 importer 与生成的 `InscapeGenerated` 资源是否提交，或先清理后保留 Inscape 侧原型。
-2. 设计 Bird Adapter 的下一层：`L10N_Talking.csv` 合并策略、真实 `roleId` 绑定流。
+2. 设计真实 `roleId` 绑定流，决定是否生成项目级 role map 配置并接入 VSCode 补全。
 3. 明确 Timeline Hook 的 phase 语义，尤其是 Bird 当前 `TalkingEffectTM` 在 talking exit 触发的关系。
 4. 设计本地化模糊匹配与人工确认报告，不要直接自动复用相似文本译文。
 5. 收敛第一版块语法：继续使用 `:: node.name`，还是转向 `# 标题` + 空行分块。
@@ -100,7 +100,9 @@
 - [x] 在 Bird Unity 项目内执行真实 Import，生成 5 个 `TalkingSO`，并用二次 Dry Run 验证字段无差异。
 - [x] 在 Bird Unity 项目内试跑 `-inscapeApplyAddressables`，确认只修改 `TM_Talking.asset` 并新增 5 个 `TM_Talking` entries。
 - [ ] 决定 Bird 项目新增 importer 与 `InscapeGenerated` 资源的提交策略。
-- [ ] 设计 `L10N_Talking.csv` 合并策略，避免覆盖 Bird 现有人工译文。
+- [x] 设计并实现 `merge-bird-l10n` 合并预览命令，避免覆盖 Bird 现有人工译文。
+- [x] 用 Bird 当前 `L10N_Talking.csv` 试跑合并预览，确认只追加 5 个新增行并生成审查报告。
+- [ ] 设计真实 `roleId` 绑定流，决定 role map 是临时 CSV、项目配置，还是由宿主 Schema 生成。
 - [x] 设计 Timeline 引用的第一版最小表达方式，但不让 DSL 直接变成演出时间轴语言。
 - [ ] 明确 Timeline Hook 的 phase 是否继续沿用 `talking.exit`，或扩展为 node enter/exit。
 
