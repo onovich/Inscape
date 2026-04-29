@@ -27,6 +27,7 @@ dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-project s
 ```text
 Inscape > Bird > Dry Run Import Manifest...
 Inscape > Bird > Import Manifest...
+Inscape > Bird > Import Manifest And Apply Addressables...
 ```
 
 3. 先执行 `Dry Run Import Manifest...`，选择 `artifacts\bird-export\bird-manifest.json`。
@@ -63,6 +64,19 @@ Assets/Resources_Runtime/Talking/InscapeGenerated
   -logFile "D:\LabProjects\Inscape\artifacts\bird-trial\unity-import.log"
 ```
 
+如果需要在导入后立刻把生成的 `TalkingSO` 加入 Bird 的 `TM_Talking` Addressables group / label，可以增加显式开关：
+
+```powershell
+& "D:\UnityEditors\Unity 2023.2.22f1\Editor\Unity.exe" `
+  -batchmode -quit `
+  -projectPath "D:\UnityProjects\Bird" `
+  -executeMethod Inscape.Unity.BirdImporter.InscapeBirdManifestImporter.ImportManifestFromCommandLine `
+  -inscapeManifest "D:\LabProjects\Inscape\artifacts\bird-trial\export\bird-manifest.json" `
+  -inscapeOutputFolder "Assets/Resources_Runtime/Talking/InscapeGenerated" `
+  -inscapeApplyAddressables `
+  -logFile "D:\LabProjects\Inscape\artifacts\bird-trial\unity-import-aa.log"
+```
+
 ## 当前行为
 
 - 通过 manifest 的 `talkings` 创建或更新 `TalkingSO`。
@@ -75,6 +89,7 @@ Assets/Resources_Runtime/Talking/InscapeGenerated
 - Dry Run 报告会尽量附带 Inscape `node`、`kind`、`anchor` 和 `source`，方便从 Unity 导入计划追溯回 DSL 源文本。
 - `DryRunImportManifestFromCommandLine` 支持 `-inscapeManifest` 和 `-inscapeOutputFolder` 参数，`-inscapeOutputFolder` 可传 `Assets/...` 或 Unity 项目内绝对路径。
 - `ImportManifestFromCommandLine` 使用同一组参数执行真实导入，会创建或更新 `.asset`。
+- `ImportManifestFromCommandLine` 增加 `-inscapeApplyAddressables` 显式开关，打开后会调用 Bird 现有 `TalkingSO.ApplyAA()`，把生成资源加入 `TM_Talking` group / label。
 
 ## 当前限制
 

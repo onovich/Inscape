@@ -9,7 +9,7 @@
 下一位接手者建议按以下顺序推进：
 
 1. 决定 Bird 项目内 importer 与生成的 `InscapeGenerated` 资源是否提交，或先清理后保留 Inscape 侧原型。
-2. 设计 Bird Adapter 的下一层：Addressables 自动分组、`L10N_Talking.csv` 合并策略、真实 `roleId` 绑定流。
+2. 设计 Bird Adapter 的下一层：`L10N_Talking.csv` 合并策略、真实 `roleId` 绑定流。
 3. 明确 Timeline Hook 的 phase 语义，尤其是 Bird 当前 `TalkingEffectTM` 在 talking exit 触发的关系。
 4. 设计本地化模糊匹配与人工确认报告，不要直接自动复用相似文本译文。
 5. 收敛第一版块语法：继续使用 `:: node.name`，还是转向 `# 标题` + 空行分块。
@@ -95,10 +95,11 @@
 - [x] 为 Unity Editor Importer Dry Run 报告补充字段级文本 diff，覆盖 `roleId`、`nextTalking`、`textAnchorIndex`、`textDisplayType` 和选项变化。
 - [x] 为 Unity Editor Importer Dry Run 增加 batchmode 命令行入口，便于本地自动化和未来 CI。
 - [x] 为 Unity Editor Importer 增加真实 Import 的 batchmode 命令行入口，复用无弹窗导入核心。
+- [x] 为 Unity Editor Importer 增加显式 Addressables 开关，调用 Bird 现有 `TalkingSO.ApplyAA()` 设置 `TM_Talking` group / label。
 - [x] 在 Bird Unity 项目内执行 batchmode Dry Run，并记录创建计划、日志风险和当前未改动 `.asset` 的边界。
 - [x] 在 Bird Unity 项目内执行真实 Import，生成 5 个 `TalkingSO`，并用二次 Dry Run 验证字段无差异。
+- [x] 在 Bird Unity 项目内试跑 `-inscapeApplyAddressables`，确认只修改 `TM_Talking.asset` 并新增 5 个 `TM_Talking` entries。
 - [ ] 决定 Bird 项目新增 importer 与 `InscapeGenerated` 资源的提交策略。
-- [ ] 设计 Addressables 自动分组策略，避免生成资源导入后遗漏 Bird 运行时加载标签。
 - [ ] 设计 `L10N_Talking.csv` 合并策略，避免覆盖 Bird 现有人工译文。
 - [x] 设计 Timeline 引用的第一版最小表达方式，但不让 DSL 直接变成演出时间轴语言。
 - [ ] 明确 Timeline Hook 的 phase 是否继续沿用 `talking.exit`，或扩展为 node enter/exit。

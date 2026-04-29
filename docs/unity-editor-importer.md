@@ -74,6 +74,7 @@ Timeline 解析优先级：
 ```text
 Inscape > Bird > Dry Run Import Manifest...
 Inscape > Bird > Import Manifest...
+Inscape > Bird > Import Manifest And Apply Addressables...
 ```
 
 建议先执行 Dry Run。选择 `bird-manifest.json` 后，再选择生成 `TalkingSO` 的目录，例如：
@@ -125,6 +126,21 @@ Dry Run 也提供命令行入口，方便之后接入 CI 或本地自动化：
   -logFile "D:\LabProjects\Inscape\artifacts\bird-trial\unity-import.log"
 ```
 
+需要同步设置 Bird Addressables 时，增加显式开关：
+
+```powershell
+& "D:\UnityEditors\Unity 2023.2.22f1\Editor\Unity.exe" `
+  -batchmode -quit `
+  -projectPath "D:\UnityProjects\Bird" `
+  -executeMethod Inscape.Unity.BirdImporter.InscapeBirdManifestImporter.ImportManifestFromCommandLine `
+  -inscapeManifest "D:\LabProjects\Inscape\artifacts\bird-trial\export\bird-manifest.json" `
+  -inscapeOutputFolder "Assets/Resources_Runtime/Talking/InscapeGenerated" `
+  -inscapeApplyAddressables `
+  -logFile "D:\LabProjects\Inscape\artifacts\bird-trial\unity-import-aa.log"
+```
+
+`-inscapeApplyAddressables` 会调用 Bird 现有的 `TalkingSO.ApplyAA()`，把生成资源加入 `TM_Talking` group / label。默认 Import 不修改 Addressables。
+
 报告中的 TalkingSO 计划会尽量附带 Inscape 上下文：
 
 - `node`：来源节点名。
@@ -169,6 +185,22 @@ Generated folder: D:\UnityProjects\Bird\Assets\Resources_Runtime\Talking\Inscape
 - `roleId` 当前均为 0，因为样例角色表还没有填入 Bird 真实角色 ID。
 - 没有改动 `Localization`、`L10N_Talking.csv` 或 Addressables 配置。
 
+随后执行 `-inscapeApplyAddressables`：
+
+```text
+Log: D:\LabProjects\Inscape\artifacts\bird-trial\unity-import-aa.log
+Changed Addressables group: Assets/Plugins/UnityPlugin/AddressableAssetsData/AssetGroups/TM_Talking.asset
+```
+
+Addressables 结果：
+
+- Unity 成功执行 `ImportManifestFromCommandLine`，日志显示 `applyAddressables=True`。
+- Bird 现有 `TalkingSO.ApplyAA()` 被调用 5 次。
+- `TM_Talking.asset` 新增 5 个 Addressables entries。
+- 新增 entry 的 address 是资源简名，例如 `SO_Talking_Inscape_100000`。
+- 新增 entry 的 label 均为 `TM_Talking`。
+- 没有改动 `Localization` 或 `L10N_Talking.csv`。
+
 真实 Import 后再次执行 Dry Run：
 
 - 计划更新 `TalkingSO` 5 个，创建 0 个。
@@ -177,7 +209,7 @@ Generated folder: D:\UnityProjects\Bird\Assets\Resources_Runtime\Talking\Inscape
 
 注意：
 
-- Bird 项目当前新增了 `Assets/Editor/InscapeBirdManifestImporter.cs`、Unity 生成的 `.meta`，以及 `Assets/Resources_Runtime/Talking/InscapeGenerated/` 下的 5 个 `TalkingSO` 资源，尚未在 Bird 仓库提交。
+- Bird 项目当前新增了 `Assets/Editor/InscapeBirdManifestImporter.cs`、Unity 生成的 `.meta`、`Assets/Resources_Runtime/Talking/InscapeGenerated/` 下的 5 个 `TalkingSO` 资源，并修改了 `TM_Talking.asset`，尚未在 Bird 仓库提交。
 - Unity 日志中出现过 Bird 既有脚本 `Assets\Scripts_Editor\MenuTool\CommonMenuTool.cs` 的一次增量编译错误记录，以及一次 Unity 网络 ping 异常；随后 `Assembly-CSharp` / `Assembly-CSharp-Editor` 构建成功，Importer Dry Run 正常执行。
 - Unity 退出时仍有 `Curl error 42: Callback aborted` 与 TMP fallback font 清理日志，目前未造成资源改动。
 

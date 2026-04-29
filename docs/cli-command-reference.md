@@ -153,6 +153,19 @@ artifacts\bird-trial\export\bird-import-dry-run-report.txt
   -logFile "D:\LabProjects\Inscape\artifacts\bird-trial\unity-import.log"
 ```
 
+真实 Import 后同步设置 Bird Addressables：
+
+```powershell
+& "D:\UnityEditors\Unity 2023.2.22f1\Editor\Unity.exe" `
+  -batchmode -quit `
+  -projectPath "D:\UnityProjects\Bird" `
+  -executeMethod Inscape.Unity.BirdImporter.InscapeBirdManifestImporter.ImportManifestFromCommandLine `
+  -inscapeManifest "D:\LabProjects\Inscape\artifacts\bird-trial\export\bird-manifest.json" `
+  -inscapeOutputFolder "Assets/Resources_Runtime/Talking/InscapeGenerated" `
+  -inscapeApplyAddressables `
+  -logFile "D:\LabProjects\Inscape\artifacts\bird-trial\unity-import-aa.log"
+```
+
 ## 验证命令
 
 每次修改 CLI、Core、VSCode 工具或文档链接后，建议运行：

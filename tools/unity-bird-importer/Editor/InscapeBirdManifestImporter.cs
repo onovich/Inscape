@@ -20,6 +20,15 @@ namespace Inscape.Unity.BirdImporter {
 
         [MenuItem("Inscape/Bird/Import Manifest...")]
         public static void ImportManifestMenu() {
+            ImportManifestFromMenu(false);
+        }
+
+        [MenuItem("Inscape/Bird/Import Manifest And Apply Addressables...")]
+        public static void ImportManifestAndApplyAddressablesMenu() {
+            ImportManifestFromMenu(true);
+        }
+
+        static void ImportManifestFromMenu(bool applyAddressables) {
             string manifestPath = EditorUtility.OpenFilePanel("Import Inscape Bird Manifest", "", "json");
             if (string.IsNullOrEmpty(manifestPath)) {
                 return;
@@ -36,7 +45,7 @@ namespace Inscape.Unity.BirdImporter {
                 return;
             }
 
-            ImportManifest(manifestPath, outputFolder);
+            ImportManifest(manifestPath, outputFolder, applyAddressables);
         }
 
         [MenuItem("Inscape/Bird/Dry Run Import Manifest...")]
@@ -89,8 +98,8 @@ namespace Inscape.Unity.BirdImporter {
             }
         }
 
-        public static void ImportManifest(string manifestPath, string outputFolder) {
-            int importedCount = ImportManifestCore(manifestPath, outputFolder);
+        public static void ImportManifest(string manifestPath, string outputFolder, bool applyAddressables = false) {
+            int importedCount = ImportManifestCore(manifestPath, outputFolder, applyAddressables);
             EditorUtility.DisplayDialog("Inscape Bird Importer", "Imported " + importedCount + " TalkingSO assets.", "OK");
         }
 
@@ -98,6 +107,7 @@ namespace Inscape.Unity.BirdImporter {
             try {
                 string manifestPath = ReadCommandLineArgument("-inscapeManifest");
                 string outputFolder = ResolveOutputFolderArgument(ReadCommandLineArgument("-inscapeOutputFolder"));
+                bool applyAddressables = ReadCommandLineFlag("-inscapeApplyAddressables");
 
                 if (string.IsNullOrEmpty(manifestPath)) {
                     throw new InvalidOperationException("Missing required argument: -inscapeManifest <path>");
@@ -107,8 +117,8 @@ namespace Inscape.Unity.BirdImporter {
                     throw new InvalidOperationException("Missing or invalid required argument: -inscapeOutputFolder <Assets/... or absolute project path>");
                 }
 
-                int importedCount = ImportManifestCore(manifestPath, outputFolder);
-                Debug.Log("Inscape Bird Importer imported " + importedCount + " TalkingSO assets.");
+                int importedCount = ImportManifestCore(manifestPath, outputFolder, applyAddressables);
+                Debug.Log("Inscape Bird Importer imported " + importedCount + " TalkingSO assets. applyAddressables=" + applyAddressables);
                 EditorApplication.Exit(0);
             } catch (Exception ex) {
                 Debug.LogException(ex);
@@ -116,7 +126,7 @@ namespace Inscape.Unity.BirdImporter {
             }
         }
 
-        static int ImportManifestCore(string manifestPath, string outputFolder) {
+        static int ImportManifestCore(string manifestPath, string outputFolder, bool applyAddressables) {
             EnsureFolder(outputFolder);
             BirdManifest manifest = LoadManifest(manifestPath);
             Dictionary<int, TalkingSO> talkingsById = LoadTalkingAssetsById();
@@ -135,6 +145,9 @@ namespace Inscape.Unity.BirdImporter {
                 TalkingSO talkingSO = talkingsById[entry.talkingId];
                 talkingSO.tm = BuildTalkingTM(entry, manifest, talkingsById, timelinesById);
                 ApplyGuid(talkingSO);
+                if (applyAddressables) {
+                    talkingSO.ApplyAA();
+                }
                 EditorUtility.SetDirty(talkingSO);
             }
 
@@ -449,6 +462,25 @@ namespace Inscape.Unity.BirdImporter {
             }
 
             return string.Empty;
+        }
+
+        static bool ReadCommandLineFlag(string name) {
+            string[] args = Environment.GetCommandLineArgs();
+            for (int i = 0; i < args.Length; i += 1) {
+                if (args[i] == name) {
+                    return true;
+                }
+
+                string prefix = name + "=";
+                if (args[i].StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) {
+                    string value = args[i].Substring(prefix.Length);
+                    return value == "1" ||
+                           value.Equals("true", StringComparison.OrdinalIgnoreCase) ||
+                           value.Equals("yes", StringComparison.OrdinalIgnoreCase);
+                }
+            }
+
+            return false;
         }
 
         static string NullableIntText(int? value) {
