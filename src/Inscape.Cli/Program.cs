@@ -198,8 +198,12 @@ namespace Inscape.Cli {
             }
 
             if (command == "export-bird-role-template") {
+                if (!TryReadBirdRoleNameBindingsForTemplate(args, out Dictionary<string, int> roleIdsBySpeaker)) {
+                    return 1;
+                }
+
                 BirdRoleTemplateWriter writer = new BirdRoleTemplateWriter();
-                WriteOrPrint(outputPath, writer.Write(result.Graph));
+                WriteOrPrint(outputPath, writer.Write(result.Graph, roleIdsBySpeaker));
                 PrintDiagnostics(result.Diagnostics);
                 return result.HasErrors ? 1 : 0;
             }
@@ -524,6 +528,71 @@ namespace Inscape.Cli {
             return true;
         }
 
+        static bool TryReadBirdRoleNameBindingsForTemplate(string[] args, out Dictionary<string, int> roleIdsBySpeaker) {
+            roleIdsBySpeaker = new Dictionary<string, int>(StringComparer.Ordinal);
+            string? roleNameCsvPath = ReadOption(args, "--bird-existing-role-name-csv");
+            if (string.IsNullOrWhiteSpace(roleNameCsvPath)) {
+                return true;
+            }
+
+            if (!File.Exists(roleNameCsvPath)) {
+                Console.Error.WriteLine("Bird existing role name CSV not found: " + roleNameCsvPath);
+                return false;
+            }
+
+            string[] lines = File.ReadAllLines(roleNameCsvPath, Encoding.UTF8);
+            if (lines.Length == 0) {
+                return true;
+            }
+
+            List<string> headers = ParseCsvRow(lines[0]);
+            List<int> textColumns = new List<int>();
+            for (int i = 0; i < headers.Count; i += 1) {
+                string header = headers[i].Trim();
+                if (header.Length == 0
+                    || header.Equals("ID", StringComparison.OrdinalIgnoreCase)
+                    || header.Equals("Desc", StringComparison.OrdinalIgnoreCase)) {
+                    continue;
+                }
+                textColumns.Add(i);
+            }
+
+            HashSet<string> ambiguousSpeakers = new HashSet<string>(StringComparer.Ordinal);
+            for (int i = 1; i < lines.Length; i += 1) {
+                if (string.IsNullOrWhiteSpace(lines[i])) {
+                    continue;
+                }
+
+                List<string> fields = ParseCsvRow(lines[i]);
+                if (fields.Count == 0 || !int.TryParse(fields[0].Trim(), out int roleId)) {
+                    continue;
+                }
+
+                for (int columnIndex = 0; columnIndex < textColumns.Count; columnIndex += 1) {
+                    int column = textColumns[columnIndex];
+                    if (column >= fields.Count) {
+                        continue;
+                    }
+
+                    string speaker = fields[column].Trim();
+                    if (speaker.Length == 0 || ambiguousSpeakers.Contains(speaker)) {
+                        continue;
+                    }
+
+                    if (roleIdsBySpeaker.TryGetValue(speaker, out int existingRoleId)) {
+                        if (existingRoleId != roleId) {
+                            roleIdsBySpeaker.Remove(speaker);
+                            ambiguousSpeakers.Add(speaker);
+                        }
+                    } else {
+                        roleIdsBySpeaker.Add(speaker, roleId);
+                    }
+                }
+            }
+
+            return true;
+        }
+
         static bool TryReadTimelineId(string assetPath, out int timelineId) {
             timelineId = 0;
             foreach (string rawLine in File.ReadLines(assetPath, Encoding.UTF8)) {
@@ -705,7 +774,7 @@ namespace Inscape.Cli {
             Console.WriteLine("  inscape extract-l10n-project <root> [--entry node.name] [--override source.inscape temp.inscape] [-o strings.csv]");
             Console.WriteLine("  inscape update-l10n-project <root> --from old.csv [--entry node.name] [--override source.inscape temp.inscape] [-o strings.csv]");
             Console.WriteLine("  inscape export-bird-binding-template <root> [--entry node.name] [--override source.inscape temp.inscape] [--bird-existing-timeline-root path] [-o bindings.csv]");
-            Console.WriteLine("  inscape export-bird-role-template <root> [--entry node.name] [--override source.inscape temp.inscape] [-o roles.csv]");
+            Console.WriteLine("  inscape export-bird-role-template <root> [--entry node.name] [--override source.inscape temp.inscape] [--bird-existing-role-name-csv path] [-o roles.csv]");
             Console.WriteLine("  inscape export-bird-project <root> [--entry node.name] [--bird-talking-start 100000] [--bird-role-map roles.csv] [--bird-binding-map bindings.csv] [--bird-existing-talking-root path] -o output-dir");
             Console.WriteLine("  inscape compile-project <root> [--entry node.name] [-o output.json]");
             Console.WriteLine("  inscape preview-project <root> [--entry node.name] [-o preview.html]");
@@ -817,8 +886,8 @@ namespace Inscape.Cli {
                 case "export-bird-role-template":
                     PrintCommandHelpBlock("export-bird-role-template",
                                           "Scan project dialogue speakers and write a Bird role binding template.",
-                                          "inscape export-bird-role-template <root> [--entry node.name] [--override source.inscape temp.inscape] [-o roles.csv]",
-                                          "dotnet run --project src\\Inscape.Cli\\Inscape.Cli.csproj -- export-bird-role-template samples -o config\\bird-roles.csv",
+                                          "inscape export-bird-role-template <root> [--entry node.name] [--override source.inscape temp.inscape] [--bird-existing-role-name-csv path] [-o roles.csv]",
+                                          "dotnet run --project src\\Inscape.Cli\\Inscape.Cli.csproj -- export-bird-role-template samples --bird-existing-role-name-csv D:\\UnityProjects\\Bird\\Assets\\Resources_Runtime\\Localization\\L10N_RoleName.csv -o config\\bird-roles.csv",
                                           "Output CSV: speaker,roleId");
                     return true;
                 case "export-bird-binding-template":

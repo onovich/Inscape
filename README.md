@@ -84,6 +84,7 @@ dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- extract-l10n-project 
 Copy-Item artifacts\l10n.csv artifacts\old-l10n.csv
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- update-l10n-project samples --from artifacts\old-l10n.csv -o artifacts\l10n.updated.csv
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-role-template samples -o artifacts\bird-roles.template.csv
+dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-role-template samples --bird-existing-role-name-csv D:\UnityProjects\Bird\Assets\Resources_Runtime\Localization\L10N_RoleName.csv -o artifacts\bird-roles.template.csv
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-binding-template samples --bird-existing-timeline-root D:\UnityProjects\Bird\Assets\Resources_Runtime\Timeline -o artifacts\bird-bindings.template.csv
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-project samples -o artifacts\bird-export
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- compile samples\court-loop.inscape -o artifacts\court-loop.json

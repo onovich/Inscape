@@ -40,6 +40,7 @@ namespace Inscape.Tests {
                 ("cli update-l10n-project preserves translations", CliUpdateL10nProjectPreservesTranslations),
                 ("cli export-bird-binding-template emits csv", CliExportBirdBindingTemplateEmitsCsv),
                 ("cli export-bird-role-template emits csv", CliExportBirdRoleTemplateEmitsCsv),
+                ("cli export-bird-role-template fills existing role ids", CliExportBirdRoleTemplateFillsExistingRoleIds),
                 ("cli export-bird-project emits manifest and csv", CliExportBirdProjectEmitsManifestAndCsv),
                 ("cli export-bird-project reports unresolved host hooks", CliExportBirdProjectReportsUnresolvedHostHooks),
             };
@@ -837,6 +838,51 @@ A quiet narration line.
                        "Role template should escape commas and quotes.");
             AssertFalse(csv.Contains("quiet narration"), "Role template should not include narration text.");
             AssertEqual(4, CountCsvLines(csv), "Role template CSV line count");
+        }
+
+        static void CliExportBirdRoleTemplateFillsExistingRoleIds() {
+            string directory = Path.Combine(Path.GetTempPath(), "inscape-tests", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory);
+
+            string roleNameCsvPath = Path.Combine(directory, "L10N_RoleName.csv");
+            File.WriteAllText(Path.Combine(directory, "story.inscape"), """
+:: start
+@entry
+Narrator: Hello.
+利亚姆：你好。
+旁白：重复角色名不应自动填。
+""", Encoding.UTF8);
+            File.WriteAllText(roleNameCsvPath, """
+ID,Desc,ZH_CN,EN_US,ES_ES
+1050,系统,旁白,Narrator,
+10001,,旁白,,
+10011,宴会,利亚姆,Liam,
+""", Encoding.UTF8);
+
+            TextWriter originalOut = Console.Out;
+            TextWriter originalError = Console.Error;
+            StringWriter output = new StringWriter();
+            StringWriter error = new StringWriter();
+
+            int exitCode;
+            try {
+                Console.SetOut(output);
+                Console.SetError(error);
+                exitCode = CliProgram.Main(new[] { "export-bird-role-template", directory, "--bird-existing-role-name-csv", roleNameCsvPath });
+            } finally {
+                Console.SetOut(originalOut);
+                Console.SetError(originalError);
+                Directory.Delete(directory, true);
+            }
+
+            string csv = output.ToString();
+            AssertEqual(0, exitCode, "Export-bird-role-template with role name CSV exit code");
+            AssertEqual("", error.ToString().Trim(), "Export-bird-role-template with role name CSV stderr");
+            AssertTrue(csv.Contains("Narrator,1050"), "Role template should match EN_US role name.");
+            AssertTrue(csv.Contains("利亚姆,10011"), "Role template should match ZH_CN role name.");
+            AssertTrue(csv.Contains("旁白,"), "Ambiguous role name should stay unfilled.");
+            AssertFalse(csv.Contains("旁白,1050"), "Ambiguous role name should not pick first match.");
+            AssertFalse(csv.Contains("旁白,10001"), "Ambiguous role name should not pick second match.");
         }
 
         static void CliExportBirdProjectEmitsManifestAndCsv() {

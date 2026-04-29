@@ -8,6 +8,10 @@ namespace Inscape.Core.Bird {
     public sealed class BirdRoleTemplateWriter {
 
         public string Write(InscapeDocument graph) {
+            return Write(graph, new Dictionary<string, int>(StringComparer.Ordinal));
+        }
+
+        public string Write(InscapeDocument graph, IReadOnlyDictionary<string, int> roleIdsBySpeaker) {
             SortedSet<string> speakers = new SortedSet<string>(StringComparer.Ordinal);
             for (int nodeIndex = 0; nodeIndex < graph.Nodes.Count; nodeIndex += 1) {
                 NarrativeNode node = graph.Nodes[nodeIndex];
@@ -26,6 +30,9 @@ namespace Inscape.Core.Bird {
             foreach (string speaker in speakers) {
                 AppendCsvField(builder, speaker);
                 builder.Append(',');
+                if (roleIdsBySpeaker.TryGetValue(speaker, out int roleId)) {
+                    builder.Append(roleId);
+                }
                 builder.AppendLine();
             }
             return builder.ToString();

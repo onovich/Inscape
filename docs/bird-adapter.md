@@ -30,6 +30,12 @@ dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-project s
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-role-template samples -o config\bird-roles.csv
 ```
 
+也可以读取 Bird 现有 `L10N_RoleName.csv`，自动填入能唯一匹配的 `roleId`：
+
+```powershell
+dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-role-template samples --bird-existing-role-name-csv D:\UnityProjects\Bird\Assets\Resources_Runtime\Localization\L10N_RoleName.csv -o config\bird-roles.csv
+```
+
 可选扫描现有 Bird `TalkingSO` 资源，避开已使用的 `talkingId`：
 
 ```powershell
@@ -77,7 +83,7 @@ Narrator,0
 
 未出现在映射表中的 speaker 会保留在 manifest 的 `roles` 列表中，但 `roleId` 为 `null`，等待后续绑定。
 
-`export-bird-role-template` 会扫描项目内所有对白 speaker，去重后输出同一格式的 CSV，便于先由编剧写作、后由 Unity/Bird 侧补 `roleId`。
+`export-bird-role-template` 会扫描项目内所有对白 speaker，去重后输出同一格式的 CSV，便于先由编剧写作、后由 Unity/Bird 侧补 `roleId`。配合 `--bird-existing-role-name-csv` 时，会读取 Bird `L10N_RoleName.csv` 的各语言列并做精确匹配；只有唯一匹配时才自动填入 `roleId`，例如重复出现的 `旁白` 会保持空白，避免误绑定。
 
 宿主绑定 CSV 第一版格式：
 
@@ -166,6 +172,7 @@ anchor,node,kind,speaker,text,talkingId,talkingIndex,birdField,sourcePath,line,c
 - 尚未生成 Unity `.asset` 或 ScriptableObject；这一步留给 Unity Editor Importer。
 - Timeline Hook 目前只进入 manifest，不直接生成 `TalkingEffectTM.PlayTimeline`；这一步留给 Unity Editor Importer。
 - `roleId` 仅支持通过 CSV 手工绑定，尚不能从 Bird 资源自动扫描。
+- `export-bird-role-template` 可以从 `L10N_RoleName.csv` 辅助填充 `roleId`，但只做精确唯一匹配，不做模糊匹配。
 - `textAnchorIndex` 暂固定为 `0`，`textDisplayType` 暂固定为 `Instant`。
 - 选择项文本目前进入 manifest 和锚点映射表，但不进入 `L10N_Talking.csv`，因为 Bird 当前 `TalkingOptionTM.optionText` 是结构字段，不是 `L10N.Talking_Get` 坐标。
 - 尚未合并多段文本到同一个 `talkingId + <pr>` 单元格。

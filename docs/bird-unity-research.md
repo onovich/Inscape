@@ -261,6 +261,7 @@ timeline hook              -> TalkingEffectTM.PlayTimeline, by timelineId
 
 - `talkingId` 是由 Adapter 自动分配并写入 manifest，还是允许作者在项目配置中声明 ID 范围。
 - 角色名到 `roleId` 的映射来源：项目配置、CSV、Unity 导出的资源表，还是宿主 Schema。
+- 当前确认 Bird 角色名来自 `Resources_Runtime\Localization\L10N_RoleName.csv`，字段为 `ID,Desc,ZH_CN,EN_US,ES_ES`；`export-bird-role-template --bird-existing-role-name-csv` 已可基于该表做唯一精确匹配。
 - 资源别名到 Timeline / 音频 / 立绘 ID 的映射来源。
 - Inscape 节点是否需要一个稳定的 node id，专门用于节点重命名迁移。
 - Bird 兼容 CSV 是否要完全沿用 `L10N_Talking.csv` 的列，还是生成额外审校表。
