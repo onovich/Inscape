@@ -50,7 +50,6 @@ Inscape 的默认阅读优先级应当是：
 
 - 正式 Language Server。
 - VSCode WebView 预览；当前 HTML 预览仍通过 CLI 生成静态文件。
-- VSCode 命令面板中的本地化导出/更新；当前能力已在 CLI 中实现，尚未接入扩展。
 - 角色表、资源别名、宿主 Schema 驱动的智能提示。
 
 ## 诊断桥接
@@ -65,14 +64,17 @@ dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- diagnose-project <wor
 
 项目扫描会忽略 `.git`、`bin`、`obj`、`node_modules` 和 `artifacts` 目录。第一版项目规则是节点名在项目内全局唯一，跨文件跳转不需要 `include`。项目入口使用节点内 `@entry` 声明；未声明时编译器会兼容回退到按文件路径排序后的第一个节点。
 
-同一套桥接方式应复用于后续本地化命令：
+同一套桥接方式已经复用于本地化命令。VSCode 命令面板提供：
+
+- `Inscape: Export Localization CSV`
+- `Inscape: Update Localization CSV From Previous Table`
 
 ```powershell
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- extract-l10n-project <workspace> -o <csv>
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- update-l10n-project <workspace> --from <old-csv> -o <csv>
 ```
 
-VSCode 第一版可以先做命令面板入口，不必等正式 Language Server。
+如果当前活动 `.inscape` 文件尚未保存，扩展会像诊断一样通过 `--override <source> <temp-file>` 把编辑器内容传给 CLI。
 
 可通过以下 VSCode 设置调整：
 

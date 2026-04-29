@@ -11,9 +11,9 @@
 - 已完成基础 DSL 原型：显式节点、对白、旁白、选项、跳转、注释、metadata。
 - 已完成 Narrative Graph IR、源映射、项目级编译、跨文件跳转诊断和 `@entry`。
 - 已完成行级 `line-v1` hash、锚点碰撞诊断、本地化 CSV 提取和旧表精确继承。
-- 已完成 VSCode 轻工具原型：高亮、snippets、诊断桥接、补全、Outline、定义、引用和 Hover。
+- 已完成 VSCode 轻工具原型：高亮、snippets、诊断桥接、补全、Outline、定义、引用、Hover 和本地化导出/更新命令。
 - 已完成无引擎 HTML 预览：单文件/项目级图调试、回环、路径、Back/Restart 和锚点显示。
-- 尚未完成 Unity/Bird Adapter、项目入口覆盖策略、VSCode 本地化命令和 Language Server。
+- 尚未完成 Unity/Bird Adapter、项目入口覆盖策略和 Language Server。
 
 计划内容：
 

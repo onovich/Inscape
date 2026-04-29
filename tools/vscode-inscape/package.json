@@ -10,7 +10,9 @@
     "vscode": "^1.92.0"
   },
   "activationEvents": [
-    "onLanguage:inscape"
+    "onLanguage:inscape",
+    "onCommand:inscape.extractLocalization",
+    "onCommand:inscape.updateLocalization"
   ],
   "categories": [
     "Programming Languages",
@@ -41,6 +43,18 @@
       {
         "language": "inscape",
         "path": "./snippets/inscape.code-snippets"
+      }
+    ],
+    "commands": [
+      {
+        "command": "inscape.extractLocalization",
+        "title": "Inscape: Export Localization CSV",
+        "category": "Inscape"
+      },
+      {
+        "command": "inscape.updateLocalization",
+        "title": "Inscape: Update Localization CSV From Previous Table",
+        "category": "Inscape"
       }
     ],
     "configuration": {

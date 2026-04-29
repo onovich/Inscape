@@ -45,7 +45,14 @@ Inscape 编辑器是叙事创作者和开发者共享的独立工作台。它不
 - `extract-l10n` / `extract-l10n-project`：导出当前可翻译文本。
 - `update-l10n` / `update-l10n-project`：读取旧 CSV，按 `anchor` 精确继承译文，并标记 `current/new/removed`。
 
-下一步应在 VSCode 命令面板中接入这些命令，使作者不用离开编辑器即可导出或更新翻译表。模糊匹配与人工确认 UI 后续再设计。
+当前 VSCode 原型已提供命令面板入口，使作者不用离开编辑器即可导出或更新翻译表：
+
+- `Inscape: Export Localization CSV`
+- `Inscape: Update Localization CSV From Previous Table`
+
+如果当前 `.inscape` 文件未保存，命令会通过 CLI `--override` 使用编辑器中的临时内容。
+
+模糊匹配与人工确认 UI 后续再设计。
 
 ## 目标工作流
 

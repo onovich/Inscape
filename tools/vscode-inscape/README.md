@@ -14,6 +14,9 @@ This is the first lightweight authoring layer for `.inscape` scripts. It keeps s
 - Supports Find All References from node declarations and jump targets.
 - Shows hover summaries for node declarations and jump targets.
 - Provides an outline view backed by visible node headers.
+- Exposes command palette actions for localization:
+  - `Inscape: Export Localization CSV`
+  - `Inscape: Update Localization CSV From Previous Table`
 
 ## Development Use
 
@@ -25,12 +28,14 @@ code --extensionDevelopmentPath=tools\vscode-inscape .
 
 This package is not published yet. Later stages should add a language server that reuses `Inscape.Core` for diagnostics, completion, symbols, and definition/reference navigation.
 
-The next practical extension task is to expose localization commands in the VSCode command palette by invoking:
+Localization commands invoke:
 
 ```powershell
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- extract-l10n-project <workspace> -o <csv>
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- update-l10n-project <workspace> --from <old-csv> -o <csv>
 ```
+
+If the active `.inscape` document is unsaved and belongs to the selected workspace, the extension passes it to the CLI with `--override` so the generated CSV reflects editor contents.
 
 ## Settings
 

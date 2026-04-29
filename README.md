@@ -19,6 +19,7 @@
 - C# Compiler Core：解析 `.inscape`，输出 Narrative Graph IR 与诊断。
 - 项目级编译：跨文件节点合并、全局节点唯一性、`@entry` 项目入口、跨文件跳转诊断。
 - VSCode 轻工具链：高亮、snippets、诊断桥接、节点补全、Outline、跳转定义、引用查找和 Hover。
+- VSCode 本地化命令：导出项目 CSV，基于旧 CSV 更新项目本地化表。
 - HTML 调试预览：单文件/项目级预览、节点跳转、选择、回环、路径、Restart/Back 和锚点显示。
 - 本地化工具：CSV 提取、旧表按锚点精确继承、`current/new/removed` 状态标记。
 
