@@ -25,6 +25,13 @@ code --extensionDevelopmentPath=tools\vscode-inscape .
 
 This package is not published yet. Later stages should add a language server that reuses `Inscape.Core` for diagnostics, completion, symbols, and definition/reference navigation.
 
+The next practical extension task is to expose localization commands in the VSCode command palette by invoking:
+
+```powershell
+dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- extract-l10n-project <workspace> -o <csv>
+dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- update-l10n-project <workspace> --from <old-csv> -o <csv>
+```
+
 ## Settings
 
 - `inscape.diagnostics.enabled`: turns compiler-backed diagnostics on or off.

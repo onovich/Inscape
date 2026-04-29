@@ -6,6 +6,15 @@
 
 目标：证明从纯文本 DSL 到 Unity 可执行指令流的主链路。
 
+当前进展：
+
+- 已完成基础 DSL 原型：显式节点、对白、旁白、选项、跳转、注释、metadata。
+- 已完成 Narrative Graph IR、源映射、项目级编译、跨文件跳转诊断和 `@entry`。
+- 已完成行级 `line-v1` hash、锚点碰撞诊断、本地化 CSV 提取和旧表精确继承。
+- 已完成 VSCode 轻工具原型：高亮、snippets、诊断桥接、补全、Outline、定义、引用和 Hover。
+- 已完成无引擎 HTML 预览：单文件/项目级图调试、回环、路径、Back/Restart 和锚点显示。
+- 尚未完成 Unity/Bird Adapter、项目入口覆盖策略、VSCode 本地化命令和 Language Server。
+
 计划内容：
 
 - 完成基础 DSL 语法定义草案。
@@ -13,6 +22,7 @@
 - 实现哈希锚点生成与增量本地化提取原型。
 - 提供 VSCode 语法高亮、补全、诊断、跳转定义和大纲能力。
 - 提供轻量 HTML 调试预览，支持节点跳转、选项、回环和路径记录。
+- 在 VSCode 中接入本地化导出/更新命令。
 - 开发 Unity 宿主解释执行器。
 - 支持基础对话、背景切换、立绘切换、简单条件和分支。
 - 调研 Bird 项目中 StorySystem/DirectorSystem 的映射边界，确认第一版是否只映射 Talking/L10N，还是包含 Timeline 引用。

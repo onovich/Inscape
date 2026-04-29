@@ -11,6 +11,8 @@ Inscape 采用三层解耦架构：
 - Editor Environment：后续独立编辑器负责文本编辑、项目索引、逻辑可视化、状态检查和实时预览通信。
 - Runtime Host：负责加载 IR、推进执行流、管理状态、调度渲染和素材系统。
 
+当前实现处于第一阶段：Compiler Core、CLI、VSCode 轻工具和 HTML 预览已经可运行；Runtime Host 与独立 Editor Environment 仍处于设计和调研阶段。
+
 ```mermaid
 flowchart LR
   Script["Inscape DSL Script"] --> Compiler["Compiler Core"]
@@ -31,6 +33,7 @@ flowchart LR
 - 文本是主要源数据，配置应尽量作为文本标签或项目级资源索引出现。
 - 编译结果应可序列化、可比较、可缓存。
 - 第一阶段编译产物以纯数据 Narrative Graph IR 为主，不依赖 Unity ScriptableObject。
+- 本地化提取和旧表更新属于 Compiler Core 能力，由 CLI 和未来编辑器复用。
 - 运行时只消费 IR 与资源引用，不直接解析原始脚本。
 - 状态变更通过 Action 或 Command 进入 Store，不允许任意系统直接改写叙事状态。
 - 本地化、存档和热重载都必须能追溯到同一套锚点机制。

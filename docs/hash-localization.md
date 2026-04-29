@@ -30,7 +30,7 @@ l1_<fnv1a64-hex>
 
 ```text
 inscape-line-v1
-kind=<Narration|Dialogue|ChoiceOption>
+kind=<Narration|Dialogue|ChoicePrompt|ChoiceOption>
 node=<node.name>
 speaker=<speaker-or-empty>
 occurrence=<same-content-index-within-node>

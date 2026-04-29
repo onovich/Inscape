@@ -2,23 +2,44 @@
 
 本目录是 Inscape 的项目知识库。当前目标不是一次性写出最终规格，而是建立一个能持续收敛的文档体系：已经确定的内容进入基线文档，仍在探索的内容进入草案和待确认清单，已经做出的项目级选择进入 ADR。
 
+## 快速入口
+
+- 接手项目或恢复上下文：先读 [Agent 接手指南](agent-handoff.md)，再读 [TODO](todo.md)。
+- 查长期决策：读 [ADR](adr/README.md)，不要只看当前实现推断设计意图。
+- 查当前实现边界：读 [代码结构规划](code-structure.md)，再进入对应源码目录。
+- 查未定事项：读 [待确认问题](open-questions.md)，避免把草案当成规范。
+
 ## 阅读路径
 
 新成员建议按以下顺序阅读：
 
-1. [项目立项说明](project-brief.md)
-2. [架构草案](architecture.md)
-3. [代码结构规划](code-structure.md)
-4. [语法样例对比](syntax-comparison.md)
-5. [DSL 语言设计草案](dsl-language.md)
-6. [VSCode 轻工具链](vscode-tooling.md)
-7. [哈希锚点与本地化](hash-localization.md)
-8. [本地化提取](l10n-extraction.md)
-9. [编辑器设计草案](editor-design.md)
-10. [运行时与 Unity 宿主](runtime-unity.md)
-11. [路线图](roadmap.md)
-12. [TODO](todo.md)
-13. [待确认问题](open-questions.md)
+1. [Agent 接手指南](agent-handoff.md)
+2. [项目立项说明](project-brief.md)
+3. [架构草案](architecture.md)
+4. [代码结构规划](code-structure.md)
+5. [语法样例对比](syntax-comparison.md)
+6. [DSL 语言设计草案](dsl-language.md)
+7. [VSCode 轻工具链](vscode-tooling.md)
+8. [哈希锚点与本地化](hash-localization.md)
+9. [本地化提取](l10n-extraction.md)
+10. [编辑器设计草案](editor-design.md)
+11. [运行时与 Unity 宿主](runtime-unity.md)
+12. [路线图](roadmap.md)
+13. [TODO](todo.md)
+14. [待确认问题](open-questions.md)
+
+## 按任务检索
+
+```text
+任务类型             建议读取
+接手/恢复上下文      agent-handoff.md, todo.md, roadmap.md
+DSL 语法             dsl-language.md, syntax-comparison.md, open-questions.md
+VSCode 工具          vscode-tooling.md, tools/vscode-inscape/README.md
+本地化               hash-localization.md, l10n-extraction.md, ADR 0006
+Unity/Bird 适配      runtime-unity.md, architecture.md, todo.md
+编辑器阶段           editor-design.md, roadmap.md
+长期设计决策         adr/README.md
+```
 
 ## 文档状态标记
 
@@ -32,6 +53,7 @@
 ```text
 docs/
   README.md              文档索引与维护规则
+  agent-handoff.md       Agent 接手指南、当前快照、检索地图和工作协议
   project-brief.md       项目定位、目标、非目标、成功标准
   architecture.md        三层架构、数据流与关键约束
   code-structure.md      代码目录规划与分层原则
@@ -54,3 +76,4 @@ docs/
 - 影响架构、长期兼容性、存档、本地化或编辑器交互模型的决定，需要新增 ADR。
 - 草案可以大胆记录候选方案，但必须写明风险、取舍和下一步验证方式。
 - 当代码实现与文档不一致时，应优先判断是不是设计变化。如果是，更新文档或新增 ADR；如果不是，修正实现。
+- 每次完成可独立接续的阶段后，更新 [Agent 接手指南](agent-handoff.md) 的当前快照和下一步优先队列。

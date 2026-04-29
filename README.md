@@ -6,7 +6,7 @@
 
 ## 当前状态
 
-项目处于立项与设计收敛阶段。以下方向已经作为项目基线记录：
+项目处于第一阶段：DSL 与轻工具链已经形成可运行原型，Unity/Bird 适配尚未开始编码。以下方向已经作为项目基线记录：
 
 - 文即代码：剧本行即逻辑行，减少剧本与配置之间的跳转。
 - 确定性哈希：解析阶段为文本生成持久化锚点，用于本地化、存档与热重载定位。
@@ -14,16 +14,25 @@
 - 单流控制：运行时状态通过单向数据流更新，降低全局单例和隐式副作用。
 - 先 Unity，后独立：前期适配 Unity 宿主，后期保留迁移到独立渲染层或 Bevy 等技术栈的空间。
 
+当前已经实现：
+
+- C# Compiler Core：解析 `.inscape`，输出 Narrative Graph IR 与诊断。
+- 项目级编译：跨文件节点合并、全局节点唯一性、`@entry` 项目入口、跨文件跳转诊断。
+- VSCode 轻工具链：高亮、snippets、诊断桥接、节点补全、Outline、跳转定义、引用查找和 Hover。
+- HTML 调试预览：单文件/项目级预览、节点跳转、选择、回环、路径、Restart/Back 和锚点显示。
+- 本地化工具：CSV 提取、旧表按锚点精确继承、`current/new/removed` 状态标记。
+
 以下内容尚未定稿，需要在后续设计讨论中明确：
 
 - DSL 的完整语法、错误恢复策略和分支表达能力。
 - 编辑器的核心交互、调试体验、可视化范围与实时预览协议。
-- 哈希锚点的稳定性策略，尤其是文件改名、文本微调、上下文移动时的对齐规则。
+- 哈希锚点的迁移策略，尤其是节点重命名、重复文本插入、文本微调时的对齐规则。
 - Unity 版本、解析器方案、运行时管线和插件扩展边界。
 
 ## 文档入口
 
 - [文档索引](docs/README.md)
+- [Agent 接手指南](docs/agent-handoff.md)
 - [项目立项说明](docs/project-brief.md)
 - [架构草案](docs/architecture.md)
 - [代码结构规划](docs/code-structure.md)
@@ -33,6 +42,7 @@
 - [编辑器设计草案](docs/editor-design.md)
 - [运行时与 Unity 宿主](docs/runtime-unity.md)
 - [哈希锚点与本地化](docs/hash-localization.md)
+- [本地化提取](docs/l10n-extraction.md)
 - [路线图](docs/roadmap.md)
 - [TODO](docs/todo.md)
 - [待确认问题](docs/open-questions.md)
@@ -53,6 +63,9 @@ dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- check-project samples
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- diagnose-project samples
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- compile-project samples -o artifacts\samples-project.json
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- preview-project samples -o artifacts\samples-project.html
+dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- extract-l10n-project samples -o artifacts\l10n.csv
+Copy-Item artifacts\l10n.csv artifacts\old-l10n.csv
+dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- update-l10n-project samples --from artifacts\old-l10n.csv -o artifacts\l10n.updated.csv
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- compile samples\court-loop.inscape -o artifacts\court-loop.json
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- preview samples\court-loop.inscape -o artifacts\court-loop.html
 code --extensionDevelopmentPath=tools\vscode-inscape .

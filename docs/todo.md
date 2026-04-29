@@ -4,6 +4,22 @@
 
 本文件记录已经能执行或需要调研的工作。仍未形成共识的问题放在 [待确认问题](open-questions.md)，已经形成长期决策的问题放在 [ADR](adr/README.md)。
 
+## 接力优先队列
+
+下一位接手者建议按以下顺序推进：
+
+1. 在 VSCode 扩展中接入 `extract-l10n-project` / `update-l10n-project` 命令，完成“写作-诊断-预览-本地化”的轻工具闭环。
+2. 设计项目入口覆盖策略，让 CLI/预览可以临时从任意节点启动，而不是只依赖源文件中的 `@entry`。
+3. 调研 Bird 项目中的 `StorySystem`、`DirectorSystem` 和 `TimelineEffectTM`，确认 Unity Adapter 第一版边界。
+4. 设计本地化模糊匹配与人工确认报告，不要直接自动复用相似文本译文。
+5. 收敛 Language Server 能力范围，再决定是否创建 `src/Inscape.LanguageServer/`。
+
+## 文档与接手效率
+
+- [x] 建立 Agent 接手指南，记录当前快照、检索地图、工作方法和验证命令。
+- [x] 建立根目录 `AGENTS.md`，为未来 agent 提供最短入口。
+- [ ] 每次完成阶段性提交后，同步更新 [Agent 接手指南](agent-handoff.md) 的当前快照。
+
 ## 阶段 1：DSL 与轻工具链
 
 - [x] 准备一个图叙事样例，包含复入、回环和多出口选择。
@@ -33,6 +49,8 @@
 - [x] 添加 `-> target` 的 VSCode 跳转定义原型。
 - [x] 添加节点声明和 `-> target` 的 VSCode 引用查找原型。
 - [x] 添加节点声明和 `-> target` 的 VSCode Hover 摘要。
+- [ ] 添加 VSCode 命令：导出项目本地化 CSV。
+- [ ] 添加 VSCode 命令：基于旧 CSV 更新项目本地化表。
 - [ ] 设计 Language Server 能力范围：补全、诊断、跳转定义、引用查找、大纲、悬浮说明。
 - [ ] 设计补全数据来源：当前文件节点、项目节点、角色表、资源别名、宿主 Schema。
 - [x] 定义第一版诊断清单：重复节点、非法节点名、缺失目标、不可达节点、空节点、选项语法问题。

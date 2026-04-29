@@ -50,7 +50,7 @@ anchor,node,kind,speaker,text,translation,status,sourcePath,line,column
 - `kind`：`Narration`、`Dialogue`、`ChoicePrompt` 或 `ChoiceOption`。
 - `speaker`：对白说话人；旁白和选项为空。
 - `text`：原文。
-- `translation`：预留译文列，第一版保持为空。
+- `translation`：译文列；纯提取命令保持为空，更新命令会按旧表锚点继承。
 - `status`：仅更新命令输出，用于标记 `current`、`new`、`removed`。
 - `sourcePath` / `line` / `column`：源映射信息，用于回跳和审校。
 

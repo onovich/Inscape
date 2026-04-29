@@ -8,8 +8,15 @@
 
 ```text
 src/
-  Inscape.Core/          DSL 解析、诊断、图模型、哈希与 IR 生成
-  Inscape.Cli/           命令行工具：check、diagnose、compile、preview 与项目级命令
+  Inscape.Core/          DSL 解析、诊断、图模型、哈希、IR 生成与本地化提取
+    Analysis/            图校验、项目级校验、锚点碰撞诊断
+    Compilation/         单文件与项目级编译入口
+    Diagnostics/         诊断模型
+    Localization/        CSV 提取、读取、写入与旧表合并
+    Model/               Narrative Graph IR 数据模型
+    Parsing/             第一版手写解析器与节点命名规则
+    Text/                稳定 hash 与文本规范化
+  Inscape.Cli/           命令行工具：check、diagnose、compile、preview、l10n 与项目级命令
 tests/
   Inscape.Tests/         无第三方依赖的轻量回归测试
 samples/
@@ -23,7 +30,7 @@ docs/
 ## 分层原则
 
 - `Inscape.Core` 不依赖 Unity、不依赖 VSCode、不依赖 HTML 渲染，也不依赖外部包。
-- `Inscape.Cli` 是开发工具层，可以输出单文件 JSON IR、项目级 JSON IR、项目级诊断 JSON，以及单文件/项目级轻量 HTML 预览。
+- `Inscape.Cli` 是开发工具层，可以输出单文件 JSON IR、项目级 JSON IR、项目级诊断 JSON、单文件/项目级轻量 HTML 预览，以及本地化 CSV。
 - `tools/vscode-inscape` 可以承载 VSCode 写作体验代码，但语法诊断必须通过 `Inscape.Core` 或 CLI 桥接获得。
 - VSCode Language Server 后续应复用 `Inscape.Core`，而不是重新实现解析器。
 - Unity Adapter 后续应消费 Narrative Graph IR，并决定是否转换为 Bird `Talking/L10N` 数据或直接运行 IR。
@@ -39,6 +46,29 @@ docs/
 - 生成行级稳定 hash。
 - 诊断重复节点、非法节点名、缺失目标、空节点、不可达节点和选项语法问题。
 - 项目级编译合并多个 `.inscape` 文件，第一版要求节点名在项目内全局唯一，并通过 `@entry` 标记项目入口。
+- 提取本地化 CSV，并按旧 CSV 中的 `anchor` 精确继承译文。
+
+## 当前 CLI 能力
+
+```text
+单文件：
+  check
+  diagnose
+  compile
+  preview
+  extract-l10n
+  update-l10n
+
+项目级：
+  check-project
+  diagnose-project
+  compile-project
+  preview-project
+  extract-l10n-project
+  update-l10n-project
+```
+
+项目级扫描会忽略 `.git`、`bin`、`obj`、`node_modules` 和 `artifacts`。VSCode 诊断桥接依赖 `diagnose-project --override source temp`，未来 WebView 和本地化命令也应优先复用项目级 CLI。
 
 ## 后续预留目录
 
