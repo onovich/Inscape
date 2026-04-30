@@ -44,10 +44,10 @@ Inscape 的默认阅读优先级应当是：
 - 在对白行开头补全角色名，优先读取 `inscape.config.json` 中 `bird.roleMap` 指向的 `speaker,roleId` 表；未配置时回退扫描工作区已有对白 speaker。
 - 在 `@timeline ...`、`@timeline.<phase> ...` 和 `[kind: ...]` 位置补全宿主绑定别名，优先读取 `inscape.config.json` 中 `bird.bindingMap` 指向的 `kind,alias,birdId,unityGuid,addressableKey,assetPath` 表；未配置时回退扫描工作区已有 hook / inline tag。
 - 在 `->` 跳转目标上支持 Go to Definition / Ctrl+Click。
-- 在对白 speaker 上支持 Go to Definition / Ctrl+Click 到 `bird.roleMap` 中对应的 `speaker` 行。
+- 在对白 speaker 上支持 Go to Definition / Ctrl+Click 到 `bird.roleMap` 中对应的 `speaker` 行；没有配置角色表时，回退到工作区内该 speaker 的对白引用位置。
 - 在节点声明、`->` 跳转目标或对白 speaker 上支持 Find All References。
-- 在节点标题上显示 CodeLens：`入边 N` 用于追溯跳到当前 block 的调用方，`出边 N` 用于查看当前 block 跳向的被调用方。
-- 在节点声明或 `->` 跳转目标上显示 Hover 摘要：定义位置、引用数量和出边目标。
+- 在节点标题上显示 CodeLens：`N 个引用`，点击后使用 VSCode References Peek 追溯跳到当前 block 的调用方。
+- 在节点声明和 `->` 跳转目标上显示简短 Hover 类型说明，不在跳转目标上显示统计信息。
 - 在对白 speaker 上显示 Hover 摘要：角色名、Bird `roleId` 绑定状态和来源表。
 - 在宿主绑定别名上显示 Hover 摘要：`kind:alias`、Bird id、Addressable、Unity guid、Asset path 和来源表。
 - 为 VSCode Outline 提供当前文件节点列表。
@@ -88,19 +88,19 @@ speaker,roleId
 
 在对白行开头输入时，补全项会插入 `角色：`。如果 `roleId` 已绑定，补全详情显示 Bird `roleId`；如果为空，则显示未绑定状态。Hover 同样展示绑定状态和来源路径。
 
-对白 speaker 也支持导航：Ctrl+Click 会跳到配置的 `bird.roleMap` 中对应 `speaker` 行；Find All References 会返回工作区内该 speaker 的全部对白行，并在 VSCode 请求 declaration 时包含角色表行。如果未配置角色表，引用查找仍可基于工作区对白扫描运行，但定义跳转不会返回结果。
+对白 speaker 也支持导航：Ctrl+Click 会优先跳到配置的 `bird.roleMap` 中对应 `speaker` 行；Find All References 会返回工作区内该 speaker 的全部对白行，并在 VSCode 请求 declaration 时包含角色表行。如果未配置角色表，Ctrl+Click 会回退返回工作区内该 speaker 的对白引用位置，便于至少通过 Peek/跳转追溯用法。
 
 这项能力只是写作提示，不改变编译结果。真正的 Bird 导出仍由 CLI 的 `export-bird-project` 读取同一份 `roleMap` 完成。
 
 ## Block 双向导航
 
-Inscape 的 block 之间是图关系，不应只能顺着 `-> target` 单向跳转。VSCode 原型因此提供两层导航：
+Inscape 的 block 之间是图关系，不应只能顺着 `-> target` 单向跳转。VSCode 原型采用接近 C# References CodeLens 的模型：引用统计显示在被引用对象，也就是 block 标题上。
 
 - `-> target` 上 Ctrl+Click：跳到被调用方，也就是目标 block。
-- block 标题上 CodeLens `入边 N`：查看所有跳到当前 block 的调用方。
-- block 标题上 CodeLens `出边 N`：列出当前 block 跳向的目标，并可直接打开目标 block。
+- block 标题上 CodeLens `N 个引用`：查看所有跳到当前 block 的调用方，使用 VSCode 原生 References Peek 展示引用源；在预览区域双击条目可跳转。
+- `-> target` 上的 Hover 只说明这是对话块引用，不显示引用统计或出边摘要。
 
-这对应编程体验中的“Go to Definition / Find References”，但在领域语言里显示为入边和出边。当前实现仍是轻量行扫描，后续 Language Server 应复用 Core 的项目 IR 来提供更稳定的图导航。
+这对应编程体验中的“Go to Definition / Find References”，但在领域语言里把跳转关系显示为 block 标题上的引用计数。当前实现仍是轻量行扫描，后续 Language Server 应复用 Core 的项目 IR 来提供更稳定的图导航。
 
 ## 宿主绑定提示
 

@@ -11,10 +11,11 @@
 
 :: court.cross_exam.loop
 
-证人：我什么都不知道。
+证人：我什么都不知道，哈哈哈哈哈。
 -> court.intro
 
 :: evidence.menu
 
 旁白：证物袋里只有一枚旧怀表。
--> court.intro
+-> court.intro  
+

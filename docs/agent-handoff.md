@@ -10,6 +10,14 @@
 
 Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原型，Unity/Bird 适配已有无 Unity 依赖的导出原型。
 
+### 2026-04-30 GitHub Copilot 接手巡检
+
+- 已按本指南完成接手阅读：`docs/agent-handoff.md`、`docs/todo.md`、`docs/roadmap.md`、`docs/open-questions.md` 和 `docs/code-structure.md`。
+- 仓库位于 `main...origin/main`，HEAD 为 `8087d5b feat: 明确 Timeline Hook phase 语义`。
+- 当前存在接手前未提交变更：`samples/court-loop.inscape` 修改了一句证人对白并追加文件末尾空行；`tools/vscode-inscape/extension.js` 的 VSCode 交互按用户反馈改为接近 C# 的引用模型：block 标题显示 `N 个引用`，点击打开 References Peek，`-> target` Hover 只做类型说明，speaker 定义缺失时回退到对白引用位置。
+- 接手验证通过：`dotnet build Inscape.slnx --no-restore`、`dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj --no-build`、`node --check tools\vscode-inscape\extension.js`。
+- VSCode 角色名、block 引用计数和 `-> target` 简短 Hover 已按用户最新反馈对齐；Timeline / 资源别名定义跳转、Host Schema 脚本内跳转和变量名追溯仍未实现。
+
 已经落地：
 
 - 文档体系、ADR、路线图和 TODO。
