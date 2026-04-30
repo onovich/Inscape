@@ -1,4 +1,8 @@
 {
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-org/inscape"
+  },
   "name": "inscape-vscode",
   "displayName": "Inscape DSL",
   "description": "Syntax highlighting and authoring helpers for Inscape narrative scripts.",
@@ -80,17 +84,20 @@
         "inscape.diagnostics.enabled": {
           "type": "boolean",
           "default": true,
+          "scope": "resource",
           "description": "Enable compiler-backed diagnostics for .inscape files."
         },
         "inscape.diagnostics.debounceMs": {
           "type": "number",
           "default": 450,
           "minimum": 100,
+          "scope": "resource",
           "description": "Delay before refreshing diagnostics after document changes."
         },
         "inscape.compiler.command": {
           "type": "string",
           "default": "dotnet",
+          "scope": "resource",
           "description": "Command used by the VSCode extension to invoke the Inscape compiler."
         },
         "inscape.compiler.args": {
@@ -109,6 +116,7 @@
           "items": {
             "type": "string"
           },
+          "scope": "resource",
           "description": "Arguments used to invoke the Inscape compiler. Supported variables: ${workspaceFolder}, ${extensionPath}, ${file}, ${documentFile}."
         }
       }

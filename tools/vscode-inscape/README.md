@@ -12,10 +12,10 @@ This is the first lightweight authoring layer for `.inscape` scripts. It keeps s
 - Provides workspace node completions in jump target positions.
 - Provides dialogue speaker completions from `inscape.config.json` `bird.roleMap`, with workspace speaker fallback.
 - Provides host binding alias completions from `inscape.config.json` `bird.bindingMap` for `@timeline ...`, `@timeline.<phase> ...`, and `[kind: ...]` inline tag positions.
-- Supports Go to Definition / Ctrl+Click from jump targets to node declarations, and from dialogue speakers to configured role-map rows.
+- Supports Go to Definition / Ctrl+Click from jump targets to node declarations, and from dialogue speakers to configured role-map rows with dialogue-reference fallback.
 - Supports Find All References from node declarations, jump targets, and dialogue speakers.
-- Shows node CodeLens entries for incoming and outgoing graph edges. Incoming edges open callers; outgoing edges jump to callees.
-- Shows hover summaries for node declarations, jump targets, dialogue speakers, and host binding aliases.
+- Shows node CodeLens entries as `N 个引用` on the referenced block header; clicking opens VSCode References Peek for incoming jumps.
+- Shows concise hover summaries for node declarations, jump targets, dialogue speakers, and host binding aliases.
 - Provides an outline view backed by visible node headers.
 - Provides JSON validation for `inscape.host.schema.json` / `*.host.schema.json`.
 - Exposes command palette actions for localization:
@@ -52,7 +52,7 @@ speaker,roleId
 
 When no configured role map exists, the extension still scans open and workspace `.inscape` files for existing dialogue speakers.
 
-Ctrl+Click on a dialogue speaker jumps to the matching `speaker` row in the configured role map. Find All References on a speaker lists all matching dialogue lines in the workspace and includes the role-map row when VSCode requests declarations.
+Ctrl+Click on a dialogue speaker jumps to the matching `speaker` row in the configured role map. If no configured row exists, it falls back to matching dialogue lines in the workspace. Find All References on a speaker lists all matching dialogue lines in the workspace and includes the role-map row when VSCode requests declarations.
 
 Host binding completion reads `bird.bindingMap` from the same project config. The binding map format is:
 

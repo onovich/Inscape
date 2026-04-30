@@ -7,12 +7,16 @@ const path = require("path");
 const vscode = require("vscode");
 
 const languageSelector = { language: "inscape" };
+let outputChannel;
 
 function activate(context) {
+    outputChannel = vscode.window.createOutputChannel("Inscape");
     const diagnostics = vscode.languages.createDiagnosticCollection("inscape");
     const scheduler = new DiagnosticScheduler(context, diagnostics);
+    logOutput("Activated Inscape extension from " + context.extensionPath);
 
     context.subscriptions.push(
+        outputChannel,
         diagnostics,
         scheduler,
         vscode.workspace.onDidOpenTextDocument((document) => scheduler.schedule(document)),
@@ -31,7 +35,6 @@ function activate(context) {
         vscode.languages.registerHoverProvider(languageSelector, new InscapeHoverProvider()),
         vscode.languages.registerCodeLensProvider(languageSelector, new InscapeCodeLensProvider()),
         vscode.commands.registerCommand("inscape.showNodeIncomingReferences", (uri, position, locations) => showNodeIncomingReferences(uri, position, locations)),
-        vscode.commands.registerCommand("inscape.showNodeOutgoingTargets", (items) => showNodeOutgoingTargets(items)),
         vscode.commands.registerCommand("inscape.extractLocalization", () => exportLocalization(context)),
         vscode.commands.registerCommand("inscape.updateLocalization", () => updateLocalization(context)),
         vscode.commands.registerCommand("inscape.showHostSchemaCapabilities", () => showHostSchemaCapabilities())
@@ -41,6 +44,14 @@ function activate(context) {
 }
 
 function deactivate() {
+}
+
+function logOutput(message) {
+    if (!outputChannel) {
+        return;
+    }
+
+    outputChannel.appendLine("[" + new Date().toISOString() + "] " + message);
 }
 
 class DiagnosticScheduler {
@@ -175,18 +186,32 @@ class InscapeCompletionProvider {
 class InscapeDefinitionProvider {
 
     async provideDefinition(document, position) {
+        logOutput('provideDefinition called');
         if (!isInscapeDocument(document)) {
+            logOutput('Not an inscape document');
             return undefined;
         }
 
         const speakerInfo = getDialogueSpeakerAtPosition(document, position);
         if (speakerInfo) {
             const definitions = await collectConfiguredRoleMapSpeakerDefinitions(document, speakerInfo.name);
-            return definitions.length > 0 ? definitions.map((definition) => createLocation(definition)) : undefined;
+            if (definitions.length > 0) {
+                logOutput('Jump to roleMap definition for ' + speakerInfo.name);
+                return definitions.map((definition) => createLocation(definition));
+            }
+
+            const references = await collectWorkspaceDialogueSpeakerReferences(document, speakerInfo.name);
+            if (references.length > 0) {
+                logOutput('Jump to dialogue reference for ' + speakerInfo.name);
+                return references.map((reference) => createLocation(reference));
+            }
+            logOutput('No definition or reference found for ' + speakerInfo.name);
+            return undefined;
         }
 
         const target = getJumpTargetAtPosition(document, position);
         if (!target) {
+            logOutput('No jump target at position');
             return undefined;
         }
 
@@ -197,7 +222,12 @@ class InscapeDefinitionProvider {
                 new vscode.Position(node.line, node.character)
             ));
 
-        return locations.length > 0 ? locations : undefined;
+        if (locations.length > 0) {
+            logOutput('Jump to node target: ' + target);
+            return locations;
+        }
+        logOutput('No node target found for ' + target);
+        return undefined;
     }
 }
 
@@ -267,17 +297,17 @@ class InscapeHoverProvider {
             }
         }
 
-        const node = getNodeDeclarationAtPosition(document, position) || getJumpTargetAtPositionInfo(document, position);
-        if (!node) {
-            return undefined;
+        const declaredNode = getNodeDeclarationAtPosition(document, position);
+        if (declaredNode) {
+            return new vscode.Hover(createNodeDeclarationHoverMarkdown(declaredNode.name), declaredNode.range);
         }
 
-        const declarations = (await collectWorkspaceNodes(document)).filter((candidate) => candidate.name === node.name);
-        const references = await collectWorkspaceJumpReferences(document, node.name);
-        const outgoingTargets = await collectWorkspaceOutgoingTargets(document, node.name);
-        const markdown = createNodeHoverMarkdown(node.name, declarations, references, outgoingTargets);
+        const jumpTarget = getJumpTargetAtPositionInfo(document, position);
+        if (jumpTarget) {
+            return new vscode.Hover(createJumpTargetHoverMarkdown(jumpTarget.name), jumpTarget.range);
+        }
 
-        return new vscode.Hover(markdown, node.range);
+        return undefined;
     }
 }
 
@@ -297,7 +327,7 @@ class InscapeDocumentSymbolProvider {
             const range = textLine.range;
             symbols.push(new vscode.DocumentSymbol(
                 match[1],
-                "Inscape node",
+                "Inscape dialogue block",
                 vscode.SymbolKind.Namespace,
                 range,
                 range
@@ -312,11 +342,13 @@ class InscapeCodeLensProvider {
 
     async provideCodeLenses(document) {
         if (!isInscapeDocument(document)) {
+            logOutput("CodeLens skipped non-Inscape document: " + document.uri.toString() + " language=" + document.languageId);
             return [];
         }
 
         const currentDocumentNodes = collectDocumentNodes(document);
         if (currentDocumentNodes.length === 0) {
+            logOutput("CodeLens found no nodes in " + document.uri.fsPath);
             return [];
         }
 
@@ -326,11 +358,9 @@ class InscapeCodeLensProvider {
             const range = new vscode.Range(node.line, node.character, node.line, node.character + node.length);
             const position = new vscode.Position(node.line, node.character);
             const incoming = navigation.referencesByTarget.get(node.name) || [];
-            const outgoing = navigation.outgoingByNode.get(node.name) || [];
-            const outgoingItems = createOutgoingTargetItems(outgoing, navigation.declarations);
 
             codeLenses.push(new vscode.CodeLens(range, {
-                title: "入边 " + incoming.length,
+                title: incoming.length + " 个引用",
                 command: "inscape.showNodeIncomingReferences",
                 arguments: [
                     vscode.Uri.file(node.sourcePath),
@@ -338,14 +368,10 @@ class InscapeCodeLensProvider {
                     incoming.map((reference) => createLocation(reference))
                 ]
             }));
-
-            codeLenses.push(new vscode.CodeLens(range, {
-                title: "出边 " + outgoingItems.length,
-                command: "inscape.showNodeOutgoingTargets",
-                arguments: [outgoingItems]
-            }));
         }
 
+        logOutput("CodeLens produced " + codeLenses.length + " entries for " + document.uri.fsPath + ": "
+            + currentDocumentNodes.map((node) => node.name + "=" + ((navigation.referencesByTarget.get(node.name) || []).length)).join(", "));
         return codeLenses;
     }
 }
@@ -836,30 +862,6 @@ function showNodeIncomingReferences(uri, position, locations) {
     }
 
     vscode.commands.executeCommand("editor.action.showReferences", uri, position, locations);
-}
-
-async function showNodeOutgoingTargets(items) {
-    if (!items || items.length === 0) {
-        vscode.window.showInformationMessage("This Inscape node has no outgoing jumps.");
-        return;
-    }
-
-    const selected = items.length === 1
-        ? items[0]
-        : await vscode.window.showQuickPick(items, {
-            placeHolder: "Select an outgoing Inscape target"
-        });
-
-    if (!selected) {
-        return;
-    }
-
-    if (selected.missing) {
-        vscode.window.showWarningMessage("Inscape target is not declared: " + selected.label);
-        return;
-    }
-
-    await openLocation(locationFromPayload(selected.location));
 }
 
 function isJumpTargetContext(linePrefix) {
@@ -1427,34 +1429,24 @@ async function collectWorkspaceNodeNavigation(document) {
     const declarations = [];
     const declarationSeen = new Set();
     const referencesByTarget = new Map();
-    const outgoingByNode = new Map();
     const sources = await collectWorkspaceTextSources(document);
 
     for (const source of sources) {
         collectNodesFromText(source.text, source.sourcePath, declarationSeen, declarations);
-        collectNodeNavigationFromText(source.text, source.sourcePath, referencesByTarget, outgoingByNode);
+        collectNodeNavigationFromText(source.text, source.sourcePath, referencesByTarget);
     }
 
     return {
         declarations,
-        referencesByTarget,
-        outgoingByNode
+        referencesByTarget
     };
 }
 
-function collectNodeNavigationFromText(text, sourcePath, referencesByTarget, outgoingByNode) {
-    const nodePattern = /^\s*::\s+([a-z][a-z0-9_-]*(?:\.[a-z][a-z0-9_-]*)*)\s*$/;
+function collectNodeNavigationFromText(text, sourcePath, referencesByTarget) {
     const jumpPattern = /->\s*([A-Za-z0-9_.-]+)/g;
     const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
-    let currentNode = "";
 
     for (let line = 0; line < lines.length; line += 1) {
-        const nodeMatch = nodePattern.exec(lines[line]);
-        if (nodeMatch) {
-            currentNode = nodeMatch[1];
-            continue;
-        }
-
         if (!isJumpReferenceLine(lines[line])) {
             continue;
         }
@@ -1473,9 +1465,6 @@ function collectNodeNavigationFromText(text, sourcePath, referencesByTarget, out
             };
 
             addToMapList(referencesByTarget, target, reference);
-            if (currentNode) {
-                addToMapList(outgoingByNode, currentNode, reference);
-            }
 
             jumpMatch = jumpPattern.exec(lines[line]);
         }
@@ -1489,41 +1478,6 @@ function addToMapList(map, key, value) {
     map.get(key).push(value);
 }
 
-function createOutgoingTargetItems(outgoingTargets, declarations) {
-    const declarationsByName = new Map();
-    for (const declaration of declarations) {
-        if (!declarationsByName.has(declaration.name)) {
-            declarationsByName.set(declaration.name, declaration);
-        }
-    }
-
-    const grouped = new Map();
-    for (const target of outgoingTargets) {
-        if (!grouped.has(target.name)) {
-            grouped.set(target.name, {
-                name: target.name,
-                count: 0,
-                firstReference: target
-            });
-        }
-
-        grouped.get(target.name).count += 1;
-    }
-
-    return Array.from(grouped.values())
-        .sort((left, right) => left.name.localeCompare(right.name))
-        .map((target) => {
-            const declaration = declarationsByName.get(target.name);
-            return {
-                label: target.name,
-                description: target.count > 1 ? target.count + " jumps" : "1 jump",
-                detail: declaration ? formatSourceLocation(declaration) : "Missing declaration",
-                location: declaration ? locationPayloadFromItem(declaration) : undefined,
-                missing: !declaration
-            };
-        });
-}
-
 async function collectWorkspaceJumpReferences(document, targetName) {
     const references = [];
     const sources = await collectWorkspaceTextSources(document);
@@ -1533,26 +1487,6 @@ async function collectWorkspaceJumpReferences(document, targetName) {
     }
 
     return references.sort((left, right) => {
-        const pathCompare = left.sourcePath.localeCompare(right.sourcePath);
-        if (pathCompare !== 0) {
-            return pathCompare;
-        }
-        if (left.line !== right.line) {
-            return left.line - right.line;
-        }
-        return left.character - right.character;
-    });
-}
-
-async function collectWorkspaceOutgoingTargets(document, nodeName) {
-    const targets = [];
-    const sources = await collectWorkspaceTextSources(document);
-
-    for (const source of sources) {
-        collectOutgoingTargetsFromText(source.text, source.sourcePath, nodeName, targets);
-    }
-
-    return targets.sort((left, right) => {
         const pathCompare = left.sourcePath.localeCompare(right.sourcePath);
         if (pathCompare !== 0) {
             return pathCompare;
@@ -1650,40 +1584,6 @@ function collectJumpReferencesFromText(text, sourcePath, targetName, references)
                 });
             }
             match = pattern.exec(lines[line]);
-        }
-    }
-}
-
-function collectOutgoingTargetsFromText(text, sourcePath, nodeName, targets) {
-    const nodePattern = /^\s*::\s+([a-z][a-z0-9_-]*(?:\.[a-z][a-z0-9_-]*)*)\s*$/;
-    const jumpPattern = /->\s*([A-Za-z0-9_.-]+)/g;
-    const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
-    let currentNode = "";
-
-    for (let line = 0; line < lines.length; line += 1) {
-        const nodeMatch = nodePattern.exec(lines[line]);
-        if (nodeMatch) {
-            currentNode = nodeMatch[1];
-            continue;
-        }
-
-        if (currentNode !== nodeName || !isJumpReferenceLine(lines[line])) {
-            continue;
-        }
-
-        jumpPattern.lastIndex = 0;
-        let jumpMatch = jumpPattern.exec(lines[line]);
-        while (jumpMatch) {
-            const target = jumpMatch[1];
-            const character = jumpMatch.index + jumpMatch[0].length - target.length;
-            targets.push({
-                name: target,
-                sourcePath,
-                line,
-                character,
-                length: target.length
-            });
-            jumpMatch = jumpPattern.exec(lines[line]);
         }
     }
 }
@@ -1809,37 +1709,19 @@ function isJumpReferenceLine(line) {
     return trimmed.startsWith("->") || trimmed.startsWith("-");
 }
 
-function createNodeHoverMarkdown(nodeName, declarations, references, outgoingTargets) {
+function createNodeDeclarationHoverMarkdown(nodeName) {
     const markdown = new vscode.MarkdownString(undefined, true);
     markdown.isTrusted = false;
-    markdown.appendMarkdown("**Inscape Node** `" + nodeName + "`\n\n");
+    markdown.appendMarkdown("**Inscape Dialogue Block** `" + nodeName + "`\n\n");
+    markdown.appendMarkdown("A named dialogue block. Its CodeLens shows incoming references.");
+    return markdown;
+}
 
-    if (declarations.length === 0) {
-        markdown.appendMarkdown("Declaration: not found\n\n");
-    } else if (declarations.length === 1) {
-        markdown.appendMarkdown("Defined: `" + formatSourceLocation(declarations[0]) + "`\n\n");
-    } else {
-        markdown.appendMarkdown("Definitions: " + declarations.length + "\n\n");
-        for (const declaration of declarations.slice(0, 5)) {
-            markdown.appendMarkdown("- `" + formatSourceLocation(declaration) + "`\n");
-        }
-        if (declarations.length > 5) {
-            markdown.appendMarkdown("- ...\n");
-        }
-        markdown.appendMarkdown("\n");
-    }
-
-    markdown.appendMarkdown("References: " + references.length + "\n\n");
-
-    const outgoingNames = uniqueNames(outgoingTargets.map((target) => target.name));
-    if (outgoingNames.length === 0) {
-        markdown.appendMarkdown("Outgoing: none");
-    } else {
-        const displayed = outgoingNames.slice(0, 8).map((name) => "`" + name + "`").join(", ");
-        const suffix = outgoingNames.length > 8 ? ", ..." : "";
-        markdown.appendMarkdown("Outgoing: " + displayed + suffix);
-    }
-
+function createJumpTargetHoverMarkdown(nodeName) {
+    const markdown = new vscode.MarkdownString(undefined, true);
+    markdown.isTrusted = false;
+    markdown.appendMarkdown("**Inscape Dialogue Block Reference** `" + nodeName + "`\n\n");
+    markdown.appendMarkdown("Ctrl+Click to jump to this dialogue block.");
     return markdown;
 }
 
@@ -1924,21 +1806,6 @@ function uniqueLocations(locations) {
 
         seen.add(key);
         result.push(location);
-    }
-
-    return result;
-}
-
-function uniqueNames(names) {
-    const seen = new Set();
-    const result = [];
-
-    for (const name of names) {
-        if (seen.has(name)) {
-            continue;
-        }
-        seen.add(name);
-        result.push(name);
     }
 
     return result;
