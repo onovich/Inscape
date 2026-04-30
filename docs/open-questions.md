@@ -25,7 +25,7 @@
    - 当前材料同时出现 Unity 6 与 2023 LTS，需要统一表达和兼容策略。
 
 6. Bird Adapter 的第一版输出协议是什么？
-   - 初步确认第一版优先映射 Talking/L10N，Timeline 只做外部引用；仍需确认 manifest 字段、ID 分配、角色/资源绑定和 Unity Editor Importer 边界。
+   - 初步确认第一版优先映射 Talking/L10N，Timeline 只做外部引用；manifest、ID 分配、角色/资源绑定和 Unity Editor Importer 已有原型，但仍需确认 Bird 项目内提交策略与真实导入边界。
 
 ## 语法设计
 
@@ -72,7 +72,7 @@
 - 宿主事件清单是否由编译器/烘焙器自动生成，而不是人工维护。
 - 是否需要一定程度的代码生成，强制把 DSL 用到的查询 Func / 回调 Action 注册到宿主层。
 - Unity Addressables 是否作为第一版强依赖。
-- Timeline 第一版作为外部资源引用；后续仍需确认是否演化为 Presentation IR。
+- Timeline 第一版作为外部资源引用，Hook phase 已支持 `talking.enter` / `talking.exit` / `node.enter` / `node.exit`；后续仍需确认非 `talking.exit` 的 Bird 运行时落地方式，以及是否演化为 Presentation IR。
 - Bird 的 `talkingId` / `timelineId` 如何分配，是否需要项目级 ID 范围。
 - 角色名、资源别名和 Timeline 名称如何绑定到宿主 ID 或 Unity 资源引用。
 

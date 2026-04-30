@@ -42,7 +42,7 @@ Inscape 的默认阅读优先级应当是：
 - 通过 `dotnet run --project src/Inscape.Cli/Inscape.Cli.csproj -- diagnose-project <workspace> --override <source> <temp-file>` 刷新实时诊断。
 - 在 `->` 跳转目标位置补全工作区内的节点名。
 - 在对白行开头补全角色名，优先读取 `inscape.config.json` 中 `bird.roleMap` 指向的 `speaker,roleId` 表；未配置时回退扫描工作区已有对白 speaker。
-- 在 `@timeline ...` 和 `[kind: ...]` 位置补全宿主绑定别名，优先读取 `inscape.config.json` 中 `bird.bindingMap` 指向的 `kind,alias,birdId,unityGuid,addressableKey,assetPath` 表；未配置时回退扫描工作区已有 hook / inline tag。
+- 在 `@timeline ...`、`@timeline.<phase> ...` 和 `[kind: ...]` 位置补全宿主绑定别名，优先读取 `inscape.config.json` 中 `bird.bindingMap` 指向的 `kind,alias,birdId,unityGuid,addressableKey,assetPath` 表；未配置时回退扫描工作区已有 hook / inline tag。
 - 在 `->` 跳转目标上支持 Go to Definition / Ctrl+Click。
 - 在对白 speaker 上支持 Go to Definition / Ctrl+Click 到 `bird.roleMap` 中对应的 `speaker` 行。
 - 在节点声明、`->` 跳转目标或对白 speaker 上支持 Find All References。
@@ -125,7 +125,8 @@ bg,classroom,,,BG/Classroom,Assets/Art/BG/classroom.png
 当前 VSCode 扩展支持两类位置：
 
 - `@timeline court_intro`
-- `[timeline: court_intro]`、`[bg: classroom]` 等 inline tag 的值部分
+- `@timeline.node.enter court_intro`
+- `[timeline: court_intro]`、`[timeline.node.exit: court_outro]`、`[bg: classroom]` 等 inline tag 的值部分
 
 补全按 `kind` 过滤，Hover 显示绑定表中的 Bird id、Addressable、Unity guid 和 asset path。未配置绑定表时，扩展会从工作区已有 `@timeline` 和 inline tag 中扫描别名作为轻量回退。
 

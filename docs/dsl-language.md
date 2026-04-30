@@ -156,15 +156,27 @@ Inscape 的源文件不是线性脚本，也不是完整游戏引擎语言。它
 当前语义：
 
 - `@timeline alias` / `[timeline: alias]` 是 metadata，不参与本地化，不生成行级文本锚点。
+- 默认 phase 为 `talking.exit`，兼容 Bird 当前 `TalkingEffectTM.PlayTimeline` 的落点。
+- 可显式写出 phase：
+
+```inscape
+@timeline.talking.exit court.opening.pan
+@timeline.talking.enter court.line_enter
+@timeline.node.enter court.node_enter
+[timeline.node.exit: court.node_exit]
+```
+
+- `talking.exit`：绑定到同节点内最近的前一个可见 talking；如果写在节点开头，则绑定到该节点第一条 talking。
+- `talking.enter`：绑定到同节点内 hook 后面的下一条可见 talking；如果没有下一条 talking，则产生无法挂载 warning。
+- `node.enter`：绑定到该节点第一条可见 talking。
+- `node.exit`：绑定到该节点最后一条可见 talking。
 - `alias` 必须通过 Bird 宿主绑定表 `--bird-binding-map` 映射到 Bird / Unity 坐标。
-- Bird Adapter 会把它导出为 manifest 的 `hostHooks`，当前 phase 为 `talking.exit`。
-- hook 会绑定到同节点内最近的前一个可见 talking；如果写在节点开头，则绑定到该节点第一条 talking。
+- Bird Adapter 会把它导出为 manifest 的 `hostHooks`，保留 `phase` 和 `targetTalkingId`。
+- Unity Bird Importer 当前只把 `talking.exit` 真实生成到 `TalkingTM.effects -> TalkingEffectTM.PlayTimeline`。其他 phase 先作为 manifest 数据和 Dry Run warning 保留，避免 DSL 提前变成完整演出时间轴。
 - 它只表达“这里引用一个宿主演出资源”，不描述 Timeline 内部的轨道、关键帧、时长或资源组合。
 
 待确认：
 
-- 是否需要 `@timeline.enter` / `@timeline.exit` 这类显式 phase。
-- hook 应该绑定到上一条 talking、下一条 talking，还是节点 enter/exit。
 - 多个 hook 的执行顺序、失败策略和调试显示方式。
 - 非 Bird 宿主是否沿用 `timeline` 这个术语，还是改为更通用的 `presentation` / `cue`。
 
@@ -224,6 +236,7 @@ Inscape 的源文件不是线性脚本，也不是完整游戏引擎语言。它
 - `-> target`：显式跳转到节点。
 - `@entry`：项目入口节点声明。
 - `@timeline alias` / `[timeline: alias]`：Timeline Hook 原型，只引用宿主演出资源，不表达时间轴内部逻辑。
+- `@timeline.<phase> alias` / `[timeline.<phase>: alias]`：显式 Timeline Hook phase。当前支持 `talking.enter`、`talking.exit`、`node.enter`、`node.exit`。
 - `# 标题`：更写作化的块级候选语法，尚未采用。
 - `call` / `return`：子场景调用，是否需要待确认。
 - `include`：物理包含或导入语义是否需要待确认；第一版跨文件跳转不依赖 `include`。
@@ -242,6 +255,6 @@ Inscape 的源文件不是线性脚本，也不是完整游戏引擎语言。它
 ## 下一步建议
 
 1. 明确 `:: node.name` 与 `# 标题` 两类块语法的取舍，尤其是“跳转目标命名”和“标题可读性”是否必须解耦。
-2. 明确 Timeline Hook 的 phase 语义，尤其是 enter/exit 与 Bird 当前 `TalkingEffectTM` 的关系。
+2. 基于显式 Timeline Hook phase 做一次带真实绑定的 Bird Import Dry Run，确认 `talking.exit` 落地和其他 phase warning 是否符合预期。
 3. 设计节点重命名、重复文本插入和文本轻微改写时的迁移策略。
 4. 结合 Bird 的 `L10N` 格式重新评估本地化 CSV 的字段和列顺序。

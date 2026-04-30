@@ -112,8 +112,10 @@ IR Command
 
 ## Timeline 调研方向
 
-- Bird 现有 Timeline 是否适合作为“演出资源”，由 DSL 节点引用。
-- DSL 是否需要表达节点进入、退出、选项选择时的 Timeline Hook。
+- Bird 现有 Timeline 当前适合作为“外部演出资源”，由 DSL 节点引用；Inscape 不直接生成 Timeline 内部轨道。
+- DSL 已能表达 `talking.enter`、`talking.exit`、`node.enter`、`node.exit` 四种 Timeline Hook phase，并在 manifest 中保留。
+- Bird 当前 `TalkingEffectTM.PlayTimeline` 只安全对应 `talking.exit`；其他 phase 暂由 Unity Importer Dry Run 报告 unsupported phase，后续需要运行时或 adapter 层扩展。
+- 选项选择时的 Timeline Hook 尚未设计，需要先确认它属于边事件、选项 metadata，还是未来 Presentation IR。
 - Timeline 的时间队列是否应与叙事图分离，避免 DSL 变成完整演出脚本。
 - 如果未来自研引擎对标 Ren'Py，Timeline 是否会演化为独立的 Presentation IR。
 - Unity ScriptableObject 是否只是 Adapter 输出格式，还是作为第一版唯一运行格式。

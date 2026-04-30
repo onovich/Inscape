@@ -888,7 +888,7 @@ function isSpeakerCompletionContext(linePrefix) {
 }
 
 function getHostBindingCompletionContext(linePrefix) {
-    if (/^\s*@timeline(?::|\s+)\s*[^\s\]]*$/.test(linePrefix)) {
+    if (/^\s*@timeline(?:\.(?:talking|node)\.(?:enter|exit))?(?::|\s+)\s*[^\s\]]*$/.test(linePrefix)) {
         return { kind: "timeline" };
     }
 
@@ -899,8 +899,8 @@ function getHostBindingCompletionContext(linePrefix) {
     }
 
     const body = linePrefix.slice(openBracket + 1);
-    const match = /^([A-Za-z_][A-Za-z0-9_-]*)\s*:\s*[^\]]*$/.exec(body);
-    return match ? { kind: match[1] } : undefined;
+    const match = /^([A-Za-z_][A-Za-z0-9_.-]*)\s*:\s*[^\]]*$/.exec(body);
+    return match ? { kind: normalizeHostBindingKind(match[1]) } : undefined;
 }
 
 async function collectWorkspaceHostBindings(document, kind) {
@@ -981,7 +981,7 @@ function readOptionalCsvField(row, index) {
 function collectHostBindingsFromText(text, sourcePath, requestedKind, bindings, seen) {
     const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
     for (const line of lines) {
-        const metadataMatch = /^\s*@timeline(?::|\s+)\s*([^\s\]]+)/.exec(line);
+        const metadataMatch = /^\s*@timeline(?:\.(?:talking|node)\.(?:enter|exit))?(?::|\s+)\s*([^\s\]]+)/.exec(line);
         if (requestedKind === "timeline" && metadataMatch) {
             addHostBinding(bindings, seen, {
                 kind: "timeline",
@@ -996,10 +996,10 @@ function collectHostBindingsFromText(text, sourcePath, requestedKind, bindings, 
             });
         }
 
-        const inlinePattern = /\[([A-Za-z_][A-Za-z0-9_-]*)\s*:\s*([^\]\s]+)\]/g;
+        const inlinePattern = /\[([A-Za-z_][A-Za-z0-9_.-]*)\s*:\s*([^\]\s]+)\]/g;
         let inlineMatch = inlinePattern.exec(line);
         while (inlineMatch) {
-            const kind = inlineMatch[1].trim();
+            const kind = normalizeHostBindingKind(inlineMatch[1].trim());
             const alias = inlineMatch[2].trim();
             if (kind === requestedKind && alias.length > 0) {
                 addHostBinding(bindings, seen, {
@@ -1017,6 +1017,14 @@ function collectHostBindingsFromText(text, sourcePath, requestedKind, bindings, 
             inlineMatch = inlinePattern.exec(line);
         }
     }
+}
+
+function normalizeHostBindingKind(kind) {
+    if (kind === "timeline" || /^timeline\.(?:talking|node)\.(?:enter|exit)$/.test(kind)) {
+        return "timeline";
+    }
+
+    return kind;
 }
 
 function addHostBinding(bindings, seen, binding) {
@@ -1762,7 +1770,7 @@ function getDialogueSpeakerAtPosition(document, position) {
 
 function getHostBindingAtPosition(document, position) {
     const line = document.lineAt(position).text;
-    const metadataMatch = /^\s*@timeline(?::|\s+)\s*([^\s\]]+)/.exec(line);
+    const metadataMatch = /^\s*@timeline(?:\.(?:talking|node)\.(?:enter|exit))?(?::|\s+)\s*([^\s\]]+)/.exec(line);
     if (metadataMatch) {
         const alias = metadataMatch[1].trim();
         const aliasStart = line.indexOf(metadataMatch[1], metadataMatch.index);
@@ -1776,10 +1784,10 @@ function getHostBindingAtPosition(document, position) {
         }
     }
 
-    const inlinePattern = /\[([A-Za-z_][A-Za-z0-9_-]*)\s*:\s*([^\]\s]+)\]/g;
+    const inlinePattern = /\[([A-Za-z_][A-Za-z0-9_.-]*)\s*:\s*([^\]\s]+)\]/g;
     let inlineMatch = inlinePattern.exec(line);
     while (inlineMatch) {
-        const kind = inlineMatch[1].trim();
+        const kind = normalizeHostBindingKind(inlineMatch[1].trim());
         const alias = inlineMatch[2].trim();
         const aliasStart = inlineMatch.index + inlineMatch[0].lastIndexOf(inlineMatch[2]);
         const aliasEnd = aliasStart + inlineMatch[2].length;

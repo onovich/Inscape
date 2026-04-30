@@ -46,6 +46,13 @@
     ],
     "description": "Reference a host timeline alias."
   },
+  "Timeline Hook With Phase": {
+    "prefix": "timeline-phase",
+    "body": [
+      "@timeline.${1|talking.exit,talking.enter,node.enter,node.exit|} ${2:timeline.alias}"
+    ],
+    "description": "Reference a host timeline alias with an explicit phase."
+  },
   "Inline Tag": {
     "prefix": "tag",
     "body": [

@@ -61,7 +61,7 @@ flowchart LR
 - 前期宿主：Unity。具体版本需确认，当前材料中“Unity 6”和“2023 LTS”存在版本表达不一致。
 - 数据流：Command Pattern Pipeline 为优先候选；Entitas ECS 保留为复杂项目候选。
 - 资产管理：Addressables 候选，用于立绘、背景、音频和视频加载。
-- Bird 现有系统：当前 Unity 项目中 StorySystem 更接近对话图执行层，DirectorSystem 更接近带时间的演出队列。Inscape 第一阶段应优先编译到 StoryGraph IR，并保留映射到 StorySystem/Talking 数据的适配层；是否直接生成或控制 Timeline 需要继续调研。
+- Bird 现有系统：当前 Unity 项目中 StorySystem 更接近对话图执行层，DirectorSystem 更接近带时间的演出队列。Inscape 第一阶段应优先编译到 StoryGraph IR，并保留映射到 StorySystem/Talking 数据的适配层；Timeline 先作为外部资源 hook 引用，manifest 可表达 phase，但除 `talking.exit` 外不直接生成 Bird effect。
 
 ## 编译数据流
 

@@ -11,7 +11,7 @@ This is the first lightweight authoring layer for `.inscape` scripts. It keeps s
 - Refreshes diagnostics by invoking `dotnet run --project src/Inscape.Cli/Inscape.Cli.csproj -- diagnose-project <workspace> --override <source> <temp-file>`.
 - Provides workspace node completions in jump target positions.
 - Provides dialogue speaker completions from `inscape.config.json` `bird.roleMap`, with workspace speaker fallback.
-- Provides host binding alias completions from `inscape.config.json` `bird.bindingMap` for `@timeline ...` and `[kind: ...]` inline tag positions.
+- Provides host binding alias completions from `inscape.config.json` `bird.bindingMap` for `@timeline ...`, `@timeline.<phase> ...`, and `[kind: ...]` inline tag positions.
 - Supports Go to Definition / Ctrl+Click from jump targets to node declarations, and from dialogue speakers to configured role-map rows.
 - Supports Find All References from node declarations, jump targets, and dialogue speakers.
 - Shows node CodeLens entries for incoming and outgoing graph edges. Incoming edges open callers; outgoing edges jump to callees.
@@ -61,7 +61,7 @@ kind,alias,birdId,unityGuid,addressableKey,assetPath
 timeline,court_intro,12,,Timeline/CourtIntro,Assets/Resources_Runtime/Timeline/SO_Timeline_CourtIntro.asset
 ```
 
-The first supported contexts are `@timeline court_intro` and inline tags such as `[timeline: court_intro]` or `[bg: classroom]`. For inline tags, completion is generic by `kind`, but the compiler still only gives special Bird export meaning to supported hooks such as `timeline`.
+The first supported contexts are `@timeline court_intro`, explicit phase forms such as `@timeline.node.enter court_intro`, and inline tags such as `[timeline: court_intro]`, `[timeline.node.exit: court_outro]`, or `[bg: classroom]`. For inline tags, completion is generic by `kind`, but the compiler still only gives special Bird export meaning to supported hooks such as `timeline`.
 
 Host schema files named `inscape.host.schema.json` or `*.host.schema.json` are validated by the bundled JSON Schema. The command `Inscape: Show Host Schema Capabilities` reads `inscape.config.json` `hostSchema`, lists configured queries/events, and opens the selected capability in the schema file.
 

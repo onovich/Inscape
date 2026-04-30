@@ -67,6 +67,8 @@ Timeline 解析优先级：
 2. `hostHook.assetPath`
 3. `hostHook.birdId` 对应现有 `TimelineSO.tm.timelineId`
 
+当前只生成 `phase=talking.exit` 的 Timeline effect。`talking.enter`、`node.enter` 和 `node.exit` 会在 Dry Run 中报告 `UNSUPPORTED_PHASE`，真实 Import 时跳过并输出 warning；它们先作为 manifest 数据保留，等待 Bird/DirectorSystem 后续扩展。
+
 ## 安装与使用
 
 将脚本复制到 Bird 项目的 `Assets/Editor/` 下，然后在 Unity 菜单执行：
@@ -148,7 +150,7 @@ Dry Run 也提供命令行入口，方便之后接入 CI 或本地自动化：
 - `anchor`：Inscape 行级锚点。
 - `source`：源文件、行、列。
 
-Timeline Hook 计划会附带 `node`、`phase` 和源位置，便于确认 hook 是否挂到了预期 talking 上。
+Timeline Hook 计划会附带 `node`、`phase` 和源位置，便于确认 hook 是否挂到了预期 talking 上。非 `talking.exit` phase 会被标记为 unsupported，不会生成 Bird effect。
 
 ## Bird 项目试跑记录
 
@@ -219,7 +221,7 @@ Addressables 结果：
 - Dry Run 文本报告已经能列出既有 `TalkingTM` 的字段级变化，但仍然只是审查辅助，不提供交互式选择性合并。
 - 原型不自动修改 Addressables 分组。
 - 原型不自动合并 `L10N_Talking.csv`。
-- 原型只支持 Timeline Hook，不处理背景、立绘、音频等其他 host binding。
+- 原型只支持 `talking.exit` Timeline Hook，不处理背景、立绘、音频等其他 host binding，也不把 `talking.enter` / `node.enter` / `node.exit` 强行映射到 Bird effect。
 - Dry Run 已有 Console 文本报告和独立报告文件，但还没有字段级 diff UI 和回滚机制。
 
 ## 后续建议
@@ -227,4 +229,4 @@ Addressables 结果：
 1. 增加字段级 diff UI：展示每个 `TalkingTM` 即将改动的字段，并允许人工确认。
 2. 设计 `L10N_Talking.csv` 合并策略，避免覆盖人工译文。
 3. 接入 Addressables：生成后自动加入 Bird 的 `TM_TALKING` 分组。
-4. 明确 Timeline Hook phase，决定是否需要 talking enter、node enter、node exit。
+4. 基于 Bird/DirectorSystem 运行时语义决定是否实现 talking enter、node enter、node exit 的真实导入。

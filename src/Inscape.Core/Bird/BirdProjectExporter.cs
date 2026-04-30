@@ -278,12 +278,12 @@ namespace Inscape.Core.Bird {
                         continue;
                     }
 
-                    if (!BirdHostHookParser.TryParseTimelineHook(line.Text, out string alias)) {
+                    if (!BirdHostHookParser.TryParseTimelineHook(line.Text, out string alias, out string phase)) {
                         continue;
                     }
 
                     BirdHostBinding? binding = ResolveHostBinding(manifest.HostBindings, "timeline", alias);
-                    BirdTalkingEntry? targetTalking = FindHookTargetTalking(node.Name, line.Source.Line, talkingsByNodeName);
+                    BirdTalkingEntry? targetTalking = FindHookTargetTalking(node.Name, line.Source.Line, phase, talkingsByNodeName);
                     if (binding == null) {
                         manifest.Warnings.Add(new BirdExportWarning("BIRD002",
                                                                     "Timeline hook '" + alias + "' has no matching host binding. Add a 'timeline," + alias + ",...' row to --bird-binding-map.",
@@ -298,7 +298,7 @@ namespace Inscape.Core.Bird {
                     manifest.HostHooks.Add(new BirdHostHook {
                         Kind = "timeline",
                         Alias = alias,
-                        Phase = "talking.exit",
+                        Phase = phase,
                         NodeName = node.Name,
                         TargetTalkingId = targetTalking == null ? (int?)null : targetTalking.TalkingId,
                         BirdId = binding == null ? null : binding.BirdId,
@@ -326,8 +326,27 @@ namespace Inscape.Core.Bird {
 
         static BirdTalkingEntry? FindHookTargetTalking(string nodeName,
                                                        int hookLine,
+                                                       string phase,
                                                        Dictionary<string, List<BirdTalkingEntry>> talkingsByNodeName) {
             if (!talkingsByNodeName.TryGetValue(nodeName, out List<BirdTalkingEntry>? nodeTalkings) || nodeTalkings.Count == 0) {
+                return null;
+            }
+
+            if (phase == "node.enter") {
+                return nodeTalkings[0];
+            }
+
+            if (phase == "node.exit") {
+                return nodeTalkings[nodeTalkings.Count - 1];
+            }
+
+            if (phase == "talking.enter") {
+                for (int i = 0; i < nodeTalkings.Count; i += 1) {
+                    BirdTalkingEntry talking = nodeTalkings[i];
+                    if (talking.Source.Line > hookLine) {
+                        return talking;
+                    }
+                }
                 return null;
             }
 

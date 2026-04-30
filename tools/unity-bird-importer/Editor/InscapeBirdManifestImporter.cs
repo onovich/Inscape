@@ -169,6 +169,7 @@ namespace Inscape.Unity.BirdImporter {
             int updateCount = 0;
             int timelineHookCount = 0;
             int unresolvedTimelineHookCount = 0;
+            int unsupportedTimelineHookPhaseCount = 0;
             int warningCount = 0;
 
             StringBuilder builder = new StringBuilder();
@@ -221,6 +222,13 @@ namespace Inscape.Unity.BirdImporter {
                     }
 
                     timelineHookCount += 1;
+                    if (!IsSupportedTimelineHookPhase(hook.phase)) {
+                        unsupportedTimelineHookPhaseCount += 1;
+                        warningCount += 1;
+                        builder.AppendLine("  UNSUPPORTED_PHASE " + hook.alias + " -> talkingId " + NullableIntText(hook.targetTalkingId) + FormatHookContext(hook) + " no Bird effect will be generated");
+                        continue;
+                    }
+
                     TimelineSO timelineSO = ResolveTimeline(hook, timelinesById);
                     if (timelineSO == null) {
                         unresolvedTimelineHookCount += 1;
@@ -238,6 +246,7 @@ namespace Inscape.Unity.BirdImporter {
             builder.AppendLine("  update TalkingSO: " + updateCount);
             builder.AppendLine("  timeline hooks: " + timelineHookCount);
             builder.AppendLine("  unresolved timeline hooks: " + unresolvedTimelineHookCount);
+            builder.AppendLine("  unsupported timeline hook phases: " + unsupportedTimelineHookPhaseCount);
             builder.AppendLine("  warnings: " + warningCount);
             return builder.ToString();
         }
@@ -321,6 +330,11 @@ namespace Inscape.Unity.BirdImporter {
                     continue;
                 }
 
+                if (!IsSupportedTimelineHookPhase(hook.phase)) {
+                    Debug.LogWarning("Inscape Bird Importer: timeline hook '" + hook.alias + "' uses unsupported phase '" + hook.phase + "'. Only talking.exit maps to TalkingEffectTM.PlayTimeline.");
+                    continue;
+                }
+
                 TimelineSO timelineSO = ResolveTimeline(hook, timelinesById);
                 if (timelineSO == null) {
                     Debug.LogWarning("Inscape Bird Importer: timeline hook '" + hook.alias + "' could not resolve a TimelineSO.");
@@ -334,6 +348,10 @@ namespace Inscape.Unity.BirdImporter {
             }
 
             return effects.ToArray();
+        }
+
+        static bool IsSupportedTimelineHookPhase(string phase) {
+            return string.IsNullOrEmpty(phase) || phase == "talking.exit";
         }
 
         static TimelineSO ResolveTimeline(BirdHostHook hook, Dictionary<int, TimelineSO> timelinesById) {

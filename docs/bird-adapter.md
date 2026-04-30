@@ -48,7 +48,7 @@ dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-project s
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-project samples --bird-binding-map config\bird-bindings.csv -o artifacts\bird-export
 ```
 
-如果项目里已经写了 `@timeline alias` 或 `[timeline: alias]`，可以先生成绑定模板：
+如果项目里已经写了 `@timeline alias`、`@timeline.<phase> alias`、`[timeline: alias]` 或 `[timeline.<phase>: alias]`，可以先生成绑定模板：
 
 ```powershell
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-binding-template samples -o config\bird-bindings.csv
@@ -221,7 +221,8 @@ dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- merge-bird-l10n artif
 - `--bird-role-map` 会把对白 speaker 映射为 Bird `roleId`，并写入 `roles` 和对应 `talkings`。
 - `--bird-binding-map` 会把资源别名、Timeline 名称和 Unity 资源坐标写入 manifest 的 `hostBindings`，供后续 Unity Editor Importer 和 Timeline hook 使用。
 - `export-bird-binding-template` 会从项目 metadata 中收集 Timeline Hook，并生成待补全的 `--bird-binding-map` 模板；配合 `--bird-existing-timeline-root` 时会尽量从现有 `TimelineSO` 资源自动填表。
-- `@timeline alias` 和 `[timeline: alias]` 会写入 manifest 的 `hostHooks`，当前导出为 `kind=timeline`、`phase=talking.exit`，并尽量通过 `hostBindings` 解析 `birdId` / Unity 坐标。
+- `@timeline alias` 和 `[timeline: alias]` 会写入 manifest 的 `hostHooks`，默认导出为 `kind=timeline`、`phase=talking.exit`，并尽量通过 `hostBindings` 解析 `birdId` / Unity 坐标。
+- Timeline Hook 可显式写 phase：`@timeline.talking.enter alias`、`@timeline.talking.exit alias`、`@timeline.node.enter alias`、`@timeline.node.exit alias`，或对应的 `[timeline.node.exit: alias]`。导出时 `talking.exit` 挂最近前一条 talking，`talking.enter` 挂后续下一条 talking，`node.enter` / `node.exit` 分别挂节点首尾 talking。
 - `--bird-existing-talking-root` 会递归扫描 `.asset` 文件中的 `talkingId:`，顺序分配新 ID 时自动跳过已占用值。
 - 重复 `kind + alias` 的 host binding 会产生 `BIRD001` warning。
 - 找不到绑定表行的 Timeline Hook 会产生 `BIRD002` warning。
@@ -230,7 +231,7 @@ dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- merge-bird-l10n artif
 ## 当前限制
 
 - 尚未生成 Unity `.asset` 或 ScriptableObject；这一步留给 Unity Editor Importer。
-- Timeline Hook 目前只进入 manifest，不直接生成 `TalkingEffectTM.PlayTimeline`；这一步留给 Unity Editor Importer。
+- Timeline Hook 目前先进入 manifest；Unity Editor Importer 只把 `talking.exit` 生成 `TalkingEffectTM.PlayTimeline`。其他 phase 会在 Dry Run 中提示 unsupported phase，等 Bird/DirectorSystem 语义进一步确认后再落地。
 - `roleId` 仅支持通过 CSV 手工绑定，尚不能从 Bird 资源自动扫描。
 - `export-bird-role-template` 可以从 `L10N_RoleName.csv` 辅助填充 `roleId`，但只做精确唯一匹配，不做模糊匹配。
 - `textAnchorIndex` 暂固定为 `0`，`textDisplayType` 暂固定为 `Instant`。
@@ -241,7 +242,7 @@ dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- merge-bird-l10n artif
 
 ## 下一步
 
-- 将 Unity Editor Importer 原型复制到 Bird 项目中试跑，验证 `TalkingSO` 和 Timeline Hook 落地效果。
-- 明确 Timeline Hook 的 phase 是否继续沿用 `talking.exit`，或扩展为 node enter/exit。
+- 用带真实绑定的 `@timeline.talking.exit` 样例在 Bird 项目中试跑 Import，验证 `TalkingSO.effects` 与 `TimelineSO` 解析。
+- 评估 `talking.enter`、`node.enter`、`node.exit` 是否需要 Bird 运行时或 importer 扩展，暂不把它们自动落为 `TalkingEffectTM`。
 - 决定选择项文本长期如何本地化：保留在 `TalkingOptionTM.optionText`，还是扩展 Bird L10N。
 - 评估是否把连续同配置文本合并为 `<pr>`，减少 `TalkingSO` 数量。

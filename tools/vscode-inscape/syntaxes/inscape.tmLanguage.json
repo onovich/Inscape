@@ -149,7 +149,7 @@
       "patterns": [
         {
           "name": "comment.line.metadata.inscape",
-          "match": "^\\s*@[A-Za-z_][A-Za-z0-9_-]*(?:\\s+.*)?$"
+          "match": "^\\s*@[A-Za-z_][A-Za-z0-9_.-]*(?::.*|\\s+.*)?$"
         },
         {
           "name": "comment.line.metadata.bracket.inscape",

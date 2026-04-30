@@ -13,7 +13,7 @@
 - 已完成行级 `line-v1` hash、锚点碰撞诊断、本地化 CSV 提取和旧表精确继承。
 - 已完成 VSCode 轻工具原型：高亮、snippets、诊断桥接、补全、Outline、定义、引用、Hover 和本地化导出/更新命令。
 - 已完成无引擎 HTML 预览：单文件/项目级图调试、回环、路径、Back/Restart 和锚点显示。
-- 已完成 Bird 导出侧原型：binding template、role map、host binding、Timeline Hook、warning/report 和 Unity Editor Importer dry run。
+- 已完成 Bird 导出侧原型：binding template、role map、host binding、Timeline Hook phase、warning/report 和 Unity Editor Importer dry run。
 - 尚未完成 Unity/Bird Adapter 和 Language Server。
 
 计划内容：

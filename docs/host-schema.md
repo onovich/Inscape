@@ -114,7 +114,7 @@ Inscape: Show Host Schema Capabilities
 kind,alias,birdId,unityGuid,addressableKey,assetPath
 ```
 
-这张表描述资源 / Timeline 等宿主对象坐标，服务 `@timeline alias` 和 `[kind: alias]` 这类引用。宿主 Schema 则描述查询与事件能力。两者都属于宿主连接层，但不要混为同一张表：
+这张表描述资源 / Timeline 等宿主对象坐标，服务 `@timeline alias`、`@timeline.<phase> alias` 和 `[kind: alias]` 这类引用。宿主 Schema 则描述查询与事件能力。两者都属于宿主连接层，但不要混为同一张表：
 
 - `bindingMap` 回答“这个别名指向哪个资源或宿主对象”。
 - `hostSchema` 回答“剧本可以表达哪些查询和事件，以及它们需要哪些参数”。

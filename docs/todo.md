@@ -9,7 +9,7 @@
 下一位接手者建议按以下顺序推进：
 
 1. 决定 Bird 项目内 importer 与生成的 `InscapeGenerated` 资源是否提交，或先清理后保留 Inscape 侧原型。
-2. 明确 Timeline Hook 的 phase 语义，尤其是 Bird 当前 `TalkingEffectTM` 在 talking exit 触发的关系。
+2. 用带真实绑定的 `@timeline.talking.exit` 样例在 Bird 项目中试跑 Import，验证 `TalkingSO.effects` 与 `TimelineSO` 解析。
 3. 设计本地化模糊匹配与人工确认报告，不要直接自动复用相似文本译文。
 4. 收敛第一版块语法：继续使用 `:: node.name`，还是转向 `# 标题` + 空行分块。
 5. 等条件 / 事件语法更明确后，将宿主 Schema query / event 接入 `.inscape` 脚本内补全与 Hover。
@@ -89,7 +89,7 @@
 - [x] 设计并实现资源别名、Timeline 名称到 Bird 整数 ID / Unity 资源引用的第一版 CSV 绑定：`--bird-binding-map kind,alias,birdId,unityGuid,addressableKey,assetPath`。
 - [x] 增加 `export-bird-binding-template`，从项目内 Timeline Hook 生成待补全的 Bird 绑定表模板。
 - [x] 为 `export-bird-binding-template` 增加 `--bird-existing-timeline-root`，扫描现有 Bird Timeline `.asset` / `.meta` 辅助填表。
-- [x] 结合 `docs/dsl-ecosystem-positioning.md` 设计并实现 Timeline hook 原型：`@timeline alias` / `[timeline: alias]` 只表达宿主引用，不引入通用命令宏系统。
+- [x] 结合 `docs/dsl-ecosystem-positioning.md` 设计并实现 Timeline hook 原型：`@timeline alias` / `[timeline: alias]` 及显式 phase 写法只表达宿主引用，不引入通用命令宏系统。
 - [x] 为 Bird 导出增加 `bird-export-report.txt` 与 manifest `warnings`，暴露重复 host binding、缺失 Timeline 绑定和无法挂载 hook 等问题。
 - [x] 设计 Bird 兼容 `L10N_Talking.csv` 导出，并保留 Inscape `anchor` 审校表。
 - [x] 原型实现 `export-bird-project`：从项目 IR 生成 manifest 与 Bird L10N CSV。
@@ -113,7 +113,8 @@
 - [x] 为项目配置读取增加测试，确认相对路径和命令行覆盖边界。
 - [x] 将角色绑定信息接入 VSCode 补全和 Hover，减少写作阶段记忆压力。
 - [x] 设计 Timeline 引用的第一版最小表达方式，但不让 DSL 直接变成演出时间轴语言。
-- [ ] 明确 Timeline Hook 的 phase 是否继续沿用 `talking.exit`，或扩展为 node enter/exit。
+- [x] 明确并实现 Timeline Hook phase 第一版：默认 `talking.exit`，可显式表达 `talking.enter`、`talking.exit`、`node.enter`、`node.exit`；Bird Importer 暂只落地 `talking.exit`。
+- [ ] 用带真实 Timeline 绑定的样例再次执行 Bird Import Dry Run，确认 `talking.exit` 的 `TalkingEffectTM.PlayTimeline` 落地与其他 phase warning。
 
 ## 变量与状态查询，第二版前置调研
 

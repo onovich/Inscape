@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using Inscape.Core.Analysis;
+using Inscape.Core.Bird;
 using Inscape.Core.Compilation;
 using Inscape.Core.Diagnostics;
 using Inscape.Core.Model;
@@ -45,6 +46,7 @@ namespace Inscape.Tests {
                 ("cli bird commands read project config", CliBirdCommandsReadProjectConfig),
                 ("cli export-bird-project emits manifest and csv", CliExportBirdProjectEmitsManifestAndCsv),
                 ("cli export-bird-project reports unresolved host hooks", CliExportBirdProjectReportsUnresolvedHostHooks),
+                ("bird timeline hooks support explicit phases", BirdTimelineHooksSupportExplicitPhases),
                 ("cli merge-bird-l10n preserves and clears safely", CliMergeBirdL10nPreservesAndClearsSafely),
             };
 
@@ -1173,6 +1175,45 @@ Narrator: Hello.
             }
         }
 
+        static void BirdTimelineHooksSupportExplicitPhases() {
+            ProjectCompiler compiler = new ProjectCompiler();
+            ProjectCompilationResult project = compiler.Compile(new List<ProjectSource> {
+                new ProjectSource("memory://story.inscape", """
+:: start
+@entry
+@timeline.node.enter court.node_enter
+Narrator: First line.
+@timeline.talking.exit court.first_exit
+@timeline.talking.enter court.second_enter
+Narrator: Second line.
+[timeline.node.exit: court.node_exit]
+"""),
+            }, "memory://project");
+
+            AssertFalse(project.HasErrors, "Project with timeline phases should compile.");
+
+            BirdExportOptions options = new BirdExportOptions {
+                TalkingIdStart = 700,
+            };
+            AddTimelineBinding(options, "court.node_enter", 101);
+            AddTimelineBinding(options, "court.first_exit", 102);
+            AddTimelineBinding(options, "court.second_enter", 103);
+            AddTimelineBinding(options, "court.node_exit", 104);
+
+            BirdExportResult export = new BirdProjectExporter().Export(project, options);
+
+            AssertEqual(0, export.Manifest.Warnings.Count, "Explicit phases should not create export warnings.");
+            AssertEqual(4, export.Manifest.HostHooks.Count, "Timeline hook count");
+            AssertEqual("node.enter", export.Manifest.HostHooks[0].Phase, "Node enter phase");
+            AssertEqual((int?)700, export.Manifest.HostHooks[0].TargetTalkingId, "Node enter target talking");
+            AssertEqual("talking.exit", export.Manifest.HostHooks[1].Phase, "Talking exit phase");
+            AssertEqual((int?)700, export.Manifest.HostHooks[1].TargetTalkingId, "Talking exit target talking");
+            AssertEqual("talking.enter", export.Manifest.HostHooks[2].Phase, "Talking enter phase");
+            AssertEqual((int?)701, export.Manifest.HostHooks[2].TargetTalkingId, "Talking enter target talking");
+            AssertEqual("node.exit", export.Manifest.HostHooks[3].Phase, "Node exit phase");
+            AssertEqual((int?)701, export.Manifest.HostHooks[3].TargetTalkingId, "Node exit target talking");
+        }
+
         static void CliMergeBirdL10nPreservesAndClearsSafely() {
             string directory = Path.Combine(Path.GetTempPath(), "inscape-tests", Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(directory);
@@ -1234,6 +1275,14 @@ ID,ZH_CN,EN_US,ES_ES
         static CompilationResult Compile(string source) {
             InscapeCompiler compiler = new InscapeCompiler();
             return compiler.Compile(source, "memory://test.inscape");
+        }
+
+        static void AddTimelineBinding(BirdExportOptions options, string alias, int birdId) {
+            options.HostBindings.Add(new BirdHostBinding {
+                Kind = "timeline",
+                Alias = alias,
+                BirdId = birdId,
+            });
         }
 
         static bool ContainsCode(CompilationResult result, string code) {
