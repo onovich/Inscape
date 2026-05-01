@@ -12,8 +12,8 @@ This is the first lightweight authoring layer for `.inscape` scripts. It keeps s
 - Provides workspace node completions in jump target positions.
 - Provides dialogue speaker completions from `inscape.config.json` `unitySample.roleMap`, with workspace speaker fallback.
 - Provides host binding alias completions from `inscape.config.json` `unitySample.bindingMap` for `@timeline ...`, `@timeline.<phase> ...`, and `[kind: ...]` inline tag positions.
-- Highlights host binding lines such as `@timeline court_intro` and `[bg: courtroom]`, and lets Hover / Ctrl+Click jump to the matching mapping row or workspace occurrence.
-- Supports Go to Definition / Ctrl+Click from jump targets to node declarations, and from dialogue speakers to configured role-map rows with dialogue-reference fallback.
+- Highlights host binding lines such as `@timeline court_intro` and `[bg: courtroom]` without the always-on link look, while Hover / Ctrl+Click still jumps to the matching mapping row or workspace occurrence.
+- Supports Go to Definition / Ctrl+Click from jump targets to node declarations, and from dialogue speakers to configured role-map rows with dialogue-reference fallback; the clickable text stays visually plain until Ctrl is held.
 - Treats full-width colons and common Chinese punctuation as word boundaries so Ctrl+Click link styling on Chinese dialogue only covers the speaker name.
 - Supports Find All References from node declarations, jump targets, and dialogue speakers.
 - Shows node CodeLens entries as `N 个引用` on the referenced block header; clicking opens VSCode References Peek for incoming jumps.
@@ -26,6 +26,17 @@ This is the first lightweight authoring layer for `.inscape` scripts. It keeps s
   - `Inscape: Update Localization CSV From Previous Table`
 - Exposes command palette action for host schema inspection:
   - `Inscape: Show Host Schema Capabilities`
+- Adds an editor-title icon button for `Inscape: Toggle Preview`, plus an `Inscape` drop-down menu with entries for editor style, preview style, and the quick syntax guide.
+
+## Quick Authoring Guide
+
+- `:: node.name` starts a dialogue block.
+- `角色：文本` writes dialogue; `旁白：文本` works the same way.
+- `? 提示` starts a choice prompt.
+- `- 选项 -> target.node` adds a choice.
+- `-> target.node` jumps directly.
+
+Style tweaking is file-based: point `inscape.config.json` at an editor style JSON and a preview style JSON, then adjust plain values such as colors, font sizes, and radii.
 
 ## Development Use
 

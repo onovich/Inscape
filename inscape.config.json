@@ -1,0 +1,6 @@
+{
+  "styles": {
+    "editor": "config/inscape.editor-style.json",
+    "preview": "config/inscape.preview-style.json"
+  }
+}

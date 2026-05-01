@@ -31,6 +31,40 @@ Inscape 的默认阅读优先级应当是：
 - 元信息和行内标签使用 comment-like scope，尽量在多数主题下自然变弱。
 - 已知非法的节点名和目标名使用 invalid scope，给出轻量即时反馈。
 
+## 样式配置文件
+
+为了让开发者能快速改“编辑器里看起来怎么样”和“预览里看起来怎么样”，当前原型提供两份独立样式文件，并通过工作区根目录的 `inscape.config.json` 连接：
+
+```json
+{
+  "styles": {
+    "editor": "config/inscape.editor-style.json",
+    "preview": "config/inscape.preview-style.json"
+  }
+}
+```
+
+编辑器样式文件用于 VSCode 内的可见 `.inscape` 文本装饰；预览样式文件用于 CLI/VSCode 预览页的 CSS 变量。两者都刻意保持“像 CSS 一样填值”的轻量结构，不要求开发者理解扩展 API 或直接改源码。
+
+推荐字段示例：
+
+```json
+{
+  "speakerColor": "#569cd6",
+  "dialogueColor": "#dcdcaa",
+  "speakerFontWeight": "600",
+  "storyFontSize": "28px",
+  "cardRadius": "24px"
+}
+```
+
+约定：
+
+- `editor` 文件主要使用 `...Color`、`...FontWeight`、`...TextDecoration` 这类扁平字段。
+- `preview` 文件主要使用颜色、字号、圆角、行高、字体族等 CSS 值字符串。
+- 修改 `inscape.config.json`、`inscape.editor-style.json` 或 `inscape.preview-style.json` 后，重载窗口即可看到变化；预览打开时保存这些文件也会触发刷新。
+- 编辑器样式由扩展 decorations 应用，所以不会把颜色选择硬绑到某个 VSCode 主题里。
+
 ## 已提供能力
 
 - 注册 `.inscape` 文件扩展名和 `inscape` language ID。

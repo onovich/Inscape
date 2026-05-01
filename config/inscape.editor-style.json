@@ -1,0 +1,14 @@
+{
+  "nodeNameColor": "#d7ba7d",
+  "speakerColor": "#569cd6",
+  "speakerFontWeight": "600",
+  "speakerTextDecoration": "none",
+  "dialogueColor": "#dcdcaa",
+  "dialogueTextDecoration": "none",
+  "narrationColor": "#dcdcaa",
+  "choicePromptColor": "#c586c0",
+  "choiceTextColor": "#dcdcaa",
+  "jumpTargetColor": "#4ec9b0",
+  "metadataColor": "#6a9955",
+  "inlineTagColor": "#6a9955"
+}

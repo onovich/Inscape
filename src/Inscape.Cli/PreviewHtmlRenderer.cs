@@ -6,15 +6,24 @@ namespace Inscape.Cli {
     public static class PreviewHtmlRenderer {
 
         public static string Render(CompileOutput output, JsonSerializerOptions jsonOptions) {
-            return RenderSerializedOutput(output, jsonOptions);
+            return Render(output, jsonOptions, new PreviewStyleSheet());
+        }
+
+        public static string Render(CompileOutput output, JsonSerializerOptions jsonOptions, PreviewStyleSheet styleSheet) {
+            return RenderSerializedOutput(output, jsonOptions, styleSheet);
         }
 
         public static string Render(ProjectCompileOutput output, JsonSerializerOptions jsonOptions) {
-            return RenderSerializedOutput(output, jsonOptions);
+            return Render(output, jsonOptions, new PreviewStyleSheet());
         }
 
-        static string RenderSerializedOutput(object output, JsonSerializerOptions jsonOptions) {
+        public static string Render(ProjectCompileOutput output, JsonSerializerOptions jsonOptions, PreviewStyleSheet styleSheet) {
+            return RenderSerializedOutput(output, jsonOptions, styleSheet);
+        }
+
+        static string RenderSerializedOutput(object output, JsonSerializerOptions jsonOptions, PreviewStyleSheet? styleSheet) {
             string json = JsonSerializer.Serialize(output, jsonOptions).Replace("</", "<\\/");
+            PreviewStyleSheet style = styleSheet ?? new PreviewStyleSheet();
             StringBuilder html = new StringBuilder();
 
             html.AppendLine("<!doctype html>");
@@ -24,37 +33,58 @@ namespace Inscape.Cli {
             html.AppendLine("  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />");
             html.AppendLine("  <title>Inscape Preview</title>");
             html.AppendLine("  <style>");
-            html.AppendLine("    :root { color-scheme: light dark; font-family: Inter, \"Segoe UI\", sans-serif; }");
+            html.AppendLine("    :root { color-scheme: light dark;"
+                + " --inscape-font-family: " + Css(style.FontFamily) + ";"
+                + " --inscape-page-background: " + Css(style.PageBackground) + ";"
+                + " --inscape-text-color: " + Css(style.TextColor) + ";"
+                + " --inscape-card-background: " + Css(style.CardBackground) + ";"
+                + " --inscape-node-title-color: " + Css(style.NodeTitleColor) + ";"
+                + " --inscape-muted-text-color: " + Css(style.MutedTextColor) + ";"
+                + " --inscape-toolbar-button-background: " + Css(style.ToolbarButtonBackground) + ";"
+                + " --inscape-toolbar-button-hover-background: " + Css(style.ToolbarButtonHoverBackground) + ";"
+                + " --inscape-source-button-background: " + Css(style.SourceButtonBackground) + ";"
+                + " --inscape-source-button-hover-background: " + Css(style.SourceButtonHoverBackground) + ";"
+                + " --inscape-meta-background: " + Css(style.MetaBackground) + ";"
+                + " --inscape-meta-text-color: " + Css(style.MetaTextColor) + ";"
+                + " --inscape-speaker-color: " + Css(style.SpeakerColor) + ";"
+                + " --inscape-choice-background: " + Css(style.ChoiceBackground) + ";"
+                + " --inscape-choice-prompt-color: " + Css(style.ChoicePromptColor) + ";"
+                + " --inscape-diagnostic-background: " + Css(style.DiagnosticBackground) + ";"
+                + " --inscape-diagnostic-text-color: " + Css(style.DiagnosticTextColor) + ";"
+                + " --inscape-story-font-size: " + Css(style.StoryFontSize) + ";"
+                + " --inscape-story-line-height: " + Css(style.StoryLineHeight) + ";"
+                + " --inscape-card-radius: " + Css(style.CardRadius) + ";"
+                + " --inscape-choice-radius: " + Css(style.ChoiceRadius) + "; }");
             html.AppendLine("    * { box-sizing: border-box; }");
-            html.AppendLine("    body { margin: 0; min-height: 100vh; background: #f6f4ee; color: #211d18; }");
+            html.AppendLine("    body { margin: 0; min-height: 100vh; background: var(--inscape-page-background); color: var(--inscape-text-color); font-family: var(--inscape-font-family); }");
             html.AppendLine("    main { min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding: 18px 22px 26px; }");
             html.AppendLine("    .shell { width: min(920px, 100%); }");
             html.AppendLine("    .toolbar { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; }");
             html.AppendLine("    .toolbar-spacer { flex: 1; }");
-            html.AppendLine("    .status { color: #7b7468; font-size: 13px; padding: 9px 2px 0; }");
-            html.AppendLine("    button { cursor: pointer; border: 0; outline: none; box-shadow: none; background: #ece7db; color: inherit; padding: 9px 13px; border-radius: 999px; font-size: 14px; transition: background-color 120ms ease; }");
-            html.AppendLine("    button:hover { background: #e1dacb; }");
+            html.AppendLine("    .status { color: var(--inscape-muted-text-color); font-size: 13px; padding: 9px 2px 0; }");
+            html.AppendLine("    button { cursor: pointer; border: 0; outline: none; box-shadow: none; background: var(--inscape-toolbar-button-background); color: inherit; padding: 9px 13px; border-radius: 999px; font-size: 14px; transition: background-color 120ms ease; }");
+            html.AppendLine("    button:hover { background: var(--inscape-toolbar-button-hover-background); }");
             html.AppendLine("    button:disabled { opacity: 0.45; cursor: default; }");
-            html.AppendLine("    .story-card { background: #fbfaf6; border-radius: 24px; overflow: hidden; }");
+            html.AppendLine("    .story-card { background: var(--inscape-card-background); border-radius: var(--inscape-card-radius); overflow: hidden; }");
             html.AppendLine("    .story-header { padding: 16px 18px 0; display: flex; align-items: flex-start; gap: 10px; flex-wrap: wrap; }");
-            html.AppendLine("    .node-title { font-size: 12px; color: #8d846f; letter-spacing: 0.08em; text-transform: uppercase; padding-top: 8px; }");
-            html.AppendLine("    .source-link { border-radius: 999px; padding: 6px 11px; font-size: 12px; background: #efeadf; }");
-            html.AppendLine("    .source-link:hover { background: #e2dccd; }");
+            html.AppendLine("    .node-title { font-size: 12px; color: var(--inscape-node-title-color); letter-spacing: 0.08em; text-transform: uppercase; padding-top: 8px; }");
+            html.AppendLine("    .source-link { border-radius: 999px; padding: 6px 11px; font-size: 12px; background: var(--inscape-source-button-background); }");
+            html.AppendLine("    .source-link:hover { background: var(--inscape-source-button-hover-background); }");
             html.AppendLine("    .meta-strip { padding: 10px 18px 0; display: flex; flex-wrap: wrap; gap: 8px; }");
-            html.AppendLine("    .meta-pill { display: inline-flex; align-items: center; border-radius: 999px; padding: 4px 10px; background: #efeadf; color: #706754; font-size: 12px; font-family: \"Cascadia Mono\", Consolas, monospace; }");
+            html.AppendLine("    .meta-pill { display: inline-flex; align-items: center; border-radius: 999px; padding: 4px 10px; background: var(--inscape-meta-background); color: var(--inscape-meta-text-color); font-size: 12px; font-family: \"Cascadia Mono\", Consolas, monospace; }");
             html.AppendLine("    .story-panel { padding: 34px 18px 12px; min-height: 320px; }");
             html.AppendLine("    .story-panel.can-continue { cursor: pointer; }");
-            html.AppendLine("    .line { margin: 0 0 18px; line-height: 1.84; font-size: 28px; letter-spacing: 0.005em; }");
+            html.AppendLine("    .line { margin: 0 0 18px; line-height: var(--inscape-story-line-height); font-size: var(--inscape-story-font-size); letter-spacing: 0.005em; }");
             html.AppendLine("    .line:last-child { margin-bottom: 0; }");
-            html.AppendLine("    .speaker { color: #7d5a34; font-weight: 700; margin-right: 10px; }");
+            html.AppendLine("    .speaker { color: var(--inscape-speaker-color); font-weight: 700; margin-right: 10px; }");
             html.AppendLine("    .choices { padding: 6px 18px 24px; }");
-            html.AppendLine("    .choice-prompt { margin: 0 0 12px; color: #807663; font-size: 14px; }");
-            html.AppendLine("    .choice { display: block; width: 100%; text-align: left; margin: 0 0 10px; padding: 16px 18px; border-radius: 16px; font-size: 18px; background: #efeadf; }");
+            html.AppendLine("    .choice-prompt { margin: 0 0 12px; color: var(--inscape-choice-prompt-color); font-size: 14px; }");
+            html.AppendLine("    .choice { display: block; width: 100%; text-align: left; margin: 0 0 10px; padding: 16px 18px; border-radius: var(--inscape-choice-radius); font-size: 18px; background: var(--inscape-choice-background); }");
             html.AppendLine("    .choice:last-child { margin-bottom: 0; }");
-            html.AppendLine("    .continue-hint { padding: 0 18px 22px; color: #8d8068; font-size: 13px; }");
-            html.AppendLine("    .ending { padding: 0 18px 22px; color: #8d8068; font-size: 13px; }");
+            html.AppendLine("    .continue-hint { padding: 0 18px 22px; color: var(--inscape-muted-text-color); font-size: 13px; }");
+            html.AppendLine("    .ending { padding: 0 18px 22px; color: var(--inscape-muted-text-color); font-size: 13px; }");
             html.AppendLine("    .diagnostics { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; }");
-            html.AppendLine("    .diagnostic { background: #f2e6de; padding: 10px 12px; border-radius: 10px; color: #7f2f18; font-size: 13px; }");
+            html.AppendLine("    .diagnostic { background: var(--inscape-diagnostic-background); padding: 10px 12px; border-radius: 10px; color: var(--inscape-diagnostic-text-color); font-size: 13px; }");
             html.AppendLine("    @media (max-width: 760px) { main { padding: 12px 14px 22px; } .story-panel { min-height: 260px; } .line { font-size: 22px; } .toolbar { flex-wrap: wrap; } .toolbar-spacer { display: none; } .status { width: 100%; padding-top: 2px; } }");
             html.AppendLine("  </style>");
             html.AppendLine("</head>");
@@ -130,6 +160,12 @@ namespace Inscape.Cli {
             html.AppendLine("</html>");
 
             return html.ToString();
+        }
+
+        static string Css(string? value) {
+            return string.IsNullOrWhiteSpace(value)
+                ? "initial"
+                : value.Replace("</", "<\\/").Replace("\r", " ").Replace("\n", " ").Trim();
         }
 
     }

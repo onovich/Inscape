@@ -43,7 +43,7 @@
               "name": "keyword.control.node.inscape"
             },
             "4": {
-              "name": "entity.name.section.node.inscape"
+              "name": "variable.other.node-name.inscape"
             }
           }
         },
@@ -71,13 +71,13 @@
               "name": "punctuation.definition.list.inscape"
             },
             "4": {
-              "name": "string.unquoted.option.inscape"
+              "name": "text.plain.option.inscape"
             },
             "6": {
               "name": "keyword.control.jump.inscape"
             },
             "8": {
-              "name": "entity.name.function.target.inscape"
+              "name": "variable.other.jump-target.inscape"
             }
           }
         },
@@ -89,7 +89,7 @@
               "name": "punctuation.definition.list.inscape"
             },
             "4": {
-              "name": "string.unquoted.option.inscape"
+              "name": "text.plain.option.inscape"
             },
             "6": {
               "name": "keyword.control.jump.inscape"
@@ -108,7 +108,7 @@
             }
           },
           "end": "$",
-          "contentName": "string.unquoted.choice-prompt.inscape",
+          "contentName": "text.plain.choice-prompt.inscape",
           "patterns": [
             {
               "include": "#inlineTags"
@@ -127,7 +127,7 @@
               "name": "keyword.control.jump.inscape"
             },
             "4": {
-              "name": "entity.name.function.target.inscape"
+              "name": "variable.other.jump-target.inscape"
             }
           }
         },
@@ -158,7 +158,7 @@
               "name": "keyword.control.metadata-name.inscape"
             },
             "4": {
-              "name": "string.unquoted.metadata-value.inscape"
+              "name": "text.plain.metadata-value.inscape"
             }
           }
         },
@@ -178,7 +178,7 @@
               "name": "keyword.control.host-binding-kind.inscape"
             },
             "3": {
-              "name": "entity.name.function.host-binding-alias.inscape"
+              "name": "variable.other.host-binding-alias.inscape"
             }
           }
         }
@@ -213,7 +213,7 @@
           "name": "meta.narration.inscape",
           "begin": "^(\\s*)(?=\\S)",
           "end": "$",
-          "contentName": "string.unquoted.narration.inscape",
+          "contentName": "text.plain.narration.inscape",
           "patterns": [
             {
               "include": "#inlineTags"

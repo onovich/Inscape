@@ -62,6 +62,10 @@ namespace Inscape.Cli {
             }
 
             string source = File.ReadAllText(inputPath, Encoding.UTF8);
+            ProjectConfig previewConfig;
+            if (!TryReadProjectConfig(Path.GetDirectoryName(Path.GetFullPath(inputPath)) ?? Directory.GetCurrentDirectory(), args, out previewConfig)) {
+                return 1;
+            }
             InscapeCompiler compiler = new InscapeCompiler();
             CompilationResult result = compiler.Compile(source, Path.GetFullPath(inputPath));
 
@@ -84,7 +88,7 @@ namespace Inscape.Cli {
             }
 
             if (command == "preview") {
-                string html = PreviewHtmlRenderer.Render(ToOutput(result), JsonOptions);
+                string html = PreviewHtmlRenderer.Render(ToOutput(result), JsonOptions, ReadPreviewStyle(previewConfig));
                 WriteOrPrint(outputPath, html);
                 PrintDiagnostics(result.Diagnostics);
                 return result.HasErrors ? 1 : 0;
@@ -175,7 +179,7 @@ namespace Inscape.Cli {
             }
 
             if (command == "preview-project") {
-                string html = PreviewHtmlRenderer.Render(ToProjectOutput(result), JsonOptions);
+                string html = PreviewHtmlRenderer.Render(ToProjectOutput(result), JsonOptions, ReadPreviewStyle(config));
                 WriteOrPrint(outputPath, html);
                 PrintDiagnostics(result.Diagnostics);
                 return result.HasErrors ? 1 : 0;
@@ -323,11 +327,27 @@ namespace Inscape.Cli {
         static void NormalizeProjectConfigPaths(ProjectConfig config, string configPath) {
             string configDirectory = Path.GetDirectoryName(configPath) ?? Directory.GetCurrentDirectory();
             config.HostSchema = ResolveConfigPath(configDirectory, config.HostSchema);
+            config.Styles.Editor = ResolveConfigPath(configDirectory, config.Styles.Editor);
+            config.Styles.Preview = ResolveConfigPath(configDirectory, config.Styles.Preview);
             config.UnitySample.RoleMap = ResolveConfigPath(configDirectory, config.UnitySample.RoleMap);
             config.UnitySample.BindingMap = ResolveConfigPath(configDirectory, config.UnitySample.BindingMap);
             config.UnitySample.ExistingRoleNameCsv = ResolveConfigPath(configDirectory, config.UnitySample.ExistingRoleNameCsv);
             config.UnitySample.ExistingTimelineRoot = ResolveConfigPath(configDirectory, config.UnitySample.ExistingTimelineRoot);
             config.UnitySample.ExistingTalkingRoot = ResolveConfigPath(configDirectory, config.UnitySample.ExistingTalkingRoot);
+        }
+
+        static PreviewStyleSheet ReadPreviewStyle(ProjectConfig config) {
+            if (string.IsNullOrWhiteSpace(config.Styles.Preview) || !File.Exists(config.Styles.Preview)) {
+                return new PreviewStyleSheet();
+            }
+
+            try {
+                PreviewStyleSheet? parsed = JsonSerializer.Deserialize<PreviewStyleSheet>(File.ReadAllText(config.Styles.Preview, Encoding.UTF8), JsonOptions);
+                return parsed ?? new PreviewStyleSheet();
+            } catch (Exception ex) {
+                Console.Error.WriteLine("Invalid preview style '" + config.Styles.Preview + "': " + ex.Message);
+                return new PreviewStyleSheet();
+            }
         }
 
         static string? ResolveConfigPath(string configDirectory, string? value) {
@@ -1271,7 +1291,17 @@ namespace Inscape.Cli {
 
             public string? HostSchema { get; set; }
 
+            public StyleProjectConfig Styles { get; set; } = new StyleProjectConfig();
+
             public UnitySampleProjectConfig UnitySample { get; set; } = new UnitySampleProjectConfig();
+
+        }
+
+        sealed class StyleProjectConfig {
+
+            public string? Editor { get; set; }
+
+            public string? Preview { get; set; }
 
         }
 

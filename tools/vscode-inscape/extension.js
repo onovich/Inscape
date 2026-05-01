@@ -14,6 +14,45 @@ const previewRefreshTimers = new Map();
 const previewRenderCache = new Map();
 const previewRenderVersions = new Map();
 const pendingPreviewReveals = new Map();
+const editorStyleStates = new Map();
+const editorStyleFileNames = new Set(["inscape.config.json", "inscape.editor-style.json", "inscape.preview-style.json"]);
+const defaultEditorStyle = Object.freeze({
+    nodeNameColor: "#d7ba7d",
+    speakerColor: "#569cd6",
+    speakerFontWeight: "600",
+    speakerTextDecoration: "none",
+    dialogueColor: "#dcdcaa",
+    dialogueTextDecoration: "none",
+    narrationColor: "#dcdcaa",
+    choicePromptColor: "#c586c0",
+    choiceTextColor: "#dcdcaa",
+    jumpTargetColor: "#4ec9b0",
+    metadataColor: "#6a9955",
+    inlineTagColor: "#6a9955"
+});
+const defaultPreviewStyle = Object.freeze({
+    fontFamily: "Inter, \"Segoe UI\", sans-serif",
+    pageBackground: "#f6f4ee",
+    textColor: "#211d18",
+    cardBackground: "#fbfaf6",
+    nodeTitleColor: "#8d846f",
+    mutedTextColor: "#8d8068",
+    toolbarButtonBackground: "#ece7db",
+    toolbarButtonHoverBackground: "#e1dacb",
+    sourceButtonBackground: "#efeadf",
+    sourceButtonHoverBackground: "#e2dccd",
+    metaBackground: "#efeadf",
+    metaTextColor: "#706754",
+    speakerColor: "#7d5a34",
+    choiceBackground: "#efeadf",
+    choicePromptColor: "#807663",
+    diagnosticBackground: "#f2e6de",
+    diagnosticTextColor: "#7f2f18",
+    storyFontSize: "28px",
+    storyLineHeight: "1.84",
+    cardRadius: "24px",
+    choiceRadius: "16px"
+});
 
 function activate(context) {
     outputChannel = vscode.window.createOutputChannel("Inscape");
@@ -29,27 +68,34 @@ function activate(context) {
         vscode.workspace.onDidChangeTextDocument((event) => {
             scheduler.schedule(event.document);
             schedulePreviewRefresh(context, event.document, 250);
+            refreshEditorStylesForDocument(context, event.document);
         }),
         vscode.workspace.onDidSaveTextDocument((document) => {
             scheduler.schedule(document, 0);
             refreshPreviewPanelsForDocument(context, document);
+            refreshEditorStylesForDocument(context, document);
+            handleStyleSupportDocumentSave(context, document);
         }),
         vscode.workspace.onDidCloseTextDocument((document) => diagnostics.delete(document.uri)),
+        vscode.window.onDidChangeVisibleTextEditors(() => refreshEditorStylesForVisibleEditors(context)),
         vscode.workspace.onDidChangeConfiguration((event) => {
             if (event.affectsConfiguration("inscape")) {
                 refreshVisibleDocuments(scheduler);
+                refreshEditorStylesForVisibleEditors(context);
             }
         }),
         vscode.languages.registerCompletionItemProvider(languageSelector, new InscapeCompletionProvider(), ">", ".", ":", "\uFF1A", "[", " "),
         vscode.languages.registerDocumentSymbolProvider(languageSelector, new InscapeDocumentSymbolProvider()),
         vscode.languages.registerDefinitionProvider(languageSelector, new InscapeDefinitionProvider()),
-        vscode.languages.registerDocumentLinkProvider(languageSelector, new InscapeDocumentLinkProvider()),
         vscode.languages.registerReferenceProvider(languageSelector, new InscapeReferenceProvider()),
         vscode.languages.registerHoverProvider(languageSelector, new InscapeHoverProvider()),
         vscode.languages.registerCodeLensProvider(languageSelector, new InscapeCodeLensProvider()),
         vscode.commands.registerCommand("inscape.showNodeIncomingReferences", (uri, position, locations) => showNodeIncomingReferences(uri, position, locations)),
         vscode.commands.registerCommand("inscape.openPreview", () => openPreview(context)),
         vscode.commands.registerCommand("inscape.togglePreview", () => togglePreview(context)),
+        vscode.commands.registerCommand("inscape.openEditorStyle", () => openEditorStyleFile()),
+        vscode.commands.registerCommand("inscape.openPreviewStyle", () => openPreviewStyleFile()),
+        vscode.commands.registerCommand("inscape.openQuickSyntaxGuide", () => openQuickSyntaxGuide()),
         vscode.commands.registerCommand("inscape.revealInPreview", (payload) => revealInPreview(context, payload)),
         vscode.commands.registerCommand("inscape.extractLocalization", () => exportLocalization(context)),
         vscode.commands.registerCommand("inscape.updateLocalization", () => updateLocalization(context)),
@@ -67,6 +113,7 @@ function activate(context) {
     );
 
     refreshVisibleDocuments(scheduler);
+    refreshEditorStylesForVisibleEditors(context);
 }
 
 function deactivate() {
@@ -308,30 +355,6 @@ class InscapeReferenceProvider {
     }
 }
 
-class InscapeDocumentLinkProvider {
-
-    provideDocumentLinks(document) {
-        if (!isInscapeDocument(document)) {
-            return undefined;
-        }
-
-        const links = [];
-        for (let lineNumber = 0; lineNumber < document.lineCount; lineNumber += 1) {
-            const range = getPreviewRevealRangeForLine(document.lineAt(lineNumber).text);
-            if (!range) {
-                continue;
-            }
-
-            const link = createPreviewRevealDocumentLink(document, lineNumber, range.start, range.end);
-            if (link) {
-                links.push(link);
-            }
-        }
-
-        return links;
-    }
-}
-
 class InscapeHoverProvider {
 
     async provideHover(document, position) {
@@ -447,6 +470,239 @@ function refreshVisibleDocuments(scheduler) {
     for (const editor of vscode.window.visibleTextEditors) {
         scheduler.schedule(editor.document, 0);
     }
+}
+
+function handleStyleSupportDocumentSave(context, document) {
+    if (!document || document.uri.scheme !== "file") {
+        return;
+    }
+
+    const fileName = path.basename(document.uri.fsPath).toLowerCase();
+    if (!editorStyleFileNames.has(fileName)) {
+        return;
+    }
+
+    refreshEditorStylesForVisibleEditors(context);
+    refreshVisiblePreviewPanels(context);
+}
+
+function refreshVisiblePreviewPanels(context) {
+    const seen = new Set();
+    for (const editor of vscode.window.visibleTextEditors) {
+        if (!isInscapeDocument(editor.document)) {
+            continue;
+        }
+
+        const key = normalizePath(editor.document.uri.fsPath);
+        if (seen.has(key)) {
+            continue;
+        }
+
+        seen.add(key);
+        refreshPreviewPanelsForDocument(context, editor.document);
+    }
+}
+
+function refreshEditorStylesForVisibleEditors(context) {
+    for (const editor of vscode.window.visibleTextEditors) {
+        applyEditorStyleSheet(context, editor);
+    }
+}
+
+function refreshEditorStylesForDocument(context, document) {
+    if (!document || document.uri.scheme !== "file") {
+        return;
+    }
+
+    for (const editor of vscode.window.visibleTextEditors) {
+        if (normalizePath(editor.document.uri.fsPath) === normalizePath(document.uri.fsPath)) {
+            applyEditorStyleSheet(context, editor);
+        }
+    }
+}
+
+async function applyEditorStyleSheet(context, editor) {
+    clearEditorStyleState(editor);
+
+    if (!editor || !isInscapeDocument(editor.document)) {
+        return;
+    }
+
+    const style = await readEditorStyleSheet(editor.document);
+    const ranges = collectEditorStyleRanges(editor.document);
+    const entries = createEditorStyleEntries(style);
+    const key = getEditorStyleStateKey(editor);
+    editorStyleStates.set(key, entries);
+
+    for (const entry of entries) {
+        editor.setDecorations(entry.decoration, ranges[entry.key] || []);
+    }
+}
+
+function getEditorStyleStateKey(editor) {
+    return editor.document.uri.toString() + "::" + String(editor.viewColumn || 0);
+}
+
+function clearEditorStyleState(editor) {
+    const key = getEditorStyleStateKey(editor);
+    const existing = editorStyleStates.get(key);
+    if (!existing) {
+        return;
+    }
+
+    editorStyleStates.delete(key);
+    for (const entry of existing) {
+        entry.decoration.dispose();
+    }
+}
+
+async function readEditorStyleSheet(document) {
+    const projectConfig = await readProjectConfig(document);
+    const configuredPath = projectConfig && projectConfig.config && projectConfig.config.styles
+        ? projectConfig.config.styles.editor
+        : undefined;
+
+    if (!projectConfig || !projectConfig.configPath || !configuredPath) {
+        return Object.assign({}, defaultEditorStyle);
+    }
+
+    const stylePath = resolveProjectConfigPath(projectConfig.configPath, configuredPath);
+    try {
+        const text = await fs.promises.readFile(stylePath, "utf8");
+        return normalizeEditorStyleSheet(JSON.parse(text));
+    } catch {
+        return Object.assign({}, defaultEditorStyle);
+    }
+}
+
+function normalizeEditorStyleSheet(value) {
+    const style = Object.assign({}, defaultEditorStyle);
+    if (!value || typeof value !== "object") {
+        return style;
+    }
+
+    for (const key of Object.keys(defaultEditorStyle)) {
+        if (typeof value[key] === "string" && value[key].trim()) {
+            style[key] = value[key].trim();
+        }
+    }
+
+    return style;
+}
+
+function createEditorStyleEntries(style) {
+    return [
+        createEditorStyleEntry("nodeName", { color: style.nodeNameColor }),
+        createEditorStyleEntry("speaker", { color: style.speakerColor, fontWeight: style.speakerFontWeight, textDecoration: style.speakerTextDecoration }),
+        createEditorStyleEntry("dialogue", { color: style.dialogueColor, textDecoration: style.dialogueTextDecoration }),
+        createEditorStyleEntry("narration", { color: style.narrationColor }),
+        createEditorStyleEntry("choicePrompt", { color: style.choicePromptColor }),
+        createEditorStyleEntry("choiceText", { color: style.choiceTextColor }),
+        createEditorStyleEntry("jumpTarget", { color: style.jumpTargetColor }),
+        createEditorStyleEntry("metadata", { color: style.metadataColor }),
+        createEditorStyleEntry("inlineTag", { color: style.inlineTagColor })
+    ];
+}
+
+function createEditorStyleEntry(key, options) {
+    return {
+        key,
+        decoration: vscode.window.createTextEditorDecorationType(options)
+    };
+}
+
+function collectEditorStyleRanges(document) {
+    const ranges = {
+        nodeName: [],
+        speaker: [],
+        dialogue: [],
+        narration: [],
+        choicePrompt: [],
+        choiceText: [],
+        jumpTarget: [],
+        metadata: [],
+        inlineTag: []
+    };
+
+    for (let lineNumber = 0; lineNumber < document.lineCount; lineNumber += 1) {
+        const text = document.lineAt(lineNumber).text;
+        if (!text || !text.trim() || /^\s*\/\//.test(text)) {
+            continue;
+        }
+
+        let match = /^(\s*)(::)(\s*)([a-z][a-z0-9_-]*(?:\.[a-z][a-z0-9_-]*)*)\s*$/.exec(text);
+        if (match) {
+            pushEditorStyleRange(ranges.nodeName, lineNumber, match.index + match[1].length + match[2].length + match[3].length, match[4].length);
+            continue;
+        }
+
+        match = /^(\s*)(@)([A-Za-z_][A-Za-z0-9_.-]*)(?:((?::|\s+).*))?$/.exec(text);
+        if (match) {
+            pushTrimmedRange(ranges.metadata, lineNumber, text, 0, text.length);
+            continue;
+        }
+
+        if (/^\s*\[[^\]\r\n]*\]\s*$/.test(text)) {
+            pushTrimmedRange(ranges.inlineTag, lineNumber, text, 0, text.length);
+            continue;
+        }
+
+        match = /^(\s*)(->)(\s*)([a-z][a-z0-9_-]*(?:\.[a-z][a-z0-9_-]*)*)\s*$/.exec(text);
+        if (match) {
+            pushEditorStyleRange(ranges.jumpTarget, lineNumber, match.index + match[1].length + match[2].length + match[3].length, match[4].length);
+            continue;
+        }
+
+        match = /^(\s*\?\s*)(.*)$/.exec(text);
+        if (match) {
+            pushTrimmedRange(ranges.choicePrompt, lineNumber, text, match[1].length, text.length);
+            continue;
+        }
+
+        match = /^(\s*-\s*)(.*?)(\s+->\s*[A-Za-z0-9_.-]+)?\s*$/.exec(text);
+        if (match) {
+            pushTrimmedRange(ranges.choiceText, lineNumber, text, match[1].length, match[1].length + match[2].length);
+            const targetIndex = text.indexOf("->", match[1].length);
+            if (targetIndex >= 0) {
+                pushTrimmedRange(ranges.jumpTarget, lineNumber, text, targetIndex + 2, text.length);
+            }
+            continue;
+        }
+
+        const dialogueSeparator = findDialogueSeparatorIndex(text);
+        if (dialogueSeparator >= 0) {
+            const speakerRange = trimRange(text, 0, dialogueSeparator);
+            const dialogueRange = trimRange(text, dialogueSeparator + 1, text.length);
+            if (speakerRange && isLikelyDialogueSpeaker(text.slice(speakerRange.start, speakerRange.end))) {
+                ranges.speaker.push(new vscode.Range(lineNumber, speakerRange.start, lineNumber, speakerRange.end));
+                if (dialogueRange) {
+                    ranges.dialogue.push(new vscode.Range(lineNumber, dialogueRange.start, lineNumber, dialogueRange.end));
+                }
+                continue;
+            }
+        }
+
+        pushTrimmedRange(ranges.narration, lineNumber, text, 0, text.length);
+    }
+
+    return ranges;
+}
+
+function pushEditorStyleRange(bucket, lineNumber, start, length) {
+    if (length <= 0) {
+        return;
+    }
+
+    bucket.push(new vscode.Range(lineNumber, start, lineNumber, start + length));
+}
+
+function pushTrimmedRange(bucket, lineNumber, text, start, end) {
+    const range = trimRange(text, start, end);
+    if (!range) {
+        return;
+    }
+
+    bucket.push(new vscode.Range(lineNumber, range.start, lineNumber, range.end));
 }
 
 async function exportLocalization(context) {
@@ -1030,6 +1286,111 @@ async function selectWorkspaceFolder() {
     });
 
     return selected ? selected.folder : undefined;
+}
+
+async function resolvePreferredWorkspaceFolder() {
+    const activeDocument = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.document : undefined;
+    if (activeDocument) {
+        const folder = vscode.workspace.getWorkspaceFolder(activeDocument.uri);
+        if (folder) {
+            return folder;
+        }
+    }
+
+    return selectWorkspaceFolder();
+}
+
+async function openEditorStyleFile() {
+    const workspaceFolder = await resolvePreferredWorkspaceFolder();
+    if (!workspaceFolder) {
+        return;
+    }
+
+    const stylePath = await ensureStyleSupportFile(workspaceFolder, "editor");
+    if (!stylePath) {
+        return;
+    }
+
+    await openFilePath(stylePath);
+}
+
+async function openPreviewStyleFile() {
+    const workspaceFolder = await resolvePreferredWorkspaceFolder();
+    if (!workspaceFolder) {
+        return;
+    }
+
+    const stylePath = await ensureStyleSupportFile(workspaceFolder, "preview");
+    if (!stylePath) {
+        return;
+    }
+
+    await openFilePath(stylePath);
+}
+
+async function openQuickSyntaxGuide() {
+    const workspaceFolder = await resolvePreferredWorkspaceFolder();
+    if (!workspaceFolder) {
+        return;
+    }
+
+    await openFilePath(path.join(workspaceFolder.uri.fsPath, "README.md"));
+}
+
+async function ensureStyleSupportFile(workspaceFolder, kind) {
+    const workspacePath = workspaceFolder.uri.fsPath;
+    const configPath = path.join(workspacePath, "inscape.config.json");
+    let config = {};
+
+    if (fs.existsSync(configPath)) {
+        try {
+            config = JSON.parse(await fs.promises.readFile(configPath, "utf8"));
+        } catch {
+            config = {};
+        }
+    }
+
+    if (!config.styles || typeof config.styles !== "object") {
+        config.styles = {};
+    }
+
+    const defaultRelativePath = kind === "editor"
+        ? path.join("config", "inscape.editor-style.json")
+        : path.join("config", "inscape.preview-style.json");
+    const configuredRelativePath = typeof config.styles[kind] === "string" && config.styles[kind].trim()
+        ? config.styles[kind].trim()
+        : defaultRelativePath;
+    const targetPath = path.isAbsolute(configuredRelativePath)
+        ? configuredRelativePath
+        : path.resolve(path.dirname(configPath), configuredRelativePath);
+
+    config.styles[kind] = path.isAbsolute(configuredRelativePath)
+        ? configuredRelativePath
+        : configuredRelativePath.replace(/\\/g, "/");
+
+    if (!fs.existsSync(configPath)) {
+        await fs.promises.writeFile(configPath, JSON.stringify(config, null, 2) + "\n", "utf8");
+    } else {
+        await fs.promises.writeFile(configPath, JSON.stringify(config, null, 2) + "\n", "utf8");
+    }
+
+    await fs.promises.mkdir(path.dirname(targetPath), { recursive: true });
+    if (!fs.existsSync(targetPath)) {
+        const content = kind === "editor"
+            ? JSON.stringify(defaultEditorStyle, null, 2) + "\n"
+            : JSON.stringify(defaultPreviewStyle, null, 2) + "\n";
+        await fs.promises.writeFile(targetPath, content, "utf8");
+    }
+
+    return targetPath;
+}
+
+async function openFilePath(filePath) {
+    const document = await vscode.workspace.openTextDocument(vscode.Uri.file(filePath));
+    await vscode.window.showTextDocument(document, {
+        preview: false,
+        preserveFocus: false
+    });
 }
 
 async function showHostSchemaCapabilities() {
@@ -2353,42 +2714,6 @@ function getHostBindingAtPosition(document, position) {
     return undefined;
 }
 
-function getPreviewRevealRangeForLine(line) {
-    if (!line || !line.trim()) {
-        return undefined;
-    }
-
-    const trimmed = line.trim();
-    if (trimmed.startsWith("//") || trimmed.startsWith("::") || trimmed.startsWith("@") || trimmed.startsWith("->")) {
-        return undefined;
-    }
-
-    const speakerMatch = /^\s*([^:\uFF1A]+?)[ \t]*[:\uFF1A](.*)$/.exec(line);
-    if (speakerMatch && isLikelyDialogueSpeaker(speakerMatch[1].trim())) {
-        const colonIndex = findDialogueSeparatorIndex(line);
-        return trimRange(line, colonIndex + 1, line.length);
-    }
-
-    const choicePromptMatch = /^(\s*\?\s*)(.*)$/.exec(line);
-    if (choicePromptMatch) {
-        return trimRange(line, choicePromptMatch[1].length, line.length);
-    }
-
-    const choiceOptionMatch = /^(\s*-\s*)(.*)$/.exec(line);
-    if (choiceOptionMatch) {
-        const optionStart = choiceOptionMatch[1].length;
-        const targetIndex = line.indexOf("->", optionStart);
-        const optionEnd = targetIndex >= 0 ? targetIndex : line.length;
-        return trimRange(line, optionStart, optionEnd);
-    }
-
-    if (/^\s*\[[^\]]+\]\s*$/.test(line)) {
-        return undefined;
-    }
-
-    return trimRange(line, 0, line.length);
-}
-
 function findDialogueSeparatorIndex(line) {
     const halfWidth = line.indexOf(":");
     const fullWidth = line.indexOf("\uFF1A");
@@ -2420,24 +2745,6 @@ function trimRange(line, start, end) {
     }
 
     return { start: rangeStart, end: rangeEnd };
-}
-
-function createPreviewRevealDocumentLink(document, line, startCharacter, endCharacter) {
-    if (endCharacter <= startCharacter) {
-        return undefined;
-    }
-
-    const payload = {
-        sourcePath: document.uri.fsPath,
-        line,
-        character: startCharacter,
-        length: endCharacter - startCharacter
-    };
-
-    const target = vscode.Uri.parse("command:inscape.revealInPreview?" + encodeURIComponent(JSON.stringify([payload])));
-    const link = new vscode.DocumentLink(new vscode.Range(line, startCharacter, line, endCharacter), target);
-    link.tooltip = "Ctrl+Click 打开或刷新 Inscape 预览，并定位到这里。";
-    return link;
 }
 
 function isJumpReferenceLine(line) {
