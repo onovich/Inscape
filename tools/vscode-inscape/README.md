@@ -13,6 +13,7 @@ This is the first lightweight authoring layer for `.inscape` scripts. It keeps s
 - Provides dialogue speaker completions from `inscape.config.json` `bird.roleMap`, with workspace speaker fallback.
 - Provides host binding alias completions from `inscape.config.json` `bird.bindingMap` for `@timeline ...`, `@timeline.<phase> ...`, and `[kind: ...]` inline tag positions.
 - Supports Go to Definition / Ctrl+Click from jump targets to node declarations, and from dialogue speakers to configured role-map rows with dialogue-reference fallback.
+- Treats full-width colons and common Chinese punctuation as word boundaries so Ctrl+Click link styling on Chinese dialogue only covers the speaker name.
 - Supports Find All References from node declarations, jump targets, and dialogue speakers.
 - Shows node CodeLens entries as `N 个引用` on the referenced block header; clicking opens VSCode References Peek for incoming jumps.
 - Shows concise hover summaries for node declarations, jump targets, dialogue speakers, and host binding aliases.
