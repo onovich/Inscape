@@ -112,6 +112,24 @@ Adapter 负责项目绑定，不反向污染 Core。
 - `UnitySample` 和 Bird 只能作为样例或适配包，不应进入 Core 命名。
 - Host Bridge 应以数据配置和代码生成驱动，而不是把项目内部 ID 写死在 DSL 或 Core 中。
 
+### 模块前缀命名
+
+同一个模块内的类型名应优先使用“模块短前缀”，不要再重复产品前缀或命名空间前缀。这样可以让目录、命名空间和类型名各自承担不同信息：目录表示位置，namespace 表示边界，类型名前缀表示模块职责。
+
+推荐规则：
+
+- 测试模块用 `Test*`，例如 `TestCore`。
+- CLI 模块用 `Cli*`，例如 `CliCore`、`CliCommandCatalog`、`CliPreviewHtmlRenderer`。
+- VSCode/Tooling 模块优先用 `Vscode*` 或更具体的职责前缀，例如 `VscodePreviewBridge`、`VscodeDefinitionProvider`。
+- 对外门面入口统一用 `Core` 结尾，例如 `TestCore`、`CliCore`、`NarrativeRuntime` 的未来入口也应避免叫 `Program`。
+- 文件名与主要 public 类型同名，且命名变更时文件名、类型名、引用一并更新。
+
+约束：
+
+- 不再使用 `InscapeCli*`、`InscapeTest*` 这类重复产品前缀的类型名。
+- 当模块已经足够明确时，类名不需要再重复 `Inscape`。
+- 如果一个模块确实需要跨项目复用，优先用职责前缀而不是产品前缀。
+
 ### Runtime 层（未来）
 
 当 roadmap 进入 Runtime Host 或独立运行时，应引入游戏项目更熟悉的生命周期式入口。
