@@ -38,6 +38,8 @@ flowchart LR
 - 状态变更通过 Action 或 Command 进入 Store，不允许任意系统直接改写叙事状态。
 - 本地化、存档和热重载都必须能追溯到同一套锚点机制。
 - 变量和状态查询只在 DSL 中表达，由宿主层根据 Schema 解析并绑定具体业务来源。
+- 宿主对象、资源、Item 和事件处理器通过桥接层映射到具体项目；Inscape 内 ID 不要求等同于项目内部 ID。
+- Bird、Addressables 和 ScriptableObject 只能作为参考适配路径，不能成为 Core 或通用 Runtime Host 的默认依赖。
 
 ## 技术选型状态
 
@@ -60,8 +62,8 @@ flowchart LR
 
 - 前期宿主：Unity。具体版本需确认，当前材料中“Unity 6”和“2023 LTS”存在版本表达不一致。
 - 数据流：Command Pattern Pipeline 为优先候选；Entitas ECS 保留为复杂项目候选。
-- 资产管理：Addressables 候选，用于立绘、背景、音频和视频加载。
-- Bird 现有系统：当前 Unity 项目中 StorySystem 更接近对话图执行层，DirectorSystem 更接近带时间的演出队列。Inscape 第一阶段应优先编译到 StoryGraph IR，并保留映射到 StorySystem/Talking 数据的适配层；Timeline 先作为外部资源 hook 引用，manifest 可表达 phase，但除 `talking.exit` 外不直接生成 Bird effect。
+- 资产管理：Addressables 只是 Unity 项目候选方案之一；不同项目可能使用 Resources、自研资源表、ScriptableObject、JSON、数据库、Godot Resource、UE DataAsset 或服务端配置。
+- Bird 现有系统：当前 Unity 项目中 StorySystem 更接近对话图执行层，DirectorSystem 更接近带时间的演出队列。Bird 适配用于验证项目桥接层，不代表 Inscape 的通用 Unity 运行时形态；Timeline 先作为宿主事件 / 外部资源引用示例，manifest 可表达 phase，但不应把 Bird effect 作为 DSL 语义。
 
 ## 编译数据流
 
@@ -95,5 +97,6 @@ flowchart LR
 - 哈希锚点是否应该分为文本锚点、节点锚点和语义锚点。
 - IR 是否需要保持人类可读，还是优先二进制体积和加载速度。
 - Unity 插件和独立编辑器之间如何共享 Compiler Core。
+- Unity 上层支持是否作为独立插件项目维护，以及如何通过配置、代码扫描和代码生成适配不同项目已有数据结构。
 - 扩展指令是编译期注册、运行时注册，还是两者都支持。
 - Bird 的 Timeline 数据是否应该由 DSL 直接生成，还是保持为外部可引用演出资源。

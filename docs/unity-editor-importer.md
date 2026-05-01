@@ -2,15 +2,17 @@
 
 状态：原型草案
 
-最后更新：2026-04-29
+最后更新：2026-05-01
 
-本文记录 Inscape 到 Bird Unity 项目的第一版 Editor Importer 方案。当前仓库提供可复制脚本：
+本文记录 Inscape 到 Bird Unity 项目的第一版 Editor Importer 方案。它是 Bird-specific 参考适配器，不是通用 Unity 插件方案。当前仓库提供可复制脚本：
 
 ```text
 tools/unity-bird-importer/Editor/InscapeBirdManifestImporter.cs
 ```
 
-该脚本不属于 `Inscape.Core`，也不会让 Core 依赖 Unity。它是 `export-bird-project` 之后的 Unity 侧导入工具草案。
+该脚本不属于 `Inscape.Core`，也不会让 Core 依赖 Unity。它是 `export-bird-project` 之后的 Unity 侧导入工具草案，用于验证一个项目适配器如何把 Inscape 数据转成项目已有数据结构。
+
+通用 Unity 支持层后续应作为独立插件 / 适配包研究，不混在 VSCode 扩展中。它应以通用 IR、Host Schema 和 Host Bridge 配置为输入，再按项目选择 ScriptableObject、JSON、Addressables、自研资源表、代码生成或调用项目已有 importer。
 
 ## 输入
 
@@ -226,7 +228,9 @@ Addressables 结果：
 
 ## 后续建议
 
-1. 增加字段级 diff UI：展示每个 `TalkingTM` 即将改动的字段，并允许人工确认。
-2. 设计 `L10N_Talking.csv` 合并策略，避免覆盖人工译文。
-3. 接入 Addressables：生成后自动加入 Bird 的 `TM_TALKING` 分组。
-4. 基于 Bird/DirectorSystem 运行时语义决定是否实现 talking enter、node enter、node exit 的真实导入。
+1. 先沉淀 Bird 项目的提交 / 清理策略，避免试跑资源、Addressables 修改和正式项目资源混在一起。
+2. 增加字段级 diff UI：展示每个 `TalkingTM` 即将改动的字段，并允许人工确认。
+3. 设计 `L10N_Talking.csv` 合并策略，避免覆盖人工译文。
+4. Addressables 继续保持显式开关；它是 Bird 当前项目能力，不应作为通用 Unity 插件强依赖。
+5. 基于 Bird/DirectorSystem 运行时语义决定是否实现 talking enter、node enter、node exit 的真实导入。
+6. 在通用 Unity 插件进入实现前，先研究配置、智能识别、Attribute 扫描和代码生成如何适配不同项目已有数据结构。

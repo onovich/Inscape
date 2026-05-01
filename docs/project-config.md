@@ -2,7 +2,7 @@
 
 状态：原型草案
 
-最后更新：2026-04-30
+最后更新：2026-05-01
 
 Inscape CLI 会在项目根目录自动读取：
 
@@ -49,6 +49,8 @@ inscape.config.json
 
 ## 设计边界
 
-这份配置不是最终宿主 Schema。它只是第一版“项目级默认值”，用于把当前 CSV 和 Bird 项目路径稳定下来。后续如果引入宿主 Schema，应考虑把角色、资源、Timeline、查询函数、回调事件等统一纳入更正式的配置或生成流程。
+这份配置不是最终宿主 Schema，也不是最终 Host Bridge。它只是第一版“项目级默认值”，用于把当前 CSV 和 Bird 项目路径稳定下来。后续如果引入宿主 Schema / Host Bridge，应考虑把角色、资源、Timeline、查询函数、回调事件和 Inscape ID 到项目内部 ID 的映射纳入更正式的配置或生成流程。
 
 当前 `hostSchema` 是这个方向的第一步，详见 [宿主 Schema 草案](host-schema.md)。它用于描述查询函数和宿主事件清单，不替代 Bird 的 `roleMap` / `bindingMap`。
+
+`bird.bindingMap` 目前可以视为 Host Bridge 的 Bird-specific 早期形态：它把 Inscape 侧可读别名映射到 Bird 整数 ID、Unity guid、Addressables key 或 asset path。通用 Host Bridge 后续需要支持更多项目和引擎，不应假设所有项目都使用 Bird、Addressables 或 ScriptableObject。

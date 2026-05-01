@@ -8,11 +8,12 @@
 
 下一位接手者建议按以下顺序推进：
 
-1. 决定 Bird 项目内 importer 与生成的 `InscapeGenerated` 资源是否提交，或先清理后保留 Inscape 侧原型。
-2. 用带真实绑定的 `@timeline.talking.exit` 样例在 Bird 项目中试跑 Import，验证 `TalkingSO.effects` 与 `TimelineSO` 解析。
-3. 设计本地化模糊匹配与人工确认报告，不要直接自动复用相似文本译文。
-4. 收敛第一版块语法：继续使用 `:: node.name`，还是转向 `# 标题` + 空行分块。
-5. 等条件 / 事件语法更明确后，将宿主 Schema query / event 接入 `.inscape` 脚本内补全与 Hover。
+1. 设计 Host Bridge 草案：解决 Inscape 可读 ID 与项目内部 ID / 资源 / 事件处理器的映射，不被 Bird、Addressables 或 ScriptableObject 绑定。
+2. 将 Timeline Hook 的长期模型重述为宿主自定义事件示例，保留 Bird `@timeline.talking.exit` 作为参考验证路径。
+3. 决定 Bird 项目内 importer 与生成的 `InscapeGenerated` 资源是否提交，或先清理后保留 Inscape 侧原型。
+4. 用带真实绑定的 `@timeline.talking.exit` 样例在 Bird 项目中试跑 Import，验证 Bird-specific `TalkingSO.effects` 与 `TimelineSO` 解析。
+5. 设计本地化模糊匹配与人工确认报告，不要直接自动复用相似文本译文。
+6. 收敛第一版块语法：继续使用 `:: node.name`，还是转向 `# 标题` + 空行分块。
 
 ## 文档与接手效率
 
@@ -123,5 +124,7 @@
 - [ ] 对比 Yarn、Ink、Ren'Py、Twine 的变量、函数和宿主 API 边界。
 - [ ] 设计表达式只表达数据查询的模型，不在 DSL 中绑定具体业务实体或服务端。
 - [x] 设计宿主查询 Schema 草案：谓词名、参数类型、返回类型、同步/异步、事件清单和副作用边界。
+- [x] 明确 Host Schema / Host Bridge 边界：Inscape 内 ID 可读且抽象，项目内部 ID、资源坐标和事件处理器由桥接层映射。
+- [ ] 设计 Host Bridge 配置草案，覆盖 Inscape ID 到项目 ID、资源引用、宿主事件处理器和查询实现的映射。
 - [ ] 明确查询表达式是否允许副作用。当前倾向是不允许。
 - [ ] 设计宿主查询 / 回调 / 事件清单的注册或代码生成策略，避免 DSL 直接控制反转进业务层。

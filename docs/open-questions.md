@@ -25,7 +25,12 @@
    - 当前材料同时出现 Unity 6 与 2023 LTS，需要统一表达和兼容策略。
 
 6. Bird Adapter 的第一版输出协议是什么？
-   - 初步确认第一版优先映射 Talking/L10N，Timeline 只做外部引用；manifest、ID 分配、角色/资源绑定和 Unity Editor Importer 已有原型，但仍需确认 Bird 项目内提交策略与真实导入边界。
+   - 初步确认第一版优先映射 Talking/L10N，Timeline 只做外部引用；manifest、ID 分配、角色/资源绑定和 Unity Editor Importer 已有原型，但仍需确认 Bird 项目内提交策略与真实导入边界。Bird 只是参考适配器，不应决定通用 Unity 支持层边界。
+
+7. Host Bridge 如何设计？
+   - 需要解决 Inscape 可读 ID 与项目内部 ID 不一致的问题，例如 `hasItem("badge")` 在项目中可能对应整数、枚举、GUID 或服务器主键。
+   - 需要明确哪些内容属于 Host Schema 能力清单，哪些属于资源 / 对象 / 事件处理器映射，哪些可以通过代码生成或项目扫描自动生成。
+   - 需要保证 Inscape 下层状态只被上层查询或内部使用，不反向查询上层业务。
 
 ## 语法设计
 
@@ -34,6 +39,7 @@
 - 缩进是否有语义；当前倾向是不让缩进承载核心语义。
 - 是否支持 `# 标题` 作为块标题；如果支持，空白台词或空白段落如何显式表示。
 - 第一版暂不设计条件块；第二版需要确认表达式和宿主查询 Schema。
+- 条件表达式候选可类似 `?hasItem("badge")->node`，但参数 ID 必须允许通过 Host Bridge 映射到项目内部编码。
 - 选项语法如何兼顾阅读和结构化。
 - 标签参数是否支持命名参数。
 - 第一版暂不支持作者自定义标签；后续需确认它属于节点元信息、宿主命令还是 Timeline 效果。
@@ -71,10 +77,11 @@
 - 第二版查询/回调方案更适合哪种模型：底层回调、宿主注册 Schema、轮询读取状态，还是混合方案。当前已有 `inscape.host-schema` 草案，但还没有决定运行时绑定方式。
 - 宿主事件清单是否由编译器/烘焙器自动生成，而不是人工维护。
 - 是否需要一定程度的代码生成，强制把 DSL 用到的查询 Func / 回调 Action 注册到宿主层。
-- Unity Addressables 是否作为第一版强依赖。
-- Timeline 第一版作为外部资源引用，Hook phase 已支持 `talking.enter` / `talking.exit` / `node.enter` / `node.exit`；后续仍需确认非 `talking.exit` 的 Bird 运行时落地方式，以及是否演化为 Presentation IR。
+- Unity Addressables 不应作为第一版强依赖；需研究 Unity 插件如何适配不同项目的资源管理方案。
+- Timeline 第一版作为外部资源引用，Hook phase 已支持 `talking.enter` / `talking.exit` / `node.enter` / `node.exit`；后续仍需确认非 `talking.exit` 的 Bird 运行时落地方式。长期更通用的模型可能是宿主自定义事件，而不是内建 Timeline 机制。
 - Bird 的 `talkingId` / `timelineId` 如何分配，是否需要项目级 ID 范围。
 - 角色名、资源别名和 Timeline 名称如何绑定到宿主 ID 或 Unity 资源引用。
+- Unity 上层支持层是否应作为独立插件项目，以及如何通过配置、智能识别、Attribute 扫描或代码生成匹配不同项目已有代码结构。
 
 ## 本地化
 

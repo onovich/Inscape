@@ -2,9 +2,11 @@
 
 状态：原型基线
 
-最后更新：2026-04-29
+最后更新：2026-05-01
 
-本文记录第一版 Bird 导出原型。它用于验证 Inscape Project IR 能否低侵入地转换为 Bird 当前可消费的数据，不代表最终 Unity 导入流程。
+本文记录第一版 Bird 导出原型。它用于验证 Inscape Project IR 能否低侵入地转换为 Bird 当前可消费的数据，不代表最终 Unity 导入流程，也不代表 Inscape 只能服务 Bird、Addressables 或 ScriptableObject 项目。
+
+Bird 在这里是一个真实需求方和参考适配器：它帮助暴露角色 ID、Timeline 资源、L10N 表、TalkingSO 等项目桥接问题。通用方案应抽象为 Host Schema / Host Bridge / 项目 Adapter，而不是把 Bird 的数据结构写进 Core。
 
 ## CLI
 
@@ -42,7 +44,7 @@ dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-role-temp
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-project samples --bird-existing-talking-root D:\UnityProjects\Bird\Assets\Resources_Runtime\Talking -o artifacts\bird-export
 ```
 
-可选提供宿主绑定表，把 Inscape 使用的资源别名 / Timeline 名称映射到 Bird 整数 ID 与 Unity 资源引用：
+可选提供宿主绑定表，把 Inscape 使用的资源别名 / Timeline 名称映射到 Bird 整数 ID 与 Unity 资源引用。这里的 CSV 是 Host Bridge 的 Bird-specific 早期形态，用于解决 Inscape 可读别名与项目内部 ID / 资源坐标不一致的问题：
 
 ```powershell
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-project samples --bird-binding-map config\bird-bindings.csv -o artifacts\bird-export
@@ -133,7 +135,7 @@ portrait,naruhodo.normal,,cccccccccccccccccccccccccccccccc,Portrait/Naruhodo/Nor
 字段说明：
 
 - `kind`：绑定类型。当前不做枚举锁死，建议使用 `timeline`、`background`、`portrait`、`item`、`audio` 等小写类型。
-- `alias`：Inscape 侧稳定别名，后续 Timeline hook 或资源 hook 会引用它。
+- `alias`：Inscape 侧稳定别名，后续宿主事件、Timeline hook 或资源 hook 会引用它。它不要求与项目内部 ID 相同。
 - `birdId`：Bird 侧整数 ID。对 `timeline` 来说对应 `TimelineTM.timelineId`；对其他资源类型可按 Bird 现有模板含义填写。
 - `unityGuid`：Unity `.meta` guid，用于未来 Importer 定位 ScriptableObject 或资源。
 - `addressableKey`：Addressables key，适合运行时按 key 加载的资源。
@@ -221,7 +223,7 @@ dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- merge-bird-l10n artif
 - `--bird-role-map` 会把对白 speaker 映射为 Bird `roleId`，并写入 `roles` 和对应 `talkings`。
 - `--bird-binding-map` 会把资源别名、Timeline 名称和 Unity 资源坐标写入 manifest 的 `hostBindings`，供后续 Unity Editor Importer 和 Timeline hook 使用。
 - `export-bird-binding-template` 会从项目 metadata 中收集 Timeline Hook，并生成待补全的 `--bird-binding-map` 模板；配合 `--bird-existing-timeline-root` 时会尽量从现有 `TimelineSO` 资源自动填表。
-- `@timeline alias` 和 `[timeline: alias]` 会写入 manifest 的 `hostHooks`，默认导出为 `kind=timeline`、`phase=talking.exit`，并尽量通过 `hostBindings` 解析 `birdId` / Unity 坐标。
+- `@timeline alias` 和 `[timeline: alias]` 会写入 manifest 的 `hostHooks`，默认导出为 `kind=timeline`、`phase=talking.exit`，并尽量通过 `hostBindings` 解析 `birdId` / Unity 坐标。长期方向是把“触发 Timeline”泛化为宿主事件示例，而不是把 Timeline 做成唯一内建演出机制。
 - Timeline Hook 可显式写 phase：`@timeline.talking.enter alias`、`@timeline.talking.exit alias`、`@timeline.node.enter alias`、`@timeline.node.exit alias`，或对应的 `[timeline.node.exit: alias]`。导出时 `talking.exit` 挂最近前一条 talking，`talking.enter` 挂后续下一条 talking，`node.enter` / `node.exit` 分别挂节点首尾 talking。
 - `--bird-existing-talking-root` 会递归扫描 `.asset` 文件中的 `talkingId:`，顺序分配新 ID 时自动跳过已占用值。
 - 重复 `kind + alias` 的 host binding 会产生 `BIRD001` warning。
@@ -238,11 +240,14 @@ dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- merge-bird-l10n artif
 - 选择项文本目前进入 manifest 和锚点映射表，但不进入 `L10N_Talking.csv`，因为 Bird 当前 `TalkingOptionTM.optionText` 是结构字段，不是 `L10N.Talking_Get` 坐标。
 - 尚未合并多段文本到同一个 `talkingId + <pr>` 单元格。
 - 角色、资源、Timeline 目前仅有 CSV 绑定表，还没有项目配置文件或正式宿主 Schema。
+- 当前绑定表只覆盖 Bird 需要的字段，不代表通用 Host Bridge 的最终格式。
 - `talkingId` 只支持给定起点后顺序分配；可以扫描现有 Talking 资源避让冲突，但还没有全项目 ID 范围配置。
 
 ## 下一步
 
-- 用带真实绑定的 `@timeline.talking.exit` 样例在 Bird 项目中试跑 Import，验证 `TalkingSO.effects` 与 `TimelineSO` 解析。
+- 用带真实绑定的 `@timeline.talking.exit` 样例在 Bird 项目中试跑 Import，验证 Bird-specific `TalkingSO.effects` 与 `TimelineSO` 解析。
 - 评估 `talking.enter`、`node.enter`、`node.exit` 是否需要 Bird 运行时或 importer 扩展，暂不把它们自动落为 `TalkingEffectTM`。
+- 设计通用 Host Bridge 草案，明确 Inscape 可读 ID 到项目内部 ID / 资源 / 处理器的映射方式。
+- 将 Timeline Hook 的长期模型转为宿主事件：Bird 可以保留 `timeline` 示例，但通用层应允许策划自定义事件和参数。
 - 决定选择项文本长期如何本地化：保留在 `TalkingOptionTM.optionText`，还是扩展 Bird L10N。
 - 评估是否把连续同配置文本合并为 `<pr>`，减少 `TalkingSO` 数量。
