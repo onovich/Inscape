@@ -8,12 +8,13 @@
 
 下一位接手者建议按以下顺序推进：
 
-1. 设计 Host Bridge 草案：解决 Inscape 可读 ID 与项目内部 ID / 资源 / 事件处理器的映射，不被 Bird、Addressables 或 ScriptableObject 绑定。
-2. 将 Timeline Hook 的长期模型重述为宿主自定义事件示例，保留 Bird `@timeline.talking.exit` 作为参考验证路径。
-3. 决定 Bird 项目内 importer 与生成的 `InscapeGenerated` 资源是否提交，或先清理后保留 Inscape 侧原型。
-4. 用带真实绑定的 `@timeline.talking.exit` 样例在 Bird 项目中试跑 Import，验证 Bird-specific `TalkingSO.effects` 与 `TimelineSO` 解析。
-5. 设计本地化模糊匹配与人工确认报告，不要直接自动复用相似文本译文。
-6. 收敛第一版块语法：继续使用 `:: node.name`，还是转向 `# 标题` + 空行分块。
+1. 做 VSCode 可玩预览视图：复用项目级 IR / HTML 预览逻辑，在编辑器内像玩文字游戏一样体验当前剧情流程。
+2. 设计 Host Bridge 草案：解决 Inscape 可读 ID 与项目内部 ID / 资源 / 事件处理器的映射，不被 UnitySample、Addressables 或 ScriptableObject 绑定。
+3. 调研 Unity `[Inscape]` Attribute 扫描与 Unity 内代码生成：生成待配置桥接表，再由人工完成 C# 成员与 Inscape 名称映射。
+4. 将 `Inscape.Adapters.UnitySample` 作为实验样例继续隔离，后续验证它能否由 Host Bridge 配置和代码生成替代。
+5. 决定 Bird 项目内 importer 与生成的 `InscapeGenerated` 资源是否提交，或先清理后保留 Inscape 侧原型。
+6. 设计本地化模糊匹配与人工确认报告，不要直接自动复用相似文本译文。
+7. 收敛第一版块语法：继续使用 `:: node.name`，还是转向 `# 标题` + 空行分块。
 
 ## 文档与接手效率
 
@@ -22,6 +23,7 @@
 - [x] 完成 GitHub Copilot 接手巡检，记录当前 HEAD、未提交变更和验证结果。
 - [x] 沉淀 DSL 生态定位对比，明确 Yarn / Ink / Ren'Py / Arcweave / articy 等方案的分层参照关系。
 - [x] 建立 CLI 命令速查清单，并让 CLI 支持 `commands` / `help <command>` 终端查询。
+- [x] 将固定 Unity 项目适配 spike 从 `Inscape.Core` 迁出为 `Inscape.Adapters.UnitySample` 实验样例，并明确它不是最终 Host Bridge。
 - [ ] 每次完成阶段性提交后，同步更新 [Agent 接手指南](agent-handoff.md) 的当前快照。
 
 ## 阶段 1：DSL 与轻工具链
@@ -61,6 +63,7 @@
 - [x] 修正 VSCode `wordPattern`，把全角冒号和常见中文标点视为词边界，避免 Ctrl+Click 角色名时把整行对白标为可跳转范围。
 - [x] 添加 block 级 CodeLens 双向导航：`入边` 追溯调用方，`出边` 跳转被调用方。
 - [x] 为宿主 Schema 文件提供 VSCode JSON Schema 校验，并增加命令查看当前 query / event 清单。
+- [ ] 实现 VSCode WebView 可玩预览视图，复用 CLI / Core 的项目级编译结果，并支持选项点击、Back、Restart、路径记录和源位置回跳的后续扩展。
 - [ ] 设计 Language Server 能力范围：补全、诊断、跳转定义、引用查找、大纲、悬浮说明。
 - [x] 设计补全数据来源：当前文件节点、项目节点、角色表、宿主绑定表、宿主 Schema 查询 / 事件清单。
 - [ ] 将 `hostSchema` 中的查询 / 事件清单接入 `.inscape` 脚本补全与 Hover，但不改变当前 DSL 编译语义。
@@ -126,5 +129,8 @@
 - [x] 设计宿主查询 Schema 草案：谓词名、参数类型、返回类型、同步/异步、事件清单和副作用边界。
 - [x] 明确 Host Schema / Host Bridge 边界：Inscape 内 ID 可读且抽象，项目内部 ID、资源坐标和事件处理器由桥接层映射。
 - [ ] 设计 Host Bridge 配置草案，覆盖 Inscape ID 到项目 ID、资源引用、宿主事件处理器和查询实现的映射。
+- [ ] 调研 Unity `[Inscape]` Attribute 扫描和 Unity Editor 代码生成流程，生成待配置 Host Bridge 表并保留人工确认步骤。
+- [ ] 设计 Host Bridge 到 adapter 代码生成的最小闭环，用 UnitySample 当前输出作为回归样例，逐步替代硬编码样例结构。
+- [ ] 明确 Unity 上层消费事件数据的模型：直接事件绑定、轮询叙事状态，还是混合模式。
 - [ ] 明确查询表达式是否允许副作用。当前倾向是不允许。
 - [ ] 设计宿主查询 / 回调 / 事件清单的注册或代码生成策略，避免 DSL 直接控制反转进业务层。

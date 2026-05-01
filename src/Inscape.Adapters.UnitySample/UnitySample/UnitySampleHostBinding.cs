@@ -1,12 +1,12 @@
-namespace Inscape.Core.Bird {
+﻿namespace Inscape.Adapters.UnitySample {
 
-    public sealed class BirdHostBinding {
+    public sealed class UnitySampleHostBinding {
 
         public string Kind { get; set; }
 
         public string Alias { get; set; }
 
-        public int? BirdId { get; set; }
+        public int? UnitySampleId { get; set; }
 
         public string UnityGuid { get; set; }
 
@@ -14,10 +14,10 @@ namespace Inscape.Core.Bird {
 
         public string AssetPath { get; set; }
 
-        public BirdHostBinding() {
+        public UnitySampleHostBinding() {
             Kind = string.Empty;
             Alias = string.Empty;
-            BirdId = null;
+            UnitySampleId = null;
             UnityGuid = string.Empty;
             AddressableKey = string.Empty;
             AssetPath = string.Empty;
@@ -26,3 +26,4 @@ namespace Inscape.Core.Bird {
     }
 
 }
+

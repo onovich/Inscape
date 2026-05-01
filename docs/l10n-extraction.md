@@ -91,12 +91,12 @@ ID,ZH_CN,EN_US,ES_ES
 因此，Inscape 后续需要区分两种表：
 
 - Inscape 源本地化表：服务翻译流转、文本修订和审校，核心键是 `anchor`。
-- Bird 运行时本地化表：服务 Bird 当前运行时读取，核心键是 `talkingId + talkingIndex`。
+- 宿主运行时本地化表：服务具体项目当前运行时读取，核心键可能是 `talkingId + talkingIndex`、资源 ID、数据库主键或其他项目坐标。
 
-建议后续 Bird Adapter 生成一个 manifest，记录 `anchor -> talkingId/index`，避免为了兼容 Bird 而牺牲 Inscape 行级 hash 的长期稳定性。
+建议后续 Host Bridge / Adapter 生成一个 manifest 或映射表，记录 `anchor -> 项目运行时坐标`，避免为了兼容某个项目而牺牲 Inscape 行级 hash 的长期稳定性。
 
-当前 `export-bird-project` 原型已经生成：
+当前 `export-unity-sample-project` 实验样例已经生成：
 
-- `L10N_Talking.csv`：Bird 运行时读取表。
-- `inscape-bird-l10n-map.csv`：Inscape `anchor` 到 Bird 坐标的审校映射。
-- `bird-manifest.json`：包含同样的 localization 映射，供 Unity Editor Importer 使用。
+- `L10N_Talking.csv`：样例运行时读取表。
+- `inscape-unity-sample-l10n-map.csv`：Inscape `anchor` 到样例坐标的审校映射。
+- `unity-sample-manifest.json`：包含同样的 localization 映射，供后续 adapter / importer 实验使用。

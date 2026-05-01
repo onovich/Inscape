@@ -1,8 +1,8 @@
-using Inscape.Core.Model;
+﻿using Inscape.Core.Model;
 
-namespace Inscape.Core.Bird {
+namespace Inscape.Adapters.UnitySample {
 
-    public sealed class BirdExportWarning {
+    public sealed class UnitySampleExportWarning {
 
         public string Code { get; set; }
 
@@ -10,13 +10,13 @@ namespace Inscape.Core.Bird {
 
         public SourceSpan Source { get; set; }
 
-        public BirdExportWarning() {
+        public UnitySampleExportWarning() {
             Code = string.Empty;
             Message = string.Empty;
             Source = SourceSpan.Empty;
         }
 
-        public BirdExportWarning(string code, string message, SourceSpan source) {
+        public UnitySampleExportWarning(string code, string message, SourceSpan source) {
             Code = code;
             Message = message;
             Source = source;
@@ -25,3 +25,4 @@ namespace Inscape.Core.Bird {
     }
 
 }
+

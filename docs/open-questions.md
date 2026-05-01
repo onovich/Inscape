@@ -77,6 +77,8 @@
 - 第二版查询/回调方案更适合哪种模型：底层回调、宿主注册 Schema、轮询读取状态，还是混合方案。当前已有 `inscape.host-schema` 草案，但还没有决定运行时绑定方式。
 - 宿主事件清单是否由编译器/烘焙器自动生成，而不是人工维护。
 - 是否需要一定程度的代码生成，强制把 DSL 用到的查询 Func / 回调 Action 注册到宿主层。
+- Unity 支持层是否采用 `[Inscape]` 一类 C# Attribute 扫描项目类型和字段，并在 Unity 内生成待配置的 Host Bridge 表，再由人工完成 C# 成员与 Inscape 可读名的映射。
+- Inscape 事件数据到达 Unity 上层后，应该直接绑定事件回调、由上层轮询叙事状态，还是支持二者混合；目前不应把其中一种写死为通用运行时模型。
 - Unity Addressables 不应作为第一版强依赖；需研究 Unity 插件如何适配不同项目的资源管理方案。
 - Timeline 第一版作为外部资源引用，Hook phase 已支持 `talking.enter` / `talking.exit` / `node.enter` / `node.exit`；后续仍需确认非 `talking.exit` 的 Bird 运行时落地方式。长期更通用的模型可能是宿主自定义事件，而不是内建 Timeline 机制。
 - Bird 的 `talkingId` / `timelineId` 如何分配，是否需要项目级 ID 范围。

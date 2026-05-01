@@ -1,8 +1,8 @@
-using Inscape.Core.Model;
+﻿using Inscape.Core.Model;
 
-namespace Inscape.Core.Bird {
+namespace Inscape.Adapters.UnitySample {
 
-    public sealed class BirdNodeEntry {
+    public sealed class UnitySampleNodeEntry {
 
         public string Name { get; set; }
 
@@ -14,7 +14,7 @@ namespace Inscape.Core.Bird {
 
         public SourceSpan Source { get; set; }
 
-        public BirdNodeEntry() {
+        public UnitySampleNodeEntry() {
             Name = string.Empty;
             EntryTalkingId = 0;
             DefaultNextNodeName = string.Empty;
@@ -25,3 +25,4 @@ namespace Inscape.Core.Bird {
     }
 
 }
+

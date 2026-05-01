@@ -24,13 +24,13 @@ inscape <command> <args>
 
 ```powershell
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- commands
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- help export-bird-project
+dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- help export-unity-sample-project
 ```
 
 项目级命令会自动读取项目根目录下的 `inscape.config.json`。也可以显式指定：
 
 ```powershell
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-project samples --config samples\inscape.config.json -o artifacts\bird-export
+dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-unity-sample-project samples --config samples\inscape.config.json -o artifacts\unity-sample-export
 ```
 
 命令行参数优先级高于配置文件。配置格式见 [项目配置草案](project-config.md)。
@@ -95,60 +95,60 @@ dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- extract-l10n-project 
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- update-l10n-project samples --from artifacts\old-l10n.csv -o artifacts\l10n.updated.csv
 ```
 
-## Bird 适配命令
+## UnitySample 实验样例命令
 
-Bird 命令服务 Unity/Bird 连接层，不应与本地化 CSV 混用。角色表、宿主绑定表、Bird L10N 和 Inscape 本地化表是不同产物。
+UnitySample 命令服务实验性 Unity 样例 adapter，不应与最终 Host Bridge 混淆。角色表、宿主绑定表、样例 L10N 和 Inscape 本地化表是不同产物。该 adapter 仍硬编码一套宿主侧数据结构，只用于验证流程和作为未来配置 / 代码生成的回归样例。
 
 | 命令 | 用途 | 常用输出 |
 | --- | --- | --- |
-| `export-bird-role-template` | 扫描对白 speaker，生成角色绑定模板 | `speaker,roleId` CSV |
-| `export-bird-binding-template` | 扫描 Timeline Hook，生成宿主绑定模板 | `kind,alias,birdId,unityGuid,addressableKey,assetPath` CSV |
-| `export-bird-project` | 导出 Bird manifest、L10N、锚点映射和报告 | 输出目录 |
-| `merge-bird-l10n` | 将 Inscape 生成的 `L10N_Talking.csv` 合并到 Bird 现有表，并输出审查报告 | CSV |
+| `export-unity-sample-role-template` | 扫描对白 speaker，生成角色绑定模板 | `speaker,roleId` CSV |
+| `export-unity-sample-binding-template` | 扫描 Timeline Hook，生成宿主绑定模板 | `kind,alias,unitySampleId,unityGuid,addressableKey,assetPath` CSV |
+| `export-unity-sample-project` | 导出样例 manifest、L10N、锚点映射和报告 | 输出目录 |
+| `merge-unity-sample-l10n` | 将 Inscape 生成的 `L10N_Talking.csv` 合并到样例旧表，并输出审查报告 | CSV |
 
 ```powershell
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-role-template samples -o config\bird-roles.csv
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-role-template samples --bird-existing-role-name-csv D:\UnityProjects\Bird\Assets\Resources_Runtime\Localization\L10N_RoleName.csv --report artifacts\bird-export\bird-roles.report.csv -o config\bird-roles.csv
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-binding-template samples -o config\bird-bindings.csv
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-binding-template samples --bird-existing-timeline-root D:\UnityProjects\Bird\Assets\Resources_Runtime\Timeline -o config\bird-bindings.csv
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-project samples --bird-role-map config\bird-roles.csv --bird-binding-map config\bird-bindings.csv -o artifacts\bird-export
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- merge-bird-l10n artifacts\bird-export\L10N_Talking.csv --from D:\UnityProjects\Bird\Assets\Resources_Runtime\Localization\L10N_Talking.csv --report artifacts\bird-export\L10N_Talking.merge-report.csv -o artifacts\bird-export\L10N_Talking.merged.csv
+dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-unity-sample-role-template samples -o config\unity-sample-roles.csv
+dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-unity-sample-role-template samples --unity-sample-existing-role-name-csv D:\UnityProjects\UnitySample\Assets\Resources_Runtime\Localization\L10N_RoleName.csv --report artifacts\unity-sample-export\unity-sample-roles.report.csv -o config\unity-sample-roles.csv
+dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-unity-sample-binding-template samples -o config\unity-sample-bindings.csv
+dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-unity-sample-binding-template samples --unity-sample-existing-timeline-root D:\UnityProjects\UnitySample\Assets\Resources_Runtime\Timeline -o config\unity-sample-bindings.csv
+dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-unity-sample-project samples --unity-sample-role-map config\unity-sample-roles.csv --unity-sample-binding-map config\unity-sample-bindings.csv -o artifacts\unity-sample-export
+dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- merge-unity-sample-l10n artifacts\unity-sample-export\L10N_Talking.csv --from D:\UnityProjects\UnitySample\Assets\Resources_Runtime\Localization\L10N_Talking.csv --report artifacts\unity-sample-export\L10N_Talking.merge-report.csv -o artifacts\unity-sample-export\L10N_Talking.merged.csv
 ```
 
-如果项目根目录有 `inscape.config.json`，可以省略常用 Bird 路径参数：
+如果项目根目录有 `inscape.config.json`，可以省略常用 UnitySample 路径参数：
 
 ```powershell
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-role-template samples --report artifacts\bird-export\bird-roles.report.csv -o config\bird-roles.csv
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-binding-template samples -o config\bird-bindings.csv
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-project samples -o artifacts\bird-export
+dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-unity-sample-role-template samples --report artifacts\unity-sample-export\unity-sample-roles.report.csv -o config\unity-sample-roles.csv
+dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-unity-sample-binding-template samples -o config\unity-sample-bindings.csv
+dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-unity-sample-project samples -o artifacts\unity-sample-export
 ```
 
-`export-bird-project` 输出：
+`export-unity-sample-project` 输出：
 
 ```text
-bird-manifest.json
+unity-sample-manifest.json
 L10N_Talking.csv
-inscape-bird-l10n-map.csv
-bird-export-report.txt
+inscape-unity-sample-l10n-map.csv
+unity-sample-export-report.txt
 ```
 
 常用参数：
 
-- `--bird-talking-start 100000`：设置新 `talkingId` 起点。
-- `--bird-role-map roles.csv`：读取 `speaker,roleId` 角色绑定。
-- `--bird-existing-role-name-csv path`：仅用于 `export-bird-role-template`，读取 Bird `L10N_RoleName.csv`，对唯一匹配的 speaker 自动填入 `roleId`。
-- `--report report.csv`：用于 `export-bird-role-template` 或 `merge-bird-l10n`，输出人工审查报告。角色报告状态包括 `unique`、`ambiguous`、`missing`、`unscanned`。
-- `--bird-binding-map bindings.csv`：读取资源 / Timeline 宿主绑定。
-- `--bird-existing-talking-root path`：扫描现有 Talking `.asset`，避让已使用的 `talkingId`。
-- `--bird-existing-timeline-root path`：仅用于 `export-bird-binding-template`，扫描现有 Timeline `.asset` / `.meta` 辅助填表。
+- `--unity-sample-talking-start 100000`：设置新 `talkingId` 起点。
+- `--unity-sample-role-map roles.csv`：读取 `speaker,roleId` 角色绑定。
+- `--unity-sample-existing-role-name-csv path`：仅用于 `export-unity-sample-role-template`，读取样例 `L10N_RoleName.csv`，对唯一匹配的 speaker 自动填入 `roleId`。
+- `--report report.csv`：用于 `export-unity-sample-role-template` 或 `merge-unity-sample-l10n`，输出人工审查报告。角色报告状态包括 `unique`、`ambiguous`、`missing`、`unscanned`。
+- `--unity-sample-binding-map bindings.csv`：读取资源 / Timeline 宿主绑定。
+- `--unity-sample-existing-talking-root path`：扫描现有 Talking `.asset`，避让已使用的 `talkingId`。
+- `--unity-sample-existing-timeline-root path`：仅用于 `export-unity-sample-binding-template`，扫描现有 Timeline `.asset` / `.meta` 辅助填表。
 
-`merge-bird-l10n` 合并规则：
+`merge-unity-sample-l10n` 合并规则：
 
-- 保留 Bird 现有但当前 Inscape 导出未涉及的行。
+- 保留样例旧表中当前 Inscape 导出未涉及的行。
 - 新增 Inscape 行会追加到表尾。
 - 同 ID 且源文本未变时，保留现有译文。
 - 同 ID 但源文本变化时，写入新源文本并清空目标语言列，旧源文本和旧译文写入 `--report` 报告供人工参考。
-- 不处理选择项文本；选择项仍在 `TalkingOptionTM.optionText` 和 `inscape-bird-l10n-map.csv` 中审查。
+- 不处理选择项文本；选择项仍在 `TalkingOptionTM.optionText` 和 `inscape-unity-sample-l10n-map.csv` 中审查。
 
 ## Unity / Bird Importer 命令
 

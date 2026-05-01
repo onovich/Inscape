@@ -1,8 +1,8 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
-namespace Inscape.Core.Bird {
+namespace Inscape.Adapters.UnitySample {
 
-    public sealed class BirdExportOptions {
+    public sealed class UnitySampleExportOptions {
 
         public int TalkingIdStart { get; set; }
 
@@ -12,16 +12,17 @@ namespace Inscape.Core.Bird {
 
         public HashSet<int> ReservedTalkingIds { get; set; }
 
-        public List<BirdHostBinding> HostBindings { get; set; }
+        public List<UnitySampleHostBinding> HostBindings { get; set; }
 
-        public BirdExportOptions() {
+        public UnitySampleExportOptions() {
             TalkingIdStart = 100000;
             Languages = new[] { "ZH_CN", "EN_US", "ES_ES" };
             RoleIdsBySpeaker = new Dictionary<string, int>();
             ReservedTalkingIds = new HashSet<int>();
-            HostBindings = new List<BirdHostBinding>();
+            HostBindings = new List<UnitySampleHostBinding>();
         }
 
     }
 
 }
+

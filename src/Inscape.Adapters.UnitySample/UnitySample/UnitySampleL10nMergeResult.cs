@@ -1,12 +1,12 @@
-namespace Inscape.Core.Bird {
+﻿namespace Inscape.Adapters.UnitySample {
 
-    public sealed class BirdL10nMergeResult {
+    public sealed class UnitySampleL10nMergeResult {
 
         public string MergedCsv { get; set; }
 
         public string ReportCsv { get; set; }
 
-        public BirdL10nMergeResult(string mergedCsv, string reportCsv) {
+        public UnitySampleL10nMergeResult(string mergedCsv, string reportCsv) {
             MergedCsv = mergedCsv;
             ReportCsv = reportCsv;
         }
@@ -14,3 +14,4 @@ namespace Inscape.Core.Bird {
     }
 
 }
+

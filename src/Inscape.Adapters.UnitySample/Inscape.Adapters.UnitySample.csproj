@@ -1,0 +1,13 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <Nullable>enable</Nullable>
+    <Description>Experimental Unity sample adapter; not the final Host Bridge contract.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Inscape.Core\Inscape.Core.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,12 +1,12 @@
-namespace Inscape.Core.Bird {
+﻿namespace Inscape.Adapters.UnitySample {
 
-    public sealed class BirdRoleBinding {
+    public sealed class UnitySampleRoleBinding {
 
         public string Speaker { get; set; }
 
         public int? RoleId { get; set; }
 
-        public BirdRoleBinding() {
+        public UnitySampleRoleBinding() {
             Speaker = string.Empty;
             RoleId = null;
         }
@@ -14,3 +14,4 @@ namespace Inscape.Core.Bird {
     }
 
 }
+

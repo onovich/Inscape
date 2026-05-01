@@ -2,6 +2,7 @@
   <Folder Name="/src/">
     <Project Path="src/Inscape.Cli/Inscape.Cli.csproj" />
     <Project Path="src/Inscape.Core/Inscape.Core.csproj" />
+    <Project Path="src/Inscape.Adapters.UnitySample/Inscape.Adapters.UnitySample.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Inscape.Tests/Inscape.Tests.csproj" />

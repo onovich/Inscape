@@ -1,28 +1,28 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Inscape.Core.Bird {
+namespace Inscape.Adapters.UnitySample {
 
-    public sealed class BirdL10nMergePlanner {
+    public sealed class UnitySampleL10nMergePlanner {
 
-        public BirdL10nMergeResult Merge(string existingCsv, string generatedCsv) {
+        public UnitySampleL10nMergeResult Merge(string existingCsv, string generatedCsv) {
             Table existing = Table.Parse(existingCsv);
             Table generated = Table.Parse(generatedCsv);
             if (!existing.Header.Contains("ID")) {
-                throw new InvalidOperationException("Existing Bird L10N CSV must contain an ID column.");
+                throw new InvalidOperationException("Existing UnitySample L10N CSV must contain an ID column.");
             }
             if (!generated.Header.Contains("ID")) {
-                throw new InvalidOperationException("Generated Bird L10N CSV must contain an ID column.");
+                throw new InvalidOperationException("Generated UnitySample L10N CSV must contain an ID column.");
             }
             if (generated.Header.Count < 2) {
-                throw new InvalidOperationException("Generated Bird L10N CSV must contain at least one language column.");
+                throw new InvalidOperationException("Generated UnitySample L10N CSV must contain at least one language column.");
             }
 
             List<string> mergedHeader = MergeHeaders(existing.Header, generated.Header);
             string sourceColumn = generated.Header[1];
             List<RowPlan> plans = CreatePlans(existing, generated, sourceColumn, mergedHeader);
-            return new BirdL10nMergeResult(WriteMergedCsv(mergedHeader, plans),
+            return new UnitySampleL10nMergeResult(WriteMergedCsv(mergedHeader, plans),
                                            WriteReportCsv(mergedHeader, plans));
         }
 
@@ -343,3 +343,4 @@ namespace Inscape.Core.Bird {
     }
 
 }
+

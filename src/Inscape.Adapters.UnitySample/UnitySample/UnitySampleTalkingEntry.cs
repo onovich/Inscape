@@ -1,9 +1,9 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Inscape.Core.Model;
 
-namespace Inscape.Core.Bird {
+namespace Inscape.Adapters.UnitySample {
 
-    public sealed class BirdTalkingEntry {
+    public sealed class UnitySampleTalkingEntry {
 
         public int TalkingId { get; set; }
 
@@ -27,11 +27,11 @@ namespace Inscape.Core.Bird {
 
         public int? NextTalkingId { get; set; }
 
-        public List<BirdChoiceOptionEntry> Options { get; set; }
+        public List<UnitySampleChoiceOptionEntry> Options { get; set; }
 
         public SourceSpan Source { get; set; }
 
-        public BirdTalkingEntry() {
+        public UnitySampleTalkingEntry() {
             TalkingId = 0;
             NodeName = string.Empty;
             NodeOrder = 0;
@@ -43,10 +43,11 @@ namespace Inscape.Core.Bird {
             TextDisplayType = "Instant";
             TalkingIndex = 0;
             NextTalkingId = null;
-            Options = new List<BirdChoiceOptionEntry>();
+            Options = new List<UnitySampleChoiceOptionEntry>();
             Source = SourceSpan.Empty;
         }
 
     }
 
 }
+

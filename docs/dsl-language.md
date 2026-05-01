@@ -170,9 +170,9 @@ Inscape 的源文件不是线性脚本，也不是完整游戏引擎语言。它
 - `talking.enter`：绑定到同节点内 hook 后面的下一条可见 talking；如果没有下一条 talking，则产生无法挂载 warning。
 - `node.enter`：绑定到该节点第一条可见 talking。
 - `node.exit`：绑定到该节点最后一条可见 talking。
-- `alias` 必须通过 Bird 宿主绑定表 `--bird-binding-map` 映射到 Bird / Unity 坐标。
-- Bird Adapter 会把它导出为 manifest 的 `hostHooks`，保留 `phase` 和 `targetTalkingId`。
-- Unity Bird Importer 当前只把 `talking.exit` 真实生成到 `TalkingTM.effects -> TalkingEffectTM.PlayTimeline`。其他 phase 先作为 manifest 数据和 Dry Run warning 保留，避免 DSL 提前变成完整演出时间轴。
+- `alias` 应通过宿主桥接配置映射到项目内部 ID、资源坐标或事件处理器；当前 UnitySample 实验样例临时使用 `--unity-sample-binding-map`。
+- UnitySample Adapter 会把它导出为 manifest 的 `hostHooks`，保留 `phase` 和 `targetTalkingId`。
+- 当前这仍是实验 adapter 行为。长期应把 Timeline 视为宿主事件示例，避免 DSL 提前变成完整演出时间轴。
 - 它只表达“这里引用一个宿主演出资源”，不描述 Timeline 内部的轨道、关键帧、时长或资源组合。
 
 待确认：

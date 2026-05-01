@@ -1,8 +1,8 @@
-using System;
+﻿using System;
 
-namespace Inscape.Core.Bird {
+namespace Inscape.Adapters.UnitySample {
 
-    public static class BirdHostHookParser {
+    public static class UnitySampleHostHookParser {
 
         public const string DefaultTimelinePhase = "talking.exit";
 
@@ -92,3 +92,4 @@ namespace Inscape.Core.Bird {
     }
 
 }
+

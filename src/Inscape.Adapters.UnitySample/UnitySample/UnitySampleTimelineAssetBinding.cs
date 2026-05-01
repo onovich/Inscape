@@ -1,6 +1,6 @@
-namespace Inscape.Core.Bird {
+﻿namespace Inscape.Adapters.UnitySample {
 
-    public sealed class BirdTimelineAssetBinding {
+    public sealed class UnitySampleTimelineAssetBinding {
 
         public int TimelineId { get; set; }
 
@@ -8,7 +8,7 @@ namespace Inscape.Core.Bird {
 
         public string AssetPath { get; set; }
 
-        public BirdTimelineAssetBinding() {
+        public UnitySampleTimelineAssetBinding() {
             TimelineId = 0;
             UnityGuid = string.Empty;
             AssetPath = string.Empty;
@@ -17,3 +17,4 @@ namespace Inscape.Core.Bird {
     }
 
 }
+

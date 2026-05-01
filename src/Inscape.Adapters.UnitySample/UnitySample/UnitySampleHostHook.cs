@@ -1,8 +1,8 @@
-using Inscape.Core.Model;
+﻿using Inscape.Core.Model;
 
-namespace Inscape.Core.Bird {
+namespace Inscape.Adapters.UnitySample {
 
-    public sealed class BirdHostHook {
+    public sealed class UnitySampleHostHook {
 
         public string Kind { get; set; }
 
@@ -14,7 +14,7 @@ namespace Inscape.Core.Bird {
 
         public int? TargetTalkingId { get; set; }
 
-        public int? BirdId { get; set; }
+        public int? UnitySampleId { get; set; }
 
         public string UnityGuid { get; set; }
 
@@ -24,13 +24,13 @@ namespace Inscape.Core.Bird {
 
         public SourceSpan Source { get; set; }
 
-        public BirdHostHook() {
+        public UnitySampleHostHook() {
             Kind = string.Empty;
             Alias = string.Empty;
             Phase = string.Empty;
             NodeName = string.Empty;
             TargetTalkingId = null;
-            BirdId = null;
+            UnitySampleId = null;
             UnityGuid = string.Empty;
             AddressableKey = string.Empty;
             AssetPath = string.Empty;
@@ -40,3 +40,4 @@ namespace Inscape.Core.Bird {
     }
 
 }
+

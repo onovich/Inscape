@@ -1,8 +1,8 @@
-using Inscape.Core.Model;
+﻿using Inscape.Core.Model;
 
-namespace Inscape.Core.Bird {
+namespace Inscape.Adapters.UnitySample {
 
-    public sealed class BirdLocalizationMapping {
+    public sealed class UnitySampleLocalizationMapping {
 
         public string Anchor { get; set; }
 
@@ -18,11 +18,11 @@ namespace Inscape.Core.Bird {
 
         public int? TalkingIndex { get; set; }
 
-        public string BirdField { get; set; }
+        public string UnitySampleField { get; set; }
 
         public SourceSpan Source { get; set; }
 
-        public BirdLocalizationMapping() {
+        public UnitySampleLocalizationMapping() {
             Anchor = string.Empty;
             NodeName = string.Empty;
             Kind = string.Empty;
@@ -30,10 +30,11 @@ namespace Inscape.Core.Bird {
             Text = string.Empty;
             TalkingId = null;
             TalkingIndex = null;
-            BirdField = string.Empty;
+            UnitySampleField = string.Empty;
             Source = SourceSpan.Empty;
         }
 
     }
 
 }
+

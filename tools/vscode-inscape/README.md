@@ -10,8 +10,8 @@ This is the first lightweight authoring layer for `.inscape` scripts. It keeps s
 - Keeps metadata and inline tags on comment-like scopes so themes can visually soften them while prose remains readable.
 - Refreshes diagnostics by invoking `dotnet run --project src/Inscape.Cli/Inscape.Cli.csproj -- diagnose-project <workspace> --override <source> <temp-file>`.
 - Provides workspace node completions in jump target positions.
-- Provides dialogue speaker completions from `inscape.config.json` `bird.roleMap`, with workspace speaker fallback.
-- Provides host binding alias completions from `inscape.config.json` `bird.bindingMap` for `@timeline ...`, `@timeline.<phase> ...`, and `[kind: ...]` inline tag positions.
+- Provides dialogue speaker completions from `inscape.config.json` `unitySample.roleMap`, with workspace speaker fallback.
+- Provides host binding alias completions from `inscape.config.json` `unitySample.bindingMap` for `@timeline ...`, `@timeline.<phase> ...`, and `[kind: ...]` inline tag positions.
 - Supports Go to Definition / Ctrl+Click from jump targets to node declarations, and from dialogue speakers to configured role-map rows with dialogue-reference fallback.
 - Treats full-width colons and common Chinese punctuation as word boundaries so Ctrl+Click link styling on Chinese dialogue only covers the speaker name.
 - Supports Find All References from node declarations, jump targets, and dialogue speakers.
@@ -44,7 +44,7 @@ dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- update-l10n-project <
 
 If the active `.inscape` document is unsaved and belongs to the selected workspace, the extension passes it to the CLI with `--override` so the generated CSV reflects editor contents.
 
-Speaker completion reads `inscape.config.json` from the workspace root and resolves `bird.roleMap` relative to that file. The role map format is:
+Speaker completion reads `inscape.config.json` from the workspace root and resolves `unitySample.roleMap` relative to that file. The role map format is:
 
 ```csv
 speaker,roleId
@@ -55,14 +55,14 @@ When no configured role map exists, the extension still scans open and workspace
 
 Ctrl+Click on a dialogue speaker jumps to the matching `speaker` row in the configured role map. If no configured row exists, it falls back to matching dialogue lines in the workspace. Find All References on a speaker lists all matching dialogue lines in the workspace and includes the role-map row when VSCode requests declarations.
 
-Host binding completion reads `bird.bindingMap` from the same project config. The binding map format is:
+Host binding completion reads `unitySample.bindingMap` from the same project config. The binding map format is:
 
 ```csv
-kind,alias,birdId,unityGuid,addressableKey,assetPath
+kind,alias,unitySampleId,unityGuid,addressableKey,assetPath
 timeline,court_intro,12,,Timeline/CourtIntro,Assets/Resources_Runtime/Timeline/SO_Timeline_CourtIntro.asset
 ```
 
-The first supported contexts are `@timeline court_intro`, explicit phase forms such as `@timeline.node.enter court_intro`, and inline tags such as `[timeline: court_intro]`, `[timeline.node.exit: court_outro]`, or `[bg: classroom]`. For inline tags, completion is generic by `kind`, but the compiler still only gives special Bird export meaning to supported hooks such as `timeline`.
+The first supported contexts are `@timeline court_intro`, explicit phase forms such as `@timeline.node.enter court_intro`, and inline tags such as `[timeline: court_intro]`, `[timeline.node.exit: court_outro]`, or `[bg: classroom]`. For inline tags, completion is generic by `kind`; compiler semantics still come from `Inscape.Core`, while UnitySample export remains an experimental adapter.
 
 Host schema files named `inscape.host.schema.json` or `*.host.schema.json` are validated by the bundled JSON Schema. The command `Inscape: Show Host Schema Capabilities` reads `inscape.config.json` `hostSchema`, lists configured queries/events, and opens the selected capability in the schema file.
 

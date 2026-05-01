@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Inscape.Core\Inscape.Core.csproj" />
+    <ProjectReference Include="..\..\src\Inscape.Adapters.UnitySample\Inscape.Adapters.UnitySample.csproj" />
     <ProjectReference Include="..\..\src\Inscape.Cli\Inscape.Cli.csproj" />
   </ItemGroup>
 

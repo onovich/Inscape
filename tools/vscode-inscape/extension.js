@@ -919,11 +919,11 @@ async function collectWorkspaceHostBindings(document, kind) {
 
 async function readConfiguredHostBindings(document) {
     const projectConfig = await readProjectConfig(document);
-    if (!projectConfig || !projectConfig.configPath || !projectConfig.config || !projectConfig.config.bird) {
+    if (!projectConfig || !projectConfig.configPath || !projectConfig.config || !projectConfig.config.unitySample) {
         return [];
     }
 
-    const bindingMap = projectConfig.config.bird.bindingMap;
+    const bindingMap = projectConfig.config.unitySample.bindingMap;
     if (!bindingMap) {
         return [];
     }
@@ -943,7 +943,7 @@ async function readConfiguredHostBindings(document) {
     const hasHeader = headers.includes("kind") && headers.includes("alias");
     const kindIndex = hasHeader ? headers.indexOf("kind") : 0;
     const aliasIndex = hasHeader ? headers.indexOf("alias") : 1;
-    const birdIdIndex = hasHeader ? headers.indexOf("birdId") : 2;
+    const unitySampleIdIndex = hasHeader ? headers.indexOf("unitySampleId") : 2;
     const unityGuidIndex = hasHeader ? headers.indexOf("unityGuid") : 3;
     const addressableKeyIndex = hasHeader ? headers.indexOf("addressableKey") : 4;
     const assetPathIndex = hasHeader ? headers.indexOf("assetPath") : 5;
@@ -953,12 +953,12 @@ async function readConfiguredHostBindings(document) {
         .map((row) => ({
             kind: (row[kindIndex] || "").trim(),
             alias: (row[aliasIndex] || "").trim(),
-            birdId: readOptionalCsvField(row, birdIdIndex),
+            unitySampleId: readOptionalCsvField(row, unitySampleIdIndex),
             unityGuid: readOptionalCsvField(row, unityGuidIndex),
             addressableKey: readOptionalCsvField(row, addressableKeyIndex),
             assetPath: readOptionalCsvField(row, assetPathIndex),
             sourcePath: bindingMapPath,
-            sourceLabel: "Bird binding map",
+            sourceLabel: "UnitySample binding map",
             sourceRank: 0
         }))
         .filter((binding) => binding.kind.length > 0 && binding.alias.length > 0);
@@ -976,7 +976,7 @@ function collectHostBindingsFromText(text, sourcePath, requestedKind, bindings, 
             addHostBinding(bindings, seen, {
                 kind: "timeline",
                 alias: metadataMatch[1].trim(),
-                birdId: "",
+                unitySampleId: "",
                 unityGuid: "",
                 addressableKey: "",
                 assetPath: "",
@@ -995,7 +995,7 @@ function collectHostBindingsFromText(text, sourcePath, requestedKind, bindings, 
                 addHostBinding(bindings, seen, {
                     kind,
                     alias,
-                    birdId: "",
+                    unitySampleId: "",
                     unityGuid: "",
                     addressableKey: "",
                     assetPath: "",
@@ -1038,8 +1038,8 @@ function createHostBindingCompletionItem(binding) {
 
 function createHostBindingDetail(binding) {
     const pieces = [binding.kind];
-    if (binding.birdId) {
-        pieces.push("Bird " + binding.birdId);
+    if (binding.unitySampleId) {
+        pieces.push("UnitySample " + binding.unitySampleId);
     }
     if (binding.addressableKey) {
         pieces.push(binding.addressableKey);
@@ -1089,11 +1089,11 @@ async function readConfiguredRoleMapSpeakerRows(document) {
 
 async function getConfiguredRoleMapPath(document) {
     const projectConfig = await readProjectConfig(document);
-    if (!projectConfig || !projectConfig.configPath || !projectConfig.config || !projectConfig.config.bird) {
+    if (!projectConfig || !projectConfig.configPath || !projectConfig.config || !projectConfig.config.unitySample) {
         return undefined;
     }
 
-    const roleMap = projectConfig.config.bird.roleMap;
+    const roleMap = projectConfig.config.unitySample.roleMap;
     if (!roleMap) {
         return undefined;
     }
@@ -1155,7 +1155,7 @@ function parseRoleMapSpeakerRows(text, roleMapPath) {
             name,
             roleId: roleIdIndex >= 0 ? (row[roleIdIndex] || "").trim() : "",
             sourcePath: roleMapPath,
-            sourceLabel: "Bird role map",
+            sourceLabel: "UnitySample role map",
             sourceRank: 0,
             line,
             character: findCsvFieldValueStart(lines[line], speakerIndex, name),
@@ -1388,7 +1388,7 @@ function createSpeakerCompletionItem(speaker) {
     const item = new vscode.CompletionItem(speaker.name, vscode.CompletionItemKind.Class);
     item.insertText = speaker.name + "\uFF1A";
     item.detail = speaker.roleId
-        ? "Bird roleId " + speaker.roleId
+        ? "UnitySample roleId " + speaker.roleId
         : speaker.sourceLabel + " (unbound)";
     item.documentation = speaker.sourcePath;
     item.sortText = (speaker.sourceRank || 0) + "_" + speaker.name;
@@ -1719,9 +1719,9 @@ function createSpeakerHoverMarkdown(speaker) {
     markdown.appendMarkdown("**Inscape Speaker** `" + speaker.name + "`\n\n");
 
     if (speaker.roleId) {
-        markdown.appendMarkdown("Bird roleId: `" + speaker.roleId + "`\n\n");
+        markdown.appendMarkdown("UnitySample roleId: `" + speaker.roleId + "`\n\n");
     } else {
-        markdown.appendMarkdown("Bird roleId: unbound\n\n");
+        markdown.appendMarkdown("UnitySample roleId: unbound\n\n");
     }
 
     markdown.appendMarkdown("Source: `" + formatDisplayPath(speaker.sourcePath) + "`");
@@ -1736,7 +1736,7 @@ function createHostBindingMarkdown(binding) {
     const markdown = new vscode.MarkdownString(undefined, true);
     markdown.isTrusted = false;
     markdown.appendMarkdown("**Inscape Host Binding** `" + binding.kind + ":" + binding.alias + "`\n\n");
-    appendHostBindingField(markdown, "Bird id", binding.birdId);
+    appendHostBindingField(markdown, "UnitySample id", binding.unitySampleId);
     appendHostBindingField(markdown, "Addressable", binding.addressableKey);
     appendHostBindingField(markdown, "Asset", binding.assetPath);
     appendHostBindingField(markdown, "Unity guid", binding.unityGuid);

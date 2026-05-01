@@ -1,8 +1,8 @@
-using Inscape.Core.Model;
+﻿using Inscape.Core.Model;
 
-namespace Inscape.Core.Bird {
+namespace Inscape.Adapters.UnitySample {
 
-    public sealed class BirdChoiceOptionEntry {
+    public sealed class UnitySampleChoiceOptionEntry {
 
         public string Text { get; set; }
 
@@ -14,7 +14,7 @@ namespace Inscape.Core.Bird {
 
         public SourceSpan Source { get; set; }
 
-        public BirdChoiceOptionEntry() {
+        public UnitySampleChoiceOptionEntry() {
             Text = string.Empty;
             Anchor = string.Empty;
             TargetNodeName = string.Empty;
@@ -25,3 +25,4 @@ namespace Inscape.Core.Bird {
     }
 
 }
+

@@ -1,11 +1,11 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 using Inscape.Core.Model;
 
-namespace Inscape.Core.Bird {
+namespace Inscape.Adapters.UnitySample {
 
-    public sealed class BirdRoleTemplateWriter {
+    public sealed class UnitySampleRoleTemplateWriter {
 
         public string Write(InscapeDocument graph) {
             return Write(graph, new Dictionary<string, int>(StringComparer.Ordinal));
@@ -60,3 +60,4 @@ namespace Inscape.Core.Bird {
     }
 
 }
+

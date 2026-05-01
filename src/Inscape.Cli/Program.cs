@@ -2,7 +2,7 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Inscape.Core.Bird;
+using Inscape.Adapters.UnitySample;
 using Inscape.Core.Compilation;
 using Inscape.Core.Diagnostics;
 using Inscape.Core.Localization;
@@ -48,8 +48,8 @@ namespace Inscape.Cli {
             string? outputPath = ReadOption(args, "-o");
             string? previousLocalizationPath = ReadOption(args, "--from");
 
-            if (command == "merge-bird-l10n") {
-                return RunMergeBirdL10n(inputPath, previousLocalizationPath, ReadOption(args, "--report"), outputPath);
+            if (command == "merge-unity-sample-l10n") {
+                return RunMergeUnitySampleL10n(inputPath, previousLocalizationPath, ReadOption(args, "--report"), outputPath);
             }
 
             if (IsProjectCommand(command)) {
@@ -199,48 +199,48 @@ namespace Inscape.Cli {
                 return result.HasErrors ? 1 : 0;
             }
 
-            if (command == "export-bird-binding-template") {
-                if (!TryReadBirdTimelineBindingsForTemplate(args, config, out Dictionary<string, BirdTimelineAssetBinding> timelineBindingsByAlias)) {
+            if (command == "export-unity-sample-binding-template") {
+                if (!TryReadUnitySampleTimelineBindingsForTemplate(args, config, out Dictionary<string, UnitySampleTimelineAssetBinding> timelineBindingsByAlias)) {
                     return 1;
                 }
 
-                BirdBindingTemplateWriter writer = new BirdBindingTemplateWriter();
+                UnitySampleBindingTemplateWriter writer = new UnitySampleBindingTemplateWriter();
                 WriteOrPrint(outputPath, writer.Write(result.Graph, timelineBindingsByAlias));
                 PrintDiagnostics(result.Diagnostics);
                 return result.HasErrors ? 1 : 0;
             }
 
-            if (command == "export-bird-role-template") {
-                if (!TryReadBirdRoleNameBindingsForTemplate(args,
+            if (command == "export-unity-sample-role-template") {
+                if (!TryReadUnitySampleRoleNameBindingsForTemplate(args,
                                                             config,
                                                             out Dictionary<string, int> roleIdsBySpeaker,
-                                                            out Dictionary<string, List<BirdRoleNameCandidate>> candidatesBySpeaker,
+                                                            out Dictionary<string, List<UnitySampleRoleNameCandidate>> candidatesBySpeaker,
                                                             out bool scannedRoleNameCsv)) {
                     return 1;
                 }
 
-                BirdRoleTemplateWriter writer = new BirdRoleTemplateWriter();
+                UnitySampleRoleTemplateWriter writer = new UnitySampleRoleTemplateWriter();
                 WriteOrPrint(outputPath, writer.Write(result.Graph, roleIdsBySpeaker));
                 string? reportPath = ReadOption(args, "--report");
                 if (!string.IsNullOrWhiteSpace(reportPath)) {
-                    WriteOrPrint(reportPath, WriteBirdRoleTemplateReport(result.Graph, roleIdsBySpeaker, candidatesBySpeaker, scannedRoleNameCsv));
+                    WriteOrPrint(reportPath, WriteUnitySampleRoleTemplateReport(result.Graph, roleIdsBySpeaker, candidatesBySpeaker, scannedRoleNameCsv));
                 }
                 PrintDiagnostics(result.Diagnostics);
                 return result.HasErrors ? 1 : 0;
             }
 
-            if (command == "export-bird-project") {
+            if (command == "export-unity-sample-project") {
                 if (string.IsNullOrWhiteSpace(outputPath)) {
                     Console.Error.WriteLine("Missing required option: -o <output-directory>");
                     return 1;
                 }
 
-                BirdProjectExporter exporter = new BirdProjectExporter();
-                if (!TryReadBirdExportOptions(args, config, out BirdExportOptions options)) {
+                UnitySampleProjectExporter exporter = new UnitySampleProjectExporter();
+                if (!TryReadUnitySampleExportOptions(args, config, out UnitySampleExportOptions options)) {
                     return 1;
                 }
-                BirdExportResult export = exporter.Export(result, options);
-                WriteBirdExport(outputPath, export);
+                UnitySampleExportResult export = exporter.Export(result, options);
+                WriteUnitySampleExport(outputPath, export);
                 PrintDiagnostics(result.Diagnostics);
                 return result.HasErrors ? 1 : 0;
             }
@@ -323,11 +323,11 @@ namespace Inscape.Cli {
         static void NormalizeProjectConfigPaths(ProjectConfig config, string configPath) {
             string configDirectory = Path.GetDirectoryName(configPath) ?? Directory.GetCurrentDirectory();
             config.HostSchema = ResolveConfigPath(configDirectory, config.HostSchema);
-            config.Bird.RoleMap = ResolveConfigPath(configDirectory, config.Bird.RoleMap);
-            config.Bird.BindingMap = ResolveConfigPath(configDirectory, config.Bird.BindingMap);
-            config.Bird.ExistingRoleNameCsv = ResolveConfigPath(configDirectory, config.Bird.ExistingRoleNameCsv);
-            config.Bird.ExistingTimelineRoot = ResolveConfigPath(configDirectory, config.Bird.ExistingTimelineRoot);
-            config.Bird.ExistingTalkingRoot = ResolveConfigPath(configDirectory, config.Bird.ExistingTalkingRoot);
+            config.UnitySample.RoleMap = ResolveConfigPath(configDirectory, config.UnitySample.RoleMap);
+            config.UnitySample.BindingMap = ResolveConfigPath(configDirectory, config.UnitySample.BindingMap);
+            config.UnitySample.ExistingRoleNameCsv = ResolveConfigPath(configDirectory, config.UnitySample.ExistingRoleNameCsv);
+            config.UnitySample.ExistingTimelineRoot = ResolveConfigPath(configDirectory, config.UnitySample.ExistingTimelineRoot);
+            config.UnitySample.ExistingTalkingRoot = ResolveConfigPath(configDirectory, config.UnitySample.ExistingTalkingRoot);
         }
 
         static string? ResolveConfigPath(string configDirectory, string? value) {
@@ -358,9 +358,9 @@ namespace Inscape.Cli {
                 || command == "preview-project"
                 || command == "extract-l10n-project"
                 || command == "update-l10n-project"
-                || command == "export-bird-binding-template"
-                || command == "export-bird-role-template"
-                || command == "export-bird-project";
+                || command == "export-unity-sample-binding-template"
+                || command == "export-unity-sample-role-template"
+                || command == "export-unity-sample-project";
         }
 
         static string ExtractLocalizationCsv(Inscape.Core.Model.InscapeDocument document) {
@@ -394,9 +394,9 @@ namespace Inscape.Cli {
             return true;
         }
 
-        static int RunMergeBirdL10n(string generatedPath, string? existingPath, string? reportPath, string? outputPath) {
+        static int RunMergeUnitySampleL10n(string generatedPath, string? existingPath, string? reportPath, string? outputPath) {
             if (!File.Exists(generatedPath)) {
-                Console.Error.WriteLine("Generated Bird L10N CSV not found: " + generatedPath);
+                Console.Error.WriteLine("Generated UnitySample L10N CSV not found: " + generatedPath);
                 return 1;
             }
 
@@ -406,13 +406,13 @@ namespace Inscape.Cli {
             }
 
             if (!File.Exists(existingPath)) {
-                Console.Error.WriteLine("Existing Bird L10N CSV not found: " + existingPath);
+                Console.Error.WriteLine("Existing UnitySample L10N CSV not found: " + existingPath);
                 return 1;
             }
 
             try {
-                BirdL10nMergePlanner planner = new BirdL10nMergePlanner();
-                BirdL10nMergeResult result = planner.Merge(File.ReadAllText(existingPath, Encoding.UTF8),
+                UnitySampleL10nMergePlanner planner = new UnitySampleL10nMergePlanner();
+                UnitySampleL10nMergeResult result = planner.Merge(File.ReadAllText(existingPath, Encoding.UTF8),
                                                            File.ReadAllText(generatedPath, Encoding.UTF8));
                 WriteOrPrint(outputPath, result.MergedCsv);
                 if (!string.IsNullOrWhiteSpace(reportPath)) {
@@ -454,32 +454,32 @@ namespace Inscape.Cli {
             File.WriteAllText(fullPath, content, Encoding.UTF8);
         }
 
-        static void WriteBirdExport(string outputDirectory, BirdExportResult export) {
+        static void WriteUnitySampleExport(string outputDirectory, UnitySampleExportResult export) {
             string fullDirectory = Path.GetFullPath(outputDirectory);
             Directory.CreateDirectory(fullDirectory);
-            File.WriteAllText(Path.Combine(fullDirectory, "bird-manifest.json"),
+            File.WriteAllText(Path.Combine(fullDirectory, "unity-sample-manifest.json"),
                               JsonSerializer.Serialize(export.Manifest, JsonOptions),
                               Encoding.UTF8);
             File.WriteAllText(Path.Combine(fullDirectory, "L10N_Talking.csv"), export.L10nTalkingCsv, Encoding.UTF8);
-            File.WriteAllText(Path.Combine(fullDirectory, "inscape-bird-l10n-map.csv"), export.AnchorMapCsv, Encoding.UTF8);
-            File.WriteAllText(Path.Combine(fullDirectory, "bird-export-report.txt"), export.ReportText, Encoding.UTF8);
+            File.WriteAllText(Path.Combine(fullDirectory, "inscape-unity-sample-l10n-map.csv"), export.AnchorMapCsv, Encoding.UTF8);
+            File.WriteAllText(Path.Combine(fullDirectory, "unity-sample-export-report.txt"), export.ReportText, Encoding.UTF8);
         }
 
-        static bool TryReadBirdExportOptions(string[] args, ProjectConfig config, out BirdExportOptions options) {
-            options = new BirdExportOptions {
-                TalkingIdStart = ReadIntOption(args, "--bird-talking-start", config.Bird.TalkingIdStart ?? 100000),
+        static bool TryReadUnitySampleExportOptions(string[] args, ProjectConfig config, out UnitySampleExportOptions options) {
+            options = new UnitySampleExportOptions {
+                TalkingIdStart = ReadIntOption(args, "--unity-sample-talking-start", config.UnitySample.TalkingIdStart ?? 100000),
             };
 
-            string? roleMapPath = ReadOption(args, "--bird-role-map") ?? config.Bird.RoleMap;
+            string? roleMapPath = ReadOption(args, "--unity-sample-role-map") ?? config.UnitySample.RoleMap;
             if (!string.IsNullOrWhiteSpace(roleMapPath)) {
-                if (!TryReadBirdRoleMap(roleMapPath, options)) {
+                if (!TryReadUnitySampleRoleMap(roleMapPath, options)) {
                     return false;
                 }
             }
 
-            string? bindingMapPath = ReadOption(args, "--bird-binding-map") ?? config.Bird.BindingMap;
+            string? bindingMapPath = ReadOption(args, "--unity-sample-binding-map") ?? config.UnitySample.BindingMap;
             if (!string.IsNullOrWhiteSpace(bindingMapPath)) {
-                if (!TryReadBirdBindingMap(bindingMapPath, options)) {
+                if (!TryReadUnitySampleBindingMap(bindingMapPath, options)) {
                     return false;
                 }
             }
@@ -487,9 +487,9 @@ namespace Inscape.Cli {
             return TryReadReservedTalkingIds(args, config, options);
         }
 
-        static bool TryReadBirdRoleMap(string roleMapPath, BirdExportOptions options) {
+        static bool TryReadUnitySampleRoleMap(string roleMapPath, UnitySampleExportOptions options) {
             if (!File.Exists(roleMapPath)) {
-                Console.Error.WriteLine("Bird role map not found: " + roleMapPath);
+                Console.Error.WriteLine("UnitySample role map not found: " + roleMapPath);
                 return false;
             }
 
@@ -505,14 +505,14 @@ namespace Inscape.Cli {
 
                 int commaIndex = line.LastIndexOf(',');
                 if (commaIndex <= 0 || commaIndex == line.Length - 1) {
-                    Console.Error.WriteLine("Invalid Bird role map row at line " + (i + 1) + ": " + lines[i]);
+                    Console.Error.WriteLine("Invalid UnitySample role map row at line " + (i + 1) + ": " + lines[i]);
                     return false;
                 }
 
                 string speaker = UnquoteCsvField(line.Substring(0, commaIndex).Trim());
                 string roleIdText = UnquoteCsvField(line.Substring(commaIndex + 1).Trim());
                 if (speaker.Length == 0 || !int.TryParse(roleIdText, out int roleId)) {
-                    Console.Error.WriteLine("Invalid Bird role map row at line " + (i + 1) + ": " + lines[i]);
+                    Console.Error.WriteLine("Invalid UnitySample role map row at line " + (i + 1) + ": " + lines[i]);
                     return false;
                 }
 
@@ -522,9 +522,9 @@ namespace Inscape.Cli {
             return true;
         }
 
-        static bool TryReadBirdBindingMap(string bindingMapPath, BirdExportOptions options) {
+        static bool TryReadUnitySampleBindingMap(string bindingMapPath, UnitySampleExportOptions options) {
             if (!File.Exists(bindingMapPath)) {
-                Console.Error.WriteLine("Bird binding map not found: " + bindingMapPath);
+                Console.Error.WriteLine("UnitySample binding map not found: " + bindingMapPath);
                 return false;
             }
 
@@ -536,48 +536,48 @@ namespace Inscape.Cli {
                 }
 
                 List<string> fields = ParseCsvRow(lines[i]);
-                if (IsBirdBindingHeader(fields)) {
+                if (IsUnitySampleBindingHeader(fields)) {
                     continue;
                 }
 
                 if (fields.Count != 6) {
-                    Console.Error.WriteLine("Invalid Bird binding map row at line " + (i + 1) + ": " + lines[i]);
+                    Console.Error.WriteLine("Invalid UnitySample binding map row at line " + (i + 1) + ": " + lines[i]);
                     return false;
                 }
 
                 string kind = fields[0].Trim();
                 string alias = fields[1].Trim();
-                string birdIdText = fields[2].Trim();
+                string unitySampleIdText = fields[2].Trim();
                 string unityGuid = fields[3].Trim();
                 string addressableKey = fields[4].Trim();
                 string assetPath = fields[5].Trim();
 
                 if (kind.Length == 0 || alias.Length == 0) {
-                    Console.Error.WriteLine("Invalid Bird binding map row at line " + (i + 1) + ": kind and alias are required.");
+                    Console.Error.WriteLine("Invalid UnitySample binding map row at line " + (i + 1) + ": kind and alias are required.");
                     return false;
                 }
 
-                int? birdId = null;
-                if (birdIdText.Length > 0) {
-                    if (!int.TryParse(birdIdText, out int parsedBirdId)) {
-                        Console.Error.WriteLine("Invalid Bird binding map row at line " + (i + 1) + ": birdId must be an integer.");
+                int? unitySampleId = null;
+                if (unitySampleIdText.Length > 0) {
+                    if (!int.TryParse(unitySampleIdText, out int parsedUnitySampleId)) {
+                        Console.Error.WriteLine("Invalid UnitySample binding map row at line " + (i + 1) + ": unitySampleId must be an integer.");
                         return false;
                     }
-                    birdId = parsedBirdId;
+                    unitySampleId = parsedUnitySampleId;
                 }
 
-                if (birdId == null
+                if (unitySampleId == null
                     && unityGuid.Length == 0
                     && addressableKey.Length == 0
                     && assetPath.Length == 0) {
-                    Console.Error.WriteLine("Invalid Bird binding map row at line " + (i + 1) + ": at least one binding target is required.");
+                    Console.Error.WriteLine("Invalid UnitySample binding map row at line " + (i + 1) + ": at least one binding target is required.");
                     return false;
                 }
 
-                options.HostBindings.Add(new BirdHostBinding {
+                options.HostBindings.Add(new UnitySampleHostBinding {
                     Kind = kind,
                     Alias = alias,
-                    BirdId = birdId,
+                    UnitySampleId = unitySampleId,
                     UnityGuid = unityGuid,
                     AddressableKey = addressableKey,
                     AssetPath = assetPath,
@@ -587,15 +587,15 @@ namespace Inscape.Cli {
             return true;
         }
 
-        static bool TryReadBirdTimelineBindingsForTemplate(string[] args, ProjectConfig config, out Dictionary<string, BirdTimelineAssetBinding> bindingsByAlias) {
-            bindingsByAlias = new Dictionary<string, BirdTimelineAssetBinding>(StringComparer.Ordinal);
-            string? timelineRoot = ReadOption(args, "--bird-existing-timeline-root") ?? config.Bird.ExistingTimelineRoot;
+        static bool TryReadUnitySampleTimelineBindingsForTemplate(string[] args, ProjectConfig config, out Dictionary<string, UnitySampleTimelineAssetBinding> bindingsByAlias) {
+            bindingsByAlias = new Dictionary<string, UnitySampleTimelineAssetBinding>(StringComparer.Ordinal);
+            string? timelineRoot = ReadOption(args, "--unity-sample-existing-timeline-root") ?? config.UnitySample.ExistingTimelineRoot;
             if (string.IsNullOrWhiteSpace(timelineRoot)) {
                 return true;
             }
 
             if (!Directory.Exists(timelineRoot)) {
-                Console.Error.WriteLine("Bird existing timeline root not found: " + timelineRoot);
+                Console.Error.WriteLine("UnitySample existing timeline root not found: " + timelineRoot);
                 return false;
             }
 
@@ -605,7 +605,7 @@ namespace Inscape.Cli {
                     continue;
                 }
 
-                BirdTimelineAssetBinding binding = new BirdTimelineAssetBinding {
+                UnitySampleTimelineAssetBinding binding = new UnitySampleTimelineAssetBinding {
                     TimelineId = timelineId,
                     UnityGuid = ReadUnityMetaGuid(assetPath + ".meta"),
                     AssetPath = ToUnityAssetPath(assetPath),
@@ -628,21 +628,21 @@ namespace Inscape.Cli {
             return true;
         }
 
-        static bool TryReadBirdRoleNameBindingsForTemplate(string[] args,
+        static bool TryReadUnitySampleRoleNameBindingsForTemplate(string[] args,
                                                            ProjectConfig config,
                                                            out Dictionary<string, int> roleIdsBySpeaker,
-                                                           out Dictionary<string, List<BirdRoleNameCandidate>> candidatesBySpeaker,
+                                                           out Dictionary<string, List<UnitySampleRoleNameCandidate>> candidatesBySpeaker,
                                                            out bool scannedRoleNameCsv) {
             roleIdsBySpeaker = new Dictionary<string, int>(StringComparer.Ordinal);
-            candidatesBySpeaker = new Dictionary<string, List<BirdRoleNameCandidate>>(StringComparer.Ordinal);
+            candidatesBySpeaker = new Dictionary<string, List<UnitySampleRoleNameCandidate>>(StringComparer.Ordinal);
             scannedRoleNameCsv = false;
-            string? roleNameCsvPath = ReadOption(args, "--bird-existing-role-name-csv") ?? config.Bird.ExistingRoleNameCsv;
+            string? roleNameCsvPath = ReadOption(args, "--unity-sample-existing-role-name-csv") ?? config.UnitySample.ExistingRoleNameCsv;
             if (string.IsNullOrWhiteSpace(roleNameCsvPath)) {
                 return true;
             }
 
             if (!File.Exists(roleNameCsvPath)) {
-                Console.Error.WriteLine("Bird existing role name CSV not found: " + roleNameCsvPath);
+                Console.Error.WriteLine("UnitySample existing role name CSV not found: " + roleNameCsvPath);
                 return false;
             }
 
@@ -687,9 +687,9 @@ namespace Inscape.Cli {
                         continue;
                     }
 
-                    AddBirdRoleCandidate(candidatesBySpeaker,
+                    AddUnitySampleRoleCandidate(candidatesBySpeaker,
                                          speaker,
-                                         new BirdRoleNameCandidate(roleId, description, headers[column].Trim()));
+                                         new UnitySampleRoleNameCandidate(roleId, description, headers[column].Trim()));
 
                     if (roleIdsBySpeaker.TryGetValue(speaker, out int existingRoleId)) {
                         if (existingRoleId != roleId) {
@@ -705,11 +705,11 @@ namespace Inscape.Cli {
             return true;
         }
 
-        static void AddBirdRoleCandidate(Dictionary<string, List<BirdRoleNameCandidate>> candidatesBySpeaker,
+        static void AddUnitySampleRoleCandidate(Dictionary<string, List<UnitySampleRoleNameCandidate>> candidatesBySpeaker,
                                          string speaker,
-                                         BirdRoleNameCandidate candidate) {
-            if (!candidatesBySpeaker.TryGetValue(speaker, out List<BirdRoleNameCandidate>? candidates)) {
-                candidates = new List<BirdRoleNameCandidate>();
+                                         UnitySampleRoleNameCandidate candidate) {
+            if (!candidatesBySpeaker.TryGetValue(speaker, out List<UnitySampleRoleNameCandidate>? candidates)) {
+                candidates = new List<UnitySampleRoleNameCandidate>();
                 candidatesBySpeaker.Add(speaker, candidates);
             }
 
@@ -721,16 +721,16 @@ namespace Inscape.Cli {
             candidates.Add(candidate);
         }
 
-        static string WriteBirdRoleTemplateReport(InscapeDocument graph,
+        static string WriteUnitySampleRoleTemplateReport(InscapeDocument graph,
                                                   IReadOnlyDictionary<string, int> roleIdsBySpeaker,
-                                                  IReadOnlyDictionary<string, List<BirdRoleNameCandidate>> candidatesBySpeaker,
+                                                  IReadOnlyDictionary<string, List<UnitySampleRoleNameCandidate>> candidatesBySpeaker,
                                                   bool scannedRoleNameCsv) {
             StringBuilder builder = new StringBuilder();
             builder.AppendLine("speaker,status,roleId,candidateRoleIds,candidateDescriptions,candidateLanguages");
             foreach (string speaker in CollectDialogueSpeakers(graph)) {
                 roleIdsBySpeaker.TryGetValue(speaker, out int roleId);
-                candidatesBySpeaker.TryGetValue(speaker, out List<BirdRoleNameCandidate>? candidates);
-                string status = CreateBirdRoleReportStatus(roleIdsBySpeaker.ContainsKey(speaker), candidates, scannedRoleNameCsv);
+                candidatesBySpeaker.TryGetValue(speaker, out List<UnitySampleRoleNameCandidate>? candidates);
+                string status = CreateUnitySampleRoleReportStatus(roleIdsBySpeaker.ContainsKey(speaker), candidates, scannedRoleNameCsv);
                 AppendCsvField(builder, speaker);
                 builder.Append(',');
                 AppendCsvField(builder, status);
@@ -747,8 +747,8 @@ namespace Inscape.Cli {
             return builder.ToString();
         }
 
-        static string CreateBirdRoleReportStatus(bool hasUniqueRoleId,
-                                                 List<BirdRoleNameCandidate>? candidates,
+        static string CreateUnitySampleRoleReportStatus(bool hasUniqueRoleId,
+                                                 List<UnitySampleRoleNameCandidate>? candidates,
                                                  bool scannedRoleNameCsv) {
             if (hasUniqueRoleId) {
                 return "unique";
@@ -776,7 +776,7 @@ namespace Inscape.Cli {
             return speakers;
         }
 
-        static string JoinRoleCandidateIds(List<BirdRoleNameCandidate>? candidates) {
+        static string JoinRoleCandidateIds(List<UnitySampleRoleNameCandidate>? candidates) {
             if (candidates == null || candidates.Count == 0) {
                 return string.Empty;
             }
@@ -788,7 +788,7 @@ namespace Inscape.Cli {
             return string.Join("|", ids);
         }
 
-        static string JoinRoleCandidateDescriptions(List<BirdRoleNameCandidate>? candidates) {
+        static string JoinRoleCandidateDescriptions(List<UnitySampleRoleNameCandidate>? candidates) {
             if (candidates == null || candidates.Count == 0) {
                 return string.Empty;
             }
@@ -802,7 +802,7 @@ namespace Inscape.Cli {
             return string.Join("|", descriptions);
         }
 
-        static string JoinRoleCandidateLanguages(List<BirdRoleNameCandidate>? candidates) {
+        static string JoinRoleCandidateLanguages(List<UnitySampleRoleNameCandidate>? candidates) {
             if (candidates == null || candidates.Count == 0) {
                 return string.Empty;
             }
@@ -885,11 +885,11 @@ namespace Inscape.Cli {
             candidates.Add(dotted.ToLowerInvariant());
         }
 
-        static bool IsBirdBindingHeader(List<string> fields) {
+        static bool IsUnitySampleBindingHeader(List<string> fields) {
             return fields.Count == 6
                 && fields[0].Equals("kind", StringComparison.OrdinalIgnoreCase)
                 && fields[1].Equals("alias", StringComparison.OrdinalIgnoreCase)
-                && fields[2].Equals("birdId", StringComparison.OrdinalIgnoreCase)
+                && fields[2].Equals("unitySampleId", StringComparison.OrdinalIgnoreCase)
                 && fields[3].Equals("unityGuid", StringComparison.OrdinalIgnoreCase)
                 && fields[4].Equals("addressableKey", StringComparison.OrdinalIgnoreCase)
                 && fields[5].Equals("assetPath", StringComparison.OrdinalIgnoreCase);
@@ -986,14 +986,14 @@ namespace Inscape.Cli {
             return JsonSerializer.Serialize(template, JsonOptions);
         }
 
-        static bool TryReadReservedTalkingIds(string[] args, ProjectConfig config, BirdExportOptions options) {
-            string? talkingRoot = ReadOption(args, "--bird-existing-talking-root") ?? config.Bird.ExistingTalkingRoot;
+        static bool TryReadReservedTalkingIds(string[] args, ProjectConfig config, UnitySampleExportOptions options) {
+            string? talkingRoot = ReadOption(args, "--unity-sample-existing-talking-root") ?? config.UnitySample.ExistingTalkingRoot;
             if (string.IsNullOrWhiteSpace(talkingRoot)) {
                 return true;
             }
 
             if (!Directory.Exists(talkingRoot)) {
-                Console.Error.WriteLine("Bird existing talking root not found: " + talkingRoot);
+                Console.Error.WriteLine("UnitySample existing talking root not found: " + talkingRoot);
                 return false;
             }
 
@@ -1055,10 +1055,10 @@ namespace Inscape.Cli {
             Console.WriteLine("  inscape diagnose-project <root> [--entry node.name] [--override source.inscape temp.inscape] [-o diagnostics.json]");
             Console.WriteLine("  inscape extract-l10n-project <root> [--entry node.name] [--override source.inscape temp.inscape] [-o strings.csv]");
             Console.WriteLine("  inscape update-l10n-project <root> --from old.csv [--entry node.name] [--override source.inscape temp.inscape] [-o strings.csv]");
-            Console.WriteLine("  inscape export-bird-binding-template <root> [--config inscape.config.json] [--entry node.name] [--override source.inscape temp.inscape] [--bird-existing-timeline-root path] [-o bindings.csv]");
-            Console.WriteLine("  inscape export-bird-role-template <root> [--config inscape.config.json] [--entry node.name] [--override source.inscape temp.inscape] [--bird-existing-role-name-csv path] [--report report.csv] [-o roles.csv]");
-            Console.WriteLine("  inscape export-bird-project <root> [--config inscape.config.json] [--entry node.name] [--bird-talking-start 100000] [--bird-role-map roles.csv] [--bird-binding-map bindings.csv] [--bird-existing-talking-root path] -o output-dir");
-            Console.WriteLine("  inscape merge-bird-l10n <generated-L10N_Talking.csv> --from existing-L10N_Talking.csv [--report report.csv] [-o merged.csv]");
+            Console.WriteLine("  inscape export-unity-sample-binding-template <root> [--config inscape.config.json] [--entry node.name] [--override source.inscape temp.inscape] [--unity-sample-existing-timeline-root path] [-o bindings.csv]");
+            Console.WriteLine("  inscape export-unity-sample-role-template <root> [--config inscape.config.json] [--entry node.name] [--override source.inscape temp.inscape] [--unity-sample-existing-role-name-csv path] [--report report.csv] [-o roles.csv]");
+            Console.WriteLine("  inscape export-unity-sample-project <root> [--config inscape.config.json] [--entry node.name] [--unity-sample-talking-start 100000] [--unity-sample-role-map roles.csv] [--unity-sample-binding-map bindings.csv] [--unity-sample-existing-talking-root path] -o output-dir");
+            Console.WriteLine("  inscape merge-unity-sample-l10n <generated-L10N_Talking.csv> --from existing-L10N_Talking.csv [--report report.csv] [-o merged.csv]");
             Console.WriteLine("  inscape compile-project <root> [--entry node.name] [-o output.json]");
             Console.WriteLine("  inscape preview-project <root> [--entry node.name] [-o preview.html]");
             Console.WriteLine("  inscape compile <file.inscape> [-o output.json]");
@@ -1087,11 +1087,11 @@ namespace Inscape.Cli {
             Console.WriteLine("  extract-l10n-project");
             Console.WriteLine("  update-l10n-project");
             Console.WriteLine();
-            Console.WriteLine("Bird:");
-            Console.WriteLine("  export-bird-role-template");
-            Console.WriteLine("  export-bird-binding-template");
-            Console.WriteLine("  export-bird-project");
-            Console.WriteLine("  merge-bird-l10n");
+            Console.WriteLine("UnitySample:");
+            Console.WriteLine("  export-unity-sample-role-template");
+            Console.WriteLine("  export-unity-sample-binding-template");
+            Console.WriteLine("  export-unity-sample-project");
+            Console.WriteLine("  merge-unity-sample-l10n");
             Console.WriteLine();
             Console.WriteLine("Run `inscape help <command>` for details.");
         }
@@ -1139,7 +1139,7 @@ namespace Inscape.Cli {
                                           "Write a first host schema template for pure queries and host events.",
                                           "inscape export-host-schema-template [-o inscape.host.schema.json]",
                                           "dotnet run --project src\\Inscape.Cli\\Inscape.Cli.csproj -- export-host-schema-template -o config\\inscape.host.schema.json",
-                                          "The template is a versioned design scaffold. It does not change current DSL parsing or Bird export behavior.");
+                                          "The template is a versioned design scaffold. It does not change current DSL parsing or UnitySample export behavior.");
                     return true;
                 case "check-project":
                     PrintCommandHelpBlock("check-project",
@@ -1177,32 +1177,32 @@ namespace Inscape.Cli {
                                           "inscape update-l10n-project <root> --from old.csv [--entry node.name] [--override source.inscape temp.inscape] [-o strings.csv]",
                                           "dotnet run --project src\\Inscape.Cli\\Inscape.Cli.csproj -- update-l10n-project samples --from artifacts\\old-l10n.csv -o artifacts\\l10n.updated.csv");
                     return true;
-                case "export-bird-role-template":
-                    PrintCommandHelpBlock("export-bird-role-template",
-                                          "Scan project dialogue speakers and write a Bird role binding template.",
-                                          "inscape export-bird-role-template <root> [--config inscape.config.json] [--entry node.name] [--override source.inscape temp.inscape] [--bird-existing-role-name-csv path] [--report report.csv] [-o roles.csv]",
-                                          "dotnet run --project src\\Inscape.Cli\\Inscape.Cli.csproj -- export-bird-role-template samples --bird-existing-role-name-csv D:\\UnityProjects\\Bird\\Assets\\Resources_Runtime\\Localization\\L10N_RoleName.csv --report artifacts\\bird-export\\bird-roles.report.csv -o config\\bird-roles.csv",
+                case "export-unity-sample-role-template":
+                    PrintCommandHelpBlock("export-unity-sample-role-template",
+                                          "Scan project dialogue speakers and write a UnitySample role binding template.",
+                                          "inscape export-unity-sample-role-template <root> [--config inscape.config.json] [--entry node.name] [--override source.inscape temp.inscape] [--unity-sample-existing-role-name-csv path] [--report report.csv] [-o roles.csv]",
+                                          "dotnet run --project src\\Inscape.Cli\\Inscape.Cli.csproj -- export-unity-sample-role-template samples --unity-sample-existing-role-name-csv D:\\UnityProjects\\UnitySample\\Assets\\Resources_Runtime\\Localization\\L10N_RoleName.csv --report artifacts\\unity-sample-export\\unity-sample-roles.report.csv -o config\\unity-sample-roles.csv",
                                           "Output CSV: speaker,roleId. Optional report statuses: unique, ambiguous, missing, unscanned.");
                     return true;
-                case "export-bird-binding-template":
-                    PrintCommandHelpBlock("export-bird-binding-template",
-                                          "Scan Timeline hooks and write a Bird host binding template.",
-                                          "inscape export-bird-binding-template <root> [--config inscape.config.json] [--entry node.name] [--override source.inscape temp.inscape] [--bird-existing-timeline-root path] [-o bindings.csv]",
-                                          "dotnet run --project src\\Inscape.Cli\\Inscape.Cli.csproj -- export-bird-binding-template samples --bird-existing-timeline-root D:\\UnityProjects\\Bird\\Assets\\Resources_Runtime\\Timeline -o config\\bird-bindings.csv",
-                                          "Output CSV: kind,alias,birdId,unityGuid,addressableKey,assetPath");
+                case "export-unity-sample-binding-template":
+                    PrintCommandHelpBlock("export-unity-sample-binding-template",
+                                          "Scan Timeline hooks and write a UnitySample host binding template.",
+                                          "inscape export-unity-sample-binding-template <root> [--config inscape.config.json] [--entry node.name] [--override source.inscape temp.inscape] [--unity-sample-existing-timeline-root path] [-o bindings.csv]",
+                                          "dotnet run --project src\\Inscape.Cli\\Inscape.Cli.csproj -- export-unity-sample-binding-template samples --unity-sample-existing-timeline-root D:\\UnityProjects\\UnitySample\\Assets\\Resources_Runtime\\Timeline -o config\\unity-sample-bindings.csv",
+                                          "Output CSV: kind,alias,unitySampleId,unityGuid,addressableKey,assetPath");
                     return true;
-                case "export-bird-project":
-                    PrintCommandHelpBlock("export-bird-project",
-                                          "Export project IR to Bird manifest, Bird L10N CSV, anchor map, and report.",
-                                          "inscape export-bird-project <root> [--config inscape.config.json] [--entry node.name] [--bird-talking-start 100000] [--bird-role-map roles.csv] [--bird-binding-map bindings.csv] [--bird-existing-talking-root path] -o output-dir",
-                                          "dotnet run --project src\\Inscape.Cli\\Inscape.Cli.csproj -- export-bird-project samples --bird-role-map config\\bird-roles.csv --bird-binding-map config\\bird-bindings.csv -o artifacts\\bird-export",
-                                          "Output files: bird-manifest.json, L10N_Talking.csv, inscape-bird-l10n-map.csv, bird-export-report.txt");
+                case "export-unity-sample-project":
+                    PrintCommandHelpBlock("export-unity-sample-project",
+                                          "Export project IR to UnitySample manifest, UnitySample L10N CSV, anchor map, and report.",
+                                          "inscape export-unity-sample-project <root> [--config inscape.config.json] [--entry node.name] [--unity-sample-talking-start 100000] [--unity-sample-role-map roles.csv] [--unity-sample-binding-map bindings.csv] [--unity-sample-existing-talking-root path] -o output-dir",
+                                          "dotnet run --project src\\Inscape.Cli\\Inscape.Cli.csproj -- export-unity-sample-project samples --unity-sample-role-map config\\unity-sample-roles.csv --unity-sample-binding-map config\\unity-sample-bindings.csv -o artifacts\\unity-sample-export",
+                                          "Output files: unity-sample-manifest.json, L10N_Talking.csv, inscape-unity-sample-l10n-map.csv, unity-sample-export-report.txt");
                     return true;
-                case "merge-bird-l10n":
-                    PrintCommandHelpBlock("merge-bird-l10n",
-                                          "Merge generated Inscape Bird L10N_Talking.csv into an existing Bird L10N_Talking.csv without silently reusing stale translations.",
-                                          "inscape merge-bird-l10n <generated-L10N_Talking.csv> --from existing-L10N_Talking.csv [--report report.csv] [-o merged.csv]",
-                                          "dotnet run --project src\\Inscape.Cli\\Inscape.Cli.csproj -- merge-bird-l10n artifacts\\bird-export\\L10N_Talking.csv --from D:\\UnityProjects\\Bird\\Assets\\Resources_Runtime\\Localization\\L10N_Talking.csv --report artifacts\\bird-export\\L10N_Talking.merge-report.csv -o artifacts\\bird-export\\L10N_Talking.merged.csv",
+                case "merge-unity-sample-l10n":
+                    PrintCommandHelpBlock("merge-unity-sample-l10n",
+                                          "Merge generated Inscape UnitySample L10N_Talking.csv into an existing UnitySample L10N_Talking.csv without silently reusing stale translations.",
+                                          "inscape merge-unity-sample-l10n <generated-L10N_Talking.csv> --from existing-L10N_Talking.csv [--report report.csv] [-o merged.csv]",
+                                          "dotnet run --project src\\Inscape.Cli\\Inscape.Cli.csproj -- merge-unity-sample-l10n artifacts\\unity-sample-export\\L10N_Talking.csv --from D:\\UnityProjects\\UnitySample\\Assets\\Resources_Runtime\\Localization\\L10N_Talking.csv --report artifacts\\unity-sample-export\\L10N_Talking.merge-report.csv -o artifacts\\unity-sample-export\\L10N_Talking.merged.csv",
                                           "Preserves unrelated rows and existing translations when source text is unchanged. If source text changed, target-language cells are cleared and old values are written to the report.");
                     return true;
                 default:
@@ -1251,7 +1251,7 @@ namespace Inscape.Cli {
 
         }
 
-        sealed class BirdRoleNameCandidate {
+        sealed class UnitySampleRoleNameCandidate {
 
             public int RoleId { get; }
 
@@ -1259,7 +1259,7 @@ namespace Inscape.Cli {
 
             public string Language { get; }
 
-            public BirdRoleNameCandidate(int roleId, string description, string language) {
+            public UnitySampleRoleNameCandidate(int roleId, string description, string language) {
                 RoleId = roleId;
                 Description = description;
                 Language = language;
@@ -1271,11 +1271,11 @@ namespace Inscape.Cli {
 
             public string? HostSchema { get; set; }
 
-            public BirdProjectConfig Bird { get; set; } = new BirdProjectConfig();
+            public UnitySampleProjectConfig UnitySample { get; set; } = new UnitySampleProjectConfig();
 
         }
 
-        sealed class BirdProjectConfig {
+        sealed class UnitySampleProjectConfig {
 
             public string? RoleMap { get; set; }
 

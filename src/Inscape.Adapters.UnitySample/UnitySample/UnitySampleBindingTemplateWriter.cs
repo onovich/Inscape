@@ -1,18 +1,18 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using Inscape.Core.Model;
 
-namespace Inscape.Core.Bird {
+namespace Inscape.Adapters.UnitySample {
 
-    public sealed class BirdBindingTemplateWriter {
+    public sealed class UnitySampleBindingTemplateWriter {
 
         public string Write(InscapeDocument graph) {
-            return Write(graph, new Dictionary<string, BirdTimelineAssetBinding>(StringComparer.Ordinal));
+            return Write(graph, new Dictionary<string, UnitySampleTimelineAssetBinding>(StringComparer.Ordinal));
         }
 
-        public string Write(InscapeDocument graph, IReadOnlyDictionary<string, BirdTimelineAssetBinding> timelineBindingsByAlias) {
+        public string Write(InscapeDocument graph, IReadOnlyDictionary<string, UnitySampleTimelineAssetBinding> timelineBindingsByAlias) {
             SortedSet<string> timelineAliases = new SortedSet<string>(StringComparer.Ordinal);
             for (int nodeIndex = 0; nodeIndex < graph.Nodes.Count; nodeIndex += 1) {
                 NarrativeNode node = graph.Nodes[nodeIndex];
@@ -22,19 +22,19 @@ namespace Inscape.Core.Bird {
                         continue;
                     }
 
-                    if (BirdHostHookParser.TryParseTimelineHook(line.Text, out string alias)) {
+                    if (UnitySampleHostHookParser.TryParseTimelineHook(line.Text, out string alias)) {
                         timelineAliases.Add(alias);
                     }
                 }
             }
 
             StringBuilder builder = new StringBuilder();
-            builder.AppendLine("kind,alias,birdId,unityGuid,addressableKey,assetPath");
+            builder.AppendLine("kind,alias,unitySampleId,unityGuid,addressableKey,assetPath");
             foreach (string alias in timelineAliases) {
                 AppendCsvField(builder, "timeline");
                 builder.Append(',');
                 AppendCsvField(builder, alias);
-                if (timelineBindingsByAlias.TryGetValue(alias, out BirdTimelineAssetBinding? binding)) {
+                if (timelineBindingsByAlias.TryGetValue(alias, out UnitySampleTimelineAssetBinding? binding)) {
                     builder.Append(',');
                     AppendCsvField(builder, binding.TimelineId.ToString(CultureInfo.InvariantCulture));
                     builder.Append(',');
@@ -72,3 +72,4 @@ namespace Inscape.Core.Bird {
     }
 
 }
+

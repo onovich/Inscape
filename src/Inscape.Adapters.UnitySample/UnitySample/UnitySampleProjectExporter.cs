@@ -1,28 +1,28 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using Inscape.Core.Compilation;
 using Inscape.Core.Model;
 
-namespace Inscape.Core.Bird {
+namespace Inscape.Adapters.UnitySample {
 
-    public sealed class BirdProjectExporter {
+    public sealed class UnitySampleProjectExporter {
 
-        public BirdExportResult Export(ProjectCompilationResult project) {
-            return Export(project, new BirdExportOptions());
+        public UnitySampleExportResult Export(ProjectCompilationResult project) {
+            return Export(project, new UnitySampleExportOptions());
         }
 
-        public BirdExportResult Export(ProjectCompilationResult project, BirdExportOptions options) {
-            BirdManifest manifest = CreateManifest(project, options);
+        public UnitySampleExportResult Export(ProjectCompilationResult project, UnitySampleExportOptions options) {
+            UnitySampleManifest manifest = CreateManifest(project, options);
             string l10nTalkingCsv = WriteL10nTalkingCsv(manifest, options);
             string anchorMapCsv = WriteAnchorMapCsv(manifest.Localization);
             string reportText = WriteExportReport(manifest);
-            return new BirdExportResult(manifest, l10nTalkingCsv, anchorMapCsv, reportText);
+            return new UnitySampleExportResult(manifest, l10nTalkingCsv, anchorMapCsv, reportText);
         }
 
-        static BirdManifest CreateManifest(ProjectCompilationResult project, BirdExportOptions options) {
-            BirdManifest manifest = new BirdManifest();
+        static UnitySampleManifest CreateManifest(ProjectCompilationResult project, UnitySampleExportOptions options) {
+            UnitySampleManifest manifest = new UnitySampleManifest();
             manifest.RootPath = project.RootPath;
             manifest.EntryNodeName = project.EntryNodeName;
             manifest.TalkingIdStart = options.TalkingIdStart;
@@ -30,14 +30,14 @@ namespace Inscape.Core.Bird {
             manifest.HostBindings.AddRange(options.HostBindings);
             ValidateHostBindings(manifest);
 
-            Dictionary<string, BirdNodeEntry> nodesByName = new Dictionary<string, BirdNodeEntry>(StringComparer.Ordinal);
+            Dictionary<string, UnitySampleNodeEntry> nodesByName = new Dictionary<string, UnitySampleNodeEntry>(StringComparer.Ordinal);
             Dictionary<string, int> entryTalkingIdsByNodeName = new Dictionary<string, int>(StringComparer.Ordinal);
             HashSet<string> speakers = new HashSet<string>(StringComparer.Ordinal);
 
             int nextTalkingId = options.TalkingIdStart;
             for (int nodeIndex = 0; nodeIndex < project.Graph.Nodes.Count; nodeIndex += 1) {
                 NarrativeNode node = project.Graph.Nodes[nodeIndex];
-                BirdNodeEntry nodeEntry = new BirdNodeEntry {
+                UnitySampleNodeEntry nodeEntry = new UnitySampleNodeEntry {
                     Name = node.Name,
                     DefaultNextNodeName = node.DefaultNext,
                     Source = node.Source,
@@ -49,7 +49,7 @@ namespace Inscape.Core.Bird {
                 for (int segmentIndex = 0; segmentIndex < segments.Count; segmentIndex += 1) {
                     Segment segment = segments[segmentIndex];
                     int talkingId = TakeNextTalkingId(options, ref nextTalkingId);
-                    BirdTalkingEntry talking = new BirdTalkingEntry {
+                    UnitySampleTalkingEntry talking = new UnitySampleTalkingEntry {
                         TalkingId = talkingId,
                         NodeName = node.Name,
                         NodeOrder = segmentIndex,
@@ -79,7 +79,7 @@ namespace Inscape.Core.Bird {
 
                 if (segments.Count == 0 && HasChoices(node)) {
                     int talkingId = TakeNextTalkingId(options, ref nextTalkingId);
-                    BirdTalkingEntry talking = new BirdTalkingEntry {
+                    UnitySampleTalkingEntry talking = new UnitySampleTalkingEntry {
                         TalkingId = talkingId,
                         NodeName = node.Name,
                         NodeOrder = 0,
@@ -96,7 +96,7 @@ namespace Inscape.Core.Bird {
             }
 
             foreach (string speaker in speakers) {
-                manifest.Roles.Add(new BirdRoleBinding {
+                manifest.Roles.Add(new UnitySampleRoleBinding {
                     Speaker = speaker,
                     RoleId = ResolveRoleId(options, speaker),
                 });
@@ -108,13 +108,13 @@ namespace Inscape.Core.Bird {
             return manifest;
         }
 
-        static void ValidateHostBindings(BirdManifest manifest) {
+        static void ValidateHostBindings(UnitySampleManifest manifest) {
             HashSet<string> seenKeys = new HashSet<string>(StringComparer.Ordinal);
             for (int i = 0; i < manifest.HostBindings.Count; i += 1) {
-                BirdHostBinding binding = manifest.HostBindings[i];
+                UnitySampleHostBinding binding = manifest.HostBindings[i];
                 string key = binding.Kind + "\n" + binding.Alias;
                 if (!seenKeys.Add(key)) {
-                    manifest.Warnings.Add(new BirdExportWarning("BIRD001",
+                    manifest.Warnings.Add(new UnitySampleExportWarning("UnitySample001",
                                                                 "Duplicate host binding '" + binding.Kind + ":" + binding.Alias + "'. The first matching binding will be used.",
                                                                 SourceSpan.Empty));
                 }
@@ -152,7 +152,7 @@ namespace Inscape.Core.Bird {
             return false;
         }
 
-        static int? ResolveRoleId(BirdExportOptions options, string speaker) {
+        static int? ResolveRoleId(UnitySampleExportOptions options, string speaker) {
             if (string.IsNullOrWhiteSpace(speaker)) {
                 return null;
             }
@@ -163,7 +163,7 @@ namespace Inscape.Core.Bird {
             return null;
         }
 
-        static int TakeNextTalkingId(BirdExportOptions options, ref int nextTalkingId) {
+        static int TakeNextTalkingId(UnitySampleExportOptions options, ref int nextTalkingId) {
             while (options.ReservedTalkingIds.Contains(nextTalkingId)) {
                 nextTalkingId += 1;
             }
@@ -175,13 +175,13 @@ namespace Inscape.Core.Bird {
 
         static void LinkTalkings(InscapeDocument graph,
                                  Dictionary<string, int> entryTalkingIdsByNodeName,
-                                 Dictionary<string, BirdNodeEntry> nodesByName,
-                                 BirdManifest manifest) {
-            Dictionary<string, List<BirdTalkingEntry>> talkingsByNodeName = new Dictionary<string, List<BirdTalkingEntry>>(StringComparer.Ordinal);
+                                 Dictionary<string, UnitySampleNodeEntry> nodesByName,
+                                 UnitySampleManifest manifest) {
+            Dictionary<string, List<UnitySampleTalkingEntry>> talkingsByNodeName = new Dictionary<string, List<UnitySampleTalkingEntry>>(StringComparer.Ordinal);
             for (int i = 0; i < manifest.Talkings.Count; i += 1) {
-                BirdTalkingEntry talking = manifest.Talkings[i];
-                if (!talkingsByNodeName.TryGetValue(talking.NodeName, out List<BirdTalkingEntry>? nodeTalkings)) {
-                    nodeTalkings = new List<BirdTalkingEntry>();
+                UnitySampleTalkingEntry talking = manifest.Talkings[i];
+                if (!talkingsByNodeName.TryGetValue(talking.NodeName, out List<UnitySampleTalkingEntry>? nodeTalkings)) {
+                    nodeTalkings = new List<UnitySampleTalkingEntry>();
                     talkingsByNodeName.Add(talking.NodeName, nodeTalkings);
                 }
                 nodeTalkings.Add(talking);
@@ -189,7 +189,7 @@ namespace Inscape.Core.Bird {
 
             for (int nodeIndex = 0; nodeIndex < graph.Nodes.Count; nodeIndex += 1) {
                 NarrativeNode node = graph.Nodes[nodeIndex];
-                if (!talkingsByNodeName.TryGetValue(node.Name, out List<BirdTalkingEntry>? nodeTalkings) || nodeTalkings.Count == 0) {
+                if (!talkingsByNodeName.TryGetValue(node.Name, out List<UnitySampleTalkingEntry>? nodeTalkings) || nodeTalkings.Count == 0) {
                     continue;
                 }
 
@@ -197,13 +197,13 @@ namespace Inscape.Core.Bird {
                     nodeTalkings[talkingIndex].NextTalkingId = nodeTalkings[talkingIndex + 1].TalkingId;
                 }
 
-                BirdTalkingEntry terminalTalking = nodeTalkings[nodeTalkings.Count - 1];
+                UnitySampleTalkingEntry terminalTalking = nodeTalkings[nodeTalkings.Count - 1];
                 AttachChoices(node, entryTalkingIdsByNodeName, manifest, terminalTalking);
 
                 if (terminalTalking.Options.Count == 0 && !string.IsNullOrWhiteSpace(node.DefaultNext)) {
                     if (entryTalkingIdsByNodeName.TryGetValue(node.DefaultNext, out int nextTalkingId)) {
                         terminalTalking.NextTalkingId = nextTalkingId;
-                        if (nodesByName.TryGetValue(node.Name, out BirdNodeEntry? nodeEntry)) {
+                        if (nodesByName.TryGetValue(node.Name, out UnitySampleNodeEntry? nodeEntry)) {
                             nodeEntry.DefaultNextTalkingId = nextTalkingId;
                         }
                     }
@@ -213,8 +213,8 @@ namespace Inscape.Core.Bird {
 
         static void AttachChoices(NarrativeNode node,
                                   Dictionary<string, int> entryTalkingIdsByNodeName,
-                                  BirdManifest manifest,
-                                  BirdTalkingEntry terminalTalking) {
+                                  UnitySampleManifest manifest,
+                                  UnitySampleTalkingEntry terminalTalking) {
             for (int choiceIndex = 0; choiceIndex < node.Choices.Count; choiceIndex += 1) {
                 ChoiceGroup choice = node.Choices[choiceIndex];
                 for (int optionIndex = 0; optionIndex < choice.Options.Count; optionIndex += 1) {
@@ -224,7 +224,7 @@ namespace Inscape.Core.Bird {
                         nextTalkingId = targetTalkingId;
                     }
 
-                    terminalTalking.Options.Add(new BirdChoiceOptionEntry {
+                    terminalTalking.Options.Add(new UnitySampleChoiceOptionEntry {
                         Text = option.Text,
                         Anchor = option.Anchor,
                         TargetNodeName = option.Target,
@@ -233,7 +233,7 @@ namespace Inscape.Core.Bird {
                     });
 
                     if (!string.IsNullOrWhiteSpace(option.Anchor)) {
-                        manifest.Localization.Add(new BirdLocalizationMapping {
+                        manifest.Localization.Add(new UnitySampleLocalizationMapping {
                             Anchor = option.Anchor,
                             NodeName = node.Name,
                             Kind = "ChoiceOption",
@@ -241,7 +241,7 @@ namespace Inscape.Core.Bird {
                             Text = option.Text,
                             TalkingId = terminalTalking.TalkingId,
                             TalkingIndex = null,
-                            BirdField = "TalkingOptionTM.optionText",
+                            UnitySampleField = "TalkingOptionTM.optionText",
                             Source = option.Source,
                         });
                     }
@@ -249,12 +249,12 @@ namespace Inscape.Core.Bird {
             }
         }
 
-        static void AddTalkingLocalization(BirdManifest manifest, string nodeName, Segment segment, int talkingId) {
+        static void AddTalkingLocalization(UnitySampleManifest manifest, string nodeName, Segment segment, int talkingId) {
             if (string.IsNullOrWhiteSpace(segment.Anchor)) {
                 return;
             }
 
-            manifest.Localization.Add(new BirdLocalizationMapping {
+            manifest.Localization.Add(new UnitySampleLocalizationMapping {
                 Anchor = segment.Anchor,
                 NodeName = nodeName,
                 Kind = segment.Kind,
@@ -262,13 +262,13 @@ namespace Inscape.Core.Bird {
                 Text = segment.Text,
                 TalkingId = talkingId,
                 TalkingIndex = 0,
-                BirdField = "L10N_Talking.ZH_CN",
+                UnitySampleField = "L10N_Talking.ZH_CN",
                 Source = segment.Source,
             });
         }
 
-        static void ExtractHostHooks(InscapeDocument graph, BirdManifest manifest) {
-            Dictionary<string, List<BirdTalkingEntry>> talkingsByNodeName = BuildTalkingsByNodeName(manifest);
+        static void ExtractHostHooks(InscapeDocument graph, UnitySampleManifest manifest) {
+            Dictionary<string, List<UnitySampleTalkingEntry>> talkingsByNodeName = BuildTalkingsByNodeName(manifest);
 
             for (int nodeIndex = 0; nodeIndex < graph.Nodes.Count; nodeIndex += 1) {
                 NarrativeNode node = graph.Nodes[nodeIndex];
@@ -278,30 +278,30 @@ namespace Inscape.Core.Bird {
                         continue;
                     }
 
-                    if (!BirdHostHookParser.TryParseTimelineHook(line.Text, out string alias, out string phase)) {
+                    if (!UnitySampleHostHookParser.TryParseTimelineHook(line.Text, out string alias, out string phase)) {
                         continue;
                     }
 
-                    BirdHostBinding? binding = ResolveHostBinding(manifest.HostBindings, "timeline", alias);
-                    BirdTalkingEntry? targetTalking = FindHookTargetTalking(node.Name, line.Source.Line, phase, talkingsByNodeName);
+                    UnitySampleHostBinding? binding = ResolveHostBinding(manifest.HostBindings, "timeline", alias);
+                    UnitySampleTalkingEntry? targetTalking = FindHookTargetTalking(node.Name, line.Source.Line, phase, talkingsByNodeName);
                     if (binding == null) {
-                        manifest.Warnings.Add(new BirdExportWarning("BIRD002",
-                                                                    "Timeline hook '" + alias + "' has no matching host binding. Add a 'timeline," + alias + ",...' row to --bird-binding-map.",
+                        manifest.Warnings.Add(new UnitySampleExportWarning("UnitySample002",
+                                                                    "Timeline hook '" + alias + "' has no matching host binding. Add a 'timeline," + alias + ",...' row to --unity-sample-binding-map.",
                                                                     line.Source));
                     }
                     if (targetTalking == null) {
-                        manifest.Warnings.Add(new BirdExportWarning("BIRD003",
+                        manifest.Warnings.Add(new UnitySampleExportWarning("UnitySample003",
                                                                     "Timeline hook '" + alias + "' could not be attached to a generated talking entry.",
                                                                     line.Source));
                     }
 
-                    manifest.HostHooks.Add(new BirdHostHook {
+                    manifest.HostHooks.Add(new UnitySampleHostHook {
                         Kind = "timeline",
                         Alias = alias,
                         Phase = phase,
                         NodeName = node.Name,
                         TargetTalkingId = targetTalking == null ? (int?)null : targetTalking.TalkingId,
-                        BirdId = binding == null ? null : binding.BirdId,
+                        UnitySampleId = binding == null ? null : binding.UnitySampleId,
                         UnityGuid = binding == null ? string.Empty : binding.UnityGuid,
                         AddressableKey = binding == null ? string.Empty : binding.AddressableKey,
                         AssetPath = binding == null ? string.Empty : binding.AssetPath,
@@ -311,12 +311,12 @@ namespace Inscape.Core.Bird {
             }
         }
 
-        static Dictionary<string, List<BirdTalkingEntry>> BuildTalkingsByNodeName(BirdManifest manifest) {
-            Dictionary<string, List<BirdTalkingEntry>> talkingsByNodeName = new Dictionary<string, List<BirdTalkingEntry>>(StringComparer.Ordinal);
+        static Dictionary<string, List<UnitySampleTalkingEntry>> BuildTalkingsByNodeName(UnitySampleManifest manifest) {
+            Dictionary<string, List<UnitySampleTalkingEntry>> talkingsByNodeName = new Dictionary<string, List<UnitySampleTalkingEntry>>(StringComparer.Ordinal);
             for (int i = 0; i < manifest.Talkings.Count; i += 1) {
-                BirdTalkingEntry talking = manifest.Talkings[i];
-                if (!talkingsByNodeName.TryGetValue(talking.NodeName, out List<BirdTalkingEntry>? nodeTalkings)) {
-                    nodeTalkings = new List<BirdTalkingEntry>();
+                UnitySampleTalkingEntry talking = manifest.Talkings[i];
+                if (!talkingsByNodeName.TryGetValue(talking.NodeName, out List<UnitySampleTalkingEntry>? nodeTalkings)) {
+                    nodeTalkings = new List<UnitySampleTalkingEntry>();
                     talkingsByNodeName.Add(talking.NodeName, nodeTalkings);
                 }
                 nodeTalkings.Add(talking);
@@ -324,11 +324,11 @@ namespace Inscape.Core.Bird {
             return talkingsByNodeName;
         }
 
-        static BirdTalkingEntry? FindHookTargetTalking(string nodeName,
+        static UnitySampleTalkingEntry? FindHookTargetTalking(string nodeName,
                                                        int hookLine,
                                                        string phase,
-                                                       Dictionary<string, List<BirdTalkingEntry>> talkingsByNodeName) {
-            if (!talkingsByNodeName.TryGetValue(nodeName, out List<BirdTalkingEntry>? nodeTalkings) || nodeTalkings.Count == 0) {
+                                                       Dictionary<string, List<UnitySampleTalkingEntry>> talkingsByNodeName) {
+            if (!talkingsByNodeName.TryGetValue(nodeName, out List<UnitySampleTalkingEntry>? nodeTalkings) || nodeTalkings.Count == 0) {
                 return null;
             }
 
@@ -342,7 +342,7 @@ namespace Inscape.Core.Bird {
 
             if (phase == "talking.enter") {
                 for (int i = 0; i < nodeTalkings.Count; i += 1) {
-                    BirdTalkingEntry talking = nodeTalkings[i];
+                    UnitySampleTalkingEntry talking = nodeTalkings[i];
                     if (talking.Source.Line > hookLine) {
                         return talking;
                     }
@@ -350,9 +350,9 @@ namespace Inscape.Core.Bird {
                 return null;
             }
 
-            BirdTalkingEntry? previousTalking = null;
+            UnitySampleTalkingEntry? previousTalking = null;
             for (int i = 0; i < nodeTalkings.Count; i += 1) {
-                BirdTalkingEntry talking = nodeTalkings[i];
+                UnitySampleTalkingEntry talking = nodeTalkings[i];
                 if (talking.Source.Line < hookLine) {
                     previousTalking = talking;
                     continue;
@@ -364,9 +364,9 @@ namespace Inscape.Core.Bird {
             return previousTalking ?? nodeTalkings[0];
         }
 
-        static BirdHostBinding? ResolveHostBinding(IReadOnlyList<BirdHostBinding> bindings, string kind, string alias) {
+        static UnitySampleHostBinding? ResolveHostBinding(IReadOnlyList<UnitySampleHostBinding> bindings, string kind, string alias) {
             for (int i = 0; i < bindings.Count; i += 1) {
-                BirdHostBinding binding = bindings[i];
+                UnitySampleHostBinding binding = bindings[i];
                 if (binding.Kind == kind && binding.Alias == alias) {
                     return binding;
                 }
@@ -374,9 +374,9 @@ namespace Inscape.Core.Bird {
             return null;
         }
 
-        static string WriteExportReport(BirdManifest manifest) {
+        static string WriteExportReport(UnitySampleManifest manifest) {
             StringBuilder builder = new StringBuilder();
-            builder.AppendLine("Inscape Bird Export Report");
+            builder.AppendLine("Inscape UnitySample Export Report");
             builder.AppendLine("format: " + manifest.Format);
             builder.AppendLine("entryNodeName: " + manifest.EntryNodeName);
             builder.AppendLine("nodes: " + manifest.Nodes.Count.ToString(CultureInfo.InvariantCulture));
@@ -394,7 +394,7 @@ namespace Inscape.Core.Bird {
             }
 
             for (int i = 0; i < manifest.Warnings.Count; i += 1) {
-                BirdExportWarning warning = manifest.Warnings[i];
+                UnitySampleExportWarning warning = manifest.Warnings[i];
                 builder.Append("  ");
                 builder.Append(warning.Code);
                 builder.Append(": ");
@@ -414,7 +414,7 @@ namespace Inscape.Core.Bird {
             return builder.ToString();
         }
 
-        static string WriteL10nTalkingCsv(BirdManifest manifest, BirdExportOptions options) {
+        static string WriteL10nTalkingCsv(UnitySampleManifest manifest, UnitySampleExportOptions options) {
             StringBuilder builder = new StringBuilder();
             builder.Append("ID");
             for (int i = 0; i < options.Languages.Length; i += 1) {
@@ -424,8 +424,8 @@ namespace Inscape.Core.Bird {
             builder.AppendLine();
 
             for (int i = 0; i < manifest.Localization.Count; i += 1) {
-                BirdLocalizationMapping mapping = manifest.Localization[i];
-                if (mapping.BirdField != "L10N_Talking.ZH_CN" || mapping.TalkingId == null) {
+                UnitySampleLocalizationMapping mapping = manifest.Localization[i];
+                if (mapping.UnitySampleField != "L10N_Talking.ZH_CN" || mapping.TalkingId == null) {
                     continue;
                 }
 
@@ -433,7 +433,7 @@ namespace Inscape.Core.Bird {
                 for (int langIndex = 0; langIndex < options.Languages.Length; langIndex += 1) {
                     builder.Append(',');
                     if (langIndex == 0) {
-                        builder.Append(EscapeBirdCsvText(mapping.Text));
+                        builder.Append(EscapeUnitySampleCsvText(mapping.Text));
                     }
                 }
                 builder.AppendLine();
@@ -442,11 +442,11 @@ namespace Inscape.Core.Bird {
             return builder.ToString();
         }
 
-        static string WriteAnchorMapCsv(IReadOnlyList<BirdLocalizationMapping> mappings) {
+        static string WriteAnchorMapCsv(IReadOnlyList<UnitySampleLocalizationMapping> mappings) {
             StringBuilder builder = new StringBuilder();
-            builder.AppendLine("anchor,node,kind,speaker,text,talkingId,talkingIndex,birdField,sourcePath,line,column");
+            builder.AppendLine("anchor,node,kind,speaker,text,talkingId,talkingIndex,unitySampleField,sourcePath,line,column");
             for (int i = 0; i < mappings.Count; i += 1) {
-                BirdLocalizationMapping mapping = mappings[i];
+                UnitySampleLocalizationMapping mapping = mappings[i];
                 AppendCsvField(builder, mapping.Anchor);
                 builder.Append(',');
                 AppendCsvField(builder, mapping.NodeName);
@@ -461,7 +461,7 @@ namespace Inscape.Core.Bird {
                 builder.Append(',');
                 AppendCsvField(builder, mapping.TalkingIndex == null ? string.Empty : mapping.TalkingIndex.Value.ToString(CultureInfo.InvariantCulture));
                 builder.Append(',');
-                AppendCsvField(builder, mapping.BirdField);
+                AppendCsvField(builder, mapping.UnitySampleField);
                 builder.Append(',');
                 AppendCsvField(builder, mapping.Source.SourcePath);
                 builder.Append(',');
@@ -473,7 +473,7 @@ namespace Inscape.Core.Bird {
             return builder.ToString();
         }
 
-        static string EscapeBirdCsvText(string text) {
+        static string EscapeUnitySampleCsvText(string text) {
             return text.Replace(",", "`")
                        .Replace("\"", "%")
                        .Replace("\r\n", "/br")
@@ -525,3 +525,4 @@ namespace Inscape.Core.Bird {
     }
 
 }
+

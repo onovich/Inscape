@@ -1,8 +1,8 @@
-namespace Inscape.Core.Bird {
+﻿namespace Inscape.Adapters.UnitySample {
 
-    public sealed class BirdExportResult {
+    public sealed class UnitySampleExportResult {
 
-        public BirdManifest Manifest { get; set; }
+        public UnitySampleManifest Manifest { get; set; }
 
         public string L10nTalkingCsv { get; set; }
 
@@ -10,7 +10,7 @@ namespace Inscape.Core.Bird {
 
         public string ReportText { get; set; }
 
-        public BirdExportResult(BirdManifest manifest, string l10nTalkingCsv, string anchorMapCsv, string reportText) {
+        public UnitySampleExportResult(UnitySampleManifest manifest, string l10nTalkingCsv, string anchorMapCsv, string reportText) {
             Manifest = manifest;
             L10nTalkingCsv = l10nTalkingCsv;
             AnchorMapCsv = anchorMapCsv;
@@ -20,3 +20,4 @@ namespace Inscape.Core.Bird {
     }
 
 }
+
