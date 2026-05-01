@@ -20,6 +20,7 @@ This is the first lightweight authoring layer for `.inscape` scripts. It keeps s
 - Provides an outline view backed by visible node headers.
 - Provides JSON validation for `inscape.host.schema.json` / `*.host.schema.json`.
 - Exposes command palette actions for localization:
+  - `Inscape: Open Preview`
   - `Inscape: Export Localization CSV`
   - `Inscape: Update Localization CSV From Previous Table`
 - Exposes command palette action for host schema inspection:
@@ -34,6 +35,16 @@ code --extensionDevelopmentPath=tools\vscode-inscape .
 ```
 
 This package is not published yet. Later stages should add a language server that reuses `Inscape.Core` for diagnostics, completion, symbols, and definition/reference navigation.
+
+Preview command opens a VSCode custom editor tab:
+
+```powershell
+dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- preview-project <workspace> -o <preview.html>
+```
+
+If the active `.inscape` document is unsaved and belongs to the selected workspace, the extension passes it to the CLI with `--override` so the preview reflects editor contents. Once a preview editor is open, saving any `.inscape` file in that workspace refreshes it automatically, and typing uses a short debounce so it still feels lightweight. Compiler diagnostics do not block preview rendering; the CLI still emits HTML and the editor keeps showing it.
+
+Preview nodes, dialogue lines, choices, metadata tags, and diagnostics include a source jump affordance. Clicking the source badge opens the matching location in the editor so you can move between gameplay flow and script edits quickly.
 
 Localization commands invoke:
 
@@ -62,7 +73,7 @@ kind,alias,unitySampleId,unityGuid,addressableKey,assetPath
 timeline,court_intro,12,,Timeline/CourtIntro,Assets/Resources_Runtime/Timeline/SO_Timeline_CourtIntro.asset
 ```
 
-The first supported contexts are `@timeline court_intro`, explicit phase forms such as `@timeline.node.enter court_intro`, and inline tags such as `[timeline: court_intro]`, `[timeline.node.exit: court_outro]`, or `[bg: classroom]`. For inline tags, completion is generic by `kind`; compiler semantics still come from `Inscape.Core`, while UnitySample export remains an experimental adapter.
+The first supported contexts are `@timeline court_intro`, explicit phase forms such as `@timeline.node.enter court_intro`, and inline tags such as `[timeline: court_intro]`, `[timeline.node.exit: court_outro]`, or `[bg: classroom]`. Hover explains `@entry` / `@scene` metadata lines, while Ctrl+Click on `@timeline ...` and `[kind: alias]` opens the corresponding binding row when one exists. For inline tags, completion is generic by `kind`; compiler semantics still come from `Inscape.Core`, while UnitySample export remains an experimental adapter.
 
 Host schema files named `inscape.host.schema.json` or `*.host.schema.json` are validated by the bundled JSON Schema. The command `Inscape: Show Host Schema Capabilities` reads `inscape.config.json` `hostSchema`, lists configured queries/events, and opens the selected capability in the schema file.
 

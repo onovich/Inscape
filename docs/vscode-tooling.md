@@ -49,15 +49,21 @@ Inscape 的默认阅读优先级应当是：
 - 在节点标题上显示 CodeLens：`N 个引用`，点击后使用 VSCode References Peek 追溯跳到当前 block 的调用方。
 - 在节点声明和 `->` 跳转目标上显示简短 Hover 类型说明，不在跳转目标上显示统计信息。
 - 在对白 speaker 上显示 Hover 摘要：角色名、UnitySample `roleId` 绑定状态和来源表。
+- 在 `@entry`、`@scene` 这类 `@` 元信息上显示 Hover 解释，告诉作者它们是用于标记入口、场景或其他宿主可读意图的轻量元数据。
 - 在宿主绑定别名上显示 Hover 摘要：`kind:alias`、UnitySample id、Addressable、Unity guid、Asset path 和来源表。
+- 在 `@timeline ...` 和 `[kind: alias]` 上支持 Ctrl+Click 跳转到对应的绑定行，让作者直接看到它们是如何映射到宿主桥接表的。
 - 为 VSCode Outline 提供当前文件节点列表。
 - 为 `inscape.host.schema.json` / `*.host.schema.json` 提供 JSON Schema 校验。
 - 提供命令 `Inscape: Show Host Schema Capabilities`，读取 `inscape.config.json` 的 `hostSchema` 并列出 query / event。
+- 提供命令 `Inscape: Open Preview`，以 VSCode custom editor 方式打开可玩预览；它看起来像编辑器标签页的一部分，而不是独立面板。如果当前活动 `.inscape` 文件未保存，会通过 `--override` 使用编辑器中的临时内容。
+- 编辑器右上角提供 `Inscape: Toggle Preview` 按钮，可以快速在源码和预览之间切换；当前实现会优先复用已有预览标签页，避免重复打开。
+- 预览首版支持项目流程体验：点击选项推进、Back、Restart、节点列表、路径记录和 diagnostics；编辑时会防抖刷新，保存工作区内 `.inscape` 文件后立即刷新打开的预览编辑器。
+- 预览中的节点、行、选项、`@` 元信息和 `[]` 宿主标签都支持一键跳回源码位置，便于把“玩流程”和“改脚本”连成一个闭环。
 
 ## 尚未实现
 
 - 正式 Language Server。
-- VSCode WebView 可玩预览；当前 HTML 预览仍通过 CLI 生成静态文件，后续应在编辑器内像玩文字游戏一样体验项目流程。
+- 未保存改动的自动热刷新；当前版本在编辑时会做轻量防抖刷新，在保存后立即刷新。
 - 宿主 Schema 查询 / 事件清单驱动的脚本内补全。
 
 ## 角色提示
@@ -128,7 +134,7 @@ bg,classroom,,,BG/Classroom,Assets/Art/BG/classroom.png
 - `@timeline.node.enter court_intro`
 - `[timeline: court_intro]`、`[timeline.node.exit: court_outro]`、`[bg: classroom]` 等 inline tag 的值部分
 
-补全按 `kind` 过滤，Hover 显示绑定表中的 UnitySample id、Addressable、Unity guid 和 asset path。未配置绑定表时，扩展会从工作区已有 `@timeline` 和 inline tag 中扫描别名作为轻量回退。
+补全按 `kind` 过滤，Hover 显示绑定表中的 UnitySample id、Addressable、Unity guid 和 asset path。未配置绑定表时，扩展会从工作区已有 `@timeline` 和 inline tag 中扫描别名作为轻量回退。`@entry` / `@scene` 这类普通 `@` 元信息则用于入口、场景或其他宿主语义说明，本身不参与绑定解析。
 
 注意：这仍然只是作者体验层。当前 UnitySample 导出只对已支持的 hook 赋予样例 adapter 意义，例如 `timeline`；其他 `kind` 的 inline tag 补全用于减少写作记忆成本，不代表 Core 已经承诺资源系统语义。
 
@@ -163,15 +169,17 @@ dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- diagnose-project <wor
 
 同一套桥接方式已经复用于本地化命令。VSCode 命令面板提供：
 
+- `Inscape: Open Preview`
 - `Inscape: Export Localization CSV`
 - `Inscape: Update Localization CSV From Previous Table`
 
 ```powershell
+dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- preview-project <workspace> --override <source-file> <temp-file> -o <preview.html>
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- extract-l10n-project <workspace> -o <csv>
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- update-l10n-project <workspace> --from <old-csv> -o <csv>
 ```
 
-如果当前活动 `.inscape` 文件尚未保存，扩展会像诊断一样通过 `--override <source> <temp-file>` 把编辑器内容传给 CLI。
+如果当前活动 `.inscape` 文件尚未保存，扩展会像诊断一样通过 `--override <source> <temp-file>` 把编辑器内容传给 CLI。`preview-project` 即使带编译诊断也会先输出 HTML，扩展会继续显示预览，并把诊断留给 Problems / 输出面板处理。
 
 可通过以下 VSCode 设置调整：
 

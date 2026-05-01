@@ -13,12 +13,6 @@
   "engines": {
     "vscode": "^1.92.0"
   },
-  "activationEvents": [
-    "onLanguage:inscape",
-    "onCommand:inscape.extractLocalization",
-    "onCommand:inscape.updateLocalization",
-    "onCommand:inscape.showHostSchemaCapabilities"
-  ],
   "categories": [
     "Programming Languages",
     "Snippets"
@@ -52,6 +46,16 @@
     ],
     "commands": [
       {
+        "command": "inscape.openPreview",
+        "title": "Inscape: Open Preview",
+        "category": "Inscape"
+      },
+      {
+        "command": "inscape.togglePreview",
+        "title": "Inscape: Toggle Preview",
+        "category": "Inscape"
+      },
+      {
         "command": "inscape.extractLocalization",
         "title": "Inscape: Export Localization CSV",
         "category": "Inscape"
@@ -67,6 +71,27 @@
         "category": "Inscape"
       }
     ],
+    "customEditors": [
+      {
+        "viewType": "inscape.preview",
+        "displayName": "Inscape Preview",
+        "selector": [
+          {
+            "filenamePattern": "*.inscape"
+          }
+        ],
+        "priority": "default"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "inscape.togglePreview",
+          "when": "resourceLangId == inscape",
+          "group": "navigation@1"
+        }
+      ]
+    },
     "jsonValidation": [
       {
         "fileMatch": [

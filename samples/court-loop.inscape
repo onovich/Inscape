@@ -2,20 +2,49 @@
 
 @entry
 @scene court
-旁白：法庭里很安静。
+@timeline court_intro
+[bg: courtroom]
+旁白：法庭里很安静，像在等一句台词落地。
 成步堂：现在开始吧。
 
 ? 选择行动
   - 询问证言 -> court.cross_exam.loop
-  - 查看证物 -> evidence.menu
+  - 查看证物 -> court.evidence.table
+  - 直接反驳 -> court.pressure.opening
 
 :: court.cross_exam.loop
 
 证人：我什么都不知道，哈哈哈哈哈。
--> court.intro
+旁白：这是一段故意写成循环的段落，方便测试预览里的 Back / Restart。
 
-:: evidence.menu
+? 继续追问还是回到开场？
+  - 继续追问 -> court.cross_exam.press
+  - 回到开场 -> court.intro
+
+:: court.cross_exam.press
+
+成步堂：请再说一遍刚才那句话。
+证人：呃……
+[emotion: tense]
+-> court.cross_exam.loop
+
+:: court.evidence.table
 
 旁白：证物袋里只有一枚旧怀表。
--> court.intro  
+[bg: evidence_room]
+? 你想怎么处理这个证物？
+  - 摆在桌上 -> court.evidence.showcase
+  - 退回询问 -> court.intro
+
+:: court.evidence.showcase
+
+成步堂：它表盘停在 3:14。
+证人：这说明不了什么。
+-> court.intro
+
+:: court.pressure.opening
+
+成步堂：既然如此，就从时间开始吧。
+证人：……
+-> court.cross_exam.loop
 

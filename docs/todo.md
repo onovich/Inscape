@@ -63,7 +63,8 @@
 - [x] 修正 VSCode `wordPattern`，把全角冒号和常见中文标点视为词边界，避免 Ctrl+Click 角色名时把整行对白标为可跳转范围。
 - [x] 添加 block 级 CodeLens 双向导航：`入边` 追溯调用方，`出边` 跳转被调用方。
 - [x] 为宿主 Schema 文件提供 VSCode JSON Schema 校验，并增加命令查看当前 query / event 清单。
-- [ ] 实现 VSCode WebView 可玩预览视图，复用 CLI / Core 的项目级编译结果，并支持选项点击、Back、Restart、路径记录和源位置回跳的后续扩展。
+- [x] 实现 VSCode 编辑器内可玩预览视图第一版，复用 CLI / Core 的项目级编译结果，并支持选项点击、Back、Restart、节点列表、路径记录、源码回跳和保存后自动刷新。
+- [ ] 为 VSCode 预览补充未保存文件自动热刷新与更细粒度的状态提示。
 - [ ] 设计 Language Server 能力范围：补全、诊断、跳转定义、引用查找、大纲、悬浮说明。
 - [x] 设计补全数据来源：当前文件节点、项目节点、角色表、宿主绑定表、宿主 Schema 查询 / 事件清单。
 - [ ] 将 `hostSchema` 中的查询 / 事件清单接入 `.inscape` 脚本补全与 Hover，但不改变当前 DSL 编译语义。

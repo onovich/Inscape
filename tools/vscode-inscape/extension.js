@@ -2,12 +2,17 @@
 
 const childProcess = require("child_process");
 const fs = require("fs");
+const crypto = require("crypto");
 const os = require("os");
 const path = require("path");
 const vscode = require("vscode");
 
 const languageSelector = { language: "inscape" };
 let outputChannel;
+const previewPanels = new Map();
+const previewRefreshTimers = new Map();
+const previewRenderCache = new Map();
+const previewRenderVersions = new Map();
 
 function activate(context) {
     outputChannel = vscode.window.createOutputChannel("Inscape");
@@ -20,8 +25,14 @@ function activate(context) {
         diagnostics,
         scheduler,
         vscode.workspace.onDidOpenTextDocument((document) => scheduler.schedule(document)),
-        vscode.workspace.onDidChangeTextDocument((event) => scheduler.schedule(event.document)),
-        vscode.workspace.onDidSaveTextDocument((document) => scheduler.schedule(document, 0)),
+        vscode.workspace.onDidChangeTextDocument((event) => {
+            scheduler.schedule(event.document);
+            schedulePreviewRefresh(context, event.document, 250);
+        }),
+        vscode.workspace.onDidSaveTextDocument((document) => {
+            scheduler.schedule(document, 0);
+            refreshPreviewPanelsForDocument(context, document);
+        }),
         vscode.workspace.onDidCloseTextDocument((document) => diagnostics.delete(document.uri)),
         vscode.workspace.onDidChangeConfiguration((event) => {
             if (event.affectsConfiguration("inscape")) {
@@ -35,9 +46,22 @@ function activate(context) {
         vscode.languages.registerHoverProvider(languageSelector, new InscapeHoverProvider()),
         vscode.languages.registerCodeLensProvider(languageSelector, new InscapeCodeLensProvider()),
         vscode.commands.registerCommand("inscape.showNodeIncomingReferences", (uri, position, locations) => showNodeIncomingReferences(uri, position, locations)),
+        vscode.commands.registerCommand("inscape.openPreview", () => openPreview(context)),
+        vscode.commands.registerCommand("inscape.togglePreview", () => togglePreview(context)),
         vscode.commands.registerCommand("inscape.extractLocalization", () => exportLocalization(context)),
         vscode.commands.registerCommand("inscape.updateLocalization", () => updateLocalization(context)),
-        vscode.commands.registerCommand("inscape.showHostSchemaCapabilities", () => showHostSchemaCapabilities())
+        vscode.commands.registerCommand("inscape.showHostSchemaCapabilities", () => showHostSchemaCapabilities()),
+        vscode.window.registerCustomEditorProvider(
+            "inscape.preview",
+            new InscapePreviewEditorProvider(context),
+            {
+                webviewOptions: {
+                    retainContextWhenHidden: true,
+                    enableScripts: true
+                },
+                supportsMultipleEditorsPerDocument: true
+            }
+        )
     );
 
     refreshVisibleDocuments(scheduler);
@@ -204,6 +228,15 @@ class InscapeDefinitionProvider {
             return undefined;
         }
 
+        const hostBindingInfo = getHostBindingAtPosition(document, position);
+        if (hostBindingInfo) {
+            const bindings = await collectWorkspaceHostBindings(document, hostBindingInfo.kind);
+            const binding = bindings.find((candidate) => candidate.alias === hostBindingInfo.alias);
+            if (binding) {
+                return [createLocation(binding)];
+            }
+        }
+
         const target = getJumpTargetAtPosition(document, position);
         if (!target) {
             return undefined;
@@ -287,6 +320,11 @@ class InscapeHoverProvider {
             if (binding) {
                 return new vscode.Hover(createHostBindingHoverMarkdown(binding), hostBindingInfo.range);
             }
+        }
+
+        const metadataInfo = getMetadataDirectiveAtPosition(document, position);
+        if (metadataInfo) {
+            return new vscode.Hover(createMetadataHoverMarkdown(metadataInfo), metadataInfo.range);
         }
 
         const declaredNode = getNodeDeclarationAtPosition(document, position);
@@ -393,6 +431,355 @@ async function exportLocalization(context) {
         outputPath: outputUri.fsPath,
         progressTitle: "Exporting Inscape localization CSV"
     });
+}
+
+async function openPreview(context) {
+    const document = await resolvePreviewDocument();
+    if (!document) {
+        return;
+    }
+
+    await vscode.commands.executeCommand("vscode.openWith", document.uri, "inscape.preview");
+}
+
+async function togglePreview(context) {
+    const document = await resolvePreviewDocument();
+    if (!document) {
+        return;
+    }
+
+    const openPreviewTab = findPreviewTabForDocument(document);
+    if (openPreviewTab && isActivePreviewTab(openPreviewTab, document)) {
+        await vscode.window.tabGroups.close(openPreviewTab, true);
+        return;
+    }
+
+    await vscode.commands.executeCommand("vscode.openWith", document.uri, "inscape.preview");
+}
+
+async function resolvePreviewDocument() {
+    const activeDocument = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.document : undefined;
+    if (activeDocument && isInscapeDocument(activeDocument)) {
+        return activeDocument;
+    }
+
+    const workspaceFolder = await selectWorkspaceFolder();
+    if (!workspaceFolder) {
+        return undefined;
+    }
+
+    const candidates = await vscode.workspace.findFiles("**/*.inscape", "{**/.git/**,**/bin/**,**/obj/**,**/node_modules/**,**/artifacts/**}", 1);
+    if (candidates.length === 0) {
+        vscode.window.showWarningMessage("Open an .inscape file before opening the Inscape preview.");
+        return undefined;
+    }
+
+    const document = await vscode.workspace.openTextDocument(candidates[0]);
+    return document;
+}
+
+async function refreshPreviewPanelsForDocument(context, document) {
+    if (!isInscapeDocument(document)) {
+        return;
+    }
+
+    const panels = previewPanels.get(normalizePath(document.uri.fsPath));
+    if (!panels || panels.size === 0) {
+        return;
+    }
+
+    for (const panel of panels) {
+        await refreshPreviewPanel(context, panel, document, false);
+    }
+}
+
+function findPreviewTabForDocument(document) {
+    const targetPath = normalizePath(document.uri.fsPath);
+    for (const group of vscode.window.tabGroups.all) {
+        for (const tab of group.tabs) {
+            const input = tab.input;
+            if (!input || input.viewType !== "inscape.preview" || !input.uri) {
+                continue;
+            }
+
+            if (normalizePath(input.uri.fsPath) === targetPath) {
+                return tab;
+            }
+        }
+    }
+
+    return undefined;
+}
+
+function isActivePreviewTab(tab, document) {
+    const activeTab = vscode.window.tabGroups.activeTabGroup.activeTab;
+    if (!activeTab || activeTab !== tab) {
+        return false;
+    }
+
+    const input = tab.input;
+    return input && input.viewType === "inscape.preview" && input.uri && normalizePath(input.uri.fsPath) === normalizePath(document.uri.fsPath);
+}
+
+function schedulePreviewRefresh(context, document, delayOverride) {
+    if (!isInscapeDocument(document)) {
+        return;
+    }
+
+    const sourceKey = normalizePath(document.uri.fsPath);
+    const panels = previewPanels.get(sourceKey);
+    if (!panels || panels.size === 0) {
+        return;
+    }
+
+    const existing = previewRefreshTimers.get(sourceKey);
+    if (existing) {
+        clearTimeout(existing);
+    }
+
+    const delay = typeof delayOverride === "number" ? delayOverride : 250;
+    previewRefreshTimers.set(sourceKey, setTimeout(() => {
+        previewRefreshTimers.delete(sourceKey);
+        refreshPreviewPanelsForDocument(context, document);
+    }, delay));
+}
+
+async function refreshPreviewPanel(context, panel, document, showProgress) {
+    const runRefresh = async () => {
+        const cacheKey = normalizePath(document.uri.fsPath);
+        const documentHash = hashDocumentText(document);
+        const cached = previewRenderCache.get(cacheKey);
+        if (cached && cached.documentHash === documentHash && cached.html) {
+            panel.webview.html = cached.html;
+            return;
+        }
+
+        const version = (previewRenderVersions.get(cacheKey) || 0) + 1;
+        previewRenderVersions.set(cacheKey, version);
+
+        let tempPath;
+        const outputPath = createTempPath("preview", ".html");
+
+        try {
+            if (document && isInscapeDocument(document)) {
+                tempPath = writeTempDocument(document);
+            }
+
+            const invocation = createPreviewInvocation(context, document, tempPath, outputPath);
+            const result = await execFileDetailedPromise(invocation);
+
+            if (previewRenderVersions.get(cacheKey) !== version) {
+                return;
+            }
+
+            const hasOutput = fs.existsSync(outputPath);
+
+            if (!hasOutput) {
+                throw new Error(getInvocationFailureDetail(result.stderr, result.stdout, "Preview HTML was not generated."));
+            }
+
+            const html = await fs.promises.readFile(outputPath, "utf8");
+            previewRenderCache.set(cacheKey, {
+                documentHash,
+                html
+            });
+            panel.webview.html = html;
+
+            if (result.exitCode !== 0) {
+                const detail = getInvocationFailureDetail(result.stderr, result.stdout, "Preview rendered with compiler diagnostics.");
+                logOutput("Preview rendered with diagnostics for " + document.uri.fsPath + ": " + detail);
+                if (showProgress) {
+                    vscode.window.showWarningMessage("Inscape preview已刷新，但包含编译诊断。详情见 Problems 或输出面板。");
+                }
+            }
+        } finally {
+            if (tempPath) {
+                fs.unlink(tempPath, () => { });
+            }
+
+            fs.unlink(outputPath, () => { });
+        }
+    };
+
+    try {
+        if (showProgress) {
+            await vscode.window.withProgress({
+                location: vscode.ProgressLocation.Notification,
+                title: "Opening Inscape preview",
+                cancellable: false
+            }, runRefresh);
+        } else {
+            await runRefresh();
+        }
+    } catch (error) {
+        logOutput("Preview refresh failed: " + (error.message || String(error)));
+        panel.webview.html = createPreviewErrorHtml(error.message || String(error));
+        vscode.window.showErrorMessage(error.message || String(error));
+    }
+}
+
+function createPreviewInvocation(context, document, tempPath, outputPath) {
+    const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri);
+    const workspaceFolderPath = workspaceFolder ? workspaceFolder.uri.fsPath : getWorkspaceFolder(context, document);
+    const configuration = vscode.workspace.getConfiguration("inscape", workspaceFolder ? workspaceFolder.uri : document.uri);
+    const command = configuration.get("compiler.command", "dotnet");
+    const cliProject = resolveCliProjectPath(context, workspaceFolderPath);
+    const args = [
+        "run",
+        "--project",
+        cliProject,
+        "--",
+        "preview-project",
+        workspaceFolderPath
+    ];
+
+    if (document && tempPath) {
+        args.push("--override", document.uri.fsPath, tempPath);
+    }
+
+    args.push("-o", outputPath);
+
+    return {
+        command,
+        args,
+        cwd: workspaceFolderPath
+    };
+}
+
+function hashDocumentText(document) {
+    return crypto.createHash("sha1").update(document.getText(), "utf8").digest("hex");
+}
+
+class InscapePreviewEditorProvider {
+
+    constructor(context) {
+        this.context = context;
+    }
+
+    resolveCustomTextEditor(document, webviewPanel) {
+        const sourceKey = normalizePath(document.uri.fsPath);
+        if (!previewPanels.has(sourceKey)) {
+            previewPanels.set(sourceKey, new Set());
+        }
+
+        const panels = previewPanels.get(sourceKey);
+        panels.add(webviewPanel);
+
+        webviewPanel.title = "Inscape Preview · " + path.basename(document.uri.fsPath);
+        webviewPanel.webview.html = createPreviewLoadingHtml(path.basename(document.uri.fsPath));
+
+        webviewPanel.onDidDispose(() => {
+            const currentPanels = previewPanels.get(sourceKey);
+            if (!currentPanels) {
+                return;
+            }
+
+            currentPanels.delete(webviewPanel);
+            if (currentPanels.size === 0) {
+                previewPanels.delete(sourceKey);
+            }
+        });
+
+        webviewPanel.webview.onDidReceiveMessage((message) => {
+            if (!message || message.type !== "openSource" || !message.source || !message.source.sourcePath) {
+                return;
+            }
+
+            openPreviewSource(message.source);
+        });
+
+        refreshPreviewPanel(this.context, webviewPanel, document, true);
+    }
+
+}
+
+function createTempPath(prefix, extension) {
+    const directory = path.join(os.tmpdir(), "inscape-vscode");
+    fs.mkdirSync(directory, { recursive: true });
+
+    const fileName = prefix
+        + "-"
+        + process.pid
+        + "-"
+        + Date.now()
+        + "-"
+        + Math.random().toString(16).slice(2)
+        + extension;
+
+    return path.join(directory, fileName);
+}
+
+function createPreviewLoadingHtml(workspaceName) {
+    return [
+        "<!DOCTYPE html>",
+        "<html lang=\"zh-CN\">",
+        "<head>",
+        "  <meta charset=\"utf-8\" />",
+        "  <title>Inscape Preview</title>",
+        "  <style>",
+        "    body { font-family: var(--vscode-font-family); color: var(--vscode-foreground); background: var(--vscode-editor-background); padding: 24px; }",
+        "    .card { max-width: 640px; border: 1px solid var(--vscode-panel-border); border-radius: 10px; padding: 16px 18px; background: var(--vscode-sideBar-background); }",
+        "    h1 { font-size: 18px; margin: 0 0 8px; }",
+        "    p { margin: 0; opacity: 0.85; line-height: 1.5; }",
+        "  </style>",
+        "</head>",
+        "<body>",
+        "  <div class=\"card\">",
+        "    <h1>正在生成预览</h1>",
+        "    <p>工作区：" + escapeHtml(workspaceName) + "</p>",
+        "  </div>",
+        "</body>",
+        "</html>"
+    ].join("\n");
+}
+
+function createPreviewErrorHtml(message) {
+    return [
+        "<!DOCTYPE html>",
+        "<html lang=\"zh-CN\">",
+        "<head>",
+        "  <meta charset=\"utf-8\" />",
+        "  <title>Inscape Preview Error</title>",
+        "  <style>",
+        "    body { font-family: var(--vscode-font-family); color: var(--vscode-foreground); background: var(--vscode-editor-background); padding: 24px; }",
+        "    .card { max-width: 760px; border: 1px solid var(--vscode-errorForeground); border-radius: 10px; padding: 16px 18px; background: var(--vscode-inputValidation-errorBackground); }",
+        "    h1 { font-size: 18px; margin: 0 0 8px; color: var(--vscode-errorForeground); }",
+        "    pre { white-space: pre-wrap; margin: 0; line-height: 1.5; }",
+        "  </style>",
+        "</head>",
+        "<body>",
+        "  <div class=\"card\">",
+        "    <h1>预览生成失败</h1>",
+        "    <pre>" + escapeHtml(message) + "</pre>",
+        "  </div>",
+        "</body>",
+        "</html>"
+    ].join("\n");
+}
+
+async function openPreviewSource(source) {
+    try {
+        const location = new vscode.Location(
+            vscode.Uri.file(source.sourcePath),
+            new vscode.Range(
+                Math.max(0, (source.line || 0)),
+                Math.max(0, (source.column || 0)),
+                Math.max(0, (source.line || 0)),
+                Math.max(0, (source.column || 0) + 1)
+            )
+        );
+        await openLocation(location);
+    } catch (error) {
+        vscode.window.showErrorMessage(error.message || String(error));
+    }
+}
+
+function escapeHtml(value) {
+    return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;");
 }
 
 async function updateLocalization(context) {
@@ -719,6 +1106,39 @@ function execFilePromise(invocation) {
             resolve(stdout);
         });
     });
+}
+
+function execFileDetailedPromise(invocation) {
+    return new Promise((resolve, reject) => {
+        childProcess.execFile(invocation.command, invocation.args, {
+            cwd: invocation.cwd,
+            windowsHide: true,
+            maxBuffer: 1024 * 1024 * 8
+        }, (error, stdout, stderr) => {
+            if (error && typeof error.code !== "number") {
+                reject(new Error(getInvocationFailureDetail(stderr, stdout, error.message)));
+                return;
+            }
+
+            resolve({
+                exitCode: error ? error.code : 0,
+                stdout: stdout || "",
+                stderr: stderr || ""
+            });
+        });
+    });
+}
+
+function getInvocationFailureDetail(stderr, stdout, fallbackMessage) {
+    if (stderr && stderr.trim()) {
+        return stderr.trim();
+    }
+
+    if (stdout && stdout.trim()) {
+        return stdout.trim();
+    }
+
+    return fallbackMessage;
 }
 
 function isInscapeDocument(document) {
@@ -1736,11 +2156,43 @@ function createHostBindingMarkdown(binding) {
     const markdown = new vscode.MarkdownString(undefined, true);
     markdown.isTrusted = false;
     markdown.appendMarkdown("**Inscape Host Binding** `" + binding.kind + ":" + binding.alias + "`\n\n");
+    markdown.appendMarkdown("This is a host bridge hint. Ctrl+Click opens the configured mapping row or the first workspace occurrence.\n\n");
     appendHostBindingField(markdown, "UnitySample id", binding.unitySampleId);
     appendHostBindingField(markdown, "Addressable", binding.addressableKey);
     appendHostBindingField(markdown, "Asset", binding.assetPath);
     appendHostBindingField(markdown, "Unity guid", binding.unityGuid);
     markdown.appendMarkdown("Source: `" + formatDisplayPath(binding.sourcePath) + "`");
+    return markdown;
+}
+
+function createHostBindingMissingMarkdown(binding) {
+    const markdown = new vscode.MarkdownString(undefined, true);
+    markdown.isTrusted = false;
+    markdown.appendMarkdown("**Inscape Host Binding** `" + binding.kind + ":" + binding.alias + "`\n\n");
+    markdown.appendMarkdown("This looks like a host bridge hint, but no mapping row or scanned workspace occurrence was found yet.\n\n");
+    markdown.appendMarkdown("Add it to `inscape.config.json` or the binding CSV to make Ctrl+Click resolve it.\n\n");
+    markdown.appendMarkdown("Source: `" + formatDisplayPath(binding.sourcePath) + "`");
+    return markdown;
+}
+
+function createMetadataHoverMarkdown(metadataInfo) {
+    const markdown = new vscode.MarkdownString(undefined, true);
+    markdown.isTrusted = false;
+    markdown.appendMarkdown("**Inscape Metadata** `" + metadataInfo.raw + "`\n\n");
+
+    if (metadataInfo.kind === "entry") {
+        markdown.appendMarkdown("Marks the entry node for preview / project startup. It does not change dialogue text; it tells the compiler and preview where to begin.\n\n");
+    } else if (metadataInfo.kind === "scene") {
+        markdown.appendMarkdown("Scene metadata. Use it to label or group a block for host-side logic, asset loading, or authoring conventions.\n\n");
+    } else {
+        markdown.appendMarkdown("Generic `@` metadata line. Inscape keeps these as lightweight author-intent markers so hosts and adapters can interpret them later.\n\n");
+    }
+
+    if (metadataInfo.value) {
+        markdown.appendMarkdown("Value: `" + metadataInfo.value + "`\n\n");
+    }
+
+    markdown.appendMarkdown("Tip: `@timeline ...` is a host binding hint; `[` `kind: alias` `]` is the inline equivalent.");
     return markdown;
 }
 
@@ -1750,6 +2202,30 @@ function appendHostBindingField(markdown, label, value) {
     }
 
     markdown.appendMarkdown(label + ": `" + value + "`\n\n");
+}
+
+function getMetadataDirectiveAtPosition(document, position) {
+    const line = document.lineAt(position).text;
+    const match = /^\s*@([A-Za-z_][A-Za-z0-9_.-]*)(?:\s+([^\s]+))?/.exec(line);
+    if (!match) {
+        return undefined;
+    }
+
+    const kind = match[1].trim();
+    const value = match[2] ? match[2].trim() : "";
+    const start = line.indexOf("@" + match[1]);
+    const end = value ? line.indexOf(value, start) + value.length : start + match[1].length + 1;
+
+    if (position.character >= start && position.character <= Math.max(start, end)) {
+        return {
+            kind,
+            value,
+            raw: line.trim(),
+            range: new vscode.Range(position.line, start, position.line, Math.max(start, end))
+        };
+    }
+
+    return undefined;
 }
 
 function createLocation(item) {
