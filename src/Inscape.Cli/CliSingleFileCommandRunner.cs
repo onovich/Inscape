@@ -36,7 +36,7 @@ namespace Inscape.Cli {
                     CliCore.WriteOrPrint(outputPath,
                                          CliPreviewHtmlRenderer.Render(output,
                                                                        jsonOptions,
-                                                                       CliConfigLoader.ReadPreviewStyle(previewConfig, jsonOptions)));
+                                                                       CliPreviewStyleLoader.Read(previewConfig.Styles.Preview, jsonOptions)));
                     CliCore.PrintDiagnostics(result.Diagnostics);
                     exitCode = result.HasErrors ? 1 : 0;
                     return true;

@@ -16,9 +16,9 @@ namespace Inscape.Cli {
             if (!CliConfigLoader.TryReadProjectConfig(rootPath, args, jsonOptions, out CliProjectConfig config)) {
                 return 1;
             }
-            CliProjectCommandSupport.ProjectOverride? projectOverride = CliProjectCommandSupport.ReadProjectOverride(args);
+            CliDslSourceLoader.DslSourceOverride? sourceOverride = CliDslSourceLoader.ReadOverride(args);
             string? entryOverrideName = CliCore.ReadOption(args, "--entry");
-            List<ProjectSource> sources = CliProjectCommandSupport.ReadProjectSources(rootPath, projectOverride);
+            List<ProjectSource> sources = CliDslSourceLoader.LoadProjectSources(rootPath, sourceOverride);
             if (sources.Count == 0) {
                 Console.Error.WriteLine("No .inscape files found under: " + rootPath);
                 return 1;
@@ -45,7 +45,7 @@ namespace Inscape.Cli {
                     CliCore.WriteOrPrint(outputPath,
                                          CliPreviewHtmlRenderer.Render(CliCore.ToProjectOutput(result),
                                                                        jsonOptions,
-                                                                       CliConfigLoader.ReadPreviewStyle(config, jsonOptions)));
+                                                                       CliPreviewStyleLoader.Read(config.Styles.Preview, jsonOptions)));
                     CliCore.PrintDiagnostics(result.Diagnostics);
                     return result.HasErrors ? 1 : 0;
 
@@ -64,7 +64,7 @@ namespace Inscape.Cli {
                     return result.HasErrors ? 1 : 0;
 
                 case "export-unity-sample-binding-template":
-                    if (!CliProjectCommandSupport.TryReadUnitySampleTimelineBindingsForTemplate(args, config, out Dictionary<string, UnitySampleTimelineAssetBinding> timelineBindingsByAlias)) {
+                    if (!CliUnitySampleSupport.TryReadUnitySampleTimelineBindingsForTemplate(args, config, out Dictionary<string, UnitySampleTimelineAssetBinding> timelineBindingsByAlias)) {
                         return 1;
                     }
 
@@ -74,10 +74,10 @@ namespace Inscape.Cli {
                     return result.HasErrors ? 1 : 0;
 
                 case "export-unity-sample-role-template":
-                    if (!CliProjectCommandSupport.TryReadUnitySampleRoleNameBindingsForTemplate(args,
-                                                                                                config,
-                                                                                                out Dictionary<string, int> roleIdsBySpeaker,
-                                                                                                out Dictionary<string, List<CliProjectCommandSupport.UnitySampleRoleNameCandidate>> candidatesBySpeaker,
+                    if (!CliUnitySampleSupport.TryReadUnitySampleRoleNameBindingsForTemplate(args,
+                                                                                             config,
+                                                                                             out Dictionary<string, int> roleIdsBySpeaker,
+                                                                                             out Dictionary<string, List<CliUnitySampleSupport.UnitySampleRoleNameCandidate>> candidatesBySpeaker,
                                                                                                 out bool scannedRoleNameCsv)) {
                         return 1;
                     }
@@ -87,10 +87,10 @@ namespace Inscape.Cli {
                     string? reportPath = CliCore.ReadOption(args, "--report");
                     if (!string.IsNullOrWhiteSpace(reportPath)) {
                         CliCore.WriteOrPrint(reportPath,
-                                             CliProjectCommandSupport.WriteUnitySampleRoleTemplateReport(result.Graph,
-                                                                                                        roleIdsBySpeaker,
-                                                                                                        candidatesBySpeaker,
-                                                                                                        scannedRoleNameCsv));
+                                             CliUnitySampleSupport.WriteUnitySampleRoleTemplateReport(result.Graph,
+                                                                                                      roleIdsBySpeaker,
+                                                                                                      candidatesBySpeaker,
+                                                                                                      scannedRoleNameCsv));
                     }
                     CliCore.PrintDiagnostics(result.Diagnostics);
                     return result.HasErrors ? 1 : 0;
@@ -102,12 +102,12 @@ namespace Inscape.Cli {
                     }
 
                     UnitySampleProjectExporter exporter = new UnitySampleProjectExporter();
-                    if (!CliProjectCommandSupport.TryReadUnitySampleExportOptions(args, config, out UnitySampleExportOptions options)) {
+                    if (!CliUnitySampleSupport.TryReadUnitySampleExportOptions(args, config, out UnitySampleExportOptions options)) {
                         return 1;
                     }
 
                     UnitySampleExportResult export = exporter.Export(result, options);
-                    CliProjectCommandSupport.WriteUnitySampleExport(outputPath, export, jsonOptions);
+                    CliUnitySampleSupport.WriteUnitySampleExport(outputPath, export, jsonOptions);
                     CliCore.PrintDiagnostics(result.Diagnostics);
                     return result.HasErrors ? 1 : 0;
 

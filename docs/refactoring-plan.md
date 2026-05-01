@@ -136,7 +136,7 @@ VSCode：4 / 10
 - 命令帮助、错误码、JSON/CSV/HTML 输出保持兼容。
 - CLI 测试全部通过。
 
-当前进展：已先后提取 `CliConfigLoader`，并把顶层元命令（`help` / `commands` / `export-host-schema-template`）、单文件命令分支和项目级命令分支从 `CliCore` 主入口中抽离；项目扫描、override 与 UnitySample 项目命令辅助逻辑已收口到独立 support。下一步应评估是否引入 `InscapeProjectService`，避免 CLI/VSCode 长期各自编排项目级流程。
+当前进展：已先后提取 `CliConfigLoader`，并把顶层元命令（`help` / `commands` / `export-host-schema-template`）、单文件命令分支和项目级命令分支从 `CliCore` 主入口中抽离；项目 `.inscape` 源扫描/读取/override 已提取为 `CliDslSourceLoader`，预览样式读取已提取为 `CliPreviewStyleLoader`，UnitySample 项目命令辅助逻辑已收口到 `CliUnitySampleSupport`。下一步应继续按职责细化 `Dsl` / `DslSources` / `Config` / `Preview` 等命名，而不是过早引入泛化的 `ProjectService` 或 `Workspace` 大层。
 
 收益：高。
 

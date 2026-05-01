@@ -31,20 +31,6 @@ namespace Inscape.Cli {
             }
         }
 
-        public static CliPreviewStyleSheet ReadPreviewStyle(CliProjectConfig config, JsonSerializerOptions jsonOptions) {
-            if (string.IsNullOrWhiteSpace(config.Styles.Preview) || !File.Exists(config.Styles.Preview)) {
-                return new CliPreviewStyleSheet();
-            }
-
-            try {
-                CliPreviewStyleSheet? parsed = JsonSerializer.Deserialize<CliPreviewStyleSheet>(File.ReadAllText(config.Styles.Preview, Encoding.UTF8), jsonOptions);
-                return parsed ?? new CliPreviewStyleSheet();
-            } catch (Exception ex) {
-                Console.Error.WriteLine("Invalid preview style '" + config.Styles.Preview + "': " + ex.Message);
-                return new CliPreviewStyleSheet();
-            }
-        }
-
         static void NormalizeProjectConfigPaths(CliProjectConfig config, string configPath) {
             string configDirectory = Path.GetDirectoryName(configPath) ?? Directory.GetCurrentDirectory();
             config.HostSchema = ResolveConfigPath(configDirectory, config.HostSchema);
