@@ -4,6 +4,8 @@
 
 第一版代码目标是跑通 DSL 到 Narrative Graph IR 的主链路，并为后续 VSCode、HTML 预览和 Unity Adapter 留出边界。
 
+具体命名、入口、生命周期式方法和渐进式重构规则见 [编码与命名规范](coding-conventions.md)。后续重构应先对齐该规范，再做小步、可验证的代码移动或重命名。
+
 ## 当前目录
 
 ```text
@@ -38,6 +40,17 @@ docs/
 - VSCode Language Server 后续应复用 `Inscape.Core`，而不是重新实现解析器。
 - Unity Adapter 后续应消费 Narrative Graph IR，并通过 Host Schema / Host Bridge / 代码生成适配项目自己的数据结构；`Inscape.Adapters.UnitySample` 只是实验样例。
 - Timeline / DirectorSystem 暂不进入 Core 的第一版模型，先作为后续调研与 Adapter 层问题。
+
+## 入口与可读性方向
+
+当前项目仍处于编译器 + 工具链阶段，因此没有游戏项目式的统一主循环。现有入口分散为：Core 编译入口、CLI 命令入口、VSCode 扩展入口和 HTML 预览入口。
+
+为了让代码更接近游戏项目中的“主入口 + 生命周期”阅读习惯，后续应逐步补齐两个应用层入口：
+
+- `InscapeProjectService`：统一项目加载、编译、诊断、索引、本地化和 source map 查询，供 CLI、VSCode 和未来 Language Server 复用。
+- `NarrativeRuntime`：进入 Runtime Host 阶段后再引入，负责从 IR 启动故事、进入节点、继续、选择、回退、重启、派发宿主事件和存档恢复。
+
+短期不要为了形式统一给 Core 增加 runtime loop；Core 仍然只负责编译和数据契约。
 
 ## 第一版 Core 能力
 

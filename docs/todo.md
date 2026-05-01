@@ -27,7 +27,20 @@
 - [x] 建立 CLI 命令速查清单，并让 CLI 支持 `commands` / `help <command>` 终端查询。
 - [x] 将固定 Unity 项目适配 spike 从 `Inscape.Core` 迁出为 `Inscape.Adapters.UnitySample` 实验样例，并明确它不是最终 Host Bridge。
 - [x] 固化 VSCode 扩展发布工作流，补充 `npm run rebuild:vsix` 与 `.vsix` 安装步骤，避免只改源码不更新到本机扩展。
+- [x] 建立编码与命名规范，明确入口、生命周期式方法、数据/逻辑/表现/适配分层和渐进式重构顺序。
+- [x] 建立渐进式重构计划，按大目标/中目标/小目标安排入口、测试、CLI、VSCode、source map、Host Bridge 和 Runtime 前置设计。
 - [ ] 每次完成阶段性提交后，同步更新 [Agent 接手指南](agent-handoff.md) 的当前快照。
+
+## 代码质量与渐进式重构
+
+执行顺序和验收标准见 [渐进式重构计划](refactoring-plan.md)。
+
+- [ ] 按 [编码与命名规范](coding-conventions.md) 拆分测试文件，降低 `tests/Inscape.Tests/Program.cs` 的阅读成本，但不改变测试语义。
+- [ ] 按 command 职责拆分 CLI 入口，避免 `src/Inscape.Cli/Program.cs` 继续承担过多命令分发和业务编排。
+- [ ] 按 provider / command / preview bridge / style / workspace index 拆分 VSCode extension，保持现有作者体验不回归。
+- [ ] 设计并引入 `InscapeProjectService`，统一 CLI、VSCode 和未来 Language Server 的项目级编译、诊断、索引与本地化调用。
+- [ ] 统一 source map / reveal payload 数据契约，支撑预览、诊断、跳转、本地化和未来编辑器三视图。
+- [ ] Runtime Host 阶段再引入 `NarrativeRuntime`，采用生命周期式执行模型，不提前把 runtime loop 放进 Core 编译层。
 
 ## 阶段 1：DSL 与轻工具链
 
