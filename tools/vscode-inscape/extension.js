@@ -873,6 +873,13 @@ async function openPreviewSource(source, webviewPanel) {
                 Math.max(0, (source.column || 0) + 1)
             )
         );
+
+        const existingEditor = findVisibleTextEditorForUri(location.uri, webviewPanel);
+        if (existingEditor) {
+            await focusExistingTextEditor(existingEditor, location.range);
+            return;
+        }
+
         await openLocation(location, {
             viewColumn: resolveSourceViewColumn(location.uri, webviewPanel)
         });
@@ -2581,15 +2588,40 @@ async function openLocation(location, options = {}) {
     editor.revealRange(location.range, vscode.TextEditorRevealType.InCenter);
 }
 
-function resolveSourceViewColumn(targetUri, webviewPanel) {
-    const openTabColumn = findOpenTextTabViewColumn(targetUri);
-    if (openTabColumn) {
-        return openTabColumn;
+async function focusExistingTextEditor(editor, range) {
+    const activatedEditor = await vscode.window.showTextDocument(editor.document, {
+        viewColumn: editor.viewColumn,
+        preview: false,
+        preserveFocus: false,
+        selection: range
+    });
+    activatedEditor.selection = new vscode.Selection(range.start, range.end);
+    activatedEditor.revealRange(range, vscode.TextEditorRevealType.InCenter);
+}
+
+function findVisibleTextEditorForUri(targetUri, webviewPanel) {
+    const targetPath = normalizePath(targetUri.fsPath);
+    const exactMatch = vscode.window.visibleTextEditors.find((editor) => normalizePath(editor.document.uri.fsPath) === targetPath);
+    if (exactMatch) {
+        return exactMatch;
     }
 
+    if (!webviewPanel) {
+        return undefined;
+    }
+
+    return vscode.window.visibleTextEditors.find((editor) => editor.viewColumn && editor.viewColumn !== webviewPanel.viewColumn);
+}
+
+function resolveSourceViewColumn(targetUri, webviewPanel) {
     const visibleEditor = vscode.window.visibleTextEditors.find((editor) => normalizePath(editor.document.uri.fsPath) === normalizePath(targetUri.fsPath));
     if (visibleEditor && visibleEditor.viewColumn) {
         return visibleEditor.viewColumn;
+    }
+
+    const openTabColumn = findOpenTextTabViewColumn(targetUri);
+    if (openTabColumn) {
+        return openTabColumn;
     }
 
     const fallbackEditor = vscode.window.visibleTextEditors.find((editor) => editor.viewColumn && (!webviewPanel || editor.viewColumn !== webviewPanel.viewColumn));
