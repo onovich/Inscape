@@ -8,15 +8,20 @@
 
 下一位接手者建议按以下顺序推进：
 
-1. 收敛 `@` 与 `[]` 的语法分工：当前两套提示语法的职责重叠过高，作者心智不稳定；需要明确二者是否保留并存、如何区分“语义/时机”与“资源/别名绑定”，以及 `@timeline ...` / `[timeline: ...]` 是否还应继续双写法共存。
-2. 设计 Host Bridge 草案：解决 Inscape 可读 ID 与项目内部 ID / 资源 / 事件处理器的映射，不被 UnitySample、Addressables 或 ScriptableObject 绑定。
-3. 调研 Unity `[Inscape]` Attribute 扫描与 Unity 内代码生成：生成待配置桥接表，再由人工完成 C# 成员与 Inscape 名称映射。
-4. 继续打磨 VSCode 可玩预览：补未保存内容的更细粒度热刷新、刷新中状态提示，以及可选的预览 / 源码同步策略。
+1. 执行当前重构收口计划（最高优先级）：按本会话已经确认的模块边界继续拆分，而不是再引入笼统的 `InscapeProjectService` / `Workspace` / `ProjectSystem` 大层。
+	- CLI 继续从 `CliCore` 抽离剩余共享辅助，保持入口只做参数分流、命令路由、退出码与通用输出。
+	- VSCode 按 `provider / command / preview bridge / style / workspace index` 拆分 `tools/vscode-inscape/extension.js`，避免继续堆单文件入口。
+	- 共享术语统一使用 `Dsl`、`DslSources`、`Config`、`Cli`、`Preview`、`L10n`、`Host`；工程名暂保留 `Inscape.Core`，但架构文档不再把 `Core`、`Workspace`、`ProjectSystem` 当成长期主术语扩张。
+	- 每完成一轮小步重构，都同步更新 `docs/agent-handoff.md`、`docs/refactoring-plan.md`、`docs/code-structure.md` 和本 TODO，避免再次积累陈旧口径。
+2. 收敛 `@` 与 `[]` 的语法分工：当前两套提示语法的职责重叠过高，作者心智不稳定；需要明确二者是否保留并存、如何区分“语义/时机”与“资源/别名绑定”，以及 `@timeline ...` / `[timeline: ...]` 是否还应继续双写法共存。
+3. 设计 Host Bridge 草案：解决 Inscape 可读 ID 与项目内部 ID / 资源 / 事件处理器的映射，不被 UnitySample、Addressables 或 ScriptableObject 绑定。
+4. 调研 Unity `[Inscape]` Attribute 扫描与 Unity 内代码生成：生成待配置桥接表，再由人工完成 C# 成员与 Inscape 名称映射。
+5. 继续打磨 VSCode 可玩预览：补未保存内容的更细粒度热刷新、刷新中状态提示，以及可选的预览 / 源码同步策略。
 	- 正文 / 选项文本不再用 `DocumentLinkProvider`，因为它会导致整段文本常驻下划线；当前用 `DefinitionProvider` 恢复“默认无下划线、Ctrl+指向才显示链接态”的编辑体验，并通过 selection bridge 在 Ctrl+Click 后执行预览定位，显式命令仅作为兜底。
-5. 将 `Inscape.Adapters.UnitySample` 作为实验样例继续隔离，后续验证它能否由 Host Bridge 配置和代码生成替代。
-6. 决定 Bird 项目内 importer 与生成的 `InscapeGenerated` 资源是否提交，或先清理后保留 Inscape 侧原型。
-7. 设计本地化模糊匹配与人工确认报告，不要直接自动复用相似文本译文。
-8. 收敛第一版块语法：继续使用 `:: node.name`，还是转向 `# 标题` + 空行分块。
+6. 将 `Inscape.Adapters.UnitySample` 作为实验样例继续隔离，后续验证它能否由 Host Bridge 配置和代码生成替代。
+7. 决定 Bird 项目内 importer 与生成的 `InscapeGenerated` 资源是否提交，或先清理后保留 Inscape 侧原型。
+8. 设计本地化模糊匹配与人工确认报告，不要直接自动复用相似文本译文。
+9. 收敛第一版块语法：继续使用 `:: node.name`，还是转向 `# 标题` + 空行分块。
 
 ## 文档与接手效率
 
@@ -38,7 +43,7 @@
 - [x] 按 [编码与命名规范](coding-conventions.md) 拆分测试文件，降低 `tests/Inscape.Tests/TestCore.cs` 的阅读成本，但不改变测试语义。
 - [x] 按 command 职责拆分 CLI 入口，避免 `src/Inscape.Cli/CliCore.cs` 继续承担过多命令分发和业务编排；已完成配置读取、顶层元命令、单文件命令和项目级命令分支拆分，并将项目 `.inscape` 源扫描/读取/override 收口到 `CliDslSourceLoader`、预览样式读取收口到 `CliPreviewStyleLoader`、项目命令共享编译前置流程收口到 `CliProjectCompiler`、单文件命令共享编译前置流程收口到 `CliSingleFileCompiler`、UnitySample 项目命令辅助逻辑收口到 `CliUnitySampleSupport`，`CliCore` 仅保留入口分发与共享基础输出辅助。
 - [ ] 按 provider / command / preview bridge / style / workspace index 拆分 VSCode extension，保持现有作者体验不回归。
-- [ ] 设计并引入 `InscapeProjectService`，统一 CLI、VSCode 和未来 Language Server 的项目级编译、诊断、索引与本地化调用。
+- [ ] 将 CLI、VSCode 和未来 Language Server 共享的项目级流程继续拆成显式职责模块，优先落到 `DslSources`、`Config`、`Preview`、`L10n`、`Host` 等窄边界；如未来确需统一门面，也应建立在这些模块之上，而不是先造一个大而泛的 `ProjectService`。
 - [ ] 统一 source map / reveal payload 数据契约，支撑预览、诊断、跳转、本地化和未来编辑器三视图。
 - [ ] Runtime Host 阶段再引入 `NarrativeRuntime`，采用生命周期式执行模型，不提前把 runtime loop 放进 Core 编译层。
 - [ ] 保持 `src/Inscape.Adapters.UnitySample` 作为隔离实验/回归样例，暂不纳入主动重构范围；只在 Host Bridge / generator 设计阶段把它当验证样本使用。

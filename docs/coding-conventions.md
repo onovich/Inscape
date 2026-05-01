@@ -15,6 +15,7 @@
 - 先区分数据、逻辑、表现、控制、适配，再决定类名和目录。
 - 不为“看起来统一”做大规模机械重命名；每次重构必须保持已有测试和作者体验不回归。
 - `Inscape.Core` 是语义真相；CLI、VSCode、Preview、Adapter 都只能消费或编排 Core 能力。
+- 架构讨论与文档口径优先使用 `Dsl`、`DslSources`、`Config`、`Cli`、`Preview`、`L10n`、`Host` 这些窄职责模块名；工程名可以暂时保留现状，但不要让 `Core`、`Workspace`、`ProjectSystem` 继续泛化成“什么都能装”的桶。
 
 ## 分层命名
 
@@ -51,6 +52,7 @@ CLI 是工具编排层，不是语义层。
 - `CommandResult`：命令执行结果和退出码。
 - `OutputWriter`：把 Core 结果写成 JSON、CSV、HTML 或报告。
 - `ProjectLocator` / `ConfigLoader`：文件系统与配置读取。
+- `DslSourceLoader` / `ProjectCompiler` / `SingleFileCompiler`：项目源读取或共享编译前置流程，职责保持显式且单一。
 
 约束：
 
@@ -167,21 +169,37 @@ Dispose()
 
 ## 入口命名
 
-为了让代码更接近游戏项目的“主入口 + 生命周期”阅读习惯，后续建议逐步补齐以下应用层入口：
+为了让代码更接近游戏项目的“主入口 + 生命周期”阅读习惯，后续建议优先把工具链组合层拆成明确模块，而不是先造一个泛化服务：
 
 ```text
-InscapeProjectService
-  LoadProject()
-  Compile()
-  Diagnose()
-  BuildIndex()
-  ExtractLocalization()
-  UpdateLocalization()
+DslSources
+  DiscoverSources()
+  ReadOverride()
+  LoadProjectSources()
 
-InscapePreviewService
+Config
+  ReadProjectConfig()
+  NormalizePaths()
+
+Preview
+  ReadStyle()
   BuildPreview()
   RevealSource()
   RevealPreview()
+
+L10n
+  ExtractLocalization()
+  UpdateLocalization()
+
+Host
+  ReadHostSchema()
+  ResolveBindings()
+  ExportHostArtifacts()
+
+Cli
+  RouteCommand()
+  RunSingleFileCommand()
+  RunProjectCommand()
 
 NarrativeRuntime
   Initialize()
@@ -193,7 +211,7 @@ NarrativeRuntime
   Dispose()
 ```
 
-短期优先补 `InscapeProjectService`，用于统一 CLI、VSCode、未来 Language Server 对项目编译、诊断、索引和本地化的调用方式。中长期再补 `NarrativeRuntime`，用于 Unity Runtime Host 和独立编辑器实时预览。
+短期优先补齐这些窄职责模块，并通过薄组合层在 CLI、VSCode、未来 Language Server 中复用；不要先造 `InscapeProjectService` 这类大而泛的主服务。中长期再补 `NarrativeRuntime`，用于 Unity Runtime Host 和独立编辑器实时预览。
 
 ## 数据与逻辑分层
 
@@ -276,7 +294,7 @@ UnitySampleExporterReportsUnresolvedHostHooks
 2. 拆分测试文件，降低阅读门槛。
 3. 拆分 CLI command 分发，避免 `CliCore.cs` 继续膨胀。
 4. 拆分 VSCode extension：providers、commands、preview bridge、style、workspace index。
-5. 引入 `InscapeProjectService`，统一 CLI / VSCode / Language Server 的项目级调用。
+5. 继续按 `DslSources` / `Config` / `Preview` / `L10n` / `Host` 收口工具链共享流程，避免重新聚合成大总层。
 6. 统一 source map / reveal payload，支撑预览、诊断、跳转、本地化和未来编辑器三视图。
 7. 设计 Host Bridge 数据模型，用配置和代码生成逐步替代 UnitySample 硬编码。
 8. 进入 Runtime Host 阶段后，再引入 `NarrativeRuntime` 和生命周期式执行模型。

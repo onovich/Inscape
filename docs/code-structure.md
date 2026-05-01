@@ -34,6 +34,7 @@ docs/
 
 ## 分层原则
 
+- 架构术语上优先使用 `Dsl`、`DslSources`、`Config`、`Cli`、`Preview`、`L10n`、`Host` 这些窄职责模块名；当前工程名 `Inscape.Core` 暂不强改，但在设计讨论中应把它视为当前 DSL 语义层，而不是无限扩张的“Core 万物层”。
 - `Inscape.Core` 不依赖 Unity、不依赖 VSCode、不依赖 HTML 渲染，也不依赖外部包。
 - `Inscape.Cli` 是开发工具层，可以输出单文件 JSON IR、项目级 JSON IR、项目级诊断 JSON、单文件/项目级轻量 HTML 预览，以及本地化 CSV。
 - `tools/vscode-inscape` 可以承载 VSCode 写作体验代码，但语法诊断必须通过 `Inscape.Core` 或 CLI 桥接获得。
@@ -41,13 +42,25 @@ docs/
 - Unity Adapter 后续应消费 Narrative Graph IR，并通过 Host Schema / Host Bridge / 代码生成适配项目自己的数据结构；`Inscape.Adapters.UnitySample` 只是实验样例。
 - Timeline / DirectorSystem 暂不进入 Core 的第一版模型，先作为后续调研与 Adapter 层问题。
 
+## 当前确认的模块名称
+
+- `Dsl`：DSL 语法、IR、诊断、图结构和编译语义真相；当前主要由 `src/Inscape.Core/` 承载。
+- `DslSources`：`.inscape` 文件发现、读取、override、来源组织；当前 CLI 侧已落地 `CliDslSourceLoader`。
+- `Config`：`inscape.config.json` 读取、路径归一化、配置模型；当前 CLI 侧已落地 `CliConfigLoader`、`CliProjectConfig`。
+- `Cli`：命令入口、命令路由、退出码与工具编排；当前落地 `CliCore`、`CliTopLevelCommandRunner`、`CliSingleFileCommandRunner`、`CliProjectCommandRunner`。
+- `Preview`：预览样式、HTML / WebView 渲染和源码定位；当前落地 `CliPreviewStyleLoader`、`CliPreviewHtmlRenderer` 与 VSCode preview bridge。
+- `L10n`：本地化提取、更新、合并和审校；当前主要落地在 `Inscape.Core/Localization/` 与 CLI 对应命令。
+- `Host`：宿主 Schema、Host Bridge、绑定、导入导出和生成；当前包括 `hostSchema` 草案以及 UnitySample / Bird 链路。
+
+这些名称现在是后续重构和文档同步的标准口径。除非有新的 ADR 或明确讨论结论，不要回退到 `Workspace`、`ProjectSystem`、`InscapeProjectService` 这类过泛术语。
+
 ## 入口与可读性方向
 
 当前项目仍处于编译器 + 工具链阶段，因此没有游戏项目式的统一主循环。现有入口分散为：Core 编译入口、CLI 命令入口、VSCode 扩展入口和 HTML 预览入口。
 
-为了让代码更接近游戏项目中的“主入口 + 生命周期”阅读习惯，后续应逐步补齐两个应用层入口：
+为了让代码更接近游戏项目中的“主入口 + 生命周期”阅读习惯，后续应区分“工具链组合层”和“运行时入口”，但不要把工具链组合层提前做成大杂烩总服务：
 
-- `InscapeProjectService`：统一项目加载、编译、诊断、索引、本地化和 source map 查询，供 CLI、VSCode 和未来 Language Server 复用。
+- 工具链侧短期先通过 `DslSources`、`Config`、`Preview`、`L10n`、`Host` 等窄模块组合当前需求；如未来确需统一门面，也应只是建立在这些模块之上的薄组合层。
 - `NarrativeRuntime`：进入 Runtime Host 阶段后再引入，负责从 IR 启动故事、进入节点、继续、选择、回退、重启、派发宿主事件和存档恢复。
 
 短期不要为了形式统一给 Core 增加 runtime loop；Core 仍然只负责编译和数据契约。

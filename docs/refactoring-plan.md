@@ -1,6 +1,6 @@
 # 渐进式重构计划
 
-状态：草案
+状态：执行中
 
 最后更新：2026-05-01
 
@@ -44,7 +44,7 @@ VSCode：4 / 10
 - 标注 Core 入口：`InscapeCompiler`、`ProjectCompiler`。
 - 标注工具入口：CLI `CliCore`、VSCode `activate()`、HTML Preview renderer。
 - 在文档中明确：当前没有游戏式主循环，因为项目仍处于编译器 + 工具链阶段。
-- 明确未来两类入口：`InscapeProjectService` 和 `NarrativeRuntime`。
+- 明确未来运行时入口是 `NarrativeRuntime`；工具链侧短期继续按 `DslSources`、`Config`、`Preview`、`L10n`、`Host` 等窄职责模块推进，而不是预设 `InscapeProjectService` 一类总服务。
 
 验收标准：
 
@@ -53,24 +53,25 @@ VSCode：4 / 10
 
 状态：已部分完成，见 [代码结构规划](code-structure.md) 和 [编码与命名规范](coding-conventions.md)。
 
-### 中目标 A2：引入 `InscapeProjectService`
+### 中目标 A2：按显式职责补齐工具链应用层
 
 小目标：
 
-- 新增项目级应用服务，统一项目加载、编译、诊断、索引、本地化提取和更新。
-- CLI 项目级命令逐步改为调用该服务。
-- VSCode 诊断、预览、本地化命令逐步通过统一契约消费该服务或未来 Language Server 输出。
+- 不预设 `InscapeProjectService`、`Workspace`、`ProjectSystem` 之类大而泛的工具链总服务。
+- 继续把项目级流程拆到 `DslSources`、`Config`、`Preview`、`L10n`、`Host` 等可单独验证的窄模块中。
+- CLI、VSCode 与未来 Language Server 逐步通过共享数据契约和薄组合层复用这些窄模块，而不是各自重新拼装，也不是先引入巨型门面。
 - 保留 `ProjectCompiler` 作为 Core 编译能力，不让它承担文件系统、配置和工具编排职责。
 
 验收标准：
 
-- CLI 和 VSCode 不再各自拼装项目编译流程。
-- 项目配置读取、override、entry override、source map 查询有统一路径。
+- CLI 和 VSCode 不再无序拼装项目编译流程。
+- 项目配置读取、override、entry override、source map / reveal payload 查询有清晰边界和命名。
+- 如确实出现统一门面，也必须建立在已稳定的窄模块之上，并保持其本身足够薄。
 - 现有项目级测试全部通过。
 
 风险：
 
-- 容易把 CLI 文件系统逻辑提前塞进 Core。
+- 容易把 CLI 文件系统逻辑提前塞进 Core，或以“统一入口”为名重新做一个大杂烩服务。
 - 需要谨慎拆分，避免同时改动输出格式。
 
 建议优先级：高。
@@ -120,6 +121,17 @@ VSCode：4 / 10
 
 建议优先级：最高。它最适合作为第一轮安全重构。
 
+## 当前最高优先级（2026-05-01）
+
+当前最高优先级已经从“继续补更多语法与宿主能力”切换为“先把正在进行的重构路线收口并文档化”，避免后续在旧术语和旧边界上继续累积代码。
+
+执行顺序：
+
+1. 继续收口 CLI：让 `CliCore` 只保留参数分流、命令路由、退出码与少量共享输出；剩余共用逻辑优先提取到窄职责 helper。
+2. 拆分 VSCode 扩展：按 provider / command / preview bridge / style / workspace index 分层，而不是继续扩张 `extension.js`。
+3. 固化共享契约：明确 source map、reveal payload、项目扫描 / override / 配置读取的边界，供 CLI / VSCode / 未来 LSP 复用。
+4. 文档与 TODO 同步：每一轮重构提交都要同步更新 handoff、todo、code-structure、coding-conventions 和本计划，避免口径再次过时。
+
 ### 中目标 B2：拆分 CLI command 分发
 
 小目标：
@@ -128,7 +140,7 @@ VSCode：4 / 10
 - 把每个主要命令拆成独立 command handler。
 - 提取 `CommandOptions`、`CommandResult`、`OutputWriter`、`ConfigLoader`。
 - 让 `CliCore.cs` 只保留参数分发、命令表和退出码处理。
-- 项目级命令逐步调用 `InscapeProjectService`。
+- 项目级命令逐步调用更窄的项目编排 helper，而不是回到大而泛的项目总服务。
 
 验收标准：
 
@@ -151,7 +163,7 @@ VSCode：4 / 10
 - 拆出 providers：completion、definition、reference、hover、CodeLens。
 - 拆出 commands：preview、localization、host schema、style、quick guide。
 - 拆出 preview bridge：open/reuse preview、source reveal、preview reveal、pending reveal。
-- 拆出 workspace index：节点、speaker、host binding、schema capability 的轻量索引。
+- 拆出 workspace index：节点、speaker、host binding、schema capability 的轻量索引；这是 VSCode 作者体验层的索引，不等同“Workspace”架构总层。
 - 拆出 style loader / decoration controller。
 
 验收标准：
@@ -370,10 +382,10 @@ VSCode：4 / 10
 
 ### 第四轮：统一项目服务和定位契约
 
-1. 设计 `InscapeProjectService` API。
-2. 统一 compile / diagnose / l10n / index 调用。
-3. 统一 source map / reveal payload。
-4. 让 CLI 和 VSCode 逐步消费统一服务。
+1. 明确 CLI、VSCode、Preview 共用的数据契约与组合边界。
+2. 统一 compile / diagnose / l10n / index / reveal payload 调用方式。
+3. 如有必要，再设计建立在窄模块之上的薄组合层，但不把它当新“真相层”。
+4. 让 CLI 和 VSCode 逐步消费统一契约。
 
 目标：整体可维护性提升到约 7.8。
 
