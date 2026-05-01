@@ -56,8 +56,7 @@ function activate(context) {
             new InscapePreviewEditorProvider(context),
             {
                 webviewOptions: {
-                    retainContextWhenHidden: true,
-                    enableScripts: true
+                    retainContextWhenHidden: true
                 },
                 supportsMultipleEditorsPerDocument: true
             }
@@ -320,6 +319,12 @@ class InscapeHoverProvider {
             if (binding) {
                 return new vscode.Hover(createHostBindingHoverMarkdown(binding), hostBindingInfo.range);
             }
+
+            return new vscode.Hover(createHostBindingMissingMarkdown({
+                kind: hostBindingInfo.kind,
+                alias: hostBindingInfo.alias,
+                sourcePath: document.uri.fsPath
+            }), hostBindingInfo.range);
         }
 
         const metadataInfo = getMetadataDirectiveAtPosition(document, position);
@@ -439,7 +444,11 @@ async function openPreview(context) {
         return;
     }
 
-    await vscode.commands.executeCommand("vscode.openWith", document.uri, "inscape.preview");
+    await vscode.commands.executeCommand("vscode.openWith", document.uri, "inscape.preview", {
+        viewColumn: vscode.ViewColumn.Beside,
+        preserveFocus: false,
+        preview: false
+    });
 }
 
 async function togglePreview(context) {
@@ -454,7 +463,11 @@ async function togglePreview(context) {
         return;
     }
 
-    await vscode.commands.executeCommand("vscode.openWith", document.uri, "inscape.preview");
+    await vscode.commands.executeCommand("vscode.openWith", document.uri, "inscape.preview", {
+        viewColumn: vscode.ViewColumn.Beside,
+        preserveFocus: false,
+        preview: false
+    });
 }
 
 async function resolvePreviewDocument() {
@@ -624,14 +637,23 @@ function createPreviewInvocation(context, document, tempPath, outputPath) {
     const configuration = vscode.workspace.getConfiguration("inscape", workspaceFolder ? workspaceFolder.uri : document.uri);
     const command = configuration.get("compiler.command", "dotnet");
     const cliProject = resolveCliProjectPath(context, workspaceFolderPath);
-    const args = [
-        "run",
-        "--project",
-        cliProject,
-        "--",
-        "preview-project",
-        workspaceFolderPath
-    ];
+    const cliAssembly = resolveCliAssemblyPath(workspaceFolderPath, cliProject);
+    const useExec = cliAssembly && fs.existsSync(cliAssembly);
+    const args = useExec
+        ? [
+            "exec",
+            cliAssembly,
+            "preview-project",
+            workspaceFolderPath
+        ]
+        : [
+            "run",
+            "--project",
+            cliProject,
+            "--",
+            "preview-project",
+            workspaceFolderPath
+        ];
 
     if (document && tempPath) {
         args.push("--override", document.uri.fsPath, tempPath);
@@ -646,6 +668,23 @@ function createPreviewInvocation(context, document, tempPath, outputPath) {
     };
 }
 
+function resolveCliAssemblyPath(workspaceFolderPath, cliProject) {
+    const projectDirectory = path.dirname(cliProject);
+    const candidateFrameworks = ["net10.0", "net9.0", "net8.0"];
+    const candidateConfigurations = ["Debug", "Release"];
+
+    for (const configuration of candidateConfigurations) {
+        for (const framework of candidateFrameworks) {
+            const candidate = path.join(projectDirectory, "bin", configuration, framework, "Inscape.Cli.dll");
+            if (fs.existsSync(candidate)) {
+                return candidate;
+            }
+        }
+    }
+
+    return undefined;
+}
+
 function hashDocumentText(document) {
     return crypto.createHash("sha1").update(document.getText(), "utf8").digest("hex");
 }
@@ -657,6 +696,10 @@ class InscapePreviewEditorProvider {
     }
 
     resolveCustomTextEditor(document, webviewPanel) {
+        webviewPanel.webview.options = {
+            enableScripts: true
+        };
+
         const sourceKey = normalizePath(document.uri.fsPath);
         if (!previewPanels.has(sourceKey)) {
             previewPanels.set(sourceKey, new Set());
@@ -2081,13 +2124,13 @@ function getHostBindingAtPosition(document, position) {
     const metadataMatch = /^\s*@timeline(?:\.(?:talking|node)\.(?:enter|exit))?(?::|\s+)\s*([^\s\]]+)/.exec(line);
     if (metadataMatch) {
         const alias = metadataMatch[1].trim();
-        const aliasStart = line.indexOf(metadataMatch[1], metadataMatch.index);
-        const aliasEnd = aliasStart + metadataMatch[1].length;
-        if (position.character >= aliasStart && position.character <= aliasEnd) {
+        const bindingStart = line.indexOf("@timeline", metadataMatch.index);
+        const bindingEnd = Math.min(line.length, metadataMatch.index + metadataMatch[0].length);
+        if (position.character >= bindingStart && position.character <= bindingEnd) {
             return {
                 kind: "timeline",
                 alias,
-                range: new vscode.Range(position.line, aliasStart, position.line, aliasEnd)
+                range: new vscode.Range(position.line, bindingStart, position.line, bindingEnd)
             };
         }
     }
@@ -2097,13 +2140,13 @@ function getHostBindingAtPosition(document, position) {
     while (inlineMatch) {
         const kind = normalizeHostBindingKind(inlineMatch[1].trim());
         const alias = inlineMatch[2].trim();
-        const aliasStart = inlineMatch.index + inlineMatch[0].lastIndexOf(inlineMatch[2]);
-        const aliasEnd = aliasStart + inlineMatch[2].length;
-        if (position.character >= aliasStart && position.character <= aliasEnd) {
+        const bindingStart = inlineMatch.index;
+        const bindingEnd = inlineMatch.index + inlineMatch[0].length;
+        if (position.character >= bindingStart && position.character <= bindingEnd) {
             return {
                 kind,
                 alias,
-                range: new vscode.Range(position.line, aliasStart, position.line, aliasEnd)
+                range: new vscode.Range(position.line, bindingStart, position.line, bindingEnd)
             };
         }
         inlineMatch = inlinePattern.exec(line);
@@ -2214,7 +2257,7 @@ function getMetadataDirectiveAtPosition(document, position) {
     const kind = match[1].trim();
     const value = match[2] ? match[2].trim() : "";
     const start = line.indexOf("@" + match[1]);
-    const end = value ? line.indexOf(value, start) + value.length : start + match[1].length + 1;
+    const end = line.trimEnd().length;
 
     if (position.character >= start && position.character <= Math.max(start, end)) {
         return {

@@ -55,9 +55,9 @@ Inscape 的默认阅读优先级应当是：
 - 为 VSCode Outline 提供当前文件节点列表。
 - 为 `inscape.host.schema.json` / `*.host.schema.json` 提供 JSON Schema 校验。
 - 提供命令 `Inscape: Show Host Schema Capabilities`，读取 `inscape.config.json` 的 `hostSchema` 并列出 query / event。
-- 提供命令 `Inscape: Open Preview`，以 VSCode custom editor 方式打开可玩预览；它看起来像编辑器标签页的一部分，而不是独立面板。如果当前活动 `.inscape` 文件未保存，会通过 `--override` 使用编辑器中的临时内容。
+- 提供命令 `Inscape: Open Preview`，以 VSCode custom editor 方式打开可玩预览；它默认会尝试在源码旁边以侧边编辑器打开，而不是只堆在同一个页签组里。如果当前活动 `.inscape` 文件未保存，会通过 `--override` 使用编辑器中的临时内容。
 - 编辑器右上角提供 `Inscape: Toggle Preview` 按钮，可以快速在源码和预览之间切换；当前实现会优先复用已有预览标签页，避免重复打开。
-- 预览首版支持项目流程体验：点击选项推进、Back、Restart、节点列表、路径记录和 diagnostics；编辑时会防抖刷新，保存工作区内 `.inscape` 文件后立即刷新打开的预览编辑器。
+- 预览首版支持项目流程体验：当前采用单栏沉浸式界面展示正文和选项；点击选项推进、无选项时点击正文继续、支持 Back / Restart 和 diagnostics；编辑时会防抖刷新，保存工作区内 `.inscape` 文件后立即刷新打开的预览编辑器。预览启动时优先复用已编译的 CLI DLL，减少 `dotnet run` 带来的等待。
 - 预览中的节点、行、选项、`@` 元信息和 `[]` 宿主标签都支持一键跳回源码位置，便于把“玩流程”和“改脚本”连成一个闭环。
 
 ## 尚未实现
@@ -197,3 +197,14 @@ code --extensionDevelopmentPath=tools\vscode-inscape .
 ```
 
 也可以直接打开 `tools/vscode-inscape/` 作为扩展项目，启动 Extension Development Host 后再打开 `.inscape` 文件验证高亮。
+
+## 发布工作流
+
+当扩展改动需要让本机 VS Code 立刻看到效果时，先重新打包再覆盖安装，而不是只重启窗口。当前建议使用：
+
+```powershell
+cd tools\vscode-inscape
+npm run rebuild:vsix
+```
+
+这条流程会调用 `vsce package` 生成 `.vsix`，再用 `code.cmd` 安装覆盖。详细约定见 [VSCode 扩展发布工作流](vscode-release-workflow.md)。

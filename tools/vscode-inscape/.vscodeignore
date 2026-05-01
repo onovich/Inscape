@@ -1,0 +1,12 @@
+**/*.map
+**/*.log
+**/node_modules/**
+**/scripts/**
+**/test/**
+**/tests/**
+**/*.vsix
+**/.gitignore
+**/.npmrc
+**/.vscode/**
+**/*.ts
+**/*.js.map

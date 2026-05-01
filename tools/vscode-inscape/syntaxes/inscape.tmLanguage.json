@@ -15,6 +15,9 @@
       "include": "#jumps"
     },
     {
+        "include": "#hostBindings"
+      },
+      {
       "include": "#metadataLines"
     },
     {
@@ -148,12 +151,51 @@
     "metadataLines": {
       "patterns": [
         {
-          "name": "comment.line.metadata.inscape",
-          "match": "^\\s*@[A-Za-z_][A-Za-z0-9_.-]*(?::.*|\\s+.*)?$"
+          "name": "meta.metadata.directive.inscape",
+          "match": "^(\\s*)(@)([A-Za-z_][A-Za-z0-9_.-]*)(?:((?::|\\s+).*))?$",
+          "captures": {
+            "2": {
+              "name": "keyword.control.metadata-prefix.inscape"
+            },
+            "3": {
+              "name": "keyword.control.metadata-name.inscape"
+            },
+            "4": {
+              "name": "string.unquoted.metadata-value.inscape"
+            }
+          }
         },
         {
           "name": "comment.line.metadata.bracket.inscape",
           "match": "^\\s*\\[[^\\]\\r\\n]*\\]\\s*$"
+        }
+      ]
+    },
+    "hostBindings": {
+      "patterns": [
+        {
+          "name": "meta.host-binding.timeline.inscape",
+          "match": "^(\\s*)(@timeline(?:\\.(?:talking|node)\\.(?:enter|exit))?)(?::|\\s+)([^\\s\\]]+)\\s*$",
+          "captures": {
+            "2": {
+              "name": "keyword.control.host-binding.inscape"
+            },
+            "3": {
+              "name": "entity.name.function.host-binding-alias.inscape"
+            }
+          }
+        },
+        {
+          "name": "meta.host-binding.inline.inscape",
+          "match": "^(\\s*)\\[([A-Za-z_][A-Za-z0-9_.-]*)\\s*:\\s*([^\\]\\r\\n]+)\\]\\s*$",
+          "captures": {
+            "2": {
+              "name": "keyword.control.host-binding-kind.inscape"
+            },
+            "3": {
+              "name": "entity.name.function.host-binding-alias.inscape"
+            }
+          }
         }
       ]
     },
