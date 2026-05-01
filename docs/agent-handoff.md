@@ -151,7 +151,7 @@ DSL 语法                           docs/dsl-syntax-guide.md, docs/dsl-language
 DSL 生态定位 / 竞品对比             docs/dsl-ecosystem-positioning.md, docs/adr/0007-dsl-benchmark-positioning.md
 代码结构 / 新模块                  docs/code-structure.md, docs/coding-conventions.md, docs/refactoring-plan.md, src/Inscape.Core, src/Inscape.Cli
 VSCode 工具                        docs/vscode-tooling.md, tools/vscode-inscape/README.md
-HTML 预览                          src/Inscape.Cli/PreviewHtmlRenderer.cs, docs/vscode-tooling.md
+HTML 预览                          src/Inscape.Cli/CliPreviewHtmlRenderer.cs, docs/vscode-tooling.md
 本地化 / hash                      docs/hash-localization.md, docs/l10n-extraction.md
 宿主 Schema / 查询事件             docs/host-schema.md, docs/dsl-language.md, docs/open-questions.md, docs/todo.md
 Unity / Host Bridge                docs/unity-sample-adapter.md, docs/project-config.md, docs/runtime-unity.md, docs/architecture.md, docs/todo.md

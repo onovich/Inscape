@@ -40,7 +40,7 @@ VSCode：4 / 10
 小目标：
 
 - 标注 Core 入口：`InscapeCompiler`、`ProjectCompiler`。
-- 标注工具入口：CLI `Program`、VSCode `activate()`、HTML Preview renderer。
+- 标注工具入口：CLI `CliCore`、VSCode `activate()`、HTML Preview renderer。
 - 在文档中明确：当前没有游戏式主循环，因为项目仍处于编译器 + 工具链阶段。
 - 明确未来两类入口：`InscapeProjectService` 和 `NarrativeRuntime`。
 
@@ -108,7 +108,7 @@ VSCode：4 / 10
 
 验收标准：
 
-- `tests/Inscape.Tests/Program.cs` 不再承载全部测试实现。
+- `tests/Inscape.Tests/TestCore.cs` 不再承载全部测试实现。
 - 新增测试能快速放入对应文件。
 - `dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj --no-build` 继续通过。
 
@@ -124,12 +124,12 @@ VSCode：4 / 10
 
 - 把每个主要命令拆成独立 command handler。
 - 提取 `CommandOptions`、`CommandResult`、`OutputWriter`、`ConfigLoader`。
-- 让 `Program.cs` 只保留参数分发、命令表和退出码处理。
+- 让 `CliCore.cs` 只保留参数分发、命令表和退出码处理。
 - 项目级命令逐步调用 `InscapeProjectService`。
 
 验收标准：
 
-- 新增 CLI 命令不需要继续扩张 `Program.cs` 主体。
+- 新增 CLI 命令不需要继续扩张 `CliCore.cs` 主体。
 - 命令帮助、错误码、JSON/CSV/HTML 输出保持兼容。
 - CLI 测试全部通过。
 

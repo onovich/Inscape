@@ -5,7 +5,7 @@ using Inscape.Adapters.UnitySample;
 using Inscape.Core.Compilation;
 using Inscape.Core.Diagnostics;
 using Inscape.Core.Model;
-using CliProgram = Inscape.Cli.Program;
+using CliCore = Inscape.Cli.CliCore;
 
 namespace Inscape.Tests {
 

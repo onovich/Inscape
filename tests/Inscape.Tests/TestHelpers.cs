@@ -3,7 +3,7 @@ using System.Text.Json;
 using Inscape.Adapters.UnitySample;
 using Inscape.Core.Compilation;
 using Inscape.Core.Diagnostics;
-using CliProgram = Inscape.Cli.Program;
+using CliCore = Inscape.Cli.CliCore;
 
 namespace Inscape.Tests {
 
@@ -106,7 +106,7 @@ namespace Inscape.Tests {
             try {
                 Console.SetOut(output);
                 Console.SetError(error);
-                exitCode = CliProgram.Main(args);
+                exitCode = CliCore.Main(args);
             } finally {
                 Console.SetOut(originalOut);
                 Console.SetError(originalError);

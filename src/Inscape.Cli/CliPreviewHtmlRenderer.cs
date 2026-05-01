@@ -3,27 +3,27 @@ using System.Text.Json;
 
 namespace Inscape.Cli {
 
-    public static class PreviewHtmlRenderer {
+    public static class CliPreviewHtmlRenderer {
 
-        public static string Render(CompileOutput output, JsonSerializerOptions jsonOptions) {
-            return Render(output, jsonOptions, new PreviewStyleSheet());
+        public static string Render(CliCompileOutput output, JsonSerializerOptions jsonOptions) {
+            return Render(output, jsonOptions, new CliPreviewStyleSheet());
         }
 
-        public static string Render(CompileOutput output, JsonSerializerOptions jsonOptions, PreviewStyleSheet styleSheet) {
+        public static string Render(CliCompileOutput output, JsonSerializerOptions jsonOptions, CliPreviewStyleSheet styleSheet) {
             return RenderSerializedOutput(output, jsonOptions, styleSheet);
         }
 
-        public static string Render(ProjectCompileOutput output, JsonSerializerOptions jsonOptions) {
-            return Render(output, jsonOptions, new PreviewStyleSheet());
+        public static string Render(CliProjectCompileOutput output, JsonSerializerOptions jsonOptions) {
+            return Render(output, jsonOptions, new CliPreviewStyleSheet());
         }
 
-        public static string Render(ProjectCompileOutput output, JsonSerializerOptions jsonOptions, PreviewStyleSheet styleSheet) {
+        public static string Render(CliProjectCompileOutput output, JsonSerializerOptions jsonOptions, CliPreviewStyleSheet styleSheet) {
             return RenderSerializedOutput(output, jsonOptions, styleSheet);
         }
 
-        static string RenderSerializedOutput(object output, JsonSerializerOptions jsonOptions, PreviewStyleSheet? styleSheet) {
+        static string RenderSerializedOutput(object output, JsonSerializerOptions jsonOptions, CliPreviewStyleSheet? styleSheet) {
             string json = JsonSerializer.Serialize(output, jsonOptions).Replace("</", "<\\/");
-            PreviewStyleSheet style = styleSheet ?? new PreviewStyleSheet();
+            CliPreviewStyleSheet style = styleSheet ?? new CliPreviewStyleSheet();
             StringBuilder html = new StringBuilder();
 
             html.AppendLine("<!doctype html>");

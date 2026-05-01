@@ -1,6 +1,6 @@
 namespace Inscape.Cli {
 
-    public sealed class PreviewStyleSheet {
+    public sealed class CliPreviewStyleSheet {
 
         public string FontFamily { get; set; } = "Inter, \"Segoe UI\", sans-serif";
 

@@ -5,7 +5,7 @@ using Inscape.Adapters.UnitySample;
 using Inscape.Core.Compilation;
 using Inscape.Core.Diagnostics;
 using Inscape.Core.Model;
-using CliProgram = Inscape.Cli.Program;
+using CliCore = Inscape.Cli.CliCore;
 
 namespace Inscape.Tests {
 
@@ -35,7 +35,7 @@ Narrator: Second page.
             try {
                 Console.SetOut(output);
                 Console.SetError(error);
-                exitCode = CliProgram.Main(new[] { "preview-project", directory });
+                exitCode = CliCore.Main(new[] { "preview-project", directory });
             } finally {
                 Console.SetOut(originalOut);
                 Console.SetError(originalError);
@@ -75,7 +75,7 @@ Narrator: Temporary entry.
             try {
                 Console.SetOut(output);
                 Console.SetError(error);
-                exitCode = CliProgram.Main(new[] { "preview-project", directory, "--entry", "second.node" });
+                exitCode = CliCore.Main(new[] { "preview-project", directory, "--entry", "second.node" });
             } finally {
                 Console.SetOut(originalOut);
                 Console.SetError(originalError);
@@ -111,7 +111,7 @@ A quiet line.
             try {
                 Console.SetOut(output);
                 Console.SetError(error);
-                exitCode = CliProgram.Main(new[] { "extract-l10n", path });
+                exitCode = CliCore.Main(new[] { "extract-l10n", path });
             } finally {
                 Console.SetOut(originalOut);
                 Console.SetError(originalError);
@@ -154,7 +154,7 @@ Project second line.
             try {
                 Console.SetOut(output);
                 Console.SetError(error);
-                exitCode = CliProgram.Main(new[] { "extract-l10n-project", directory });
+                exitCode = CliCore.Main(new[] { "extract-l10n-project", directory });
             } finally {
                 Console.SetOut(originalOut);
                 Console.SetError(originalError);

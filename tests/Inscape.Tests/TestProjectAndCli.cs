@@ -5,7 +5,7 @@ using Inscape.Adapters.UnitySample;
 using Inscape.Core.Compilation;
 using Inscape.Core.Diagnostics;
 using Inscape.Core.Model;
-using CliProgram = Inscape.Cli.Program;
+using CliCore = Inscape.Cli.CliCore;
 
 namespace Inscape.Tests {
 
@@ -31,7 +31,7 @@ Narrator: Start.
             try {
                 Console.SetOut(output);
                 Console.SetError(error);
-                exitCode = CliProgram.Main(new[] { "diagnose", path });
+                exitCode = CliCore.Main(new[] { "diagnose", path });
             } finally {
                 Console.SetOut(originalOut);
                 Console.SetError(originalError);
@@ -58,7 +58,7 @@ Narrator: Start.
             try {
                 Console.SetOut(output);
                 Console.SetError(error);
-                exitCode = CliProgram.Main(new[] { "commands" });
+                exitCode = CliCore.Main(new[] { "commands" });
             } finally {
                 Console.SetOut(originalOut);
                 Console.SetError(originalError);
@@ -84,7 +84,7 @@ Narrator: Start.
             try {
                 Console.SetOut(output);
                 Console.SetError(error);
-                exitCode = CliProgram.Main(new[] { "help", "export-unity-sample-project" });
+                exitCode = CliCore.Main(new[] { "help", "export-unity-sample-project" });
             } finally {
                 Console.SetOut(originalOut);
                 Console.SetError(originalError);
@@ -108,7 +108,7 @@ Narrator: Start.
             try {
                 Console.SetOut(output);
                 Console.SetError(error);
-                exitCode = CliProgram.Main(new[] { "export-host-schema-template" });
+                exitCode = CliCore.Main(new[] { "export-host-schema-template" });
             } finally {
                 Console.SetOut(originalOut);
                 Console.SetError(originalError);
@@ -194,7 +194,7 @@ Narrator: New node.
             try {
                 Console.SetOut(output);
                 Console.SetError(error);
-                exitCode = CliProgram.Main(new[] { "diagnose-project", directory, "--override", targetPath, overridePath });
+                exitCode = CliCore.Main(new[] { "diagnose-project", directory, "--override", targetPath, overridePath });
             } finally {
                 Console.SetOut(originalOut);
                 Console.SetError(originalError);
@@ -234,7 +234,7 @@ Narrator: Second page.
             try {
                 Console.SetOut(output);
                 Console.SetError(error);
-                exitCode = CliProgram.Main(new[] { "compile-project", directory });
+                exitCode = CliCore.Main(new[] { "compile-project", directory });
             } finally {
                 Console.SetOut(originalOut);
                 Console.SetError(originalError);

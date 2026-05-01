@@ -256,7 +256,7 @@ UnitySampleExporterReportsUnresolvedHostHooks
 
 1. 先建立规范和文档索引，不改行为。
 2. 拆分测试文件，降低阅读门槛。
-3. 拆分 CLI command 分发，避免 `Program.cs` 继续膨胀。
+3. 拆分 CLI command 分发，避免 `CliCore.cs` 继续膨胀。
 4. 拆分 VSCode extension：providers、commands、preview bridge、style、workspace index。
 5. 引入 `InscapeProjectService`，统一 CLI / VSCode / Language Server 的项目级调用。
 6. 统一 source map / reveal payload，支撑预览、诊断、跳转、本地化和未来编辑器三视图。

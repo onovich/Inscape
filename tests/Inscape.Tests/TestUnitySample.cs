@@ -5,7 +5,7 @@ using Inscape.Adapters.UnitySample;
 using Inscape.Core.Compilation;
 using Inscape.Core.Diagnostics;
 using Inscape.Core.Model;
-using CliProgram = Inscape.Cli.Program;
+using CliCore = Inscape.Cli.CliCore;
 
 namespace Inscape.Tests {
 
@@ -45,7 +45,7 @@ guid: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
             try {
                 Console.SetOut(output);
                 Console.SetError(error);
-                exitCode = CliProgram.Main(new[] { "export-unity-sample-binding-template", directory, "--unity-sample-existing-timeline-root", timelineDirectory });
+                exitCode = CliCore.Main(new[] { "export-unity-sample-binding-template", directory, "--unity-sample-existing-timeline-root", timelineDirectory });
             } finally {
                 Console.SetOut(originalOut);
                 Console.SetError(originalError);
@@ -84,7 +84,7 @@ A quiet narration line.
             try {
                 Console.SetOut(output);
                 Console.SetError(error);
-                exitCode = CliProgram.Main(new[] { "export-unity-sample-role-template", directory });
+                exitCode = CliCore.Main(new[] { "export-unity-sample-role-template", directory });
             } finally {
                 Console.SetOut(originalOut);
                 Console.SetError(originalError);
@@ -133,7 +133,7 @@ ID,Desc,ZH_CN,EN_US,ES_ES
             try {
                 Console.SetOut(output);
                 Console.SetError(error);
-                exitCode = CliProgram.Main(new[] { "export-unity-sample-role-template", directory, "--unity-sample-existing-role-name-csv", roleNameCsvPath, "--report", reportPath });
+                exitCode = CliCore.Main(new[] { "export-unity-sample-role-template", directory, "--unity-sample-existing-role-name-csv", roleNameCsvPath, "--report", reportPath });
             } finally {
                 Console.SetOut(originalOut);
                 Console.SetError(originalError);
@@ -204,7 +204,7 @@ MonoBehaviour:
             try {
                 Console.SetOut(output);
                 Console.SetError(error);
-                exitCode = CliProgram.Main(new[] { "export-unity-sample-project", directory, "-o", outputDirectory });
+                exitCode = CliCore.Main(new[] { "export-unity-sample-project", directory, "-o", outputDirectory });
             } finally {
                 Console.SetOut(originalOut);
                 Console.SetError(originalError);
@@ -272,7 +272,7 @@ MonoBehaviour:
             try {
                 Console.SetOut(output);
                 Console.SetError(error);
-                exitCode = CliProgram.Main(new[] { "export-unity-sample-project", directory, "--unity-sample-talking-start", "500", "--unity-sample-role-map", roleMapPath, "--unity-sample-binding-map", bindingMapPath, "--unity-sample-existing-talking-root", existingTalkingDirectory, "-o", outputDirectory });
+                exitCode = CliCore.Main(new[] { "export-unity-sample-project", directory, "--unity-sample-talking-start", "500", "--unity-sample-role-map", roleMapPath, "--unity-sample-binding-map", bindingMapPath, "--unity-sample-existing-talking-root", existingTalkingDirectory, "-o", outputDirectory });
             } finally {
                 Console.SetOut(originalOut);
                 Console.SetError(originalError);
@@ -376,7 +376,7 @@ Narrator: Hello.
             try {
                 Console.SetOut(output);
                 Console.SetError(error);
-                exitCode = CliProgram.Main(new[] { "export-unity-sample-project", directory, "--unity-sample-binding-map", bindingMapPath, "-o", outputDirectory });
+                exitCode = CliCore.Main(new[] { "export-unity-sample-project", directory, "--unity-sample-binding-map", bindingMapPath, "-o", outputDirectory });
             } finally {
                 Console.SetOut(originalOut);
                 Console.SetError(originalError);
@@ -474,7 +474,7 @@ ID,ZH_CN,EN_US,ES_ES
             try {
                 Console.SetOut(output);
                 Console.SetError(error);
-                exitCode = CliProgram.Main(new[] { "merge-unity-sample-l10n", generatedPath, "--from", existingPath, "--report", reportPath, "-o", mergedPath });
+                exitCode = CliCore.Main(new[] { "merge-unity-sample-l10n", generatedPath, "--from", existingPath, "--report", reportPath, "-o", mergedPath });
             } finally {
                 Console.SetOut(originalOut);
                 Console.SetError(originalError);

@@ -10,7 +10,7 @@ using Inscape.Core.Model;
 
 namespace Inscape.Cli {
 
-    public static class Program {
+    public static class CliCore {
 
         static readonly JsonSerializerOptions JsonOptions = CreateJsonOptions();
 
@@ -88,7 +88,7 @@ namespace Inscape.Cli {
             }
 
             if (command == "preview") {
-                string html = PreviewHtmlRenderer.Render(ToOutput(result), JsonOptions, ReadPreviewStyle(previewConfig));
+                string html = CliPreviewHtmlRenderer.Render(ToOutput(result), JsonOptions, ReadPreviewStyle(previewConfig));
                 WriteOrPrint(outputPath, html);
                 PrintDiagnostics(result.Diagnostics);
                 return result.HasErrors ? 1 : 0;
@@ -117,8 +117,8 @@ namespace Inscape.Cli {
             return 1;
         }
 
-        static CompileOutput ToOutput(CompilationResult result) {
-            return new CompileOutput {
+        static CliCompileOutput ToOutput(CompilationResult result) {
+            return new CliCompileOutput {
                 Format = "inscape.graph-ir",
                 FormatVersion = 1,
                 Document = result.Document,
@@ -127,8 +127,8 @@ namespace Inscape.Cli {
             };
         }
 
-        static ProjectCompileOutput ToProjectOutput(ProjectCompilationResult result) {
-            return new ProjectCompileOutput {
+        static CliProjectCompileOutput ToProjectOutput(ProjectCompilationResult result) {
+            return new CliProjectCompileOutput {
                 Format = "inscape.project-ir",
                 FormatVersion = 1,
                 RootPath = result.RootPath,
@@ -179,7 +179,7 @@ namespace Inscape.Cli {
             }
 
             if (command == "preview-project") {
-                string html = PreviewHtmlRenderer.Render(ToProjectOutput(result), JsonOptions, ReadPreviewStyle(config));
+                string html = CliPreviewHtmlRenderer.Render(ToProjectOutput(result), JsonOptions, ReadPreviewStyle(config));
                 WriteOrPrint(outputPath, html);
                 PrintDiagnostics(result.Diagnostics);
                 return result.HasErrors ? 1 : 0;
@@ -336,17 +336,17 @@ namespace Inscape.Cli {
             config.UnitySample.ExistingTalkingRoot = ResolveConfigPath(configDirectory, config.UnitySample.ExistingTalkingRoot);
         }
 
-        static PreviewStyleSheet ReadPreviewStyle(ProjectConfig config) {
+        static CliPreviewStyleSheet ReadPreviewStyle(ProjectConfig config) {
             if (string.IsNullOrWhiteSpace(config.Styles.Preview) || !File.Exists(config.Styles.Preview)) {
-                return new PreviewStyleSheet();
+                return new CliPreviewStyleSheet();
             }
 
             try {
-                PreviewStyleSheet? parsed = JsonSerializer.Deserialize<PreviewStyleSheet>(File.ReadAllText(config.Styles.Preview, Encoding.UTF8), JsonOptions);
-                return parsed ?? new PreviewStyleSheet();
+                CliPreviewStyleSheet? parsed = JsonSerializer.Deserialize<CliPreviewStyleSheet>(File.ReadAllText(config.Styles.Preview, Encoding.UTF8), JsonOptions);
+                return parsed ?? new CliPreviewStyleSheet();
             } catch (Exception ex) {
                 Console.Error.WriteLine("Invalid preview style '" + config.Styles.Preview + "': " + ex.Message);
-                return new PreviewStyleSheet();
+                return new CliPreviewStyleSheet();
             }
         }
 

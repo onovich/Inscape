@@ -3,7 +3,7 @@ using Inscape.Core.Model;
 
 namespace Inscape.Cli {
 
-    public sealed class CompileOutput {
+    public sealed class CliCompileOutput {
 
         public string Format { get; set; } = string.Empty;
 
