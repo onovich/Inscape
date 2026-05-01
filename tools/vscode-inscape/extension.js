@@ -186,9 +186,7 @@ class InscapeCompletionProvider {
 class InscapeDefinitionProvider {
 
     async provideDefinition(document, position) {
-        logOutput('provideDefinition called');
         if (!isInscapeDocument(document)) {
-            logOutput('Not an inscape document');
             return undefined;
         }
 
@@ -196,22 +194,18 @@ class InscapeDefinitionProvider {
         if (speakerInfo) {
             const definitions = await collectConfiguredRoleMapSpeakerDefinitions(document, speakerInfo.name);
             if (definitions.length > 0) {
-                logOutput('Jump to roleMap definition for ' + speakerInfo.name);
                 return definitions.map((definition) => createLocation(definition));
             }
 
             const references = await collectWorkspaceDialogueSpeakerReferences(document, speakerInfo.name);
             if (references.length > 0) {
-                logOutput('Jump to dialogue reference for ' + speakerInfo.name);
                 return references.map((reference) => createLocation(reference));
             }
-            logOutput('No definition or reference found for ' + speakerInfo.name);
             return undefined;
         }
 
         const target = getJumpTargetAtPosition(document, position);
         if (!target) {
-            logOutput('No jump target at position');
             return undefined;
         }
 
@@ -223,10 +217,8 @@ class InscapeDefinitionProvider {
             ));
 
         if (locations.length > 0) {
-            logOutput('Jump to node target: ' + target);
             return locations;
         }
-        logOutput('No node target found for ' + target);
         return undefined;
     }
 }
@@ -342,13 +334,11 @@ class InscapeCodeLensProvider {
 
     async provideCodeLenses(document) {
         if (!isInscapeDocument(document)) {
-            logOutput("CodeLens skipped non-Inscape document: " + document.uri.toString() + " language=" + document.languageId);
             return [];
         }
 
         const currentDocumentNodes = collectDocumentNodes(document);
         if (currentDocumentNodes.length === 0) {
-            logOutput("CodeLens found no nodes in " + document.uri.fsPath);
             return [];
         }
 
@@ -370,8 +360,6 @@ class InscapeCodeLensProvider {
             }));
         }
 
-        logOutput("CodeLens produced " + codeLenses.length + " entries for " + document.uri.fsPath + ": "
-            + currentDocumentNodes.map((node) => node.name + "=" + ((navigation.referencesByTarget.get(node.name) || []).length)).join(", "));
         return codeLenses;
     }
 }
