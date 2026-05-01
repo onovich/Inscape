@@ -20,26 +20,27 @@
 5. [DSL 生态定位对比](dsl-ecosystem-positioning.md)
 6. [语法样例对比](syntax-comparison.md)
 7. [DSL 语言设计草案](dsl-language.md)
-8. [VSCode 轻工具链](vscode-tooling.md)
-9. [CLI 命令速查](cli-command-reference.md)
-10. [哈希锚点与本地化](hash-localization.md)
-11. [本地化提取](l10n-extraction.md)
-12. [编辑器设计草案](editor-design.md)
-13. [运行时与 Unity 宿主](runtime-unity.md)
-14. [宿主 Schema 草案](host-schema.md)
-15. [Bird / Unity 调研记录](bird-unity-research.md)
-16. [Bird Adapter 原型](bird-adapter.md)
-17. [Unity Editor Importer 草案](unity-editor-importer.md)
-18. [路线图](roadmap.md)
-19. [TODO](todo.md)
-20. [待确认问题](open-questions.md)
+8. [Inscape 语法说明](dsl-syntax-guide.md)
+9. [VSCode 轻工具链](vscode-tooling.md)
+10. [CLI 命令速查](cli-command-reference.md)
+11. [哈希锚点与本地化](hash-localization.md)
+12. [本地化提取](l10n-extraction.md)
+13. [编辑器设计草案](editor-design.md)
+14. [运行时与 Unity 宿主](runtime-unity.md)
+15. [宿主 Schema 草案](host-schema.md)
+16. [Bird / Unity 调研记录](bird-unity-research.md)
+17. [Bird Adapter 原型](bird-adapter.md)
+18. [Unity Editor Importer 草案](unity-editor-importer.md)
+19. [路线图](roadmap.md)
+20. [TODO](todo.md)
+21. [待确认问题](open-questions.md)
 
 ## 按任务检索
 
 ```text
 任务类型             建议读取
 接手/恢复上下文      agent-handoff.md, todo.md, roadmap.md
-DSL 定位/语法        dsl-ecosystem-positioning.md, dsl-language.md, syntax-comparison.md, open-questions.md
+DSL 定位/语法        dsl-ecosystem-positioning.md, dsl-syntax-guide.md, dsl-language.md, syntax-comparison.md, open-questions.md
 VSCode 工具          vscode-tooling.md, tools/vscode-inscape/README.md
 CLI 命令速查         cli-command-reference.md, README.md
 本地化               hash-localization.md, l10n-extraction.md, ADR 0006
@@ -67,6 +68,7 @@ docs/
   code-structure.md      代码目录规划与分层原则
   dsl-ecosystem-positioning.md  DSL 生态、竞品差异和分层参照
   syntax-comparison.md   同一剧情在多种叙事 DSL 风格下的对比
+  dsl-syntax-guide.md    面向作者的当前语法说明与写法示例
   dsl-language.md        DSL 语言设计草案与语法待确认项
   host-schema.md         宿主查询、事件清单与连接层 Schema 草案
   vscode-tooling.md      VSCode 阶段的轻工具链设计与使用方式

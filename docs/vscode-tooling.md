@@ -50,20 +50,32 @@ Inscape 的默认阅读优先级应当是：
 - 在节点声明和 `->` 跳转目标上显示简短 Hover 类型说明，不在跳转目标上显示统计信息。
 - 在对白 speaker 上显示 Hover 摘要：角色名、UnitySample `roleId` 绑定状态和来源表。
 - 在 `@entry`、`@scene` 这类 `@` 元信息上显示 Hover 解释，告诉作者它们是用于标记入口、场景或其他宿主可读意图的轻量元数据。
+- 将 `@entry`、`@scene`、`@timeline` 等统一按 `@metadata` 语法层高亮和解释，避免在主题或交互上把 `@timeline` 伪装成另一种核心语法。
 - 在宿主绑定别名上显示 Hover 摘要：`kind:alias`、UnitySample id、Addressable、Unity guid、Asset path 和来源表。
 - 在 `@timeline ...` 和 `[kind: alias]` 上支持 Ctrl+Click 跳转到对应的绑定行，让作者直接看到它们是如何映射到宿主桥接表的。
 - 为 VSCode Outline 提供当前文件节点列表。
 - 为 `inscape.host.schema.json` / `*.host.schema.json` 提供 JSON Schema 校验。
 - 提供命令 `Inscape: Show Host Schema Capabilities`，读取 `inscape.config.json` 的 `hostSchema` 并列出 query / event。
-- 提供命令 `Inscape: Open Preview`，以 VSCode custom editor 方式打开可玩预览；它默认会尝试在源码旁边以侧边编辑器打开，而不是只堆在同一个页签组里。如果当前活动 `.inscape` 文件未保存，会通过 `--override` 使用编辑器中的临时内容。
-- 编辑器右上角提供 `Inscape: Toggle Preview` 按钮，可以快速在源码和预览之间切换；当前实现会优先复用已有预览标签页，避免重复打开。
-- 预览首版支持项目流程体验：当前采用单栏沉浸式界面展示正文和选项；点击选项推进、无选项时点击正文继续、支持 Back / Restart 和 diagnostics；编辑时会防抖刷新，保存工作区内 `.inscape` 文件后立即刷新打开的预览编辑器。预览启动时优先复用已编译的 CLI DLL，减少 `dotnet run` 带来的等待。
+- 提供命令 `Inscape: Open Preview`，以 VSCode custom editor 方式打开可玩预览；它默认会在源码旁边以侧边编辑器打开。如果当前活动 `.inscape` 文件未保存，会通过 `--override` 使用编辑器中的临时内容。
+- 编辑器右上角提供 `Inscape: Toggle Preview` 按钮，可以快速在源码和预览之间切换；当前实现会优先复用已有预览标签页，避免重复打开。扩展清单把 custom editor 设为 `option` 而不是 `default`，避免预览劫持源码标签页、Definition 跳转或普通文件打开行为。
+- 预览当前采用单栏沉浸式界面展示正文和选项；点击选项推进、无选项时点击正文继续、支持 Back / Restart 和 diagnostics；编辑时会防抖刷新，保存工作区内 `.inscape` 文件后立即刷新打开的预览编辑器，并尽量保留当前 `{ current, path }` 进度，而不是每次都回到第一页。
+- 预览启动时优先复用已编译的 `Inscape.Cli.exe`，其次回退到 `dotnet exec Inscape.Cli.dll`，最后才使用 `dotnet run --project ...`，以缩短打开与刷新等待时间。
 - 预览中的节点、行、选项、`@` 元信息和 `[]` 宿主标签都支持一键跳回源码位置，便于把“玩流程”和“改脚本”连成一个闭环。
+- 预览中的 `源码` 按钮与诊断跳转会优先复用已经打开的源码编辑器；如果源码页签还没打开，再新开源码页签并定位，避免用源码跳转直接替换掉当前预览标签页。
+- 编辑器里的正文、旁白、选项提示和选项文本支持 Ctrl+Click：会打开或刷新对应脚本的预览，并把预览定位到包含这段文本的节点页面，方便从“写”切到“玩”。
+
+## 当前预览交互约定
+
+- 预览是作者体验层，不是脚本真相来源；语义仍由 `Inscape.Core` / CLI 决定。
+- 预览中的源码回跳只负责把作者带回对应源位置，不与源码编辑器内的 Ctrl+Click 做自动双向同步。
+- 预览刷新应尽量保持玩家当前上下文；只有源码结构变化导致当前位置失效时，才回退到新的可达起点。
+- `@` 与 `[]` 的目标是“让作者看得懂它们在做什么”：`@` 偏向轻量元数据说明，`[]` 偏向宿主绑定 / 行内标签说明；两者都应提供 Hover 和可导航的来源，但不在扩展里内建 Bird / Unity 运行时语义。
+- 文本到预览的 Ctrl+Click 属于作者体验增强，而不是新的语言语义；它只是根据源位置把预览切到最接近的节点页面，不改变编译结果。
 
 ## 尚未实现
 
 - 正式 Language Server。
-- 未保存改动的自动热刷新；当前版本在编辑时会做轻量防抖刷新，在保存后立即刷新。
+- 更细粒度的未保存内容热刷新、局部更新和刷新中状态提示；当前版本已支持编辑防抖刷新和保存后立即刷新，但还不是 Markdown 级别的无感体验。
 - 宿主 Schema 查询 / 事件清单驱动的脚本内补全。
 
 ## 角色提示
@@ -136,7 +148,7 @@ bg,classroom,,,BG/Classroom,Assets/Art/BG/classroom.png
 
 补全按 `kind` 过滤，Hover 显示绑定表中的 UnitySample id、Addressable、Unity guid 和 asset path。未配置绑定表时，扩展会从工作区已有 `@timeline` 和 inline tag 中扫描别名作为轻量回退。`@entry` / `@scene` 这类普通 `@` 元信息则用于入口、场景或其他宿主语义说明，本身不参与绑定解析。
 
-注意：这仍然只是作者体验层。当前 UnitySample 导出只对已支持的 hook 赋予样例 adapter 意义，例如 `timeline`；其他 `kind` 的 inline tag 补全用于减少写作记忆成本，不代表 Core 已经承诺资源系统语义。
+注意：这仍然只是作者体验层。当前 UnitySample 导出只对已支持的 hook 赋予样例 adapter 意义，例如 `timeline`；其他 `kind` 的 inline tag 补全用于减少写作记忆成本，不代表 Core 已经承诺资源系统语义。即使 `@timeline` 当前会读取绑定表并可导航，它在语法层依然属于 `@metadata`，不应在编辑器里被实现成另一套独立语言。
 
 ## 宿主 Schema 提示
 
@@ -179,7 +191,7 @@ dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- extract-l10n-project 
 dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- update-l10n-project <workspace> --from <old-csv> -o <csv>
 ```
 
-如果当前活动 `.inscape` 文件尚未保存，扩展会像诊断一样通过 `--override <source> <temp-file>` 把编辑器内容传给 CLI。`preview-project` 即使带编译诊断也会先输出 HTML，扩展会继续显示预览，并把诊断留给 Problems / 输出面板处理。
+如果当前活动 `.inscape` 文件尚未保存，扩展会像诊断一样通过 `--override <source> <temp-file>` 把编辑器内容传给 CLI。`preview-project` 即使带编译诊断也会先输出 HTML，扩展会继续显示预览，并把诊断留给 Problems / 输出面板处理。webview 必须显式开启 scripts，否则 HTML 已生成但界面会表现为空白，这条经验已经在当前实现中固化。
 
 可通过以下 VSCode 设置调整：
 

@@ -13,6 +13,7 @@ const previewPanels = new Map();
 const previewRefreshTimers = new Map();
 const previewRenderCache = new Map();
 const previewRenderVersions = new Map();
+const pendingPreviewReveals = new Map();
 
 function activate(context) {
     outputChannel = vscode.window.createOutputChannel("Inscape");
@@ -42,12 +43,14 @@ function activate(context) {
         vscode.languages.registerCompletionItemProvider(languageSelector, new InscapeCompletionProvider(), ">", ".", ":", "\uFF1A", "[", " "),
         vscode.languages.registerDocumentSymbolProvider(languageSelector, new InscapeDocumentSymbolProvider()),
         vscode.languages.registerDefinitionProvider(languageSelector, new InscapeDefinitionProvider()),
+        vscode.languages.registerDocumentLinkProvider(languageSelector, new InscapeDocumentLinkProvider()),
         vscode.languages.registerReferenceProvider(languageSelector, new InscapeReferenceProvider()),
         vscode.languages.registerHoverProvider(languageSelector, new InscapeHoverProvider()),
         vscode.languages.registerCodeLensProvider(languageSelector, new InscapeCodeLensProvider()),
         vscode.commands.registerCommand("inscape.showNodeIncomingReferences", (uri, position, locations) => showNodeIncomingReferences(uri, position, locations)),
         vscode.commands.registerCommand("inscape.openPreview", () => openPreview(context)),
         vscode.commands.registerCommand("inscape.togglePreview", () => togglePreview(context)),
+        vscode.commands.registerCommand("inscape.revealInPreview", (payload) => revealInPreview(context, payload)),
         vscode.commands.registerCommand("inscape.extractLocalization", () => exportLocalization(context)),
         vscode.commands.registerCommand("inscape.updateLocalization", () => updateLocalization(context)),
         vscode.commands.registerCommand("inscape.showHostSchemaCapabilities", () => showHostSchemaCapabilities()),
@@ -302,6 +305,30 @@ class InscapeReferenceProvider {
 
         locations = uniqueLocations(locations);
         return locations.length > 0 ? locations : undefined;
+    }
+}
+
+class InscapeDocumentLinkProvider {
+
+    provideDocumentLinks(document) {
+        if (!isInscapeDocument(document)) {
+            return undefined;
+        }
+
+        const links = [];
+        for (let lineNumber = 0; lineNumber < document.lineCount; lineNumber += 1) {
+            const range = getPreviewRevealRangeForLine(document.lineAt(lineNumber).text);
+            if (!range) {
+                continue;
+            }
+
+            const link = createPreviewRevealDocumentLink(document, lineNumber, range.start, range.end);
+            if (link) {
+                links.push(link);
+            }
+        }
+
+        return links;
     }
 }
 
@@ -762,10 +789,11 @@ class InscapePreviewEditorProvider {
                 return;
             }
 
-            openPreviewSource(message.source);
+            openPreviewSource(message.source, webviewPanel);
         });
 
-        refreshPreviewPanel(this.context, webviewPanel, document, true);
+        refreshPreviewPanel(this.context, webviewPanel, document, true)
+            .then(() => applyPendingPreviewReveal(webviewPanel, document));
     }
 
 }
@@ -834,7 +862,7 @@ function createPreviewErrorHtml(message) {
     ].join("\n");
 }
 
-async function openPreviewSource(source) {
+async function openPreviewSource(source, webviewPanel) {
     try {
         const location = new vscode.Location(
             vscode.Uri.file(source.sourcePath),
@@ -845,10 +873,85 @@ async function openPreviewSource(source) {
                 Math.max(0, (source.column || 0) + 1)
             )
         );
-        await openLocation(location);
+        await openLocation(location, {
+            viewColumn: resolveSourceViewColumn(location.uri, webviewPanel)
+        });
     } catch (error) {
         vscode.window.showErrorMessage(error.message || String(error));
     }
+}
+
+async function revealInPreview(context, payload) {
+    if (!payload || !payload.sourcePath) {
+        return;
+    }
+
+    try {
+        const document = await vscode.workspace.openTextDocument(vscode.Uri.file(payload.sourcePath));
+        if (!isInscapeDocument(document)) {
+            return;
+        }
+
+        queuePreviewReveal(document, payload);
+        await vscode.commands.executeCommand("vscode.openWith", document.uri, "inscape.preview", {
+            viewColumn: vscode.ViewColumn.Beside,
+            preserveFocus: false,
+            preview: false
+        });
+        await revealOpenPreviewPanels(context, document, payload);
+    } catch (error) {
+        vscode.window.showErrorMessage(error.message || String(error));
+    }
+}
+
+function queuePreviewReveal(document, payload) {
+    pendingPreviewReveals.set(normalizePath(document.uri.fsPath), {
+        sourcePath: payload.sourcePath,
+        line: Math.max(0, payload.line || 0),
+        character: Math.max(0, payload.character || 0),
+        length: Math.max(0, payload.length || 0)
+    });
+}
+
+async function revealOpenPreviewPanels(context, document, payload) {
+    const panels = previewPanels.get(normalizePath(document.uri.fsPath));
+    if (!panels || panels.size === 0) {
+        return false;
+    }
+
+    for (const panel of panels) {
+        await refreshPreviewPanel(context, panel, document, false);
+        postPreviewReveal(panel, payload);
+    }
+
+    pendingPreviewReveals.delete(normalizePath(document.uri.fsPath));
+    return true;
+}
+
+function applyPendingPreviewReveal(panel, document) {
+    const key = normalizePath(document.uri.fsPath);
+    const payload = pendingPreviewReveals.get(key);
+    if (!payload) {
+        return false;
+    }
+
+    postPreviewReveal(panel, payload);
+    pendingPreviewReveals.delete(key);
+    return true;
+}
+
+function postPreviewReveal(panel, payload) {
+    setTimeout(() => {
+        panel.webview.postMessage({
+            type: "revealSource",
+            source: {
+                sourcePath: payload.sourcePath,
+                line: Math.max(0, payload.line || 0),
+                character: Math.max(0, payload.character || 0),
+                length: Math.max(0, payload.length || 0)
+            }
+        });
+    }, 30);
 }
 
 function escapeHtml(value) {
@@ -2243,6 +2346,93 @@ function getHostBindingAtPosition(document, position) {
     return undefined;
 }
 
+function getPreviewRevealRangeForLine(line) {
+    if (!line || !line.trim()) {
+        return undefined;
+    }
+
+    const trimmed = line.trim();
+    if (trimmed.startsWith("//") || trimmed.startsWith("::") || trimmed.startsWith("@") || trimmed.startsWith("->")) {
+        return undefined;
+    }
+
+    const speakerMatch = /^\s*([^:\uFF1A]+?)[ \t]*[:\uFF1A](.*)$/.exec(line);
+    if (speakerMatch && isLikelyDialogueSpeaker(speakerMatch[1].trim())) {
+        const colonIndex = findDialogueSeparatorIndex(line);
+        return trimRange(line, colonIndex + 1, line.length);
+    }
+
+    const choicePromptMatch = /^(\s*\?\s*)(.*)$/.exec(line);
+    if (choicePromptMatch) {
+        return trimRange(line, choicePromptMatch[1].length, line.length);
+    }
+
+    const choiceOptionMatch = /^(\s*-\s*)(.*)$/.exec(line);
+    if (choiceOptionMatch) {
+        const optionStart = choiceOptionMatch[1].length;
+        const targetIndex = line.indexOf("->", optionStart);
+        const optionEnd = targetIndex >= 0 ? targetIndex : line.length;
+        return trimRange(line, optionStart, optionEnd);
+    }
+
+    if (/^\s*\[[^\]]+\]\s*$/.test(line)) {
+        return undefined;
+    }
+
+    return trimRange(line, 0, line.length);
+}
+
+function findDialogueSeparatorIndex(line) {
+    const halfWidth = line.indexOf(":");
+    const fullWidth = line.indexOf("\uFF1A");
+    if (halfWidth < 0) {
+        return fullWidth;
+    }
+
+    if (fullWidth < 0) {
+        return halfWidth;
+    }
+
+    return Math.min(halfWidth, fullWidth);
+}
+
+function trimRange(line, start, end) {
+    let rangeStart = Math.max(0, start);
+    let rangeEnd = Math.max(rangeStart, end);
+
+    while (rangeStart < rangeEnd && /\s/.test(line[rangeStart])) {
+        rangeStart += 1;
+    }
+
+    while (rangeEnd > rangeStart && /\s/.test(line[rangeEnd - 1])) {
+        rangeEnd -= 1;
+    }
+
+    if (rangeEnd <= rangeStart) {
+        return undefined;
+    }
+
+    return { start: rangeStart, end: rangeEnd };
+}
+
+function createPreviewRevealDocumentLink(document, line, startCharacter, endCharacter) {
+    if (endCharacter <= startCharacter) {
+        return undefined;
+    }
+
+    const payload = {
+        sourcePath: document.uri.fsPath,
+        line,
+        character: startCharacter,
+        length: endCharacter - startCharacter
+    };
+
+    const target = vscode.Uri.parse("command:inscape.revealInPreview?" + encodeURIComponent(JSON.stringify([payload])));
+    const link = new vscode.DocumentLink(new vscode.Range(line, startCharacter, line, endCharacter), target);
+    link.tooltip = "Ctrl+Click 打开或刷新 Inscape 预览，并定位到这里。";
+    return link;
+}
+
 function isJumpReferenceLine(line) {
     const trimmed = line.trim();
     return trimmed.startsWith("->") || trimmed.startsWith("-");
@@ -2379,11 +2569,57 @@ function locationFromPayload(payload) {
     return createLocation(payload);
 }
 
-async function openLocation(location) {
+async function openLocation(location, options = {}) {
     const document = await vscode.workspace.openTextDocument(location.uri);
-    const editor = await vscode.window.showTextDocument(document);
+    const editor = await vscode.window.showTextDocument(document, {
+        viewColumn: options.viewColumn,
+        preview: false,
+        preserveFocus: false,
+        selection: location.range
+    });
     editor.selection = new vscode.Selection(location.range.start, location.range.end);
     editor.revealRange(location.range, vscode.TextEditorRevealType.InCenter);
+}
+
+function resolveSourceViewColumn(targetUri, webviewPanel) {
+    const openTabColumn = findOpenTextTabViewColumn(targetUri);
+    if (openTabColumn) {
+        return openTabColumn;
+    }
+
+    const visibleEditor = vscode.window.visibleTextEditors.find((editor) => normalizePath(editor.document.uri.fsPath) === normalizePath(targetUri.fsPath));
+    if (visibleEditor && visibleEditor.viewColumn) {
+        return visibleEditor.viewColumn;
+    }
+
+    const fallbackEditor = vscode.window.visibleTextEditors.find((editor) => editor.viewColumn && (!webviewPanel || editor.viewColumn !== webviewPanel.viewColumn));
+    if (fallbackEditor && fallbackEditor.viewColumn) {
+        return fallbackEditor.viewColumn;
+    }
+
+    if (webviewPanel && typeof webviewPanel.viewColumn === "number") {
+        return webviewPanel.viewColumn > 1 ? webviewPanel.viewColumn - 1 : vscode.ViewColumn.Beside;
+    }
+
+    return vscode.ViewColumn.Beside;
+}
+
+function findOpenTextTabViewColumn(targetUri) {
+    const targetPath = normalizePath(targetUri.fsPath);
+    for (const group of vscode.window.tabGroups.all) {
+        for (const tab of group.tabs) {
+            const input = tab.input;
+            if (!input || !input.uri || input.viewType === "inscape.preview") {
+                continue;
+            }
+
+            if (normalizePath(input.uri.fsPath) === targetPath && group.viewColumn) {
+                return group.viewColumn;
+            }
+        }
+    }
+
+    return undefined;
 }
 
 function uniqueLocations(locations) {

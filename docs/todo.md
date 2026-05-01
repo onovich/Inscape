@@ -8,9 +8,9 @@
 
 下一位接手者建议按以下顺序推进：
 
-1. 做 VSCode 可玩预览视图：复用项目级 IR / HTML 预览逻辑，在编辑器内像玩文字游戏一样体验当前剧情流程。
-2. 设计 Host Bridge 草案：解决 Inscape 可读 ID 与项目内部 ID / 资源 / 事件处理器的映射，不被 UnitySample、Addressables 或 ScriptableObject 绑定。
-3. 调研 Unity `[Inscape]` Attribute 扫描与 Unity 内代码生成：生成待配置桥接表，再由人工完成 C# 成员与 Inscape 名称映射。
+1. 设计 Host Bridge 草案：解决 Inscape 可读 ID 与项目内部 ID / 资源 / 事件处理器的映射，不被 UnitySample、Addressables 或 ScriptableObject 绑定。
+2. 调研 Unity `[Inscape]` Attribute 扫描与 Unity 内代码生成：生成待配置桥接表，再由人工完成 C# 成员与 Inscape 名称映射。
+3. 继续打磨 VSCode 可玩预览：补未保存内容的更细粒度热刷新、刷新中状态提示，以及可选的预览 / 源码同步策略。
 4. 将 `Inscape.Adapters.UnitySample` 作为实验样例继续隔离，后续验证它能否由 Host Bridge 配置和代码生成替代。
 5. 决定 Bird 项目内 importer 与生成的 `InscapeGenerated` 资源是否提交，或先清理后保留 Inscape 侧原型。
 6. 设计本地化模糊匹配与人工确认报告，不要直接自动复用相似文本译文。
@@ -64,8 +64,9 @@
 - [x] 修正 VSCode `wordPattern`，把全角冒号和常见中文标点视为词边界，避免 Ctrl+Click 角色名时把整行对白标为可跳转范围。
 - [x] 添加 block 级 CodeLens 双向导航：`入边` 追溯调用方，`出边` 跳转被调用方。
 - [x] 为宿主 Schema 文件提供 VSCode JSON Schema 校验，并增加命令查看当前 query / event 清单。
-- [x] 实现 VSCode 编辑器内可玩预览视图第一版，复用 CLI / Core 的项目级编译结果，并支持选项点击、Back、Restart、节点列表、路径记录、源码回跳和保存后自动刷新。
-- [ ] 为 VSCode 预览补充未保存文件自动热刷新与更细粒度的状态提示。
+- [x] 实现 VSCode 编辑器内可玩预览视图第一版，复用 CLI / Core 的项目级编译结果，并支持源码侧边打开、选项点击、正文点击继续、Back、Restart、源码回跳、编辑防抖刷新和保存后自动刷新。
+- [x] 修正 VSCode 预览体验关键问题：custom editor 改为 `option` 避免劫持源码标签页；webview 显式启用 scripts；刷新尽量保留当前页进度；CLI 调用优先已构建可执行文件 / 程序集，减少等待时间。
+- [ ] 为 VSCode 预览补充更细粒度的未保存内容热刷新、局部更新与状态提示。
 - [ ] 设计 Language Server 能力范围：补全、诊断、跳转定义、引用查找、大纲、悬浮说明。
 - [x] 设计补全数据来源：当前文件节点、项目节点、角色表、宿主绑定表、宿主 Schema 查询 / 事件清单。
 - [ ] 将 `hostSchema` 中的查询 / 事件清单接入 `.inscape` 脚本补全与 Hover，但不改变当前 DSL 编译语义。
