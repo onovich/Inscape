@@ -31,18 +31,9 @@ namespace Inscape.Cli {
                 return RunProjectCommand(command, inputPath, args, outputPath);
             }
 
-            if (!File.Exists(inputPath)) {
-                Console.Error.WriteLine("Input file not found: " + inputPath);
+            if (!CliSingleFileCompiler.TryCompile(inputPath, args, JsonOptions, out CliProjectConfig previewConfig, out CompilationResult result)) {
                 return 1;
             }
-
-            string source = File.ReadAllText(inputPath, Encoding.UTF8);
-            CliProjectConfig previewConfig;
-            if (!CliConfigLoader.TryReadProjectConfig(Path.GetDirectoryName(Path.GetFullPath(inputPath)) ?? Directory.GetCurrentDirectory(), args, JsonOptions, out previewConfig)) {
-                return 1;
-            }
-            InscapeCompiler compiler = new InscapeCompiler();
-            CompilationResult result = compiler.Compile(source, Path.GetFullPath(inputPath));
 
             if (CliSingleFileCommandRunner.TryRun(command, result, outputPath, previousLocalizationPath, previewConfig, JsonOptions, out exitCode)) {
                 return exitCode;
