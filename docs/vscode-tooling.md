@@ -115,6 +115,13 @@ Inscape 的默认阅读优先级应当是：
 - 正文这类文本想要的不是“它本身始终是链接”，而是“Ctrl+指向时才出现导航 affordance”，所以要优先使用 `DefinitionProvider` 的精确范围。
 - 如果需求是“打开或刷新预览并定位到当前文本”，优先使用 `DefinitionProvider` 维持 Ctrl+指向链接态，再用 selection bridge 触发 `inscape.revealInPreview`；不要把整段正文重新伪装成 document link。
 
+这次踩坑里最容易误判的几点，也建议直接记住：
+
+- 根因优先级是 provider 语义 > decorations / theme / 样式文件；常驻下划线通常不是颜色问题，而是 provider 选型错误。
+- `inscape.editor-style.json` 只负责视觉调参，不应该承担“修正导航语义”的职责；如果要靠 `...TextDecoration` 去掩盖行为，通常说明方案已经偏了。
+- `DefinitionProvider` 负责“何时出现 Ctrl+指向链接态”，selection bridge 负责“Ctrl+Click 后做什么”；两者分工清楚后，样式和交互才不会反复互相打架。
+- 只改 `tools/vscode-inscape/` 源码但不重建 / 重装 `.vsix`，非常容易把旧扩展行为误判成新回归；这个链路必须当成验证的一部分，而不是发布后的附加动作。
+
 可操作的回归检查：
 
 - 默认状态下，正文 / 选项文本没有常驻下划线。
@@ -122,6 +129,13 @@ Inscape 的默认阅读优先级应当是：
 - Ctrl+Click 正文 / 选项文本会打开或复用预览，并定位到对应页面。
 - 角色名、`-> target`、宿主绑定别名等已有导航不受影响。
 - 修改扩展后，必须重新打包并安装 `.vsix`，不能只依赖 Reload Window。
+
+建议排查顺序：
+
+1. 先确认是否又引入了 `DocumentLinkProvider`，或让正文范围落到了 document link 逻辑里。
+2. 再确认 `DefinitionProvider` 返回的是否是精确范围，而不是整行或过宽范围。
+3. 再检查 selection bridge 是否正确识别 Ctrl+Click 产生的选择变化并调用 `inscape.revealInPreview`。
+4. 最后才看 theme、TextMate scope 和样式文件是否让视觉提示看起来异常。
 
 ## 尚未实现
 
