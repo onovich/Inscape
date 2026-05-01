@@ -15,32 +15,8 @@ namespace Inscape.Cli {
         static readonly JsonSerializerOptions JsonOptions = CreateJsonOptions();
 
         public static int Main(string[] args) {
-            if (args.Length == 0) {
-                CliCommandCatalog.PrintUsage();
-                return 1;
-            }
-
-            if (IsHelp(args[0])) {
-                if (args.Length >= 2 && !IsHelp(args[1])) {
-                    return CliCommandCatalog.PrintCommandHelp(args[1]) ? 0 : 1;
-                }
-                CliCommandCatalog.PrintUsage();
-                return 0;
-            }
-
-            if (args[0] == "commands") {
-                CliCommandCatalog.PrintCommandList();
-                return 0;
-            }
-
-            if (args[0] == "export-host-schema-template") {
-                WriteOrPrint(ReadOption(args, "-o"), CreateHostSchemaTemplateJson());
-                return 0;
-            }
-
-            if (args.Length < 2) {
-                CliCommandCatalog.PrintUsage();
-                return 1;
+            if (CliTopLevelCommandRunner.TryRun(args, JsonOptions, out int exitCode)) {
+                return exitCode;
             }
 
             string command = args[0];
@@ -62,54 +38,15 @@ namespace Inscape.Cli {
             }
 
             string source = File.ReadAllText(inputPath, Encoding.UTF8);
-            ProjectConfig previewConfig;
-            if (!TryReadProjectConfig(Path.GetDirectoryName(Path.GetFullPath(inputPath)) ?? Directory.GetCurrentDirectory(), args, out previewConfig)) {
+            CliProjectConfig previewConfig;
+            if (!CliConfigLoader.TryReadProjectConfig(Path.GetDirectoryName(Path.GetFullPath(inputPath)) ?? Directory.GetCurrentDirectory(), args, JsonOptions, out previewConfig)) {
                 return 1;
             }
             InscapeCompiler compiler = new InscapeCompiler();
             CompilationResult result = compiler.Compile(source, Path.GetFullPath(inputPath));
 
-            if (command == "check") {
-                PrintDiagnostics(result.Diagnostics);
-                return result.HasErrors ? 1 : 0;
-            }
-
-            if (command == "diagnose") {
-                string json = JsonSerializer.Serialize(ToOutput(result), JsonOptions);
-                WriteOrPrint(outputPath, json);
-                return 0;
-            }
-
-            if (command == "compile") {
-                string json = JsonSerializer.Serialize(ToOutput(result), JsonOptions);
-                WriteOrPrint(outputPath, json);
-                PrintDiagnostics(result.Diagnostics);
-                return result.HasErrors ? 1 : 0;
-            }
-
-            if (command == "preview") {
-                string html = CliPreviewHtmlRenderer.Render(ToOutput(result), JsonOptions, ReadPreviewStyle(previewConfig));
-                WriteOrPrint(outputPath, html);
-                PrintDiagnostics(result.Diagnostics);
-                return result.HasErrors ? 1 : 0;
-            }
-
-            if (command == "extract-l10n") {
-                string csv = ExtractLocalizationCsv(result.Document);
-                WriteOrPrint(outputPath, csv);
-                PrintDiagnostics(result.Diagnostics);
-                return result.HasErrors ? 1 : 0;
-            }
-
-            if (command == "update-l10n") {
-                if (!TryReadPreviousLocalization(previousLocalizationPath, out List<LocalizationEntry> previousEntries)) {
-                    return 1;
-                }
-
-                string csv = UpdateLocalizationCsv(result.Document, previousEntries);
-                WriteOrPrint(outputPath, csv);
-                PrintDiagnostics(result.Diagnostics);
-                return result.HasErrors ? 1 : 0;
+            if (CliSingleFileCommandRunner.TryRun(command, result, outputPath, previousLocalizationPath, previewConfig, JsonOptions, out exitCode)) {
+                return exitCode;
             }
 
             Console.Error.WriteLine("Unknown command: " + command);
@@ -117,7 +54,7 @@ namespace Inscape.Cli {
             return 1;
         }
 
-        static CliCompileOutput ToOutput(CompilationResult result) {
+        internal static CliCompileOutput ToOutput(CompilationResult result) {
             return new CliCompileOutput {
                 Format = "inscape.graph-ir",
                 FormatVersion = 1,
@@ -146,7 +83,7 @@ namespace Inscape.Cli {
                 return 1;
             }
 
-            if (!TryReadProjectConfig(rootPath, args, out ProjectConfig config)) {
+            if (!CliConfigLoader.TryReadProjectConfig(rootPath, args, JsonOptions, out CliProjectConfig config)) {
                 return 1;
             }
             ProjectOverride? projectOverride = ReadProjectOverride(args);
@@ -179,7 +116,7 @@ namespace Inscape.Cli {
             }
 
             if (command == "preview-project") {
-                string html = CliPreviewHtmlRenderer.Render(ToProjectOutput(result), JsonOptions, ReadPreviewStyle(config));
+                string html = CliPreviewHtmlRenderer.Render(ToProjectOutput(result), JsonOptions, CliConfigLoader.ReadPreviewStyle(config, JsonOptions));
                 WriteOrPrint(outputPath, html);
                 PrintDiagnostics(result.Diagnostics);
                 return result.HasErrors ? 1 : 0;
@@ -298,70 +235,6 @@ namespace Inscape.Cli {
             return false;
         }
 
-        static bool TryReadProjectConfig(string rootPath, string[] args, out ProjectConfig config) {
-            config = new ProjectConfig();
-            string? configuredPath = ReadOption(args, "--config");
-            string configPath = string.IsNullOrWhiteSpace(configuredPath)
-                ? Path.Combine(Path.GetFullPath(rootPath), "inscape.config.json")
-                : Path.GetFullPath(configuredPath);
-            if (!File.Exists(configPath)) {
-                if (string.IsNullOrWhiteSpace(configuredPath)) {
-                    return true;
-                }
-
-                Console.Error.WriteLine("Project config not found: " + configPath);
-                return false;
-            }
-
-            try {
-                ProjectConfig? parsed = JsonSerializer.Deserialize<ProjectConfig>(File.ReadAllText(configPath, Encoding.UTF8), JsonOptions);
-                config = parsed ?? new ProjectConfig();
-                NormalizeProjectConfigPaths(config, configPath);
-                return true;
-            } catch (Exception ex) {
-                Console.Error.WriteLine("Invalid project config '" + configPath + "': " + ex.Message);
-                return false;
-            }
-        }
-
-        static void NormalizeProjectConfigPaths(ProjectConfig config, string configPath) {
-            string configDirectory = Path.GetDirectoryName(configPath) ?? Directory.GetCurrentDirectory();
-            config.HostSchema = ResolveConfigPath(configDirectory, config.HostSchema);
-            config.Styles.Editor = ResolveConfigPath(configDirectory, config.Styles.Editor);
-            config.Styles.Preview = ResolveConfigPath(configDirectory, config.Styles.Preview);
-            config.UnitySample.RoleMap = ResolveConfigPath(configDirectory, config.UnitySample.RoleMap);
-            config.UnitySample.BindingMap = ResolveConfigPath(configDirectory, config.UnitySample.BindingMap);
-            config.UnitySample.ExistingRoleNameCsv = ResolveConfigPath(configDirectory, config.UnitySample.ExistingRoleNameCsv);
-            config.UnitySample.ExistingTimelineRoot = ResolveConfigPath(configDirectory, config.UnitySample.ExistingTimelineRoot);
-            config.UnitySample.ExistingTalkingRoot = ResolveConfigPath(configDirectory, config.UnitySample.ExistingTalkingRoot);
-        }
-
-        static CliPreviewStyleSheet ReadPreviewStyle(ProjectConfig config) {
-            if (string.IsNullOrWhiteSpace(config.Styles.Preview) || !File.Exists(config.Styles.Preview)) {
-                return new CliPreviewStyleSheet();
-            }
-
-            try {
-                CliPreviewStyleSheet? parsed = JsonSerializer.Deserialize<CliPreviewStyleSheet>(File.ReadAllText(config.Styles.Preview, Encoding.UTF8), JsonOptions);
-                return parsed ?? new CliPreviewStyleSheet();
-            } catch (Exception ex) {
-                Console.Error.WriteLine("Invalid preview style '" + config.Styles.Preview + "': " + ex.Message);
-                return new CliPreviewStyleSheet();
-            }
-        }
-
-        static string? ResolveConfigPath(string configDirectory, string? value) {
-            if (string.IsNullOrWhiteSpace(value)) {
-                return null;
-            }
-
-            if (Path.IsPathRooted(value)) {
-                return value;
-            }
-
-            return Path.GetFullPath(Path.Combine(configDirectory, value));
-        }
-
         static ProjectOverride? ReadProjectOverride(string[] args) {
             for (int i = 0; i < args.Length - 2; i += 1) {
                 if (args[i] == "--override") {
@@ -371,13 +244,13 @@ namespace Inscape.Cli {
             return null;
         }
 
-        static string ExtractLocalizationCsv(Inscape.Core.Model.InscapeDocument document) {
+        internal static string ExtractLocalizationCsv(Inscape.Core.Model.InscapeDocument document) {
             LocalizationExtractor extractor = new LocalizationExtractor();
             LocalizationCsvWriter writer = new LocalizationCsvWriter();
             return writer.Write(extractor.Extract(document));
         }
 
-        static string UpdateLocalizationCsv(Inscape.Core.Model.InscapeDocument document,
+        internal static string UpdateLocalizationCsv(Inscape.Core.Model.InscapeDocument document,
                                             IReadOnlyList<LocalizationEntry> previousEntries) {
             LocalizationExtractor extractor = new LocalizationExtractor();
             LocalizationMerger merger = new LocalizationMerger();
@@ -385,7 +258,7 @@ namespace Inscape.Cli {
             return writer.Write(merger.Merge(extractor.Extract(document), previousEntries), true);
         }
 
-        static bool TryReadPreviousLocalization(string? previousLocalizationPath, out List<LocalizationEntry> entries) {
+        internal static bool TryReadPreviousLocalization(string? previousLocalizationPath, out List<LocalizationEntry> entries) {
             entries = new List<LocalizationEntry>();
             if (string.IsNullOrWhiteSpace(previousLocalizationPath)) {
                 Console.Error.WriteLine("Missing required option: --from <old.csv>");
@@ -437,7 +310,7 @@ namespace Inscape.Cli {
             return string.Equals(Path.GetFullPath(left), Path.GetFullPath(right), StringComparison.OrdinalIgnoreCase);
         }
 
-        static void PrintDiagnostics(IReadOnlyList<Diagnostic> diagnostics) {
+        internal static void PrintDiagnostics(IReadOnlyList<Diagnostic> diagnostics) {
             for (int i = 0; i < diagnostics.Count; i += 1) {
                 Diagnostic diagnostic = diagnostics[i];
                 Console.Error.WriteLine(diagnostic.SourcePath
@@ -448,7 +321,7 @@ namespace Inscape.Cli {
             }
         }
 
-        static void WriteOrPrint(string? outputPath, string content) {
+        internal static void WriteOrPrint(string? outputPath, string content) {
             if (string.IsNullOrWhiteSpace(outputPath)) {
                 Console.WriteLine(content);
                 return;
@@ -473,7 +346,7 @@ namespace Inscape.Cli {
             File.WriteAllText(Path.Combine(fullDirectory, "unity-sample-export-report.txt"), export.ReportText, Encoding.UTF8);
         }
 
-        static bool TryReadUnitySampleExportOptions(string[] args, ProjectConfig config, out UnitySampleExportOptions options) {
+        static bool TryReadUnitySampleExportOptions(string[] args, CliProjectConfig config, out UnitySampleExportOptions options) {
             options = new UnitySampleExportOptions {
                 TalkingIdStart = ReadIntOption(args, "--unity-sample-talking-start", config.UnitySample.TalkingIdStart ?? 100000),
             };
@@ -595,7 +468,7 @@ namespace Inscape.Cli {
             return true;
         }
 
-        static bool TryReadUnitySampleTimelineBindingsForTemplate(string[] args, ProjectConfig config, out Dictionary<string, UnitySampleTimelineAssetBinding> bindingsByAlias) {
+        static bool TryReadUnitySampleTimelineBindingsForTemplate(string[] args, CliProjectConfig config, out Dictionary<string, UnitySampleTimelineAssetBinding> bindingsByAlias) {
             bindingsByAlias = new Dictionary<string, UnitySampleTimelineAssetBinding>(StringComparer.Ordinal);
             string? timelineRoot = ReadOption(args, "--unity-sample-existing-timeline-root") ?? config.UnitySample.ExistingTimelineRoot;
             if (string.IsNullOrWhiteSpace(timelineRoot)) {
@@ -637,7 +510,7 @@ namespace Inscape.Cli {
         }
 
         static bool TryReadUnitySampleRoleNameBindingsForTemplate(string[] args,
-                                                           ProjectConfig config,
+                                   CliProjectConfig config,
                                                            out Dictionary<string, int> roleIdsBySpeaker,
                                                            out Dictionary<string, List<UnitySampleRoleNameCandidate>> candidatesBySpeaker,
                                                            out bool scannedRoleNameCsv) {
@@ -955,46 +828,7 @@ namespace Inscape.Cli {
             builder.Append('"');
         }
 
-        static string CreateHostSchemaTemplateJson() {
-            HostSchemaTemplate template = new HostSchemaTemplate {
-                Queries = new List<HostSchemaQuery> {
-                    new HostSchemaQuery {
-                        Name = "has_item",
-                        Description = "Pure query example. The DSL may reference it later, but the host owns execution.",
-                        ReturnType = "bool",
-                        IsAsync = false,
-                        Parameters = new List<HostSchemaParameter> {
-                            new HostSchemaParameter {
-                                Name = "itemId",
-                                Type = "string",
-                                Required = true,
-                                Description = "Stable item identifier owned by the host."
-                            }
-                        }
-                    }
-                },
-                Events = new List<HostSchemaEvent> {
-                    new HostSchemaEvent {
-                        Name = "open_window",
-                        Description = "Host event example. Inscape only records the intent; the host decides behavior.",
-                        Delivery = "fire-and-forget",
-                        SideEffects = true,
-                        Parameters = new List<HostSchemaParameter> {
-                            new HostSchemaParameter {
-                                Name = "windowId",
-                                Type = "string",
-                                Required = true,
-                                Description = "Stable UI window identifier owned by the host."
-                            }
-                        }
-                    }
-                }
-            };
-
-            return JsonSerializer.Serialize(template, JsonOptions);
-        }
-
-        static bool TryReadReservedTalkingIds(string[] args, ProjectConfig config, UnitySampleExportOptions options) {
+        static bool TryReadReservedTalkingIds(string[] args, CliProjectConfig config, UnitySampleExportOptions options) {
             string? talkingRoot = ReadOption(args, "--unity-sample-existing-talking-root") ?? config.UnitySample.ExistingTalkingRoot;
             if (string.IsNullOrWhiteSpace(talkingRoot)) {
                 return true;
@@ -1024,7 +858,7 @@ namespace Inscape.Cli {
             return true;
         }
 
-        static string? ReadOption(string[] args, string optionName) {
+        internal static string? ReadOption(string[] args, string optionName) {
             for (int i = 0; i < args.Length - 1; i += 1) {
                 if (args[i] == optionName) {
                     return args[i + 1];
@@ -1044,7 +878,7 @@ namespace Inscape.Cli {
             return fallback;
         }
 
-        static bool IsHelp(string value) {
+        internal static bool IsHelp(string value) {
             return value == "-h" || value == "--help" || value == "help";
         }
 
@@ -1084,92 +918,6 @@ namespace Inscape.Cli {
                 Description = description;
                 Language = language;
             }
-
-        }
-
-        sealed class ProjectConfig {
-
-            public string? HostSchema { get; set; }
-
-            public StyleProjectConfig Styles { get; set; } = new StyleProjectConfig();
-
-            public UnitySampleProjectConfig UnitySample { get; set; } = new UnitySampleProjectConfig();
-
-        }
-
-        sealed class StyleProjectConfig {
-
-            public string? Editor { get; set; }
-
-            public string? Preview { get; set; }
-
-        }
-
-        sealed class UnitySampleProjectConfig {
-
-            public string? RoleMap { get; set; }
-
-            public string? BindingMap { get; set; }
-
-            public string? ExistingRoleNameCsv { get; set; }
-
-            public string? ExistingTimelineRoot { get; set; }
-
-            public string? ExistingTalkingRoot { get; set; }
-
-            public int? TalkingIdStart { get; set; }
-
-        }
-
-        sealed class HostSchemaTemplate {
-
-            public string Format { get; set; } = "inscape.host-schema";
-
-            public int FormatVersion { get; set; } = 1;
-
-            public List<HostSchemaQuery> Queries { get; set; } = new List<HostSchemaQuery>();
-
-            public List<HostSchemaEvent> Events { get; set; } = new List<HostSchemaEvent>();
-
-        }
-
-        sealed class HostSchemaQuery {
-
-            public string Name { get; set; } = string.Empty;
-
-            public string Description { get; set; } = string.Empty;
-
-            public string ReturnType { get; set; } = string.Empty;
-
-            public bool IsAsync { get; set; }
-
-            public List<HostSchemaParameter> Parameters { get; set; } = new List<HostSchemaParameter>();
-
-        }
-
-        sealed class HostSchemaEvent {
-
-            public string Name { get; set; } = string.Empty;
-
-            public string Description { get; set; } = string.Empty;
-
-            public string Delivery { get; set; } = string.Empty;
-
-            public bool SideEffects { get; set; }
-
-            public List<HostSchemaParameter> Parameters { get; set; } = new List<HostSchemaParameter>();
-
-        }
-
-        sealed class HostSchemaParameter {
-
-            public string Name { get; set; } = string.Empty;
-
-            public string Type { get; set; } = string.Empty;
-
-            public bool Required { get; set; }
-
-            public string Description { get; set; } = string.Empty;
 
         }
 

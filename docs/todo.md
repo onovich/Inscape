@@ -36,11 +36,12 @@
 执行顺序和验收标准见 [渐进式重构计划](refactoring-plan.md)。
 
 - [x] 按 [编码与命名规范](coding-conventions.md) 拆分测试文件，降低 `tests/Inscape.Tests/TestCore.cs` 的阅读成本，但不改变测试语义。
-- [ ] 按 command 职责拆分 CLI 入口，避免 `src/Inscape.Cli/CliCore.cs` 继续承担过多命令分发和业务编排。
+- [ ] 按 command 职责拆分 CLI 入口，避免 `src/Inscape.Cli/CliCore.cs` 继续承担过多命令分发和业务编排；已完成配置读取、顶层元命令和单文件命令分支拆分，下一步继续处理项目级命令与 UnitySample 导出分支。
 - [ ] 按 provider / command / preview bridge / style / workspace index 拆分 VSCode extension，保持现有作者体验不回归。
 - [ ] 设计并引入 `InscapeProjectService`，统一 CLI、VSCode 和未来 Language Server 的项目级编译、诊断、索引与本地化调用。
 - [ ] 统一 source map / reveal payload 数据契约，支撑预览、诊断、跳转、本地化和未来编辑器三视图。
 - [ ] Runtime Host 阶段再引入 `NarrativeRuntime`，采用生命周期式执行模型，不提前把 runtime loop 放进 Core 编译层。
+- [ ] 保持 `src/Inscape.Adapters.UnitySample` 作为隔离实验/回归样例，暂不纳入主动重构范围；只在 Host Bridge / generator 设计阶段把它当验证样本使用。
 
 ## 阶段 1：DSL 与轻工具链
 

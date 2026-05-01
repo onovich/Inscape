@@ -6,6 +6,8 @@
 
 本文把 Inscape 的重构拆成大目标、中目标、小目标，目标是让代码逐步接近游戏项目中常见的清晰入口、生命周期式流程、数据/逻辑/表现/适配分层，同时不破坏当前 DSL、CLI、VSCode 和预览体验。
 
+当前主动重构范围只覆盖 `Inscape.Core`、`Inscape.Cli`、`tools/vscode-inscape` 与测试组织。`src/Inscape.Adapters.UnitySample` 继续作为搁置中的实验/回归样例保留隔离，不纳入本阶段主动重构，只要求不反向污染 Core，并能继续承担 Host Bridge / generator 的回归验证素材。
+
 重构原则见 [编码与命名规范](coding-conventions.md)。本文只安排执行顺序和验收方式。
 
 ## 评分目标
@@ -122,6 +124,7 @@ VSCode：4 / 10
 
 小目标：
 
+- 先提取配置读取、路径归一化、输出辅助等纯工具职责。
 - 把每个主要命令拆成独立 command handler。
 - 提取 `CommandOptions`、`CommandResult`、`OutputWriter`、`ConfigLoader`。
 - 让 `CliCore.cs` 只保留参数分发、命令表和退出码处理。
@@ -132,6 +135,8 @@ VSCode：4 / 10
 - 新增 CLI 命令不需要继续扩张 `CliCore.cs` 主体。
 - 命令帮助、错误码、JSON/CSV/HTML 输出保持兼容。
 - CLI 测试全部通过。
+
+当前进展：已先后提取 `CliConfigLoader`，并把顶层元命令（`help` / `commands` / `export-host-schema-template`）与单文件命令分支从 `CliCore` 主入口中抽离；下一步应继续处理项目级命令与 UnitySample 导出分支。
 
 收益：高。
 
@@ -253,7 +258,7 @@ VSCode：4 / 10
 
 小目标：
 
-- 继续保持 UnitySample 作为实验 adapter。
+- 继续保持 UnitySample 作为实验 adapter，但暂不投入主动重构工时。
 - 设计 Host Bridge 配置模型，解决 Inscape 可读 ID 到项目内部 ID / 资源 / 事件 / 查询实现的映射。
 - 用 UnitySample 当前输出作为未来 generator 的回归样例。
 - 不把 Bird、ScriptableObject、Addressables 写进 Core。
@@ -347,8 +352,8 @@ VSCode：4 / 10
 ### 第二轮：CLI 模块化
 
 1. 建立 command handler 命名和目录。
-2. 先迁移只读命令，例如 `commands` / `help`。
-3. 再迁移 `check` / `diagnose` / `compile`。
+2. 先迁移配置读取、路径归一化、只读命令等低风险辅助职责。
+3. 再迁移 `commands` / `help` / `check` / `diagnose` / `compile`。
 4. 最后迁移 preview / l10n / UnitySample 导出命令。
 
 目标：整体可维护性提升到约 6.8。
@@ -390,6 +395,7 @@ VSCode：4 / 10
 - 不要引入大型框架或第三方依赖。
 - 不要把 Preview 临时播放器升级成正式 Runtime。
 - 不要把 UnitySample 逻辑迁回 Core。
+- 不要把 `src/Inscape.Adapters.UnitySample` 纳入当前主动重构范围。
 - 不要在拆文件时顺手改输出格式。
 
 ## 每轮完成标准
