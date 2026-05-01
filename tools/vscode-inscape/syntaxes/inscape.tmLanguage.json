@@ -15,9 +15,6 @@
       "include": "#jumps"
     },
     {
-        "include": "#hostBindings"
-      },
-      {
       "include": "#metadataLines"
     },
     {
@@ -173,18 +170,6 @@
     },
     "hostBindings": {
       "patterns": [
-        {
-          "name": "meta.host-binding.timeline.inscape",
-          "match": "^(\\s*)(@timeline(?:\\.(?:talking|node)\\.(?:enter|exit))?)(?::|\\s+)([^\\s\\]]+)\\s*$",
-          "captures": {
-            "2": {
-              "name": "keyword.control.host-binding.inscape"
-            },
-            "3": {
-              "name": "entity.name.function.host-binding-alias.inscape"
-            }
-          }
-        },
         {
           "name": "meta.host-binding.inline.inscape",
           "match": "^(\\s*)\\[([A-Za-z_][A-Za-z0-9_.-]*)\\s*:\\s*([^\\]\\r\\n]+)\\]\\s*$",

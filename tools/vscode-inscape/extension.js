@@ -230,9 +230,18 @@ class InscapeDefinitionProvider {
         const hostBindingInfo = getHostBindingAtPosition(document, position);
         if (hostBindingInfo) {
             const bindings = await collectWorkspaceHostBindings(document, hostBindingInfo.kind);
-            const binding = bindings.find((candidate) => candidate.alias === hostBindingInfo.alias);
-            if (binding) {
-                return [createLocation(binding)];
+            const matchingBindings = bindings.filter((candidate) => candidate.alias === hostBindingInfo.alias)
+                .map((candidate) => createLocation(candidate));
+            if (matchingBindings.length > 0) {
+                return uniqueLocations(matchingBindings);
+            }
+        }
+
+        const metadataInfo = getMetadataDirectiveAtPosition(document, position);
+        if (metadataInfo) {
+            const locations = await collectWorkspaceMetadataReferences(document, metadataInfo);
+            if (locations.length > 0) {
+                return uniqueLocations(locations.map((item) => createLocation(item)));
             }
         }
 
@@ -635,25 +644,9 @@ function createPreviewInvocation(context, document, tempPath, outputPath) {
     const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri);
     const workspaceFolderPath = workspaceFolder ? workspaceFolder.uri.fsPath : getWorkspaceFolder(context, document);
     const configuration = vscode.workspace.getConfiguration("inscape", workspaceFolder ? workspaceFolder.uri : document.uri);
-    const command = configuration.get("compiler.command", "dotnet");
     const cliProject = resolveCliProjectPath(context, workspaceFolderPath);
-    const cliAssembly = resolveCliAssemblyPath(workspaceFolderPath, cliProject);
-    const useExec = cliAssembly && fs.existsSync(cliAssembly);
-    const args = useExec
-        ? [
-            "exec",
-            cliAssembly,
-            "preview-project",
-            workspaceFolderPath
-        ]
-        : [
-            "run",
-            "--project",
-            cliProject,
-            "--",
-            "preview-project",
-            workspaceFolderPath
-        ];
+    const invocation = resolveCliInvocation(configuration.get("compiler.command", "dotnet"), cliProject, workspaceFolderPath);
+    const args = invocation.args.slice();
 
     if (document && tempPath) {
         args.push("--override", document.uri.fsPath, tempPath);
@@ -662,10 +655,51 @@ function createPreviewInvocation(context, document, tempPath, outputPath) {
     args.push("-o", outputPath);
 
     return {
-        command,
+        command: invocation.command,
         args,
         cwd: workspaceFolderPath
     };
+}
+
+function resolveCliInvocation(defaultCommand, cliProject, workspaceFolderPath) {
+    const cliExecutable = resolveCliExecutablePath(cliProject);
+    if (cliExecutable) {
+        return {
+            command: cliExecutable,
+            args: ["preview-project", workspaceFolderPath]
+        };
+    }
+
+    const cliAssembly = resolveCliAssemblyPath(workspaceFolderPath, cliProject);
+    if (cliAssembly && fs.existsSync(cliAssembly)) {
+        return {
+            command: defaultCommand,
+            args: ["exec", cliAssembly, "preview-project", workspaceFolderPath]
+        };
+    }
+
+    return {
+        command: defaultCommand,
+        args: ["run", "--project", cliProject, "--", "preview-project", workspaceFolderPath]
+    };
+}
+
+function resolveCliExecutablePath(cliProject) {
+    const projectDirectory = path.dirname(cliProject);
+    const candidateFrameworks = ["net10.0", "net9.0", "net8.0"];
+    const candidateConfigurations = ["Debug", "Release"];
+    const executableName = process.platform === "win32" ? "Inscape.Cli.exe" : "Inscape.Cli";
+
+    for (const configuration of candidateConfigurations) {
+        for (const framework of candidateFrameworks) {
+            const candidate = path.join(projectDirectory, "bin", configuration, framework, executableName);
+            if (fs.existsSync(candidate)) {
+                return candidate;
+            }
+        }
+    }
+
+    return undefined;
 }
 
 function resolveCliAssemblyPath(workspaceFolderPath, cliProject) {
@@ -1397,6 +1431,7 @@ async function readConfiguredHostBindings(document) {
     }
 
     const text = await fs.promises.readFile(bindingMapPath, "utf8");
+    const sourceLines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
     const rows = parseCsvRows(text).filter((row) => !(row[0] || "").trim().startsWith("#"));
     if (rows.length === 0) {
         return [];
@@ -1413,17 +1448,25 @@ async function readConfiguredHostBindings(document) {
     const dataRows = hasHeader ? rows.slice(1) : rows;
 
     return dataRows
-        .map((row) => ({
+        .map((row, index) => {
+            const line = hasHeader ? index + 1 : index;
+            const lineText = sourceLines[line] || row.join(",");
+            const alias = (row[aliasIndex] || "").trim();
+            return {
             kind: (row[kindIndex] || "").trim(),
-            alias: (row[aliasIndex] || "").trim(),
+            alias,
             unitySampleId: readOptionalCsvField(row, unitySampleIdIndex),
             unityGuid: readOptionalCsvField(row, unityGuidIndex),
             addressableKey: readOptionalCsvField(row, addressableKeyIndex),
             assetPath: readOptionalCsvField(row, assetPathIndex),
             sourcePath: bindingMapPath,
             sourceLabel: "UnitySample binding map",
-            sourceRank: 0
-        }))
+            sourceRank: 0,
+            line,
+            character: 0,
+            length: Math.max(alias.length, lineText.length)
+        };
+        })
         .filter((binding) => binding.kind.length > 0 && binding.alias.length > 0);
 }
 
@@ -1433,19 +1476,25 @@ function readOptionalCsvField(row, index) {
 
 function collectHostBindingsFromText(text, sourcePath, requestedKind, bindings, seen) {
     const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
-    for (const line of lines) {
+    for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
+        const line = lines[lineIndex];
         const metadataMatch = /^\s*@timeline(?:\.(?:talking|node)\.(?:enter|exit))?(?::|\s+)\s*([^\s\]]+)/.exec(line);
         if (requestedKind === "timeline" && metadataMatch) {
+            const alias = metadataMatch[1].trim();
+            const start = line.indexOf(alias, metadataMatch.index);
             addHostBinding(bindings, seen, {
                 kind: "timeline",
-                alias: metadataMatch[1].trim(),
+                alias,
                 unitySampleId: "",
                 unityGuid: "",
                 addressableKey: "",
                 assetPath: "",
                 sourcePath,
                 sourceLabel: "Workspace timeline hook",
-                sourceRank: 1
+                sourceRank: 1,
+                line: lineIndex,
+                character: Math.max(0, start),
+                length: Math.max(alias.length, 1)
             });
         }
 
@@ -1455,6 +1504,7 @@ function collectHostBindingsFromText(text, sourcePath, requestedKind, bindings, 
             const kind = normalizeHostBindingKind(inlineMatch[1].trim());
             const alias = inlineMatch[2].trim();
             if (kind === requestedKind && alias.length > 0) {
+                const aliasStart = inlineMatch.index + inlineMatch[0].lastIndexOf(inlineMatch[2]);
                 addHostBinding(bindings, seen, {
                     kind,
                     alias,
@@ -1464,11 +1514,49 @@ function collectHostBindingsFromText(text, sourcePath, requestedKind, bindings, 
                     assetPath: "",
                     sourcePath,
                     sourceLabel: "Workspace inline tag",
-                    sourceRank: 1
+                    sourceRank: 1,
+                    line: lineIndex,
+                    character: Math.max(0, aliasStart),
+                    length: Math.max(alias.length, 1)
                 });
             }
             inlineMatch = inlinePattern.exec(line);
         }
+    }
+}
+
+async function collectWorkspaceMetadataReferences(document, metadataInfo) {
+    const references = [];
+    const sources = await collectWorkspaceTextSources(document);
+    for (const source of sources) {
+        collectMetadataReferencesFromText(source.text, source.sourcePath, metadataInfo, references);
+    }
+    return references;
+}
+
+function collectMetadataReferencesFromText(text, sourcePath, metadataInfo, references) {
+    const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+    for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
+        const line = lines[lineIndex];
+        const match = /^\s*@([A-Za-z_][A-Za-z0-9_.-]*)(?:\s+([^\s]+))?/.exec(line);
+        if (!match) {
+            continue;
+        }
+
+        const kind = match[1].trim();
+        const value = match[2] ? match[2].trim() : "";
+        const raw = line.trim();
+        if (raw !== metadataInfo.raw && (kind !== metadataInfo.kind || value !== metadataInfo.value)) {
+            continue;
+        }
+
+        const start = line.indexOf("@" + kind);
+        references.push({
+            sourcePath,
+            line: lineIndex,
+            character: Math.max(0, start),
+            length: Math.max(line.trimEnd().length - Math.max(0, start), 1)
+        });
     }
 }
 
