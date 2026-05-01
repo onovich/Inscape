@@ -8,24 +8,9 @@ namespace Inscape.Cli {
     static class CliProjectCommandRunner {
 
         public static int Run(string command, string rootPath, string[] args, string? outputPath, JsonSerializerOptions jsonOptions) {
-            if (!Directory.Exists(rootPath)) {
-                Console.Error.WriteLine("Project root not found: " + rootPath);
+            if (!CliProjectCompiler.TryCompile(rootPath, args, jsonOptions, out CliProjectConfig config, out ProjectCompilationResult result)) {
                 return 1;
             }
-
-            if (!CliConfigLoader.TryReadProjectConfig(rootPath, args, jsonOptions, out CliProjectConfig config)) {
-                return 1;
-            }
-            CliDslSourceLoader.DslSourceOverride? sourceOverride = CliDslSourceLoader.ReadOverride(args);
-            string? entryOverrideName = CliCore.ReadOption(args, "--entry");
-            List<ProjectSource> sources = CliDslSourceLoader.LoadProjectSources(rootPath, sourceOverride);
-            if (sources.Count == 0) {
-                Console.Error.WriteLine("No .inscape files found under: " + rootPath);
-                return 1;
-            }
-
-            ProjectCompiler compiler = new ProjectCompiler();
-            ProjectCompilationResult result = compiler.Compile(sources, Path.GetFullPath(rootPath), entryOverrideName ?? string.Empty);
 
             switch (command) {
                 case "check-project":
