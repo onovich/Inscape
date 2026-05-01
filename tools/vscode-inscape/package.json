@@ -68,6 +68,11 @@
         }
       },
       {
+        "command": "inscape.revealSelectionInPreview",
+        "title": "Inscape: Reveal Current Selection In Preview",
+        "category": "Inscape"
+      },
+      {
         "command": "inscape.openEditorStyle",
         "title": "Inscape: Open Editor Style",
         "category": "Inscape"
@@ -81,6 +86,15 @@
         "command": "inscape.openQuickSyntaxGuide",
         "title": "Inscape: Open Quick Syntax Guide",
         "category": "Inscape"
+      },
+      {
+        "command": "inscape.openToolsMenu",
+        "title": "Inscape: Open Tools Menu",
+        "category": "Inscape",
+        "icon": {
+          "light": "media/menu-light.svg",
+          "dark": "media/menu-dark.svg"
+        }
       },
       {
         "command": "inscape.extractLocalization",
@@ -110,12 +124,6 @@
         "priority": "option"
       }
     ],
-    "submenus": [
-      {
-        "id": "inscape.editorMenu",
-        "label": "Inscape"
-      }
-    ],
     "menus": {
       "editor/title": [
         {
@@ -124,26 +132,9 @@
           "group": "navigation@1"
         },
         {
-          "submenu": "inscape.editorMenu",
+          "command": "inscape.openToolsMenu",
           "when": "resourceLangId == inscape",
           "group": "navigation@9"
-        }
-      ],
-      "inscape.editorMenu": [
-        {
-          "command": "inscape.openEditorStyle",
-          "when": "resourceLangId == inscape",
-          "group": "1_files@1"
-        },
-        {
-          "command": "inscape.openPreviewStyle",
-          "when": "resourceLangId == inscape",
-          "group": "1_files@2"
-        },
-        {
-          "command": "inscape.openQuickSyntaxGuide",
-          "when": "resourceLangId == inscape",
-          "group": "2_help@1"
         }
       ]
     },

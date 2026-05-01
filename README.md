@@ -1,137 +1,38 @@
 # Inscape
 
-内景（Inscape）是一套面向叙事驱动型游戏，尤其是视觉小说的 DSL 与配套开发环境。它把剧本文本、逻辑控制、本地化锚点和运行时指令流放在同一条创作链路里，让创作者尽量接近自然写作，让开发者保留确定、可回溯、可自动化的工程结构。
+内景（Inscape）是一套面向叙事驱动游戏的脚本语言与轻量工具链，重点服务视觉小说、对话驱动剧情和分支叙事原型。它希望让作者更接近自然写作，同时保留工程上可验证、可定位、可自动化的结构。
 
 > 叙事，是意识在数字时空中的精准折射。
 
-## 极简语法指南
+## 它适合什么
 
-把 Inscape 先当成 5 条规则：
+- 视觉小说、对话驱动剧情、分支叙事原型
+- 希望用接近自然语言的方式写脚本
+- 需要同时保留跳转结构、调试预览和本地化入口的团队
 
-- `:: node.name`：声明一个对话块。
-- `角色：台词`：写对白；`旁白：文字` 也一样。
-- `? 选择提示`：写一组选择的标题。
-- `- 选项文字 -> target.node`：写一个选项并跳到目标块。
-- `-> target.node`：当前块结束后直接跳转。
+## 目前能做什么
 
-可选补充：
+- 编写 `.inscape` 叙事脚本
+- 在 VS Code 中获得高亮、补全、跳转、引用和预览
+- 导出调试预览 HTML
+- 提取本地化 CSV，并基于旧表更新
 
-- `@entry`：把当前块标成入口。
-- `@scene court`：写一个轻量场景标签。
-- `[bg: courtroom]`：写一个行内宿主标签，比如背景、情绪、Timeline 别名。
+## 快速开始
 
-最小例子：
+- 语法速查：见 [docs/quick-syntax-guide.md](docs/quick-syntax-guide.md)
+- VS Code 工具说明：见 [docs/vscode-tooling.md](docs/vscode-tooling.md)
+- CLI 命令速查：见 [docs/cli-command-reference.md](docs/cli-command-reference.md)
 
-```inscape
-:: court.intro
+如果你只是想快速看一个例子，可以直接打开 [samples/court-loop.inscape](samples/court-loop.inscape)。
 
-@entry
-[bg: courtroom]
-旁白：法庭里很安静。
-成步堂：现在开始吧。
+## VS Code 体验
 
-? 你想做什么？
-	- 继续询问 -> court.ask
-	- 直接反驳 -> court.press
-```
+- 右上角预览图标：打开或切换预览
+- 右上角三横线工具菜单：打开编辑器样式、预览样式、极简语法速查
+- 样式文件可独立配置，不必改扩展源码
 
-如果你在 VS Code 里写 `.inscape`：
+## 项目状态
 
-- 右上角的预览图标按钮用于打开或切换预览。
-- 右上角 `Inscape` 下拉菜单可以直接打开编辑器样式、预览样式和这份极简指南。
-- 想改颜色和 UI，优先编辑 `inscape.config.json` 指向的样式文件，不必改源码。
+当前仍处于原型阶段，但 DSL、CLI、VS Code 扩展与 HTML 预览已经形成一套可运行闭环。
 
-## 当前状态
-
-项目处于第一阶段：DSL 与轻工具链已经形成可运行原型，UnitySample 实验 adapter 已从 Core 迁出，用于保留早期 Unity 数据映射 spike。以下方向已经作为项目基线记录：
-
-- 文即代码：剧本行即逻辑行，减少剧本与配置之间的跳转。
-- 确定性哈希：解析阶段为文本生成持久化锚点，用于本地化、存档与热重载定位。
-- 图叙事优先：块级叙事单元使用显式节点名组织图结构，行级文本使用隐式哈希锚点。
-- 单流控制：运行时状态通过单向数据流更新，降低全局单例和隐式副作用。
-- 先 Unity，后独立：前期适配 Unity 宿主，后期保留迁移到独立渲染层或 Bevy 等技术栈的空间。
-- 编辑器方向：DSL 阶段先在 VSCode 建立工作闭环，后续独立编辑器围绕脚本视图、节点图视图和 CSV 视图组织。
-
-当前已经实现：
-
-- C# Compiler Core：解析 `.inscape`，输出 Narrative Graph IR 与诊断。
-- 项目级编译：跨文件节点合并、全局节点唯一性、`@entry` 项目入口、跨文件跳转诊断。
-- 项目级入口覆盖：`--entry node.name` 可临时从任意节点编译或预览。
-- VSCode 轻工具链：高亮、snippets、诊断桥接、节点补全、Outline、跳转定义、引用查找和 Hover。
-- VSCode 本地化命令：导出项目 CSV，基于旧 CSV 更新项目本地化表。
-- HTML 调试预览：单文件/项目级预览、节点跳转、选择、回环、路径、Restart/Back 和锚点显示。
-- 本地化工具：CSV 提取、旧表按锚点精确继承、`current/new/removed` 状态标记，并与宿主配置 CSV 分离。
-- UnitySample 实验 adapter：生成样例 manifest、`L10N_Talking.csv`、锚点映射表和导出报告，支持角色 / 宿主资源绑定 CSV 与 Timeline Hook manifest；它不是最终 Host Bridge。
-
-以下内容尚未定稿，需要在后续设计讨论中明确：
-
-- DSL 的完整语法、错误恢复策略和分支表达能力。
-- 编辑器的核心交互、调试体验、可视化范围与实时预览协议。
-- 哈希锚点的迁移策略，尤其是节点重命名、重复文本插入、文本微调时的对齐规则。
-- Unity 版本、解析器方案、运行时管线和插件扩展边界。
-
-## 文档入口
-
-- [文档索引](docs/README.md)
-- [Agent 接手指南](docs/agent-handoff.md)
-- [项目立项说明](docs/project-brief.md)
-- [架构草案](docs/architecture.md)
-- [代码结构规划](docs/code-structure.md)
-- [DSL 生态定位对比](docs/dsl-ecosystem-positioning.md)
-- [语法样例对比](docs/syntax-comparison.md)
-- [DSL 语言设计草案](docs/dsl-language.md)
-- [宿主 Schema 草案](docs/host-schema.md)
-- [VSCode 轻工具链](docs/vscode-tooling.md)
-- [CLI 命令速查](docs/cli-command-reference.md)
-- [编辑器设计草案](docs/editor-design.md)
-- [运行时与 Unity 宿主](docs/runtime-unity.md)
-- [Bird / Unity 调研记录](docs/bird-unity-research.md)
-- [UnitySample Adapter 实验样例](docs/unity-sample-adapter.md)
-- [Unity Editor Importer 草案](docs/unity-editor-importer.md)
-- [哈希锚点与本地化](docs/hash-localization.md)
-- [本地化提取](docs/l10n-extraction.md)
-- [路线图](docs/roadmap.md)
-- [TODO](docs/todo.md)
-- [待确认问题](docs/open-questions.md)
-- [架构决策记录](docs/adr/README.md)
-
-## 开发入口
-
-当前第一版代码提供 DSL 解析、图 IR 输出、诊断、CLI 和轻量 HTML 预览。
-
-完整命令清单见 [CLI 命令速查](docs/cli-command-reference.md)。终端内可用 `commands` 和 `help <command>` 快速查看：
-
-```powershell
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- commands
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- help export-unity-sample-project
-```
-
-```powershell
-dotnet restore src\Inscape.Cli\Inscape.Cli.csproj --configfile NuGet.Config
-dotnet restore tests\Inscape.Tests\Inscape.Tests.csproj --configfile NuGet.Config
-dotnet build Inscape.slnx --no-restore
-dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj --no-build
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- check samples\court-loop.inscape
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- diagnose samples\court-loop.inscape
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- check-project samples
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- diagnose-project samples
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- compile-project samples -o artifacts\samples-project.json
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- preview-project samples -o artifacts\samples-project.html
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- preview-project samples --entry court.cross_exam.loop -o artifacts\samples-project.entry.html
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- extract-l10n-project samples -o artifacts\l10n.csv
-Copy-Item artifacts\l10n.csv artifacts\old-l10n.csv
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- update-l10n-project samples --from artifacts\old-l10n.csv -o artifacts\l10n.updated.csv
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-host-schema-template -o config\inscape.host.schema.json
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-unity-sample-role-template samples -o artifacts\unity-sample-roles.template.csv
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-unity-sample-binding-template samples -o artifacts\unity-sample-bindings.template.csv
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-unity-sample-project samples -o artifacts\unity-sample-export
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- compile samples\court-loop.inscape -o artifacts\court-loop.json
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- preview samples\court-loop.inscape -o artifacts\court-loop.html
-code --extensionDevelopmentPath=tools\vscode-inscape .
-```
-
-## 仓库约定
-
-文档默认使用中文撰写。文件名使用英文小写与连字符，便于跨平台工具链、链接和自动化脚本处理。
-
-项目目前优先沉淀设计文档，不急于锁死实现细节。凡是语法、编辑器交互、运行时协议还没有共识的地方，应明确标注为“待确认”或“候选方案”，避免把早期假设伪装成规范。
+更深入的设计文档、研究记录和路线图请从 [docs/README.md](docs/README.md) 进入。

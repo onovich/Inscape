@@ -14,18 +14,21 @@ const previewRefreshTimers = new Map();
 const previewRenderCache = new Map();
 const previewRenderVersions = new Map();
 const pendingPreviewReveals = new Map();
+let pendingPreviewRevealDefinition;
 const editorStyleStates = new Map();
 const editorStyleFileNames = new Set(["inscape.config.json", "inscape.editor-style.json", "inscape.preview-style.json"]);
 const defaultEditorStyle = Object.freeze({
     nodeNameColor: "#d7ba7d",
     speakerColor: "#569cd6",
     speakerFontWeight: "600",
-    speakerTextDecoration: "none",
+    speakerTextDecoration: "",
     dialogueColor: "#dcdcaa",
-    dialogueTextDecoration: "none",
+    dialogueTextDecoration: "",
     narrationColor: "#dcdcaa",
     choicePromptColor: "#c586c0",
+    choicePromptTextDecoration: "none",
     choiceTextColor: "#dcdcaa",
+    choiceTextDecoration: "none",
     jumpTargetColor: "#4ec9b0",
     metadataColor: "#6a9955",
     inlineTagColor: "#6a9955"
@@ -77,6 +80,7 @@ function activate(context) {
             handleStyleSupportDocumentSave(context, document);
         }),
         vscode.workspace.onDidCloseTextDocument((document) => diagnostics.delete(document.uri)),
+        vscode.window.onDidChangeTextEditorSelection((event) => handlePreviewRevealSelection(context, event)),
         vscode.window.onDidChangeVisibleTextEditors(() => refreshEditorStylesForVisibleEditors(context)),
         vscode.workspace.onDidChangeConfiguration((event) => {
             if (event.affectsConfiguration("inscape")) {
@@ -93,6 +97,8 @@ function activate(context) {
         vscode.commands.registerCommand("inscape.showNodeIncomingReferences", (uri, position, locations) => showNodeIncomingReferences(uri, position, locations)),
         vscode.commands.registerCommand("inscape.openPreview", () => openPreview(context)),
         vscode.commands.registerCommand("inscape.togglePreview", () => togglePreview(context)),
+        vscode.commands.registerCommand("inscape.revealSelectionInPreview", () => revealActiveSelectionInPreview(context)),
+        vscode.commands.registerCommand("inscape.openToolsMenu", () => openToolsMenu(context)),
         vscode.commands.registerCommand("inscape.openEditorStyle", () => openEditorStyleFile()),
         vscode.commands.registerCommand("inscape.openPreviewStyle", () => openPreviewStyleFile()),
         vscode.commands.registerCommand("inscape.openQuickSyntaxGuide", () => openQuickSyntaxGuide()),
@@ -293,6 +299,12 @@ class InscapeDefinitionProvider {
             if (locations.length > 0) {
                 return uniqueLocations(locations.map((item) => createLocation(item)));
             }
+        }
+
+        const previewRevealInfo = getPreviewRevealInfoAtPosition(document, position);
+        if (previewRevealInfo) {
+            rememberPreviewRevealDefinition(document, previewRevealInfo);
+            return [createPreviewRevealDefinitionLink(document, previewRevealInfo)];
         }
 
         const target = getJumpTargetAtPosition(document, position);
@@ -593,15 +605,20 @@ function normalizeEditorStyleSheet(value) {
 function createEditorStyleEntries(style) {
     return [
         createEditorStyleEntry("nodeName", { color: style.nodeNameColor }),
-        createEditorStyleEntry("speaker", { color: style.speakerColor, fontWeight: style.speakerFontWeight, textDecoration: style.speakerTextDecoration }),
-        createEditorStyleEntry("dialogue", { color: style.dialogueColor, textDecoration: style.dialogueTextDecoration }),
-        createEditorStyleEntry("narration", { color: style.narrationColor }),
-        createEditorStyleEntry("choicePrompt", { color: style.choicePromptColor }),
-        createEditorStyleEntry("choiceText", { color: style.choiceTextColor }),
         createEditorStyleEntry("jumpTarget", { color: style.jumpTargetColor }),
         createEditorStyleEntry("metadata", { color: style.metadataColor }),
         createEditorStyleEntry("inlineTag", { color: style.inlineTagColor })
     ];
+}
+
+function buildEditorDecorationOptions(options) {
+    const result = {};
+    for (const [key, value] of Object.entries(options)) {
+        if (typeof value === "string" && value.trim()) {
+            result[key] = value.trim();
+        }
+    }
+    return result;
 }
 
 function createEditorStyleEntry(key, options) {
@@ -1167,6 +1184,35 @@ async function revealInPreview(context, payload) {
     }
 }
 
+async function handlePreviewRevealSelection(context, event) {
+    if (!event || !event.textEditor || !event.selections || event.selections.length === 0) {
+        return;
+    }
+
+    const pending = pendingPreviewRevealDefinition;
+    if (!pending || pending.expiresAt < Date.now()) {
+        pendingPreviewRevealDefinition = undefined;
+        return;
+    }
+
+    if (normalizePath(event.textEditor.document.uri.fsPath) !== pending.sourceKey) {
+        return;
+    }
+
+    const kind = event.kind;
+    if (kind === vscode.TextEditorSelectionChangeKind.Keyboard) {
+        return;
+    }
+
+    const active = event.selections[0].active;
+    if (!pending.range.contains(active)) {
+        return;
+    }
+
+    pendingPreviewRevealDefinition = undefined;
+    await revealInPreview(context, pending.payload);
+}
+
 function queuePreviewReveal(document, payload) {
     pendingPreviewReveals.set(normalizePath(document.uri.fsPath), {
         sourcePath: payload.sourcePath,
@@ -1334,7 +1380,40 @@ async function openQuickSyntaxGuide() {
         return;
     }
 
-    await openFilePath(path.join(workspaceFolder.uri.fsPath, "README.md"));
+    await openFilePath(path.join(workspaceFolder.uri.fsPath, "docs", "quick-syntax-guide.md"));
+}
+
+async function openToolsMenu(context) {
+    const items = [
+        {
+            label: "$(play) 在预览中定位当前文本",
+            description: "按当前光标或选区定位预览",
+            action: () => revealActiveSelectionInPreview(context)
+        },
+        {
+            label: "$(symbol-color) 编辑器样式",
+            description: "打开 inscape.editor-style.json",
+            action: () => openEditorStyleFile()
+        },
+        {
+            label: "$(paintcan) 预览样式",
+            description: "打开 inscape.preview-style.json",
+            action: () => openPreviewStyleFile()
+        },
+        {
+            label: "$(book) 极简语法速查",
+            description: "打开面向用户的语法速查文档",
+            action: () => openQuickSyntaxGuide()
+        }
+    ];
+
+    const selected = await vscode.window.showQuickPick(items, {
+        placeHolder: "Inscape 工具菜单"
+    });
+
+    if (selected && typeof selected.action === "function") {
+        await selected.action();
+    }
 }
 
 async function ensureStyleSupportFile(workspaceFolder, kind) {
@@ -1391,6 +1470,26 @@ async function openFilePath(filePath) {
         preview: false,
         preserveFocus: false
     });
+}
+
+async function revealActiveSelectionInPreview(context) {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor || !isInscapeDocument(editor.document)) {
+        vscode.window.showWarningMessage("Open an .inscape file before revealing preview.");
+        return;
+    }
+
+    const selection = editor.selection;
+    const start = selection ? selection.start : new vscode.Position(0, 0);
+    const end = selection ? selection.end : start;
+    const payload = {
+        sourcePath: editor.document.uri.fsPath,
+        line: start.line,
+        character: start.character,
+        length: start.line === end.line ? Math.max(0, end.character - start.character) : 0
+    };
+
+    await revealInPreview(context, payload);
 }
 
 async function showHostSchemaCapabilities() {
@@ -2712,6 +2811,82 @@ function getHostBindingAtPosition(document, position) {
     }
 
     return undefined;
+}
+
+function getPreviewRevealRangeForLine(line) {
+    if (!line || !line.trim()) {
+        return undefined;
+    }
+
+    const trimmed = line.trim();
+    if (trimmed.startsWith("//") || trimmed.startsWith("::") || trimmed.startsWith("@") || trimmed.startsWith("->")) {
+        return undefined;
+    }
+
+    const speakerMatch = /^\s*([^:\uFF1A]+?)[ \t]*[:\uFF1A](.*)$/.exec(line);
+    if (speakerMatch && isLikelyDialogueSpeaker(speakerMatch[1].trim())) {
+        const colonIndex = findDialogueSeparatorIndex(line);
+        return trimRange(line, colonIndex + 1, line.length);
+    }
+
+    const choicePromptMatch = /^(\s*\?\s*)(.*)$/.exec(line);
+    if (choicePromptMatch) {
+        return trimRange(line, choicePromptMatch[1].length, line.length);
+    }
+
+    const choiceOptionMatch = /^(\s*-\s*)(.*)$/.exec(line);
+    if (choiceOptionMatch) {
+        const optionStart = choiceOptionMatch[1].length;
+        const targetIndex = line.indexOf("->", optionStart);
+        const optionEnd = targetIndex >= 0 ? targetIndex : line.length;
+        return trimRange(line, optionStart, optionEnd);
+    }
+
+    if (/^\s*\[[^\]]+\]\s*$/.test(line)) {
+        return undefined;
+    }
+
+    return trimRange(line, 0, line.length);
+}
+
+function getPreviewRevealInfoAtPosition(document, position) {
+    if (!isInscapeDocument(document) || position.line < 0 || position.line >= document.lineCount) {
+        return undefined;
+    }
+
+    const range = getPreviewRevealRangeForLine(document.lineAt(position.line).text);
+    if (!range || position.character < range.start || position.character > range.end) {
+        return undefined;
+    }
+
+    const revealRange = new vscode.Range(position.line, range.start, position.line, range.end);
+    return {
+        range: revealRange,
+        payload: {
+            sourcePath: document.uri.fsPath,
+            line: position.line,
+            character: range.start,
+            length: range.end - range.start
+        }
+    };
+}
+
+function rememberPreviewRevealDefinition(document, previewRevealInfo) {
+    pendingPreviewRevealDefinition = {
+        sourceKey: normalizePath(document.uri.fsPath),
+        range: previewRevealInfo.range,
+        payload: previewRevealInfo.payload,
+        expiresAt: Date.now() + 1500
+    };
+}
+
+function createPreviewRevealDefinitionLink(document, previewRevealInfo) {
+    return {
+        originSelectionRange: previewRevealInfo.range,
+        targetUri: document.uri,
+        targetRange: previewRevealInfo.range,
+        targetSelectionRange: previewRevealInfo.range
+    };
 }
 
 function findDialogueSeparatorIndex(line) {
