@@ -9,7 +9,7 @@ using CliProgram = Inscape.Cli.Program;
 
 namespace Inscape.Tests {
 
-    public static partial class Program {
+    public static partial class TestCore {
 
         static void CliExportUnitySampleBindingTemplateEmitsCsv() {
             string directory = Path.Combine(Path.GetTempPath(), "inscape-tests", Guid.NewGuid().ToString("N"));

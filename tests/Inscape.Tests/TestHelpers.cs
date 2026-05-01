@@ -7,7 +7,7 @@ using CliProgram = Inscape.Cli.Program;
 
 namespace Inscape.Tests {
 
-    public static partial class Program {
+    public static partial class TestCore {
 
         static CompilationResult Compile(string source) {
             InscapeCompiler compiler = new InscapeCompiler();

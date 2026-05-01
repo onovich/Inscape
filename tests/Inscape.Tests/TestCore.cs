@@ -1,9 +1,9 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace Inscape.Tests {
 
-    public static partial class Program {
+    public static partial class TestCore {
 
         public static int Main() {
             List<(string Name, Action Body)> tests = new List<(string Name, Action Body)> {

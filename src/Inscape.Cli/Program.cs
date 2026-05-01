@@ -16,20 +16,20 @@ namespace Inscape.Cli {
 
         public static int Main(string[] args) {
             if (args.Length == 0) {
-                PrintUsage();
+                CliCommandCatalog.PrintUsage();
                 return 1;
             }
 
             if (IsHelp(args[0])) {
                 if (args.Length >= 2 && !IsHelp(args[1])) {
-                    return PrintCommandHelp(args[1]) ? 0 : 1;
+                    return CliCommandCatalog.PrintCommandHelp(args[1]) ? 0 : 1;
                 }
-                PrintUsage();
+                CliCommandCatalog.PrintUsage();
                 return 0;
             }
 
             if (args[0] == "commands") {
-                PrintCommandList();
+                CliCommandCatalog.PrintCommandList();
                 return 0;
             }
 
@@ -39,7 +39,7 @@ namespace Inscape.Cli {
             }
 
             if (args.Length < 2) {
-                PrintUsage();
+                CliCommandCatalog.PrintUsage();
                 return 1;
             }
 
@@ -52,7 +52,7 @@ namespace Inscape.Cli {
                 return RunMergeUnitySampleL10n(inputPath, previousLocalizationPath, ReadOption(args, "--report"), outputPath);
             }
 
-            if (IsProjectCommand(command)) {
+            if (CliCommandCatalog.IsProjectCommand(command)) {
                 return RunProjectCommand(command, inputPath, args, outputPath);
             }
 
@@ -113,7 +113,7 @@ namespace Inscape.Cli {
             }
 
             Console.Error.WriteLine("Unknown command: " + command);
-            PrintUsage();
+            CliCommandCatalog.PrintUsage();
             return 1;
         }
 
@@ -250,7 +250,7 @@ namespace Inscape.Cli {
             }
 
             Console.Error.WriteLine("Unknown command: " + command);
-            PrintUsage();
+            CliCommandCatalog.PrintUsage();
             return 1;
         }
 
@@ -369,18 +369,6 @@ namespace Inscape.Cli {
                 }
             }
             return null;
-        }
-
-        static bool IsProjectCommand(string command) {
-            return command == "check-project"
-                || command == "diagnose-project"
-                || command == "compile-project"
-                || command == "preview-project"
-                || command == "extract-l10n-project"
-                || command == "update-l10n-project"
-                || command == "export-unity-sample-binding-template"
-                || command == "export-unity-sample-role-template"
-                || command == "export-unity-sample-project";
         }
 
         static string ExtractLocalizationCsv(Inscape.Core.Model.InscapeDocument document) {
@@ -1058,194 +1046,6 @@ namespace Inscape.Cli {
 
         static bool IsHelp(string value) {
             return value == "-h" || value == "--help" || value == "help";
-        }
-
-        static void PrintUsage() {
-            Console.WriteLine("Inscape CLI");
-            Console.WriteLine();
-            Console.WriteLine("Usage:");
-            Console.WriteLine("  inscape commands");
-            Console.WriteLine("  inscape help <command>");
-            Console.WriteLine("  inscape export-host-schema-template [-o inscape.host.schema.json]");
-            Console.WriteLine("  inscape check <file.inscape>");
-            Console.WriteLine("  inscape diagnose <file.inscape> [-o diagnostics.json]");
-            Console.WriteLine("  inscape extract-l10n <file.inscape> [-o strings.csv]");
-            Console.WriteLine("  inscape update-l10n <file.inscape> --from old.csv [-o strings.csv]");
-            Console.WriteLine("  inscape check-project <root> [--entry node.name]");
-            Console.WriteLine("  inscape diagnose-project <root> [--entry node.name] [--override source.inscape temp.inscape] [-o diagnostics.json]");
-            Console.WriteLine("  inscape extract-l10n-project <root> [--entry node.name] [--override source.inscape temp.inscape] [-o strings.csv]");
-            Console.WriteLine("  inscape update-l10n-project <root> --from old.csv [--entry node.name] [--override source.inscape temp.inscape] [-o strings.csv]");
-            Console.WriteLine("  inscape export-unity-sample-binding-template <root> [--config inscape.config.json] [--entry node.name] [--override source.inscape temp.inscape] [--unity-sample-existing-timeline-root path] [-o bindings.csv]");
-            Console.WriteLine("  inscape export-unity-sample-role-template <root> [--config inscape.config.json] [--entry node.name] [--override source.inscape temp.inscape] [--unity-sample-existing-role-name-csv path] [--report report.csv] [-o roles.csv]");
-            Console.WriteLine("  inscape export-unity-sample-project <root> [--config inscape.config.json] [--entry node.name] [--unity-sample-talking-start 100000] [--unity-sample-role-map roles.csv] [--unity-sample-binding-map bindings.csv] [--unity-sample-existing-talking-root path] -o output-dir");
-            Console.WriteLine("  inscape merge-unity-sample-l10n <generated-L10N_Talking.csv> --from existing-L10N_Talking.csv [--report report.csv] [-o merged.csv]");
-            Console.WriteLine("  inscape compile-project <root> [--entry node.name] [-o output.json]");
-            Console.WriteLine("  inscape preview-project <root> [--entry node.name] [-o preview.html]");
-            Console.WriteLine("  inscape compile <file.inscape> [-o output.json]");
-            Console.WriteLine("  inscape preview <file.inscape> [-o preview.html]");
-        }
-
-        static void PrintCommandList() {
-            Console.WriteLine("Inscape CLI commands");
-            Console.WriteLine();
-            Console.WriteLine("Single-file:");
-            Console.WriteLine("  check");
-            Console.WriteLine("  diagnose");
-            Console.WriteLine("  compile");
-            Console.WriteLine("  preview");
-            Console.WriteLine("  extract-l10n");
-            Console.WriteLine("  update-l10n");
-            Console.WriteLine();
-            Console.WriteLine("Host schema:");
-            Console.WriteLine("  export-host-schema-template");
-            Console.WriteLine();
-            Console.WriteLine("Project:");
-            Console.WriteLine("  check-project");
-            Console.WriteLine("  diagnose-project");
-            Console.WriteLine("  compile-project");
-            Console.WriteLine("  preview-project");
-            Console.WriteLine("  extract-l10n-project");
-            Console.WriteLine("  update-l10n-project");
-            Console.WriteLine();
-            Console.WriteLine("UnitySample:");
-            Console.WriteLine("  export-unity-sample-role-template");
-            Console.WriteLine("  export-unity-sample-binding-template");
-            Console.WriteLine("  export-unity-sample-project");
-            Console.WriteLine("  merge-unity-sample-l10n");
-            Console.WriteLine();
-            Console.WriteLine("Run `inscape help <command>` for details.");
-        }
-
-        static bool PrintCommandHelp(string command) {
-            switch (command) {
-                case "check":
-                    PrintCommandHelpBlock("check",
-                                          "Validate one .inscape file and print diagnostics.",
-                                          "inscape check <file.inscape>",
-                                          "dotnet run --project src\\Inscape.Cli\\Inscape.Cli.csproj -- check samples\\court-loop.inscape");
-                    return true;
-                case "diagnose":
-                    PrintCommandHelpBlock("diagnose",
-                                          "Compile one .inscape file and write graph IR plus diagnostics as JSON.",
-                                          "inscape diagnose <file.inscape> [-o diagnostics.json]",
-                                          "dotnet run --project src\\Inscape.Cli\\Inscape.Cli.csproj -- diagnose samples\\court-loop.inscape -o artifacts\\court-loop.diagnostics.json");
-                    return true;
-                case "compile":
-                    PrintCommandHelpBlock("compile",
-                                          "Compile one .inscape file and write graph IR as JSON.",
-                                          "inscape compile <file.inscape> [-o output.json]",
-                                          "dotnet run --project src\\Inscape.Cli\\Inscape.Cli.csproj -- compile samples\\court-loop.inscape -o artifacts\\court-loop.json");
-                    return true;
-                case "preview":
-                    PrintCommandHelpBlock("preview",
-                                          "Render one .inscape file to a static HTML debug preview.",
-                                          "inscape preview <file.inscape> [-o preview.html]",
-                                          "dotnet run --project src\\Inscape.Cli\\Inscape.Cli.csproj -- preview samples\\court-loop.inscape -o artifacts\\court-loop.html");
-                    return true;
-                case "extract-l10n":
-                    PrintCommandHelpBlock("extract-l10n",
-                                          "Extract localizable text from one .inscape file to CSV.",
-                                          "inscape extract-l10n <file.inscape> [-o strings.csv]",
-                                          "dotnet run --project src\\Inscape.Cli\\Inscape.Cli.csproj -- extract-l10n samples\\court-loop.inscape -o artifacts\\court-loop.l10n.csv");
-                    return true;
-                case "update-l10n":
-                    PrintCommandHelpBlock("update-l10n",
-                                          "Update a one-file localization CSV from a previous CSV by exact anchor match.",
-                                          "inscape update-l10n <file.inscape> --from old.csv [-o strings.csv]",
-                                          "dotnet run --project src\\Inscape.Cli\\Inscape.Cli.csproj -- update-l10n samples\\court-loop.inscape --from artifacts\\old-l10n.csv -o artifacts\\court-loop.l10n.csv");
-                    return true;
-                case "export-host-schema-template":
-                    PrintCommandHelpBlock("export-host-schema-template",
-                                          "Write a first host schema template for pure queries and host events.",
-                                          "inscape export-host-schema-template [-o inscape.host.schema.json]",
-                                          "dotnet run --project src\\Inscape.Cli\\Inscape.Cli.csproj -- export-host-schema-template -o config\\inscape.host.schema.json",
-                                          "The template is a versioned design scaffold. It does not change current DSL parsing or UnitySample export behavior.");
-                    return true;
-                case "check-project":
-                    PrintCommandHelpBlock("check-project",
-                                          "Validate all .inscape files under a project root.",
-                                          "inscape check-project <root> [--entry node.name]",
-                                          "dotnet run --project src\\Inscape.Cli\\Inscape.Cli.csproj -- check-project samples");
-                    return true;
-                case "diagnose-project":
-                    PrintCommandHelpBlock("diagnose-project",
-                                          "Compile a project and write project IR plus diagnostics as JSON.",
-                                          "inscape diagnose-project <root> [--entry node.name] [--override source.inscape temp.inscape] [-o diagnostics.json]",
-                                          "dotnet run --project src\\Inscape.Cli\\Inscape.Cli.csproj -- diagnose-project samples -o artifacts\\samples.diagnostics.json");
-                    return true;
-                case "compile-project":
-                    PrintCommandHelpBlock("compile-project",
-                                          "Compile a project and write project IR as JSON.",
-                                          "inscape compile-project <root> [--entry node.name] [-o output.json]",
-                                          "dotnet run --project src\\Inscape.Cli\\Inscape.Cli.csproj -- compile-project samples -o artifacts\\samples-project.json");
-                    return true;
-                case "preview-project":
-                    PrintCommandHelpBlock("preview-project",
-                                          "Render a project to a static HTML debug preview.",
-                                          "inscape preview-project <root> [--entry node.name] [-o preview.html]",
-                                          "dotnet run --project src\\Inscape.Cli\\Inscape.Cli.csproj -- preview-project samples --entry court.cross_exam.loop -o artifacts\\samples-project.html");
-                    return true;
-                case "extract-l10n-project":
-                    PrintCommandHelpBlock("extract-l10n-project",
-                                          "Extract project localizable text to CSV.",
-                                          "inscape extract-l10n-project <root> [--entry node.name] [--override source.inscape temp.inscape] [-o strings.csv]",
-                                          "dotnet run --project src\\Inscape.Cli\\Inscape.Cli.csproj -- extract-l10n-project samples -o artifacts\\l10n.csv");
-                    return true;
-                case "update-l10n-project":
-                    PrintCommandHelpBlock("update-l10n-project",
-                                          "Update a project localization CSV from a previous CSV by exact anchor match.",
-                                          "inscape update-l10n-project <root> --from old.csv [--entry node.name] [--override source.inscape temp.inscape] [-o strings.csv]",
-                                          "dotnet run --project src\\Inscape.Cli\\Inscape.Cli.csproj -- update-l10n-project samples --from artifacts\\old-l10n.csv -o artifacts\\l10n.updated.csv");
-                    return true;
-                case "export-unity-sample-role-template":
-                    PrintCommandHelpBlock("export-unity-sample-role-template",
-                                          "Scan project dialogue speakers and write a UnitySample role binding template.",
-                                          "inscape export-unity-sample-role-template <root> [--config inscape.config.json] [--entry node.name] [--override source.inscape temp.inscape] [--unity-sample-existing-role-name-csv path] [--report report.csv] [-o roles.csv]",
-                                          "dotnet run --project src\\Inscape.Cli\\Inscape.Cli.csproj -- export-unity-sample-role-template samples --unity-sample-existing-role-name-csv D:\\UnityProjects\\UnitySample\\Assets\\Resources_Runtime\\Localization\\L10N_RoleName.csv --report artifacts\\unity-sample-export\\unity-sample-roles.report.csv -o config\\unity-sample-roles.csv",
-                                          "Output CSV: speaker,roleId. Optional report statuses: unique, ambiguous, missing, unscanned.");
-                    return true;
-                case "export-unity-sample-binding-template":
-                    PrintCommandHelpBlock("export-unity-sample-binding-template",
-                                          "Scan Timeline hooks and write a UnitySample host binding template.",
-                                          "inscape export-unity-sample-binding-template <root> [--config inscape.config.json] [--entry node.name] [--override source.inscape temp.inscape] [--unity-sample-existing-timeline-root path] [-o bindings.csv]",
-                                          "dotnet run --project src\\Inscape.Cli\\Inscape.Cli.csproj -- export-unity-sample-binding-template samples --unity-sample-existing-timeline-root D:\\UnityProjects\\UnitySample\\Assets\\Resources_Runtime\\Timeline -o config\\unity-sample-bindings.csv",
-                                          "Output CSV: kind,alias,unitySampleId,unityGuid,addressableKey,assetPath");
-                    return true;
-                case "export-unity-sample-project":
-                    PrintCommandHelpBlock("export-unity-sample-project",
-                                          "Export project IR to UnitySample manifest, UnitySample L10N CSV, anchor map, and report.",
-                                          "inscape export-unity-sample-project <root> [--config inscape.config.json] [--entry node.name] [--unity-sample-talking-start 100000] [--unity-sample-role-map roles.csv] [--unity-sample-binding-map bindings.csv] [--unity-sample-existing-talking-root path] -o output-dir",
-                                          "dotnet run --project src\\Inscape.Cli\\Inscape.Cli.csproj -- export-unity-sample-project samples --unity-sample-role-map config\\unity-sample-roles.csv --unity-sample-binding-map config\\unity-sample-bindings.csv -o artifacts\\unity-sample-export",
-                                          "Output files: unity-sample-manifest.json, L10N_Talking.csv, inscape-unity-sample-l10n-map.csv, unity-sample-export-report.txt");
-                    return true;
-                case "merge-unity-sample-l10n":
-                    PrintCommandHelpBlock("merge-unity-sample-l10n",
-                                          "Merge generated Inscape UnitySample L10N_Talking.csv into an existing UnitySample L10N_Talking.csv without silently reusing stale translations.",
-                                          "inscape merge-unity-sample-l10n <generated-L10N_Talking.csv> --from existing-L10N_Talking.csv [--report report.csv] [-o merged.csv]",
-                                          "dotnet run --project src\\Inscape.Cli\\Inscape.Cli.csproj -- merge-unity-sample-l10n artifacts\\unity-sample-export\\L10N_Talking.csv --from D:\\UnityProjects\\UnitySample\\Assets\\Resources_Runtime\\Localization\\L10N_Talking.csv --report artifacts\\unity-sample-export\\L10N_Talking.merge-report.csv -o artifacts\\unity-sample-export\\L10N_Talking.merged.csv",
-                                          "Preserves unrelated rows and existing translations when source text is unchanged. If source text changed, target-language cells are cleared and old values are written to the report.");
-                    return true;
-                default:
-                    Console.Error.WriteLine("Unknown command: " + command);
-                    Console.Error.WriteLine("Run `inscape commands` to list available commands.");
-                    return false;
-            }
-        }
-
-        static void PrintCommandHelpBlock(string command, string description, string usage, string example, string? note = null) {
-            Console.WriteLine(command);
-            Console.WriteLine();
-            Console.WriteLine(description);
-            Console.WriteLine();
-            Console.WriteLine("Usage:");
-            Console.WriteLine("  " + usage);
-            Console.WriteLine();
-            Console.WriteLine("Example:");
-            Console.WriteLine("  " + example);
-            if (!string.IsNullOrWhiteSpace(note)) {
-                Console.WriteLine();
-                Console.WriteLine(note);
-            }
         }
 
         static JsonSerializerOptions CreateJsonOptions() {
