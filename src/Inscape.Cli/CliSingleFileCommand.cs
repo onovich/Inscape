@@ -40,7 +40,7 @@ namespace Inscape.Cli {
                     }
 
                     CliCore.WriteOrPrint(outputPath,
-                                         CliPreviewHtmlRenderer.Render(viewModel,
+                                         PreviewHtmlRendererDomain.Render(viewModel,
                                                                        jsonOptions,
                                                                        previewStyle));
                     CliCore.PrintDiagnostics(result.Diagnostics);

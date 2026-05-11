@@ -44,7 +44,7 @@ Inscape 编辑器是叙事创作者和开发者共享的独立工作台。它不
 - 支持通过项目级 CLI `--entry node.name` 从任意节点临时启动预览。
 - 不追求演出美观，不模拟 Unity Timeline，不加载复杂素材。
 
-当前 CLI 已经支持单文件/项目级静态 HTML 预览。VSCode WebView 预览尚未接入，建议后续复用 CLI 生成的项目级 IR 与现有预览渲染逻辑。
+当前 CLI 已经支持单文件/项目级静态 HTML 预览。VSCode WebView 预览尚未接入，建议后续复用 CLI 生成的项目级 IR 与 `Inscape.Tooling` 内现有的预览渲染逻辑。
 
 ## DSL 阶段本地化工具
 

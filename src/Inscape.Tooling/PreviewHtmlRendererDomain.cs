@@ -1,29 +1,20 @@
 using System.Text;
 using System.Text.Json;
-using Inscape.Tooling;
 
-namespace Inscape.Cli {
+namespace Inscape.Tooling {
 
-    public static class CliPreviewHtmlRenderer {
+    public static class PreviewHtmlRendererDomain {
 
-        public static string Render(CliCompileViewModel viewModel, JsonSerializerOptions jsonOptions) {
+        public static string Render(object viewModel, JsonSerializerOptions jsonOptions) {
             return Render(viewModel, jsonOptions, new PreviewStyleSheetModel());
         }
 
-        public static string Render(CliCompileViewModel viewModel, JsonSerializerOptions jsonOptions, PreviewStyleSheetModel styleSheet) {
+        public static string Render(object viewModel, JsonSerializerOptions jsonOptions, PreviewStyleSheetModel? styleSheet) {
             return RenderSerializedOutput(viewModel, jsonOptions, styleSheet);
         }
 
-        public static string Render(CliProjectCompileViewModel viewModel, JsonSerializerOptions jsonOptions) {
-            return Render(viewModel, jsonOptions, new PreviewStyleSheetModel());
-        }
-
-        public static string Render(CliProjectCompileViewModel viewModel, JsonSerializerOptions jsonOptions, PreviewStyleSheetModel styleSheet) {
-            return RenderSerializedOutput(viewModel, jsonOptions, styleSheet);
-        }
-
-        static string RenderSerializedOutput(object output, JsonSerializerOptions jsonOptions, PreviewStyleSheetModel? styleSheet) {
-            string json = JsonSerializer.Serialize(output, jsonOptions).Replace("</", "<\\/");
+        static string RenderSerializedOutput(object viewModel, JsonSerializerOptions jsonOptions, PreviewStyleSheetModel? styleSheet) {
+            string json = JsonSerializer.Serialize(viewModel, jsonOptions).Replace("</", "<\\/");
             PreviewStyleSheetModel style = styleSheet ?? new PreviewStyleSheetModel();
             StringBuilder html = new StringBuilder();
 

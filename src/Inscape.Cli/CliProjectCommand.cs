@@ -37,7 +37,7 @@ namespace Inscape.Cli {
                     }
 
                     CliCore.WriteOrPrint(outputPath,
-                                         CliPreviewHtmlRenderer.Render(CliCore.ToProjectCompileViewModel(result),
+                                         PreviewHtmlRendererDomain.Render(CliCore.ToProjectCompileViewModel(result),
                                                                        jsonOptions,
                                                                        previewStyle));
                     CliCore.PrintDiagnostics(result.Diagnostics);
