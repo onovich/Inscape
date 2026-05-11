@@ -22,11 +22,11 @@ namespace Inscape.Cli {
                     return result.HasErrors ? 1 : 0;
 
                 case "diagnose-project":
-                    CliCore.WriteOrPrint(outputPath, JsonSerializer.Serialize(CliCore.ToProjectOutput(result), jsonOptions));
+                    CliCore.WriteOrPrint(outputPath, JsonSerializer.Serialize(CliCore.ToProjectCompileViewModel(result), jsonOptions));
                     return 0;
 
                 case "compile-project":
-                    CliCore.WriteOrPrint(outputPath, JsonSerializer.Serialize(CliCore.ToProjectOutput(result), jsonOptions));
+                    CliCore.WriteOrPrint(outputPath, JsonSerializer.Serialize(CliCore.ToProjectCompileViewModel(result), jsonOptions));
                     CliCore.PrintDiagnostics(result.Diagnostics);
                     return result.HasErrors ? 1 : 0;
 
@@ -37,7 +37,7 @@ namespace Inscape.Cli {
                     }
 
                     CliCore.WriteOrPrint(outputPath,
-                                         CliPreviewHtmlRenderer.Render(CliCore.ToProjectOutput(result),
+                                         CliPreviewHtmlRenderer.Render(CliCore.ToProjectCompileViewModel(result),
                                                                        jsonOptions,
                                                                        previewStyle));
                     CliCore.PrintDiagnostics(result.Diagnostics);
@@ -60,7 +60,7 @@ namespace Inscape.Cli {
 
                 default:
                     Console.Error.WriteLine("Unknown project command: " + command);
-                    CliCommandCatalog.PrintUsage();
+                    CliCommandProvider.PrintUsage();
                     return 1;
             }
         }

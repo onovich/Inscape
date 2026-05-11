@@ -15,7 +15,7 @@ namespace Inscape.Cli {
                                   JsonSerializerOptions jsonOptions,
                                   out int exitCode) {
             exitCode = 0;
-            CliCompileOutput output = CliCore.ToOutput(result);
+            CliCompileViewModel viewModel = CliCore.ToCompileViewModel(result);
 
             switch (command) {
                 case "check":
@@ -24,11 +24,11 @@ namespace Inscape.Cli {
                     return true;
 
                 case "diagnose":
-                    CliCore.WriteOrPrint(outputPath, JsonSerializer.Serialize(output, jsonOptions));
+                    CliCore.WriteOrPrint(outputPath, JsonSerializer.Serialize(viewModel, jsonOptions));
                     return true;
 
                 case "compile":
-                    CliCore.WriteOrPrint(outputPath, JsonSerializer.Serialize(output, jsonOptions));
+                    CliCore.WriteOrPrint(outputPath, JsonSerializer.Serialize(viewModel, jsonOptions));
                     CliCore.PrintDiagnostics(result.Diagnostics);
                     exitCode = result.HasErrors ? 1 : 0;
                     return true;
@@ -40,7 +40,7 @@ namespace Inscape.Cli {
                     }
 
                     CliCore.WriteOrPrint(outputPath,
-                                         CliPreviewHtmlRenderer.Render(output,
+                                         CliPreviewHtmlRenderer.Render(viewModel,
                                                                        jsonOptions,
                                                                        previewStyle));
                     CliCore.PrintDiagnostics(result.Diagnostics);

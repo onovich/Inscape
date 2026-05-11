@@ -28,7 +28,7 @@ namespace Inscape.Cli {
                 return RunMergeUnitySampleL10n(inputPath, previousLocalizationPath, ReadOption(args, "--report"), outputPath);
             }
 
-            if (CliCommandCatalog.IsProjectCommand(command)) {
+            if (CliCommandProvider.IsProjectCommand(command)) {
                 return RunProjectCommand(command, inputPath, args, outputPath);
             }
 
@@ -41,12 +41,12 @@ namespace Inscape.Cli {
             }
 
             Console.Error.WriteLine("Unknown command: " + command);
-            CliCommandCatalog.PrintUsage();
+            CliCommandProvider.PrintUsage();
             return 1;
         }
 
-        internal static CliCompileOutput ToOutput(CompilationResult result) {
-            return new CliCompileOutput {
+        internal static CliCompileViewModel ToCompileViewModel(CompilationResult result) {
+            return new CliCompileViewModel {
                 Format = "inscape.graph-ir",
                 FormatVersion = 1,
                 Document = result.Document,
@@ -55,8 +55,8 @@ namespace Inscape.Cli {
             };
         }
 
-        internal static CliProjectCompileOutput ToProjectOutput(ProjectCompilationResult result) {
-            return new CliProjectCompileOutput {
+        internal static CliProjectCompileViewModel ToProjectCompileViewModel(ProjectCompilationResult result) {
+            return new CliProjectCompileViewModel {
                 Format = "inscape.project-ir",
                 FormatVersion = 1,
                 RootPath = result.RootPath,

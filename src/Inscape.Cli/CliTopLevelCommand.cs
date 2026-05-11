@@ -9,24 +9,24 @@ namespace Inscape.Cli {
             exitCode = 0;
 
             if (args.Length == 0) {
-                CliCommandCatalog.PrintUsage();
+                CliCommandProvider.PrintUsage();
                 exitCode = 1;
                 return true;
             }
 
             if (CliCore.IsHelp(args[0])) {
                 if (args.Length >= 2 && !CliCore.IsHelp(args[1])) {
-                    exitCode = CliCommandCatalog.PrintCommandHelp(args[1]) ? 0 : 1;
+                    exitCode = CliCommandProvider.PrintCommandHelp(args[1]) ? 0 : 1;
                     return true;
                 }
 
-                CliCommandCatalog.PrintUsage();
+                CliCommandProvider.PrintUsage();
                 exitCode = 0;
                 return true;
             }
 
             if (args[0] == "commands") {
-                CliCommandCatalog.PrintCommandList();
+                CliCommandProvider.PrintCommandList();
                 exitCode = 0;
                 return true;
             }
@@ -38,7 +38,7 @@ namespace Inscape.Cli {
             }
 
             if (args.Length < 2) {
-                CliCommandCatalog.PrintUsage();
+                CliCommandProvider.PrintUsage();
                 exitCode = 1;
                 return true;
             }

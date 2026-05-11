@@ -6,20 +6,20 @@ namespace Inscape.Cli {
 
     public static class CliPreviewHtmlRenderer {
 
-        public static string Render(CliCompileOutput output, JsonSerializerOptions jsonOptions) {
-            return Render(output, jsonOptions, new PreviewStyleSheetModel());
+        public static string Render(CliCompileViewModel viewModel, JsonSerializerOptions jsonOptions) {
+            return Render(viewModel, jsonOptions, new PreviewStyleSheetModel());
         }
 
-        public static string Render(CliCompileOutput output, JsonSerializerOptions jsonOptions, PreviewStyleSheetModel styleSheet) {
-            return RenderSerializedOutput(output, jsonOptions, styleSheet);
+        public static string Render(CliCompileViewModel viewModel, JsonSerializerOptions jsonOptions, PreviewStyleSheetModel styleSheet) {
+            return RenderSerializedOutput(viewModel, jsonOptions, styleSheet);
         }
 
-        public static string Render(CliProjectCompileOutput output, JsonSerializerOptions jsonOptions) {
-            return Render(output, jsonOptions, new PreviewStyleSheetModel());
+        public static string Render(CliProjectCompileViewModel viewModel, JsonSerializerOptions jsonOptions) {
+            return Render(viewModel, jsonOptions, new PreviewStyleSheetModel());
         }
 
-        public static string Render(CliProjectCompileOutput output, JsonSerializerOptions jsonOptions, PreviewStyleSheetModel styleSheet) {
-            return RenderSerializedOutput(output, jsonOptions, styleSheet);
+        public static string Render(CliProjectCompileViewModel viewModel, JsonSerializerOptions jsonOptions, PreviewStyleSheetModel styleSheet) {
+            return RenderSerializedOutput(viewModel, jsonOptions, styleSheet);
         }
 
         static string RenderSerializedOutput(object output, JsonSerializerOptions jsonOptions, PreviewStyleSheetModel? styleSheet) {
