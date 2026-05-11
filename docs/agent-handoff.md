@@ -28,9 +28,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - 本轮会话已完成 Stage 1 的第八刀：迁出 timeline 资产扫描与 alias 归并流程；`Cli` 现在只保留 UnitySample timeline 绑定结果适配。
 - 本轮会话已完成 Stage 1 的第九刀：迁出 `speaker -> roleId` 的 role map 读取流程；`Cli` 现在只保留 UnitySample role id 适配。
 - 本轮会话已完成 Stage 1 的第十刀：迁出既有 talking 资产扫描与保留 talkingId 收集流程；`Cli` 现在只保留 UnitySample reserved id 适配。
-- 本轮会话已继续收口 `CliUnitySampleSupport` 的输出职责：导出目录写盘已拆到 `CliUnitySampleExportWriter`，role template report 输出已拆到 `CliUnitySampleRoleTemplateReportWriter`。
-- 本轮会话已继续按 ADR 0010 收敛 UnitySample 命令命名：`CliUnitySampleSupport` 已退出源码，拆为 `CliUnitySampleExportOptionsReader` 与 `CliUnitySampleTemplateBindingReader`。
-- 本轮会话已继续收敛 binding-template 命令的适配边界：`CliUnitySampleTemplateBindingReader` 现在只返回 `TimelineAssetBindingModel`，最后一层 UnitySample 类型适配已拆到 `CliUnitySampleBindingTemplateWriter`。
+- 本轮会话已继续按 CLI 入口边界收紧 UnitySample 命令实现：binding-template、role-template、project-export 三个命令的单用途读取/适配/写盘/报表辅助已全部内联回各自 `CliUnitySample*Command`，当前 CLI 不再保留独立 `CliUnitySample*Reader/Writer` 辅助类型。
 - 本轮会话已继续收敛 CLI 总入口 runner 命名：`CliTopLevelCommandRunner`、`CliSingleFileCommandRunner`、`CliProjectCommandRunner` 已分别改为 `CliCommandTopLevelRunner`、`CliCommandSingleFileRunner`、`CliCommandProjectRunner`。
 - 本轮会话已继续按终局后缀白名单收口 CLI 命令入口：`CliCommandTopLevelRunner`、`CliCommandSingleFileRunner`、`CliCommandProjectRunner` 以及 `CliUnitySample*CommandRunner` 已统一去掉 `Runner`，收敛为 `CliTopLevelCommand`、`CliSingleFileCommand`、`CliProjectCommand` 与 `CliUnitySample*Command`。
 - 本轮会话已继续按终局后缀白名单收口 CLI 展示与命令元数据类型：`CliCompileOutput`、`CliProjectCompileOutput` 已分别改为 `CliCompileViewModel`、`CliProjectCompileViewModel`，`CliCommandCatalog` 已改为 `CliCommandProvider`，内部 `CliCommandDefinition` 也已改为 `CliCommandModel`。
@@ -65,8 +63,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - `Tooling` 当前已实际落下第九块稳定落点：`speaker -> roleId` 的 role map 读取流程已迁入独立项目 `src/Inscape.Tooling/`。
 - `Tooling` 当前已实际落下第十块稳定落点：既有 talking 资产扫描与保留 talkingId 收集流程已迁入独立项目 `src/Inscape.Tooling/`。
 - `Cli`：命令行入口层；当前落在 `CliCore`、`CliTopLevelCommand`、`CliSingleFileCommand`、`CliProjectCommand`。
-- `Cli` 的 UnitySample 命令辅助已进一步收敛：输入读取侧当前落在 `CliUnitySampleExportOptionsReader` 与 `CliUnitySampleTemplateBindingReader`，输出侧当前落在 `CliUnitySampleExportWriter` 与 `CliUnitySampleRoleTemplateReportWriter`。
-- `Cli` 的 binding-template 命令当前也已形成更清楚的 reader / writer 分工：`CliUnitySampleTemplateBindingReader` 负责读取 Tooling 模型，`CliUnitySampleBindingTemplateWriter` 负责最后一层 UnitySample 类型适配与 CSV 输出。
+- `Cli` 的 UnitySample 命令辅助已进一步收敛：binding-template、role-template、project-export 的局部读取、适配、报表与写盘逻辑都已收回各自 `CliUnitySample*Command`，当前 CLI 不再保留独立 `CliUnitySample*Reader/Writer` 辅助类型。
 - `Cli` 的 UnitySample 项目级命令当前也已形成更清楚的入口边界：`CliProjectCommand` 只做委托，具体三条项目级命令由 `CliUnitySampleProjectCommand` 承载。
 - `Cli` 的 binding-template 项目级命令当前也已形成更清楚的局部边界：`CliUnitySampleProjectCommand` 只做分派，具体 binding template 读取、主 CSV 输出和诊断输出由 `CliUnitySampleBindingTemplateCommand` 承载。
 - `Cli` 的 role-template 项目级命令当前也已形成更清楚的局部边界：`CliUnitySampleProjectCommand` 只做分派，具体 role template 读取、主 CSV 输出和 report 输出由 `CliUnitySampleRoleTemplateCommand` 承载。
