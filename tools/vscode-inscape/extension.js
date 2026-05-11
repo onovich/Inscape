@@ -1138,6 +1138,58 @@ const workspaceSpeakerProvider = new InscapeWorkspaceSpeakerProvider();
 
 class InscapeWorkspaceHostBindingProvider {
 
+    getBindingCompletionContext(linePrefix) {
+        if (/^\s*@timeline(?:\.(?:talking|node)\.(?:enter|exit))?(?::|\s+)\s*[^\s\]]*$/.test(linePrefix)) {
+            return { kind: "timeline" };
+        }
+
+        const openBracket = linePrefix.lastIndexOf("[");
+        const closeBracket = linePrefix.lastIndexOf("]");
+        if (openBracket <= closeBracket) {
+            return undefined;
+        }
+
+        const body = linePrefix.slice(openBracket + 1);
+        const match = /^([A-Za-z_][A-Za-z0-9_.-]*)\s*:\s*[^\]]*$/.exec(body);
+        return match ? { kind: normalizeHostBindingKind(match[1]) } : undefined;
+    }
+
+    getBindingAtPosition(document, position) {
+        const line = document.lineAt(position).text;
+        const metadataMatch = /^\s*@timeline(?:\.(?:talking|node)\.(?:enter|exit))?(?::|\s+)\s*([^\s\]]+)/.exec(line);
+        if (metadataMatch) {
+            const alias = metadataMatch[1].trim();
+            const bindingStart = line.indexOf("@timeline", metadataMatch.index);
+            const bindingEnd = Math.min(line.length, metadataMatch.index + metadataMatch[0].length);
+            if (position.character >= bindingStart && position.character <= bindingEnd) {
+                return {
+                    kind: "timeline",
+                    alias,
+                    range: new vscode.Range(position.line, bindingStart, position.line, bindingEnd)
+                };
+            }
+        }
+
+        const inlinePattern = /\[([A-Za-z_][A-Za-z0-9_.-]*)\s*:\s*([^\]\s]+)\]/g;
+        let inlineMatch = inlinePattern.exec(line);
+        while (inlineMatch) {
+            const kind = normalizeHostBindingKind(inlineMatch[1].trim());
+            const alias = inlineMatch[2].trim();
+            const bindingStart = inlineMatch.index;
+            const bindingEnd = inlineMatch.index + inlineMatch[0].length;
+            if (position.character >= bindingStart && position.character <= bindingEnd) {
+                return {
+                    kind,
+                    alias,
+                    range: new vscode.Range(position.line, bindingStart, position.line, bindingEnd)
+                };
+            }
+            inlineMatch = inlinePattern.exec(line);
+        }
+
+        return undefined;
+    }
+
     async collectWorkspaceBindings(document, kind) {
         const bindings = [];
         const seen = new Set();
@@ -1621,7 +1673,7 @@ class InscapeCompletionProvider {
             });
         }
 
-        const hostBindingContext = getHostBindingCompletionContext(linePrefix);
+        const hostBindingContext = workspaceHostBindingProvider.getBindingCompletionContext(linePrefix);
         if (hostBindingContext) {
             const bindings = await workspaceHostBindingProvider.collectWorkspaceBindings(document, hostBindingContext.kind);
             return bindings.map((binding) => workspaceHostBindingProvider.createCompletionItem(binding));
@@ -1657,7 +1709,7 @@ class InscapeDefinitionProvider {
             return undefined;
         }
 
-        const hostBindingInfo = getHostBindingAtPosition(document, position);
+        const hostBindingInfo = workspaceHostBindingProvider.getBindingAtPosition(document, position);
         if (hostBindingInfo) {
             const bindings = await workspaceHostBindingProvider.collectWorkspaceBindings(document, hostBindingInfo.kind);
             const matchingBindings = bindings.filter((candidate) => candidate.alias === hostBindingInfo.alias)
@@ -1675,10 +1727,10 @@ class InscapeDefinitionProvider {
             }
         }
 
-        const previewRevealInfo = getPreviewRevealInfoAtPosition(document, position);
+        const previewRevealInfo = previewRevealBridge.getRevealInfoAtPosition(document, position);
         if (previewRevealInfo) {
             previewRevealBridge.rememberDefinition(document, previewRevealInfo);
-            return [createPreviewRevealDefinitionLink(document, previewRevealInfo)];
+            return [previewRevealBridge.createDefinitionLink(document, previewRevealInfo)];
         }
 
         const target = workspaceNodeProvider.getJumpTargetAtPosition(document, position);
@@ -1758,7 +1810,7 @@ class InscapeHoverProvider {
             }
         }
 
-        const hostBindingInfo = getHostBindingAtPosition(document, position);
+        const hostBindingInfo = workspaceHostBindingProvider.getBindingAtPosition(document, position);
         if (hostBindingInfo) {
             const bindings = await workspaceHostBindingProvider.collectWorkspaceBindings(document, hostBindingInfo.kind);
             const binding = bindings.find((candidate) => candidate.alias === hostBindingInfo.alias);
@@ -2446,6 +2498,73 @@ class InscapePreviewRevealBridge {
         };
     }
 
+    getRevealInfoAtPosition(document, position) {
+        if (!isInscapeDocument(document) || position.line < 0 || position.line >= document.lineCount) {
+            return undefined;
+        }
+
+        const range = this.getRevealRangeForLine(document.lineAt(position.line).text);
+        if (!range || position.character < range.start || position.character > range.end) {
+            return undefined;
+        }
+
+        const revealRange = new vscode.Range(position.line, range.start, position.line, range.end);
+        return {
+            range: revealRange,
+            payload: {
+                sourcePath: document.uri.fsPath,
+                line: position.line,
+                character: range.start,
+                length: range.end - range.start
+            }
+        };
+    }
+
+    getRevealRangeForLine(line) {
+        if (!line || !line.trim()) {
+            return undefined;
+        }
+
+        const trimmed = line.trim();
+        if (trimmed.startsWith("//") || trimmed.startsWith("::") || trimmed.startsWith("@") || trimmed.startsWith("->")) {
+            return undefined;
+        }
+
+        const speakerMatch = /^\s*([^:\uFF1A]+?)[ \t]*[:\uFF1A](.*)$/.exec(line);
+        if (speakerMatch && isLikelyDialogueSpeaker(speakerMatch[1].trim())) {
+            const colonIndex = findDialogueSeparatorIndex(line);
+            return trimRange(line, colonIndex + 1, line.length);
+        }
+
+        const choicePromptMatch = /^(\s*\?\s*)(.*)$/.exec(line);
+        if (choicePromptMatch) {
+            return trimRange(line, choicePromptMatch[1].length, line.length);
+        }
+
+        const choiceOptionMatch = /^(\s*-\s*)(.*)$/.exec(line);
+        if (choiceOptionMatch) {
+            const optionStart = choiceOptionMatch[1].length;
+            const targetIndex = line.indexOf("->", optionStart);
+            const optionEnd = targetIndex >= 0 ? targetIndex : line.length;
+            return trimRange(line, optionStart, optionEnd);
+        }
+
+        if (/^\s*\[[^\]]+\]\s*$/.test(line)) {
+            return undefined;
+        }
+
+        return trimRange(line, 0, line.length);
+    }
+
+    createDefinitionLink(document, previewRevealInfo) {
+        return {
+            originSelectionRange: previewRevealInfo.range,
+            targetUri: document.uri,
+            targetRange: previewRevealInfo.range,
+            targetSelectionRange: previewRevealInfo.range
+        };
+    }
+
     async reveal(context, payload) {
         if (!payload || !payload.sourcePath) {
             return;
@@ -2786,22 +2905,6 @@ function isSpeakerCompletionContext(linePrefix) {
     return !/\s/.test(trimmed);
 }
 
-function getHostBindingCompletionContext(linePrefix) {
-    if (/^\s*@timeline(?:\.(?:talking|node)\.(?:enter|exit))?(?::|\s+)\s*[^\s\]]*$/.test(linePrefix)) {
-        return { kind: "timeline" };
-    }
-
-    const openBracket = linePrefix.lastIndexOf("[");
-    const closeBracket = linePrefix.lastIndexOf("]");
-    if (openBracket <= closeBracket) {
-        return undefined;
-    }
-
-    const body = linePrefix.slice(openBracket + 1);
-    const match = /^([A-Za-z_][A-Za-z0-9_.-]*)\s*:\s*[^\]]*$/.exec(body);
-    return match ? { kind: normalizeHostBindingKind(match[1]) } : undefined;
-}
-
 function normalizeHostBindingKind(kind) {
     if (kind === "timeline" || /^timeline\.(?:talking|node)\.(?:enter|exit)$/.test(kind)) {
         return "timeline";
@@ -2943,109 +3046,6 @@ function addWorkspaceTextSource(sources, seen, sourcePath, text) {
 async function readWorkspaceFileText(uri) {
     const bytes = await vscode.workspace.fs.readFile(uri);
     return Buffer.from(bytes).toString("utf8");
-}
-
-function getHostBindingAtPosition(document, position) {
-    const line = document.lineAt(position).text;
-    const metadataMatch = /^\s*@timeline(?:\.(?:talking|node)\.(?:enter|exit))?(?::|\s+)\s*([^\s\]]+)/.exec(line);
-    if (metadataMatch) {
-        const alias = metadataMatch[1].trim();
-        const bindingStart = line.indexOf("@timeline", metadataMatch.index);
-        const bindingEnd = Math.min(line.length, metadataMatch.index + metadataMatch[0].length);
-        if (position.character >= bindingStart && position.character <= bindingEnd) {
-            return {
-                kind: "timeline",
-                alias,
-                range: new vscode.Range(position.line, bindingStart, position.line, bindingEnd)
-            };
-        }
-    }
-
-    const inlinePattern = /\[([A-Za-z_][A-Za-z0-9_.-]*)\s*:\s*([^\]\s]+)\]/g;
-    let inlineMatch = inlinePattern.exec(line);
-    while (inlineMatch) {
-        const kind = normalizeHostBindingKind(inlineMatch[1].trim());
-        const alias = inlineMatch[2].trim();
-        const bindingStart = inlineMatch.index;
-        const bindingEnd = inlineMatch.index + inlineMatch[0].length;
-        if (position.character >= bindingStart && position.character <= bindingEnd) {
-            return {
-                kind,
-                alias,
-                range: new vscode.Range(position.line, bindingStart, position.line, bindingEnd)
-            };
-        }
-        inlineMatch = inlinePattern.exec(line);
-    }
-
-    return undefined;
-}
-
-function getPreviewRevealRangeForLine(line) {
-    if (!line || !line.trim()) {
-        return undefined;
-    }
-
-    const trimmed = line.trim();
-    if (trimmed.startsWith("//") || trimmed.startsWith("::") || trimmed.startsWith("@") || trimmed.startsWith("->")) {
-        return undefined;
-    }
-
-    const speakerMatch = /^\s*([^:\uFF1A]+?)[ \t]*[:\uFF1A](.*)$/.exec(line);
-    if (speakerMatch && isLikelyDialogueSpeaker(speakerMatch[1].trim())) {
-        const colonIndex = findDialogueSeparatorIndex(line);
-        return trimRange(line, colonIndex + 1, line.length);
-    }
-
-    const choicePromptMatch = /^(\s*\?\s*)(.*)$/.exec(line);
-    if (choicePromptMatch) {
-        return trimRange(line, choicePromptMatch[1].length, line.length);
-    }
-
-    const choiceOptionMatch = /^(\s*-\s*)(.*)$/.exec(line);
-    if (choiceOptionMatch) {
-        const optionStart = choiceOptionMatch[1].length;
-        const targetIndex = line.indexOf("->", optionStart);
-        const optionEnd = targetIndex >= 0 ? targetIndex : line.length;
-        return trimRange(line, optionStart, optionEnd);
-    }
-
-    if (/^\s*\[[^\]]+\]\s*$/.test(line)) {
-        return undefined;
-    }
-
-    return trimRange(line, 0, line.length);
-}
-
-function getPreviewRevealInfoAtPosition(document, position) {
-    if (!isInscapeDocument(document) || position.line < 0 || position.line >= document.lineCount) {
-        return undefined;
-    }
-
-    const range = getPreviewRevealRangeForLine(document.lineAt(position.line).text);
-    if (!range || position.character < range.start || position.character > range.end) {
-        return undefined;
-    }
-
-    const revealRange = new vscode.Range(position.line, range.start, position.line, range.end);
-    return {
-        range: revealRange,
-        payload: {
-            sourcePath: document.uri.fsPath,
-            line: position.line,
-            character: range.start,
-            length: range.end - range.start
-        }
-    };
-}
-
-function createPreviewRevealDefinitionLink(document, previewRevealInfo) {
-    return {
-        originSelectionRange: previewRevealInfo.range,
-        targetUri: document.uri,
-        targetRange: previewRevealInfo.range,
-        targetSelectionRange: previewRevealInfo.range
-    };
 }
 
 function findDialogueSeparatorIndex(line) {
