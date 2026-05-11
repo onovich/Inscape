@@ -27,27 +27,7 @@ namespace Inscape.Cli {
                     return true;
 
                 case "export-unity-sample-role-template":
-                    if (!RoleNameBindingScanDomain.TryRead(CliCore.ReadOption(args, "--unity-sample-existing-role-name-csv") ?? config.UnitySample.ExistingRoleNameCsv,
-                                                         out RoleNameBindingScanResultModel roleNameScan,
-                                                         out string? roleNameError)) {
-                        Console.Error.WriteLine(roleNameError);
-                        exitCode = 1;
-                        return true;
-                    }
-
-                    UnitySampleRoleTemplateWriter roleWriter = new UnitySampleRoleTemplateWriter();
-                    CliCore.WriteOrPrint(outputPath, roleWriter.Write(result.Graph, roleNameScan.RoleIdsBySpeaker));
-                    string? reportPath = CliCore.ReadOption(args, "--report");
-                    if (!string.IsNullOrWhiteSpace(reportPath)) {
-                        CliCore.WriteOrPrint(reportPath,
-                                             CliUnitySampleRoleTemplateReportWriter.Write(result.Graph,
-                                                                                          roleNameScan.RoleIdsBySpeaker,
-                                                                                          roleNameScan.CandidatesBySpeaker,
-                                                                                          roleNameScan.ScannedRoleNameCsv));
-                    }
-
-                    CliCore.PrintDiagnostics(result.Diagnostics);
-                    exitCode = result.HasErrors ? 1 : 0;
+                    exitCode = CliUnitySampleRoleTemplateCommandRunner.Run(result, args, config, outputPath);
                     return true;
 
                 case "export-unity-sample-project":
