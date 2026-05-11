@@ -31,22 +31,7 @@ namespace Inscape.Cli {
                     return true;
 
                 case "export-unity-sample-project":
-                    if (string.IsNullOrWhiteSpace(outputPath)) {
-                        Console.Error.WriteLine("Missing required option: -o <output-directory>");
-                        exitCode = 1;
-                        return true;
-                    }
-
-                    UnitySampleProjectExporter exporter = new UnitySampleProjectExporter();
-                    if (!CliUnitySampleExportOptionsReader.TryRead(args, config, out UnitySampleExportOptions options)) {
-                        exitCode = 1;
-                        return true;
-                    }
-
-                    UnitySampleExportResult export = exporter.Export(result, options);
-                    CliUnitySampleExportWriter.Write(outputPath, export, jsonOptions);
-                    CliCore.PrintDiagnostics(result.Diagnostics);
-                    exitCode = result.HasErrors ? 1 : 0;
+                    exitCode = CliUnitySampleProjectExportCommandRunner.Run(result, args, config, outputPath, jsonOptions);
                     return true;
 
                 default:
