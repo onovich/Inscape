@@ -27,6 +27,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - 本轮会话已完成 Stage 1 的第七刀：迁出现有角色名 CSV 扫描与歧义收敛流程；`Cli` 现在只保留 UnitySample role template report 输出。
 - 本轮会话已完成 Stage 1 的第八刀：迁出 timeline 资产扫描与 alias 归并流程；`Cli` 现在只保留 UnitySample timeline 绑定结果适配。
 - 本轮会话已完成 Stage 1 的第九刀：迁出 `speaker -> roleId` 的 role map 读取流程；`Cli` 现在只保留 UnitySample role id 适配。
+- 本轮会话已完成 Stage 1 的第十刀：迁出既有 talking 资产扫描与保留 talkingId 收集流程；`Cli` 现在只保留 UnitySample reserved id 适配。
 - 本轮会话确认：VSCode 长期方向是“薄扩展前端 + C# LanguageServer”，而不是继续长期借道 CLI 承载重语义能力。
 - 本轮会话确认：Unity 支持不再视为 Internal 五层之一，而视为 ExternalSupport/UnityPlugin；代码可以继续留在当前仓库，但不应进入默认 .NET solution 编译链。
 
@@ -50,6 +51,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - `Tooling` 当前已实际落下第七块稳定落点：现有角色名 CSV 的扫描与歧义收敛流程已迁入独立项目 `src/Inscape.Tooling/`。
 - `Tooling` 当前已实际落下第八块稳定落点：timeline 资产扫描与 alias 归并流程已迁入独立项目 `src/Inscape.Tooling/`。
 - `Tooling` 当前已实际落下第九块稳定落点：`speaker -> roleId` 的 role map 读取流程已迁入独立项目 `src/Inscape.Tooling/`。
+- `Tooling` 当前已实际落下第十块稳定落点：既有 talking 资产扫描与保留 talkingId 收集流程已迁入独立项目 `src/Inscape.Tooling/`。
 - `Cli`：命令行入口层；当前落在 `CliCore`、`CliTopLevelCommandRunner`、`CliSingleFileCommandRunner`、`CliProjectCommandRunner`。
 - `VSCode`：编辑器入口层；当前主要落在 `tools/vscode-inscape/extension.js`。
 - `LanguageServer`：C# 语义服务层；当前尚未创建项目，但已确认长期方向。
@@ -136,6 +138,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - 2026-05-11 已继续执行第七刀：当前 `CliUnitySampleSupport` 内的现有角色名 CSV 扫描与歧义收敛流程已被 `Inscape.Tooling` 内的 `RoleNameBindingScanDomain` / `RoleNameBindingScanResultModel` / `RoleNameBindingCandidateModel` 取代，Cli 侧只保留 UnitySample role template report 输出。这一刀同样通过了 `dotnet build Inscape.slnx --no-restore` 和 `dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj --no-build`。
 - 2026-05-11 已继续执行第八刀：当前 `CliUnitySampleSupport` 内的 timeline 资产扫描与 alias 归并流程已被 `Inscape.Tooling` 内的 `TimelineAssetBindingScanDomain` / `TimelineAssetBindingModel` 取代，Cli 侧只保留把通用扫描结果映射到 `UnitySampleTimelineAssetBinding` 的适配。这一刀同样通过了 `dotnet build Inscape.slnx --no-restore` 和 `dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj --no-build`。
 - 2026-05-11 已继续执行第九刀：当前 `CliUnitySampleSupport` 内的 `speaker -> roleId` role map 读取流程已被 `Inscape.Tooling` 内的 `RoleMapReaderDomain` 取代，Cli 侧只保留把通用结果映射到 `UnitySampleExportOptions.RoleIdsBySpeaker` 的适配。这一刀同样通过了 `dotnet build Inscape.slnx --no-restore` 和 `dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj --no-build`。
+- 2026-05-11 已继续执行第十刀：当前 `CliUnitySampleSupport` 内的既有 talking 资产扫描与保留 talkingId 收集流程已被 `Inscape.Tooling` 内的 `TalkingIdReservationScanDomain` 取代，Cli 侧只保留把通用结果映射到 `UnitySampleExportOptions.ReservedTalkingIds` 的适配。这一刀同样通过了 `dotnet build Inscape.slnx --no-restore` 和 `dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj --no-build`。
 
 - 2026-05-01 已完成 CLI 项目命令收口：项目级命令分发位于 `CliProjectCommandRunner`，共享的“配置读取 + `.inscape` 项目源扫描/读取/override + 项目编译”前置流程已收口到 `CliProjectCompiler`；其中 DSL 源加载位于 `CliDslSourceLoader`，UnitySample role/binding/export 辅助逻辑位于 `CliUnitySampleSupport`。单文件命令的“输入读取 + 邻近项目配置读取 + 单文件编译”前置流程也已收口到 `CliSingleFileCompiler`。`CliCore` 只保留参数分流、共享输出和退出码整合。验证通过：`dotnet build Inscape.slnx --no-restore`、`dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj --no-build`、`node --check tools\vscode-inscape\extension.js`。这些类型名现在统一视为过渡名；后续以目录优先、主语/角色的方式逐步替换。
 

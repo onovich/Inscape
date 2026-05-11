@@ -47,7 +47,16 @@ namespace Inscape.Cli {
                 AddUnitySampleBindingEntries(options, bindingEntries);
             }
 
-            return TryReadReservedTalkingIds(args, config, options);
+            string? talkingRoot = CliCore.ReadOption(args, "--unity-sample-existing-talking-root") ?? config.UnitySample.ExistingTalkingRoot;
+            if (!TalkingIdReservationScanDomain.TryRead(talkingRoot,
+                                                        out HashSet<int> reservedTalkingIds,
+                                                        out string? talkingError)) {
+                Console.Error.WriteLine(talkingError);
+                return false;
+            }
+
+            AddReservedTalkingIds(options, reservedTalkingIds);
+            return true;
         }
 
         internal static bool TryReadUnitySampleTimelineBindingsForTemplate(string[] args, ToolConfigModel config, out Dictionary<string, UnitySampleTimelineAssetBinding> bindingsByAlias) {
@@ -122,6 +131,13 @@ namespace Inscape.Cli {
                                         UnityGuid = pair.Value.UnityGuid,
                                         AssetPath = pair.Value.AssetPath,
                                     });
+            }
+        }
+
+        static void AddReservedTalkingIds(UnitySampleExportOptions options,
+                                          IReadOnlyCollection<int> reservedTalkingIds) {
+            foreach (int talkingId in reservedTalkingIds) {
+                options.ReservedTalkingIds.Add(talkingId);
             }
         }
 
@@ -211,36 +227,6 @@ namespace Inscape.Cli {
                 }
             }
             builder.Append('"');
-        }
-
-        static bool TryReadReservedTalkingIds(string[] args, ToolConfigModel config, UnitySampleExportOptions options) {
-            string? talkingRoot = CliCore.ReadOption(args, "--unity-sample-existing-talking-root") ?? config.UnitySample.ExistingTalkingRoot;
-            if (string.IsNullOrWhiteSpace(talkingRoot)) {
-                return true;
-            }
-
-            if (!Directory.Exists(talkingRoot)) {
-                Console.Error.WriteLine("UnitySample existing talking root not found: " + talkingRoot);
-                return false;
-            }
-
-            foreach (string assetPath in Directory.EnumerateFiles(talkingRoot, "*.asset", SearchOption.AllDirectories)) {
-                string[] lines = File.ReadAllLines(assetPath, Encoding.UTF8);
-                for (int i = 0; i < lines.Length; i += 1) {
-                    string line = lines[i].Trim();
-                    if (!line.StartsWith("talkingId:", StringComparison.Ordinal)) {
-                        continue;
-                    }
-
-                    string value = line.Substring("talkingId:".Length).Trim();
-                    if (int.TryParse(value, out int talkingId)) {
-                        options.ReservedTalkingIds.Add(talkingId);
-                    }
-                    break;
-                }
-            }
-
-            return true;
         }
 
         static int ReadIntOption(string[] args, string optionName, int fallback) {
