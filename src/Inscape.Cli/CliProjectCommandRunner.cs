@@ -56,12 +56,11 @@ namespace Inscape.Cli {
                     return result.HasErrors ? 1 : 0;
 
                 case "export-unity-sample-binding-template":
-                    if (!CliUnitySampleTemplateBindingReader.TryRead(args, config, out Dictionary<string, UnitySampleTimelineAssetBinding> timelineBindingsByAlias)) {
+                    if (!CliUnitySampleTemplateBindingReader.TryRead(args, config, out Dictionary<string, TimelineAssetBindingModel> timelineBindingsByAlias)) {
                         return 1;
                     }
 
-                    UnitySampleBindingTemplateWriter bindingWriter = new UnitySampleBindingTemplateWriter();
-                    CliCore.WriteOrPrint(outputPath, bindingWriter.Write(result.Graph, timelineBindingsByAlias));
+                    CliCore.WriteOrPrint(outputPath, CliUnitySampleBindingTemplateWriter.Write(result.Graph, timelineBindingsByAlias));
                     CliCore.PrintDiagnostics(result.Diagnostics);
                     return result.HasErrors ? 1 : 0;
 
