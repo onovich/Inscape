@@ -41,16 +41,17 @@ namespace Inscape.Cli {
                     return result.HasErrors ? 1 : 0;
 
                 case "extract-l10n-project":
-                    CliCore.WriteOrPrint(outputPath, CliCore.ExtractLocalizationCsv(result.Graph));
+                    CliCore.WriteOrPrint(outputPath, LocalizationCsvFlowDomain.Extract(result.Graph));
                     CliCore.PrintDiagnostics(result.Diagnostics);
                     return result.HasErrors ? 1 : 0;
 
                 case "update-l10n-project":
-                    if (!CliCore.TryReadPreviousLocalization(CliCore.ReadOption(args, "--from"), out List<LocalizationEntry> previousEntries)) {
+                    if (!LocalizationCsvFlowDomain.TryReadPreviousEntries(CliCore.ReadOption(args, "--from"), out List<LocalizationEntry> previousEntries, out string? localizationError)) {
+                        Console.Error.WriteLine(localizationError);
                         return 1;
                     }
 
-                    CliCore.WriteOrPrint(outputPath, CliCore.UpdateLocalizationCsv(result.Graph, previousEntries));
+                    CliCore.WriteOrPrint(outputPath, LocalizationCsvFlowDomain.Update(result.Graph, previousEntries));
                     CliCore.PrintDiagnostics(result.Diagnostics);
                     return result.HasErrors ? 1 : 0;
 

@@ -48,18 +48,19 @@ namespace Inscape.Cli {
                     return true;
 
                 case "extract-l10n":
-                    CliCore.WriteOrPrint(outputPath, CliCore.ExtractLocalizationCsv(result.Document));
+                    CliCore.WriteOrPrint(outputPath, LocalizationCsvFlowDomain.Extract(result.Document));
                     CliCore.PrintDiagnostics(result.Diagnostics);
                     exitCode = result.HasErrors ? 1 : 0;
                     return true;
 
                 case "update-l10n":
-                    if (!CliCore.TryReadPreviousLocalization(previousLocalizationPath, out List<LocalizationEntry> previousEntries)) {
+                    if (!LocalizationCsvFlowDomain.TryReadPreviousEntries(previousLocalizationPath, out List<LocalizationEntry> previousEntries, out string? localizationError)) {
+                        Console.Error.WriteLine(localizationError);
                         exitCode = 1;
                         return true;
                     }
 
-                    CliCore.WriteOrPrint(outputPath, CliCore.UpdateLocalizationCsv(result.Document, previousEntries));
+                    CliCore.WriteOrPrint(outputPath, LocalizationCsvFlowDomain.Update(result.Document, previousEntries));
                     CliCore.PrintDiagnostics(result.Diagnostics);
                     exitCode = result.HasErrors ? 1 : 0;
                     return true;

@@ -72,37 +72,6 @@ namespace Inscape.Cli {
             return CliProjectCommandRunner.Run(command, rootPath, args, outputPath, JsonOptions);
         }
 
-        internal static string ExtractLocalizationCsv(Inscape.Core.Model.InscapeDocument document) {
-            LocalizationExtractor extractor = new LocalizationExtractor();
-            LocalizationCsvWriter writer = new LocalizationCsvWriter();
-            return writer.Write(extractor.Extract(document));
-        }
-
-        internal static string UpdateLocalizationCsv(Inscape.Core.Model.InscapeDocument document,
-                                            IReadOnlyList<LocalizationEntry> previousEntries) {
-            LocalizationExtractor extractor = new LocalizationExtractor();
-            LocalizationMerger merger = new LocalizationMerger();
-            LocalizationCsvWriter writer = new LocalizationCsvWriter();
-            return writer.Write(merger.Merge(extractor.Extract(document), previousEntries), true);
-        }
-
-        internal static bool TryReadPreviousLocalization(string? previousLocalizationPath, out List<LocalizationEntry> entries) {
-            entries = new List<LocalizationEntry>();
-            if (string.IsNullOrWhiteSpace(previousLocalizationPath)) {
-                Console.Error.WriteLine("Missing required option: --from <old.csv>");
-                return false;
-            }
-
-            if (!File.Exists(previousLocalizationPath)) {
-                Console.Error.WriteLine("Previous localization CSV not found: " + previousLocalizationPath);
-                return false;
-            }
-
-            LocalizationCsvReader reader = new LocalizationCsvReader();
-            entries = reader.Read(File.ReadAllText(previousLocalizationPath, Encoding.UTF8));
-            return true;
-        }
-
         static int RunMergeUnitySampleL10n(string generatedPath, string? existingPath, string? reportPath, string? outputPath) {
             if (!File.Exists(generatedPath)) {
                 Console.Error.WriteLine("Generated UnitySample L10N CSV not found: " + generatedPath);
