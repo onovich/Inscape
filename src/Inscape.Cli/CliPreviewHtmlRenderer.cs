@@ -1,29 +1,30 @@
 using System.Text;
 using System.Text.Json;
+using Inscape.Tooling;
 
 namespace Inscape.Cli {
 
     public static class CliPreviewHtmlRenderer {
 
         public static string Render(CliCompileOutput output, JsonSerializerOptions jsonOptions) {
-            return Render(output, jsonOptions, new CliPreviewStyleSheet());
+            return Render(output, jsonOptions, new PreviewStyleSheetModel());
         }
 
-        public static string Render(CliCompileOutput output, JsonSerializerOptions jsonOptions, CliPreviewStyleSheet styleSheet) {
+        public static string Render(CliCompileOutput output, JsonSerializerOptions jsonOptions, PreviewStyleSheetModel styleSheet) {
             return RenderSerializedOutput(output, jsonOptions, styleSheet);
         }
 
         public static string Render(CliProjectCompileOutput output, JsonSerializerOptions jsonOptions) {
-            return Render(output, jsonOptions, new CliPreviewStyleSheet());
+            return Render(output, jsonOptions, new PreviewStyleSheetModel());
         }
 
-        public static string Render(CliProjectCompileOutput output, JsonSerializerOptions jsonOptions, CliPreviewStyleSheet styleSheet) {
+        public static string Render(CliProjectCompileOutput output, JsonSerializerOptions jsonOptions, PreviewStyleSheetModel styleSheet) {
             return RenderSerializedOutput(output, jsonOptions, styleSheet);
         }
 
-        static string RenderSerializedOutput(object output, JsonSerializerOptions jsonOptions, CliPreviewStyleSheet? styleSheet) {
+        static string RenderSerializedOutput(object output, JsonSerializerOptions jsonOptions, PreviewStyleSheetModel? styleSheet) {
             string json = JsonSerializer.Serialize(output, jsonOptions).Replace("</", "<\\/");
-            CliPreviewStyleSheet style = styleSheet ?? new CliPreviewStyleSheet();
+            PreviewStyleSheetModel style = styleSheet ?? new PreviewStyleSheetModel();
             StringBuilder html = new StringBuilder();
 
             html.AppendLine("<!doctype html>");

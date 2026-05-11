@@ -34,10 +34,15 @@ namespace Inscape.Cli {
                     return true;
 
                 case "preview":
+                    PreviewStyleSheetModel previewStyle = PreviewStyleReaderDomain.Read(previewConfig.Styles.Preview, jsonOptions, out string? previewStyleError);
+                    if (!string.IsNullOrWhiteSpace(previewStyleError)) {
+                        Console.Error.WriteLine(previewStyleError);
+                    }
+
                     CliCore.WriteOrPrint(outputPath,
                                          CliPreviewHtmlRenderer.Render(output,
                                                                        jsonOptions,
-                                                                       CliPreviewStyleLoader.Read(previewConfig.Styles.Preview, jsonOptions)));
+                                                                       previewStyle));
                     CliCore.PrintDiagnostics(result.Diagnostics);
                     exitCode = result.HasErrors ? 1 : 0;
                     return true;
