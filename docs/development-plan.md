@@ -15,6 +15,26 @@
 - 当前 `tools/vscode-inscape` 仍是前端与语义桥接混合体
 - Unity 支持长期不进入默认 .NET solution 编译链
 
+当前研发顺序已新增一个更高优先级前置阶段：先完成目录骨架与目录规则，再恢复 Tooling、VSCode、LanguageServer 和 UnityPlugin 的细粒度重构。详见 [目录优先重构蓝图](directory-first-reframe-plan.md)。
+
+## 阶段 -1：目录骨架与目录规则前置
+
+目标：先让长期结构在仓库外形中可见。
+
+具体任务：
+
+1. 冻结目录铁律与 ADR。
+2. 创建 `src/Internal`、`src/ExternalSupport`、`tests/Internal`、`tests/ExternalSupport`。
+3. 创建 `Compiler`、`Tooling`、`Cli`、`VSCode`、`LanguageServer`、`Runtime`、`UnityPlugin` 的 Layer / Business / Role 目录。
+4. 为稳定目录补 `README.md` 规则文件。
+5. 迁大目录路径，更新 solution 与项目引用，并把 UnityPlugin 相关项目移出默认 .NET solution 编译链。
+
+阶段门槛：
+
+- 仓库外形已经能一眼看出 Internal 与 ExternalSupport。
+- VSCode 与 Unity 相关长期代码不再停留在顶层 `tools/`。
+- 后续所有细粒度重构都能基于新目录树进行。
+
 ## 阶段 0：文档与边界同步
 
 目标：把架构结论固化为团队共识，避免继续在旧口径上开发。
@@ -143,3 +163,5 @@ node --check tools\vscode-inscape\extension.js
 cd tools\vscode-inscape
 npm run rebuild:vsix
 ```
+
+目录迁移阶段的当前施工真相以 [目录优先重构蓝图](directory-first-reframe-plan.md) 为准。

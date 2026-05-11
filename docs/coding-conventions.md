@@ -15,12 +15,46 @@
 
 - 目录和命名空间先表达层级与业务。
 - 类型名只表达业务主语、二级限定和角色。
+- 先落目录骨架，再做项目名、命名空间和类型名迁移。
 - `Config` 作为后缀家族存在，不作为一级业务主语。
 - `Domain` 是静态逻辑层的终局后缀。
 - `Model` / `ViewModel` 是数据结构后缀。
 - `Reader` / `Writer` / `Parser` / `Compiler` / `Resolver` / `Validator` 等作为准后缀，通常放在 `Domain` 前。
 - `Command` 只用于显式宿主动作入口；内部持续执行模型优先使用 `TaskModel` / `ActionModel`。
 - `Support` / `Helper` / `Manager` / `Utils` 一类弱语义命名默认视为待拆分信号。
+
+## 目录铁律
+
+### 一级代码树
+
+- 代码主树只允许：`src/Internal` 与 `src/ExternalSupport`
+- 测试主树对应为：`tests/Internal` 与 `tests/ExternalSupport`
+- `tools/` 只保留脚本、打包和开发辅助，不再承载长期产品源码
+
+### 目录公式
+
+- 固定公式为：`Layer / Business / Role / File`
+- `Layer` 表达大层级，例如 `Compiler`、`Tooling`、`Cli`
+- `Business` 表达当前层内的大业务，例如 `StoryGraph`、`Preview`、`HostBinding`
+- `Role` 表达文件家族，例如 `Domains`、`Models`、`Commands`
+
+### Role 目录命名
+
+- Role 目录统一使用复数名：`Domains`、`Models`、`ViewModels`、`Controllers`、`Commands`、`Providers`、`Bridges`、`Entries`、`Systems`、`Contexts`、`Events`、`Factories`
+- 不使用单数目录如 `Domain/`、`Model/` 作为长期目标
+
+### 目录规则文件
+
+- Git 空目录统一用 `README.md` 占位
+- 每个稳定 Layer 目录都必须有 `README.md`
+- 每个稳定 Business 目录都必须有 `README.md`
+- 该文件同时承担目录职责、允许内容、禁止内容与依赖边界说明
+
+### 迁移顺序
+
+- 固定顺序为：目录路径 -> 项目路径 / solution -> 项目名 -> 命名空间 -> 类型名
+- 不再接受只改类型名、不改目录的长期过渡做法
+- 进入任一目录继续重构前，先阅读该目录 `README.md`
 
 ## 架构层级
 
@@ -192,18 +226,18 @@
 ## 标准命名公式
 
 ```text
-<Layer>/<Business>/<Subject><Qualifier><Role>
+src/<Root>/<Layer>/<Business>/<Role>/<Subject><Qualifier><Role>
 ```
 
 示例：
 
-- `Compiler/DslScript/DslScriptParserDomain`
-- `Compiler/StoryGraph/StoryGraphEntryResolverDomain`
-- `Tooling/Preview/PreviewFlowController`
-- `Cli/Localization/LocalizationExportCommand`
-- `VSCode/Preview/PreviewRevealBridge`
-- `LanguageServer/DslScript/DslScriptCompletionProvider`
-- `ExternalSupport/UnityPlugin/UnityPluginAssetConfigureController`
+- `src/Internal/Compiler/DslScript/Domains/DslScriptParserDomain`
+- `src/Internal/Compiler/StoryGraph/Domains/StoryGraphEntryResolverDomain`
+- `src/Internal/Tooling/Preview/Controllers/PreviewFlowController`
+- `src/Internal/Cli/Localization/Commands/LocalizationExportCommand`
+- `src/Internal/VSCode/PreviewWebview/Bridges/PreviewRevealBridge`
+- `src/Internal/LanguageServer/DslScript/Providers/DslScriptCompletionProvider`
+- `src/ExternalSupport/UnityPlugin/AssetConfigure/Controllers/UnityPluginAssetConfigureController`
 
 ## 命名禁忌
 
@@ -215,6 +249,7 @@
 ## 迁移指针
 
 - `Inscape.Core` 长期可改名为 `Inscape.Compiler`
+- 当前最高优先级不是继续在旧目录里做微观 helper 收口，而是先完成目录骨架迁移，详见 [目录优先重构蓝图](directory-first-reframe-plan.md)
 - 当前 `Inscape.Cli` 中大量共享流程会逐步上提为 `Inscape.Tooling`
-- `tools/vscode-inscape` 长期会拆为薄扩展前端与 `Inscape.LanguageServer`
+- `tools/vscode-inscape` 长期会迁入 `src/Internal/VSCode/`，再继续拆为薄扩展前端与 `Inscape.LanguageServer`
 - 当前 `UnitySample` / `unity-bird-importer` 属于 `ExternalSupport/UnityPlugin` 的过渡素材，而不是内部五层的一部分

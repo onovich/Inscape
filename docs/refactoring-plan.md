@@ -123,17 +123,25 @@ VSCode：4 / 10
 
 建议优先级：最高。它最适合作为第一轮安全重构。
 
-## 当前最高优先级（2026-05-01）
+## 当前最高优先级（2026-05-11）
 
-当前最高优先级已经从“继续补更多语法与宿主能力”切换为“先把正在进行的重构路线收口并文档化”，避免后续在旧术语和旧边界上继续累积代码。
+当前最高优先级已经再次收敛：先完成目录骨架可见化，再恢复各层内部的细粒度职责收口。
+
+原因：
+
+1. 近期多轮重构虽然完成了大量局部收口，但仓库外形仍然保留旧项目平铺、旧路径和旧 solution 边界，导致成果不可见。
+2. `Compiler`、`VSCode`、`LanguageServer`、`UnityPlugin` 等长期层级仍缺乏明确目录落点。
+3. `UnityPlugin` 外部支持层尚未真正退出默认 .NET solution 编译链。
 
 执行顺序：
 
-1. 先抽出 `Tooling`：让 `CliCore` 只保留参数分流、命令路由、退出码与少量共享输出，项目扫描、配置读取、预览构建和模板导出逐步迁到 `Tooling`。
-2. 建立 `LanguageServer` 基线：把 VSCode 的重语义能力规划为“薄前端 + C# server”结构。
-3. 拆分 VSCode 扩展：按 provider / command / preview bridge / style / workspace index 分层，而不是继续扩张 `extension.js`。
-4. 固化共享契约：明确 source map、reveal payload、项目扫描 / override / 配置读取的边界，供 Tooling / VSCode / LanguageServer 复用。
-5. 文档与 TODO 同步：每一轮重构提交都要同步更新 handoff、todo、code-structure、coding-conventions 和本计划，避免口径再次过时。
+1. 先冻结目录规则，详见 [目录优先重构蓝图](directory-first-reframe-plan.md) 与 [ADR 0012](adr/0012-directory-first-repository-reframe-order.md)。
+2. 先创建 `src/Internal`、`src/ExternalSupport`、`tests/Internal`、`tests/ExternalSupport` 以及各 Layer / Business / Role 目录，并为稳定目录补 `README.md` 规则文件。
+3. 再迁 `Inscape.Core`、`Inscape.Tooling`、`Inscape.Cli`、VSCode 前端与 Unity 原型的大目录路径。
+4. 再更新 `Inscape.slnx` 与 `ProjectReference`，并把 UnityPlugin 相关项目移出默认 .NET solution 编译链。
+5. 只有在路径稳定后，才继续项目名、命名空间、类型名迁移，以及 Tooling / VSCode / LanguageServer 的逐层重构。
+
+当前最明显的不符合点详见 [目录优先重构蓝图](directory-first-reframe-plan.md#当前最明显的不符合点)。
 
 ### 中目标 B2：拆分 CLI command 分发
 

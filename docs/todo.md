@@ -4,18 +4,20 @@
 
 本文件记录已经能执行或需要调研的工作。仍未形成共识的问题放在 [待确认问题](open-questions.md)，已经形成长期决策的问题放在 [ADR](adr/README.md)。
 
+当前目录迁移与不符合项总蓝图见 [目录优先重构蓝图](directory-first-reframe-plan.md)。
+
 ## 接力优先队列
 
 下一位接手者建议按以下顺序推进：
 
-1. 执行当前重构收口计划（最高优先级）：按最新确认的 Internal / ExternalSupport 边界推进，而不是再引入笼统的 `InscapeProjectService` / `Workspace` / `ProjectSystem` 大层。
-	- CLI 继续从 `CliCore` 抽离剩余共享辅助，保持入口只做参数分流、命令路由、退出码与通用输出。
-	- 先把当前 `Inscape.Cli` 中的共享流程上提为 `Tooling`，让 `Cli` 回到命令行入口层。
-	- 提前规划并建立 `LanguageServer`，让 VSCode 长期走“薄前端 + C# server”路线。
-	- VSCode 按 `provider / command / preview bridge / style / workspace index` 拆分 `tools/vscode-inscape/extension.js`，避免继续堆单文件入口。
-	- Unity 支持明确收束为 `ExternalSupport/UnityPlugin`，继续留在仓库内，但不进入默认 .NET solution 编译链。
-	- 具体类型命名按 ADR 0010 收敛为“目录先表达层级与范围，类型名只表达具体业务主语 + 限定 + 角色”；优先清理 `Project*` / `SingleFile*` 前导范围词，以及 `Support` / `Helper` 弱语义后缀。
-	- 每完成一轮小步重构，都同步更新 `docs/agent-handoff.md`、`docs/refactoring-plan.md`、`docs/code-structure.md`、[研发计划](development-plan.md) 和本 TODO，避免再次积累陈旧口径。
+1. 执行目录优先重构主线（最高优先级）：先把目标结构做成仓库外形事实，再恢复各层内部的小步重构。
+	- 先冻结并维护 [目录优先重构蓝图](directory-first-reframe-plan.md) 与 [ADR 0012](adr/0012-directory-first-repository-reframe-order.md)。
+	- 先创建 `src/Internal`、`src/ExternalSupport`、`tests/Internal`、`tests/ExternalSupport` 及其 Layer / Business / Role 目录。
+	- 先为稳定目录补 `README.md` 规则文件，再迁代码。
+	- 再迁 `Inscape.Core`、`Inscape.Tooling`、`Inscape.Cli`、VSCode 前端和 Unity 原型的大目录路径。
+	- 再更新 `Inscape.slnx` 与 `ProjectReference`，让 UnityPlugin 退出默认 .NET solution 编译链。
+	- 只有在路径稳定后，才继续项目名、命名空间、类型名和局部 helper 收口。
+	- 每完成一轮结构迁移，都同步更新 `docs/agent-handoff.md`、`docs/refactoring-plan.md`、`docs/code-structure.md`、[研发计划](development-plan.md) 和本 TODO。
 2. 收敛 `@` 与 `[]` 的语法分工：当前两套提示语法的职责重叠过高，作者心智不稳定；需要明确二者是否保留并存、如何区分“语义/时机”与“资源/别名绑定”，以及 `@timeline ...` / `[timeline: ...]` 是否还应继续双写法共存。
 3. 设计 Host Bridge 草案：解决 Inscape 可读 ID 与项目内部 ID / 资源 / 事件处理器的映射，不被 UnitySample、Addressables 或 ScriptableObject 绑定。
 4. 调研 Unity `[Inscape]` Attribute 扫描与 Unity 内代码生成：生成待配置桥接表，再由人工完成 C# 成员与 Inscape 名称映射。
@@ -46,11 +48,18 @@
 
 执行顺序和验收标准见 [渐进式重构计划](refactoring-plan.md)。
 
+- [ ] 按目录优先铁律重构仓库骨架，让架构成果先在路径与 solution 边界上可见。
+	- [x] 已完成文档冻结：新增 [目录优先重构蓝图](directory-first-reframe-plan.md)，并以 [ADR 0012](adr/0012-directory-first-repository-reframe-order.md) 固化“先目录、后改名”的顺序。
+	- [ ] 创建 `src/Internal`、`src/ExternalSupport`、`tests/Internal`、`tests/ExternalSupport` 及其 Layer / Business / Role 目录骨架，并为稳定目录补 `README.md` 规则文件。
+	- [ ] 将 `Inscape.Core`、`Inscape.Tooling`、`Inscape.Cli`、VSCode 前端与 Unity 原型迁入新目录树。
+	- [ ] 更新 `Inscape.slnx` 与 `ProjectReference`，并把 UnityPlugin 相关项目移出默认 .NET solution 编译链。
+	- [ ] 在路径稳定后，再执行 `Inscape.Core -> Inscape.Compiler` 等项目名、命名空间和类型名迁移。
+
 - [x] 按 [编码与命名规范](coding-conventions.md) 拆分测试文件，降低 `tests/Inscape.Tests/TestCore.cs` 的阅读成本，但不改变测试语义。
 - [x] 按 command 职责拆分 CLI 入口，避免 `src/Inscape.Cli/CliCore.cs` 继续承担过多命令分发和业务编排；已完成配置读取、顶层元命令、单文件命令和项目级命令分支拆分，项目 `.inscape` 源扫描/读取/override、预览样式读取等共享流程也已上提到 `Inscape.Tooling`，`CliCore` 仅保留入口分发与共享基础输出辅助，单文件/项目编译前置流程当前已分别收回 `CliSingleFileCommand` 与 `CliProjectCommand`。
 	- [x] 已继续收口 UnitySample 命令输出职责：将导出目录写盘拆到 `CliUnitySampleExportWriter`，将 role template report 输出拆到 `CliUnitySampleRoleTemplateReportWriter`，`CliUnitySampleSupport` 不再混放输出 writer。
 	- [x] 已继续收口 UnitySample 项目级命令分支：`CliProjectCommand` 不再直接编排 `export-unity-sample-binding-template`、`export-unity-sample-role-template`、`export-unity-sample-project`，改为委托 `CliUnitySampleProjectCommand`。
-- [ ] 抽出 `Tooling` 中间层：优先上提项目扫描、配置读取、预览构建、本地化流程、HostSchema / HostBinding 流程，降低 `Cli` 的共享业务负担。
+- [ ] 抽出 `Tooling` 中间层：在目录骨架迁移完成后，继续上提项目扫描、配置读取、预览构建、本地化流程、HostSchema / HostBinding 流程，降低 `Cli` 的共享业务负担。
 	- [x] 已完成第一刀：创建 `src/Inscape.Tooling/`，将 ToolConfig 配置模型与读取/路径归一化逻辑迁出 `Inscape.Cli`，`Cli` 仅保留 `--config` 参数解析和错误输出适配。
 	- [x] 已完成第二刀：将 `.inscape` 项目源发现、目录排除、内容读取与 override 应用逻辑迁出 `Inscape.Cli`，`Cli` 仅保留 `--override <source> <content>` 参数解析。
 	- [x] 已完成第三刀：将 Preview 样式表模型与 JSON 读取逻辑迁出 `Inscape.Cli`，`Cli` 仅保留 HTML 渲染与终端输出适配。
@@ -75,7 +84,7 @@
 	- [x] 已继续按 CLI 入口边界收紧 UnitySample 命令实现：binding-template、role-template、project-export 三个命令的单用途读取/适配/写盘/报表辅助已全部内联回各自 `CliUnitySample*Command`，当前 CLI 不再保留独立 `CliUnitySample*Reader/Writer` 辅助类型。
 	- [x] 已继续按显式宿主动作入口规则收紧 UnitySample L10N 合并命令：`merge-unity-sample-l10n` 已从 `CliCore` 私有分支抽为独立 `CliUnitySampleL10nMergeCommand`，`CliCore` 仅保留分发。
 	- [x] 已继续按薄门面规则收紧 `CliCore`：`IsHelp`、`ToCompileViewModel`、`ToProjectCompileViewModel` 与项目命令分发私有包装已收回拥有者文件，`CliCore` 进一步缩到入口分发与跨命令共享输出辅助。
-- [ ] 按 provider / command / preview bridge / style / workspace index 拆分 VSCode extension，保持现有作者体验不回归。
+- [ ] 按 provider / command / preview bridge / style / workspace index 拆分 VSCode extension：在 VSCode 正式迁入 `src/Internal/VSCode` 后继续执行，保持现有作者体验不回归。
 	- [x] 已先收口预览定位 selection bridge：原先散在 `extension.js` 顶层的 pending reveal 状态与相关函数已收为 `InscapePreviewRevealBridge`，使预览定位的 Ctrl+Click 链路拥有明确 `Bridge` 角色。
 	- [x] 已继续收口预览命令入口：`openPreview`、`togglePreview`、`revealSelectionInPreview` 及其局部 helper 已收为 `InscapePreviewCommand`，预览命令不再散在 `extension.js` 顶层函数。
 	- [x] 已继续收紧 preview reveal bridge 边界：光标处 reveal 信息解析、definition link 构造与 reveal range 解析已吸回 `InscapePreviewRevealBridge`，preview reveal 顶层 helper 进一步退出函数区。

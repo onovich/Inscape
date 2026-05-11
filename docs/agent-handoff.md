@@ -14,8 +14,12 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 
 ### 2026-05-11 当前交接结论（最新）
 
-- 当前分支为 `main...origin/main`，HEAD 为 `28b5693 feat(samples): deepen court-loop case flow`。
+- 当前分支为 `main...origin/main`。本轮已把目录优先方案正式冻结为文档与 ADR；最新提交请以 `git log --oneline -1` 为准。
 - 当前工作区存在未提交变更：文档重构相关文件与 `samples/court-loop.inscape`。其中脚本文本修改不属于本轮架构文档同步的一部分，后续提交时应避免误带用户的样例脚本变更。
+- 本轮会话已确认新的重构铁律：先搭目录骨架与 `README.md` 规则文件，再迁大目录路径，再迁 solution / 项目路径，再迁项目名、命名空间和类型名；在此之前，不再把主要重构精力继续放在旧目录里的微观 helper 收口上。
+- 本轮会话已将该铁律落入 [目录优先重构蓝图](directory-first-reframe-plan.md) 与 [ADR 0012](adr/0012-directory-first-repository-reframe-order.md)。
+- 本轮会话已明确当前最显眼的不符合点：`src/` 仍未落成 `Internal / ExternalSupport` 主树；`Inscape.Core` 仍停留在旧路径；`Inscape.Adapters.UnitySample` 仍在默认 solution 编译链；VSCode 前端仍位于 `tools/`；`LanguageServer` 与 `Runtime` 仍没有目录骨架；测试目录尚未镜像层级结构。
+- 本轮会话已确认新的优先级：下一阶段应先做目录骨架与规则文件，再迁大目录路径与 solution 边界；Tooling 上提、VSCode 深拆、LanguageServer 细化与项目名迁移都排在目录外形稳定之后。
 - 本轮会话确认新的长期结构：Internal 为 `Compiler`、`Tooling`、`Cli`、`VSCode`、`LanguageServer`、`Runtime`；ExternalSupport 为 `UnityPlugin`。
 - 本轮会话确认：`Inscape.Core` 长期可向 `Compiler` 收敛；`Inscape.Cli` 当前同时承载了 `Cli` 与部分 `Tooling`，下一轮重构重点应是先抽出 `Tooling`。
 - 本轮会话已完成 Stage 1 的第一刀：新建 `src/Inscape.Tooling/`，迁出 ToolConfig 配置模型与读取/路径归一化逻辑；`Cli` 现在只保留 `--config` 参数解析和错误输出适配。
