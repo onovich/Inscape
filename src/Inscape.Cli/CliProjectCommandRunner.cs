@@ -78,10 +78,10 @@ namespace Inscape.Cli {
                     string? reportPath = CliCore.ReadOption(args, "--report");
                     if (!string.IsNullOrWhiteSpace(reportPath)) {
                         CliCore.WriteOrPrint(reportPath,
-                                             CliUnitySampleSupport.WriteUnitySampleRoleTemplateReport(result.Graph,
-                                                                                                      roleNameScan.RoleIdsBySpeaker,
-                                                                                                      roleNameScan.CandidatesBySpeaker,
-                                                                                                      roleNameScan.ScannedRoleNameCsv));
+                                             CliUnitySampleRoleTemplateReportWriter.Write(result.Graph,
+                                                                                          roleNameScan.RoleIdsBySpeaker,
+                                                                                          roleNameScan.CandidatesBySpeaker,
+                                                                                          roleNameScan.ScannedRoleNameCsv));
                     }
                     CliCore.PrintDiagnostics(result.Diagnostics);
                     return result.HasErrors ? 1 : 0;
@@ -98,7 +98,7 @@ namespace Inscape.Cli {
                     }
 
                     UnitySampleExportResult export = exporter.Export(result, options);
-                    CliUnitySampleSupport.WriteUnitySampleExport(outputPath, export, jsonOptions);
+                    CliUnitySampleExportWriter.Write(outputPath, export, jsonOptions);
                     CliCore.PrintDiagnostics(result.Diagnostics);
                     return result.HasErrors ? 1 : 0;
 
