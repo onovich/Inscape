@@ -6,7 +6,7 @@ using Inscape.Tooling;
 
 namespace Inscape.Cli {
 
-    static class CliProjectCompiler {
+    static class CliCompilerProject {
 
         public static bool TryCompile(string rootPath,
                                       string[] args,

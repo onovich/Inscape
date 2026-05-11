@@ -32,7 +32,7 @@ namespace Inscape.Cli {
                 return RunProjectCommand(command, inputPath, args, outputPath);
             }
 
-            if (!CliSingleFileCompiler.TryCompile(inputPath, args, JsonOptions, out ToolConfigModel previewConfig, out CompilationResult result)) {
+            if (!CliCompilerSingleFile.TryCompile(inputPath, args, JsonOptions, out ToolConfigModel previewConfig, out CompilationResult result)) {
                 return 1;
             }
 

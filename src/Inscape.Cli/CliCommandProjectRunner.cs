@@ -8,7 +8,7 @@ namespace Inscape.Cli {
     static class CliCommandProjectRunner {
 
         public static int Run(string command, string rootPath, string[] args, string? outputPath, JsonSerializerOptions jsonOptions) {
-            if (!CliProjectCompiler.TryCompile(rootPath, args, jsonOptions, out ToolConfigModel config, out ProjectCompilationResult result)) {
+            if (!CliCompilerProject.TryCompile(rootPath, args, jsonOptions, out ToolConfigModel config, out ProjectCompilationResult result)) {
                 return 1;
             }
 
