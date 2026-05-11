@@ -24,11 +24,11 @@ namespace Inscape.Cli {
                     return result.HasErrors ? 1 : 0;
 
                 case "diagnose-project":
-                    CliCore.WriteOrPrint(outputPath, JsonSerializer.Serialize(CliCore.ToProjectCompileViewModel(result), jsonOptions));
+                    CliCore.WriteOrPrint(outputPath, JsonSerializer.Serialize(CreateProjectCompileViewModel(result), jsonOptions));
                     return 0;
 
                 case "compile-project":
-                    CliCore.WriteOrPrint(outputPath, JsonSerializer.Serialize(CliCore.ToProjectCompileViewModel(result), jsonOptions));
+                    CliCore.WriteOrPrint(outputPath, JsonSerializer.Serialize(CreateProjectCompileViewModel(result), jsonOptions));
                     CliCore.PrintDiagnostics(result.Diagnostics);
                     return result.HasErrors ? 1 : 0;
 
@@ -39,7 +39,7 @@ namespace Inscape.Cli {
                     }
 
                     CliCore.WriteOrPrint(outputPath,
-                                         PreviewHtmlRendererDomain.Render(CliCore.ToProjectCompileViewModel(result),
+                                         PreviewHtmlRendererDomain.Render(CreateProjectCompileViewModel(result),
                                                                        jsonOptions,
                                                                        previewStyle));
                     CliCore.PrintDiagnostics(result.Diagnostics);
@@ -118,6 +118,19 @@ namespace Inscape.Cli {
             }
 
             return null;
+        }
+
+        static CliProjectCompileViewModel CreateProjectCompileViewModel(ProjectCompilationResult result) {
+            return new CliProjectCompileViewModel {
+                Format = "inscape.project-ir",
+                FormatVersion = 1,
+                RootPath = result.RootPath,
+                Documents = result.Documents,
+                Graph = result.Graph,
+                EntryNodeName = result.EntryNodeName,
+                Diagnostics = result.Diagnostics,
+                HasErrors = result.HasErrors,
+            };
         }
 
     }

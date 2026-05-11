@@ -14,8 +14,8 @@ namespace Inscape.Cli {
                 return true;
             }
 
-            if (CliCore.IsHelp(args[0])) {
-                if (args.Length >= 2 && !CliCore.IsHelp(args[1])) {
+            if (IsHelp(args[0])) {
+                if (args.Length >= 2 && !IsHelp(args[1])) {
                     exitCode = CliCommandProvider.PrintCommandHelp(args[1]) ? 0 : 1;
                     return true;
                 }
@@ -44,6 +44,10 @@ namespace Inscape.Cli {
             }
 
             return false;
+        }
+
+        static bool IsHelp(string value) {
+            return value == "-h" || value == "--help" || value == "help";
         }
 
     }

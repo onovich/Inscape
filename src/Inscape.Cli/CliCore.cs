@@ -29,7 +29,7 @@ namespace Inscape.Cli {
             }
 
             if (CliCommandProvider.IsProjectCommand(command)) {
-                return RunProjectCommand(command, inputPath, args, outputPath);
+                return CliProjectCommand.Run(command, inputPath, args, outputPath, JsonOptions);
             }
 
             if (CliSingleFileCommand.TryRun(command, inputPath, args, outputPath, previousLocalizationPath, JsonOptions, out exitCode)) {
@@ -39,33 +39,6 @@ namespace Inscape.Cli {
             Console.Error.WriteLine("Unknown command: " + command);
             CliCommandProvider.PrintUsage();
             return 1;
-        }
-
-        internal static CliCompileViewModel ToCompileViewModel(CompilationResult result) {
-            return new CliCompileViewModel {
-                Format = "inscape.graph-ir",
-                FormatVersion = 1,
-                Document = result.Document,
-                Diagnostics = result.Diagnostics,
-                HasErrors = result.HasErrors,
-            };
-        }
-
-        internal static CliProjectCompileViewModel ToProjectCompileViewModel(ProjectCompilationResult result) {
-            return new CliProjectCompileViewModel {
-                Format = "inscape.project-ir",
-                FormatVersion = 1,
-                RootPath = result.RootPath,
-                Documents = result.Documents,
-                Graph = result.Graph,
-                EntryNodeName = result.EntryNodeName,
-                Diagnostics = result.Diagnostics,
-                HasErrors = result.HasErrors,
-            };
-        }
-
-        static int RunProjectCommand(string command, string rootPath, string[] args, string? outputPath) {
-            return CliProjectCommand.Run(command, rootPath, args, outputPath, JsonOptions);
         }
 
         internal static void PrintDiagnostics(IReadOnlyList<Diagnostic> diagnostics) {
@@ -100,10 +73,6 @@ namespace Inscape.Cli {
                 }
             }
             return null;
-        }
-
-        internal static bool IsHelp(string value) {
-            return value == "-h" || value == "--help" || value == "help";
         }
 
         static JsonSerializerOptions CreateJsonOptions() {

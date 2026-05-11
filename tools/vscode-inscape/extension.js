@@ -13,8 +13,6 @@ const previewPanels = new Map();
 const previewRefreshTimers = new Map();
 const previewRenderCache = new Map();
 const previewRenderVersions = new Map();
-const pendingPreviewReveals = new Map();
-let pendingPreviewRevealDefinition;
 const editorStyleStates = new Map();
 const editorStyleFileNames = new Set(["inscape.config.json", "inscape.editor-style.json", "inscape.preview-style.json"]);
 const defaultEditorStyle = Object.freeze({
@@ -80,7 +78,7 @@ function activate(context) {
             handleStyleSupportDocumentSave(context, document);
         }),
         vscode.workspace.onDidCloseTextDocument((document) => diagnostics.delete(document.uri)),
-        vscode.window.onDidChangeTextEditorSelection((event) => handlePreviewRevealSelection(context, event)),
+        vscode.window.onDidChangeTextEditorSelection((event) => previewRevealBridge.handleSelectionChange(context, event)),
         vscode.window.onDidChangeVisibleTextEditors(() => refreshEditorStylesForVisibleEditors(context)),
         vscode.workspace.onDidChangeConfiguration((event) => {
             if (event.affectsConfiguration("inscape")) {
@@ -102,7 +100,7 @@ function activate(context) {
         vscode.commands.registerCommand("inscape.openEditorStyle", () => openEditorStyleFile()),
         vscode.commands.registerCommand("inscape.openPreviewStyle", () => openPreviewStyleFile()),
         vscode.commands.registerCommand("inscape.openQuickSyntaxGuide", () => openQuickSyntaxGuide()),
-        vscode.commands.registerCommand("inscape.revealInPreview", (payload) => revealInPreview(context, payload)),
+        vscode.commands.registerCommand("inscape.revealInPreview", (payload) => previewRevealBridge.reveal(context, payload)),
         vscode.commands.registerCommand("inscape.extractLocalization", () => exportLocalization(context)),
         vscode.commands.registerCommand("inscape.updateLocalization", () => updateLocalization(context)),
         vscode.commands.registerCommand("inscape.showHostSchemaCapabilities", () => showHostSchemaCapabilities()),
@@ -303,7 +301,7 @@ class InscapeDefinitionProvider {
 
         const previewRevealInfo = getPreviewRevealInfoAtPosition(document, position);
         if (previewRevealInfo) {
-            rememberPreviewRevealDefinition(document, previewRevealInfo);
+            previewRevealBridge.rememberDefinition(document, previewRevealInfo);
             return [createPreviewRevealDefinitionLink(document, previewRevealInfo)];
         }
 
@@ -1066,7 +1064,7 @@ class InscapePreviewEditorProvider {
         });
 
         refreshPreviewPanel(this.context, webviewPanel, document, true)
-            .then(() => applyPendingPreviewReveal(webviewPanel, document));
+            .then(() => previewRevealBridge.applyPending(webviewPanel, document));
     }
 
 }
@@ -1161,107 +1159,127 @@ async function openPreviewSource(source, webviewPanel) {
     }
 }
 
-async function revealInPreview(context, payload) {
-    if (!payload || !payload.sourcePath) {
-        return;
+class InscapePreviewRevealBridge {
+
+    constructor() {
+        this.pendingReveals = new Map();
+        this.pendingDefinition = undefined;
     }
 
-    try {
-        const document = await vscode.workspace.openTextDocument(vscode.Uri.file(payload.sourcePath));
-        if (!isInscapeDocument(document)) {
+    rememberDefinition(document, previewRevealInfo) {
+        this.pendingDefinition = {
+            sourceKey: normalizePath(document.uri.fsPath),
+            range: previewRevealInfo.range,
+            payload: previewRevealInfo.payload,
+            expiresAt: Date.now() + 1500
+        };
+    }
+
+    async reveal(context, payload) {
+        if (!payload || !payload.sourcePath) {
             return;
         }
 
-        queuePreviewReveal(document, payload);
-        await vscode.commands.executeCommand("vscode.openWith", document.uri, "inscape.preview", {
-            viewColumn: vscode.ViewColumn.Beside,
-            preserveFocus: false,
-            preview: false
-        });
-        await revealOpenPreviewPanels(context, document, payload);
-    } catch (error) {
-        vscode.window.showErrorMessage(error.message || String(error));
-    }
-}
-
-async function handlePreviewRevealSelection(context, event) {
-    if (!event || !event.textEditor || !event.selections || event.selections.length === 0) {
-        return;
-    }
-
-    const pending = pendingPreviewRevealDefinition;
-    if (!pending || pending.expiresAt < Date.now()) {
-        pendingPreviewRevealDefinition = undefined;
-        return;
-    }
-
-    if (normalizePath(event.textEditor.document.uri.fsPath) !== pending.sourceKey) {
-        return;
-    }
-
-    const kind = event.kind;
-    if (kind === vscode.TextEditorSelectionChangeKind.Keyboard) {
-        return;
-    }
-
-    const active = event.selections[0].active;
-    if (!pending.range.contains(active)) {
-        return;
-    }
-
-    pendingPreviewRevealDefinition = undefined;
-    await revealInPreview(context, pending.payload);
-}
-
-function queuePreviewReveal(document, payload) {
-    pendingPreviewReveals.set(normalizePath(document.uri.fsPath), {
-        sourcePath: payload.sourcePath,
-        line: Math.max(0, payload.line || 0),
-        character: Math.max(0, payload.character || 0),
-        length: Math.max(0, payload.length || 0)
-    });
-}
-
-async function revealOpenPreviewPanels(context, document, payload) {
-    const panels = previewPanels.get(normalizePath(document.uri.fsPath));
-    if (!panels || panels.size === 0) {
-        return false;
-    }
-
-    for (const panel of panels) {
-        await refreshPreviewPanel(context, panel, document, false);
-        postPreviewReveal(panel, payload);
-    }
-
-    pendingPreviewReveals.delete(normalizePath(document.uri.fsPath));
-    return true;
-}
-
-function applyPendingPreviewReveal(panel, document) {
-    const key = normalizePath(document.uri.fsPath);
-    const payload = pendingPreviewReveals.get(key);
-    if (!payload) {
-        return false;
-    }
-
-    postPreviewReveal(panel, payload);
-    pendingPreviewReveals.delete(key);
-    return true;
-}
-
-function postPreviewReveal(panel, payload) {
-    setTimeout(() => {
-        panel.webview.postMessage({
-            type: "revealSource",
-            source: {
-                sourcePath: payload.sourcePath,
-                line: Math.max(0, payload.line || 0),
-                character: Math.max(0, payload.character || 0),
-                length: Math.max(0, payload.length || 0)
+        try {
+            const document = await vscode.workspace.openTextDocument(vscode.Uri.file(payload.sourcePath));
+            if (!isInscapeDocument(document)) {
+                return;
             }
+
+            this.queue(document, payload);
+            await vscode.commands.executeCommand("vscode.openWith", document.uri, "inscape.preview", {
+                viewColumn: vscode.ViewColumn.Beside,
+                preserveFocus: false,
+                preview: false
+            });
+            await this.revealOpenPanels(context, document, payload);
+        } catch (error) {
+            vscode.window.showErrorMessage(error.message || String(error));
+        }
+    }
+
+    async handleSelectionChange(context, event) {
+        if (!event || !event.textEditor || !event.selections || event.selections.length === 0) {
+            return;
+        }
+
+        const pending = this.pendingDefinition;
+        if (!pending || pending.expiresAt < Date.now()) {
+            this.pendingDefinition = undefined;
+            return;
+        }
+
+        if (normalizePath(event.textEditor.document.uri.fsPath) !== pending.sourceKey) {
+            return;
+        }
+
+        const kind = event.kind;
+        if (kind === vscode.TextEditorSelectionChangeKind.Keyboard) {
+            return;
+        }
+
+        const active = event.selections[0].active;
+        if (!pending.range.contains(active)) {
+            return;
+        }
+
+        this.pendingDefinition = undefined;
+        await this.reveal(context, pending.payload);
+    }
+
+    queue(document, payload) {
+        this.pendingReveals.set(normalizePath(document.uri.fsPath), {
+            sourcePath: payload.sourcePath,
+            line: Math.max(0, payload.line || 0),
+            character: Math.max(0, payload.character || 0),
+            length: Math.max(0, payload.length || 0)
         });
-    }, 30);
+    }
+
+    async revealOpenPanels(context, document, payload) {
+        const panels = previewPanels.get(normalizePath(document.uri.fsPath));
+        if (!panels || panels.size === 0) {
+            return false;
+        }
+
+        for (const panel of panels) {
+            await refreshPreviewPanel(context, panel, document, false);
+            this.postMessage(panel, payload);
+        }
+
+        this.pendingReveals.delete(normalizePath(document.uri.fsPath));
+        return true;
+    }
+
+    applyPending(panel, document) {
+        const key = normalizePath(document.uri.fsPath);
+        const payload = this.pendingReveals.get(key);
+        if (!payload) {
+            return false;
+        }
+
+        this.postMessage(panel, payload);
+        this.pendingReveals.delete(key);
+        return true;
+    }
+
+    postMessage(panel, payload) {
+        setTimeout(() => {
+            panel.webview.postMessage({
+                type: "revealSource",
+                source: {
+                    sourcePath: payload.sourcePath,
+                    line: Math.max(0, payload.line || 0),
+                    character: Math.max(0, payload.character || 0),
+                    length: Math.max(0, payload.length || 0)
+                }
+            });
+        }, 30);
+    }
+
 }
+
+const previewRevealBridge = new InscapePreviewRevealBridge();
 
 function escapeHtml(value) {
     return String(value)
@@ -1489,7 +1507,7 @@ async function revealActiveSelectionInPreview(context) {
         length: start.line === end.line ? Math.max(0, end.character - start.character) : 0
     };
 
-    await revealInPreview(context, payload);
+    await previewRevealBridge.reveal(context, payload);
 }
 
 async function showHostSchemaCapabilities() {
@@ -2871,15 +2889,6 @@ function getPreviewRevealInfoAtPosition(document, position) {
     };
 }
 
-function rememberPreviewRevealDefinition(document, previewRevealInfo) {
-    pendingPreviewRevealDefinition = {
-        sourceKey: normalizePath(document.uri.fsPath),
-        range: previewRevealInfo.range,
-        payload: previewRevealInfo.payload,
-        expiresAt: Date.now() + 1500
-    };
-}
-
 function createPreviewRevealDefinitionLink(document, previewRevealInfo) {
     return {
         originSelectionRange: previewRevealInfo.range,
@@ -2890,7 +2899,7 @@ function createPreviewRevealDefinitionLink(document, previewRevealInfo) {
 }
 
 function findDialogueSeparatorIndex(line) {
-    const halfWidth = line.indexOf(":");
+            previewRevealBridge.rememberDefinition(document, previewRevealInfo);
     const fullWidth = line.indexOf("\uFF1A");
     if (halfWidth < 0) {
         return fullWidth;

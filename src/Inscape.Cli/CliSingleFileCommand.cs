@@ -27,7 +27,7 @@ namespace Inscape.Cli {
                 return true;
             }
 
-            CliCompileViewModel viewModel = CliCore.ToCompileViewModel(result);
+            CliCompileViewModel viewModel = CreateCompileViewModel(result);
 
             switch (command) {
                 case "check":
@@ -129,6 +129,16 @@ namespace Inscape.Cli {
 
         static CompilationResult CreateEmptyResult() {
             return new CompilationResult(new InscapeDocument(), new List<Diagnostic>());
+        }
+
+        static CliCompileViewModel CreateCompileViewModel(CompilationResult result) {
+            return new CliCompileViewModel {
+                Format = "inscape.graph-ir",
+                FormatVersion = 1,
+                Document = result.Document,
+                Diagnostics = result.Diagnostics,
+                HasErrors = result.HasErrors,
+            };
         }
 
     }
