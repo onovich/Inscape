@@ -1,7 +1,6 @@
 using System.Text.Json;
 using Inscape.Core.Compilation;
 using Inscape.Core.Localization;
-using Inscape.Adapters.UnitySample;
 using Inscape.Tooling;
 
 namespace Inscape.Cli {
@@ -11,6 +10,10 @@ namespace Inscape.Cli {
         public static int Run(string command, string rootPath, string[] args, string? outputPath, JsonSerializerOptions jsonOptions) {
             if (!CliProjectCompiler.TryCompile(rootPath, args, jsonOptions, out ToolConfigModel config, out ProjectCompilationResult result)) {
                 return 1;
+            }
+
+            if (CliUnitySampleProjectCommandRunner.TryRun(command, result, args, config, outputPath, jsonOptions, out int unitySampleExitCode)) {
+                return unitySampleExitCode;
             }
 
             switch (command) {
@@ -52,52 +55,6 @@ namespace Inscape.Cli {
                     }
 
                     CliCore.WriteOrPrint(outputPath, LocalizationCsvFlowDomain.Update(result.Graph, previousEntries));
-                    CliCore.PrintDiagnostics(result.Diagnostics);
-                    return result.HasErrors ? 1 : 0;
-
-                case "export-unity-sample-binding-template":
-                    if (!CliUnitySampleTemplateBindingReader.TryRead(args, config, out Dictionary<string, TimelineAssetBindingModel> timelineBindingsByAlias)) {
-                        return 1;
-                    }
-
-                    CliCore.WriteOrPrint(outputPath, CliUnitySampleBindingTemplateWriter.Write(result.Graph, timelineBindingsByAlias));
-                    CliCore.PrintDiagnostics(result.Diagnostics);
-                    return result.HasErrors ? 1 : 0;
-
-                case "export-unity-sample-role-template":
-                    if (!RoleNameBindingScanDomain.TryRead(CliCore.ReadOption(args, "--unity-sample-existing-role-name-csv") ?? config.UnitySample.ExistingRoleNameCsv,
-                                                         out RoleNameBindingScanResultModel roleNameScan,
-                                                         out string? roleNameError)) {
-                        Console.Error.WriteLine(roleNameError);
-                        return 1;
-                    }
-
-                    UnitySampleRoleTemplateWriter roleWriter = new UnitySampleRoleTemplateWriter();
-                    CliCore.WriteOrPrint(outputPath, roleWriter.Write(result.Graph, roleNameScan.RoleIdsBySpeaker));
-                    string? reportPath = CliCore.ReadOption(args, "--report");
-                    if (!string.IsNullOrWhiteSpace(reportPath)) {
-                        CliCore.WriteOrPrint(reportPath,
-                                             CliUnitySampleRoleTemplateReportWriter.Write(result.Graph,
-                                                                                          roleNameScan.RoleIdsBySpeaker,
-                                                                                          roleNameScan.CandidatesBySpeaker,
-                                                                                          roleNameScan.ScannedRoleNameCsv));
-                    }
-                    CliCore.PrintDiagnostics(result.Diagnostics);
-                    return result.HasErrors ? 1 : 0;
-
-                case "export-unity-sample-project":
-                    if (string.IsNullOrWhiteSpace(outputPath)) {
-                        Console.Error.WriteLine("Missing required option: -o <output-directory>");
-                        return 1;
-                    }
-
-                    UnitySampleProjectExporter exporter = new UnitySampleProjectExporter();
-                    if (!CliUnitySampleExportOptionsReader.TryRead(args, config, out UnitySampleExportOptions options)) {
-                        return 1;
-                    }
-
-                    UnitySampleExportResult export = exporter.Export(result, options);
-                    CliUnitySampleExportWriter.Write(outputPath, export, jsonOptions);
                     CliCore.PrintDiagnostics(result.Diagnostics);
                     return result.HasErrors ? 1 : 0;
 

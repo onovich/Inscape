@@ -49,6 +49,7 @@
 - [x] 按 [编码与命名规范](coding-conventions.md) 拆分测试文件，降低 `tests/Inscape.Tests/TestCore.cs` 的阅读成本，但不改变测试语义。
 - [x] 按 command 职责拆分 CLI 入口，避免 `src/Inscape.Cli/CliCore.cs` 继续承担过多命令分发和业务编排；已完成配置读取、顶层元命令、单文件命令和项目级命令分支拆分，并将项目 `.inscape` 源扫描/读取/override 收口到 `CliDslSourceLoader`、预览样式读取收口到 `CliPreviewStyleLoader`、项目命令共享编译前置流程收口到 `CliProjectCompiler`、单文件命令共享编译前置流程收口到 `CliSingleFileCompiler`、UnitySample 项目命令辅助逻辑收口到 `CliUnitySampleSupport`，`CliCore` 仅保留入口分发与共享基础输出辅助。这些名字当前只视为过渡命名，后续应按 ADR 0010 继续目录化并收敛为具体主语 + 角色。
 	- [x] 已继续收口 UnitySample 命令输出职责：将导出目录写盘拆到 `CliUnitySampleExportWriter`，将 role template report 输出拆到 `CliUnitySampleRoleTemplateReportWriter`，`CliUnitySampleSupport` 不再混放输出 writer。
+	- [x] 已继续收口 UnitySample 项目级命令分支：`CliProjectCommandRunner` 不再直接编排 `export-unity-sample-binding-template`、`export-unity-sample-role-template`、`export-unity-sample-project`，改为委托 `CliUnitySampleProjectCommandRunner`。
 - [ ] 抽出 `Tooling` 中间层：优先上提项目扫描、配置读取、预览构建、本地化流程、HostSchema / HostBinding 流程，降低 `Cli` 的共享业务负担。
 	- [x] 已完成第一刀：创建 `src/Inscape.Tooling/`，将 ToolConfig 配置模型与读取/路径归一化逻辑迁出 `Inscape.Cli`，`Cli` 仅保留 `--config` 参数解析和错误输出适配。
 	- [x] 已完成第二刀：将 `.inscape` 项目源发现、目录排除、内容读取与 override 应用逻辑迁出 `Inscape.Cli`，`Cli` 仅保留 `--override <source> <content>` 参数解析。
