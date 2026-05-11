@@ -1055,9 +1055,23 @@ class InscapeWorkspaceHostBindingProvider {
         const item = new vscode.CompletionItem(binding.alias, vscode.CompletionItemKind.Reference);
         item.insertText = binding.alias;
         item.detail = this.createDetail(binding);
-        item.documentation = createHostBindingMarkdown(binding);
+        item.documentation = this.createMarkdown(binding);
         item.sortText = (binding.sourceRank || 0) + "_" + binding.alias;
         return item;
+    }
+
+    createHoverMarkdown(binding) {
+        return this.createMarkdown(binding);
+    }
+
+    createMissingHoverMarkdown(binding) {
+        const markdown = new vscode.MarkdownString(undefined, true);
+        markdown.isTrusted = false;
+        markdown.appendMarkdown("**Inscape Host Binding** `" + binding.kind + ":" + binding.alias + "`\n\n");
+        markdown.appendMarkdown("This looks like a host bridge hint, but no mapping row or scanned workspace occurrence was found yet.\n\n");
+        markdown.appendMarkdown("Add it to `inscape.config.json` or the binding CSV to make Ctrl+Click resolve it.\n\n");
+        markdown.appendMarkdown("Source: `" + formatDisplayPath(binding.sourcePath) + "`");
+        return markdown;
     }
 
     async readConfiguredBindings(document) {
@@ -1195,9 +1209,116 @@ class InscapeWorkspaceHostBindingProvider {
         return pieces.join(" / ");
     }
 
+    createMarkdown(binding) {
+        const markdown = new vscode.MarkdownString(undefined, true);
+        markdown.isTrusted = false;
+        markdown.appendMarkdown("**Inscape Host Binding** `" + binding.kind + ":" + binding.alias + "`\n\n");
+        markdown.appendMarkdown("This is a host bridge hint. Ctrl+Click opens the configured mapping row or the first workspace occurrence.\n\n");
+        this.appendField(markdown, "UnitySample id", binding.unitySampleId);
+        this.appendField(markdown, "Addressable", binding.addressableKey);
+        this.appendField(markdown, "Asset", binding.assetPath);
+        this.appendField(markdown, "Unity guid", binding.unityGuid);
+        markdown.appendMarkdown("Source: `" + formatDisplayPath(binding.sourcePath) + "`");
+        return markdown;
+    }
+
+    appendField(markdown, label, value) {
+        if (!value) {
+            return;
+        }
+
+        markdown.appendMarkdown(label + ": `" + value + "`\n\n");
+    }
+
 }
 
 const workspaceHostBindingProvider = new InscapeWorkspaceHostBindingProvider();
+
+class InscapeWorkspaceMetadataProvider {
+
+    getDirectiveAtPosition(document, position) {
+        const line = document.lineAt(position).text;
+        const match = /^\s*@([A-Za-z_][A-Za-z0-9_.-]*)(?:\s+([^\s]+))?/.exec(line);
+        if (!match) {
+            return undefined;
+        }
+
+        const kind = match[1].trim();
+        const value = match[2] ? match[2].trim() : "";
+        const start = line.indexOf("@" + match[1]);
+        const end = line.trimEnd().length;
+
+        if (position.character >= start && position.character <= Math.max(start, end)) {
+            return {
+                kind,
+                value,
+                raw: line.trim(),
+                range: new vscode.Range(position.line, start, position.line, Math.max(start, end))
+            };
+        }
+
+        return undefined;
+    }
+
+    async collectWorkspaceReferences(document, metadataInfo) {
+        const references = [];
+        const sources = await collectWorkspaceTextSources(document);
+        for (const source of sources) {
+            this.collectReferencesFromText(source.text, source.sourcePath, metadataInfo, references);
+        }
+        return references;
+    }
+
+    createHoverMarkdown(metadataInfo) {
+        const markdown = new vscode.MarkdownString(undefined, true);
+        markdown.isTrusted = false;
+        markdown.appendMarkdown("**Inscape Metadata** `" + metadataInfo.raw + "`\n\n");
+
+        if (metadataInfo.kind === "entry") {
+            markdown.appendMarkdown("Marks the entry node for preview / project startup. It does not change dialogue text; it tells the compiler and preview where to begin.\n\n");
+        } else if (metadataInfo.kind === "scene") {
+            markdown.appendMarkdown("Scene metadata. Use it to label or group a block for host-side logic, asset loading, or authoring conventions.\n\n");
+        } else {
+            markdown.appendMarkdown("Generic `@` metadata line. Inscape keeps these as lightweight author-intent markers so hosts and adapters can interpret them later.\n\n");
+        }
+
+        if (metadataInfo.value) {
+            markdown.appendMarkdown("Value: `" + metadataInfo.value + "`\n\n");
+        }
+
+        markdown.appendMarkdown("Tip: `@timeline ...` is a host binding hint; `[` `kind: alias` `]` is the inline equivalent.");
+        return markdown;
+    }
+
+    collectReferencesFromText(text, sourcePath, metadataInfo, references) {
+        const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+        for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
+            const line = lines[lineIndex];
+            const match = /^\s*@([A-Za-z_][A-Za-z0-9_.-]*)(?:\s+([^\s]+))?/.exec(line);
+            if (!match) {
+                continue;
+            }
+
+            const kind = match[1].trim();
+            const value = match[2] ? match[2].trim() : "";
+            const raw = line.trim();
+            if (raw !== metadataInfo.raw && (kind !== metadataInfo.kind || value !== metadataInfo.value)) {
+                continue;
+            }
+
+            const start = line.indexOf("@" + kind);
+            references.push({
+                sourcePath,
+                line: lineIndex,
+                character: Math.max(0, start),
+                length: Math.max(line.trimEnd().length - Math.max(0, start), 1)
+            });
+        }
+    }
+
+}
+
+const workspaceMetadataProvider = new InscapeWorkspaceMetadataProvider();
 
 function activate(context) {
     outputChannel = vscode.window.createOutputChannel("Inscape");
@@ -1435,9 +1556,9 @@ class InscapeDefinitionProvider {
             }
         }
 
-        const metadataInfo = getMetadataDirectiveAtPosition(document, position);
+        const metadataInfo = workspaceMetadataProvider.getDirectiveAtPosition(document, position);
         if (metadataInfo) {
-            const locations = await collectWorkspaceMetadataReferences(document, metadataInfo);
+            const locations = await workspaceMetadataProvider.collectWorkspaceReferences(document, metadataInfo);
             if (locations.length > 0) {
                 return uniqueLocations(locations.map((item) => createLocation(item)));
             }
@@ -1530,19 +1651,19 @@ class InscapeHoverProvider {
             const bindings = await workspaceHostBindingProvider.collectWorkspaceBindings(document, hostBindingInfo.kind);
             const binding = bindings.find((candidate) => candidate.alias === hostBindingInfo.alias);
             if (binding) {
-                return new vscode.Hover(createHostBindingHoverMarkdown(binding), hostBindingInfo.range);
+                return new vscode.Hover(workspaceHostBindingProvider.createHoverMarkdown(binding), hostBindingInfo.range);
             }
 
-            return new vscode.Hover(createHostBindingMissingMarkdown({
+            return new vscode.Hover(workspaceHostBindingProvider.createMissingHoverMarkdown({
                 kind: hostBindingInfo.kind,
                 alias: hostBindingInfo.alias,
                 sourcePath: document.uri.fsPath
             }), hostBindingInfo.range);
         }
 
-        const metadataInfo = getMetadataDirectiveAtPosition(document, position);
+        const metadataInfo = workspaceMetadataProvider.getDirectiveAtPosition(document, position);
         if (metadataInfo) {
-            return new vscode.Hover(createMetadataHoverMarkdown(metadataInfo), metadataInfo.range);
+            return new vscode.Hover(workspaceMetadataProvider.createHoverMarkdown(metadataInfo), metadataInfo.range);
         }
 
         const declaredNode = getNodeDeclarationAtPosition(document, position);
@@ -2569,41 +2690,6 @@ function getHostBindingCompletionContext(linePrefix) {
     return match ? { kind: normalizeHostBindingKind(match[1]) } : undefined;
 }
 
-async function collectWorkspaceMetadataReferences(document, metadataInfo) {
-    const references = [];
-    const sources = await collectWorkspaceTextSources(document);
-    for (const source of sources) {
-        collectMetadataReferencesFromText(source.text, source.sourcePath, metadataInfo, references);
-    }
-    return references;
-}
-
-function collectMetadataReferencesFromText(text, sourcePath, metadataInfo, references) {
-    const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
-    for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
-        const line = lines[lineIndex];
-        const match = /^\s*@([A-Za-z_][A-Za-z0-9_.-]*)(?:\s+([^\s]+))?/.exec(line);
-        if (!match) {
-            continue;
-        }
-
-        const kind = match[1].trim();
-        const value = match[2] ? match[2].trim() : "";
-        const raw = line.trim();
-        if (raw !== metadataInfo.raw && (kind !== metadataInfo.kind || value !== metadataInfo.value)) {
-            continue;
-        }
-
-        const start = line.indexOf("@" + kind);
-        references.push({
-            sourcePath,
-            line: lineIndex,
-            character: Math.max(0, start),
-            length: Math.max(line.trimEnd().length - Math.max(0, start), 1)
-        });
-    }
-}
-
 function normalizeHostBindingKind(kind) {
     if (kind === "timeline" || /^timeline\.(?:talking|node)\.(?:enter|exit)$/.test(kind)) {
         return "timeline";
@@ -2997,86 +3083,6 @@ function createSpeakerHoverMarkdown(speaker) {
 
     markdown.appendMarkdown("Source: `" + formatDisplayPath(speaker.sourcePath) + "`");
     return markdown;
-}
-
-function createHostBindingHoverMarkdown(binding) {
-    return createHostBindingMarkdown(binding);
-}
-
-function createHostBindingMarkdown(binding) {
-    const markdown = new vscode.MarkdownString(undefined, true);
-    markdown.isTrusted = false;
-    markdown.appendMarkdown("**Inscape Host Binding** `" + binding.kind + ":" + binding.alias + "`\n\n");
-    markdown.appendMarkdown("This is a host bridge hint. Ctrl+Click opens the configured mapping row or the first workspace occurrence.\n\n");
-    appendHostBindingField(markdown, "UnitySample id", binding.unitySampleId);
-    appendHostBindingField(markdown, "Addressable", binding.addressableKey);
-    appendHostBindingField(markdown, "Asset", binding.assetPath);
-    appendHostBindingField(markdown, "Unity guid", binding.unityGuid);
-    markdown.appendMarkdown("Source: `" + formatDisplayPath(binding.sourcePath) + "`");
-    return markdown;
-}
-
-function createHostBindingMissingMarkdown(binding) {
-    const markdown = new vscode.MarkdownString(undefined, true);
-    markdown.isTrusted = false;
-    markdown.appendMarkdown("**Inscape Host Binding** `" + binding.kind + ":" + binding.alias + "`\n\n");
-    markdown.appendMarkdown("This looks like a host bridge hint, but no mapping row or scanned workspace occurrence was found yet.\n\n");
-    markdown.appendMarkdown("Add it to `inscape.config.json` or the binding CSV to make Ctrl+Click resolve it.\n\n");
-    markdown.appendMarkdown("Source: `" + formatDisplayPath(binding.sourcePath) + "`");
-    return markdown;
-}
-
-function createMetadataHoverMarkdown(metadataInfo) {
-    const markdown = new vscode.MarkdownString(undefined, true);
-    markdown.isTrusted = false;
-    markdown.appendMarkdown("**Inscape Metadata** `" + metadataInfo.raw + "`\n\n");
-
-    if (metadataInfo.kind === "entry") {
-        markdown.appendMarkdown("Marks the entry node for preview / project startup. It does not change dialogue text; it tells the compiler and preview where to begin.\n\n");
-    } else if (metadataInfo.kind === "scene") {
-        markdown.appendMarkdown("Scene metadata. Use it to label or group a block for host-side logic, asset loading, or authoring conventions.\n\n");
-    } else {
-        markdown.appendMarkdown("Generic `@` metadata line. Inscape keeps these as lightweight author-intent markers so hosts and adapters can interpret them later.\n\n");
-    }
-
-    if (metadataInfo.value) {
-        markdown.appendMarkdown("Value: `" + metadataInfo.value + "`\n\n");
-    }
-
-    markdown.appendMarkdown("Tip: `@timeline ...` is a host binding hint; `[` `kind: alias` `]` is the inline equivalent.");
-    return markdown;
-}
-
-function appendHostBindingField(markdown, label, value) {
-    if (!value) {
-        return;
-    }
-
-    markdown.appendMarkdown(label + ": `" + value + "`\n\n");
-}
-
-function getMetadataDirectiveAtPosition(document, position) {
-    const line = document.lineAt(position).text;
-    const match = /^\s*@([A-Za-z_][A-Za-z0-9_.-]*)(?:\s+([^\s]+))?/.exec(line);
-    if (!match) {
-        return undefined;
-    }
-
-    const kind = match[1].trim();
-    const value = match[2] ? match[2].trim() : "";
-    const start = line.indexOf("@" + match[1]);
-    const end = line.trimEnd().length;
-
-    if (position.character >= start && position.character <= Math.max(start, end)) {
-        return {
-            kind,
-            value,
-            raw: line.trim(),
-            range: new vscode.Range(position.line, start, position.line, Math.max(start, end))
-        };
-    }
-
-    return undefined;
 }
 
 function createLocation(item) {
