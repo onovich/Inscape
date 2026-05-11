@@ -34,9 +34,14 @@ namespace Inscape.Cli {
 
             string? bindingMapPath = CliCore.ReadOption(args, "--unity-sample-binding-map") ?? config.UnitySample.BindingMap;
             if (!string.IsNullOrWhiteSpace(bindingMapPath)) {
-                if (!TryReadUnitySampleBindingMap(bindingMapPath, options)) {
+                if (!HostBindingMapReaderDomain.TryRead(bindingMapPath,
+                                                        out List<HostBindingMapEntryModel> bindingEntries,
+                                                        out string? bindingError)) {
+                    Console.Error.WriteLine(bindingError);
                     return false;
                 }
+
+                AddUnitySampleBindingEntries(options, bindingEntries);
             }
 
             return TryReadReservedTalkingIds(args, config, options);
@@ -221,69 +226,19 @@ namespace Inscape.Cli {
             return true;
         }
 
-        static bool TryReadUnitySampleBindingMap(string bindingMapPath, UnitySampleExportOptions options) {
-            if (!File.Exists(bindingMapPath)) {
-                Console.Error.WriteLine("UnitySample binding map not found: " + bindingMapPath);
-                return false;
-            }
-
-            string[] lines = File.ReadAllLines(bindingMapPath, Encoding.UTF8);
-            for (int i = 0; i < lines.Length; i += 1) {
-                string line = lines[i].Trim();
-                if (line.Length == 0 || line.StartsWith("#", StringComparison.Ordinal)) {
-                    continue;
-                }
-
-                List<string> fields = ParseCsvRow(lines[i]);
-                if (IsUnitySampleBindingHeader(fields)) {
-                    continue;
-                }
-
-                if (fields.Count != 6) {
-                    Console.Error.WriteLine("Invalid UnitySample binding map row at line " + (i + 1) + ": " + lines[i]);
-                    return false;
-                }
-
-                string kind = fields[0].Trim();
-                string alias = fields[1].Trim();
-                string unitySampleIdText = fields[2].Trim();
-                string unityGuid = fields[3].Trim();
-                string addressableKey = fields[4].Trim();
-                string assetPath = fields[5].Trim();
-
-                if (kind.Length == 0 || alias.Length == 0) {
-                    Console.Error.WriteLine("Invalid UnitySample binding map row at line " + (i + 1) + ": kind and alias are required.");
-                    return false;
-                }
-
-                int? unitySampleId = null;
-                if (unitySampleIdText.Length > 0) {
-                    if (!int.TryParse(unitySampleIdText, out int parsedUnitySampleId)) {
-                        Console.Error.WriteLine("Invalid UnitySample binding map row at line " + (i + 1) + ": unitySampleId must be an integer.");
-                        return false;
-                    }
-                    unitySampleId = parsedUnitySampleId;
-                }
-
-                if (unitySampleId == null
-                    && unityGuid.Length == 0
-                    && addressableKey.Length == 0
-                    && assetPath.Length == 0) {
-                    Console.Error.WriteLine("Invalid UnitySample binding map row at line " + (i + 1) + ": at least one binding target is required.");
-                    return false;
-                }
-
+        static void AddUnitySampleBindingEntries(UnitySampleExportOptions options,
+                                                 IReadOnlyList<HostBindingMapEntryModel> bindingEntries) {
+            for (int i = 0; i < bindingEntries.Count; i += 1) {
+                HostBindingMapEntryModel entry = bindingEntries[i];
                 options.HostBindings.Add(new UnitySampleHostBinding {
-                    Kind = kind,
-                    Alias = alias,
-                    UnitySampleId = unitySampleId,
-                    UnityGuid = unityGuid,
-                    AddressableKey = addressableKey,
-                    AssetPath = assetPath,
+                    Kind = entry.Kind,
+                    Alias = entry.Alias,
+                    UnitySampleId = entry.TargetId,
+                    UnityGuid = entry.UnityGuid,
+                    AddressableKey = entry.AddressableKey,
+                    AssetPath = entry.AssetPath,
                 });
             }
-
-            return true;
         }
 
         static void AddUnitySampleRoleCandidate(Dictionary<string, List<UnitySampleRoleNameCandidate>> candidatesBySpeaker,
@@ -438,16 +393,6 @@ namespace Inscape.Cli {
             string dotted = value.Replace('_', '.').Replace('-', '.');
             candidates.Add(dotted);
             candidates.Add(dotted.ToLowerInvariant());
-        }
-
-        static bool IsUnitySampleBindingHeader(List<string> fields) {
-            return fields.Count == 6
-                && fields[0].Equals("kind", StringComparison.OrdinalIgnoreCase)
-                && fields[1].Equals("alias", StringComparison.OrdinalIgnoreCase)
-                && fields[2].Equals("unitySampleId", StringComparison.OrdinalIgnoreCase)
-                && fields[3].Equals("unityGuid", StringComparison.OrdinalIgnoreCase)
-                && fields[4].Equals("addressableKey", StringComparison.OrdinalIgnoreCase)
-                && fields[5].Equals("assetPath", StringComparison.OrdinalIgnoreCase);
         }
 
         static List<string> ParseCsvRow(string line) {
