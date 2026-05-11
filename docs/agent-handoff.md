@@ -32,6 +32,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - 本轮会话已继续按 ADR 0010 收敛 UnitySample 命令命名：`CliUnitySampleSupport` 已退出源码，拆为 `CliUnitySampleExportOptionsReader` 与 `CliUnitySampleTemplateBindingReader`。
 - 本轮会话已继续收敛 binding-template 命令的适配边界：`CliUnitySampleTemplateBindingReader` 现在只返回 `TimelineAssetBindingModel`，最后一层 UnitySample 类型适配已拆到 `CliUnitySampleBindingTemplateWriter`。
 - 本轮会话已继续收口 UnitySample 项目级命令分支：`CliProjectCommandRunner` 不再直接编排三条 UnitySample 项目级命令，改为委托 `CliUnitySampleProjectCommandRunner`。
+- 本轮会话已继续压薄 binding-template 项目级命令编排：`CliUnitySampleProjectCommandRunner` 不再直接承载 binding template 读取、CSV 输出和诊断输出，相关逻辑已迁入 `CliUnitySampleBindingTemplateCommandRunner`。
 - 本轮会话已继续压薄 role-template 项目级命令编排：`CliUnitySampleProjectCommandRunner` 不再直接承载 role template 读取、CSV 输出和 report 输出，相关逻辑已迁入 `CliUnitySampleRoleTemplateCommandRunner`。
 - 本轮会话已继续压薄 project-export 项目级命令编排：`CliUnitySampleProjectCommandRunner` 不再直接承载导出参数校验、导出执行和写盘输出，相关逻辑已迁入 `CliUnitySampleProjectExportCommandRunner`。
 - 本轮会话确认：VSCode 长期方向是“薄扩展前端 + C# LanguageServer”，而不是继续长期借道 CLI 承载重语义能力。
@@ -62,6 +63,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - `Cli` 的 UnitySample 命令辅助已进一步收敛：输入读取侧当前落在 `CliUnitySampleExportOptionsReader` 与 `CliUnitySampleTemplateBindingReader`，输出侧当前落在 `CliUnitySampleExportWriter` 与 `CliUnitySampleRoleTemplateReportWriter`。
 - `Cli` 的 binding-template 命令当前也已形成更清楚的 reader / writer 分工：`CliUnitySampleTemplateBindingReader` 负责读取 Tooling 模型，`CliUnitySampleBindingTemplateWriter` 负责最后一层 UnitySample 类型适配与 CSV 输出。
 - `Cli` 的 UnitySample 项目级命令当前也已形成更清楚的入口边界：`CliProjectCommandRunner` 只做委托，具体三条项目级命令由 `CliUnitySampleProjectCommandRunner` 承载。
+- `Cli` 的 binding-template 项目级命令当前也已形成更清楚的局部边界：`CliUnitySampleProjectCommandRunner` 只做分派，具体 binding template 读取、主 CSV 输出和诊断输出由 `CliUnitySampleBindingTemplateCommandRunner` 承载。
 - `Cli` 的 role-template 项目级命令当前也已形成更清楚的局部边界：`CliUnitySampleProjectCommandRunner` 只做分派，具体 role template 读取、主 CSV 输出和 report 输出由 `CliUnitySampleRoleTemplateCommandRunner` 承载。
 - `Cli` 的 project-export 项目级命令当前也已形成更清楚的局部边界：`CliUnitySampleProjectCommandRunner` 只做分派，具体导出参数校验、导出执行和写盘输出由 `CliUnitySampleProjectExportCommandRunner` 承载。
 - `VSCode`：编辑器入口层；当前主要落在 `tools/vscode-inscape/extension.js`。
@@ -154,6 +156,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - 2026-05-11 已继续执行命名收敛：原 `CliUnitySampleSupport` 已退出源码，拆为 `CliUnitySampleExportOptionsReader` 与 `CliUnitySampleTemplateBindingReader` 两个具体 reader。这一刀同样通过了 `dotnet build Inscape.slnx --no-restore` 和 `dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj --no-build`。
 - 2026-05-11 已继续执行 UnitySample binding-template 收口：`CliUnitySampleTemplateBindingReader` 现在只返回 `TimelineAssetBindingModel`，最后一层 UnitySample 类型适配已拆到 `CliUnitySampleBindingTemplateWriter`。这一刀同样通过了 `dotnet build Inscape.slnx --no-restore` 和 `dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj --no-build`。
 - 2026-05-11 已继续执行 UnitySample 项目级命令收口：`CliProjectCommandRunner` 当前不再直接编排三条 UnitySample 项目级命令，相关逻辑已迁入 `CliUnitySampleProjectCommandRunner`。这一刀同样通过了 `dotnet build Inscape.slnx --no-restore` 和 `dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj --no-build`。
+- 2026-05-11 已继续执行 UnitySample binding-template 项目级命令收口：`CliUnitySampleProjectCommandRunner` 当前不再直接承载 binding template 读取、主 CSV 输出与诊断输出，相关逻辑已迁入 `CliUnitySampleBindingTemplateCommandRunner`。这一刀同样通过了 `dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj`。
 - 2026-05-11 已继续执行 UnitySample role-template 项目级命令收口：`CliUnitySampleProjectCommandRunner` 当前不再直接承载 role template 读取、主 CSV 输出与 report 输出，相关逻辑已迁入 `CliUnitySampleRoleTemplateCommandRunner`。这一刀同样通过了 `dotnet build Inscape.slnx --no-restore` 和 `dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj --no-build`。
 - 2026-05-11 已继续执行 UnitySample project-export 项目级命令收口：`CliUnitySampleProjectCommandRunner` 当前不再直接承载导出参数校验、导出执行与写盘输出，相关逻辑已迁入 `CliUnitySampleProjectExportCommandRunner`。这一刀同样通过了 `dotnet build Inscape.slnx --no-restore` 和 `dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj`。
 

@@ -1,5 +1,4 @@
 using System.Text.Json;
-using Inscape.Adapters.UnitySample;
 using Inscape.Core.Compilation;
 using Inscape.Tooling;
 
@@ -16,14 +15,7 @@ namespace Inscape.Cli {
                                     out int exitCode) {
             switch (command) {
                 case "export-unity-sample-binding-template":
-                    if (!CliUnitySampleTemplateBindingReader.TryRead(args, config, out Dictionary<string, TimelineAssetBindingModel> timelineBindingsByAlias)) {
-                        exitCode = 1;
-                        return true;
-                    }
-
-                    CliCore.WriteOrPrint(outputPath, CliUnitySampleBindingTemplateWriter.Write(result.Graph, timelineBindingsByAlias));
-                    CliCore.PrintDiagnostics(result.Diagnostics);
-                    exitCode = result.HasErrors ? 1 : 0;
+                    exitCode = CliUnitySampleBindingTemplateCommandRunner.Run(result, args, config, outputPath);
                     return true;
 
                 case "export-unity-sample-role-template":
