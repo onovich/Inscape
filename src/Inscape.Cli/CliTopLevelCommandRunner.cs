@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Inscape.Tooling;
 
 namespace Inscape.Cli {
 
@@ -31,7 +32,7 @@ namespace Inscape.Cli {
             }
 
             if (args[0] == "export-host-schema-template") {
-                CliCore.WriteOrPrint(CliCore.ReadOption(args, "-o"), CliHostSchemaTemplateWriter.Write(jsonOptions));
+                CliCore.WriteOrPrint(CliCore.ReadOption(args, "-o"), HostSchemaTemplateWriterDomain.Write(jsonOptions));
                 exitCode = 0;
                 return true;
             }

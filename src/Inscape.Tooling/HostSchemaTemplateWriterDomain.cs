@@ -1,19 +1,19 @@
 using System.Text.Json;
 
-namespace Inscape.Cli {
+namespace Inscape.Tooling {
 
-    static class CliHostSchemaTemplateWriter {
+    public static class HostSchemaTemplateWriterDomain {
 
         public static string Write(JsonSerializerOptions jsonOptions) {
-            CliHostSchemaTemplate template = new CliHostSchemaTemplate {
-                Queries = new List<CliHostSchemaQuery> {
-                    new CliHostSchemaQuery {
+            HostSchemaTemplateModel template = new HostSchemaTemplateModel {
+                Queries = new List<HostSchemaQueryModel> {
+                    new HostSchemaQueryModel {
                         Name = "has_item",
                         Description = "Pure query example. The DSL may reference it later, but the host owns execution.",
                         ReturnType = "bool",
                         IsAsync = false,
-                        Parameters = new List<CliHostSchemaParameter> {
-                            new CliHostSchemaParameter {
+                        Parameters = new List<HostSchemaParameterModel> {
+                            new HostSchemaParameterModel {
                                 Name = "itemId",
                                 Type = "string",
                                 Required = true,
@@ -22,14 +22,14 @@ namespace Inscape.Cli {
                         }
                     }
                 },
-                Events = new List<CliHostSchemaEvent> {
-                    new CliHostSchemaEvent {
+                Events = new List<HostSchemaEventModel> {
+                    new HostSchemaEventModel {
                         Name = "open_window",
                         Description = "Host event example. Inscape only records the intent; the host decides behavior.",
                         Delivery = "fire-and-forget",
                         SideEffects = true,
-                        Parameters = new List<CliHostSchemaParameter> {
-                            new CliHostSchemaParameter {
+                        Parameters = new List<HostSchemaParameterModel> {
+                            new HostSchemaParameterModel {
                                 Name = "windowId",
                                 Type = "string",
                                 Required = true,
@@ -45,19 +45,19 @@ namespace Inscape.Cli {
 
     }
 
-    sealed class CliHostSchemaTemplate {
+    public sealed class HostSchemaTemplateModel {
 
         public string Format { get; set; } = "inscape.host-schema";
 
         public int FormatVersion { get; set; } = 1;
 
-        public List<CliHostSchemaQuery> Queries { get; set; } = new List<CliHostSchemaQuery>();
+        public List<HostSchemaQueryModel> Queries { get; set; } = new List<HostSchemaQueryModel>();
 
-        public List<CliHostSchemaEvent> Events { get; set; } = new List<CliHostSchemaEvent>();
+        public List<HostSchemaEventModel> Events { get; set; } = new List<HostSchemaEventModel>();
 
     }
 
-    sealed class CliHostSchemaQuery {
+    public sealed class HostSchemaQueryModel {
 
         public string Name { get; set; } = string.Empty;
 
@@ -67,11 +67,11 @@ namespace Inscape.Cli {
 
         public bool IsAsync { get; set; }
 
-        public List<CliHostSchemaParameter> Parameters { get; set; } = new List<CliHostSchemaParameter>();
+        public List<HostSchemaParameterModel> Parameters { get; set; } = new List<HostSchemaParameterModel>();
 
     }
 
-    sealed class CliHostSchemaEvent {
+    public sealed class HostSchemaEventModel {
 
         public string Name { get; set; } = string.Empty;
 
@@ -81,11 +81,11 @@ namespace Inscape.Cli {
 
         public bool SideEffects { get; set; }
 
-        public List<CliHostSchemaParameter> Parameters { get; set; } = new List<CliHostSchemaParameter>();
+        public List<HostSchemaParameterModel> Parameters { get; set; } = new List<HostSchemaParameterModel>();
 
     }
 
-    sealed class CliHostSchemaParameter {
+    public sealed class HostSchemaParameterModel {
 
         public string Name { get; set; } = string.Empty;
 
