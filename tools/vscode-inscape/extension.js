@@ -626,6 +626,62 @@ const hostSchemaCommand = new InscapeHostSchemaCommand();
 
 class InscapeWorkspaceNodeProvider {
 
+    getDeclaredNodeAtPosition(document, position) {
+        const line = document.lineAt(position).text;
+        const match = /^\s*::\s+([a-z][a-z0-9_-]*(?:\.[a-z][a-z0-9_-]*)*)\s*$/.exec(line);
+        if (!match) {
+            return undefined;
+        }
+
+        const start = line.indexOf(match[1]);
+        const end = start + match[1].length;
+        if (position.character >= start && position.character <= end) {
+            return {
+                name: match[1],
+                range: new vscode.Range(position.line, start, position.line, end)
+            };
+        }
+
+        return undefined;
+    }
+
+    getDeclaredNodeNameAtPosition(document, position) {
+        const node = this.getDeclaredNodeAtPosition(document, position);
+        return node ? node.name : undefined;
+    }
+
+    getJumpTargetAtPosition(document, position) {
+        const target = this.getJumpTargetInfoAtPosition(document, position);
+        return target ? target.name : undefined;
+    }
+
+    getJumpTargetInfoAtPosition(document, position) {
+        const line = document.lineAt(position).text;
+        if (!isJumpReferenceLine(line)) {
+            return undefined;
+        }
+
+        const jumpPattern = /->\s*([A-Za-z0-9_.-]*)/g;
+        let match = jumpPattern.exec(line);
+
+        while (match) {
+            const target = match[1];
+            const targetStart = match.index + match[0].length - target.length;
+            const targetEnd = targetStart + target.length;
+            if (position.character >= targetStart && position.character <= targetEnd) {
+                return target.length > 0
+                    ? {
+                        name: target,
+                        range: new vscode.Range(position.line, targetStart, position.line, targetEnd)
+                    }
+                    : undefined;
+            }
+            match = jumpPattern.exec(line);
+        }
+
+        return undefined;
+    }
+
     async collectWorkspaceNodes(document) {
         const nodes = [];
         const seen = new Set();
@@ -762,11 +818,51 @@ class InscapeWorkspaceNodeProvider {
         map.get(key).push(value);
     }
 
+    createDeclarationHoverMarkdown(nodeName) {
+        const markdown = new vscode.MarkdownString(undefined, true);
+        markdown.isTrusted = false;
+        markdown.appendMarkdown("**Inscape Dialogue Block** `" + nodeName + "`\n\n");
+        markdown.appendMarkdown("A named dialogue block. Its CodeLens shows incoming references.");
+        return markdown;
+    }
+
+    createJumpTargetHoverMarkdown(nodeName) {
+        const markdown = new vscode.MarkdownString(undefined, true);
+        markdown.isTrusted = false;
+        markdown.appendMarkdown("**Inscape Dialogue Block Reference** `" + nodeName + "`\n\n");
+        markdown.appendMarkdown("Ctrl+Click to jump to this dialogue block.");
+        return markdown;
+    }
+
 }
 
 const workspaceNodeProvider = new InscapeWorkspaceNodeProvider();
 
 class InscapeWorkspaceSpeakerProvider {
+
+    getSpeakerAtPosition(document, position) {
+        const line = document.lineAt(position).text;
+        const match = /^\s*([^:\uFF1A]+?)[ \t]*[:\uFF1A]/.exec(line);
+        if (!match) {
+            return undefined;
+        }
+
+        const name = match[1].trim();
+        if (!isLikelyDialogueSpeaker(name)) {
+            return undefined;
+        }
+
+        const start = line.indexOf(match[1]);
+        const end = start + match[1].length;
+        if (position.character >= start && position.character <= end) {
+            return {
+                name,
+                range: new vscode.Range(position.line, start, position.line, end)
+            };
+        }
+
+        return undefined;
+    }
 
     async collectWorkspaceSpeakers(document) {
         const speakers = [];
@@ -824,6 +920,21 @@ class InscapeWorkspaceSpeakerProvider {
         item.documentation = speaker.sourcePath;
         item.sortText = (speaker.sourceRank || 0) + "_" + speaker.name;
         return item;
+    }
+
+    createHoverMarkdown(speaker) {
+        const markdown = new vscode.MarkdownString(undefined, true);
+        markdown.isTrusted = false;
+        markdown.appendMarkdown("**Inscape Speaker** `" + speaker.name + "`\n\n");
+
+        if (speaker.roleId) {
+            markdown.appendMarkdown("UnitySample roleId: `" + speaker.roleId + "`\n\n");
+        } else {
+            markdown.appendMarkdown("UnitySample roleId: unbound\n\n");
+        }
+
+        markdown.appendMarkdown("Source: `" + formatDisplayPath(speaker.sourcePath) + "`");
+        return markdown;
     }
 
     async readConfiguredRoleMapSpeakerRows(document) {
@@ -1532,7 +1643,7 @@ class InscapeDefinitionProvider {
             return undefined;
         }
 
-        const speakerInfo = getDialogueSpeakerAtPosition(document, position);
+        const speakerInfo = workspaceSpeakerProvider.getSpeakerAtPosition(document, position);
         if (speakerInfo) {
             const definitions = await workspaceSpeakerProvider.collectConfiguredDefinitions(document, speakerInfo.name);
             if (definitions.length > 0) {
@@ -1570,7 +1681,7 @@ class InscapeDefinitionProvider {
             return [createPreviewRevealDefinitionLink(document, previewRevealInfo)];
         }
 
-        const target = getJumpTargetAtPosition(document, position);
+        const target = workspaceNodeProvider.getJumpTargetAtPosition(document, position);
         if (!target) {
             return undefined;
         }
@@ -1596,7 +1707,7 @@ class InscapeReferenceProvider {
             return undefined;
         }
 
-        const speakerInfo = getDialogueSpeakerAtPosition(document, position);
+        const speakerInfo = workspaceSpeakerProvider.getSpeakerAtPosition(document, position);
         if (speakerInfo) {
             const references = await workspaceSpeakerProvider.collectWorkspaceReferences(document, speakerInfo.name);
             let locations = references.map((reference) => createLocation(reference));
@@ -1610,7 +1721,8 @@ class InscapeReferenceProvider {
             return locations.length > 0 ? locations : undefined;
         }
 
-        const target = getNodeNameAtDeclarationPosition(document, position) || getJumpTargetAtPosition(document, position);
+        const target = workspaceNodeProvider.getDeclaredNodeNameAtPosition(document, position)
+            || workspaceNodeProvider.getJumpTargetAtPosition(document, position);
         if (!target) {
             return undefined;
         }
@@ -1637,12 +1749,12 @@ class InscapeHoverProvider {
             return undefined;
         }
 
-        const speakerInfo = getDialogueSpeakerAtPosition(document, position);
+        const speakerInfo = workspaceSpeakerProvider.getSpeakerAtPosition(document, position);
         if (speakerInfo) {
             const speakers = await workspaceSpeakerProvider.collectWorkspaceSpeakers(document);
             const speaker = speakers.find((candidate) => candidate.name === speakerInfo.name);
             if (speaker) {
-                return new vscode.Hover(createSpeakerHoverMarkdown(speaker), speakerInfo.range);
+                return new vscode.Hover(workspaceSpeakerProvider.createHoverMarkdown(speaker), speakerInfo.range);
             }
         }
 
@@ -1666,14 +1778,14 @@ class InscapeHoverProvider {
             return new vscode.Hover(workspaceMetadataProvider.createHoverMarkdown(metadataInfo), metadataInfo.range);
         }
 
-        const declaredNode = getNodeDeclarationAtPosition(document, position);
+        const declaredNode = workspaceNodeProvider.getDeclaredNodeAtPosition(document, position);
         if (declaredNode) {
-            return new vscode.Hover(createNodeDeclarationHoverMarkdown(declaredNode.name), declaredNode.range);
+            return new vscode.Hover(workspaceNodeProvider.createDeclarationHoverMarkdown(declaredNode.name), declaredNode.range);
         }
 
-        const jumpTarget = getJumpTargetAtPositionInfo(document, position);
+        const jumpTarget = workspaceNodeProvider.getJumpTargetInfoAtPosition(document, position);
         if (jumpTarget) {
-            return new vscode.Hover(createJumpTargetHoverMarkdown(jumpTarget.name), jumpTarget.range);
+            return new vscode.Hover(workspaceNodeProvider.createJumpTargetHoverMarkdown(jumpTarget.name), jumpTarget.range);
         }
 
         return undefined;
@@ -2833,86 +2945,6 @@ async function readWorkspaceFileText(uri) {
     return Buffer.from(bytes).toString("utf8");
 }
 
-function getNodeNameAtDeclarationPosition(document, position) {
-    const node = getNodeDeclarationAtPosition(document, position);
-    return node ? node.name : undefined;
-}
-
-function getNodeDeclarationAtPosition(document, position) {
-    const line = document.lineAt(position).text;
-    const match = /^\s*::\s+([a-z][a-z0-9_-]*(?:\.[a-z][a-z0-9_-]*)*)\s*$/.exec(line);
-    if (!match) {
-        return undefined;
-    }
-
-    const start = line.indexOf(match[1]);
-    const end = start + match[1].length;
-    if (position.character >= start && position.character <= end) {
-        return {
-            name: match[1],
-            range: new vscode.Range(position.line, start, position.line, end)
-        };
-    }
-
-    return undefined;
-}
-
-function getJumpTargetAtPosition(document, position) {
-    const target = getJumpTargetAtPositionInfo(document, position);
-    return target ? target.name : undefined;
-}
-
-function getJumpTargetAtPositionInfo(document, position) {
-    const line = document.lineAt(position).text;
-    if (!isJumpReferenceLine(line)) {
-        return undefined;
-    }
-
-    const jumpPattern = /->\s*([A-Za-z0-9_.-]*)/g;
-    let match = jumpPattern.exec(line);
-
-    while (match) {
-        const target = match[1];
-        const targetStart = match.index + match[0].length - target.length;
-        const targetEnd = targetStart + target.length;
-        if (position.character >= targetStart && position.character <= targetEnd) {
-            return target.length > 0
-                ? {
-                    name: target,
-                    range: new vscode.Range(position.line, targetStart, position.line, targetEnd)
-                }
-                : undefined;
-        }
-        match = jumpPattern.exec(line);
-    }
-
-    return undefined;
-}
-
-function getDialogueSpeakerAtPosition(document, position) {
-    const line = document.lineAt(position).text;
-    const match = /^\s*([^:\uFF1A]+?)[ \t]*[:\uFF1A]/.exec(line);
-    if (!match) {
-        return undefined;
-    }
-
-    const name = match[1].trim();
-    if (!isLikelyDialogueSpeaker(name)) {
-        return undefined;
-    }
-
-    const start = line.indexOf(match[1]);
-    const end = start + match[1].length;
-    if (position.character >= start && position.character <= end) {
-        return {
-            name,
-            range: new vscode.Range(position.line, start, position.line, end)
-        };
-    }
-
-    return undefined;
-}
-
 function getHostBindingAtPosition(document, position) {
     const line = document.lineAt(position).text;
     const metadataMatch = /^\s*@timeline(?:\.(?:talking|node)\.(?:enter|exit))?(?::|\s+)\s*([^\s\]]+)/.exec(line);
@@ -3017,7 +3049,7 @@ function createPreviewRevealDefinitionLink(document, previewRevealInfo) {
 }
 
 function findDialogueSeparatorIndex(line) {
-            previewRevealBridge.rememberDefinition(document, previewRevealInfo);
+    const halfWidth = line.indexOf(":");
     const fullWidth = line.indexOf("\uFF1A");
     if (halfWidth < 0) {
         return fullWidth;
@@ -3052,37 +3084,6 @@ function trimRange(line, start, end) {
 function isJumpReferenceLine(line) {
     const trimmed = line.trim();
     return trimmed.startsWith("->") || trimmed.startsWith("-");
-}
-
-function createNodeDeclarationHoverMarkdown(nodeName) {
-    const markdown = new vscode.MarkdownString(undefined, true);
-    markdown.isTrusted = false;
-    markdown.appendMarkdown("**Inscape Dialogue Block** `" + nodeName + "`\n\n");
-    markdown.appendMarkdown("A named dialogue block. Its CodeLens shows incoming references.");
-    return markdown;
-}
-
-function createJumpTargetHoverMarkdown(nodeName) {
-    const markdown = new vscode.MarkdownString(undefined, true);
-    markdown.isTrusted = false;
-    markdown.appendMarkdown("**Inscape Dialogue Block Reference** `" + nodeName + "`\n\n");
-    markdown.appendMarkdown("Ctrl+Click to jump to this dialogue block.");
-    return markdown;
-}
-
-function createSpeakerHoverMarkdown(speaker) {
-    const markdown = new vscode.MarkdownString(undefined, true);
-    markdown.isTrusted = false;
-    markdown.appendMarkdown("**Inscape Speaker** `" + speaker.name + "`\n\n");
-
-    if (speaker.roleId) {
-        markdown.appendMarkdown("UnitySample roleId: `" + speaker.roleId + "`\n\n");
-    } else {
-        markdown.appendMarkdown("UnitySample roleId: unbound\n\n");
-    }
-
-    markdown.appendMarkdown("Source: `" + formatDisplayPath(speaker.sourcePath) + "`");
-    return markdown;
 }
 
 function createLocation(item) {

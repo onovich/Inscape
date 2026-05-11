@@ -40,7 +40,10 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - 本轮会话已继续收口 VSCode workspace index 的 speaker 子块：角色表读取、工作区 speaker 扫描、speaker completion / definition / reference 已收为 `InscapeWorkspaceSpeakerProvider`，顶层不再保留独立 speaker helper 串。
 - 本轮会话已继续收口 VSCode workspace index 的 host binding 子块：binding map 读取、工作区 hook / inline tag 扫描以及 host binding completion / definition / hover 所需绑定列表已收为 `InscapeWorkspaceHostBindingProvider`，顶层不再保留独立 host binding helper 串。
 - 本轮会话已继续收口 VSCode workspace index 的 metadata 子块：metadata 位置解析、工作区 metadata 引用扫描与 metadata hover 已收为 `InscapeWorkspaceMetadataProvider`，顶层不再保留独立 metadata helper 串。
+- 本轮会话已继续收紧 VSCode workspace index 的 speaker provider 边界：speaker 位置解析与 hover markdown 已吸回 `InscapeWorkspaceSpeakerProvider`，Definition / Reference / Hover 不再直接依赖顶层 speaker helper。
+- 本轮会话已继续收紧 VSCode workspace index 的 node provider 边界：节点声明 / jump target 位置解析与 node/jump hover markdown 已吸回 `InscapeWorkspaceNodeProvider`，相关顶层 node/jump helper 已退出函数区。
 - 本轮会话已继续收紧 `InscapeWorkspaceHostBindingProvider` 的拥有边界：host binding completion / hover / missing-hover markdown 构造已吸回 provider 自身，相关 markdown helper 不再散在顶层函数区。
+- 本轮会话已顺手修复预览定位局部缺陷：`findDialogueSeparatorIndex` 中误残留的 preview reveal 调用与缺失的半角冒号解析已清理，避免说话人行的预览定位在运行时触发异常。
 - 本轮会话已继续收敛 CLI 总入口 runner 命名：`CliTopLevelCommandRunner`、`CliSingleFileCommandRunner`、`CliProjectCommandRunner` 已分别改为 `CliCommandTopLevelRunner`、`CliCommandSingleFileRunner`、`CliCommandProjectRunner`。
 - 本轮会话已继续按终局后缀白名单收口 CLI 命令入口：`CliCommandTopLevelRunner`、`CliCommandSingleFileRunner`、`CliCommandProjectRunner` 以及 `CliUnitySample*CommandRunner` 已统一去掉 `Runner`，收敛为 `CliTopLevelCommand`、`CliSingleFileCommand`、`CliProjectCommand` 与 `CliUnitySample*Command`。
 - 本轮会话已继续按终局后缀白名单收口 CLI 展示与命令元数据类型：`CliCompileOutput`、`CliProjectCompileOutput` 已分别改为 `CliCompileViewModel`、`CliProjectCompileViewModel`，`CliCommandCatalog` 已改为 `CliCommandProvider`，内部 `CliCommandDefinition` 也已改为 `CliCommandModel`。

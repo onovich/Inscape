@@ -85,7 +85,10 @@
 	- [x] 已继续收口 workspace index 的 speaker 子块：角色表读取、工作区 speaker 扫描、speaker completion / definition / reference 已收为 `InscapeWorkspaceSpeakerProvider`，顶层不再保留独立 speaker helper 串。
 	- [x] 已继续收口 workspace index 的 host binding 子块：binding map 读取、工作区 hook / inline tag 扫描以及 host binding completion / definition / hover 所需绑定列表已收为 `InscapeWorkspaceHostBindingProvider`，顶层不再保留独立 host binding helper 串。
 	- [x] 已继续收口 workspace index 的 metadata 子块：metadata 位置解析、工作区 metadata 引用扫描与 metadata hover 已收为 `InscapeWorkspaceMetadataProvider`，顶层不再保留独立 metadata helper 串。
+	- [x] 已继续收紧 workspace index 的 speaker provider 边界：speaker 位置解析与 hover markdown 已吸回 `InscapeWorkspaceSpeakerProvider`，Definition / Reference / Hover 不再直接依赖顶层 speaker helper。
+	- [x] 已继续收紧 workspace index 的 node provider 边界：节点声明 / jump target 位置解析与 node/jump hover markdown 已吸回 `InscapeWorkspaceNodeProvider`，相关顶层 node/jump helper 已退出函数区。
 	- [x] 已继续收紧 host binding provider 拥有边界：host binding completion / hover / missing-hover markdown 构造已吸回 `InscapeWorkspaceHostBindingProvider`，相关 markdown helper 不再散在顶层函数区。
+	- [x] 已顺手修复预览定位局部缺陷：`findDialogueSeparatorIndex` 中误残留的 preview reveal 调用与缺失的半角冒号解析已清理，避免说话人行的预览定位在运行时触发异常。
 - [ ] 创建 `Inscape.LanguageServer` 基线项目，先迁移诊断与定义跳转，再迁移引用、补全与 source map 相关语义能力。
 - [ ] 将 Cli、VSCode 和未来 LanguageServer 共享的项目级流程继续拆成显式职责模块，优先落到 `Tooling` 的 `ProjectSources`、`ToolConfig`、`Preview`、`Localization`、`HostSchema`、`HostBinding` 等模块；如未来确需统一门面，也应建立在这些模块之上，而不是先造一个大而泛的 `ProjectService`。
 - [ ] 统一 source map / reveal payload 数据契约，支撑预览、诊断、跳转、本地化和未来编辑器三视图。
