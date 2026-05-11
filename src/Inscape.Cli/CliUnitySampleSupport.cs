@@ -3,6 +3,7 @@ using System.Text.Json;
 using Inscape.Adapters.UnitySample;
 using Inscape.Core.Compilation;
 using Inscape.Core.Model;
+using Inscape.Tooling;
 
 namespace Inscape.Cli {
 
@@ -19,7 +20,7 @@ namespace Inscape.Cli {
             File.WriteAllText(Path.Combine(fullDirectory, "unity-sample-export-report.txt"), export.ReportText, Encoding.UTF8);
         }
 
-        internal static bool TryReadUnitySampleExportOptions(string[] args, CliProjectConfig config, out UnitySampleExportOptions options) {
+        internal static bool TryReadUnitySampleExportOptions(string[] args, ToolConfigModel config, out UnitySampleExportOptions options) {
             options = new UnitySampleExportOptions {
                 TalkingIdStart = ReadIntOption(args, "--unity-sample-talking-start", config.UnitySample.TalkingIdStart ?? 100000),
             };
@@ -41,7 +42,7 @@ namespace Inscape.Cli {
             return TryReadReservedTalkingIds(args, config, options);
         }
 
-        internal static bool TryReadUnitySampleTimelineBindingsForTemplate(string[] args, CliProjectConfig config, out Dictionary<string, UnitySampleTimelineAssetBinding> bindingsByAlias) {
+        internal static bool TryReadUnitySampleTimelineBindingsForTemplate(string[] args, ToolConfigModel config, out Dictionary<string, UnitySampleTimelineAssetBinding> bindingsByAlias) {
             bindingsByAlias = new Dictionary<string, UnitySampleTimelineAssetBinding>(StringComparer.Ordinal);
             string? timelineRoot = CliCore.ReadOption(args, "--unity-sample-existing-timeline-root") ?? config.UnitySample.ExistingTimelineRoot;
             if (string.IsNullOrWhiteSpace(timelineRoot)) {
@@ -83,7 +84,7 @@ namespace Inscape.Cli {
         }
 
         internal static bool TryReadUnitySampleRoleNameBindingsForTemplate(string[] args,
-                                                                           CliProjectConfig config,
+                                                                           ToolConfigModel config,
                                                                            out Dictionary<string, int> roleIdsBySpeaker,
                                                                            out Dictionary<string, List<UnitySampleRoleNameCandidate>> candidatesBySpeaker,
                                                                            out bool scannedRoleNameCsv) {
@@ -501,7 +502,7 @@ namespace Inscape.Cli {
             builder.Append('"');
         }
 
-        static bool TryReadReservedTalkingIds(string[] args, CliProjectConfig config, UnitySampleExportOptions options) {
+        static bool TryReadReservedTalkingIds(string[] args, ToolConfigModel config, UnitySampleExportOptions options) {
             string? talkingRoot = CliCore.ReadOption(args, "--unity-sample-existing-talking-root") ?? config.UnitySample.ExistingTalkingRoot;
             if (string.IsNullOrWhiteSpace(talkingRoot)) {
                 return true;

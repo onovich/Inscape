@@ -1,16 +1,16 @@
-namespace Inscape.Cli {
+namespace Inscape.Tooling {
 
-    sealed class CliProjectConfig {
+    public sealed class ToolConfigModel {
 
         public string? HostSchema { get; set; }
 
-        public CliStyleProjectConfig Styles { get; set; } = new CliStyleProjectConfig();
+        public ToolConfigStyleModel Styles { get; set; } = new ToolConfigStyleModel();
 
-        public CliUnitySampleProjectConfig UnitySample { get; set; } = new CliUnitySampleProjectConfig();
+        public ToolConfigUnitySampleModel UnitySample { get; set; } = new ToolConfigUnitySampleModel();
 
     }
 
-    sealed class CliStyleProjectConfig {
+    public sealed class ToolConfigStyleModel {
 
         public string? Editor { get; set; }
 
@@ -18,7 +18,7 @@ namespace Inscape.Cli {
 
     }
 
-    sealed class CliUnitySampleProjectConfig {
+    public sealed class ToolConfigUnitySampleModel {
 
         public string? RoleMap { get; set; }
 

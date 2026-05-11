@@ -1,13 +1,18 @@
 using System.Text;
 using System.Text.Json;
 
-namespace Inscape.Cli {
+namespace Inscape.Tooling {
 
-    static class CliConfigLoader {
+    public static class ToolConfigReaderDomain {
 
-        public static bool TryReadProjectConfig(string rootPath, string[] args, JsonSerializerOptions jsonOptions, out CliProjectConfig config) {
-            config = new CliProjectConfig();
-            string? configuredPath = CliCore.ReadOption(args, "--config");
+        public static bool TryReadProjectConfig(string rootPath,
+                                                string? configuredPath,
+                                                JsonSerializerOptions jsonOptions,
+                                                out ToolConfigModel config,
+                                                out string? errorMessage) {
+            config = new ToolConfigModel();
+            errorMessage = null;
+
             string configPath = string.IsNullOrWhiteSpace(configuredPath)
                 ? Path.Combine(Path.GetFullPath(rootPath), "inscape.config.json")
                 : Path.GetFullPath(configuredPath);
@@ -16,22 +21,22 @@ namespace Inscape.Cli {
                     return true;
                 }
 
-                Console.Error.WriteLine("Project config not found: " + configPath);
+                errorMessage = "Project config not found: " + configPath;
                 return false;
             }
 
             try {
-                CliProjectConfig? parsed = JsonSerializer.Deserialize<CliProjectConfig>(File.ReadAllText(configPath, Encoding.UTF8), jsonOptions);
-                config = parsed ?? new CliProjectConfig();
+                ToolConfigModel? parsed = JsonSerializer.Deserialize<ToolConfigModel>(File.ReadAllText(configPath, Encoding.UTF8), jsonOptions);
+                config = parsed ?? new ToolConfigModel();
                 NormalizeProjectConfigPaths(config, configPath);
                 return true;
             } catch (Exception ex) {
-                Console.Error.WriteLine("Invalid project config '" + configPath + "': " + ex.Message);
+                errorMessage = "Invalid project config '" + configPath + "': " + ex.Message;
                 return false;
             }
         }
 
-        static void NormalizeProjectConfigPaths(CliProjectConfig config, string configPath) {
+        static void NormalizeProjectConfigPaths(ToolConfigModel config, string configPath) {
             string configDirectory = Path.GetDirectoryName(configPath) ?? Directory.GetCurrentDirectory();
             config.HostSchema = ResolveConfigPath(configDirectory, config.HostSchema);
             config.Styles.Editor = ResolveConfigPath(configDirectory, config.Styles.Editor);

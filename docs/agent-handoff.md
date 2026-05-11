@@ -18,6 +18,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - 当前工作区存在未提交变更：文档重构相关文件与 `samples/court-loop.inscape`。其中脚本文本修改不属于本轮架构文档同步的一部分，后续提交时应避免误带用户的样例脚本变更。
 - 本轮会话确认新的长期结构：Internal 为 `Compiler`、`Tooling`、`Cli`、`VSCode`、`LanguageServer`、`Runtime`；ExternalSupport 为 `UnityPlugin`。
 - 本轮会话确认：`Inscape.Core` 长期可向 `Compiler` 收敛；`Inscape.Cli` 当前同时承载了 `Cli` 与部分 `Tooling`，下一轮重构重点应是先抽出 `Tooling`。
+- 本轮会话已完成 Stage 1 的第一刀：新建 `src/Inscape.Tooling/`，迁出 ToolConfig 配置模型与读取/路径归一化逻辑；`Cli` 现在只保留 `--config` 参数解析和错误输出适配。
 - 本轮会话确认：VSCode 长期方向是“薄扩展前端 + C# LanguageServer”，而不是继续长期借道 CLI 承载重语义能力。
 - 本轮会话确认：Unity 支持不再视为 Internal 五层之一，而视为 ExternalSupport/UnityPlugin；代码可以继续留在当前仓库，但不应进入默认 .NET solution 编译链。
 
@@ -32,6 +33,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 
 - `Compiler`：编译期真相层；当前主要由 `Inscape.Core` 承载。内部主业务为 `DslScript`、`StoryGraph`、`Localization`。
 - `Tooling`：共享用例层；长期用于承接项目扫描、ToolConfig、Preview、Localization、HostSchema、HostBinding 等流程。当前这些流程有相当一部分仍暂住在 `Inscape.Cli`。
+- `Tooling` 当前已实际落下一块稳定落点：`ToolConfig` 已迁入独立项目 `src/Inscape.Tooling/`。
 - `Cli`：命令行入口层；当前落在 `CliCore`、`CliTopLevelCommandRunner`、`CliSingleFileCommandRunner`、`CliProjectCommandRunner`。
 - `VSCode`：编辑器入口层；当前主要落在 `tools/vscode-inscape/extension.js`。
 - `LanguageServer`：C# 语义服务层；当前尚未创建项目，但已确认长期方向。
@@ -109,6 +111,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - 当前已进一步收敛命名方向：架构文档仍用 `Dsl`、`Config`、`Preview`、`L10n`、`Host` 这类模块术语表达边界；具体类型命名则改为 Bird 风格的“具体主语 + 角色”模型，优先让目录承担层级与范围信息，不再把短层前缀扩张成所有类型的默认命名方式。
 - 当前重构边界也已收敛：`src/Inscape.Adapters.UnitySample` 继续作为实验样例存在，不参与这一轮 CLI / Core / VSCode 的可维护性重构，除非任务明确要求调整其回归样例角色。
 - CLI 当前已完成多步低风险瘦身：项目配置读取被提取到 `CliConfigLoader`，顶层元命令、单文件命令与项目级命令分支都已从 `CliCore` 主入口中抽离；项目扫描、override 与 UnitySample 项目命令辅助逻辑分别收口到更窄 helper；项目级和单文件命令共享编译前置流程分别收口到 `CliProjectCompiler` 与 `CliSingleFileCompiler`。这些名字当前仅视为过渡命名。下一步的正确方向不是继续扩张 Cli，而是先抽出 `Tooling`，再按 ADR 0010 把范围词移出类型名前缀，把 `Support` / `Helper` 拆成具体主语 + 角色。
+- 2026-05-11 已开始执行 Tooling 抽取：当前 `CliConfigLoader` / `CliProjectConfig` 已被 `Inscape.Tooling` 内的 ToolConfig 模型与读取逻辑取代，`CliProjectCompiler` 与 `CliSingleFileCompiler` 通过 `ToolConfigReaderDomain` 取配置。这一刀通过了 `dotnet build Inscape.slnx --no-restore` 和 `dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj --no-build`。
 
 - 2026-05-01 已完成 CLI 项目命令收口：项目级命令分发位于 `CliProjectCommandRunner`，共享的“配置读取 + `.inscape` 项目源扫描/读取/override + 项目编译”前置流程已收口到 `CliProjectCompiler`；其中 DSL 源加载位于 `CliDslSourceLoader`，UnitySample role/binding/export 辅助逻辑位于 `CliUnitySampleSupport`。单文件命令的“输入读取 + 邻近项目配置读取 + 单文件编译”前置流程也已收口到 `CliSingleFileCompiler`。`CliCore` 只保留参数分流、共享输出和退出码整合。验证通过：`dotnet build Inscape.slnx --no-restore`、`dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj --no-build`、`node --check tools\vscode-inscape\extension.js`。这些类型名现在统一视为过渡名；后续以目录优先、主语/角色的方式逐步替换。
 

@@ -49,6 +49,7 @@
 - [x] 按 [编码与命名规范](coding-conventions.md) 拆分测试文件，降低 `tests/Inscape.Tests/TestCore.cs` 的阅读成本，但不改变测试语义。
 - [x] 按 command 职责拆分 CLI 入口，避免 `src/Inscape.Cli/CliCore.cs` 继续承担过多命令分发和业务编排；已完成配置读取、顶层元命令、单文件命令和项目级命令分支拆分，并将项目 `.inscape` 源扫描/读取/override 收口到 `CliDslSourceLoader`、预览样式读取收口到 `CliPreviewStyleLoader`、项目命令共享编译前置流程收口到 `CliProjectCompiler`、单文件命令共享编译前置流程收口到 `CliSingleFileCompiler`、UnitySample 项目命令辅助逻辑收口到 `CliUnitySampleSupport`，`CliCore` 仅保留入口分发与共享基础输出辅助。这些名字当前只视为过渡命名，后续应按 ADR 0010 继续目录化并收敛为具体主语 + 角色。
 - [ ] 抽出 `Tooling` 中间层：优先上提项目扫描、配置读取、预览构建、本地化流程、HostSchema / HostBinding 流程，降低 `Cli` 的共享业务负担。
+	- [x] 已完成第一刀：创建 `src/Inscape.Tooling/`，将 ToolConfig 配置模型与读取/路径归一化逻辑迁出 `Inscape.Cli`，`Cli` 仅保留 `--config` 参数解析和错误输出适配。
 - [ ] 按 ADR 0010 整理 CLI 与 VSCode 命名：优先消除 `Support` / `Helper` 弱语义命名，并逐步把 `Project` / `SingleFile` 这类范围词从类型名前缀移到目录、命名空间或主语后的限定词。
 - [ ] 按 provider / command / preview bridge / style / workspace index 拆分 VSCode extension，保持现有作者体验不回归。
 - [ ] 创建 `Inscape.LanguageServer` 基线项目，先迁移诊断与定义跳转，再迁移引用、补全与 source map 相关语义能力。

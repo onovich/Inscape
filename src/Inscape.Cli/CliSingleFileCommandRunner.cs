@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Inscape.Core.Compilation;
 using Inscape.Core.Localization;
+using Inscape.Tooling;
 
 namespace Inscape.Cli {
 
@@ -10,7 +11,7 @@ namespace Inscape.Cli {
                                   CompilationResult result,
                                   string? outputPath,
                                   string? previousLocalizationPath,
-                                  CliProjectConfig previewConfig,
+                                  ToolConfigModel previewConfig,
                                   JsonSerializerOptions jsonOptions,
                                   out int exitCode) {
             exitCode = 0;

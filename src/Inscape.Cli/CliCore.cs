@@ -6,6 +6,7 @@ using Inscape.Adapters.UnitySample;
 using Inscape.Core.Compilation;
 using Inscape.Core.Diagnostics;
 using Inscape.Core.Localization;
+using Inscape.Tooling;
 
 namespace Inscape.Cli {
 
@@ -31,7 +32,7 @@ namespace Inscape.Cli {
                 return RunProjectCommand(command, inputPath, args, outputPath);
             }
 
-            if (!CliSingleFileCompiler.TryCompile(inputPath, args, JsonOptions, out CliProjectConfig previewConfig, out CompilationResult result)) {
+            if (!CliSingleFileCompiler.TryCompile(inputPath, args, JsonOptions, out ToolConfigModel previewConfig, out CompilationResult result)) {
                 return 1;
             }
 

@@ -2,13 +2,14 @@ using System.Text.Json;
 using Inscape.Core.Compilation;
 using Inscape.Core.Localization;
 using Inscape.Adapters.UnitySample;
+using Inscape.Tooling;
 
 namespace Inscape.Cli {
 
     static class CliProjectCommandRunner {
 
         public static int Run(string command, string rootPath, string[] args, string? outputPath, JsonSerializerOptions jsonOptions) {
-            if (!CliProjectCompiler.TryCompile(rootPath, args, jsonOptions, out CliProjectConfig config, out ProjectCompilationResult result)) {
+            if (!CliProjectCompiler.TryCompile(rootPath, args, jsonOptions, out ToolConfigModel config, out ProjectCompilationResult result)) {
                 return 1;
             }
 

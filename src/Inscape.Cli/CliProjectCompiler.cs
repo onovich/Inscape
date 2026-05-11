@@ -2,6 +2,7 @@ using System.Text.Json;
 using Inscape.Core.Compilation;
 using Inscape.Core.Diagnostics;
 using Inscape.Core.Model;
+using Inscape.Tooling;
 
 namespace Inscape.Cli {
 
@@ -10,9 +11,9 @@ namespace Inscape.Cli {
         public static bool TryCompile(string rootPath,
                                       string[] args,
                                       JsonSerializerOptions jsonOptions,
-                                      out CliProjectConfig config,
+                                      out ToolConfigModel config,
                                       out ProjectCompilationResult result) {
-            config = new CliProjectConfig();
+            config = new ToolConfigModel();
             result = CreateEmptyResult();
 
             if (!Directory.Exists(rootPath)) {
@@ -20,7 +21,12 @@ namespace Inscape.Cli {
                 return false;
             }
 
-            if (!CliConfigLoader.TryReadProjectConfig(rootPath, args, jsonOptions, out config)) {
+            if (!ToolConfigReaderDomain.TryReadProjectConfig(rootPath,
+                                                             CliCore.ReadOption(args, "--config"),
+                                                             jsonOptions,
+                                                             out config,
+                                                             out string? errorMessage)) {
+                Console.Error.WriteLine(errorMessage);
                 return false;
             }
 
