@@ -26,11 +26,14 @@ namespace Inscape.Cli {
             };
 
             string? roleMapPath = CliCore.ReadOption(args, "--unity-sample-role-map") ?? config.UnitySample.RoleMap;
-            if (!string.IsNullOrWhiteSpace(roleMapPath)) {
-                if (!TryReadUnitySampleRoleMap(roleMapPath, options)) {
-                    return false;
-                }
+            if (!RoleMapReaderDomain.TryRead(roleMapPath,
+                                             out Dictionary<string, int> roleIdsBySpeaker,
+                                             out string? roleMapError)) {
+                Console.Error.WriteLine(roleMapError);
+                return false;
             }
+
+            AddUnitySampleRoleIds(options, roleIdsBySpeaker);
 
             string? bindingMapPath = CliCore.ReadOption(args, "--unity-sample-binding-map") ?? config.UnitySample.BindingMap;
             if (!string.IsNullOrWhiteSpace(bindingMapPath)) {
@@ -88,39 +91,11 @@ namespace Inscape.Cli {
             return builder.ToString();
         }
 
-        static bool TryReadUnitySampleRoleMap(string roleMapPath, UnitySampleExportOptions options) {
-            if (!File.Exists(roleMapPath)) {
-                Console.Error.WriteLine("UnitySample role map not found: " + roleMapPath);
-                return false;
+        static void AddUnitySampleRoleIds(UnitySampleExportOptions options,
+                                          IReadOnlyDictionary<string, int> roleIdsBySpeaker) {
+            foreach (KeyValuePair<string, int> pair in roleIdsBySpeaker) {
+                options.RoleIdsBySpeaker[pair.Key] = pair.Value;
             }
-
-            string[] lines = File.ReadAllLines(roleMapPath, Encoding.UTF8);
-            for (int i = 0; i < lines.Length; i += 1) {
-                string line = lines[i].Trim();
-                if (line.Length == 0 || line.StartsWith("#", StringComparison.Ordinal)) {
-                    continue;
-                }
-                if (i == 0 && line.Equals("speaker,roleId", StringComparison.OrdinalIgnoreCase)) {
-                    continue;
-                }
-
-                int commaIndex = line.LastIndexOf(',');
-                if (commaIndex <= 0 || commaIndex == line.Length - 1) {
-                    Console.Error.WriteLine("Invalid UnitySample role map row at line " + (i + 1) + ": " + lines[i]);
-                    return false;
-                }
-
-                string speaker = UnquoteCsvField(line.Substring(0, commaIndex).Trim());
-                string roleIdText = UnquoteCsvField(line.Substring(commaIndex + 1).Trim());
-                if (speaker.Length == 0 || !int.TryParse(roleIdText, out int roleId)) {
-                    Console.Error.WriteLine("Invalid UnitySample role map row at line " + (i + 1) + ": " + lines[i]);
-                    return false;
-                }
-
-                options.RoleIdsBySpeaker[speaker] = roleId;
-            }
-
-            return true;
         }
 
         static void AddUnitySampleBindingEntries(UnitySampleExportOptions options,
@@ -217,39 +192,6 @@ namespace Inscape.Cli {
                 }
             }
             return string.Join("|", languages);
-        }
-
-        static List<string> ParseCsvRow(string line) {
-            List<string> fields = new List<string>();
-            StringBuilder field = new StringBuilder();
-            bool inQuotes = false;
-
-            for (int i = 0; i < line.Length; i += 1) {
-                char c = line[i];
-                if (c == '"') {
-                    if (inQuotes && i + 1 < line.Length && line[i + 1] == '"') {
-                        field.Append('"');
-                        i += 1;
-                    } else {
-                        inQuotes = !inQuotes;
-                    }
-                } else if (c == ',' && !inQuotes) {
-                    fields.Add(field.ToString());
-                    field.Clear();
-                } else {
-                    field.Append(c);
-                }
-            }
-
-            fields.Add(field.ToString());
-            return fields;
-        }
-
-        static string UnquoteCsvField(string value) {
-            if (value.Length >= 2 && value[0] == '"' && value[value.Length - 1] == '"') {
-                return value.Substring(1, value.Length - 2).Replace("\"\"", "\"");
-            }
-            return value;
         }
 
         static void AppendCsvField(StringBuilder builder, string value) {
