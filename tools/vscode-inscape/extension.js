@@ -55,6 +55,270 @@ const defaultPreviewStyle = Object.freeze({
     choiceRadius: "16px"
 });
 
+class InscapePreviewCommand {
+
+    async open() {
+        const document = await this.resolveDocument();
+        if (!document) {
+            return;
+        }
+
+        await this.openDocument(document);
+    }
+
+    async toggle() {
+        const document = await this.resolveDocument();
+        if (!document) {
+            return;
+        }
+
+        const openPreviewTab = this.findTab(document);
+        if (openPreviewTab && this.isActiveTab(openPreviewTab, document)) {
+            await vscode.window.tabGroups.close(openPreviewTab, true);
+            return;
+        }
+
+        await this.openDocument(document);
+    }
+
+    async revealSelection(context) {
+        const editor = vscode.window.activeTextEditor;
+        if (!editor || !isInscapeDocument(editor.document)) {
+            vscode.window.showWarningMessage("Open an .inscape file before revealing preview.");
+            return;
+        }
+
+        const selection = editor.selection;
+        const start = selection ? selection.start : new vscode.Position(0, 0);
+        const end = selection ? selection.end : start;
+        const payload = {
+            sourcePath: editor.document.uri.fsPath,
+            line: start.line,
+            character: start.character,
+            length: start.line === end.line ? Math.max(0, end.character - start.character) : 0
+        };
+
+        await previewRevealBridge.reveal(context, payload);
+    }
+
+    async openDocument(document) {
+        await vscode.commands.executeCommand("vscode.openWith", document.uri, "inscape.preview", {
+            viewColumn: vscode.ViewColumn.Beside,
+            preserveFocus: false,
+            preview: false
+        });
+    }
+
+    async resolveDocument() {
+        const activeDocument = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.document : undefined;
+        if (activeDocument && isInscapeDocument(activeDocument)) {
+            return activeDocument;
+        }
+
+        const workspaceFolder = await selectWorkspaceFolder();
+        if (!workspaceFolder) {
+            return undefined;
+        }
+
+        const candidates = await vscode.workspace.findFiles("**/*.inscape", "{**/.git/**,**/bin/**,**/obj/**,**/node_modules/**,**/artifacts/**}", 1);
+        if (candidates.length === 0) {
+            vscode.window.showWarningMessage("Open an .inscape file before opening the Inscape preview.");
+            return undefined;
+        }
+
+        return vscode.workspace.openTextDocument(candidates[0]);
+    }
+
+    findTab(document) {
+        const targetPath = normalizePath(document.uri.fsPath);
+        for (const group of vscode.window.tabGroups.all) {
+            for (const tab of group.tabs) {
+                const input = tab.input;
+                if (!input || input.viewType !== "inscape.preview" || !input.uri) {
+                    continue;
+                }
+
+                if (normalizePath(input.uri.fsPath) === targetPath) {
+                    return tab;
+                }
+            }
+        }
+
+        return undefined;
+    }
+
+    isActiveTab(tab, document) {
+        const activeTab = vscode.window.tabGroups.activeTabGroup.activeTab;
+        if (!activeTab || activeTab !== tab) {
+            return false;
+        }
+
+        const input = tab.input;
+        return input && input.viewType === "inscape.preview" && input.uri && normalizePath(input.uri.fsPath) === normalizePath(document.uri.fsPath);
+    }
+
+}
+
+const previewCommand = new InscapePreviewCommand();
+
+class InscapeLocalizationCommand {
+
+    async export(context) {
+        const workspaceFolder = await selectWorkspaceFolder();
+        if (!workspaceFolder) {
+            return;
+        }
+
+        const outputUri = await vscode.window.showSaveDialog({
+            defaultUri: vscode.Uri.file(path.join(workspaceFolder.uri.fsPath, "artifacts", "l10n.csv")),
+            filters: {
+                "CSV": ["csv"]
+            },
+            saveLabel: "Export Localization"
+        });
+
+        if (!outputUri) {
+            return;
+        }
+
+        await this.run(context, workspaceFolder, {
+            commandName: "extract-l10n-project",
+            outputPath: outputUri.fsPath,
+            progressTitle: "Exporting Inscape localization CSV"
+        });
+    }
+
+    async update(context) {
+        const workspaceFolder = await selectWorkspaceFolder();
+        if (!workspaceFolder) {
+            return;
+        }
+
+        const previousUris = await vscode.window.showOpenDialog({
+            defaultUri: vscode.Uri.file(path.join(workspaceFolder.uri.fsPath, "artifacts")),
+            canSelectFiles: true,
+            canSelectFolders: false,
+            canSelectMany: false,
+            filters: {
+                "CSV": ["csv"]
+            },
+            openLabel: "Select Previous Localization CSV"
+        });
+
+        if (!previousUris || previousUris.length === 0) {
+            return;
+        }
+
+        const outputUri = await vscode.window.showSaveDialog({
+            defaultUri: vscode.Uri.file(path.join(workspaceFolder.uri.fsPath, "artifacts", "l10n.updated.csv")),
+            filters: {
+                "CSV": ["csv"]
+            },
+            saveLabel: "Update Localization"
+        });
+
+        if (!outputUri) {
+            return;
+        }
+
+        await this.run(context, workspaceFolder, {
+            commandName: "update-l10n-project",
+            previousPath: previousUris[0].fsPath,
+            outputPath: outputUri.fsPath,
+            progressTitle: "Updating Inscape localization CSV"
+        });
+    }
+
+    async run(context, workspaceFolder, options) {
+        const editorDocument = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.document : undefined;
+        const activeDocument = editorDocument
+            && isInscapeDocument(editorDocument)
+            && this.isDocumentInWorkspaceFolder(editorDocument, workspaceFolder)
+            ? vscode.window.activeTextEditor.document
+            : undefined;
+        let tempPath;
+
+        try {
+            if (activeDocument) {
+                tempPath = writeTempDocument(activeDocument);
+            }
+
+            const invocation = this.createInvocation(context, workspaceFolder, options, activeDocument, tempPath);
+            await vscode.window.withProgress({
+                location: vscode.ProgressLocation.Notification,
+                title: options.progressTitle,
+                cancellable: false
+            }, () => this.execFile(invocation));
+
+            vscode.window.showInformationMessage("Inscape localization CSV written to " + options.outputPath);
+        } catch (error) {
+            vscode.window.showErrorMessage(error.message || String(error));
+        } finally {
+            if (tempPath) {
+                fs.unlink(tempPath, () => { });
+            }
+        }
+    }
+
+    createInvocation(context, workspaceFolder, options, activeDocument, tempPath) {
+        const configuration = vscode.workspace.getConfiguration("inscape", workspaceFolder.uri);
+        const command = configuration.get("compiler.command", "dotnet");
+        const cliProject = resolveCliProjectPath(context, workspaceFolder.uri.fsPath);
+        const args = [
+            "run",
+            "--project",
+            cliProject,
+            "--",
+            options.commandName,
+            workspaceFolder.uri.fsPath
+        ];
+
+        if (options.previousPath) {
+            args.push("--from", options.previousPath);
+        }
+
+        if (activeDocument && tempPath) {
+            args.push("--override", activeDocument.uri.fsPath, tempPath);
+        }
+
+        args.push("-o", options.outputPath);
+
+        return {
+            command,
+            args,
+            cwd: workspaceFolder.uri.fsPath
+        };
+    }
+
+    isDocumentInWorkspaceFolder(document, workspaceFolder) {
+        const folder = vscode.workspace.getWorkspaceFolder(document.uri);
+        return folder && normalizePath(folder.uri.fsPath) === normalizePath(workspaceFolder.uri.fsPath);
+    }
+
+    execFile(invocation) {
+        return new Promise((resolve, reject) => {
+            childProcess.execFile(invocation.command, invocation.args, {
+                cwd: invocation.cwd,
+                windowsHide: true,
+                maxBuffer: 1024 * 1024 * 8
+            }, (error, stdout, stderr) => {
+                if (error) {
+                    const detail = stderr && stderr.trim()
+                        ? stderr.trim()
+                        : (stdout && stdout.trim() ? stdout.trim() : error.message);
+                    reject(new Error(detail));
+                    return;
+                }
+
+                resolve(stdout);
+            });
+        });
+    }
+
+}
+
+const localizationCommand = new InscapeLocalizationCommand();
+
 function activate(context) {
     outputChannel = vscode.window.createOutputChannel("Inscape");
     const diagnostics = vscode.languages.createDiagnosticCollection("inscape");
@@ -93,16 +357,16 @@ function activate(context) {
         vscode.languages.registerHoverProvider(languageSelector, new InscapeHoverProvider()),
         vscode.languages.registerCodeLensProvider(languageSelector, new InscapeCodeLensProvider()),
         vscode.commands.registerCommand("inscape.showNodeIncomingReferences", (uri, position, locations) => showNodeIncomingReferences(uri, position, locations)),
-        vscode.commands.registerCommand("inscape.openPreview", () => openPreview(context)),
-        vscode.commands.registerCommand("inscape.togglePreview", () => togglePreview(context)),
-        vscode.commands.registerCommand("inscape.revealSelectionInPreview", () => revealActiveSelectionInPreview(context)),
+        vscode.commands.registerCommand("inscape.openPreview", () => previewCommand.open()),
+        vscode.commands.registerCommand("inscape.togglePreview", () => previewCommand.toggle()),
+        vscode.commands.registerCommand("inscape.revealSelectionInPreview", () => previewCommand.revealSelection(context)),
         vscode.commands.registerCommand("inscape.openToolsMenu", () => openToolsMenu(context)),
         vscode.commands.registerCommand("inscape.openEditorStyle", () => openEditorStyleFile()),
         vscode.commands.registerCommand("inscape.openPreviewStyle", () => openPreviewStyleFile()),
         vscode.commands.registerCommand("inscape.openQuickSyntaxGuide", () => openQuickSyntaxGuide()),
         vscode.commands.registerCommand("inscape.revealInPreview", (payload) => previewRevealBridge.reveal(context, payload)),
-        vscode.commands.registerCommand("inscape.extractLocalization", () => exportLocalization(context)),
-        vscode.commands.registerCommand("inscape.updateLocalization", () => updateLocalization(context)),
+        vscode.commands.registerCommand("inscape.extractLocalization", () => localizationCommand.export(context)),
+        vscode.commands.registerCommand("inscape.updateLocalization", () => localizationCommand.update(context)),
         vscode.commands.registerCommand("inscape.showHostSchemaCapabilities", () => showHostSchemaCapabilities()),
         vscode.window.registerCustomEditorProvider(
             "inscape.preview",
@@ -720,84 +984,6 @@ function pushTrimmedRange(bucket, lineNumber, text, start, end) {
     bucket.push(new vscode.Range(lineNumber, range.start, lineNumber, range.end));
 }
 
-async function exportLocalization(context) {
-    const workspaceFolder = await selectWorkspaceFolder();
-    if (!workspaceFolder) {
-        return;
-    }
-
-    const outputUri = await vscode.window.showSaveDialog({
-        defaultUri: vscode.Uri.file(path.join(workspaceFolder.uri.fsPath, "artifacts", "l10n.csv")),
-        filters: {
-            "CSV": ["csv"]
-        },
-        saveLabel: "Export Localization"
-    });
-
-    if (!outputUri) {
-        return;
-    }
-
-    await runLocalizationCommand(context, workspaceFolder, {
-        commandName: "extract-l10n-project",
-        outputPath: outputUri.fsPath,
-        progressTitle: "Exporting Inscape localization CSV"
-    });
-}
-
-async function openPreview(context) {
-    const document = await resolvePreviewDocument();
-    if (!document) {
-        return;
-    }
-
-    await vscode.commands.executeCommand("vscode.openWith", document.uri, "inscape.preview", {
-        viewColumn: vscode.ViewColumn.Beside,
-        preserveFocus: false,
-        preview: false
-    });
-}
-
-async function togglePreview(context) {
-    const document = await resolvePreviewDocument();
-    if (!document) {
-        return;
-    }
-
-    const openPreviewTab = findPreviewTabForDocument(document);
-    if (openPreviewTab && isActivePreviewTab(openPreviewTab, document)) {
-        await vscode.window.tabGroups.close(openPreviewTab, true);
-        return;
-    }
-
-    await vscode.commands.executeCommand("vscode.openWith", document.uri, "inscape.preview", {
-        viewColumn: vscode.ViewColumn.Beside,
-        preserveFocus: false,
-        preview: false
-    });
-}
-
-async function resolvePreviewDocument() {
-    const activeDocument = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.document : undefined;
-    if (activeDocument && isInscapeDocument(activeDocument)) {
-        return activeDocument;
-    }
-
-    const workspaceFolder = await selectWorkspaceFolder();
-    if (!workspaceFolder) {
-        return undefined;
-    }
-
-    const candidates = await vscode.workspace.findFiles("**/*.inscape", "{**/.git/**,**/bin/**,**/obj/**,**/node_modules/**,**/artifacts/**}", 1);
-    if (candidates.length === 0) {
-        vscode.window.showWarningMessage("Open an .inscape file before opening the Inscape preview.");
-        return undefined;
-    }
-
-    const document = await vscode.workspace.openTextDocument(candidates[0]);
-    return document;
-}
-
 async function refreshPreviewPanelsForDocument(context, document) {
     if (!isInscapeDocument(document)) {
         return;
@@ -813,40 +999,12 @@ async function refreshPreviewPanelsForDocument(context, document) {
     }
 }
 
-function findPreviewTabForDocument(document) {
-    const targetPath = normalizePath(document.uri.fsPath);
-    for (const group of vscode.window.tabGroups.all) {
-        for (const tab of group.tabs) {
-            const input = tab.input;
-            if (!input || input.viewType !== "inscape.preview" || !input.uri) {
-                continue;
-            }
-
-            if (normalizePath(input.uri.fsPath) === targetPath) {
-                return tab;
-            }
-        }
-    }
-
-    return undefined;
-}
-
-function isActivePreviewTab(tab, document) {
-    const activeTab = vscode.window.tabGroups.activeTabGroup.activeTab;
-    if (!activeTab || activeTab !== tab) {
-        return false;
-    }
-
-    const input = tab.input;
-    return input && input.viewType === "inscape.preview" && input.uri && normalizePath(input.uri.fsPath) === normalizePath(document.uri.fsPath);
-}
-
 function schedulePreviewRefresh(context, document, delayOverride) {
     if (!isInscapeDocument(document)) {
         return;
     }
 
-    const sourceKey = normalizePath(document.uri.fsPath);
+            action: () => previewCommand.revealSelection(context)
     const panels = previewPanels.get(sourceKey);
     if (!panels || panels.size === 0) {
         return;
@@ -1289,47 +1447,6 @@ function escapeHtml(value) {
         .replace(/\"/g, "&quot;");
 }
 
-async function updateLocalization(context) {
-    const workspaceFolder = await selectWorkspaceFolder();
-    if (!workspaceFolder) {
-        return;
-    }
-
-    const previousUris = await vscode.window.showOpenDialog({
-        defaultUri: vscode.Uri.file(path.join(workspaceFolder.uri.fsPath, "artifacts")),
-        canSelectFiles: true,
-        canSelectFolders: false,
-        canSelectMany: false,
-        filters: {
-            "CSV": ["csv"]
-        },
-        openLabel: "Select Previous Localization CSV"
-    });
-
-    if (!previousUris || previousUris.length === 0) {
-        return;
-    }
-
-    const outputUri = await vscode.window.showSaveDialog({
-        defaultUri: vscode.Uri.file(path.join(workspaceFolder.uri.fsPath, "artifacts", "l10n.updated.csv")),
-        filters: {
-            "CSV": ["csv"]
-        },
-        saveLabel: "Update Localization"
-    });
-
-    if (!outputUri) {
-        return;
-    }
-
-    await runLocalizationCommand(context, workspaceFolder, {
-        commandName: "update-l10n-project",
-        previousPath: previousUris[0].fsPath,
-        outputPath: outputUri.fsPath,
-        progressTitle: "Updating Inscape localization CSV"
-    });
-}
-
 async function selectWorkspaceFolder() {
     const folders = vscode.workspace.workspaceFolders || [];
     if (folders.length === 0) {
@@ -1488,26 +1605,6 @@ async function openFilePath(filePath) {
         preview: false,
         preserveFocus: false
     });
-}
-
-async function revealActiveSelectionInPreview(context) {
-    const editor = vscode.window.activeTextEditor;
-    if (!editor || !isInscapeDocument(editor.document)) {
-        vscode.window.showWarningMessage("Open an .inscape file before revealing preview.");
-        return;
-    }
-
-    const selection = editor.selection;
-    const start = selection ? selection.start : new vscode.Position(0, 0);
-    const end = selection ? selection.end : start;
-    const payload = {
-        sourcePath: editor.document.uri.fsPath,
-        line: start.line,
-        character: start.character,
-        length: start.line === end.line ? Math.max(0, end.character - start.character) : 0
-    };
-
-    await previewRevealBridge.reveal(context, payload);
 }
 
 async function showHostSchemaCapabilities() {
@@ -1672,67 +1769,6 @@ function findHostSchemaCapabilityLocation(schemaInfo, sectionName, capabilityNam
     };
 }
 
-async function runLocalizationCommand(context, workspaceFolder, options) {
-    const editorDocument = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.document : undefined;
-    const activeDocument = editorDocument
-        && isInscapeDocument(editorDocument)
-        && isDocumentInWorkspaceFolder(editorDocument, workspaceFolder)
-        ? vscode.window.activeTextEditor.document
-        : undefined;
-    let tempPath;
-
-    try {
-        if (activeDocument) {
-            tempPath = writeTempDocument(activeDocument);
-        }
-
-        const invocation = createProjectCommandInvocation(context, workspaceFolder, options, activeDocument, tempPath);
-        await vscode.window.withProgress({
-            location: vscode.ProgressLocation.Notification,
-            title: options.progressTitle,
-            cancellable: false
-        }, () => execFilePromise(invocation));
-
-        vscode.window.showInformationMessage("Inscape localization CSV written to " + options.outputPath);
-    } catch (error) {
-        vscode.window.showErrorMessage(error.message || String(error));
-    } finally {
-        if (tempPath) {
-            fs.unlink(tempPath, () => { });
-        }
-    }
-}
-
-function createProjectCommandInvocation(context, workspaceFolder, options, activeDocument, tempPath) {
-    const configuration = vscode.workspace.getConfiguration("inscape", workspaceFolder.uri);
-    const command = configuration.get("compiler.command", "dotnet");
-    const cliProject = resolveCliProjectPath(context, workspaceFolder.uri.fsPath);
-    const args = [
-        "run",
-        "--project",
-        cliProject,
-        "--",
-        options.commandName,
-        workspaceFolder.uri.fsPath
-    ];
-
-    if (options.previousPath) {
-        args.push("--from", options.previousPath);
-    }
-
-    if (activeDocument && tempPath) {
-        args.push("--override", activeDocument.uri.fsPath, tempPath);
-    }
-
-    args.push("-o", options.outputPath);
-
-    return {
-        command,
-        args,
-        cwd: workspaceFolder.uri.fsPath
-    };
-}
-
 function resolveCliProjectPath(context, workspaceFolderPath) {
     const candidates = [
         path.join(workspaceFolderPath, "src", "Inscape.Cli", "Inscape.Cli.csproj"),
@@ -1746,31 +1782,6 @@ function resolveCliProjectPath(context, workspaceFolderPath) {
     }
 
     return candidates[0];
-}
-
-function isDocumentInWorkspaceFolder(document, workspaceFolder) {
-    const folder = vscode.workspace.getWorkspaceFolder(document.uri);
-    return folder && normalizePath(folder.uri.fsPath) === normalizePath(workspaceFolder.uri.fsPath);
-}
-
-function execFilePromise(invocation) {
-    return new Promise((resolve, reject) => {
-        childProcess.execFile(invocation.command, invocation.args, {
-            cwd: invocation.cwd,
-            windowsHide: true,
-            maxBuffer: 1024 * 1024 * 8
-        }, (error, stdout, stderr) => {
-            if (error) {
-                const detail = stderr && stderr.trim()
-                    ? stderr.trim()
-                    : (stdout && stdout.trim() ? stdout.trim() : error.message);
-                reject(new Error(detail));
-                return;
-            }
-
-            resolve(stdout);
-        });
-    });
 }
 
 function execFileDetailedPromise(invocation) {
