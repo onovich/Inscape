@@ -3,7 +3,7 @@ using Inscape.Tooling;
 
 namespace Inscape.Cli {
 
-    static class CliUnitySampleBindingTemplateCommandRunner {
+    static class CliUnitySampleBindingTemplateCommand {
 
         internal static int Run(ProjectCompilationResult result,
                                 string[] args,

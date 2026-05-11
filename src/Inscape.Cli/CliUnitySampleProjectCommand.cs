@@ -4,7 +4,7 @@ using Inscape.Tooling;
 
 namespace Inscape.Cli {
 
-    static class CliUnitySampleProjectCommandRunner {
+    static class CliUnitySampleProjectCommand {
 
         internal static bool TryRun(string command,
                                     ProjectCompilationResult result,
@@ -15,15 +15,15 @@ namespace Inscape.Cli {
                                     out int exitCode) {
             switch (command) {
                 case "export-unity-sample-binding-template":
-                    exitCode = CliUnitySampleBindingTemplateCommandRunner.Run(result, args, config, outputPath);
+                    exitCode = CliUnitySampleBindingTemplateCommand.Run(result, args, config, outputPath);
                     return true;
 
                 case "export-unity-sample-role-template":
-                    exitCode = CliUnitySampleRoleTemplateCommandRunner.Run(result, args, config, outputPath);
+                    exitCode = CliUnitySampleRoleTemplateCommand.Run(result, args, config, outputPath);
                     return true;
 
                 case "export-unity-sample-project":
-                    exitCode = CliUnitySampleProjectExportCommandRunner.Run(result, args, config, outputPath, jsonOptions);
+                    exitCode = CliUnitySampleProjectExportCommand.Run(result, args, config, outputPath, jsonOptions);
                     return true;
 
                 default:

@@ -32,11 +32,12 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - 本轮会话已继续按 ADR 0010 收敛 UnitySample 命令命名：`CliUnitySampleSupport` 已退出源码，拆为 `CliUnitySampleExportOptionsReader` 与 `CliUnitySampleTemplateBindingReader`。
 - 本轮会话已继续收敛 binding-template 命令的适配边界：`CliUnitySampleTemplateBindingReader` 现在只返回 `TimelineAssetBindingModel`，最后一层 UnitySample 类型适配已拆到 `CliUnitySampleBindingTemplateWriter`。
 - 本轮会话已继续收敛 CLI 总入口 runner 命名：`CliTopLevelCommandRunner`、`CliSingleFileCommandRunner`、`CliProjectCommandRunner` 已分别改为 `CliCommandTopLevelRunner`、`CliCommandSingleFileRunner`、`CliCommandProjectRunner`。
+- 本轮会话已继续按终局后缀白名单收口 CLI 命令入口：`CliCommandTopLevelRunner`、`CliCommandSingleFileRunner`、`CliCommandProjectRunner` 以及 `CliUnitySample*CommandRunner` 已统一去掉 `Runner`，收敛为 `CliTopLevelCommand`、`CliSingleFileCommand`、`CliProjectCommand` 与 `CliUnitySample*Command`。
 - 本轮会话已继续收敛 CLI 共享编译前置 helper 命名：`CliProjectCompiler`、`CliSingleFileCompiler` 已分别改为 `CliCompilerProject`、`CliCompilerSingleFile`。
-- 本轮会话已继续收口 UnitySample 项目级命令分支：`CliCommandProjectRunner` 不再直接编排三条 UnitySample 项目级命令，改为委托 `CliUnitySampleProjectCommandRunner`。
-- 本轮会话已继续压薄 binding-template 项目级命令编排：`CliUnitySampleProjectCommandRunner` 不再直接承载 binding template 读取、CSV 输出和诊断输出，相关逻辑已迁入 `CliUnitySampleBindingTemplateCommandRunner`。
-- 本轮会话已继续压薄 role-template 项目级命令编排：`CliUnitySampleProjectCommandRunner` 不再直接承载 role template 读取、CSV 输出和 report 输出，相关逻辑已迁入 `CliUnitySampleRoleTemplateCommandRunner`。
-- 本轮会话已继续压薄 project-export 项目级命令编排：`CliUnitySampleProjectCommandRunner` 不再直接承载导出参数校验、导出执行和写盘输出，相关逻辑已迁入 `CliUnitySampleProjectExportCommandRunner`。
+- 本轮会话已继续收口 UnitySample 项目级命令分支：`CliProjectCommand` 不再直接编排三条 UnitySample 项目级命令，改为委托 `CliUnitySampleProjectCommand`。
+- 本轮会话已继续压薄 binding-template 项目级命令编排：`CliUnitySampleProjectCommand` 不再直接承载 binding template 读取、CSV 输出和诊断输出，相关逻辑已迁入 `CliUnitySampleBindingTemplateCommand`。
+- 本轮会话已继续压薄 role-template 项目级命令编排：`CliUnitySampleProjectCommand` 不再直接承载 role template 读取、CSV 输出和 report 输出，相关逻辑已迁入 `CliUnitySampleRoleTemplateCommand`。
+- 本轮会话已继续压薄 project-export 项目级命令编排：`CliUnitySampleProjectCommand` 不再直接承载导出参数校验、导出执行和写盘输出，相关逻辑已迁入 `CliUnitySampleProjectExportCommand`。
 - 本轮会话确认：VSCode 长期方向是“薄扩展前端 + C# LanguageServer”，而不是继续长期借道 CLI 承载重语义能力。
 - 本轮会话确认：Unity 支持不再视为 Internal 五层之一，而视为 ExternalSupport/UnityPlugin；代码可以继续留在当前仓库，但不应进入默认 .NET solution 编译链。
 
@@ -61,13 +62,13 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - `Tooling` 当前已实际落下第八块稳定落点：timeline 资产扫描与 alias 归并流程已迁入独立项目 `src/Inscape.Tooling/`。
 - `Tooling` 当前已实际落下第九块稳定落点：`speaker -> roleId` 的 role map 读取流程已迁入独立项目 `src/Inscape.Tooling/`。
 - `Tooling` 当前已实际落下第十块稳定落点：既有 talking 资产扫描与保留 talkingId 收集流程已迁入独立项目 `src/Inscape.Tooling/`。
-- `Cli`：命令行入口层；当前落在 `CliCore`、`CliCommandTopLevelRunner`、`CliCommandSingleFileRunner`、`CliCommandProjectRunner`。
+- `Cli`：命令行入口层；当前落在 `CliCore`、`CliTopLevelCommand`、`CliSingleFileCommand`、`CliProjectCommand`。
 - `Cli` 的 UnitySample 命令辅助已进一步收敛：输入读取侧当前落在 `CliUnitySampleExportOptionsReader` 与 `CliUnitySampleTemplateBindingReader`，输出侧当前落在 `CliUnitySampleExportWriter` 与 `CliUnitySampleRoleTemplateReportWriter`。
 - `Cli` 的 binding-template 命令当前也已形成更清楚的 reader / writer 分工：`CliUnitySampleTemplateBindingReader` 负责读取 Tooling 模型，`CliUnitySampleBindingTemplateWriter` 负责最后一层 UnitySample 类型适配与 CSV 输出。
-- `Cli` 的 UnitySample 项目级命令当前也已形成更清楚的入口边界：`CliCommandProjectRunner` 只做委托，具体三条项目级命令由 `CliUnitySampleProjectCommandRunner` 承载。
-- `Cli` 的 binding-template 项目级命令当前也已形成更清楚的局部边界：`CliUnitySampleProjectCommandRunner` 只做分派，具体 binding template 读取、主 CSV 输出和诊断输出由 `CliUnitySampleBindingTemplateCommandRunner` 承载。
-- `Cli` 的 role-template 项目级命令当前也已形成更清楚的局部边界：`CliUnitySampleProjectCommandRunner` 只做分派，具体 role template 读取、主 CSV 输出和 report 输出由 `CliUnitySampleRoleTemplateCommandRunner` 承载。
-- `Cli` 的 project-export 项目级命令当前也已形成更清楚的局部边界：`CliUnitySampleProjectCommandRunner` 只做分派，具体导出参数校验、导出执行和写盘输出由 `CliUnitySampleProjectExportCommandRunner` 承载。
+- `Cli` 的 UnitySample 项目级命令当前也已形成更清楚的入口边界：`CliProjectCommand` 只做委托，具体三条项目级命令由 `CliUnitySampleProjectCommand` 承载。
+- `Cli` 的 binding-template 项目级命令当前也已形成更清楚的局部边界：`CliUnitySampleProjectCommand` 只做分派，具体 binding template 读取、主 CSV 输出和诊断输出由 `CliUnitySampleBindingTemplateCommand` 承载。
+- `Cli` 的 role-template 项目级命令当前也已形成更清楚的局部边界：`CliUnitySampleProjectCommand` 只做分派，具体 role template 读取、主 CSV 输出和 report 输出由 `CliUnitySampleRoleTemplateCommand` 承载。
+- `Cli` 的 project-export 项目级命令当前也已形成更清楚的局部边界：`CliUnitySampleProjectCommand` 只做分派，具体导出参数校验、导出执行和写盘输出由 `CliUnitySampleProjectExportCommand` 承载。
 - `VSCode`：编辑器入口层；当前主要落在 `tools/vscode-inscape/extension.js`。
 - `LanguageServer`：C# 语义服务层；当前尚未创建项目，但已确认长期方向。
 - `Runtime`：未来运行期层；当前尚未实现。
@@ -148,7 +149,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - 2026-05-11 已继续执行 Tooling 抽取：当前 `CliDslSourceLoader` 已被 `Inscape.Tooling` 内的 `ProjectSourcesLoaderDomain` / `ProjectSourceOverrideModel` 取代，`CliCompilerProject` 只保留 `--override` 参数解释与编排调用。这一刀同样通过了 `dotnet build Inscape.slnx --no-restore` 和 `dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj --no-build`。
 - 2026-05-11 已继续执行第三刀：当前 `CliPreviewStyleLoader` / `CliPreviewStyleSheet` 已被 `Inscape.Tooling` 内的 `PreviewStyleReaderDomain` / `PreviewStyleSheetModel` 取代，`CliPreviewHtmlRenderer` 继续保留在 Cli 侧承载 HTML 输出。这一刀同样通过了 `dotnet build Inscape.slnx --no-restore` 和 `dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj --no-build`。
 - 2026-05-11 已继续执行第四刀：当前 `CliCore` 内的本地化 CSV 读取、提取与更新共享辅助已被 `Inscape.Tooling` 内的 `LocalizationCsvFlowDomain` 取代，Cli 命令侧只保留 `--from` 参数读取和错误输出。这一刀同样通过了 `dotnet build Inscape.slnx --no-restore` 和 `dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj --no-build`。
-- 2026-05-11 已继续执行第五刀：当前 `CliHostSchemaTemplateWriter` 已被 `Inscape.Tooling` 内的 `HostSchemaTemplateWriterDomain` 取代，`CliCommandTopLevelRunner` 只保留 `-o` 参数读取与输出适配。这一刀同样通过了 `dotnet build Inscape.slnx --no-restore` 和 `dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj --no-build`。
+- 2026-05-11 已继续执行第五刀：当前 `CliHostSchemaTemplateWriter` 已被 `Inscape.Tooling` 内的 `HostSchemaTemplateWriterDomain` 取代，`CliTopLevelCommand` 只保留 `-o` 参数读取与输出适配。这一刀同样通过了 `dotnet build Inscape.slnx --no-restore` 和 `dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj --no-build`。
 - 2026-05-11 已继续执行第六刀：当前 `CliUnitySampleSupport` 内的 UnitySample 绑定表 CSV 读取共享流程已被 `Inscape.Tooling` 内的 `HostBindingMapReaderDomain` / `HostBindingMapEntryModel` 取代，Cli 侧只保留把通用绑定项映射到 `UnitySampleHostBinding` 的适配。这一刀同样通过了 `dotnet build Inscape.slnx --no-restore` 和 `dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj --no-build`。
 - 2026-05-11 已继续执行第七刀：当前 `CliUnitySampleSupport` 内的现有角色名 CSV 扫描与歧义收敛流程已被 `Inscape.Tooling` 内的 `RoleNameBindingScanDomain` / `RoleNameBindingScanResultModel` / `RoleNameBindingCandidateModel` 取代，Cli 侧只保留 UnitySample role template report 输出。这一刀同样通过了 `dotnet build Inscape.slnx --no-restore` 和 `dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj --no-build`。
 - 2026-05-11 已继续执行第八刀：当前 `CliUnitySampleSupport` 内的 timeline 资产扫描与 alias 归并流程已被 `Inscape.Tooling` 内的 `TimelineAssetBindingScanDomain` / `TimelineAssetBindingModel` 取代，Cli 侧只保留把通用扫描结果映射到 `UnitySampleTimelineAssetBinding` 的适配。这一刀同样通过了 `dotnet build Inscape.slnx --no-restore` 和 `dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj --no-build`。
@@ -158,12 +159,13 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - 2026-05-11 已继续执行命名收敛：原 `CliUnitySampleSupport` 已退出源码，拆为 `CliUnitySampleExportOptionsReader` 与 `CliUnitySampleTemplateBindingReader` 两个具体 reader。这一刀同样通过了 `dotnet build Inscape.slnx --no-restore` 和 `dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj --no-build`。
 - 2026-05-11 已继续执行 UnitySample binding-template 收口：`CliUnitySampleTemplateBindingReader` 现在只返回 `TimelineAssetBindingModel`，最后一层 UnitySample 类型适配已拆到 `CliUnitySampleBindingTemplateWriter`。这一刀同样通过了 `dotnet build Inscape.slnx --no-restore` 和 `dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj --no-build`。
 - 2026-05-11 已继续执行 CLI 总入口命名收敛：`CliTopLevelCommandRunner`、`CliSingleFileCommandRunner`、`CliProjectCommandRunner` 已分别改为 `CliCommandTopLevelRunner`、`CliCommandSingleFileRunner`、`CliCommandProjectRunner`。这一刀同样通过了 `dotnet build Inscape.slnx --no-restore`。
-- 2026-05-11 已继续执行 UnitySample 项目级命令收口：`CliCommandProjectRunner` 当前不再直接编排三条 UnitySample 项目级命令，相关逻辑已迁入 `CliUnitySampleProjectCommandRunner`。这一刀同样通过了 `dotnet build Inscape.slnx --no-restore` 和 `dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj --no-build`。
-- 2026-05-11 已继续执行 UnitySample binding-template 项目级命令收口：`CliUnitySampleProjectCommandRunner` 当前不再直接承载 binding template 读取、主 CSV 输出与诊断输出，相关逻辑已迁入 `CliUnitySampleBindingTemplateCommandRunner`。这一刀同样通过了 `dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj`。
-- 2026-05-11 已继续执行 UnitySample role-template 项目级命令收口：`CliUnitySampleProjectCommandRunner` 当前不再直接承载 role template 读取、主 CSV 输出与 report 输出，相关逻辑已迁入 `CliUnitySampleRoleTemplateCommandRunner`。这一刀同样通过了 `dotnet build Inscape.slnx --no-restore` 和 `dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj --no-build`。
-- 2026-05-11 已继续执行 UnitySample project-export 项目级命令收口：`CliUnitySampleProjectCommandRunner` 当前不再直接承载导出参数校验、导出执行与写盘输出，相关逻辑已迁入 `CliUnitySampleProjectExportCommandRunner`。这一刀同样通过了 `dotnet build Inscape.slnx --no-restore` 和 `dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj`。
+- 2026-05-11 已继续执行 CLI 命令入口终局后缀收敛：`CliCommandTopLevelRunner`、`CliCommandSingleFileRunner`、`CliCommandProjectRunner` 与 `CliUnitySample*CommandRunner` 已统一去掉 `Runner`，改为 `CliTopLevelCommand`、`CliSingleFileCommand`、`CliProjectCommand` 与 `CliUnitySample*Command`。这一刀同样通过了命名规则对照：`Command` 仍属于宿主入口白名单后缀，`Runner` 已退出当前源码。
+- 2026-05-11 已继续执行 UnitySample 项目级命令收口：`CliProjectCommand` 当前不再直接编排三条 UnitySample 项目级命令，相关逻辑已迁入 `CliUnitySampleProjectCommand`。这一刀同样通过了 `dotnet build Inscape.slnx --no-restore` 和 `dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj --no-build`。
+- 2026-05-11 已继续执行 UnitySample binding-template 项目级命令收口：`CliUnitySampleProjectCommand` 当前不再直接承载 binding template 读取、主 CSV 输出与诊断输出，相关逻辑已迁入 `CliUnitySampleBindingTemplateCommand`。这一刀同样通过了 `dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj`。
+- 2026-05-11 已继续执行 UnitySample role-template 项目级命令收口：`CliUnitySampleProjectCommand` 当前不再直接承载 role template 读取、主 CSV 输出与 report 输出，相关逻辑已迁入 `CliUnitySampleRoleTemplateCommand`。这一刀同样通过了 `dotnet build Inscape.slnx --no-restore` 和 `dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj --no-build`。
+- 2026-05-11 已继续执行 UnitySample project-export 项目级命令收口：`CliUnitySampleProjectCommand` 当前不再直接承载导出参数校验、导出执行与写盘输出，相关逻辑已迁入 `CliUnitySampleProjectExportCommand`。这一刀同样通过了 `dotnet build Inscape.slnx --no-restore` 和 `dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj`。
 
-- 2026-05-01 已完成 CLI 项目命令收口：项目级命令分发当前落在 `CliCommandProjectRunner`，共享的“配置读取 + `.inscape` 项目源扫描/读取/override + 项目编译”前置流程已收口到 `CliCompilerProject`；其中 DSL 源加载位于 `CliDslSourceLoader`，UnitySample role/binding/export 辅助逻辑位于 `CliUnitySampleSupport`。单文件命令的“输入读取 + 邻近项目配置读取 + 单文件编译”前置流程也已收口到 `CliCompilerSingleFile`。`CliCore` 只保留参数分流、共享输出和退出码整合。验证通过：`dotnet build Inscape.slnx --no-restore`、`dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj --no-build`、`node --check tools\vscode-inscape\extension.js`。这些类型名现在统一视为过渡名；后续以目录优先、主语/角色的方式逐步替换。
+- 2026-05-01 已完成 CLI 项目命令收口：项目级命令分发当前落在 `CliProjectCommand`，共享的“配置读取 + `.inscape` 项目源扫描/读取/override + 项目编译”前置流程已收口到 `CliCompilerProject`；其中 DSL 源加载位于 `CliDslSourceLoader`，UnitySample role/binding/export 辅助逻辑位于 `CliUnitySampleSupport`。单文件命令的“输入读取 + 邻近项目配置读取 + 单文件编译”前置流程也已收口到 `CliCompilerSingleFile`。`CliCore` 只保留参数分流、共享输出和退出码整合。验证通过：`dotnet build Inscape.slnx --no-restore`、`dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj --no-build`、`node --check tools\vscode-inscape\extension.js`。这些类型名现在统一视为过渡名；后续以目录优先、主语/角色的方式逐步替换。
 
 - 2026-05-11 认知又补了一层：除了命名模型收敛，长期架构本身也已定稿为 Internal / ExternalSupport 两层。Internal 以 `Compiler` / `Tooling` / `Cli` / `VSCode` / `LanguageServer` / `Runtime` 组织；ExternalSupport 当前以 `UnityPlugin` 为核心。详见 ADR 0011、[代码结构规划](code-structure.md) 和 [编码与命名规范](coding-conventions.md)。
 

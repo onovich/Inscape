@@ -5,14 +5,14 @@ using Inscape.Tooling;
 
 namespace Inscape.Cli {
 
-    static class CliCommandProjectRunner {
+    static class CliProjectCommand {
 
         public static int Run(string command, string rootPath, string[] args, string? outputPath, JsonSerializerOptions jsonOptions) {
             if (!CliCompilerProject.TryCompile(rootPath, args, jsonOptions, out ToolConfigModel config, out ProjectCompilationResult result)) {
                 return 1;
             }
 
-            if (CliUnitySampleProjectCommandRunner.TryRun(command, result, args, config, outputPath, jsonOptions, out int unitySampleExitCode)) {
+            if (CliUnitySampleProjectCommand.TryRun(command, result, args, config, outputPath, jsonOptions, out int unitySampleExitCode)) {
                 return unitySampleExitCode;
             }
 

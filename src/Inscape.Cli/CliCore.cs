@@ -15,7 +15,7 @@ namespace Inscape.Cli {
         static readonly JsonSerializerOptions JsonOptions = CreateJsonOptions();
 
         public static int Main(string[] args) {
-            if (CliCommandTopLevelRunner.TryRun(args, JsonOptions, out int exitCode)) {
+            if (CliTopLevelCommand.TryRun(args, JsonOptions, out int exitCode)) {
                 return exitCode;
             }
 
@@ -36,7 +36,7 @@ namespace Inscape.Cli {
                 return 1;
             }
 
-            if (CliCommandSingleFileRunner.TryRun(command, result, outputPath, previousLocalizationPath, previewConfig, JsonOptions, out exitCode)) {
+            if (CliSingleFileCommand.TryRun(command, result, outputPath, previousLocalizationPath, previewConfig, JsonOptions, out exitCode)) {
                 return exitCode;
             }
 
@@ -69,7 +69,7 @@ namespace Inscape.Cli {
         }
 
         static int RunProjectCommand(string command, string rootPath, string[] args, string? outputPath) {
-            return CliCommandProjectRunner.Run(command, rootPath, args, outputPath, JsonOptions);
+            return CliProjectCommand.Run(command, rootPath, args, outputPath, JsonOptions);
         }
 
         static int RunMergeUnitySampleL10n(string generatedPath, string? existingPath, string? reportPath, string? outputPath) {
