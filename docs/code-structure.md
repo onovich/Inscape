@@ -2,122 +2,234 @@
 
 状态：基线 + 草案
 
-第一版代码目标是跑通 DSL 到 Narrative Graph IR 的主链路，并为后续 VSCode、HTML 预览和 Unity Adapter 留出边界。
+最后更新：2026-05-11
 
-具体命名、入口、生命周期式方法和渐进式重构规则见 [编码与命名规范](coding-conventions.md)。后续重构应先对齐该规范，再做小步、可验证的代码移动或重命名。
+本文记录 Inscape 当前实际结构与目标结构。当前仓库仍处于“编译器 + 轻工具链”阶段，但长期架构已经收敛为：
 
-## 当前目录
+- Internal：`Compiler`、`Tooling`、`Cli`、`VSCode`、`LanguageServer`、`Runtime`
+- ExternalSupport：`UnityPlugin`
+
+## 当前实际目录
 
 ```text
 src/
-  Inscape.Core/          DSL 解析、诊断、图模型、哈希、IR 生成与本地化提取
-    Analysis/            图校验、项目级校验、锚点碰撞诊断
-    Compilation/         单文件与项目级编译入口
-    Diagnostics/         诊断模型
-    Localization/        CSV 提取、读取、写入与旧表合并
-    Model/               Narrative Graph IR 数据模型
-    Parsing/             第一版手写解析器与节点命名规则
-    Text/                稳定 hash 与文本规范化
-  Inscape.Adapters.UnitySample/
-                         实验性 Unity 样例 adapter，保留固定宿主数据结构 spike，不是最终 Host Bridge
-  Inscape.Cli/           命令行工具：check、diagnose、compile、preview、l10n 与项目级命令
+  Inscape.Core/                 当前 Compiler 雏形
+  Inscape.Cli/                  当前 Cli 与部分 Tooling 混合区
+  Inscape.Adapters.UnitySample/ 当前 ExternalSupport 原型样例
 tests/
-  Inscape.Tests/         无第三方依赖的轻量回归测试
-samples/
-  court-loop.inscape     图叙事与回环样例
+  Inscape.Tests/
 tools/
-  vscode-inscape/        VSCode 轻量语言扩展：高亮、诊断桥接、补全、snippets
-  unity-bird-importer/   可复制到 Bird Unity 项目的 Editor Importer 原型
+  vscode-inscape/               当前 VSCode 前端扩展
+  unity-bird-importer/          当前 Unity 外部导入原型
 docs/
-  code-structure.md      代码结构规划
+  ...
 ```
 
-## 分层原则
-
-- 架构术语上优先使用 `Dsl`、`DslSources`、`Config`、`Cli`、`Preview`、`L10n`、`Host` 这些窄职责模块名；当前工程名 `Inscape.Core` 暂不强改，但在设计讨论中应把它视为当前 DSL 语义层，而不是无限扩张的“Core 万物层”。
-- `Inscape.Core` 不依赖 Unity、不依赖 VSCode、不依赖 HTML 渲染，也不依赖外部包。
-- `Inscape.Cli` 是开发工具层，可以输出单文件 JSON IR、项目级 JSON IR、项目级诊断 JSON、单文件/项目级轻量 HTML 预览，以及本地化 CSV。
-- `tools/vscode-inscape` 可以承载 VSCode 写作体验代码，但语法诊断必须通过 `Inscape.Core` 或 CLI 桥接获得。
-- VSCode Language Server 后续应复用 `Inscape.Core`，而不是重新实现解析器。
-- Unity Adapter 后续应消费 Narrative Graph IR，并通过 Host Schema / Host Bridge / 代码生成适配项目自己的数据结构；`Inscape.Adapters.UnitySample` 只是实验样例。
-- Timeline / DirectorSystem 暂不进入 Core 的第一版模型，先作为后续调研与 Adapter 层问题。
-
-## 当前确认的模块名称
-
-- `Dsl`：DSL 语法、IR、诊断、图结构和编译语义真相；当前主要由 `src/Inscape.Core/` 承载。
-- `DslSources`：`.inscape` 文件发现、读取、override、来源组织；当前 CLI 侧已落地 `CliDslSourceLoader`。
-- `Config`：`inscape.config.json` 读取、路径归一化、配置模型；当前 CLI 侧已落地 `CliConfigLoader`、`CliProjectConfig`。
-- `Cli`：命令入口、命令路由、退出码与工具编排；当前落地 `CliCore`、`CliTopLevelCommandRunner`、`CliSingleFileCommandRunner`、`CliProjectCommandRunner`。
-- `Preview`：预览样式、HTML / WebView 渲染和源码定位；当前落地 `CliPreviewStyleLoader`、`CliPreviewHtmlRenderer` 与 VSCode preview bridge。
-- `L10n`：本地化提取、更新、合并和审校；当前主要落地在 `Inscape.Core/Localization/` 与 CLI 对应命令。
-- `Host`：宿主 Schema、Host Bridge、绑定、导入导出和生成；当前包括 `hostSchema` 草案以及 UnitySample / Bird 链路。
-
-这些名称现在是后续重构和文档同步的标准口径。除非有新的 ADR 或明确讨论结论，不要回退到 `Workspace`、`ProjectSystem`、`InscapeProjectService` 这类过泛术语。
-
-## 入口与可读性方向
-
-当前项目仍处于编译器 + 工具链阶段，因此没有游戏项目式的统一主循环。现有入口分散为：Core 编译入口、CLI 命令入口、VSCode 扩展入口和 HTML 预览入口。
-
-为了让代码更接近游戏项目中的“主入口 + 生命周期”阅读习惯，后续应区分“工具链组合层”和“运行时入口”，但不要把工具链组合层提前做成大杂烩总服务：
-
-- 工具链侧短期先通过 `DslSources`、`Config`、`Preview`、`L10n`、`Host` 等窄模块组合当前需求；如未来确需统一门面，也应只是建立在这些模块之上的薄组合层。
-- `NarrativeRuntime`：进入 Runtime Host 阶段后再引入，负责从 IR 启动故事、进入节点、继续、选择、回退、重启、派发宿主事件和存档恢复。
-
-短期不要为了形式统一给 Core 增加 runtime loop；Core 仍然只负责编译和数据契约。
-
-## 第一版 Core 能力
-
-- 解析显式节点：`:: node.name`
-- 解析对白与旁白。
-- 解析选项组与选项跳转。
-- 解析默认跳转：`-> target`
-- 保留 `@...` 和 `[...]` 元信息为不可执行 metadata。
-- 生成行级稳定 hash。
-- 诊断重复节点、非法节点名、缺失目标、空节点、不可达节点和选项语法问题。
-- 项目级编译合并多个 `.inscape` 文件，第一版要求节点名在项目内全局唯一，并通过 `@entry` 标记项目入口。
-- 提取本地化 CSV，并按旧 CSV 中的 `anchor` 精确继承译文。
-
-## 当前 CLI 能力
+## 目标结构
 
 ```text
-单文件：
-  check
-  diagnose
-  compile
-  preview
-  extract-l10n
-  update-l10n
+Internal/
+  Compiler/
+    DslScript/
+    StoryGraph/
+    Localization/
+    Diagnostics/
+    TextContracts/
 
-项目级：
-  check-project
-  diagnose-project
-  compile-project
-  preview-project
-  extract-l10n-project
-  update-l10n-project
-  export-unity-sample-binding-template
-  export-unity-sample-role-template
-  export-unity-sample-project
-  merge-unity-sample-l10n
+  Tooling/
+    ProjectSources/
+    ToolConfig/
+    Preview/
+    Localization/
+    HostSchema/
+    HostBinding/
+    EditorAuthoring/
+
+  Cli/
+    ConsoleEntry/
+    Routing/
+    DslScript/
+    StoryGraph/
+    Localization/
+    HostSchema/
+    HostBinding/
+
+  VSCode/
+    ExtensionEntry/
+    LanguageFeatures/
+    EditorAuthoring/
+    PreviewWebview/
+
+  LanguageServer/
+    ServerEntry/
+    DslScript/
+    StoryGraph/
+    HostSchema/
+
+  Runtime/
+    StoryRuntime/
+    Input/
+    Localization/
+    HostBridge/
+
+ExternalSupport/
+  UnityPlugin/
+    PluginEntry/
+    ScriptImport/
+    AttributeScan/
+    HostBinding/
+    AssetConfigure/
+    ImportFlow/
 ```
 
-项目级命令支持 `--entry node.name` 临时覆盖项目入口，用于从任意节点编译、诊断和预览。它不修改源文件中的 `@entry`。
+## 层级职责
 
-`export-unity-sample-binding-template` 会扫描项目内 Timeline Hook，生成 `--unity-sample-binding-map` 模板；可用 `--unity-sample-existing-timeline-root` 扫描样例 Timeline `.asset` 与 `.meta`，辅助填入样例 ID、Unity guid 和 asset path。
+### Compiler
 
-`export-unity-sample-project` 会输出 `unity-sample-manifest.json`、`L10N_Talking.csv`、`inscape-unity-sample-l10n-map.csv` 和 `unity-sample-export-report.txt`。它保留一套硬编码宿主数据形状，用于验证 adapter 流程和未来生成器测试；不要把它当成最终 Host Bridge 契约。
+Compiler 是语义真相层。它只表达这些业务：
 
-项目级 UnitySample 命令会自动读取项目根目录的 `inscape.config.json` 中的 `unitySample` 配置，用于提供 `roleMap`、`bindingMap`、`existingRoleNameCsv`、`existingTimelineRoot`、`existingTalkingRoot` 和 `talkingIdStart` 默认值。命令行参数仍可覆盖配置值。配置读取暂放在 CLI 层，避免 `Inscape.Core` 过早承担工程环境路径管理。
+- `DslScript`
+- `StoryGraph`
+- `Localization`
+- `Diagnostics`
+- `TextContracts`
 
-`tools/unity-bird-importer` 提供 Unity Editor Importer 原型脚本。该脚本不进入 .NET solution；使用时复制到 Bird 项目的 `Assets/Editor/`，读取 `bird-manifest.json` 并生成或更新 `TalkingSO`。
+它不依赖：
 
-项目级扫描会忽略 `.git`、`bin`、`obj`、`node_modules` 和 `artifacts`。VSCode 诊断桥接依赖 `diagnose-project --override source temp`，未来 WebView 和本地化命令也应优先复用项目级 CLI。
+- 文件系统项目扫描
+- 命令行参数
+- VSCode API
+- UnityEngine / UnityEditor
+- HTML / WebView 容器
 
-## 后续预留目录
+### Tooling
+
+Tooling 是共享用例层。它承接当前大量暂住在 `Inscape.Cli` 中的项目扫描、配置读取、预览构建、模板导出和报告生成流程。
+
+它拥有这些大业务：
+
+- `ProjectSources`
+- `ToolConfig`
+- `Preview`
+- `Localization`
+- `HostSchema`
+- `HostBinding`
+
+它可以调用 `Compiler`，也可以被 `Cli`、`VSCode`、`LanguageServer` 和未来外部支持复用。
+
+### Cli
+
+Cli 是命令行入口层。它不是共享业务真相层。
+
+它只负责：
+
+- argv
+- stdout / stderr
+- 退出码
+- 命令目录与路由
+- 调用 Tooling
+
+当前 `Inscape.Cli` 仍混有一部分 Tooling 逻辑，这正是接下来重构的重点。
+
+### VSCode
+
+VSCode 是编辑器入口层。它负责：
+
+- VSCode API
+- 命令面板
+- Webview 容器
+- 轻前端交互
+
+重语义能力长期迁移到 `LanguageServer`，而不是继续在前端或 Cli 里重复实现。
+
+### LanguageServer
+
+LanguageServer 是 C# 语义服务层。它长期承担：
+
+- 诊断
+- 跳转定义
+- 引用查找
+- 补全
+- source map 相关语义计算
+
+VSCode 长期方向是“薄扩展前端 + C# LanguageServer”，减少对 Cli 进程桥接的依赖。
+
+### Runtime
+
+Runtime 是未来独立运行期层。当前不提前塞进 Compiler。
+
+### ExternalSupport / UnityPlugin
+
+UnityPlugin 不属于 Internal 五层之一。它是 Unity 环境下的外部支持层。
+
+当前仓库可以保留：
+
+- 协议
+- 样例导出工件
+- 回归素材
+- 外部导入原型
+
+但 UnityPlugin 本体不应进入默认 .NET solution 编译链。它更适合作为：
+
+- `tools/` 下独立支持目录
+- 独立 Unity package
+- 未来独立仓库
+
+## 当前代码映射
+
+- `src/Inscape.Core/` → 当前 `Compiler` 雏形
+- `src/Inscape.Cli/` → 当前 `Cli` 与 `Tooling` 混合承载区
+- `tools/vscode-inscape/` → 当前 `VSCode` 前端
+- `src/Inscape.Adapters.UnitySample/` → 当前 `ExternalSupport/UnityPlugin` 过渡样例
+- `tools/unity-bird-importer/` → 当前 `ExternalSupport/UnityPlugin` 导入原型
+
+## 命名树速记
 
 ```text
-src/
-  Inscape.LanguageServer/    VSCode LSP，待创建
-  Inscape.Preview/           HTML 预览共享包，待创建
-  Inscape.UnityAdapter/      Unity/Bird 适配层，待创建
+Compiler
+  DslScript
+  StoryGraph
+  Localization
+
+Tooling
+  ProjectSources
+  ToolConfig
+  Preview
+  Localization
+  HostSchema
+  HostBinding
+
+Cli
+  ConsoleEntry
+  Routing
+
+VSCode
+  ExtensionEntry
+  LanguageFeatures
+  EditorAuthoring
+  PreviewWebview
+
+LanguageServer
+  ServerEntry
+  DslScript
+  StoryGraph
+  HostSchema
+
+Runtime
+  StoryRuntime
+  Input
+  Localization
+  HostBridge
+
+ExternalSupport
+  UnityPlugin
 ```
+
+## 重构目标
+
+短期目标不是一次性重命名整个仓库，而是：
+
+1. 把共享流程从 `Inscape.Cli` 提到 `Tooling`
+2. 拆分 `tools/vscode-inscape/extension.js`
+3. 提前规划并创建 `Inscape.LanguageServer`
+4. 把 Unity 支持明确收束到 `ExternalSupport/UnityPlugin`

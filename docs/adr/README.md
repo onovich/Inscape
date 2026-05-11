@@ -19,3 +19,5 @@ ADR 用于记录影响项目长期方向的决定。每条 ADR 应说明背景�
 - [0007：采用分层竞品参照定位 DSL 与工具链](0007-dsl-benchmark-positioning.md)
 - [0008：宿主桥接层与项目适配边界](0008-host-bridge-and-adapter-boundary.md)
 - [0009：VSCode 正文链接态不用 DocumentLinkProvider](0009-vscode-transient-text-links-without-document-links.md)
+- [0010：采用目录优先的主语/角色命名模型](0010-directory-first-subject-role-naming.md)
+- [0011：采用 Internal / ExternalSupport 分层，并引入 Tooling 中间层](0011-internal-tooling-and-external-support-boundary.md)

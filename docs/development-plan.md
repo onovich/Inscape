@@ -1,0 +1,145 @@
+# 研发计划
+
+状态：草案
+
+最后更新：2026-05-11
+
+本文用于把当前已经确认的架构结论转成研发顺序。它不替代 [路线图](roadmap.md)，而是把接下来 1 到 3 轮可执行工作压成具体阶段。
+
+## 当前前提
+
+- Internal 架构收敛为：`Compiler`、`Tooling`、`Cli`、`VSCode`、`LanguageServer`、`Runtime`
+- ExternalSupport 当前只确认：`UnityPlugin`
+- 当前 `Inscape.Core` 视为 `Compiler` 雏形
+- 当前 `Inscape.Cli` 同时承载了 `Cli` 与部分 `Tooling`
+- 当前 `tools/vscode-inscape` 仍是前端与语义桥接混合体
+- Unity 支持长期不进入默认 .NET solution 编译链
+
+## 阶段 0：文档与边界同步
+
+目标：把架构结论固化为团队共识，避免继续在旧口径上开发。
+
+完成标准：
+
+- [x] 命名规则同步到 [编码与命名规范](coding-conventions.md)
+- [x] Internal / ExternalSupport 边界形成 ADR
+- [x] 代码结构规划同步更新
+- [x] 接手文档记录最新认知结论
+
+## 阶段 1：抽出 Tooling 中间层
+
+目标：把当前 Cli 里的共享流程移到可复用的 Tooling。
+
+优先模块：
+
+1. `ProjectSources`
+2. `ToolConfig`
+3. `Preview`
+4. `Localization`
+5. `HostSchema`
+6. `HostBinding`
+
+具体任务：
+
+1. 为 `Inscape.Tooling` 建立项目壳或目录边界。
+2. 把 `CliConfigLoader`、`CliDslSourceLoader` 的能力上提到 `Tooling`。
+3. 把项目/单文件共享编译前置流程改为 `Tooling` 调 `Compiler`。
+4. 把预览构建、本地化导出更新、HostSchema 模板导出收束到 `Tooling`。
+5. 让 `Cli` 退化成命令入口与文件输出适配层。
+
+阶段门槛：
+
+- `Cli` 不再拥有共享项目扫描和配置读取真相。
+- 现有 CLI 命令行为保持兼容。
+
+## 阶段 2：规划并建立 C# LanguageServer 基线
+
+目标：让 VSCode 的重语义能力开始摆脱 CLI 进程桥接。
+
+第一批能力：
+
+1. 诊断
+2. 跳转定义
+3. 引用查找
+4. 补全
+5. 源映射查询
+
+具体任务：
+
+1. 创建 `Inscape.LanguageServer` 项目壳。
+2. 明确前后端边界：VSCode 前端只保留 client、Webview 和轻 UI。
+3. 让 LanguageServer 直接调用 `Compiler` / `Tooling`。
+4. 先迁移诊断与定义跳转，再迁移引用和补全。
+
+阶段门槛：
+
+- VSCode 至少一项重语义能力已不再借道 CLI。
+- LanguageServer 的输入输出契约被文档化。
+
+## 阶段 3：拆分 VSCode 前端
+
+目标：把 `extension.js` 从单文件入口拆成可维护模块。
+
+目标模块：
+
+1. `ExtensionEntry`
+2. `LanguageFeatures`
+3. `EditorAuthoring`
+4. `PreviewWebview`
+5. `LanguageServer` client
+
+具体任务：
+
+1. 拆 provider。
+2. 拆 command。
+3. 拆 preview bridge。
+4. 拆 workspace index / authoring state。
+5. 保持当前 Ctrl+Click 与预览定位体验不回退。
+
+阶段门槛：
+
+- `extension.js` 变为注册入口。
+- VSCode 作者体验不回归。
+
+## 阶段 4：固化 HostSchema / HostBinding，并规划 ExternalSupport
+
+目标：让 Unity 支持从样例适配过渡到受控的外部支持链路。
+
+具体任务：
+
+1. 明确 `HostSchema` 与 `HostBinding` 的 Tooling 流程边界。
+2. 把当前 UnitySample 输出视为 ExternalSupport 的过渡工件，而不是最终契约。
+3. 为 `UnityPlugin` 定义输入工件、Attribute 扫描、桥接配置和资产填写流程。
+4. 明确 `UnityPlugin` 的仓库内位置：`tools/` 下独立支持目录或独立 package。
+
+阶段门槛：
+
+- UnityPlugin 的输入输出契约明确。
+- Unity 支持代码不进入默认 .NET solution 编译链。
+
+## 阶段 5：Runtime 前置设计
+
+目标：在不污染 Compiler 的前提下，为长期 Runtime 做准备。
+
+具体任务：
+
+1. 定义 `StoryRuntime`、`Input`、`Localization`、`HostBridge` 边界。
+2. 明确 `TaskModel` / `ActionModel`、`Controller`、`Events` 的角色关系。
+3. 先写运行时协议和状态模型，不急于实现完整 loop。
+
+## 每阶段统一验证
+
+每个阶段结束后至少执行：
+
+```powershell
+dotnet build Inscape.slnx --no-restore
+dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj --no-build
+node --check tools\vscode-inscape\extension.js
+```
+
+若阶段涉及 `tools/vscode-inscape/`，额外执行：
+
+```powershell
+cd tools\vscode-inscape
+npm run rebuild:vsix
+```

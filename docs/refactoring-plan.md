@@ -2,11 +2,11 @@
 
 状态：执行中
 
-最后更新：2026-05-01
+最后更新：2026-05-11
 
-本文把 Inscape 的重构拆成大目标、中目标、小目标，目标是让代码逐步接近游戏项目中常见的清晰入口、生命周期式流程、数据/逻辑/表现/适配分层，同时不破坏当前 DSL、CLI、VSCode 和预览体验。
+本文把 Inscape 的重构拆成大目标、中目标、小目标，目标是让代码逐步接近游戏项目中常见的清晰入口、生命周期式流程、数据/逻辑/表现/适配分层，同时不破坏当前 DSL、CLI、VSCode 和预览体验。当前长期结构已经收敛为：Internal 下的 `Compiler`、`Tooling`、`Cli`、`VSCode`、`LanguageServer`、`Runtime`，以及 ExternalSupport 下的 `UnityPlugin`。
 
-当前主动重构范围只覆盖 `Inscape.Core`、`Inscape.Cli`、`tools/vscode-inscape` 与测试组织。`src/Inscape.Adapters.UnitySample` 继续作为搁置中的实验/回归样例保留隔离，不纳入本阶段主动重构，只要求不反向污染 Core，并能继续承担 Host Bridge / generator 的回归验证素材。
+当前主动重构范围只覆盖 Internal 侧：`Inscape.Core`、`Inscape.Cli`、`tools/vscode-inscape` 与测试组织。`src/Inscape.Adapters.UnitySample` 和 `tools/unity-bird-importer` 继续作为 ExternalSupport 过渡样例保留隔离，不纳入这一轮内部重构，只要求不反向污染 Compiler，并能继续承担 Host Bridge / UnityPlugin 回归素材。
 
 重构原则见 [编码与命名规范](coding-conventions.md)。本文只安排执行顺序和验收方式。
 
@@ -41,10 +41,11 @@ VSCode：4 / 10
 
 小目标：
 
-- 标注 Core 入口：`InscapeCompiler`、`ProjectCompiler`。
-- 标注工具入口：CLI `CliCore`、VSCode `activate()`、HTML Preview renderer。
+- 标注 Compiler 入口：`InscapeCompiler`、`ProjectCompiler`。
+- 标注内部工具入口：CLI `CliCore`、VSCode `activate()`、LanguageServer server entry。
 - 在文档中明确：当前没有游戏式主循环，因为项目仍处于编译器 + 工具链阶段。
-- 明确未来运行时入口是 `NarrativeRuntime`；工具链侧短期继续按 `DslSources`、`Config`、`Preview`、`L10n`、`Host` 等窄职责模块推进，而不是预设 `InscapeProjectService` 一类总服务。
+- 明确未来运行时入口是 `NarrativeRuntime`；内部工具链短期继续按 `Tooling` 的共享业务模块推进，而不是预设 `InscapeProjectService` 一类总服务。
+- 新增或重命名类型时，优先把层级和范围信息放进目录或命名空间，而不是继续扩张 `CliProject*`、`CliSingleFile*` 一类前导范围词。
 
 验收标准：
 
@@ -58,9 +59,10 @@ VSCode：4 / 10
 小目标：
 
 - 不预设 `InscapeProjectService`、`Workspace`、`ProjectSystem` 之类大而泛的工具链总服务。
-- 继续把项目级流程拆到 `DslSources`、`Config`、`Preview`、`L10n`、`Host` 等可单独验证的窄模块中。
-- CLI、VSCode 与未来 Language Server 逐步通过共享数据契约和薄组合层复用这些窄模块，而不是各自重新拼装，也不是先引入巨型门面。
-- 保留 `ProjectCompiler` 作为 Core 编译能力，不让它承担文件系统、配置和工具编排职责。
+- 继续把项目级流程从 `Cli` 上提到 `Tooling`，按 `ProjectSources`、`ToolConfig`、`Preview`、`Localization`、`HostSchema`、`HostBinding` 等共享业务模块拆分。
+- 具体类型命名采用 ADR 0010 的目录优先主语/角色模型：范围词不是类型名前缀的默认选择，`Support` / `Helper` 一类弱语义命名应优先被拆分。
+- CLI、VSCode 与未来 Language Server 逐步通过 `Tooling` + `Compiler` 复用共享流程与语义能力，而不是各自重新拼装，也不是先引入巨型门面。
+- 保留 `ProjectCompiler` 作为 Compiler 编译能力，不让它承担文件系统、配置和工具编排职责。
 
 验收标准：
 
@@ -127,10 +129,11 @@ VSCode：4 / 10
 
 执行顺序：
 
-1. 继续收口 CLI：让 `CliCore` 只保留参数分流、命令路由、退出码与少量共享输出；剩余共用逻辑优先提取到窄职责 helper。
-2. 拆分 VSCode 扩展：按 provider / command / preview bridge / style / workspace index 分层，而不是继续扩张 `extension.js`。
-3. 固化共享契约：明确 source map、reveal payload、项目扫描 / override / 配置读取的边界，供 CLI / VSCode / 未来 LSP 复用。
-4. 文档与 TODO 同步：每一轮重构提交都要同步更新 handoff、todo、code-structure、coding-conventions 和本计划，避免口径再次过时。
+1. 先抽出 `Tooling`：让 `CliCore` 只保留参数分流、命令路由、退出码与少量共享输出，项目扫描、配置读取、预览构建和模板导出逐步迁到 `Tooling`。
+2. 建立 `LanguageServer` 基线：把 VSCode 的重语义能力规划为“薄前端 + C# server”结构。
+3. 拆分 VSCode 扩展：按 provider / command / preview bridge / style / workspace index 分层，而不是继续扩张 `extension.js`。
+4. 固化共享契约：明确 source map、reveal payload、项目扫描 / override / 配置读取的边界，供 Tooling / VSCode / LanguageServer 复用。
+5. 文档与 TODO 同步：每一轮重构提交都要同步更新 handoff、todo、code-structure、coding-conventions 和本计划，避免口径再次过时。
 
 ### 中目标 B2：拆分 CLI command 分发
 
@@ -140,6 +143,8 @@ VSCode：4 / 10
 - 把每个主要命令拆成独立 command handler。
 - 提取 `CommandOptions`、`CommandResult`、`OutputWriter`、`ConfigLoader`。
 - 让 `CliCore.cs` 只保留参数分发、命令表和退出码处理。
+- 当前散落在 `Cli` 的共享流程逐步上提到 `Tooling`，让 `Cli` 回到“宿主入口”而不是“共享业务承载层”。
+- 当前平铺类型名中的范围词和弱语义词只视为过渡状态；长期优先目录化，再收敛类型名为具体主语 + 角色。
 - 项目级命令逐步调用更窄的项目编排 helper，而不是回到大而泛的项目总服务。
 
 验收标准：
@@ -148,7 +153,7 @@ VSCode：4 / 10
 - 命令帮助、错误码、JSON/CSV/HTML 输出保持兼容。
 - CLI 测试全部通过。
 
-当前进展：已先后提取 `CliConfigLoader`，并把顶层元命令（`help` / `commands` / `export-host-schema-template`）、单文件命令分支和项目级命令分支从 `CliCore` 主入口中抽离；项目 `.inscape` 源扫描/读取/override 已提取为 `CliDslSourceLoader`，预览样式读取已提取为 `CliPreviewStyleLoader`，项目命令共享的编译前置流程已提取为 `CliProjectCompiler`，单文件命令共享的输入读取/配置读取/编译前置流程已提取为 `CliSingleFileCompiler`，UnitySample 项目命令辅助逻辑已收口到 `CliUnitySampleSupport`。下一步应继续按职责细化 `Dsl` / `DslSources` / `Config` / `Preview` 等命名，而不是过早引入泛化的 `ProjectService` 或 `Workspace` 大层。
+当前进展：已先后提取 `CliConfigLoader`，并把顶层元命令（`help` / `commands` / `export-host-schema-template`）、单文件命令分支和项目级命令分支从 `CliCore` 主入口中抽离；项目 `.inscape` 源扫描/读取/override 已提取为 `CliDslSourceLoader`，预览样式读取已提取为 `CliPreviewStyleLoader`，项目命令共享的编译前置流程已提取为 `CliProjectCompiler`，单文件命令共享的输入读取/配置读取/编译前置流程已提取为 `CliSingleFileCompiler`，UnitySample 项目命令辅助逻辑已收口到 `CliUnitySampleSupport`。这些名字当前视为过渡命名：下一步应优先把共享流程上提到 `Tooling`，再逐步把它们收敛为目录优先、主语/角色的具体命名，而不是继续放大 `ProjectService`、`Workspace` 或 `Support` 大层。
 
 收益：高。
 

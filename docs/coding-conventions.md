@@ -2,301 +2,219 @@
 
 状态：草案
 
-最后更新：2026-05-01
+最后更新：2026-05-11
 
-本文用于把 Inscape 的代码组织成更接近游戏项目可读经验的形态：有清晰入口、有生命周期式流程、有稳定数据契约，并且避免工具层、表现层和业务适配层互相污染。
+本文用于把 Inscape 的代码组织成可推理、可迁移、可演进的结构。当前长期目标已经收敛为：
 
-目标不是一次性重命名全仓库，而是为后续小步重构提供判断标准。
+- Internal：`Compiler`、`Tooling`、`Cli`、`VSCode`、`LanguageServer`、`Runtime`
+- ExternalSupport：`UnityPlugin`
+
+命名的首要目标不是“整齐”，而是让陌生维护者只看目录和类型名，就能推断代码在哪一层、属于哪个大业务、扮演什么角色。
 
 ## 总体原则
 
-- 先让入口清楚，再让实现细节分散。
-- 先定义行为契约，再选择具体 API。
-- 先区分数据、逻辑、表现、控制、适配，再决定类名和目录。
-- 不为“看起来统一”做大规模机械重命名；每次重构必须保持已有测试和作者体验不回归。
-- `Inscape.Core` 是语义真相；CLI、VSCode、Preview、Adapter 都只能消费或编排 Core 能力。
-- 架构讨论与文档口径优先使用 `Dsl`、`DslSources`、`Config`、`Cli`、`Preview`、`L10n`、`Host` 这些窄职责模块名；工程名可以暂时保留现状，但不要让 `Core`、`Workspace`、`ProjectSystem` 继续泛化成“什么都能装”的桶。
+- 目录和命名空间先表达层级与业务。
+- 类型名只表达业务主语、二级限定和角色。
+- `Config` 作为后缀家族存在，不作为一级业务主语。
+- `Domain` 是静态逻辑层的终局后缀。
+- `Model` / `ViewModel` 是数据结构后缀。
+- `Reader` / `Writer` / `Parser` / `Compiler` / `Resolver` / `Validator` 等作为准后缀，通常放在 `Domain` 前。
+- `Command` 只用于显式宿主动作入口；内部持续执行模型优先使用 `TaskModel` / `ActionModel`。
+- `Support` / `Helper` / `Manager` / `Utils` 一类弱语义命名默认视为待拆分信号。
 
-## 分层命名
+## 架构层级
 
-### Core 层
+### Internal
 
-Core 只表达 DSL、IR、诊断、source map、本地化、图结构等通用能力。
+- `Compiler`：编译期真相层。只承载 DSLScript、StoryGraph、Localization 与诊断契约，不碰文件系统、命令行、VSCode 或 Unity API。
+- `Tooling`：共享用例层。承载项目扫描、配置读取、预览构建、本地化流程、HostSchema / HostBinding 流程等，可被 Cli、VSCode 和未来外部支持复用。
+- `Cli`：命令行入口层。只负责 argv、stdout/stderr、退出码、命令目录和对 Tooling 的调用。
+- `VSCode`：编辑器入口层。负责 VSCode API、前端交互、Webview、样式和轻量客户端逻辑。
+- `LanguageServer`：C# 语义服务层。长期承担诊断、跳转、引用、补全、source map 等重语义能力。
+- `Runtime`：未来运行期层。只在进入真正运行时后承载 `System`、`Context`、`Events` 等长期状态与执行模型。
 
-推荐后缀：
+### ExternalSupport
 
-- `Compiler`：从源文本或项目源生成编译结果，例如 `InscapeCompiler`、`ProjectCompiler`。
-- `Parser`：只负责把文本识别为结构，不做跨文件语义和宿主业务判断。
-- `Validator`：检查已经生成的数据结构，输出 diagnostics，不修改模型。
-- `Resolver`：把引用、入口、目标、source location 等关系解析成确定结果。
-- `Builder`：从中间结构构造 IR、索引或 catalog。
-- `Catalog` / `Index`：可查询的数据集合，例如节点索引、本地化条目集合。
-- `Result`：一次操作的输出，通常包含数据和 diagnostics。
-- `Options`：调用参数，不持有执行逻辑。
-- `Context`：一次执行过程中的只读或短生命周期上下文，避免成为全局杂物箱。
+- `UnityPlugin`：Unity 环境下的外部支持层。负责 Unity 内的特性扫描、桥接应用、资产填写与导入流程。它可以与本仓库同存，但不应进入默认 .NET solution 编译链。
 
-避免：
+## 大业务主语
 
-- 在 Core 中使用 `Unity`、`VSCode`、`Html`、`Bird`、`Addressables` 等宿主或表现层词汇。
-- 用 `Manager` 包含多个不相干职责。
-- 让 `Model` 类反向调用 parser、CLI、文件系统或 VSCode API。
+以下一级主语用于表达系统级业务边界：
 
-### CLI 层
-
-CLI 是工具编排层，不是语义层。
-
-推荐命名：
-
-- `Command`：一个用户可调用命令的处理单元。
-- `CommandOptions`：命令行参数解析后的数据。
-- `CommandResult`：命令执行结果和退出码。
-- `OutputWriter`：把 Core 结果写成 JSON、CSV、HTML 或报告。
-- `ProjectLocator` / `ConfigLoader`：文件系统与配置读取。
-- `DslSourceLoader` / `ProjectCompiler` / `SingleFileCompiler`：项目源读取或共享编译前置流程，职责保持显式且单一。
-
-约束：
-
-- CLI 可以读写文件、解析参数、选择输出格式。
-- CLI 不新增 DSL 语义；如果发现需要新增语义，应回到 Core。
-- CLI 中的长 `switch` / `if` 命令分发应逐步收敛为命令表或独立 command 类。
-
-### VSCode / Tooling 层
-
-VSCode 是作者体验层，应按编辑器 API 职责拆分。
-
-推荐后缀：
-
-- `Provider`：对应 VSCode provider，例如 definition、hover、completion、reference。
-- `Command`：命令面板、菜单或快捷键动作。
-- `Bridge`：连接两个系统的交互，例如 source editor 与 preview webview。
-- `WorkspaceIndex`：工作区轻量索引；未来可由 Language Server 替代。
-- `DecorationController`：只管理视觉 decorations。
-- `PreviewPanel` / `PreviewController`：只管理预览 webview 生命周期。
-- `StyleLoader`：只读取和规范化样式配置。
-
-约束：
-
-- Provider 负责“编辑器如何理解当前位置”，Command 负责“用户动作执行什么”，Bridge 负责“两个界面如何同步”。
-- 不用样式层修正 provider 语义错误。
-- 不在 VSCode 中重写 Core parser；轻量扫描只能作为 authoring hint。
-
-### Preview 层
-
-Preview 是表现和调试层，不是运行时语义源。
-
-推荐命名：
-
-- `Renderer`：把 IR 渲染成 HTML、webview 内容或 UI 数据。
-- `Player`：只负责在预览中推进节点、选择、Back、Restart。
-- `RevealPayload`：源码与预览互相定位的数据契约。
-- `PreviewState`：当前节点、路径、诊断显示状态等。
-
-约束：
-
-- Preview 读取 IR 和 source map，不解析 `.inscape` 源文本。
-- Preview 可以模拟阅读流程，但不能定义最终 Runtime Host 的业务语义。
-
-### Adapter / Host 层
-
-Adapter 负责项目绑定，不反向污染 Core。
-
-推荐后缀：
-
-- `Adapter`：把 Inscape 数据映射到某个宿主或样例格式。
-- `Importer`：把 Inscape 产物导入宿主项目。
-- `Exporter`：把 Inscape 产物导出为外部格式。
-- `Bridge`：Inscape 可读 ID 与项目内部 ID、资源、事件、查询之间的映射层。
-- `Binding`：单个宿主资源、事件或查询的映射项。
-- `Manifest`：跨工具传递的导入 / 导出契约数据。
-
-约束：
-
-- `UnitySample` 和 Bird 只能作为样例或适配包，不应进入 Core 命名。
-- Host Bridge 应以数据配置和代码生成驱动，而不是把项目内部 ID 写死在 DSL 或 Core 中。
-
-### 模块前缀命名
-
-同一个模块内的类型名应优先使用“模块短前缀”，不要再重复产品前缀或命名空间前缀。这样可以让目录、命名空间和类型名各自承担不同信息：目录表示位置，namespace 表示边界，类型名前缀表示模块职责。
-
-推荐规则：
-
-- 测试模块用 `Test*`，例如 `TestCore`。
-- CLI 模块用 `Cli*`，例如 `CliCore`、`CliCommandCatalog`、`CliPreviewHtmlRenderer`。
-- VSCode/Tooling 模块优先用 `Vscode*` 或更具体的职责前缀，例如 `VscodePreviewBridge`、`VscodeDefinitionProvider`。
-- 对外门面入口统一用 `Core` 结尾，例如 `TestCore`、`CliCore`、`NarrativeRuntime` 的未来入口也应避免叫 `Program`。
-- 文件名与主要 public 类型同名，且命名变更时文件名、类型名、引用一并更新。
-
-约束：
-
-- 不再使用 `InscapeCli*`、`InscapeTest*` 这类重复产品前缀的类型名。
-- 当模块已经足够明确时，类名不需要再重复 `Inscape`。
-- 如果一个模块确实需要跨项目复用，优先用职责前缀而不是产品前缀。
-
-### Runtime 层（未来）
-
-当 roadmap 进入 Runtime Host 或独立运行时，应引入游戏项目更熟悉的生命周期式入口。
-
-推荐命名：
-
-- `NarrativeRuntime`：运行时总入口，加载 IR 并持有执行状态。
-- `StoryPlayer`：推进当前叙事流。
-- `RuntimeContext`：运行时依赖、宿主查询、事件发送、资源访问上下文。
-- `RuntimeState`：可存档、可回放的叙事状态。
-- `HostEventDispatcher`：把 Inscape 事件派发给宿主。
-- `StateStore` / `Reducer`：集中管理状态变更。
-
-推荐生命周期方法：
-
-```text
-Initialize()
-LoadProject() / LoadGraph()
-Start(entry)
-EnterNode(nodeId)
-Continue()
-Choose(optionId)
-ExitNode(nodeId)
-DispatchHostEvent(event)
-SaveState()
-RestoreState(snapshot)
-Dispose()
-```
-
-约束：
-
-- 不在 Core 编译阶段引入 runtime loop。
-- Runtime 只消费 IR，不直接解析脚本。
-- 状态变更集中进入 store / reducer，不允许任意系统直接改写运行时状态。
-
-## 入口命名
-
-为了让代码更接近游戏项目的“主入口 + 生命周期”阅读习惯，后续建议优先把工具链组合层拆成明确模块，而不是先造一个泛化服务：
-
-```text
-DslSources
-  DiscoverSources()
-  ReadOverride()
-  LoadProjectSources()
-
-Config
-  ReadProjectConfig()
-  NormalizePaths()
-
-Preview
-  ReadStyle()
-  BuildPreview()
-  RevealSource()
-  RevealPreview()
-
-L10n
-  ExtractLocalization()
-  UpdateLocalization()
-
-Host
-  ReadHostSchema()
-  ResolveBindings()
-  ExportHostArtifacts()
-
-Cli
-  RouteCommand()
-  RunSingleFileCommand()
-  RunProjectCommand()
-
-NarrativeRuntime
-  Initialize()
-  Start()
-  Continue()
-  Choose()
-  Back()
-  Restart()
-  Dispose()
-```
-
-短期优先补齐这些窄职责模块，并通过薄组合层在 CLI、VSCode、未来 Language Server 中复用；不要先造 `InscapeProjectService` 这类大而泛的主服务。中长期再补 `NarrativeRuntime`，用于 Unity Runtime Host 和独立编辑器实时预览。
-
-## 数据与逻辑分层
-
-数据类应尽量保持可序列化、可比较、可缓存：
-
-- `NarrativeDocument`
-- `NarrativeNode`
-- `NarrativeLine`
-- `NarrativeChoice`
-- `NarrativeEdge`
-- `Diagnostic`
-- `SourceLocation`
-- `LocalizationEntry`
+- `DslScript`
+- `StoryGraph`
+- `Localization`
+- `Preview`
+- `ToolConfig`
+- `HostSchema`
 - `HostBinding`
-- `PreviewState`
+- `EditorAuthoring`
+- `UnityPlugin` 仅限 `ExternalSupport`
 
-逻辑类应使用动词或职责后缀：
+这些词不是“层”。层级进目录，业务主语进类型名。
 
-- `Parse...`
-- `Compile...`
-- `Validate...`
-- `Resolve...`
-- `Build...`
-- `Render...`
-- `Export...`
-- `Import...`
-- `Merge...`
+## 二级限定词
 
-判断标准：如果一个类既保存长期数据，又读文件、调用 CLI、更新 UI、派发事件，基本就应该拆分。
+以下词只能作为一级主语后的限定，不作为系统级主语起点：
 
-## 控制与业务分层
+- `Node`
+- `Choice`
+- `Entry`
+- `Diagnostic`
+- `SourceMap`
+- `Reveal`
+- `Selection`
+- `Style`
+- `RoleMap`
+- `BindingMap`
+- `Timeline`
+- `Csv`
+- `Html`
+- `Json`
+- `Template`
+- `Manifest`
+- `Index`
 
-控制层负责流程编排，业务适配层负责宿主语义，二者不要混在一起。
+例如：
 
-- `Controller` / `Service`：可以编排多个步骤，但不应知道 Bird 具体字段。
-- `Adapter` / `Bridge`：可以知道 UnitySample 或 Bird 绑定格式，但不应重新解释 DSL。
-- `Renderer`：可以决定显示方式，但不应决定节点是否有效。
-- `Provider`：可以决定编辑器当前位置提供什么体验，但不应修改编译结果。
+- `StoryGraphEntryResolverDomain`
+- `LocalizationCsvReaderDomain`
+- `PreviewRevealBridge`
+- `HostSchemaTemplateModel`
 
-## C# 命名规范
+而不是：
 
-- 类型、方法、属性、公共字段使用 `PascalCase`。
-- 局部变量、参数使用 `camelCase`，避免单字母变量。
-- 私有字段如确需字段化，使用 `_camelCase`。
-- 异步方法以 `Async` 结尾。
-- 布尔属性或方法使用 `Is`、`Has`、`Can`、`Should` 开头。
-- 集合命名使用复数或语义集合名，例如 `nodes`、`diagnostics`、`entries`、`nodeIndex`。
-- 文件名与主要 public 类型同名。
-- 一个文件优先承载一个主要类型；测试辅助类型可例外。
+- `EntryResolver`
+- `CsvReader`
+- `RoleMap` 作为一级业务目录
 
-## JavaScript / VSCode 命名规范
+## 终局后缀
 
-- 函数和变量使用 `camelCase`。
-- 类和构造函数使用 `PascalCase`。
-- 常量使用 `UPPER_SNAKE_CASE` 仅限真正全局常量；普通不可变局部仍用 `camelCase`。
-- VSCode 命令 ID 使用 `inscape.<verb><Object>`，例如 `inscape.openPreview`、`inscape.revealInPreview`。
-- Provider 类以 `Inscape...Provider` 命名。
-- Bridge / Controller / Loader 按职责命名，不用 `helper`、`util` 承载核心流程。
+### 通用角色后缀
 
-## 测试命名规范
+- `Domain`
+- `Model`
+- `ViewModel`
+- `Controller`
+- `Bridge`
+- `Context`
+- `Events`
+- `Factory`
 
-当前测试是无第三方依赖的轻量 runner，后续可按领域拆分文件，但测试名应继续保持行为描述：
+### 宿主入口专用后缀
+
+- `Command`
+- `Provider`
+- `Entry`
+- 历史薄门面可暂保留 `Core`，但新类型优先使用 `Entry`
+
+### 运行期专用后缀
+
+- `System`
+
+## 准后缀
+
+以下词不作为终局后缀使用，而是作为 `Domain` 前的动作限定：
+
+- `Parser`
+- `Compiler`
+- `Validator`
+- `Resolver`
+- `Reader`
+- `Writer`
+- `Loader`
+- `Scanner`
+- `Exporter`
+- `Importer`
+- `Renderer`
+- `Merger`
+- `Builder`
+
+推荐：
+
+- `DslScriptParserDomain`
+- `StoryGraphCompilerDomain`
+- `ToolConfigReaderDomain`
+- `LocalizationMergerDomain`
+
+不推荐：
+
+- `DslScriptParser`
+- `LocalizationWriter`
+- `StoryGraphCompiler`
+
+## 层内命名规则
+
+### Compiler
+
+- 允许主语：`DslScript`、`StoryGraph`、`Localization`、`Diagnostics`、`TextContracts`
+- 终局后缀以 `Domain`、`Model` 为主
+- 准后缀常用：`Parser`、`Compiler`、`Validator`、`Resolver`、`Builder`
+- 不出现 Unity、VSCode、Cli、Html、Bird 等宿主词
+
+### Tooling
+
+- 允许主语：`ProjectSources`、`ToolConfig`、`Preview`、`Localization`、`HostSchema`、`HostBinding`
+- 终局后缀以 `Domain`、`Model`、`ViewModel`、`Controller` 为主
+- 这里拥有共享流程，不拥有编译期真相
+
+### Cli
+
+- 只承载命令行入口与路由
+- 允许后缀：`Entry`、`Command`、`Controller`
+- 共享流程若能脱离终端运行，应优先上提到 `Tooling`
+
+### VSCode
+
+- 允许主语：`EditorAuthoring`、`Preview`、`DslScript`、`HostSchema`、`HostBinding`
+- 允许后缀：`Provider`、`Bridge`、`Controller`、`ViewModel`、`Command`
+- 重语义能力长期迁移到 `LanguageServer`
+
+### LanguageServer
+
+- 允许主语：`DslScript`、`StoryGraph`、`HostSchema`
+- 允许后缀：`Entry`、`Controller`、`Provider`、`Model`
+- 它直接调用 `Compiler` / `Tooling`，而不是借道 `Cli`
+
+### Runtime
+
+- 允许主语：`StoryRuntime`、`Localization`、`Input`、`HostBridge`
+- 允许后缀：`System`、`Context`、`Events`、`Model`、`Domain`
+- Runtime 不反向承载编译期逻辑
+
+### ExternalSupport / UnityPlugin
+
+- 主语固定为 `UnityPlugin`
+- 允许终局后缀：`Entry`、`Controller`、`Model`、`Events`、`Factory`、`Domain`
+- 允许二级限定：`Attribute`、`ScriptImport`、`HostBinding`、`AssetConfigure`、`ImportFlow`
+- 它可以依赖 UnityEngine / UnityEditor，因此不应进入默认 .NET solution 编译链
+
+## 标准命名公式
 
 ```text
-ProjectCompilerResolvesCrossFileTargets
-CliDiagnoseProjectAppliesOverride
-PreviewRevealKeepsSourceLocation
-UnitySampleExporterReportsUnresolvedHostHooks
+<Layer>/<Business>/<Subject><Qualifier><Role>
 ```
 
-原则：
+示例：
 
-- 测试名描述行为，不描述实现细节。
-- 新功能必须补“新增行为 + 旧行为不回归”的测试或手测清单。
-- 编辑器交互无法自动化时，应在文档中记录可重复手测步骤。
+- `Compiler/DslScript/DslScriptParserDomain`
+- `Compiler/StoryGraph/StoryGraphEntryResolverDomain`
+- `Tooling/Preview/PreviewFlowController`
+- `Cli/Localization/LocalizationExportCommand`
+- `VSCode/Preview/PreviewRevealBridge`
+- `LanguageServer/DslScript/DslScriptCompletionProvider`
+- `ExternalSupport/UnityPlugin/UnityPluginAssetConfigureController`
 
-## 渐进式重构顺序
+## 命名禁忌
 
-1. 先建立规范和文档索引，不改行为。
-2. 拆分测试文件，降低阅读门槛。
-3. 拆分 CLI command 分发，避免 `CliCore.cs` 继续膨胀。
-4. 拆分 VSCode extension：providers、commands、preview bridge、style、workspace index。
-5. 继续按 `DslSources` / `Config` / `Preview` / `L10n` / `Host` 收口工具链共享流程，避免重新聚合成大总层。
-6. 统一 source map / reveal payload，支撑预览、诊断、跳转、本地化和未来编辑器三视图。
-7. 设计 Host Bridge 数据模型，用配置和代码生成逐步替代 UnitySample 硬编码。
-8. 进入 Runtime Host 阶段后，再引入 `NarrativeRuntime` 和生命周期式执行模型。
+- 不用 `Project` / `SingleFile` / `Workspace` 作为类型名前缀
+- 不用 `Support` / `Helper` / `Manager` / `Utils` 作为长期命名
+- 不用 `Business` 作为大业务统一后缀
+- 不把层级词直接塞进普通类型名，例如 `LocalizationVSCodeController`
 
-每一步都应该是可验证、可回滚的小提交，不应把“重命名、移动文件、改行为”混在同一次提交里。
+## 迁移指针
+
+- `Inscape.Core` 长期可改名为 `Inscape.Compiler`
+- 当前 `Inscape.Cli` 中大量共享流程会逐步上提为 `Inscape.Tooling`
+- `tools/vscode-inscape` 长期会拆为薄扩展前端与 `Inscape.LanguageServer`
+- 当前 `UnitySample` / `unity-bird-importer` 属于 `ExternalSupport/UnityPlugin` 的过渡素材，而不是内部五层的一部分

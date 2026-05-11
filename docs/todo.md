@@ -8,11 +8,14 @@
 
 下一位接手者建议按以下顺序推进：
 
-1. 执行当前重构收口计划（最高优先级）：按本会话已经确认的模块边界继续拆分，而不是再引入笼统的 `InscapeProjectService` / `Workspace` / `ProjectSystem` 大层。
+1. 执行当前重构收口计划（最高优先级）：按最新确认的 Internal / ExternalSupport 边界推进，而不是再引入笼统的 `InscapeProjectService` / `Workspace` / `ProjectSystem` 大层。
 	- CLI 继续从 `CliCore` 抽离剩余共享辅助，保持入口只做参数分流、命令路由、退出码与通用输出。
+	- 先把当前 `Inscape.Cli` 中的共享流程上提为 `Tooling`，让 `Cli` 回到命令行入口层。
+	- 提前规划并建立 `LanguageServer`，让 VSCode 长期走“薄前端 + C# server”路线。
 	- VSCode 按 `provider / command / preview bridge / style / workspace index` 拆分 `tools/vscode-inscape/extension.js`，避免继续堆单文件入口。
-	- 共享术语统一使用 `Dsl`、`DslSources`、`Config`、`Cli`、`Preview`、`L10n`、`Host`；工程名暂保留 `Inscape.Core`，但架构文档不再把 `Core`、`Workspace`、`ProjectSystem` 当成长期主术语扩张。
-	- 每完成一轮小步重构，都同步更新 `docs/agent-handoff.md`、`docs/refactoring-plan.md`、`docs/code-structure.md` 和本 TODO，避免再次积累陈旧口径。
+	- Unity 支持明确收束为 `ExternalSupport/UnityPlugin`，继续留在仓库内，但不进入默认 .NET solution 编译链。
+	- 具体类型命名按 ADR 0010 收敛为“目录先表达层级与范围，类型名只表达具体业务主语 + 限定 + 角色”；优先清理 `Project*` / `SingleFile*` 前导范围词，以及 `Support` / `Helper` 弱语义后缀。
+	- 每完成一轮小步重构，都同步更新 `docs/agent-handoff.md`、`docs/refactoring-plan.md`、`docs/code-structure.md`、[研发计划](development-plan.md) 和本 TODO，避免再次积累陈旧口径。
 2. 收敛 `@` 与 `[]` 的语法分工：当前两套提示语法的职责重叠过高，作者心智不稳定；需要明确二者是否保留并存、如何区分“语义/时机”与“资源/别名绑定”，以及 `@timeline ...` / `[timeline: ...]` 是否还应继续双写法共存。
 3. 设计 Host Bridge 草案：解决 Inscape 可读 ID 与项目内部 ID / 资源 / 事件处理器的映射，不被 UnitySample、Addressables 或 ScriptableObject 绑定。
 4. 调研 Unity `[Inscape]` Attribute 扫描与 Unity 内代码生成：生成待配置桥接表，再由人工完成 C# 成员与 Inscape 名称映射。
@@ -33,7 +36,10 @@
 - [x] 将固定 Unity 项目适配 spike 从 `Inscape.Core` 迁出为 `Inscape.Adapters.UnitySample` 实验样例，并明确它不是最终 Host Bridge。
 - [x] 固化 VSCode 扩展发布工作流，补充 `npm run rebuild:vsix` 与 `.vsix` 安装步骤，避免只改源码不更新到本机扩展。
 - [x] 建立编码与命名规范，明确入口、生命周期式方法、数据/逻辑/表现/适配分层和渐进式重构顺序。
+- [x] 将命名规范进一步收敛为 Bird 风格的“目录优先 + 主语/角色”模型，并以 ADR 0010 固化范围词与角色词约束。
+- [x] 明确 Internal / ExternalSupport 边界，并以 ADR 0011 固化 Tooling 中间层与 UnityPlugin 外部支持层定位。
 - [x] 建立渐进式重构计划，按大目标/中目标/小目标安排入口、测试、CLI、VSCode、source map、Host Bridge 和 Runtime 前置设计。
+- [x] 建立 [研发计划](development-plan.md)，把 Compiler / Tooling / Cli / VSCode / LanguageServer / ExternalSupport 的推进顺序显式写出。
 - [ ] 每次完成阶段性提交后，同步更新 [Agent 接手指南](agent-handoff.md) 的当前快照。
 
 ## 代码质量与渐进式重构
@@ -41,12 +47,15 @@
 执行顺序和验收标准见 [渐进式重构计划](refactoring-plan.md)。
 
 - [x] 按 [编码与命名规范](coding-conventions.md) 拆分测试文件，降低 `tests/Inscape.Tests/TestCore.cs` 的阅读成本，但不改变测试语义。
-- [x] 按 command 职责拆分 CLI 入口，避免 `src/Inscape.Cli/CliCore.cs` 继续承担过多命令分发和业务编排；已完成配置读取、顶层元命令、单文件命令和项目级命令分支拆分，并将项目 `.inscape` 源扫描/读取/override 收口到 `CliDslSourceLoader`、预览样式读取收口到 `CliPreviewStyleLoader`、项目命令共享编译前置流程收口到 `CliProjectCompiler`、单文件命令共享编译前置流程收口到 `CliSingleFileCompiler`、UnitySample 项目命令辅助逻辑收口到 `CliUnitySampleSupport`，`CliCore` 仅保留入口分发与共享基础输出辅助。
+- [x] 按 command 职责拆分 CLI 入口，避免 `src/Inscape.Cli/CliCore.cs` 继续承担过多命令分发和业务编排；已完成配置读取、顶层元命令、单文件命令和项目级命令分支拆分，并将项目 `.inscape` 源扫描/读取/override 收口到 `CliDslSourceLoader`、预览样式读取收口到 `CliPreviewStyleLoader`、项目命令共享编译前置流程收口到 `CliProjectCompiler`、单文件命令共享编译前置流程收口到 `CliSingleFileCompiler`、UnitySample 项目命令辅助逻辑收口到 `CliUnitySampleSupport`，`CliCore` 仅保留入口分发与共享基础输出辅助。这些名字当前只视为过渡命名，后续应按 ADR 0010 继续目录化并收敛为具体主语 + 角色。
+- [ ] 抽出 `Tooling` 中间层：优先上提项目扫描、配置读取、预览构建、本地化流程、HostSchema / HostBinding 流程，降低 `Cli` 的共享业务负担。
+- [ ] 按 ADR 0010 整理 CLI 与 VSCode 命名：优先消除 `Support` / `Helper` 弱语义命名，并逐步把 `Project` / `SingleFile` 这类范围词从类型名前缀移到目录、命名空间或主语后的限定词。
 - [ ] 按 provider / command / preview bridge / style / workspace index 拆分 VSCode extension，保持现有作者体验不回归。
-- [ ] 将 CLI、VSCode 和未来 Language Server 共享的项目级流程继续拆成显式职责模块，优先落到 `DslSources`、`Config`、`Preview`、`L10n`、`Host` 等窄边界；如未来确需统一门面，也应建立在这些模块之上，而不是先造一个大而泛的 `ProjectService`。
+- [ ] 创建 `Inscape.LanguageServer` 基线项目，先迁移诊断与定义跳转，再迁移引用、补全与 source map 相关语义能力。
+- [ ] 将 Cli、VSCode 和未来 LanguageServer 共享的项目级流程继续拆成显式职责模块，优先落到 `Tooling` 的 `ProjectSources`、`ToolConfig`、`Preview`、`Localization`、`HostSchema`、`HostBinding` 等模块；如未来确需统一门面，也应建立在这些模块之上，而不是先造一个大而泛的 `ProjectService`。
 - [ ] 统一 source map / reveal payload 数据契约，支撑预览、诊断、跳转、本地化和未来编辑器三视图。
 - [ ] Runtime Host 阶段再引入 `NarrativeRuntime`，采用生命周期式执行模型，不提前把 runtime loop 放进 Core 编译层。
-- [ ] 保持 `src/Inscape.Adapters.UnitySample` 作为隔离实验/回归样例，暂不纳入主动重构范围；只在 Host Bridge / generator 设计阶段把它当验证样本使用。
+- [ ] 保持 `src/Inscape.Adapters.UnitySample` 与 `tools/unity-bird-importer` 作为 ExternalSupport 过渡样例，暂不纳入 Internal 主动重构范围；只在 Host Bridge / UnityPlugin 设计阶段把它们当验证样本使用。
 
 ## 阶段 1：DSL 与轻工具链
 
@@ -90,7 +99,7 @@
 - [x] 为编辑器语法配色与预览 UI 提供独立样式配置文件，允许开发者通过 `inscape.config.json` 指向简洁 JSON 样式表并在本机快速调参。
 - [ ] 为 VSCode 预览补充更细粒度的未保存内容热刷新、局部更新与状态提示。
 - [ ] 继续验证正文 / 选项文本的 `DefinitionProvider` 链接态与 selection bridge 是否稳定满足“默认无下划线、Ctrl+指向才显示链接态、Ctrl+Click 复用预览定位”；若后续调整实现，仍需保持这一交互不回退到 `DocumentLinkProvider`。
-- [ ] 设计 Language Server 能力范围：补全、诊断、跳转定义、引用查找、大纲、悬浮说明。
+- [ ] 设计并实现 C# Language Server 第一版能力范围：诊断、跳转定义、引用查找、补全、大纲、悬浮说明。
 - [x] 设计补全数据来源：当前文件节点、项目节点、角色表、宿主绑定表、宿主 Schema 查询 / 事件清单。
 - [ ] 将 `hostSchema` 中的查询 / 事件清单接入 `.inscape` 脚本补全与 Hover，但不改变当前 DSL 编译语义。
 - [x] 定义第一版诊断清单：重复节点、非法节点名、缺失目标、不可达节点、空节点、选项语法问题。

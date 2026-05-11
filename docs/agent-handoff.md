@@ -2,32 +2,41 @@
 
 状态：基线
 
-最后更新：2026-05-01
+最后更新：2026-05-11
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
 
-Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原型，UnitySample 实验 adapter 已从 Core 迁出，用于保留早期 Unity 数据映射 spike，但不是最终 Host Bridge 方案。
+Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原型。当前长期架构已经收敛为 Internal 与 ExternalSupport 两层：Internal 包含 `Compiler`、`Tooling`、`Cli`、`VSCode`、`LanguageServer` 与未来 `Runtime`；ExternalSupport 当前主要是 `UnityPlugin` 方向的样例和原型。UnitySample 实验 adapter 继续保留，但只作为 ExternalSupport 过渡样例，不代表最终 Host Bridge 方案。
 
-当前主动重构范围只覆盖 `Inscape.Core`、`Inscape.Cli`、`tools/vscode-inscape` 与测试组织；`src/Inscape.Adapters.UnitySample` 视为搁置中的实验代码，暂不纳入主动重构，只保留隔离和回归样例职责。
+当前主动重构范围只覆盖 Internal 侧的 `Inscape.Core`、`Inscape.Cli`、`tools/vscode-inscape` 与测试组织；`src/Inscape.Adapters.UnitySample` 与 `tools/unity-bird-importer` 视为 ExternalSupport 原型，暂不纳入这一轮内部重构，只保留隔离和回归样例职责。
+
+### 2026-05-11 当前交接结论（最新）
+
+- 当前分支为 `main...origin/main`，HEAD 为 `28b5693 feat(samples): deepen court-loop case flow`。
+- 当前工作区存在未提交变更：文档重构相关文件与 `samples/court-loop.inscape`。其中脚本文本修改不属于本轮架构文档同步的一部分，后续提交时应避免误带用户的样例脚本变更。
+- 本轮会话确认新的长期结构：Internal 为 `Compiler`、`Tooling`、`Cli`、`VSCode`、`LanguageServer`、`Runtime`；ExternalSupport 为 `UnityPlugin`。
+- 本轮会话确认：`Inscape.Core` 长期可向 `Compiler` 收敛；`Inscape.Cli` 当前同时承载了 `Cli` 与部分 `Tooling`，下一轮重构重点应是先抽出 `Tooling`。
+- 本轮会话确认：VSCode 长期方向是“薄扩展前端 + C# LanguageServer”，而不是继续长期借道 CLI 承载重语义能力。
+- 本轮会话确认：Unity 支持不再视为 Internal 五层之一，而视为 ExternalSupport/UnityPlugin；代码可以继续留在当前仓库，但不应进入默认 .NET solution 编译链。
 
 ### 2026-05-01 当前交接结论（最新）
 
 - 当前分支为 `main...origin/main`，HEAD 为 `85e870d refactor(cli): extract single-file compiler preflight`；最近连续提交还包括 `056d345 refactor(cli): extract project compiler preflight`、`30fe7d2 refactor(cli): split project config models`、`7c5b602 refactor(cli): align dsl source and preview loaders`。
-- 当前工作区已清空未提交变更，可直接由下一位接手者从最新远端继续。
 - 最近一轮 CLI 收口已完成并验证通过：`CliProjectCompiler` 收口项目命令共享前置流程，`CliSingleFileCompiler` 收口单文件命令共享前置流程，`CliCore` 仅保留参数分流、共享输出和退出码整合。
-- 本轮会话最终确认：不要把下一步重构目标表述成 `InscapeProjectService` / `Workspace` / `ProjectSystem` 一类总服务；长期术语优先使用 `Dsl`、`DslSources`、`Config`、`Cli`、`Preview`、`L10n`、`Host` 这些窄职责模块名。
+- 本轮会话最终确认：不要把下一步重构目标表述成 `InscapeProjectService` / `Workspace` / `ProjectSystem` 一类总服务；长期架构术语优先使用 `Dsl`、`DslSources`、`Config`、`Cli`、`Preview`、`L10n`、`Host` 这些窄职责模块名。
+- 本轮会话同时确认新的类型命名方向：参考 Bird 的思路，目录和命名空间优先表达层级与范围，类型名只表达当前模块里的具体主语和角色。`Project`、`SingleFile`、`Workspace` 不再作为类型名前缀的默认选择，`Support` / `Helper` 一类弱语义后缀应优先被拆分。
 
 ### 当前确认的模块命名
 
-- `Dsl`：DSL 语法、IR、诊断、图结构与编译语义真相；当前主要落在 `Inscape.Core`，工程名暂不强改，但文档语境优先按 DSL 层理解。
-- `DslSources`：`.inscape` 项目源发现、读取、override 与来源组织；当前 CLI 内对应 `CliDslSourceLoader`。
-- `Config`：项目配置读取、路径归一化、配置模型；当前 CLI 内对应 `CliConfigLoader`、`CliProjectConfig`。
-- `Cli`：命令入口、命令分发、退出码与工具编排；当前落在 `CliCore`、`CliTopLevelCommandRunner`、`CliSingleFileCommandRunner`、`CliProjectCommandRunner`。
-- `Preview`：预览样式、HTML/WebView 渲染、源码与预览定位契约；当前落在 `CliPreviewStyleLoader`、`CliPreviewHtmlRenderer` 以及 VSCode 预览桥接。
-- `L10n`：文本提取、更新、合并与审校报告；当前主要落在 `Inscape.Core.Localization` 与 CLI 包装。
-- `Host`：宿主 Schema、Host Bridge、绑定、导入导出与生成；当前包括 `hostSchema` 草案、UnitySample/Bird 样例链路。
+- `Compiler`：编译期真相层；当前主要由 `Inscape.Core` 承载。内部主业务为 `DslScript`、`StoryGraph`、`Localization`。
+- `Tooling`：共享用例层；长期用于承接项目扫描、ToolConfig、Preview、Localization、HostSchema、HostBinding 等流程。当前这些流程有相当一部分仍暂住在 `Inscape.Cli`。
+- `Cli`：命令行入口层；当前落在 `CliCore`、`CliTopLevelCommandRunner`、`CliSingleFileCommandRunner`、`CliProjectCommandRunner`。
+- `VSCode`：编辑器入口层；当前主要落在 `tools/vscode-inscape/extension.js`。
+- `LanguageServer`：C# 语义服务层；当前尚未创建项目，但已确认长期方向。
+- `Runtime`：未来运行期层；当前尚未实现。
+- `ExternalSupport/UnityPlugin`：Unity 环境下的外部支持层；当前由 `src/Inscape.Adapters.UnitySample` 与 `tools/unity-bird-importer` 作为过渡样例与原型承载。
 
 ### 2026-04-30 GitHub Copilot 接手巡检
 
@@ -97,13 +106,13 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - 用户当前明显不喜欢缩进承载核心语义；`# 标题` + 空行分块已进入候选，但还没有替代现有 `:: node.name`。
 - 用户最新明确判断：`@` 与 `[]` 当前设计尚未收敛，作者侧几乎感受不到稳定差异；这不是理解问题，而是语法职责重叠。后续应把“是否保留两套壳、如何切分语义/时机与资源/别名绑定、是否保留 `@timeline` / `[timeline: ...]` 双写法”提升为近期重点，而不要继续带着模糊心智堆更多宿主功能。
 - 用户希望代码组织更接近 Bird 这类游戏项目的可读经验：有清晰入口、生命周期式流程、逻辑与表现分层、数据与逻辑分层、控制与业务分层，并且易于模块化加功能。已新增 [编码与命名规范](coding-conventions.md) 和 [渐进式重构计划](refactoring-plan.md)，后续重构应小步按该规范推进。
-- 当前已进一步收敛模块命名：同一模块内优先使用短前缀类型名，入口统一用 `Core` 后缀；例如测试模块用 `TestCore`，CLI 模块用 `CliCore`，不再使用 `InscapeCli*` 这类重复产品前缀。
+- 当前已进一步收敛命名方向：架构文档仍用 `Dsl`、`Config`、`Preview`、`L10n`、`Host` 这类模块术语表达边界；具体类型命名则改为 Bird 风格的“具体主语 + 角色”模型，优先让目录承担层级与范围信息，不再把短层前缀扩张成所有类型的默认命名方式。
 - 当前重构边界也已收敛：`src/Inscape.Adapters.UnitySample` 继续作为实验样例存在，不参与这一轮 CLI / Core / VSCode 的可维护性重构，除非任务明确要求调整其回归样例角色。
-- CLI 当前已完成多步低风险瘦身：项目配置读取被提取到 `CliConfigLoader`，顶层元命令、单文件命令与项目级命令分支都已从 `CliCore` 主入口中抽离；项目扫描、override 与 UnitySample 项目命令辅助逻辑分别收口到更窄 helper；项目级和单文件命令共享编译前置流程分别收口到 `CliProjectCompiler` 与 `CliSingleFileCompiler`。下一步应继续按 `DslSources` / `Config` / `Preview` / `L10n` / `Host` 这类窄职责推进，而不是回退到大而泛的项目服务命名。
+- CLI 当前已完成多步低风险瘦身：项目配置读取被提取到 `CliConfigLoader`，顶层元命令、单文件命令与项目级命令分支都已从 `CliCore` 主入口中抽离；项目扫描、override 与 UnitySample 项目命令辅助逻辑分别收口到更窄 helper；项目级和单文件命令共享编译前置流程分别收口到 `CliProjectCompiler` 与 `CliSingleFileCompiler`。这些名字当前仅视为过渡命名。下一步的正确方向不是继续扩张 Cli，而是先抽出 `Tooling`，再按 ADR 0010 把范围词移出类型名前缀，把 `Support` / `Helper` 拆成具体主语 + 角色。
 
-- 2026-05-01 已完成 CLI 项目命令收口：项目级命令分发位于 `CliProjectCommandRunner`，共享的“配置读取 + `.inscape` 项目源扫描/读取/override + 项目编译”前置流程已收口到 `CliProjectCompiler`；其中 DSL 源加载位于 `CliDslSourceLoader`，UnitySample role/binding/export 辅助逻辑位于 `CliUnitySampleSupport`。单文件命令的“输入读取 + 邻近项目配置读取 + 单文件编译”前置流程也已收口到 `CliSingleFileCompiler`。`CliCore` 只保留参数分流、共享输出和退出码整合。验证通过：`dotnet build Inscape.slnx --no-restore`、`dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj --no-build`、`node --check tools\vscode-inscape\extension.js`。
+- 2026-05-01 已完成 CLI 项目命令收口：项目级命令分发位于 `CliProjectCommandRunner`，共享的“配置读取 + `.inscape` 项目源扫描/读取/override + 项目编译”前置流程已收口到 `CliProjectCompiler`；其中 DSL 源加载位于 `CliDslSourceLoader`，UnitySample role/binding/export 辅助逻辑位于 `CliUnitySampleSupport`。单文件命令的“输入读取 + 邻近项目配置读取 + 单文件编译”前置流程也已收口到 `CliSingleFileCompiler`。`CliCore` 只保留参数分流、共享输出和退出码整合。验证通过：`dotnet build Inscape.slnx --no-restore`、`dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj --no-build`、`node --check tools\vscode-inscape\extension.js`。这些类型名现在统一视为过渡名；后续以目录优先、主语/角色的方式逐步替换。
 
-- 2026-05-01 当前命名方向进一步收敛：长期架构术语优先使用 `Dsl` / `DslSources` / `Config` / `Cli` / `Preview` / `L10n` / `Host` 这类语义明确的模块名，避免继续扩张 `Core`、`Workspace`、`ProjectSystem` 一类过泛容器；当前已在 CLI 内低风险落地 `CliDslSourceLoader`，并把预览样式读取从 `CliConfigLoader` 拆到 `CliPreviewStyleLoader`，而不是立即新建跨模块工程。
+- 2026-05-11 认知又补了一层：除了命名模型收敛，长期架构本身也已定稿为 Internal / ExternalSupport 两层。Internal 以 `Compiler` / `Tooling` / `Cli` / `VSCode` / `LanguageServer` / `Runtime` 组织；ExternalSupport 当前以 `UnityPlugin` 为核心。详见 ADR 0011、[代码结构规划](code-structure.md) 和 [编码与命名规范](coding-conventions.md)。
 
 ## 本轮踩坑总结
 
@@ -119,9 +128,11 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 建议优先做小而闭环的任务，不要直接跳到大规模重构。
 
 1. 当前重构收口（最高优先级）：
-   - 继续按 `Dsl` / `DslSources` / `Config` / `Cli` / `Preview` / `L10n` / `Host` 的命名和边界推进小步重构，而不是回到 `InscapeProjectService` / `Workspace` / `ProjectSystem` 式大层。
-   - CLI 继续从 `CliCore` 抽离剩余共享辅助；VSCode 继续按 provider / command / preview bridge / style / workspace index 拆分 `extension.js`。
-   - 每轮小步重构后同步更新 handoff / todo / refactoring-plan / code-structure，避免文档口径再次滞后。
+   - 先抽出 `Tooling`，把当前 Cli 中的共享流程从命令行入口层移走。
+   - 建立 `LanguageServer` 基线，让 VSCode 长期走“薄前端 + C# server”方向。
+   - VSCode 继续按 provider / command / preview bridge / style / workspace index 拆分 `extension.js`。
+   - Unity 支持继续留在仓库内，但明确收束到 `ExternalSupport/UnityPlugin`，不进入默认 .NET solution 编译链。
+   - 每轮小步重构后同步更新 handoff / todo / refactoring-plan / code-structure / development-plan，避免文档口径再次滞后。
 
 2. `@` / `[]` 语法收敛：
    - 当前作者反馈已经非常明确：这两套语法的职责重叠过高，使用者难以形成稳定心智模型。
