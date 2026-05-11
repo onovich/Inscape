@@ -1,20 +1,11 @@
 using System.Text;
 using Inscape.Core.Compilation;
 
-namespace Inscape.Cli {
+namespace Inscape.Tooling {
 
-    static class CliDslSourceLoader {
+    public static class ProjectSourcesLoaderDomain {
 
-        internal static DslSourceOverride? ReadOverride(string[] args) {
-            for (int i = 0; i < args.Length - 2; i += 1) {
-                if (args[i] == "--override") {
-                    return new DslSourceOverride(args[i + 1], args[i + 2]);
-                }
-            }
-            return null;
-        }
-
-        internal static List<ProjectSource> LoadProjectSources(string rootPath, DslSourceOverride? sourceOverride) {
+        public static List<ProjectSource> LoadProjectSources(string rootPath, ProjectSourceOverrideModel? sourceOverride) {
             string fullRootPath = Path.GetFullPath(rootPath);
             string? overrideSourcePath = sourceOverride == null ? null : Path.GetFullPath(sourceOverride.SourcePath);
             string? overrideContentPath = sourceOverride == null ? null : Path.GetFullPath(sourceOverride.ContentPath);
@@ -62,17 +53,17 @@ namespace Inscape.Cli {
             return string.Equals(Path.GetFullPath(left), Path.GetFullPath(right), StringComparison.OrdinalIgnoreCase);
         }
 
-        internal sealed class DslSourceOverride {
+    }
 
-            public string SourcePath { get; }
+    public sealed class ProjectSourceOverrideModel {
 
-            public string ContentPath { get; }
+        public string SourcePath { get; }
 
-            public DslSourceOverride(string sourcePath, string contentPath) {
-                SourcePath = sourcePath;
-                ContentPath = contentPath;
-            }
+        public string ContentPath { get; }
 
+        public ProjectSourceOverrideModel(string sourcePath, string contentPath) {
+            SourcePath = sourcePath;
+            ContentPath = contentPath;
         }
 
     }

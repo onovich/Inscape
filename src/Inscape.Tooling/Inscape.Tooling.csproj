@@ -6,4 +6,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Inscape.Core\Inscape.Core.csproj" />
+  </ItemGroup>
+
 </Project>

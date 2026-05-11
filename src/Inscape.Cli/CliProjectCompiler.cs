@@ -30,8 +30,8 @@ namespace Inscape.Cli {
                 return false;
             }
 
-            CliDslSourceLoader.DslSourceOverride? sourceOverride = CliDslSourceLoader.ReadOverride(args);
-            List<ProjectSource> sources = CliDslSourceLoader.LoadProjectSources(rootPath, sourceOverride);
+            ProjectSourceOverrideModel? sourceOverride = ReadSourceOverride(args);
+            List<ProjectSource> sources = ProjectSourcesLoaderDomain.LoadProjectSources(rootPath, sourceOverride);
             if (sources.Count == 0) {
                 Console.Error.WriteLine("No .inscape files found under: " + rootPath);
                 return false;
@@ -49,6 +49,16 @@ namespace Inscape.Cli {
                                                 new InscapeDocument(),
                                                 string.Empty,
                                                 new List<Diagnostic>());
+        }
+
+        static ProjectSourceOverrideModel? ReadSourceOverride(string[] args) {
+            for (int i = 0; i < args.Length - 2; i += 1) {
+                if (args[i] == "--override") {
+                    return new ProjectSourceOverrideModel(args[i + 1], args[i + 2]);
+                }
+            }
+
+            return null;
         }
 
     }
