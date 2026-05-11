@@ -24,8 +24,8 @@ namespace Inscape.Cli {
             string? outputPath = ReadOption(args, "-o");
             string? previousLocalizationPath = ReadOption(args, "--from");
 
-            if (command == "merge-unity-sample-l10n") {
-                return RunMergeUnitySampleL10n(inputPath, previousLocalizationPath, ReadOption(args, "--report"), outputPath);
+            if (CliUnitySampleL10nMergeCommand.TryRun(command, inputPath, args, outputPath, out exitCode)) {
+                return exitCode;
             }
 
             if (CliCommandProvider.IsProjectCommand(command)) {
@@ -66,37 +66,6 @@ namespace Inscape.Cli {
 
         static int RunProjectCommand(string command, string rootPath, string[] args, string? outputPath) {
             return CliProjectCommand.Run(command, rootPath, args, outputPath, JsonOptions);
-        }
-
-        static int RunMergeUnitySampleL10n(string generatedPath, string? existingPath, string? reportPath, string? outputPath) {
-            if (!File.Exists(generatedPath)) {
-                Console.Error.WriteLine("Generated UnitySample L10N CSV not found: " + generatedPath);
-                return 1;
-            }
-
-            if (string.IsNullOrWhiteSpace(existingPath)) {
-                Console.Error.WriteLine("Missing required option: --from <existing-L10N_Talking.csv>");
-                return 1;
-            }
-
-            if (!File.Exists(existingPath)) {
-                Console.Error.WriteLine("Existing UnitySample L10N CSV not found: " + existingPath);
-                return 1;
-            }
-
-            try {
-                UnitySampleL10nMergePlanner planner = new UnitySampleL10nMergePlanner();
-                UnitySampleL10nMergeResult result = planner.Merge(File.ReadAllText(existingPath, Encoding.UTF8),
-                                                           File.ReadAllText(generatedPath, Encoding.UTF8));
-                WriteOrPrint(outputPath, result.MergedCsv);
-                if (!string.IsNullOrWhiteSpace(reportPath)) {
-                    WriteOrPrint(reportPath, result.ReportCsv);
-                }
-                return 0;
-            } catch (Exception ex) {
-                Console.Error.WriteLine(ex.Message);
-                return 1;
-            }
         }
 
         internal static void PrintDiagnostics(IReadOnlyList<Diagnostic> diagnostics) {
