@@ -153,7 +153,7 @@ VSCode：4 / 10
 - 命令帮助、错误码、JSON/CSV/HTML 输出保持兼容。
 - CLI 测试全部通过。
 
-当前进展：已先后提取 `CliConfigLoader`，并把顶层元命令（`help` / `commands` / `export-host-schema-template`）、单文件命令分支和项目级命令分支从 `CliCore` 主入口中抽离；项目 `.inscape` 源扫描/读取/override 已提取为 `CliDslSourceLoader`，预览样式读取已提取为 `CliPreviewStyleLoader`，项目命令共享的编译前置流程已提取为 `CliCompilerProject`，单文件命令共享的输入读取/配置读取/编译前置流程已提取为 `CliCompilerSingleFile`，UnitySample 项目命令辅助逻辑已收口到 `CliUnitySampleSupport`。这些名字当前视为过渡命名：下一步应优先把共享流程上提到 `Tooling`，再逐步把它们收敛为目录优先、主语/角色的具体命名，而不是继续放大 `ProjectService`、`Workspace` 或 `Support` 大层。
+当前进展：顶层元命令（`help` / `commands` / `export-host-schema-template`）、单文件命令分支和项目级命令分支都已从 `CliCore` 主入口中抽离；项目 `.inscape` 源扫描/读取/override、预览样式读取等共享流程已上提到 `Inscape.Tooling`；单文件/项目编译前置流程也已分别收回 `CliSingleFileCommand` 与 `CliProjectCommand`，不再保留独立 `CliCompiler*` 过渡 helper。当前下一步应继续把真正共享的流程上提到 `Tooling`，并把仍停留在 `Cli` 的单命令局部编排继续收紧到各自入口，而不是继续放大 `ProjectService`、`Workspace` 或 `Support` 大层。
 
 收益：高。
 

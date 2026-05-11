@@ -1,6 +1,9 @@
+using System.Text;
 using System.Text.Json;
 using Inscape.Core.Compilation;
+using Inscape.Core.Diagnostics;
 using Inscape.Core.Localization;
+using Inscape.Core.Model;
 using Inscape.Tooling;
 
 namespace Inscape.Cli {
@@ -8,13 +11,22 @@ namespace Inscape.Cli {
     static class CliSingleFileCommand {
 
         public static bool TryRun(string command,
-                                  CompilationResult result,
+                                  string inputPath,
+                                  string[] args,
                                   string? outputPath,
                                   string? previousLocalizationPath,
-                                  ToolConfigModel previewConfig,
                                   JsonSerializerOptions jsonOptions,
                                   out int exitCode) {
             exitCode = 0;
+            if (!IsSupported(command)) {
+                return false;
+            }
+
+            if (!TryCompile(inputPath, args, jsonOptions, out ToolConfigModel previewConfig, out CompilationResult result)) {
+                exitCode = 1;
+                return true;
+            }
+
             CliCompileViewModel viewModel = CliCore.ToCompileViewModel(result);
 
             switch (command) {
@@ -68,6 +80,55 @@ namespace Inscape.Cli {
                 default:
                     return false;
             }
+        }
+
+        static bool IsSupported(string command) {
+            switch (command) {
+                case "check":
+                case "diagnose":
+                case "compile":
+                case "preview":
+                case "extract-l10n":
+                case "update-l10n":
+                    return true;
+
+                default:
+                    return false;
+            }
+        }
+
+        static bool TryCompile(string inputPath,
+                               string[] args,
+                               JsonSerializerOptions jsonOptions,
+                               out ToolConfigModel previewConfig,
+                               out CompilationResult result) {
+            previewConfig = new ToolConfigModel();
+            result = CreateEmptyResult();
+
+            if (!File.Exists(inputPath)) {
+                Console.Error.WriteLine("Input file not found: " + inputPath);
+                return false;
+            }
+
+            string fullInputPath = Path.GetFullPath(inputPath);
+            string projectRoot = Path.GetDirectoryName(fullInputPath) ?? Directory.GetCurrentDirectory();
+            if (!ToolConfigReaderDomain.TryReadProjectConfig(projectRoot,
+                                                             CliCore.ReadOption(args, "--config"),
+                                                             jsonOptions,
+                                                             out previewConfig,
+                                                             out string? errorMessage)) {
+                Console.Error.WriteLine(errorMessage);
+                return false;
+            }
+
+            string source = File.ReadAllText(inputPath, Encoding.UTF8);
+            InscapeCompiler compiler = new InscapeCompiler();
+            result = compiler.Compile(source, fullInputPath);
+            return true;
+        }
+
+        static CompilationResult CreateEmptyResult() {
+            return new CompilationResult(new InscapeDocument(), new List<Diagnostic>());
         }
 
     }

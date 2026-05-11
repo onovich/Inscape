@@ -42,8 +42,8 @@
 具体任务：
 
 1. 为 `Inscape.Tooling` 建立项目壳或目录边界。
-2. 把 `CliConfigLoader`、`CliDslSourceLoader` 的能力上提到 `Tooling`。
-3. 把项目/单文件共享编译前置流程改为 `Tooling` 调 `Compiler`。
+2. 把配置读取、项目源发现、预览样式等共享能力上提到 `Tooling`，并保持 `Cli` 仅保留参数与输出适配。
+3. 把只服务单个入口的项目/单文件编译前置流程收回各自 `Command`；若未来出现真实共享面，再由 `Tooling` 统一调 `Compiler`。
 4. 把预览构建、本地化导出更新、HostSchema 模板导出收束到 `Tooling`。
 5. 让 `Cli` 退化成命令入口与文件输出适配层。
 
