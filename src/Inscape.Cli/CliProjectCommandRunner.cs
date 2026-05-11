@@ -56,7 +56,7 @@ namespace Inscape.Cli {
                     return result.HasErrors ? 1 : 0;
 
                 case "export-unity-sample-binding-template":
-                    if (!CliUnitySampleSupport.TryReadUnitySampleTimelineBindingsForTemplate(args, config, out Dictionary<string, UnitySampleTimelineAssetBinding> timelineBindingsByAlias)) {
+                    if (!CliUnitySampleTemplateBindingReader.TryRead(args, config, out Dictionary<string, UnitySampleTimelineAssetBinding> timelineBindingsByAlias)) {
                         return 1;
                     }
 
@@ -93,7 +93,7 @@ namespace Inscape.Cli {
                     }
 
                     UnitySampleProjectExporter exporter = new UnitySampleProjectExporter();
-                    if (!CliUnitySampleSupport.TryReadUnitySampleExportOptions(args, config, out UnitySampleExportOptions options)) {
+                    if (!CliUnitySampleExportOptionsReader.TryRead(args, config, out UnitySampleExportOptions options)) {
                         return 1;
                     }
 

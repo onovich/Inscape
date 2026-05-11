@@ -3,9 +3,9 @@ using Inscape.Tooling;
 
 namespace Inscape.Cli {
 
-    static class CliUnitySampleSupport {
+    static class CliUnitySampleExportOptionsReader {
 
-        internal static bool TryReadUnitySampleExportOptions(string[] args, ToolConfigModel config, out UnitySampleExportOptions options) {
+        internal static bool TryRead(string[] args, ToolConfigModel config, out UnitySampleExportOptions options) {
             options = new UnitySampleExportOptions {
                 TalkingIdStart = ReadIntOption(args, "--unity-sample-talking-start", config.UnitySample.TalkingIdStart ?? 100000),
             };
@@ -18,7 +18,7 @@ namespace Inscape.Cli {
                 return false;
             }
 
-            AddUnitySampleRoleIds(options, roleIdsBySpeaker);
+            AddRoleIds(options, roleIdsBySpeaker);
 
             string? bindingMapPath = CliCore.ReadOption(args, "--unity-sample-binding-map") ?? config.UnitySample.BindingMap;
             if (!string.IsNullOrWhiteSpace(bindingMapPath)) {
@@ -29,7 +29,7 @@ namespace Inscape.Cli {
                     return false;
                 }
 
-                AddUnitySampleBindingEntries(options, bindingEntries);
+                AddBindingEntries(options, bindingEntries);
             }
 
             string? talkingRoot = CliCore.ReadOption(args, "--unity-sample-existing-talking-root") ?? config.UnitySample.ExistingTalkingRoot;
@@ -44,30 +44,15 @@ namespace Inscape.Cli {
             return true;
         }
 
-        internal static bool TryReadUnitySampleTimelineBindingsForTemplate(string[] args, ToolConfigModel config, out Dictionary<string, UnitySampleTimelineAssetBinding> bindingsByAlias) {
-            bindingsByAlias = new Dictionary<string, UnitySampleTimelineAssetBinding>(StringComparer.Ordinal);
-            string? timelineRoot = CliCore.ReadOption(args, "--unity-sample-existing-timeline-root") ?? config.UnitySample.ExistingTimelineRoot;
-            if (!TimelineAssetBindingScanDomain.TryRead(timelineRoot,
-                                                        out Dictionary<string, TimelineAssetBindingModel> scannedBindingsByAlias,
-                                                        out string? timelineError)) {
-                Console.Error.WriteLine(timelineError);
-                return false;
-            }
-
-            AddUnitySampleTimelineBindings(bindingsByAlias, scannedBindingsByAlias);
-
-            return true;
-        }
-
-        static void AddUnitySampleRoleIds(UnitySampleExportOptions options,
-                                          IReadOnlyDictionary<string, int> roleIdsBySpeaker) {
+        static void AddRoleIds(UnitySampleExportOptions options,
+                               IReadOnlyDictionary<string, int> roleIdsBySpeaker) {
             foreach (KeyValuePair<string, int> pair in roleIdsBySpeaker) {
                 options.RoleIdsBySpeaker[pair.Key] = pair.Value;
             }
         }
 
-        static void AddUnitySampleBindingEntries(UnitySampleExportOptions options,
-                                                 IReadOnlyList<HostBindingMapEntryModel> bindingEntries) {
+        static void AddBindingEntries(UnitySampleExportOptions options,
+                                      IReadOnlyList<HostBindingMapEntryModel> bindingEntries) {
             for (int i = 0; i < bindingEntries.Count; i += 1) {
                 HostBindingMapEntryModel entry = bindingEntries[i];
                 options.HostBindings.Add(new UnitySampleHostBinding {
@@ -78,18 +63,6 @@ namespace Inscape.Cli {
                     AddressableKey = entry.AddressableKey,
                     AssetPath = entry.AssetPath,
                 });
-            }
-        }
-
-        static void AddUnitySampleTimelineBindings(Dictionary<string, UnitySampleTimelineAssetBinding> bindingsByAlias,
-                                                   IReadOnlyDictionary<string, TimelineAssetBindingModel> scannedBindingsByAlias) {
-            foreach (KeyValuePair<string, TimelineAssetBindingModel> pair in scannedBindingsByAlias) {
-                bindingsByAlias.Add(pair.Key,
-                                    new UnitySampleTimelineAssetBinding {
-                                        TimelineId = pair.Value.TimelineId,
-                                        UnityGuid = pair.Value.UnityGuid,
-                                        AssetPath = pair.Value.AssetPath,
-                                    });
             }
         }
 
@@ -105,11 +78,14 @@ namespace Inscape.Cli {
             if (string.IsNullOrWhiteSpace(value)) {
                 return fallback;
             }
+
             if (int.TryParse(value, out int parsed)) {
                 return parsed;
             }
+
             return fallback;
         }
+
     }
 
 }
