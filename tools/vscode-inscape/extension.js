@@ -766,6 +766,439 @@ class InscapeWorkspaceNodeProvider {
 
 const workspaceNodeProvider = new InscapeWorkspaceNodeProvider();
 
+class InscapeWorkspaceSpeakerProvider {
+
+    async collectWorkspaceSpeakers(document) {
+        const speakers = [];
+        const seen = new Set();
+
+        const configured = await this.readConfiguredRoleMapSpeakerRows(document);
+        for (const speaker of configured) {
+            this.addSpeaker(speakers, seen, speaker);
+        }
+
+        const sources = await collectWorkspaceTextSources(document);
+        for (const source of sources) {
+            this.collectSpeakersFromText(source.text, source.sourcePath, speakers, seen);
+        }
+
+        return speakers.sort((left, right) => {
+            if (left.sourceRank !== right.sourceRank) {
+                return left.sourceRank - right.sourceRank;
+            }
+            return left.name.localeCompare(right.name, "zh-Hans-CN");
+        });
+    }
+
+    async collectConfiguredDefinitions(document, speakerName) {
+        const speakers = await this.readConfiguredRoleMapSpeakerRows(document);
+        return speakers.filter((speaker) => speaker.name === speakerName && typeof speaker.line === "number");
+    }
+
+    async collectWorkspaceReferences(document, speakerName) {
+        const references = [];
+        const sources = await collectWorkspaceTextSources(document);
+
+        for (const source of sources) {
+            this.collectReferencesFromText(source.text, source.sourcePath, speakerName, references);
+        }
+
+        return references.sort((left, right) => {
+            const pathCompare = left.sourcePath.localeCompare(right.sourcePath);
+            if (pathCompare !== 0) {
+                return pathCompare;
+            }
+            if (left.line !== right.line) {
+                return left.line - right.line;
+            }
+            return left.character - right.character;
+        });
+    }
+
+    createCompletionItem(speaker) {
+        const item = new vscode.CompletionItem(speaker.name, vscode.CompletionItemKind.Class);
+        item.insertText = speaker.name + "\uFF1A";
+        item.detail = speaker.roleId
+            ? "UnitySample roleId " + speaker.roleId
+            : speaker.sourceLabel + " (unbound)";
+        item.documentation = speaker.sourcePath;
+        item.sortText = (speaker.sourceRank || 0) + "_" + speaker.name;
+        return item;
+    }
+
+    async readConfiguredRoleMapSpeakerRows(document) {
+        const roleMapPath = await this.getConfiguredRoleMapPath(document);
+        if (!roleMapPath) {
+            return [];
+        }
+
+        const text = await fs.promises.readFile(roleMapPath, "utf8");
+        return this.parseRoleMapSpeakerRows(text, roleMapPath);
+    }
+
+    async getConfiguredRoleMapPath(document) {
+        const projectConfig = await readProjectConfig(document);
+        if (!projectConfig || !projectConfig.configPath || !projectConfig.config || !projectConfig.config.unitySample) {
+            return undefined;
+        }
+
+        const roleMap = projectConfig.config.unitySample.roleMap;
+        if (!roleMap) {
+            return undefined;
+        }
+
+        const roleMapPath = resolveProjectConfigPath(projectConfig.configPath, roleMap);
+        if (!fs.existsSync(roleMapPath)) {
+            return undefined;
+        }
+
+        return roleMapPath;
+    }
+
+    parseRoleMapSpeakerRows(text, roleMapPath) {
+        const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+        let headerLine = -1;
+        let headers = [];
+
+        for (let line = 0; line < lines.length; line += 1) {
+            const trimmed = lines[line].trim();
+            if (!trimmed || trimmed.startsWith("#")) {
+                continue;
+            }
+
+            const parsed = parseCsvRows(lines[line]);
+            if (parsed.length === 0) {
+                continue;
+            }
+
+            headers = parsed[0].map((header) => header.trim());
+            headerLine = line;
+            break;
+        }
+
+        const speakerIndex = headers.indexOf("speaker");
+        const roleIdIndex = headers.indexOf("roleId");
+        if (headerLine < 0 || speakerIndex < 0) {
+            return [];
+        }
+
+        const speakers = [];
+        for (let line = headerLine + 1; line < lines.length; line += 1) {
+            const trimmed = lines[line].trim();
+            if (!trimmed || trimmed.startsWith("#")) {
+                continue;
+            }
+
+            const parsed = parseCsvRows(lines[line]);
+            if (parsed.length === 0) {
+                continue;
+            }
+
+            const row = parsed[0];
+            const name = (row[speakerIndex] || "").trim();
+            if (!name) {
+                continue;
+            }
+
+            speakers.push({
+                name,
+                roleId: roleIdIndex >= 0 ? (row[roleIdIndex] || "").trim() : "",
+                sourcePath: roleMapPath,
+                sourceLabel: "UnitySample role map",
+                sourceRank: 0,
+                line,
+                character: this.findCsvFieldValueStart(lines[line], speakerIndex, name),
+                length: name.length
+            });
+        }
+
+        return speakers;
+    }
+
+    collectSpeakersFromText(text, sourcePath, speakers, seen) {
+        const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+        for (let line = 0; line < lines.length; line += 1) {
+            const match = /^\s*([^:\uFF1A\s][^:\uFF1A]{0,80}?)[ \t]*[:\uFF1A]/.exec(lines[line]);
+            if (!match) {
+                continue;
+            }
+
+            const name = match[1].trim();
+            if (!isLikelyDialogueSpeaker(name)) {
+                continue;
+            }
+
+            this.addSpeaker(speakers, seen, {
+                name,
+                roleId: "",
+                sourcePath,
+                sourceLabel: "Workspace speaker",
+                sourceRank: 1,
+                line,
+                character: this.getTrimmedMatchStart(lines[line], match[1], name),
+                length: name.length
+            });
+        }
+    }
+
+    collectReferencesFromText(text, sourcePath, speakerName, references) {
+        const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+        for (let line = 0; line < lines.length; line += 1) {
+            const match = /^\s*([^:\uFF1A\s][^:\uFF1A]{0,80}?)[ \t]*[:\uFF1A]/.exec(lines[line]);
+            if (!match) {
+                continue;
+            }
+
+            const name = match[1].trim();
+            if (name !== speakerName || !isLikelyDialogueSpeaker(name)) {
+                continue;
+            }
+
+            references.push({
+                name,
+                sourcePath,
+                line,
+                character: this.getTrimmedMatchStart(lines[line], match[1], name),
+                length: name.length
+            });
+        }
+    }
+
+    getTrimmedMatchStart(line, rawMatch, trimmedMatch) {
+        const rawStart = Math.max(0, line.indexOf(rawMatch));
+        const trimOffset = Math.max(0, rawMatch.indexOf(trimmedMatch));
+        return rawStart + trimOffset;
+    }
+
+    addSpeaker(speakers, seen, speaker) {
+        const key = speaker.name;
+        if (seen.has(key)) {
+            return;
+        }
+
+        seen.add(key);
+        speakers.push(speaker);
+    }
+
+    findCsvFieldValueStart(line, fieldIndex, fallbackValue) {
+        let currentField = 0;
+        let fieldStart = 0;
+        let inQuotes = false;
+
+        for (let index = 0; index <= line.length; index += 1) {
+            const character = index < line.length ? line[index] : ",";
+            if (inQuotes) {
+                if (character === "\"") {
+                    if (line[index + 1] === "\"") {
+                        index += 1;
+                    } else {
+                        inQuotes = false;
+                    }
+                }
+                continue;
+            }
+
+            if (character === "\"") {
+                inQuotes = true;
+            } else if (character === ",") {
+                if (currentField === fieldIndex) {
+                    let start = fieldStart;
+                    while (start < index && /\s/.test(line[start])) {
+                        start += 1;
+                    }
+                    if (line[start] === "\"") {
+                        start += 1;
+                    }
+                    return start;
+                }
+
+                currentField += 1;
+                fieldStart = index + 1;
+            }
+        }
+
+        const fallback = line.indexOf(fallbackValue);
+        return Math.max(0, fallback);
+    }
+
+}
+
+const workspaceSpeakerProvider = new InscapeWorkspaceSpeakerProvider();
+
+class InscapeWorkspaceHostBindingProvider {
+
+    async collectWorkspaceBindings(document, kind) {
+        const bindings = [];
+        const seen = new Set();
+
+        const configured = await this.readConfiguredBindings(document);
+        for (const binding of configured) {
+            if (binding.kind === kind) {
+                this.addBinding(bindings, seen, binding);
+            }
+        }
+
+        const sources = await collectWorkspaceTextSources(document);
+        for (const source of sources) {
+            this.collectBindingsFromText(source.text, source.sourcePath, kind, bindings, seen);
+        }
+
+        return bindings.sort((left, right) => {
+            if (left.sourceRank !== right.sourceRank) {
+                return left.sourceRank - right.sourceRank;
+            }
+            return left.alias.localeCompare(right.alias, "zh-Hans-CN");
+        });
+    }
+
+    createCompletionItem(binding) {
+        const item = new vscode.CompletionItem(binding.alias, vscode.CompletionItemKind.Reference);
+        item.insertText = binding.alias;
+        item.detail = this.createDetail(binding);
+        item.documentation = createHostBindingMarkdown(binding);
+        item.sortText = (binding.sourceRank || 0) + "_" + binding.alias;
+        return item;
+    }
+
+    async readConfiguredBindings(document) {
+        const projectConfig = await readProjectConfig(document);
+        if (!projectConfig || !projectConfig.configPath || !projectConfig.config || !projectConfig.config.unitySample) {
+            return [];
+        }
+
+        const bindingMap = projectConfig.config.unitySample.bindingMap;
+        if (!bindingMap) {
+            return [];
+        }
+
+        const bindingMapPath = resolveProjectConfigPath(projectConfig.configPath, bindingMap);
+        if (!fs.existsSync(bindingMapPath)) {
+            return [];
+        }
+
+        const text = await fs.promises.readFile(bindingMapPath, "utf8");
+        const sourceLines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+        const rows = parseCsvRows(text).filter((row) => !(row[0] || "").trim().startsWith("#"));
+        if (rows.length === 0) {
+            return [];
+        }
+
+        const headers = rows[0].map((header) => header.trim());
+        const hasHeader = headers.includes("kind") && headers.includes("alias");
+        const kindIndex = hasHeader ? headers.indexOf("kind") : 0;
+        const aliasIndex = hasHeader ? headers.indexOf("alias") : 1;
+        const unitySampleIdIndex = hasHeader ? headers.indexOf("unitySampleId") : 2;
+        const unityGuidIndex = hasHeader ? headers.indexOf("unityGuid") : 3;
+        const addressableKeyIndex = hasHeader ? headers.indexOf("addressableKey") : 4;
+        const assetPathIndex = hasHeader ? headers.indexOf("assetPath") : 5;
+        const dataRows = hasHeader ? rows.slice(1) : rows;
+
+        return dataRows
+            .map((row, index) => {
+                const line = hasHeader ? index + 1 : index;
+                const lineText = sourceLines[line] || row.join(",");
+                const alias = (row[aliasIndex] || "").trim();
+                return {
+                    kind: (row[kindIndex] || "").trim(),
+                    alias,
+                    unitySampleId: this.readOptionalCsvField(row, unitySampleIdIndex),
+                    unityGuid: this.readOptionalCsvField(row, unityGuidIndex),
+                    addressableKey: this.readOptionalCsvField(row, addressableKeyIndex),
+                    assetPath: this.readOptionalCsvField(row, assetPathIndex),
+                    sourcePath: bindingMapPath,
+                    sourceLabel: "UnitySample binding map",
+                    sourceRank: 0,
+                    line,
+                    character: 0,
+                    length: Math.max(alias.length, lineText.length)
+                };
+            })
+            .filter((binding) => binding.kind.length > 0 && binding.alias.length > 0);
+    }
+
+    readOptionalCsvField(row, index) {
+        return index >= 0 && index < row.length ? (row[index] || "").trim() : "";
+    }
+
+    collectBindingsFromText(text, sourcePath, requestedKind, bindings, seen) {
+        const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+        for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
+            const line = lines[lineIndex];
+            const metadataMatch = /^\s*@timeline(?:\.(?:talking|node)\.(?:enter|exit))?(?::|\s+)\s*([^\s\]]+)/.exec(line);
+            if (requestedKind === "timeline" && metadataMatch) {
+                const alias = metadataMatch[1].trim();
+                const start = line.indexOf(alias, metadataMatch.index);
+                this.addBinding(bindings, seen, {
+                    kind: "timeline",
+                    alias,
+                    unitySampleId: "",
+                    unityGuid: "",
+                    addressableKey: "",
+                    assetPath: "",
+                    sourcePath,
+                    sourceLabel: "Workspace timeline hook",
+                    sourceRank: 1,
+                    line: lineIndex,
+                    character: Math.max(0, start),
+                    length: Math.max(alias.length, 1)
+                });
+            }
+
+            const inlinePattern = /\[([A-Za-z_][A-Za-z0-9_.-]*)\s*:\s*([^\]\s]+)\]/g;
+            let inlineMatch = inlinePattern.exec(line);
+            while (inlineMatch) {
+                const kind = normalizeHostBindingKind(inlineMatch[1].trim());
+                const alias = inlineMatch[2].trim();
+                if (kind === requestedKind && alias.length > 0) {
+                    const aliasStart = inlineMatch.index + inlineMatch[0].lastIndexOf(inlineMatch[2]);
+                    this.addBinding(bindings, seen, {
+                        kind,
+                        alias,
+                        unitySampleId: "",
+                        unityGuid: "",
+                        addressableKey: "",
+                        assetPath: "",
+                        sourcePath,
+                        sourceLabel: "Workspace inline tag",
+                        sourceRank: 1,
+                        line: lineIndex,
+                        character: Math.max(0, aliasStart),
+                        length: Math.max(alias.length, 1)
+                    });
+                }
+                inlineMatch = inlinePattern.exec(line);
+            }
+        }
+    }
+
+    addBinding(bindings, seen, binding) {
+        const key = binding.kind + "\n" + binding.alias;
+        if (seen.has(key)) {
+            return;
+        }
+
+        seen.add(key);
+        bindings.push(binding);
+    }
+
+    createDetail(binding) {
+        const pieces = [binding.kind];
+        if (binding.unitySampleId) {
+            pieces.push("UnitySample " + binding.unitySampleId);
+        }
+        if (binding.addressableKey) {
+            pieces.push(binding.addressableKey);
+        }
+        if (pieces.length === 1) {
+            pieces.push(binding.sourceLabel + " (unbound)");
+        }
+        return pieces.join(" / ");
+    }
+
+}
+
+const workspaceHostBindingProvider = new InscapeWorkspaceHostBindingProvider();
+
 function activate(context) {
     outputChannel = vscode.window.createOutputChannel("Inscape");
     const diagnostics = vscode.languages.createDiagnosticCollection("inscape");
@@ -958,13 +1391,13 @@ class InscapeCompletionProvider {
 
         const hostBindingContext = getHostBindingCompletionContext(linePrefix);
         if (hostBindingContext) {
-            const bindings = await collectWorkspaceHostBindings(document, hostBindingContext.kind);
-            return bindings.map((binding) => createHostBindingCompletionItem(binding));
+            const bindings = await workspaceHostBindingProvider.collectWorkspaceBindings(document, hostBindingContext.kind);
+            return bindings.map((binding) => workspaceHostBindingProvider.createCompletionItem(binding));
         }
 
         if (isSpeakerCompletionContext(linePrefix)) {
-            const speakers = await collectWorkspaceSpeakers(document);
-            return speakers.map((speaker) => createSpeakerCompletionItem(speaker));
+            const speakers = await workspaceSpeakerProvider.collectWorkspaceSpeakers(document);
+            return speakers.map((speaker) => workspaceSpeakerProvider.createCompletionItem(speaker));
         }
 
         return undefined;
@@ -980,12 +1413,12 @@ class InscapeDefinitionProvider {
 
         const speakerInfo = getDialogueSpeakerAtPosition(document, position);
         if (speakerInfo) {
-            const definitions = await collectConfiguredRoleMapSpeakerDefinitions(document, speakerInfo.name);
+            const definitions = await workspaceSpeakerProvider.collectConfiguredDefinitions(document, speakerInfo.name);
             if (definitions.length > 0) {
                 return definitions.map((definition) => createLocation(definition));
             }
 
-            const references = await collectWorkspaceDialogueSpeakerReferences(document, speakerInfo.name);
+            const references = await workspaceSpeakerProvider.collectWorkspaceReferences(document, speakerInfo.name);
             if (references.length > 0) {
                 return references.map((reference) => createLocation(reference));
             }
@@ -994,7 +1427,7 @@ class InscapeDefinitionProvider {
 
         const hostBindingInfo = getHostBindingAtPosition(document, position);
         if (hostBindingInfo) {
-            const bindings = await collectWorkspaceHostBindings(document, hostBindingInfo.kind);
+            const bindings = await workspaceHostBindingProvider.collectWorkspaceBindings(document, hostBindingInfo.kind);
             const matchingBindings = bindings.filter((candidate) => candidate.alias === hostBindingInfo.alias)
                 .map((candidate) => createLocation(candidate));
             if (matchingBindings.length > 0) {
@@ -1044,11 +1477,11 @@ class InscapeReferenceProvider {
 
         const speakerInfo = getDialogueSpeakerAtPosition(document, position);
         if (speakerInfo) {
-            const references = await collectWorkspaceDialogueSpeakerReferences(document, speakerInfo.name);
+            const references = await workspaceSpeakerProvider.collectWorkspaceReferences(document, speakerInfo.name);
             let locations = references.map((reference) => createLocation(reference));
 
             if (context && context.includeDeclaration) {
-                const definitions = await collectConfiguredRoleMapSpeakerDefinitions(document, speakerInfo.name);
+                const definitions = await workspaceSpeakerProvider.collectConfiguredDefinitions(document, speakerInfo.name);
                 locations = definitions.map((definition) => createLocation(definition)).concat(locations);
             }
 
@@ -1085,7 +1518,7 @@ class InscapeHoverProvider {
 
         const speakerInfo = getDialogueSpeakerAtPosition(document, position);
         if (speakerInfo) {
-            const speakers = await collectWorkspaceSpeakers(document);
+            const speakers = await workspaceSpeakerProvider.collectWorkspaceSpeakers(document);
             const speaker = speakers.find((candidate) => candidate.name === speakerInfo.name);
             if (speaker) {
                 return new vscode.Hover(createSpeakerHoverMarkdown(speaker), speakerInfo.range);
@@ -1094,7 +1527,7 @@ class InscapeHoverProvider {
 
         const hostBindingInfo = getHostBindingAtPosition(document, position);
         if (hostBindingInfo) {
-            const bindings = await collectWorkspaceHostBindings(document, hostBindingInfo.kind);
+            const bindings = await workspaceHostBindingProvider.collectWorkspaceBindings(document, hostBindingInfo.kind);
             const binding = bindings.find((candidate) => candidate.alias === hostBindingInfo.alias);
             if (binding) {
                 return new vscode.Hover(createHostBindingHoverMarkdown(binding), hostBindingInfo.range);
@@ -2136,141 +2569,6 @@ function getHostBindingCompletionContext(linePrefix) {
     return match ? { kind: normalizeHostBindingKind(match[1]) } : undefined;
 }
 
-async function collectWorkspaceHostBindings(document, kind) {
-    const bindings = [];
-    const seen = new Set();
-
-    const configured = await readConfiguredHostBindings(document);
-    for (const binding of configured) {
-        if (binding.kind === kind) {
-            addHostBinding(bindings, seen, binding);
-        }
-    }
-
-    const sources = await collectWorkspaceTextSources(document);
-    for (const source of sources) {
-        collectHostBindingsFromText(source.text, source.sourcePath, kind, bindings, seen);
-    }
-
-    return bindings.sort((left, right) => {
-        if (left.sourceRank !== right.sourceRank) {
-            return left.sourceRank - right.sourceRank;
-        }
-        return left.alias.localeCompare(right.alias, "zh-Hans-CN");
-    });
-}
-
-async function readConfiguredHostBindings(document) {
-    const projectConfig = await readProjectConfig(document);
-    if (!projectConfig || !projectConfig.configPath || !projectConfig.config || !projectConfig.config.unitySample) {
-        return [];
-    }
-
-    const bindingMap = projectConfig.config.unitySample.bindingMap;
-    if (!bindingMap) {
-        return [];
-    }
-
-    const bindingMapPath = resolveProjectConfigPath(projectConfig.configPath, bindingMap);
-    if (!fs.existsSync(bindingMapPath)) {
-        return [];
-    }
-
-    const text = await fs.promises.readFile(bindingMapPath, "utf8");
-    const sourceLines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
-    const rows = parseCsvRows(text).filter((row) => !(row[0] || "").trim().startsWith("#"));
-    if (rows.length === 0) {
-        return [];
-    }
-
-    const headers = rows[0].map((header) => header.trim());
-    const hasHeader = headers.includes("kind") && headers.includes("alias");
-    const kindIndex = hasHeader ? headers.indexOf("kind") : 0;
-    const aliasIndex = hasHeader ? headers.indexOf("alias") : 1;
-    const unitySampleIdIndex = hasHeader ? headers.indexOf("unitySampleId") : 2;
-    const unityGuidIndex = hasHeader ? headers.indexOf("unityGuid") : 3;
-    const addressableKeyIndex = hasHeader ? headers.indexOf("addressableKey") : 4;
-    const assetPathIndex = hasHeader ? headers.indexOf("assetPath") : 5;
-    const dataRows = hasHeader ? rows.slice(1) : rows;
-
-    return dataRows
-        .map((row, index) => {
-            const line = hasHeader ? index + 1 : index;
-            const lineText = sourceLines[line] || row.join(",");
-            const alias = (row[aliasIndex] || "").trim();
-            return {
-            kind: (row[kindIndex] || "").trim(),
-            alias,
-            unitySampleId: readOptionalCsvField(row, unitySampleIdIndex),
-            unityGuid: readOptionalCsvField(row, unityGuidIndex),
-            addressableKey: readOptionalCsvField(row, addressableKeyIndex),
-            assetPath: readOptionalCsvField(row, assetPathIndex),
-            sourcePath: bindingMapPath,
-            sourceLabel: "UnitySample binding map",
-            sourceRank: 0,
-            line,
-            character: 0,
-            length: Math.max(alias.length, lineText.length)
-        };
-        })
-        .filter((binding) => binding.kind.length > 0 && binding.alias.length > 0);
-}
-
-function readOptionalCsvField(row, index) {
-    return index >= 0 && index < row.length ? (row[index] || "").trim() : "";
-}
-
-function collectHostBindingsFromText(text, sourcePath, requestedKind, bindings, seen) {
-    const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
-    for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
-        const line = lines[lineIndex];
-        const metadataMatch = /^\s*@timeline(?:\.(?:talking|node)\.(?:enter|exit))?(?::|\s+)\s*([^\s\]]+)/.exec(line);
-        if (requestedKind === "timeline" && metadataMatch) {
-            const alias = metadataMatch[1].trim();
-            const start = line.indexOf(alias, metadataMatch.index);
-            addHostBinding(bindings, seen, {
-                kind: "timeline",
-                alias,
-                unitySampleId: "",
-                unityGuid: "",
-                addressableKey: "",
-                assetPath: "",
-                sourcePath,
-                sourceLabel: "Workspace timeline hook",
-                sourceRank: 1,
-                line: lineIndex,
-                character: Math.max(0, start),
-                length: Math.max(alias.length, 1)
-            });
-        }
-
-        const inlinePattern = /\[([A-Za-z_][A-Za-z0-9_.-]*)\s*:\s*([^\]\s]+)\]/g;
-        let inlineMatch = inlinePattern.exec(line);
-        while (inlineMatch) {
-            const kind = normalizeHostBindingKind(inlineMatch[1].trim());
-            const alias = inlineMatch[2].trim();
-            if (kind === requestedKind && alias.length > 0) {
-                const aliasStart = inlineMatch.index + inlineMatch[0].lastIndexOf(inlineMatch[2]);
-                addHostBinding(bindings, seen, {
-                    kind,
-                    alias,
-                    unitySampleId: "",
-                    unityGuid: "",
-                    addressableKey: "",
-                    assetPath: "",
-                    sourcePath,
-                    sourceLabel: "Workspace inline tag",
-                    sourceRank: 1,
-                    line: lineIndex,
-                    character: Math.max(0, aliasStart),
-                    length: Math.max(alias.length, 1)
-                });
-            }
-            inlineMatch = inlinePattern.exec(line);
-        }
-    }
-}
-
 async function collectWorkspaceMetadataReferences(document, metadataInfo) {
     const references = [];
     const sources = await collectWorkspaceTextSources(document);
@@ -2312,196 +2610,6 @@ function normalizeHostBindingKind(kind) {
     }
 
     return kind;
-}
-
-function addHostBinding(bindings, seen, binding) {
-    const key = binding.kind + "\n" + binding.alias;
-    if (seen.has(key)) {
-        return;
-    }
-
-    seen.add(key);
-    bindings.push(binding);
-}
-
-function createHostBindingCompletionItem(binding) {
-    const item = new vscode.CompletionItem(binding.alias, vscode.CompletionItemKind.Reference);
-    item.insertText = binding.alias;
-    item.detail = createHostBindingDetail(binding);
-    item.documentation = createHostBindingMarkdown(binding);
-    item.sortText = (binding.sourceRank || 0) + "_" + binding.alias;
-    return item;
-}
-
-function createHostBindingDetail(binding) {
-    const pieces = [binding.kind];
-    if (binding.unitySampleId) {
-        pieces.push("UnitySample " + binding.unitySampleId);
-    }
-    if (binding.addressableKey) {
-        pieces.push(binding.addressableKey);
-    }
-    if (pieces.length === 1) {
-        pieces.push(binding.sourceLabel + " (unbound)");
-    }
-    return pieces.join(" / ");
-}
-
-async function collectWorkspaceSpeakers(document) {
-    const speakers = [];
-    const seen = new Set();
-
-    const configured = await readConfiguredRoleMapSpeakerRows(document);
-    for (const speaker of configured) {
-        addSpeaker(speakers, seen, speaker);
-    }
-
-    const sources = await collectWorkspaceTextSources(document);
-    for (const source of sources) {
-        collectSpeakersFromText(source.text, source.sourcePath, speakers, seen);
-    }
-
-    return speakers.sort((left, right) => {
-        if (left.sourceRank !== right.sourceRank) {
-            return left.sourceRank - right.sourceRank;
-        }
-        return left.name.localeCompare(right.name, "zh-Hans-CN");
-    });
-}
-
-async function collectConfiguredRoleMapSpeakerDefinitions(document, speakerName) {
-    const speakers = await readConfiguredRoleMapSpeakerRows(document);
-    return speakers.filter((speaker) => speaker.name === speakerName && typeof speaker.line === "number");
-}
-
-async function readConfiguredRoleMapSpeakerRows(document) {
-    const roleMapPath = await getConfiguredRoleMapPath(document);
-    if (!roleMapPath) {
-        return [];
-    }
-
-    const text = await fs.promises.readFile(roleMapPath, "utf8");
-    return parseRoleMapSpeakerRows(text, roleMapPath);
-}
-
-async function getConfiguredRoleMapPath(document) {
-    const projectConfig = await readProjectConfig(document);
-    if (!projectConfig || !projectConfig.configPath || !projectConfig.config || !projectConfig.config.unitySample) {
-        return undefined;
-    }
-
-    const roleMap = projectConfig.config.unitySample.roleMap;
-    if (!roleMap) {
-        return undefined;
-    }
-
-    const roleMapPath = resolveProjectConfigPath(projectConfig.configPath, roleMap);
-    if (!fs.existsSync(roleMapPath)) {
-        return undefined;
-    }
-
-    return roleMapPath;
-}
-
-function parseRoleMapSpeakerRows(text, roleMapPath) {
-    const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
-    let headerLine = -1;
-    let headers = [];
-
-    for (let line = 0; line < lines.length; line += 1) {
-        const trimmed = lines[line].trim();
-        if (!trimmed || trimmed.startsWith("#")) {
-            continue;
-        }
-
-        const parsed = parseCsvRows(lines[line]);
-        if (parsed.length === 0) {
-            continue;
-        }
-
-        headers = parsed[0].map((header) => header.trim());
-        headerLine = line;
-        break;
-    }
-
-    const speakerIndex = headers.indexOf("speaker");
-    const roleIdIndex = headers.indexOf("roleId");
-    if (headerLine < 0 || speakerIndex < 0) {
-        return [];
-    }
-
-    const speakers = [];
-    for (let line = headerLine + 1; line < lines.length; line += 1) {
-        const trimmed = lines[line].trim();
-        if (!trimmed || trimmed.startsWith("#")) {
-            continue;
-        }
-
-        const parsed = parseCsvRows(lines[line]);
-        if (parsed.length === 0) {
-            continue;
-        }
-
-        const row = parsed[0];
-        const name = (row[speakerIndex] || "").trim();
-        if (!name) {
-            continue;
-        }
-
-        speakers.push({
-            name,
-            roleId: roleIdIndex >= 0 ? (row[roleIdIndex] || "").trim() : "",
-            sourcePath: roleMapPath,
-            sourceLabel: "UnitySample role map",
-            sourceRank: 0,
-            line,
-            character: findCsvFieldValueStart(lines[line], speakerIndex, name),
-            length: name.length
-        });
-    }
-
-    return speakers;
-}
-
-function findCsvFieldValueStart(line, fieldIndex, fallbackValue) {
-    let currentField = 0;
-    let fieldStart = 0;
-    let inQuotes = false;
-
-    for (let index = 0; index <= line.length; index += 1) {
-        const character = index < line.length ? line[index] : ",";
-        if (inQuotes) {
-            if (character === "\"") {
-                if (line[index + 1] === "\"") {
-                    index += 1;
-                } else {
-                    inQuotes = false;
-                }
-            }
-            continue;
-        }
-
-        if (character === "\"") {
-            inQuotes = true;
-        } else if (character === ",") {
-            if (currentField === fieldIndex) {
-                let start = fieldStart;
-                while (start < index && /\s/.test(line[start])) {
-                    start += 1;
-                }
-                if (line[start] === "\"") {
-                    start += 1;
-                }
-                return start;
-            }
-
-            currentField += 1;
-            fieldStart = index + 1;
-        }
-    }
-
-    const fallback = line.indexOf(fallbackValue);
-    return Math.max(0, fallback);
 }
 
 async function readProjectConfig(document) {
@@ -2585,81 +2693,6 @@ function parseCsvRows(text) {
     return rows.filter((csvRow) => csvRow.some((fieldValue) => fieldValue.trim().length > 0));
 }
 
-function collectSpeakersFromText(text, sourcePath, speakers, seen) {
-    const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
-    for (let line = 0; line < lines.length; line += 1) {
-        const match = /^\s*([^:\uFF1A\s][^:\uFF1A]{0,80}?)[ \t]*[:\uFF1A]/.exec(lines[line]);
-        if (!match) {
-            continue;
-        }
-
-        const name = match[1].trim();
-        if (!isLikelyDialogueSpeaker(name)) {
-            continue;
-        }
-
-        addSpeaker(speakers, seen, {
-            name,
-            roleId: "",
-            sourcePath,
-            sourceLabel: "Workspace speaker",
-            sourceRank: 1,
-            line,
-            character: getTrimmedMatchStart(lines[line], match[1], name),
-            length: name.length
-        });
-    }
-}
-
-async function collectWorkspaceDialogueSpeakerReferences(document, speakerName) {
-    const references = [];
-    const sources = await collectWorkspaceTextSources(document);
-
-    for (const source of sources) {
-        collectDialogueSpeakerReferencesFromText(source.text, source.sourcePath, speakerName, references);
-    }
-
-    return references.sort((left, right) => {
-        const pathCompare = left.sourcePath.localeCompare(right.sourcePath);
-        if (pathCompare !== 0) {
-            return pathCompare;
-        }
-        if (left.line !== right.line) {
-            return left.line - right.line;
-        }
-        return left.character - right.character;
-    });
-}
-
-function collectDialogueSpeakerReferencesFromText(text, sourcePath, speakerName, references) {
-    const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
-    for (let line = 0; line < lines.length; line += 1) {
-        const match = /^\s*([^:\uFF1A\s][^:\uFF1A]{0,80}?)[ \t]*[:\uFF1A]/.exec(lines[line]);
-        if (!match) {
-            continue;
-        }
-
-        const name = match[1].trim();
-        if (name !== speakerName || !isLikelyDialogueSpeaker(name)) {
-            continue;
-        }
-
-        references.push({
-            name,
-            sourcePath,
-            line,
-            character: getTrimmedMatchStart(lines[line], match[1], name),
-            length: name.length
-        });
-    }
-}
-
-function getTrimmedMatchStart(line, rawMatch, trimmedMatch) {
-    const rawStart = Math.max(0, line.indexOf(rawMatch));
-    const trimOffset = Math.max(0, rawMatch.indexOf(trimmedMatch));
-    return rawStart + trimOffset;
-}
-
 function isLikelyDialogueSpeaker(name) {
     return name.length > 0
         && !name.startsWith("::")
@@ -2669,27 +2702,6 @@ function isLikelyDialogueSpeaker(name) {
         && !name.startsWith("?")
         && !name.startsWith("-")
         && !name.startsWith("[");
-}
-
-function addSpeaker(speakers, seen, speaker) {
-    const key = speaker.name;
-    if (seen.has(key)) {
-        return;
-    }
-
-    seen.add(key);
-    speakers.push(speaker);
-}
-
-function createSpeakerCompletionItem(speaker) {
-    const item = new vscode.CompletionItem(speaker.name, vscode.CompletionItemKind.Class);
-    item.insertText = speaker.name + "\uFF1A";
-    item.detail = speaker.roleId
-        ? "UnitySample roleId " + speaker.roleId
-        : speaker.sourceLabel + " (unbound)";
-    item.documentation = speaker.sourcePath;
-    item.sortText = (speaker.sourceRank || 0) + "_" + speaker.name;
-    return item;
 }
 
 async function collectWorkspaceTextSources(document) {

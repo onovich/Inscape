@@ -82,6 +82,8 @@
 	- [x] 已继续收口工作区工具命令入口：`openToolsMenu`、`openEditorStyle`、`openPreviewStyle`、`openQuickSyntaxGuide` 及其局部样式文件 helper 已收为 `InscapeWorkspaceToolCommand`，样式/文档打开流程不再散在顶层函数。
 	- [x] 已继续收口 host schema 命令入口：`showHostSchemaCapabilities` 及其局部 schema 读取、QuickPick 组装与定位逻辑已收为 `InscapeHostSchemaCommand`，host schema 浏览流程不再散在顶层函数。
 	- [x] 已开始收口 workspace index：节点声明、jump 引用与节点导航这一小片已收为 `InscapeWorkspaceNodeProvider`，Definition / Reference / CodeLens / jump completion 不再直接依赖散落的 node/jump 顶层 helper。
+	- [x] 已继续收口 workspace index 的 speaker 子块：角色表读取、工作区 speaker 扫描、speaker completion / definition / reference 已收为 `InscapeWorkspaceSpeakerProvider`，顶层不再保留独立 speaker helper 串。
+	- [x] 已继续收口 workspace index 的 host binding 子块：binding map 读取、工作区 hook / inline tag 扫描以及 host binding completion / definition / hover 所需绑定列表已收为 `InscapeWorkspaceHostBindingProvider`，顶层不再保留独立 host binding helper 串。
 - [ ] 创建 `Inscape.LanguageServer` 基线项目，先迁移诊断与定义跳转，再迁移引用、补全与 source map 相关语义能力。
 - [ ] 将 Cli、VSCode 和未来 LanguageServer 共享的项目级流程继续拆成显式职责模块，优先落到 `Tooling` 的 `ProjectSources`、`ToolConfig`、`Preview`、`Localization`、`HostSchema`、`HostBinding` 等模块；如未来确需统一门面，也应建立在这些模块之上，而不是先造一个大而泛的 `ProjectService`。
 - [ ] 统一 source map / reveal payload 数据契约，支撑预览、诊断、跳转、本地化和未来编辑器三视图。
