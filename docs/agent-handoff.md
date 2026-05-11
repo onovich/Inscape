@@ -24,6 +24,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - 本轮会话已完成 Stage 1 的第四刀：迁出 Localization CSV 读取、提取与更新流程；`Cli` 现在只保留 `--from` 参数读取和错误输出适配。
 - 本轮会话已完成 Stage 1 的第五刀：迁出 HostSchema 模板模型与导出逻辑；`Cli` 顶层命令现在只保留 `-o` 参数读取和输出适配。
 - 本轮会话已完成 Stage 1 的第六刀：迁出 HostBinding 绑定表 CSV 读取流程；`Cli` 现在只保留 UnitySample 绑定项适配与参数/错误输出处理。
+- 本轮会话已完成 Stage 1 的第七刀：迁出现有角色名 CSV 扫描与歧义收敛流程；`Cli` 现在只保留 UnitySample role template report 输出。
 - 本轮会话确认：VSCode 长期方向是“薄扩展前端 + C# LanguageServer”，而不是继续长期借道 CLI 承载重语义能力。
 - 本轮会话确认：Unity 支持不再视为 Internal 五层之一，而视为 ExternalSupport/UnityPlugin；代码可以继续留在当前仓库，但不应进入默认 .NET solution 编译链。
 
@@ -44,6 +45,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - `Tooling` 当前已实际落下第四块稳定落点：`Localization` 的 CSV 读取、提取与更新流程已迁入独立项目 `src/Inscape.Tooling/`。
 - `Tooling` 当前已实际落下第五块稳定落点：`HostSchema` 的模板模型与模板导出逻辑已迁入独立项目 `src/Inscape.Tooling/`。
 - `Tooling` 当前已实际落下第六块稳定落点：`HostBinding` 的绑定表 CSV 读取流程已迁入独立项目 `src/Inscape.Tooling/`。
+- `Tooling` 当前已实际落下第七块稳定落点：现有角色名 CSV 的扫描与歧义收敛流程已迁入独立项目 `src/Inscape.Tooling/`。
 - `Cli`：命令行入口层；当前落在 `CliCore`、`CliTopLevelCommandRunner`、`CliSingleFileCommandRunner`、`CliProjectCommandRunner`。
 - `VSCode`：编辑器入口层；当前主要落在 `tools/vscode-inscape/extension.js`。
 - `LanguageServer`：C# 语义服务层；当前尚未创建项目，但已确认长期方向。
@@ -127,6 +129,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - 2026-05-11 已继续执行第四刀：当前 `CliCore` 内的本地化 CSV 读取、提取与更新共享辅助已被 `Inscape.Tooling` 内的 `LocalizationCsvFlowDomain` 取代，Cli 命令侧只保留 `--from` 参数读取和错误输出。这一刀同样通过了 `dotnet build Inscape.slnx --no-restore` 和 `dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj --no-build`。
 - 2026-05-11 已继续执行第五刀：当前 `CliHostSchemaTemplateWriter` 已被 `Inscape.Tooling` 内的 `HostSchemaTemplateWriterDomain` 取代，`CliTopLevelCommandRunner` 只保留 `-o` 参数读取与输出适配。这一刀同样通过了 `dotnet build Inscape.slnx --no-restore` 和 `dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj --no-build`。
 - 2026-05-11 已继续执行第六刀：当前 `CliUnitySampleSupport` 内的 UnitySample 绑定表 CSV 读取共享流程已被 `Inscape.Tooling` 内的 `HostBindingMapReaderDomain` / `HostBindingMapEntryModel` 取代，Cli 侧只保留把通用绑定项映射到 `UnitySampleHostBinding` 的适配。这一刀同样通过了 `dotnet build Inscape.slnx --no-restore` 和 `dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj --no-build`。
+- 2026-05-11 已继续执行第七刀：当前 `CliUnitySampleSupport` 内的现有角色名 CSV 扫描与歧义收敛流程已被 `Inscape.Tooling` 内的 `RoleNameBindingScanDomain` / `RoleNameBindingScanResultModel` / `RoleNameBindingCandidateModel` 取代，Cli 侧只保留 UnitySample role template report 输出。这一刀同样通过了 `dotnet build Inscape.slnx --no-restore` 和 `dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj --no-build`。
 
 - 2026-05-01 已完成 CLI 项目命令收口：项目级命令分发位于 `CliProjectCommandRunner`，共享的“配置读取 + `.inscape` 项目源扫描/读取/override + 项目编译”前置流程已收口到 `CliProjectCompiler`；其中 DSL 源加载位于 `CliDslSourceLoader`，UnitySample role/binding/export 辅助逻辑位于 `CliUnitySampleSupport`。单文件命令的“输入读取 + 邻近项目配置读取 + 单文件编译”前置流程也已收口到 `CliSingleFileCompiler`。`CliCore` 只保留参数分流、共享输出和退出码整合。验证通过：`dotnet build Inscape.slnx --no-restore`、`dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj --no-build`、`node --check tools\vscode-inscape\extension.js`。这些类型名现在统一视为过渡名；后续以目录优先、主语/角色的方式逐步替换。
 

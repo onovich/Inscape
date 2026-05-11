@@ -88,92 +88,15 @@ namespace Inscape.Cli {
             return true;
         }
 
-        internal static bool TryReadUnitySampleRoleNameBindingsForTemplate(string[] args,
-                                                                           ToolConfigModel config,
-                                                                           out Dictionary<string, int> roleIdsBySpeaker,
-                                                                           out Dictionary<string, List<UnitySampleRoleNameCandidate>> candidatesBySpeaker,
-                                                                           out bool scannedRoleNameCsv) {
-            roleIdsBySpeaker = new Dictionary<string, int>(StringComparer.Ordinal);
-            candidatesBySpeaker = new Dictionary<string, List<UnitySampleRoleNameCandidate>>(StringComparer.Ordinal);
-            scannedRoleNameCsv = false;
-            string? roleNameCsvPath = CliCore.ReadOption(args, "--unity-sample-existing-role-name-csv") ?? config.UnitySample.ExistingRoleNameCsv;
-            if (string.IsNullOrWhiteSpace(roleNameCsvPath)) {
-                return true;
-            }
-
-            if (!File.Exists(roleNameCsvPath)) {
-                Console.Error.WriteLine("UnitySample existing role name CSV not found: " + roleNameCsvPath);
-                return false;
-            }
-
-            string[] lines = File.ReadAllLines(roleNameCsvPath, Encoding.UTF8);
-            if (lines.Length == 0) {
-                return true;
-            }
-            scannedRoleNameCsv = true;
-
-            List<string> headers = ParseCsvRow(lines[0]);
-            List<int> textColumns = new List<int>();
-            for (int i = 0; i < headers.Count; i += 1) {
-                string header = headers[i].Trim();
-                if (header.Length == 0
-                    || header.Equals("ID", StringComparison.OrdinalIgnoreCase)
-                    || header.Equals("Desc", StringComparison.OrdinalIgnoreCase)) {
-                    continue;
-                }
-                textColumns.Add(i);
-            }
-
-            HashSet<string> ambiguousSpeakers = new HashSet<string>(StringComparer.Ordinal);
-            for (int i = 1; i < lines.Length; i += 1) {
-                if (string.IsNullOrWhiteSpace(lines[i])) {
-                    continue;
-                }
-
-                List<string> fields = ParseCsvRow(lines[i]);
-                if (fields.Count == 0 || !int.TryParse(fields[0].Trim(), out int roleId)) {
-                    continue;
-                }
-                string description = fields.Count > 1 ? fields[1].Trim() : string.Empty;
-
-                for (int columnIndex = 0; columnIndex < textColumns.Count; columnIndex += 1) {
-                    int column = textColumns[columnIndex];
-                    if (column >= fields.Count) {
-                        continue;
-                    }
-
-                    string speaker = fields[column].Trim();
-                    if (speaker.Length == 0 || ambiguousSpeakers.Contains(speaker)) {
-                        continue;
-                    }
-
-                    AddUnitySampleRoleCandidate(candidatesBySpeaker,
-                                                speaker,
-                                                new UnitySampleRoleNameCandidate(roleId, description, headers[column].Trim()));
-
-                    if (roleIdsBySpeaker.TryGetValue(speaker, out int existingRoleId)) {
-                        if (existingRoleId != roleId) {
-                            roleIdsBySpeaker.Remove(speaker);
-                            ambiguousSpeakers.Add(speaker);
-                        }
-                    } else {
-                        roleIdsBySpeaker.Add(speaker, roleId);
-                    }
-                }
-            }
-
-            return true;
-        }
-
         internal static string WriteUnitySampleRoleTemplateReport(InscapeDocument graph,
                                                                   IReadOnlyDictionary<string, int> roleIdsBySpeaker,
-                                                                  IReadOnlyDictionary<string, List<UnitySampleRoleNameCandidate>> candidatesBySpeaker,
+                                                                  IReadOnlyDictionary<string, List<RoleNameBindingCandidateModel>> candidatesBySpeaker,
                                                                   bool scannedRoleNameCsv) {
             StringBuilder builder = new StringBuilder();
             builder.AppendLine("speaker,status,roleId,candidateRoleIds,candidateDescriptions,candidateLanguages");
             foreach (string speaker in CollectDialogueSpeakers(graph)) {
                 roleIdsBySpeaker.TryGetValue(speaker, out int roleId);
-                candidatesBySpeaker.TryGetValue(speaker, out List<UnitySampleRoleNameCandidate>? candidates);
+                candidatesBySpeaker.TryGetValue(speaker, out List<RoleNameBindingCandidateModel>? candidates);
                 string status = CreateUnitySampleRoleReportStatus(roleIdsBySpeaker.ContainsKey(speaker), candidates, scannedRoleNameCsv);
                 AppendCsvField(builder, speaker);
                 builder.Append(',');
@@ -241,24 +164,8 @@ namespace Inscape.Cli {
             }
         }
 
-        static void AddUnitySampleRoleCandidate(Dictionary<string, List<UnitySampleRoleNameCandidate>> candidatesBySpeaker,
-                                                string speaker,
-                                                UnitySampleRoleNameCandidate candidate) {
-            if (!candidatesBySpeaker.TryGetValue(speaker, out List<UnitySampleRoleNameCandidate>? candidates)) {
-                candidates = new List<UnitySampleRoleNameCandidate>();
-                candidatesBySpeaker.Add(speaker, candidates);
-            }
-
-            for (int i = 0; i < candidates.Count; i += 1) {
-                if (candidates[i].RoleId == candidate.RoleId && candidates[i].Language == candidate.Language) {
-                    return;
-                }
-            }
-            candidates.Add(candidate);
-        }
-
         static string CreateUnitySampleRoleReportStatus(bool hasUniqueRoleId,
-                                                        List<UnitySampleRoleNameCandidate>? candidates,
+                                                        List<RoleNameBindingCandidateModel>? candidates,
                                                         bool scannedRoleNameCsv) {
             if (hasUniqueRoleId) {
                 return "unique";
@@ -286,7 +193,7 @@ namespace Inscape.Cli {
             return speakers;
         }
 
-        static string JoinRoleCandidateIds(List<UnitySampleRoleNameCandidate>? candidates) {
+        static string JoinRoleCandidateIds(List<RoleNameBindingCandidateModel>? candidates) {
             if (candidates == null || candidates.Count == 0) {
                 return string.Empty;
             }
@@ -298,7 +205,7 @@ namespace Inscape.Cli {
             return string.Join("|", ids);
         }
 
-        static string JoinRoleCandidateDescriptions(List<UnitySampleRoleNameCandidate>? candidates) {
+        static string JoinRoleCandidateDescriptions(List<RoleNameBindingCandidateModel>? candidates) {
             if (candidates == null || candidates.Count == 0) {
                 return string.Empty;
             }
@@ -312,7 +219,7 @@ namespace Inscape.Cli {
             return string.Join("|", descriptions);
         }
 
-        static string JoinRoleCandidateLanguages(List<UnitySampleRoleNameCandidate>? candidates) {
+        static string JoinRoleCandidateLanguages(List<RoleNameBindingCandidateModel>? candidates) {
             if (candidates == null || candidates.Count == 0) {
                 return string.Empty;
             }
@@ -487,23 +394,6 @@ namespace Inscape.Cli {
             }
             return fallback;
         }
-
-        internal sealed class UnitySampleRoleNameCandidate {
-
-            public int RoleId { get; }
-
-            public string Description { get; }
-
-            public string Language { get; }
-
-            public UnitySampleRoleNameCandidate(int roleId, string description, string language) {
-                RoleId = roleId;
-                Description = description;
-                Language = language;
-            }
-
-        }
-
     }
 
 }

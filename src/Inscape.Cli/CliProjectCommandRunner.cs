@@ -66,23 +66,22 @@ namespace Inscape.Cli {
                     return result.HasErrors ? 1 : 0;
 
                 case "export-unity-sample-role-template":
-                    if (!CliUnitySampleSupport.TryReadUnitySampleRoleNameBindingsForTemplate(args,
-                                                                                             config,
-                                                                                             out Dictionary<string, int> roleIdsBySpeaker,
-                                                                                             out Dictionary<string, List<CliUnitySampleSupport.UnitySampleRoleNameCandidate>> candidatesBySpeaker,
-                                                                                                out bool scannedRoleNameCsv)) {
+                    if (!RoleNameBindingScanDomain.TryRead(CliCore.ReadOption(args, "--unity-sample-existing-role-name-csv") ?? config.UnitySample.ExistingRoleNameCsv,
+                                                         out RoleNameBindingScanResultModel roleNameScan,
+                                                         out string? roleNameError)) {
+                        Console.Error.WriteLine(roleNameError);
                         return 1;
                     }
 
                     UnitySampleRoleTemplateWriter roleWriter = new UnitySampleRoleTemplateWriter();
-                    CliCore.WriteOrPrint(outputPath, roleWriter.Write(result.Graph, roleIdsBySpeaker));
+                    CliCore.WriteOrPrint(outputPath, roleWriter.Write(result.Graph, roleNameScan.RoleIdsBySpeaker));
                     string? reportPath = CliCore.ReadOption(args, "--report");
                     if (!string.IsNullOrWhiteSpace(reportPath)) {
                         CliCore.WriteOrPrint(reportPath,
                                              CliUnitySampleSupport.WriteUnitySampleRoleTemplateReport(result.Graph,
-                                                                                                      roleIdsBySpeaker,
-                                                                                                      candidatesBySpeaker,
-                                                                                                      scannedRoleNameCsv));
+                                                                                                      roleNameScan.RoleIdsBySpeaker,
+                                                                                                      roleNameScan.CandidatesBySpeaker,
+                                                                                                      roleNameScan.ScannedRoleNameCsv));
                     }
                     CliCore.PrintDiagnostics(result.Diagnostics);
                     return result.HasErrors ? 1 : 0;
