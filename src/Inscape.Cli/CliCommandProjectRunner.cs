@@ -5,7 +5,7 @@ using Inscape.Tooling;
 
 namespace Inscape.Cli {
 
-    static class CliProjectCommandRunner {
+    static class CliCommandProjectRunner {
 
         public static int Run(string command, string rootPath, string[] args, string? outputPath, JsonSerializerOptions jsonOptions) {
             if (!CliProjectCompiler.TryCompile(rootPath, args, jsonOptions, out ToolConfigModel config, out ProjectCompilationResult result)) {

@@ -3,7 +3,7 @@ using Inscape.Tooling;
 
 namespace Inscape.Cli {
 
-    static class CliTopLevelCommandRunner {
+    static class CliCommandTopLevelRunner {
 
         public static bool TryRun(string[] args, JsonSerializerOptions jsonOptions, out int exitCode) {
             exitCode = 0;

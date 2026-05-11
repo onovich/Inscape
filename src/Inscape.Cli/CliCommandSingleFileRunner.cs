@@ -5,7 +5,7 @@ using Inscape.Tooling;
 
 namespace Inscape.Cli {
 
-    static class CliSingleFileCommandRunner {
+    static class CliCommandSingleFileRunner {
 
         public static bool TryRun(string command,
                                   CompilationResult result,
