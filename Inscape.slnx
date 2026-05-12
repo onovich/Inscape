@@ -2,7 +2,7 @@
   <Folder Name="/src/">
     <Project Path="src/Internal/Cli/Inscape.Cli/Inscape.Cli.csproj" />
     <Project Path="src/Internal/Compiler/Inscape.Compiler.csproj" />
-    <Project Path="src/Internal/Tooling/Inscape.Tooling/Inscape.Tooling.csproj" />
+    <Project Path="src/Internal/Tooling/Inscape.Tooling.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Internal/Inscape.Tests/Inscape.Tests.csproj" />
