@@ -1,4 +1,4 @@
-# CLI 命令速查
+﻿# CLI 命令速查
 
 状态：基线
 
@@ -11,7 +11,7 @@
 当前未打包成全局命令时，统一使用：
 
 ```powershell
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- <command> <args>
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- <command> <args>
 ```
 
 如果未来发布为 `inscape` 可执行文件，命令主体保持一致：
@@ -23,14 +23,14 @@ inscape <command> <args>
 终端内也可以直接查询：
 
 ```powershell
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- commands
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- help export-unity-sample-project
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- commands
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- help export-unity-sample-project
 ```
 
 项目级命令会自动读取项目根目录下的 `inscape.config.json`。也可以显式指定：
 
 ```powershell
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-unity-sample-project samples --config samples\inscape.config.json -o artifacts\unity-sample-export
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- export-unity-sample-project samples --config samples\inscape.config.json -o artifacts\unity-sample-export
 ```
 
 命令行参数优先级高于配置文件。配置格式见 [项目配置草案](project-config.md)。
@@ -42,7 +42,7 @@ dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-unity-sample-p
 | `export-host-schema-template` | 生成第一版宿主查询 / 事件清单 JSON 模板 | JSON |
 
 ```powershell
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-host-schema-template -o config\inscape.host.schema.json
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- export-host-schema-template -o config\inscape.host.schema.json
 ```
 
 该命令不需要输入脚本，也不会改变当前 DSL 编译行为。它只是把未来宿主查询和事件清单的格式落成可版本化文件，详见 [宿主 Schema 草案](host-schema.md)。
@@ -59,12 +59,12 @@ dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-host-schema-te
 | `update-l10n` | 基于旧 CSV 精确继承译文并更新本地化表 | CSV |
 
 ```powershell
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- check samples\court-loop.inscape
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- diagnose samples\court-loop.inscape -o artifacts\court-loop.diagnostics.json
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- compile samples\court-loop.inscape -o artifacts\court-loop.json
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- preview samples\court-loop.inscape -o artifacts\court-loop.html
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- extract-l10n samples\court-loop.inscape -o artifacts\court-loop.l10n.csv
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- update-l10n samples\court-loop.inscape --from artifacts\old-l10n.csv -o artifacts\court-loop.l10n.updated.csv
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- check samples\court-loop.inscape
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- diagnose samples\court-loop.inscape -o artifacts\court-loop.diagnostics.json
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- compile samples\court-loop.inscape -o artifacts\court-loop.json
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- preview samples\court-loop.inscape -o artifacts\court-loop.html
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- extract-l10n samples\court-loop.inscape -o artifacts\court-loop.l10n.csv
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- update-l10n samples\court-loop.inscape --from artifacts\old-l10n.csv -o artifacts\court-loop.l10n.updated.csv
 ```
 
 ## 项目级命令
@@ -87,12 +87,12 @@ dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- update-l10n samples\c
 - `-o path`：输出到指定文件。
 
 ```powershell
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- check-project samples
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- diagnose-project samples -o artifacts\samples.diagnostics.json
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- compile-project samples -o artifacts\samples-project.json
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- preview-project samples --entry court.cross_exam.loop -o artifacts\samples-project.html
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- extract-l10n-project samples -o artifacts\l10n.csv
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- update-l10n-project samples --from artifacts\old-l10n.csv -o artifacts\l10n.updated.csv
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- check-project samples
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- diagnose-project samples -o artifacts\samples.diagnostics.json
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- compile-project samples -o artifacts\samples-project.json
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- preview-project samples --entry court.cross_exam.loop -o artifacts\samples-project.html
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- extract-l10n-project samples -o artifacts\l10n.csv
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- update-l10n-project samples --from artifacts\old-l10n.csv -o artifacts\l10n.updated.csv
 ```
 
 ## UnitySample 实验样例命令
@@ -107,20 +107,20 @@ UnitySample 命令服务实验性 Unity 样例 adapter，不应与最终 Host Br
 | `merge-unity-sample-l10n` | 将 Inscape 生成的 `L10N_Talking.csv` 合并到样例旧表，并输出审查报告 | CSV |
 
 ```powershell
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-unity-sample-role-template samples -o config\unity-sample-roles.csv
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-unity-sample-role-template samples --unity-sample-existing-role-name-csv D:\UnityProjects\UnitySample\Assets\Resources_Runtime\Localization\L10N_RoleName.csv --report artifacts\unity-sample-export\unity-sample-roles.report.csv -o config\unity-sample-roles.csv
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-unity-sample-binding-template samples -o config\unity-sample-bindings.csv
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-unity-sample-binding-template samples --unity-sample-existing-timeline-root D:\UnityProjects\UnitySample\Assets\Resources_Runtime\Timeline -o config\unity-sample-bindings.csv
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-unity-sample-project samples --unity-sample-role-map config\unity-sample-roles.csv --unity-sample-binding-map config\unity-sample-bindings.csv -o artifacts\unity-sample-export
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- merge-unity-sample-l10n artifacts\unity-sample-export\L10N_Talking.csv --from D:\UnityProjects\UnitySample\Assets\Resources_Runtime\Localization\L10N_Talking.csv --report artifacts\unity-sample-export\L10N_Talking.merge-report.csv -o artifacts\unity-sample-export\L10N_Talking.merged.csv
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- export-unity-sample-role-template samples -o config\unity-sample-roles.csv
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- export-unity-sample-role-template samples --unity-sample-existing-role-name-csv D:\UnityProjects\UnitySample\Assets\Resources_Runtime\Localization\L10N_RoleName.csv --report artifacts\unity-sample-export\unity-sample-roles.report.csv -o config\unity-sample-roles.csv
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- export-unity-sample-binding-template samples -o config\unity-sample-bindings.csv
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- export-unity-sample-binding-template samples --unity-sample-existing-timeline-root D:\UnityProjects\UnitySample\Assets\Resources_Runtime\Timeline -o config\unity-sample-bindings.csv
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- export-unity-sample-project samples --unity-sample-role-map config\unity-sample-roles.csv --unity-sample-binding-map config\unity-sample-bindings.csv -o artifacts\unity-sample-export
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- merge-unity-sample-l10n artifacts\unity-sample-export\L10N_Talking.csv --from D:\UnityProjects\UnitySample\Assets\Resources_Runtime\Localization\L10N_Talking.csv --report artifacts\unity-sample-export\L10N_Talking.merge-report.csv -o artifacts\unity-sample-export\L10N_Talking.merged.csv
 ```
 
 如果项目根目录有 `inscape.config.json`，可以省略常用 UnitySample 路径参数：
 
 ```powershell
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-unity-sample-role-template samples --report artifacts\unity-sample-export\unity-sample-roles.report.csv -o config\unity-sample-roles.csv
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-unity-sample-binding-template samples -o config\unity-sample-bindings.csv
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-unity-sample-project samples -o artifacts\unity-sample-export
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- export-unity-sample-role-template samples --report artifacts\unity-sample-export\unity-sample-roles.report.csv -o config\unity-sample-roles.csv
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- export-unity-sample-binding-template samples -o config\unity-sample-bindings.csv
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- export-unity-sample-project samples -o artifacts\unity-sample-export
 ```
 
 `export-unity-sample-project` 输出：
@@ -157,9 +157,9 @@ unity-sample-export-report.txt
 生成一份可用于 Bird dry-run 的最小导出包：
 
 ```powershell
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-role-template samples --bird-existing-role-name-csv D:\UnityProjects\Bird\Assets\Resources_Runtime\Localization\L10N_RoleName.csv -o artifacts\bird-trial\bird-roles.csv
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-binding-template samples --bird-existing-timeline-root D:\UnityProjects\Bird\Assets\Resources_Runtime\Timeline -o artifacts\bird-trial\bird-bindings.csv
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-project samples --bird-existing-talking-root D:\UnityProjects\Bird\Assets\Resources_Runtime\Talking --bird-binding-map artifacts\bird-trial\bird-bindings.csv -o artifacts\bird-trial\export
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- export-bird-role-template samples --bird-existing-role-name-csv D:\UnityProjects\Bird\Assets\Resources_Runtime\Localization\L10N_RoleName.csv -o artifacts\bird-trial\bird-roles.csv
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- export-bird-binding-template samples --bird-existing-timeline-root D:\UnityProjects\Bird\Assets\Resources_Runtime\Timeline -o artifacts\bird-trial\bird-bindings.csv
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- export-bird-project samples --bird-existing-talking-root D:\UnityProjects\Bird\Assets\Resources_Runtime\Talking --bird-binding-map artifacts\bird-trial\bird-bindings.csv -o artifacts\bird-trial\export
 ```
 
 用 Unity batchmode 执行 Importer Dry Run：

@@ -1,4 +1,4 @@
-# Inscape VSCode Extension
+﻿# Inscape VSCode Extension
 
 This is the first lightweight authoring layer for `.inscape` scripts. It keeps syntax highlighting declarative and uses the repository CLI for compiler-backed diagnostics.
 
@@ -8,7 +8,7 @@ This is the first lightweight authoring layer for `.inscape` scripts. It keeps s
 - Highlights node headers, dialogue speakers, narration, choices, jumps, metadata lines, inline tags, and invalid node or jump target spellings.
 - Provides basic snippets for nodes, dialogue, choices, jumps, metadata, and inline tags.
 - Keeps metadata and inline tags on comment-like scopes so themes can visually soften them while prose remains readable.
-- Refreshes diagnostics by invoking `dotnet run --project src/Inscape.Cli/Inscape.Cli.csproj -- diagnose-project <workspace> --override <source> <temp-file>`.
+- Refreshes diagnostics by invoking `dotnet run --project src/Internal/Cli/Inscape.Cli/Inscape.Cli.csproj -- diagnose-project <workspace> --override <source> <temp-file>`.
 - Provides workspace node completions in jump target positions.
 - Provides dialogue speaker completions from `inscape.config.json` `unitySample.roleMap`, with workspace speaker fallback.
 - Provides host binding alias completions from `inscape.config.json` `unitySample.bindingMap` for `@timeline ...`, `@timeline.<phase> ...`, and `[kind: ...]` inline tag positions.
@@ -51,7 +51,7 @@ This package is not published yet. Later stages should add a language server tha
 Preview command opens a VSCode custom editor beside the current source editor when possible:
 
 ```powershell
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- preview-project <workspace> -o <preview.html>
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- preview-project <workspace> -o <preview.html>
 ```
 
 If the active `.inscape` document is unsaved and belongs to the selected workspace, the extension passes it to the CLI with `--override` so the preview reflects editor contents. Once a preview editor is open, saving any `.inscape` file in that workspace refreshes it automatically, and typing uses a short debounce so it still feels lightweight. The extension prefers a compiled CLI DLL when one is already present, which keeps preview startup closer to an editor-like experience. The preview itself now uses a single immersive story pane: click choices to branch, click the text body to continue when there is only a default next node, and use Back / Restart to revisit the flow. Compiler diagnostics do not block preview rendering; the CLI still emits HTML and the editor keeps showing it.
@@ -63,8 +63,8 @@ Dialogue, narration, prompt, and choice text inside the editor deliberately do n
 Localization commands invoke:
 
 ```powershell
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- extract-l10n-project <workspace> -o <csv>
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- update-l10n-project <workspace> --from <old-csv> -o <csv>
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- extract-l10n-project <workspace> -o <csv>
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- update-l10n-project <workspace> --from <old-csv> -o <csv>
 ```
 
 If the active `.inscape` document is unsaved and belongs to the selected workspace, the extension passes it to the CLI with `--override` so the generated CSV reflects editor contents.

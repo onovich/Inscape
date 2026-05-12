@@ -176,7 +176,7 @@
           "default": [
             "run",
             "--project",
-            "${workspaceFolder}/src/Inscape.Cli/Inscape.Cli.csproj",
+            "${workspaceFolder}/src/Internal/Cli/Inscape.Cli/Inscape.Cli.csproj",
             "--",
             "diagnose-project",
             "${workspaceFolder}",

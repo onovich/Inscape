@@ -1,4 +1,4 @@
-# Unity Bird Importer Prototype
+﻿# Unity Bird Importer Prototype
 
 状态：原型草案
 
@@ -19,7 +19,7 @@ Bird 当前工程已经引用 `Newtonsoft.Json`。如果目标 Unity 项目没�
 1. 先在 Inscape 仓库导出 Bird 数据：
 
 ```powershell
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-project samples --bird-binding-map config\bird-bindings.csv -o artifacts\bird-export
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- export-bird-project samples --bird-binding-map config\bird-bindings.csv -o artifacts\bird-export
 ```
 
 2. 回到 Unity，点击菜单：

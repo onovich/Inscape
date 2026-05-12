@@ -1,4 +1,4 @@
-# Samples
+﻿# Samples
 
 本目录保存 Inscape DSL 样例。当前主样例 `court-loop.inscape` 已经扩展成一个可完整体验的小型庭审单元，用于同时验证第一版图叙事语法和预览交互：
 
@@ -16,18 +16,18 @@
 运行示例：
 
 ```powershell
-dotnet run --project src\Inscape.Cli -- check samples\court-loop.inscape
-dotnet run --project src\Inscape.Cli -- diagnose samples\court-loop.inscape
-dotnet run --project src\Inscape.Cli -- check-project samples
-dotnet run --project src\Inscape.Cli -- diagnose-project samples
-dotnet run --project src\Inscape.Cli -- compile-project samples -o artifacts\samples-project.json
-dotnet run --project src\Inscape.Cli -- preview-project samples -o artifacts\samples-project.html
-dotnet run --project src\Inscape.Cli -- preview-project samples --entry court.cross_exam.loop -o artifacts\samples-project.entry.html
-dotnet run --project src\Inscape.Cli -- extract-l10n-project samples -o artifacts\l10n.csv
+dotnet run --project src\Internal\Cli\Inscape.Cli -- check samples\court-loop.inscape
+dotnet run --project src\Internal\Cli\Inscape.Cli -- diagnose samples\court-loop.inscape
+dotnet run --project src\Internal\Cli\Inscape.Cli -- check-project samples
+dotnet run --project src\Internal\Cli\Inscape.Cli -- diagnose-project samples
+dotnet run --project src\Internal\Cli\Inscape.Cli -- compile-project samples -o artifacts\samples-project.json
+dotnet run --project src\Internal\Cli\Inscape.Cli -- preview-project samples -o artifacts\samples-project.html
+dotnet run --project src\Internal\Cli\Inscape.Cli -- preview-project samples --entry court.cross_exam.loop -o artifacts\samples-project.entry.html
+dotnet run --project src\Internal\Cli\Inscape.Cli -- extract-l10n-project samples -o artifacts\l10n.csv
 Copy-Item artifacts\l10n.csv artifacts\old-l10n.csv
-dotnet run --project src\Inscape.Cli -- update-l10n-project samples --from artifacts\old-l10n.csv -o artifacts\l10n.updated.csv
-dotnet run --project src\Inscape.Cli -- compile samples\court-loop.inscape -o artifacts\court-loop.json
-dotnet run --project src\Inscape.Cli -- preview samples\court-loop.inscape -o artifacts\court-loop.html
+dotnet run --project src\Internal\Cli\Inscape.Cli -- update-l10n-project samples --from artifacts\old-l10n.csv -o artifacts\l10n.updated.csv
+dotnet run --project src\Internal\Cli\Inscape.Cli -- compile samples\court-loop.inscape -o artifacts\court-loop.json
+dotnet run --project src\Internal\Cli\Inscape.Cli -- preview samples\court-loop.inscape -o artifacts\court-loop.html
 ```
 
 如需在 VSCode 中验证 `.inscape` 高亮，可从仓库根目录加载本地扩展：

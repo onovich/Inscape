@@ -1,4 +1,4 @@
-namespace Inscape.Cli {
+﻿namespace Inscape.Cli {
 
     internal static class CliCommandProvider {
 

@@ -1,4 +1,4 @@
-# 宿主 Schema 草案
+﻿# 宿主 Schema 草案
 
 状态：草案
 
@@ -36,7 +36,7 @@
 可以生成第一版模板：
 
 ```powershell
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-host-schema-template -o config\inscape.host.schema.json
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- export-host-schema-template -o config\inscape.host.schema.json
 ```
 
 该命令只输出草案 JSON，不扫描宿主项目，不改变当前 DSL 解析或 Bird 导出行为。

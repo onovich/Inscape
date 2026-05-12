@@ -1,4 +1,4 @@
-# 本地化提取
+﻿# 本地化提取
 
 状态：基线 + 草案
 
@@ -9,13 +9,13 @@
 单文件提取：
 
 ```powershell
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- extract-l10n path\story.inscape -o artifacts\l10n.csv
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- extract-l10n path\story.inscape -o artifacts\l10n.csv
 ```
 
 项目级提取：
 
 ```powershell
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- extract-l10n-project path\project -o artifacts\l10n.csv
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- extract-l10n-project path\project -o artifacts\l10n.csv
 ```
 
 项目级命令复用 `compile-project` 的扫描规则，支持 `--override source.inscape temp.inscape`，便于 VSCode 或未来编辑器在未保存文件上执行临时提取。
@@ -23,8 +23,8 @@ dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- extract-l10n-project 
 基于旧表更新：
 
 ```powershell
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- update-l10n path\story.inscape --from artifacts\old-l10n.csv -o artifacts\l10n.csv
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- update-l10n-project path\project --from artifacts\old-l10n.csv -o artifacts\l10n.csv
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- update-l10n path\story.inscape --from artifacts\old-l10n.csv -o artifacts\l10n.csv
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- update-l10n-project path\project --from artifacts\old-l10n.csv -o artifacts\l10n.csv
 ```
 
 更新命令会按 `anchor` 精确继承旧表里的 `translation`，并输出额外的 `status` 列：

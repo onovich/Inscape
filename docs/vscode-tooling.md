@@ -1,4 +1,4 @@
-# VSCode 轻工具链
+﻿# VSCode 轻工具链
 
 状态：草案 + 原型
 
@@ -73,7 +73,7 @@ Inscape 的默认阅读优先级应当是：
 - 高亮旁白、选择提示、选项、跳转、元信息和行内标签。
 - 标记明显非法的节点名或跳转目标。
 - 提供基础 snippets：节点、对白、选择组、跳转、元信息、Timeline Hook、行内标签。
-- 通过 `dotnet run --project src/Inscape.Cli/Inscape.Cli.csproj -- diagnose-project <workspace> --override <source> <temp-file>` 刷新实时诊断。
+- 通过 `dotnet run --project src/Internal/Cli/Inscape.Cli/Inscape.Cli.csproj -- diagnose-project <workspace> --override <source> <temp-file>` 刷新实时诊断。
 - 在 `->` 跳转目标位置补全工作区内的节点名。
 - 在对白行开头补全角色名，优先读取 `inscape.config.json` 中 `unitySample.roleMap` 指向的 `speaker,roleId` 表；未配置时回退扫描工作区已有对白 speaker。
 - 在 `@timeline ...`、`@timeline.<phase> ...` 和 `[kind: ...]` 位置补全宿主绑定别名，优先读取 `inscape.config.json` 中 `unitySample.bindingMap` 指向的 `kind,alias,unitySampleId,unityGuid,addressableKey,assetPath` 表；未配置时回退扫描工作区已有 hook / inline tag。
@@ -237,7 +237,7 @@ inscape.host.schema.json
 VSCode 扩展在文档变更后会把当前文本写入系统临时目录，然后调用 CLI：
 
 ```powershell
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- diagnose-project <workspace> --override <source-file> <temp-file>
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- diagnose-project <workspace> --override <source-file> <temp-file>
 ```
 
 `diagnose-project` 输出项目级 JSON payload，合并工作区内所有 `.inscape` 文件，并用临时文件内容覆盖当前正在编辑的源文件。它不向 stderr 打印人类可读诊断，并且只要 CLI 正常执行就返回 `0`。这样编辑器可以区分“脚本里有语法错误”和“编译器进程不可用”。
@@ -251,9 +251,9 @@ dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- diagnose-project <wor
 - `Inscape: Update Localization CSV From Previous Table`
 
 ```powershell
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- preview-project <workspace> --override <source-file> <temp-file> -o <preview.html>
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- extract-l10n-project <workspace> -o <csv>
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- update-l10n-project <workspace> --from <old-csv> -o <csv>
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- preview-project <workspace> --override <source-file> <temp-file> -o <preview.html>
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- extract-l10n-project <workspace> -o <csv>
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- update-l10n-project <workspace> --from <old-csv> -o <csv>
 ```
 
 如果当前活动 `.inscape` 文件尚未保存，扩展会像诊断一样通过 `--override <source> <temp-file>` 把编辑器内容传给 CLI。`preview-project` 即使带编译诊断也会先输出 HTML，扩展会继续显示预览，并把诊断留给 Problems / 输出面板处理。webview 必须显式开启 scripts，否则 HTML 已生成但界面会表现为空白，这条经验已经在当前实现中固化。

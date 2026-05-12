@@ -1,6 +1,6 @@
 # 代码结构规划
 
-状态：执行前冻结
+状态：目录迁移进行中
 
 最后更新：2026-05-11
 
@@ -15,12 +15,23 @@
 
 ```text
 src/
-  Inscape.Core/                 当前 Compiler 雏形，但尚未迁入 Internal 树
-  Inscape.Cli/                  当前 Cli 与部分 Tooling 混合区，但尚未迁入 Internal 树
-  Inscape.Tooling/              当前 Tooling 项目，但尚未迁入 Internal 树
+  Internal/
+    Compiler/
+      Inscape.Core/             当前 Compiler 雏形，已迁入 Internal 路径但尚未改项目名
+    Tooling/
+      Inscape.Tooling/          当前 Tooling 项目，已迁入 Internal 路径但尚未改项目名
+    Cli/
+      Inscape.Cli/              当前 Cli 项目，已迁入 Internal 路径但尚未改项目名
+    VSCode/                     目标目录骨架已建立，前端源码仍待迁入
+    LanguageServer/             目标目录骨架已建立
+    Runtime/                    目标目录骨架已建立
+  ExternalSupport/
+    UnityPlugin/                目标目录骨架已建立，Unity 原型仍待迁入
   Inscape.Adapters.UnitySample/ 当前 ExternalSupport 原型样例，但仍在默认 solution 中
 tests/
   Inscape.Tests/                当前测试项目，尚未镜像 Internal / ExternalSupport
+  Internal/                     测试目标骨架已建立
+  ExternalSupport/              测试目标骨架已建立
 tools/
   vscode-inscape/               当前 VSCode 前端扩展，仍承载长期产品代码
   unity-bird-importer/          当前 Unity 外部导入原型，尚未收束到 ExternalSupport
@@ -30,13 +41,13 @@ docs/
 
 ## 当前最显眼的不符合点
 
-1. `src/` 仍是旧式项目平铺，尚未落成 `src/Internal` 与 `src/ExternalSupport` 两棵主树。
-2. `Inscape.Core` 仍停留在旧路径和旧项目名，Compiler 还不是仓库外形上的可见事实。
+1. `src/Internal` 与 `src/ExternalSupport` 骨架已建立，Internal 的 `.NET` 项目已先迁入目标路径，但 VSCode 与 Unity 原型尚未迁完。
+2. `Inscape.Core` 已进入 `src/Internal/Compiler/Inscape.Core`，但仍保留旧项目名和命名空间。
 3. `Inscape.Adapters.UnitySample` 仍处于默认 .NET solution 编译链，尚未体现 UnityPlugin 外部支持层边界。
 4. `tools/vscode-inscape/` 仍承载长期产品代码，VSCode 尚未成为 `src/Internal` 下的正式 Layer。
-5. `LanguageServer` 与 `Runtime` 仍只有文档口径，没有目录骨架。
-6. `tests/` 尚未镜像 Internal / ExternalSupport，未来会继续滞后于主结构。
-7. Layer / Business 目录还没有统一 `README.md` 规则文件，后续重构无法做到“先读目录规则再动手”。
+5. `LanguageServer` 与 `Runtime` 已有目录骨架，但尚未创建项目或能力草案。
+6. `tests/` 已有 Internal / ExternalSupport 骨架，但测试项目本体尚未迁入镜像路径。
+7. Layer / Business 目录已有统一 `README.md` 规则文件，后续迁移仍需补齐具体代码落位。
 
 ## 目标结构
 
@@ -190,9 +201,9 @@ UnityPlugin 不属于 Internal 五层之一。它是 Unity 环境下的外部支
 
 ## 当前代码映射
 
-- `src/Inscape.Core/` → 当前 `Compiler` 雏形，下一阶段应先迁到 `src/Internal/Compiler/`
-- `src/Inscape.Tooling/` → 当前 `Tooling` 项目，下一阶段应迁到 `src/Internal/Tooling/`
-- `src/Inscape.Cli/` → 当前 `Cli` 与 `Tooling` 混合承载区，下一阶段应迁到 `src/Internal/Cli/`
+- `src/Internal/Compiler/Inscape.Core/` → 当前 `Compiler` 雏形，后续再迁项目名与命名空间
+- `src/Internal/Tooling/Inscape.Tooling/` → 当前 `Tooling` 项目，后续继续按 Business / Role 拆入目录
+- `src/Internal/Cli/Inscape.Cli/` → 当前 `Cli` 项目，后续继续按命令职责拆入目录
 - `tools/vscode-inscape/` → 当前 `VSCode` 前端，下一阶段应迁到 `src/Internal/VSCode/`
 - `src/Inscape.Adapters.UnitySample/` → 当前 `ExternalSupport/UnityPlugin` 过渡样例，下一阶段应迁到 `src/ExternalSupport/UnityPlugin/`
 - `tools/unity-bird-importer/` → 当前 `ExternalSupport/UnityPlugin` 导入原型，也应跟随迁入 ExternalSupport 目录树

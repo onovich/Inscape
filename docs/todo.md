@@ -50,8 +50,9 @@
 
 - [ ] 按目录优先铁律重构仓库骨架，让架构成果先在路径与 solution 边界上可见。
 	- [x] 已完成文档冻结：新增 [目录优先重构蓝图](directory-first-reframe-plan.md)，并以 [ADR 0012](adr/0012-directory-first-repository-reframe-order.md) 固化“先目录、后改名”的顺序。
-	- [ ] 创建 `src/Internal`、`src/ExternalSupport`、`tests/Internal`、`tests/ExternalSupport` 及其 Layer / Business / Role 目录骨架，并为稳定目录补 `README.md` 规则文件。
+	- [x] 创建 `src/Internal`、`src/ExternalSupport`、`tests/Internal`、`tests/ExternalSupport` 及其 Layer / Business 目录骨架，并为稳定目录补 `README.md` 规则文件。
 	- [ ] 将 `Inscape.Core`、`Inscape.Tooling`、`Inscape.Cli`、VSCode 前端与 Unity 原型迁入新目录树。
+		- [x] 已先迁入 Internal 侧 `.NET` 项目路径：`Inscape.Core` -> `src/Internal/Compiler/Inscape.Core`，`Inscape.Tooling` -> `src/Internal/Tooling/Inscape.Tooling`，`Inscape.Cli` -> `src/Internal/Cli/Inscape.Cli`；项目名、命名空间和类型名暂不改。
 	- [ ] 更新 `Inscape.slnx` 与 `ProjectReference`，并把 UnityPlugin 相关项目移出默认 .NET solution 编译链。
 	- [ ] 在路径稳定后，再执行 `Inscape.Core -> Inscape.Compiler` 等项目名、命名空间和类型名迁移。
 

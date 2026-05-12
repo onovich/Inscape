@@ -1,4 +1,4 @@
-"use strict";
+﻿"use strict";
 
 const childProcess = require("child_process");
 const fs = require("fs");
@@ -2703,8 +2703,8 @@ async function selectWorkspaceFolder() {
 
 function resolveCliProjectPath(context, workspaceFolderPath) {
     const candidates = [
-        path.join(workspaceFolderPath, "src", "Inscape.Cli", "Inscape.Cli.csproj"),
-        path.resolve(context.extensionPath, "..", "..", "src", "Inscape.Cli", "Inscape.Cli.csproj")
+        path.join(workspaceFolderPath, "src", "Internal", "Cli", "Inscape.Cli", "Inscape.Cli.csproj"),
+        path.resolve(context.extensionPath, "..", "..", "src", "Internal", "Cli", "Inscape.Cli", "Inscape.Cli.csproj")
     ];
 
     for (const candidate of candidates) {

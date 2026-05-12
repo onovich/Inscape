@@ -1,4 +1,4 @@
-# Bird Adapter 原型
+﻿# Bird Adapter 原型
 
 状态：原型基线
 
@@ -11,55 +11,55 @@ Bird 在这里是一个真实需求方和参考适配器：它帮助暴露角色
 ## CLI
 
 ```powershell
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-project samples -o artifacts\bird-export
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- export-bird-project samples -o artifacts\bird-export
 ```
 
 可选指定 `talkingId` 起点：
 
 ```powershell
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-project samples --bird-talking-start 100000 -o artifacts\bird-export
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- export-bird-project samples --bird-talking-start 100000 -o artifacts\bird-export
 ```
 
 可选提供角色映射：
 
 ```powershell
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-project samples --bird-role-map config\bird-roles.csv -o artifacts\bird-export
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- export-bird-project samples --bird-role-map config\bird-roles.csv -o artifacts\bird-export
 ```
 
 如果想先从脚本里自动收集 speaker，再补角色表，可以先生成角色模板：
 
 ```powershell
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-role-template samples -o config\bird-roles.csv
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- export-bird-role-template samples -o config\bird-roles.csv
 ```
 
 也可以读取 Bird 现有 `L10N_RoleName.csv`，自动填入能唯一匹配的 `roleId`：
 
 ```powershell
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-role-template samples --bird-existing-role-name-csv D:\UnityProjects\Bird\Assets\Resources_Runtime\Localization\L10N_RoleName.csv --report artifacts\bird-export\bird-roles.report.csv -o config\bird-roles.csv
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- export-bird-role-template samples --bird-existing-role-name-csv D:\UnityProjects\Bird\Assets\Resources_Runtime\Localization\L10N_RoleName.csv --report artifacts\bird-export\bird-roles.report.csv -o config\bird-roles.csv
 ```
 
 可选扫描现有 Bird `TalkingSO` 资源，避开已使用的 `talkingId`：
 
 ```powershell
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-project samples --bird-existing-talking-root D:\UnityProjects\Bird\Assets\Resources_Runtime\Talking -o artifacts\bird-export
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- export-bird-project samples --bird-existing-talking-root D:\UnityProjects\Bird\Assets\Resources_Runtime\Talking -o artifacts\bird-export
 ```
 
 可选提供宿主绑定表，把 Inscape 使用的资源别名 / Timeline 名称映射到 Bird 整数 ID 与 Unity 资源引用。这里的 CSV 是 Host Bridge 的 Bird-specific 早期形态，用于解决 Inscape 可读别名与项目内部 ID / 资源坐标不一致的问题：
 
 ```powershell
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-project samples --bird-binding-map config\bird-bindings.csv -o artifacts\bird-export
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- export-bird-project samples --bird-binding-map config\bird-bindings.csv -o artifacts\bird-export
 ```
 
 如果项目里已经写了 `@timeline alias`、`@timeline.<phase> alias`、`[timeline: alias]` 或 `[timeline.<phase>: alias]`，可以先生成绑定模板：
 
 ```powershell
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-binding-template samples -o config\bird-bindings.csv
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- export-bird-binding-template samples -o config\bird-bindings.csv
 ```
 
 也可以扫描现有 Bird Timeline 资源，自动填入能唯一匹配的 `timelineId`、Unity guid 和 asset path：
 
 ```powershell
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- export-bird-binding-template samples --bird-existing-timeline-root D:\UnityProjects\Bird\Assets\Resources_Runtime\Timeline -o config\bird-bindings.csv
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- export-bird-binding-template samples --bird-existing-timeline-root D:\UnityProjects\Bird\Assets\Resources_Runtime\Timeline -o config\bird-bindings.csv
 ```
 
 该命令会扫描项目内 Timeline Hook，输出去重后的 CSV：
@@ -190,7 +190,7 @@ anchor,node,kind,speaker,text,talkingId,talkingIndex,birdField,sourcePath,line,c
 `export-bird-project` 生成的 `L10N_Talking.csv` 不应直接覆盖 Bird 项目的正式本地化表。当前提供独立命令做合并预览：
 
 ```powershell
-dotnet run --project src\Inscape.Cli\Inscape.Cli.csproj -- merge-bird-l10n artifacts\bird-export\L10N_Talking.csv --from D:\UnityProjects\Bird\Assets\Resources_Runtime\Localization\L10N_Talking.csv --report artifacts\bird-export\L10N_Talking.merge-report.csv -o artifacts\bird-export\L10N_Talking.merged.csv
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- merge-bird-l10n artifacts\bird-export\L10N_Talking.csv --from D:\UnityProjects\Bird\Assets\Resources_Runtime\Localization\L10N_Talking.csv --report artifacts\bird-export\L10N_Talking.merge-report.csv -o artifacts\bird-export\L10N_Talking.merged.csv
 ```
 
 合并规则：
