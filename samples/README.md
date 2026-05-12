@@ -33,5 +33,5 @@ dotnet run --project src\Internal\Cli\Inscape.Cli -- preview samples\court-loop.
 如需在 VSCode 中验证 `.inscape` 高亮，可从仓库根目录加载本地扩展：
 
 ```powershell
-code --extensionDevelopmentPath=tools\vscode-inscape .
+code --extensionDevelopmentPath=src\Internal\VSCode\vscode-inscape .
 ```

@@ -1,4 +1,4 @@
-# 渐进式重构计划
+﻿# 渐进式重构计划
 
 状态：执行中
 
@@ -6,7 +6,7 @@
 
 本文把 Inscape 的重构拆成大目标、中目标、小目标，目标是让代码逐步接近游戏项目中常见的清晰入口、生命周期式流程、数据/逻辑/表现/适配分层，同时不破坏当前 DSL、CLI、VSCode 和预览体验。当前长期结构已经收敛为：Internal 下的 `Compiler`、`Tooling`、`Cli`、`VSCode`、`LanguageServer`、`Runtime`，以及 ExternalSupport 下的 `UnityPlugin`。
 
-当前主动重构范围只覆盖 Internal 侧：`Inscape.Core`、`Inscape.Cli`、`tools/vscode-inscape` 与测试组织。`src/Inscape.Adapters.UnitySample` 和 `tools/unity-bird-importer` 继续作为 ExternalSupport 过渡样例保留隔离，不纳入这一轮内部重构，只要求不反向污染 Compiler，并能继续承担 Host Bridge / UnityPlugin 回归素材。
+当前主动重构范围只覆盖 Internal 侧：`Inscape.Core`、`Inscape.Cli`、`src/Internal/VSCode/vscode-inscape` 与测试组织。`src/Inscape.Adapters.UnitySample` 和 `tools/unity-bird-importer` 继续作为 ExternalSupport 过渡样例保留隔离，不纳入这一轮内部重构，只要求不反向污染 Compiler，并能继续承担 Host Bridge / UnityPlugin 回归素材。
 
 重构原则见 [编码与命名规范](coding-conventions.md)。本文只安排执行顺序和验收方式。
 
@@ -181,7 +181,7 @@ VSCode：4 / 10
 
 验收标准：
 
-- `tools/vscode-inscape/extension.js` 变成注册入口，而不是全部逻辑实现。
+- `src/Internal/VSCode/vscode-inscape/extension.js` 变成注册入口，而不是全部逻辑实现。
 - 正文 / 选项文本链接态回归清单全部通过。
 - 修改单个 provider 不应影响 preview bridge 或 style loader。
 
@@ -430,7 +430,7 @@ VSCode：4 / 10
 ```powershell
 dotnet build Inscape.slnx --no-restore
 dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj --no-build
-node --check tools\vscode-inscape\extension.js
+node --check src\Internal\VSCode\vscode-inscape\extension.js
 ```
 
 如果涉及 VSCode 扩展行为，还必须执行扩展重建安装流程，并手动验证关键交互。

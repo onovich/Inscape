@@ -1,4 +1,4 @@
-# 目录优先重构蓝图
+﻿# 目录优先重构蓝图
 
 状态：冻结执行前方案
 
@@ -41,7 +41,7 @@
 | 2 | `src/Inscape.Core/` 仍是当前 Compiler 雏形 | `src/Internal/Compiler/`，后续再迁 `Inscape.Compiler` | 文档已把 Compiler 定义为真相层，但仓库外形还看不出来 |
 | 3 | `src/Inscape.Tooling/` 还未进入 Internal 树 | `src/Internal/Tooling/` | Tooling 虽已落项目，但路径上还不是正式 Layer |
 | 4 | `src/Inscape.Cli/` 还未进入 Internal 树 | `src/Internal/Cli/` | Cli 与 Tooling 的边界无法在路径上直接识别 |
-| 5 | `tools/vscode-inscape/` 仍承载长期产品代码 | `src/Internal/VSCode/` | VSCode 目前看起来像外围工具，而不是正式 Internal 一层 |
+| 5 | `src/Internal/VSCode/vscode-inscape/` 仍承载长期产品代码 | `src/Internal/VSCode/` | VSCode 目前看起来像外围工具，而不是正式 Internal 一层 |
 | 6 | `src/Inscape.Adapters.UnitySample/` 仍在默认 solution 中 | `src/ExternalSupport/UnityPlugin/`，并退出默认 .NET solution | 这直接违背 ExternalSupport 的既定边界 |
 | 7 | `tools/unity-bird-importer/` 仍在顶层 tools | `src/ExternalSupport/UnityPlugin/...` 或其他 ExternalSupport 子树 | Unity 外部原型仍未被收束到外部支持层 |
 | 8 | `LanguageServer` 仍只存在于文档里 | `src/Internal/LanguageServer/` 空骨架先落地 | 长期方向缺乏任何可见落点 |
@@ -342,7 +342,7 @@ Role 目录通常不单独写规则文件，除非该 Role 在当前业务中有
 - `src/Inscape.Core` 迁入 `src/Internal/Compiler`。
 - `src/Inscape.Tooling` 迁入 `src/Internal/Tooling`。
 - `src/Inscape.Cli` 迁入 `src/Internal/Cli`。
-- `tools/vscode-inscape` 迁入 `src/Internal/VSCode`。
+- `src/Internal/VSCode/vscode-inscape` 迁入 `src/Internal/VSCode`。
 - `src/Inscape.Adapters.UnitySample` 与 `tools/unity-bird-importer` 收束到 `src/ExternalSupport/UnityPlugin`。
 
 规则：
@@ -407,7 +407,7 @@ dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj --no-build
 3. 若涉及 VSCode 前端路径或脚本迁移，额外执行：
 
 ```powershell
-node --check tools\vscode-inscape\extension.js
+node --check src\Internal\VSCode\vscode-inscape\extension.js
 ```
 
 或在 VSCode 正式迁入 `src/Internal/VSCode` 后，对新入口脚本执行等价检查。

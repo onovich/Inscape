@@ -2704,7 +2704,7 @@ async function selectWorkspaceFolder() {
 function resolveCliProjectPath(context, workspaceFolderPath) {
     const candidates = [
         path.join(workspaceFolderPath, "src", "Internal", "Cli", "Inscape.Cli", "Inscape.Cli.csproj"),
-        path.resolve(context.extensionPath, "..", "..", "src", "Internal", "Cli", "Inscape.Cli", "Inscape.Cli.csproj")
+        path.resolve(context.extensionPath, "..", "..", "Cli", "Inscape.Cli", "Inscape.Cli.csproj")
     ];
 
     for (const candidate of candidates) {

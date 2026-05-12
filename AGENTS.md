@@ -1,4 +1,4 @@
-# AGENTS.md
+﻿# AGENTS.md
 
 This repository uses Chinese project documentation. Before making changes, read:
 
@@ -17,7 +17,7 @@ Core rules:
 ```powershell
 dotnet build Inscape.slnx --no-restore
 dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj --no-build
-node --check tools\vscode-inscape\extension.js
+node --check src\Internal\VSCode\vscode-inscape\extension.js
 ```
 
 On this Windows workspace, use:

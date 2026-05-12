@@ -43,7 +43,7 @@ Style tweaking is file-based: point `inscape.config.json` at an editor style JSO
 Open this folder as an extension development host, or launch VSCode with:
 
 ```powershell
-code --extensionDevelopmentPath=tools\vscode-inscape .
+code --extensionDevelopmentPath=src\Internal\VSCode\vscode-inscape .
 ```
 
 This package is not published yet. Later stages should add a language server that reuses `Inscape.Core` for diagnostics, completion, symbols, and definition/reference navigation.

@@ -1,4 +1,4 @@
-# 研发计划
+﻿# 研发计划
 
 状态：草案
 
@@ -12,7 +12,7 @@
 - ExternalSupport 当前只确认：`UnityPlugin`
 - 当前 `Inscape.Core` 视为 `Compiler` 雏形
 - 当前 `Inscape.Cli` 同时承载了 `Cli` 与部分 `Tooling`
-- 当前 `tools/vscode-inscape` 仍是前端与语义桥接混合体
+- 当前 `src/Internal/VSCode/vscode-inscape` 仍是前端与语义桥接混合体
 - Unity 支持长期不进入默认 .NET solution 编译链
 
 当前研发顺序已新增一个更高优先级前置阶段：先完成目录骨架与目录规则，再恢复 Tooling、VSCode、LanguageServer 和 UnityPlugin 的细粒度重构。详见 [目录优先重构蓝图](directory-first-reframe-plan.md)。
@@ -154,13 +154,13 @@
 ```powershell
 dotnet build Inscape.slnx --no-restore
 dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj --no-build
-node --check tools\vscode-inscape\extension.js
+node --check src\Internal\VSCode\vscode-inscape\extension.js
 ```
 
-若阶段涉及 `tools/vscode-inscape/`，额外执行：
+若阶段涉及 `src/Internal/VSCode/vscode-inscape/`，额外执行：
 
 ```powershell
-cd tools\vscode-inscape
+cd src\Internal\VSCode\vscode-inscape
 npm run rebuild:vsix
 ```
 

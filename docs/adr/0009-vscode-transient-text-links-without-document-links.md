@@ -1,4 +1,4 @@
-# 0009：VSCode 正文链接态不用 DocumentLinkProvider
+﻿# 0009：VSCode 正文链接态不用 DocumentLinkProvider
 
 状态：Accepted
 
@@ -94,6 +94,6 @@ Inscape 的 VSCode 原型希望让正文、旁白、选项提示和选项文本�
 
 ## 关联文件
 
-- [tools/vscode-inscape/extension.js](../../tools/vscode-inscape/extension.js)
+- [src/Internal/VSCode/vscode-inscape/extension.js](../../src/Internal/VSCode/vscode-inscape/extension.js)
 - [docs/vscode-tooling.md](../vscode-tooling.md)
 - [docs/agent-handoff.md](../agent-handoff.md)
