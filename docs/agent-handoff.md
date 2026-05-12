@@ -23,6 +23,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - 2026-05-13 已开始整理 Tooling 内部目录：`Inscape.Tooling.csproj` 已提到 `src/Internal/Tooling` 根目录，源码按 `ProjectSources`、`ToolConfig`、`Preview`、`Localization`、`HostSchema`、`HostBinding` 的 `Domains` / `Models` 目录落位。命名空间暂保留 `Inscape.Tooling`，后续再按业务目录决定是否拆命名空间。
 - 2026-05-13 已开始整理 CLI 内部目录：`src/Internal/Cli/Inscape.Cli` 下新增 `Entries`、`Commands`、`Providers`、`ViewModels`，分别承载 `CliCore`、具体命令、命令元数据 provider 和输出 DTO。命名空间暂保留 `Inscape.Cli`。
 - 2026-05-13 已开始整理 Internal 测试目录：`tests/Internal/Inscape.Tests` 下新增 `Entries`、`Shared`、`Compiler`、`Cli`、`PreviewLocalization`，先按现有测试文件边界落位，测试 runner 仍保持轻量手写模式。
+- 2026-05-13 已开始整理 UnitySample CLI 内部目录：`src/ExternalSupport/UnityPlugin/Inscape.UnitySample.Cli` 下新增 `Entries` 与 `Commands`，命令仍保持 ExternalSupport 独立验证入口，不进入默认 solution。
 - 2026-05-12 已迁移当前聚合测试项目：`tests/Inscape.Tests` -> `tests/Internal/Inscape.Tests`。这只是测试项目路径进入 Internal 测试树，测试内容尚未按 Compiler / Tooling / Cli / ExternalSupport 拆分。
 - 当前分支为 `main...origin/main`。本轮已把目录优先方案正式冻结为文档与 ADR；最新提交请以 `git log --oneline -1` 为准。
 - 本轮会话已确认新的重构铁律：先搭目录骨架与 `README.md` 规则文件，再迁大目录路径，再迁 solution / 项目路径，再迁项目名、命名空间和类型名；在此之前，不再把主要重构精力继续放在旧目录里的微观 helper 收口上。

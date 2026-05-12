@@ -58,6 +58,7 @@
 	- [ ] 更新 `Inscape.slnx` 与 `ProjectReference`，并把 UnityPlugin 相关项目移出默认 .NET solution 编译链。
 		- [x] 已从 `Inscape.slnx` 直接项目清单移除 UnitySample。
 		- [x] 已将 UnitySample 命令迁入 `src/ExternalSupport/UnityPlugin/Inscape.UnitySample.Cli`，并将 UnitySample 回归测试迁入 `tests/ExternalSupport/UnityPlugin/Inscape.UnitySample.Tests`；Internal CLI / Internal tests 不再引用 UnitySample，默认 solution 编译链已退出 UnityPlugin。
+		- [x] 已将 UnitySample CLI 内部整理为 `Entries` / `Commands`，避免 ExternalSupport 命令入口继续平铺。
 	- [x] 已将当前聚合测试项目迁入 `tests/Internal/Inscape.Tests`；后续再按 Compiler / Tooling / Cli / ExternalSupport 拆成更细测试边界。
 	- [ ] 在路径稳定后，再执行 Compiler 项目名、命名空间和类型名迁移。
 		- [x] 已完成 Compiler 项目目录与 `.csproj` 改名：`Inscape.Core` -> `Inscape.Compiler`。

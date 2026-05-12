@@ -35,7 +35,7 @@ src/
   ExternalSupport/
     UnityPlugin/
       Inscape.Adapters.UnitySample/ 当前 UnitySample 外部支持样例，已迁入 ExternalSupport 路径
-      Inscape.UnitySample.Cli/      UnitySample 样例命令入口，不进入默认 solution
+      Inscape.UnitySample.Cli/      UnitySample 样例命令入口，已按 Entries / Commands 初步分目录，不进入默认 solution
       unity-bird-importer/          当前 Unity 外部导入原型，已迁入 ExternalSupport 路径
 tests/
   Internal/
