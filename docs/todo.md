@@ -65,6 +65,7 @@
 		- [x] 已将 Compiler 门面类型 `InscapeCore` 收敛为 `CompilerEntry`。
 
 - [x] 按 [编码与命名规范](coding-conventions.md) 拆分测试文件，降低 `tests/Internal/Inscape.Tests/TestCore.cs` 的阅读成本，但不改变测试语义。
+	- [x] 已将 `tests/Internal/Inscape.Tests` 初步整理为 `Entries`、`Shared`、`Compiler`、`Cli`、`PreviewLocalization` 目录，保持原有轻量测试 runner 不变。
 - [x] 按 command 职责拆分 CLI 入口，避免 `src/Inscape.Cli/CliCore.cs` 继续承担过多命令分发和业务编排；已完成配置读取、顶层元命令、单文件命令和项目级命令分支拆分，项目 `.inscape` 源扫描/读取/override、预览样式读取等共享流程也已上提到 `Inscape.Tooling`，`CliCore` 仅保留入口分发与共享基础输出辅助，单文件/项目编译前置流程当前已分别收回 `CliSingleFileCommand` 与 `CliProjectCommand`。
 	- [x] 已将 `src/Internal/Cli/Inscape.Cli` 内部整理为 `Entries`、`Commands`、`Providers`、`ViewModels` 目录，分别承载入口、具体命令、命令元数据和输出 DTO。
 	- [x] 已继续收口 UnitySample 命令输出职责：将导出目录写盘拆到 `CliUnitySampleExportWriter`，将 role template report 输出拆到 `CliUnitySampleRoleTemplateReportWriter`，`CliUnitySampleSupport` 不再混放输出 writer。

@@ -39,7 +39,7 @@ src/
       unity-bird-importer/          当前 Unity 外部导入原型，已迁入 ExternalSupport 路径
 tests/
   Internal/
-    Inscape.Tests/              当前聚合测试项目，已迁入 Internal 测试路径
+    Inscape.Tests/              当前聚合测试项目，已按 Entries / Shared / Compiler / Cli / PreviewLocalization 初步分目录
   ExternalSupport/
     UnityPlugin/
       Inscape.UnitySample.Tests/    UnitySample 外部支持回归测试，不进入默认 solution
@@ -54,7 +54,7 @@ docs/
 3. `Inscape.Adapters.UnitySample`、`Inscape.UnitySample.Cli` 与 `Inscape.UnitySample.Tests` 均已位于 ExternalSupport，并已退出默认 `Inscape.slnx` 编译链；需要回归时单独构建 / 运行外部支持测试项目。
 4. `src/Internal/VSCode/vscode-inscape/` 已成为 VSCode 前端源码位置，但内部仍需继续按 provider / command / bridge / webview 拆分。
 5. `LanguageServer` 与 `Runtime` 已有目录骨架，但尚未创建项目或能力草案。
-6. `tests/Internal/Inscape.Tests` 仍是聚合测试项目，尚未按 Compiler / Tooling / Cli / ExternalSupport 进一步拆分。
+6. `tests/Internal/Inscape.Tests` 仍是聚合测试项目，但已按现有文件边界初步拆入 `Entries`、`Shared`、`Compiler`、`Cli`、`PreviewLocalization`；后续可继续把 Tooling、Preview、Localization 分成更细项目或目录。
 7. Layer / Business 目录已有统一 `README.md` 规则文件，后续迁移仍需补齐具体代码落位。
 
 ## 目标结构
