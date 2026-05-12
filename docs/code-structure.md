@@ -27,7 +27,7 @@ src/
       HostSchema/               宿主 schema 模板导出
       HostBinding/              宿主绑定表、角色名和宿主资产扫描
     Cli/
-      Inscape.Cli/              当前 Cli 项目，已迁入 Internal 路径但尚未改项目名
+      Inscape.Cli/              当前 Cli 项目，已按 Entries / Commands / Providers / ViewModels 初步分目录
     VSCode/
       vscode-inscape/           当前 VSCode 前端扩展，已迁入 Internal 路径
     LanguageServer/             目标目录骨架已建立
@@ -211,7 +211,7 @@ UnityPlugin 不属于 Internal 五层之一。它是 Unity 环境下的外部支
 
 - `src/Internal/Compiler/Inscape.Compiler/` → 当前 `Compiler` 项目，后续再迁 C# 命名空间与类型名
 - `src/Internal/Tooling/Inscape.Tooling.csproj` + `src/Internal/Tooling/{ProjectSources,ToolConfig,Preview,Localization,HostSchema,HostBinding}/` → 当前 `Tooling` 项目，已开始按 Business / Role 目录落位
-- `src/Internal/Cli/Inscape.Cli/` → 当前 `Cli` 项目，后续继续按命令职责拆入目录
+- `src/Internal/Cli/Inscape.Cli/{Entries,Commands,Providers,ViewModels}/` → 当前 `Cli` 项目，已按入口、命令、命令元数据和输出 DTO 初步分目录
 - `src/Internal/VSCode/vscode-inscape/` → 当前 `VSCode` 前端，后续继续按 VSCode Layer 规则拆分
 - `src/ExternalSupport/UnityPlugin/Inscape.Adapters.UnitySample/` → 当前 `ExternalSupport/UnityPlugin` 过渡样例，下一阶段应迁到 `src/ExternalSupport/UnityPlugin/`
 - `src/ExternalSupport/UnityPlugin/unity-bird-importer/` → 当前 `ExternalSupport/UnityPlugin` 导入原型，也应跟随迁入 ExternalSupport 目录树
