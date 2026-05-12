@@ -52,13 +52,14 @@
 	- [x] 已完成文档冻结：新增 [目录优先重构蓝图](directory-first-reframe-plan.md)，并以 [ADR 0012](adr/0012-directory-first-repository-reframe-order.md) 固化“先目录、后改名”的顺序。
 	- [x] 创建 `src/Internal`、`src/ExternalSupport`、`tests/Internal`、`tests/ExternalSupport` 及其 Layer / Business 目录骨架，并为稳定目录补 `README.md` 规则文件。
 	- [ ] 将 `Inscape.Core`、`Inscape.Tooling`、`Inscape.Cli`、VSCode 前端与 Unity 原型迁入新目录树。
-		- [x] 已先迁入 Internal 侧 `.NET` 项目路径：`Inscape.Core` -> `src/Internal/Compiler/Inscape.Core`，`Inscape.Tooling` -> `src/Internal/Tooling/Inscape.Tooling`，`Inscape.Cli` -> `src/Internal/Cli/Inscape.Cli`；项目名、命名空间和类型名暂不改。
+		- [x] 已先迁入 Internal 侧 `.NET` 项目路径：`Inscape.Core` -> `src/Internal/Compiler/Inscape.Compiler`，`Inscape.Tooling` -> `src/Internal/Tooling/Inscape.Tooling`，`Inscape.Cli` -> `src/Internal/Cli/Inscape.Cli`；Compiler 项目名已改，命名空间和类型名暂不改。
 		- [x] 已迁入 VSCode 前端路径：`src/Internal/VSCode/vscode-inscape`；扩展源码内部仍保留原 npm 包结构，后续再拆 provider / command / preview bridge。
 		- [x] 已迁入 Unity 外部支持路径：`src/ExternalSupport/UnityPlugin/Inscape.Adapters.UnitySample` 与 `src/ExternalSupport/UnityPlugin/unity-bird-importer`。
 	- [ ] 更新 `Inscape.slnx` 与 `ProjectReference`，并把 UnityPlugin 相关项目移出默认 .NET solution 编译链。
 		- [x] 已从 `Inscape.slnx` 直接项目清单移除 UnitySample；当前仍因 CLI / tests 直接引用而被默认构建传递带入，后续需拆分外部支持命令边界才能完全退出默认编译链。
 	- [x] 已将当前聚合测试项目迁入 `tests/Internal/Inscape.Tests`；后续再按 Compiler / Tooling / Cli / ExternalSupport 拆成更细测试边界。
 	- [ ] 在路径稳定后，再执行 `Inscape.Core -> Inscape.Compiler` 等项目名、命名空间和类型名迁移。
+		- [x] 已完成 Compiler 项目目录与 `.csproj` 改名：`Inscape.Core` -> `Inscape.Compiler`。
 
 - [x] 按 [编码与命名规范](coding-conventions.md) 拆分测试文件，降低 `tests/Internal/Inscape.Tests/TestCore.cs` 的阅读成本，但不改变测试语义。
 - [x] 按 command 职责拆分 CLI 入口，避免 `src/Inscape.Cli/CliCore.cs` 继续承担过多命令分发和业务编排；已完成配置读取、顶层元命令、单文件命令和项目级命令分支拆分，项目 `.inscape` 源扫描/读取/override、预览样式读取等共享流程也已上提到 `Inscape.Tooling`，`CliCore` 仅保留入口分发与共享基础输出辅助，单文件/项目编译前置流程当前已分别收回 `CliSingleFileCommand` 与 `CliProjectCommand`。

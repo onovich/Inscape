@@ -14,7 +14,8 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 
 ### 2026-05-11 当前交接结论（最新）
 
-- 2026-05-12 已开始按目录优先蓝图执行实际迁移：目录骨架与规则 README 已提交，Internal 侧 `.NET` 项目已迁入新路径，当前路径为 `src/Internal/Compiler/Inscape.Core`、`src/Internal/Tooling/Inscape.Tooling`、`src/Internal/Cli/Inscape.Cli`。这一阶段只改路径与项目引用，不改项目名、命名空间和类型名。
+- 2026-05-12 已开始按目录优先蓝图执行实际迁移：目录骨架与规则 README 已提交，Internal 侧 `.NET` 项目已迁入新路径，当前路径为 `src/Internal/Compiler/Inscape.Compiler`、`src/Internal/Tooling/Inscape.Tooling`、`src/Internal/Cli/Inscape.Cli`。路径已稳定，Compiler 项目名已开始迁移；命名空间和类型名仍待后续小步处理。
+- 2026-05-12 已开始项目名迁移第一步：`src/Internal/Compiler/Inscape.Core/Inscape.Core.csproj` 已改为 `src/Internal/Compiler/Inscape.Compiler/Inscape.Compiler.csproj`。当前只改项目目录和 `.csproj` 名称，C# namespace 仍保留 `Inscape.Core`，下一步再单独迁。
 - 2026-05-12 已同步更新 `Inscape.slnx`、`ProjectReference`、VSCode fallback CLI 项目路径、CLI 命令速查示例和相关文档命令路径。验证通过：`dotnet build Inscape.slnx --no-restore` 与 `dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build`。由于项目路径变化，执行过一次 `dotnet restore Inscape.slnx --configfile NuGet.Config` 来刷新项目图缓存。
 - 2026-05-12 已迁移 VSCode 前端源码：`tools/vscode-inscape` -> `src/Internal/VSCode/vscode-inscape`。扩展内部仍保留原 npm 包结构，后续再按 provider / command / preview bridge / style / workspace index 深拆。验证入口同步改为 `node --check src\Internal\VSCode\vscode-inscape\extension.js`。
 - 2026-05-12 已迁移 Unity 外部支持源码：`src/Inscape.Adapters.UnitySample` -> `src/ExternalSupport/UnityPlugin/Inscape.Adapters.UnitySample`，`tools/unity-bird-importer` -> `src/ExternalSupport/UnityPlugin/unity-bird-importer`。`Inscape.slnx` 已移除 UnitySample 的直接项目条目；但由于 CLI 与 tests 仍引用 UnitySample 命令/样例，默认构建仍会传递构建该项目，后续应拆分外部支持命令边界来完成彻底退出。
