@@ -1,7 +1,6 @@
 ﻿using System.Text;
 using System.Text.Json;
 using Inscape.Compiler.Analysis;
-using Inscape.Adapters.UnitySample;
 using Inscape.Compiler.Compilation;
 using Inscape.Compiler.Diagnostics;
 using Inscape.Compiler.Model;
@@ -70,7 +69,7 @@ Narrator: Start.
             AssertTrue(text.Contains("Single-file:"), "Commands should list single-file group.");
             AssertTrue(text.Contains("Host schema:"), "Commands should list host schema group.");
             AssertTrue(text.Contains("export-host-schema-template"), "Commands should list host schema template command.");
-            AssertTrue(text.Contains("export-unity-sample-role-template"), "Commands should list UnitySample role template command.");
+            AssertFalse(text.Contains("export-unity-sample-role-template"), "Internal CLI should not list UnitySample role template command.");
             AssertTrue(text.Contains("Run `inscape help <command>`"), "Commands should explain command help.");
         }
 
@@ -84,7 +83,7 @@ Narrator: Start.
             try {
                 Console.SetOut(output);
                 Console.SetError(error);
-                exitCode = CliCore.Main(new[] { "help", "export-unity-sample-project" });
+                exitCode = CliCore.Main(new[] { "help", "export-host-schema-template" });
             } finally {
                 Console.SetOut(originalOut);
                 Console.SetError(originalError);
@@ -93,9 +92,9 @@ Narrator: Start.
             string text = output.ToString();
             AssertEqual(0, exitCode, "Help command exit code");
             AssertEqual("", error.ToString().Trim(), "Help command stderr");
-            AssertTrue(text.Contains("export-unity-sample-project"), "Help should include command name.");
-            AssertTrue(text.Contains("--unity-sample-role-map"), "Help should include UnitySample role map option.");
-            AssertTrue(text.Contains("unity-sample-manifest.json"), "Help should include output file names.");
+            AssertTrue(text.Contains("export-host-schema-template"), "Help should include command name.");
+            AssertTrue(text.Contains("host schema template"), "Help should include host schema description.");
+            AssertTrue(text.Contains("inscape.host.schema.json"), "Help should include output file name.");
         }
 
         static void CliExportHostSchemaTemplateEmitsJson() {

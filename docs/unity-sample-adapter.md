@@ -2,7 +2,7 @@
 
 状态：实验样例
 
-最后更新：2026-05-01
+最后更新：2026-05-13
 
 本文记录 `Inscape.Adapters.UnitySample` 的定位。它是从早期 Unity 项目适配 spike 中拆出的样例 adapter，用于保留当前验证过的导出、L10N、宿主绑定和 hook 流程，但不代表最终可复用的 Unity 桥接方案。
 
@@ -46,13 +46,13 @@ UnitySample 后续可以继续保留为 generator 的回归样例：当 Host Bri
 
 ## 当前 CLI
 
-当前样例命令使用小写连字符命名：
+当前样例命令使用小写连字符命名，并由 ExternalSupport 独立 CLI 承载；Internal CLI 不再分发这些命令：
 
 ```powershell
-dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- export-unity-sample-role-template samples -o config\unity-sample-roles.csv
-dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- export-unity-sample-binding-template samples -o config\unity-sample-bindings.csv
-dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- export-unity-sample-project samples --unity-sample-role-map config\unity-sample-roles.csv --unity-sample-binding-map config\unity-sample-bindings.csv -o artifacts\unity-sample-export
-dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- merge-unity-sample-l10n artifacts\unity-sample-export\L10N_Talking.csv --from existing-L10N_Talking.csv --report artifacts\unity-sample-export\L10N_Talking.merge-report.csv -o artifacts\unity-sample-export\L10N_Talking.merged.csv
+dotnet run --project src\ExternalSupport\UnityPlugin\Inscape.UnitySample.Cli\Inscape.UnitySample.Cli.csproj -- export-unity-sample-role-template samples -o config\unity-sample-roles.csv
+dotnet run --project src\ExternalSupport\UnityPlugin\Inscape.UnitySample.Cli\Inscape.UnitySample.Cli.csproj -- export-unity-sample-binding-template samples -o config\unity-sample-bindings.csv
+dotnet run --project src\ExternalSupport\UnityPlugin\Inscape.UnitySample.Cli\Inscape.UnitySample.Cli.csproj -- export-unity-sample-project samples --unity-sample-role-map config\unity-sample-roles.csv --unity-sample-binding-map config\unity-sample-bindings.csv -o artifacts\unity-sample-export
+dotnet run --project src\ExternalSupport\UnityPlugin\Inscape.UnitySample.Cli\Inscape.UnitySample.Cli.csproj -- merge-unity-sample-l10n artifacts\unity-sample-export\L10N_Talking.csv --from existing-L10N_Talking.csv --report artifacts\unity-sample-export\L10N_Talking.merge-report.csv -o artifacts\unity-sample-export\L10N_Talking.merged.csv
 ```
 
 输出文件：

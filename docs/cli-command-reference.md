@@ -2,7 +2,7 @@
 
 状态：基线
 
-最后更新：2026-04-30
+最后更新：2026-05-13
 
 本文集中记录 Inscape CLI 的常用命令。README 只保留开发入口示例；具体命令、产物和用途以后优先维护本文。
 
@@ -24,13 +24,13 @@ inscape <command> <args>
 
 ```powershell
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- commands
-dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- help export-unity-sample-project
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- help preview-project
 ```
 
 项目级命令会自动读取项目根目录下的 `inscape.config.json`。也可以显式指定：
 
 ```powershell
-dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- export-unity-sample-project samples --config samples\inscape.config.json -o artifacts\unity-sample-export
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- preview-project samples --config samples\inscape.config.json -o artifacts\samples-project.html
 ```
 
 命令行参数优先级高于配置文件。配置格式见 [项目配置草案](project-config.md)。
@@ -99,6 +99,12 @@ dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- update-l
 
 UnitySample 命令服务实验性 Unity 样例 adapter，不应与最终 Host Bridge 混淆。角色表、宿主绑定表、样例 L10N 和 Inscape 本地化表是不同产物。该 adapter 仍硬编码一套宿主侧数据结构，只用于验证流程和作为未来配置 / 代码生成的回归样例。
 
+这些命令已经从 Internal CLI 移出，统一通过 ExternalSupport 的独立项目运行：
+
+```powershell
+dotnet run --project src\ExternalSupport\UnityPlugin\Inscape.UnitySample.Cli\Inscape.UnitySample.Cli.csproj -- <command> <args>
+```
+
 | 命令 | 用途 | 常用输出 |
 | --- | --- | --- |
 | `export-unity-sample-role-template` | 扫描对白 speaker，生成角色绑定模板 | `speaker,roleId` CSV |
@@ -107,20 +113,20 @@ UnitySample 命令服务实验性 Unity 样例 adapter，不应与最终 Host Br
 | `merge-unity-sample-l10n` | 将 Inscape 生成的 `L10N_Talking.csv` 合并到样例旧表，并输出审查报告 | CSV |
 
 ```powershell
-dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- export-unity-sample-role-template samples -o config\unity-sample-roles.csv
-dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- export-unity-sample-role-template samples --unity-sample-existing-role-name-csv D:\UnityProjects\UnitySample\Assets\Resources_Runtime\Localization\L10N_RoleName.csv --report artifacts\unity-sample-export\unity-sample-roles.report.csv -o config\unity-sample-roles.csv
-dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- export-unity-sample-binding-template samples -o config\unity-sample-bindings.csv
-dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- export-unity-sample-binding-template samples --unity-sample-existing-timeline-root D:\UnityProjects\UnitySample\Assets\Resources_Runtime\Timeline -o config\unity-sample-bindings.csv
-dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- export-unity-sample-project samples --unity-sample-role-map config\unity-sample-roles.csv --unity-sample-binding-map config\unity-sample-bindings.csv -o artifacts\unity-sample-export
-dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- merge-unity-sample-l10n artifacts\unity-sample-export\L10N_Talking.csv --from D:\UnityProjects\UnitySample\Assets\Resources_Runtime\Localization\L10N_Talking.csv --report artifacts\unity-sample-export\L10N_Talking.merge-report.csv -o artifacts\unity-sample-export\L10N_Talking.merged.csv
+dotnet run --project src\ExternalSupport\UnityPlugin\Inscape.UnitySample.Cli\Inscape.UnitySample.Cli.csproj -- export-unity-sample-role-template samples -o config\unity-sample-roles.csv
+dotnet run --project src\ExternalSupport\UnityPlugin\Inscape.UnitySample.Cli\Inscape.UnitySample.Cli.csproj -- export-unity-sample-role-template samples --unity-sample-existing-role-name-csv D:\UnityProjects\UnitySample\Assets\Resources_Runtime\Localization\L10N_RoleName.csv --report artifacts\unity-sample-export\unity-sample-roles.report.csv -o config\unity-sample-roles.csv
+dotnet run --project src\ExternalSupport\UnityPlugin\Inscape.UnitySample.Cli\Inscape.UnitySample.Cli.csproj -- export-unity-sample-binding-template samples -o config\unity-sample-bindings.csv
+dotnet run --project src\ExternalSupport\UnityPlugin\Inscape.UnitySample.Cli\Inscape.UnitySample.Cli.csproj -- export-unity-sample-binding-template samples --unity-sample-existing-timeline-root D:\UnityProjects\UnitySample\Assets\Resources_Runtime\Timeline -o config\unity-sample-bindings.csv
+dotnet run --project src\ExternalSupport\UnityPlugin\Inscape.UnitySample.Cli\Inscape.UnitySample.Cli.csproj -- export-unity-sample-project samples --unity-sample-role-map config\unity-sample-roles.csv --unity-sample-binding-map config\unity-sample-bindings.csv -o artifacts\unity-sample-export
+dotnet run --project src\ExternalSupport\UnityPlugin\Inscape.UnitySample.Cli\Inscape.UnitySample.Cli.csproj -- merge-unity-sample-l10n artifacts\unity-sample-export\L10N_Talking.csv --from D:\UnityProjects\UnitySample\Assets\Resources_Runtime\Localization\L10N_Talking.csv --report artifacts\unity-sample-export\L10N_Talking.merge-report.csv -o artifacts\unity-sample-export\L10N_Talking.merged.csv
 ```
 
 如果项目根目录有 `inscape.config.json`，可以省略常用 UnitySample 路径参数：
 
 ```powershell
-dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- export-unity-sample-role-template samples --report artifacts\unity-sample-export\unity-sample-roles.report.csv -o config\unity-sample-roles.csv
-dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- export-unity-sample-binding-template samples -o config\unity-sample-bindings.csv
-dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- export-unity-sample-project samples -o artifacts\unity-sample-export
+dotnet run --project src\ExternalSupport\UnityPlugin\Inscape.UnitySample.Cli\Inscape.UnitySample.Cli.csproj -- export-unity-sample-role-template samples --report artifacts\unity-sample-export\unity-sample-roles.report.csv -o config\unity-sample-roles.csv
+dotnet run --project src\ExternalSupport\UnityPlugin\Inscape.UnitySample.Cli\Inscape.UnitySample.Cli.csproj -- export-unity-sample-binding-template samples -o config\unity-sample-bindings.csv
+dotnet run --project src\ExternalSupport\UnityPlugin\Inscape.UnitySample.Cli\Inscape.UnitySample.Cli.csproj -- export-unity-sample-project samples -o artifacts\unity-sample-export
 ```
 
 `export-unity-sample-project` 输出：

@@ -1,7 +1,6 @@
 ﻿using System.Text;
 using System.Text.Json;
 using Inscape.Compiler.Analysis;
-using Inscape.Adapters.UnitySample;
 using Inscape.Compiler.Compilation;
 using Inscape.Compiler.Diagnostics;
 using Inscape.Compiler.Model;

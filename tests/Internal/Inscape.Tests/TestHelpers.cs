@@ -1,6 +1,5 @@
 ﻿using System.Text;
 using System.Text.Json;
-using Inscape.Adapters.UnitySample;
 using Inscape.Compiler.Compilation;
 using Inscape.Compiler.Diagnostics;
 using CliCore = Inscape.Cli.CliCore;
@@ -12,14 +11,6 @@ namespace Inscape.Tests {
         static CompilationResult Compile(string source) {
             InscapeCompiler compiler = new InscapeCompiler();
             return compiler.Compile(source, "memory://test.inscape");
-        }
-
-        static void AddTimelineBinding(UnitySampleExportOptions options, string alias, int UnitySampleId) {
-            options.HostBindings.Add(new UnitySampleHostBinding {
-                Kind = "timeline",
-                Alias = alias,
-                UnitySampleId = UnitySampleId,
-            });
         }
 
         static bool ContainsCode(CompilationResult result, string code) {

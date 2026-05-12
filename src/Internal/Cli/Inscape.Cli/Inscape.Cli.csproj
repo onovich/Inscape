@@ -10,7 +10,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Compiler\Inscape.Compiler.csproj" />
     <ProjectReference Include="..\..\Tooling\Inscape.Tooling\Inscape.Tooling.csproj" />
-    <ProjectReference Include="..\..\..\ExternalSupport\UnityPlugin\Inscape.Adapters.UnitySample\Inscape.Adapters.UnitySample.csproj" />
   </ItemGroup>
 
 </Project>

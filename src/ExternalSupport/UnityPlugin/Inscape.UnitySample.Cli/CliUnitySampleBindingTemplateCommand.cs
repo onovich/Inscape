@@ -3,7 +3,7 @@ using Inscape.Compiler.Compilation;
 using Inscape.Compiler.Model;
 using Inscape.Tooling;
 
-namespace Inscape.Cli {
+namespace Inscape.UnitySample.Cli {
 
     static class CliUnitySampleBindingTemplateCommand {
 
@@ -15,8 +15,8 @@ namespace Inscape.Cli {
                 return 1;
             }
 
-            CliCore.WriteOrPrint(outputPath, WriteBindingTemplate(result.Graph, timelineBindingsByAlias));
-            CliCore.PrintDiagnostics(result.Diagnostics);
+            UnitySampleCli.WriteOrPrint(outputPath, WriteBindingTemplate(result.Graph, timelineBindingsByAlias));
+            UnitySampleCli.PrintDiagnostics(result.Diagnostics);
             return result.HasErrors ? 1 : 0;
         }
 
@@ -24,7 +24,7 @@ namespace Inscape.Cli {
                                             ToolConfigModel config,
                                             out Dictionary<string, TimelineAssetBindingModel> bindingsByAlias) {
             bindingsByAlias = new Dictionary<string, TimelineAssetBindingModel>(StringComparer.Ordinal);
-            string? timelineRoot = CliCore.ReadOption(args, "--unity-sample-existing-timeline-root") ?? config.UnitySample.ExistingTimelineRoot;
+            string? timelineRoot = UnitySampleCli.ReadOption(args, "--unity-sample-existing-timeline-root") ?? config.UnitySample.ExistingTimelineRoot;
             if (!TimelineAssetBindingScanDomain.TryRead(timelineRoot,
                                                         out Dictionary<string, TimelineAssetBindingModel> scannedBindingsByAlias,
                                                         out string? timelineError)) {

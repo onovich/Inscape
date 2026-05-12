@@ -2,7 +2,6 @@
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Inscape.Adapters.UnitySample;
 using Inscape.Compiler.Compilation;
 using Inscape.Compiler.Diagnostics;
 using Inscape.Compiler.Localization;
@@ -23,10 +22,6 @@ namespace Inscape.Cli {
             string inputPath = args[1];
             string? outputPath = ReadOption(args, "-o");
             string? previousLocalizationPath = ReadOption(args, "--from");
-
-            if (CliUnitySampleL10nMergeCommand.TryRun(command, inputPath, args, outputPath, out exitCode)) {
-                return exitCode;
-            }
 
             if (CliCommandProvider.IsProjectCommand(command)) {
                 return CliProjectCommand.Run(command, inputPath, args, outputPath, JsonOptions);

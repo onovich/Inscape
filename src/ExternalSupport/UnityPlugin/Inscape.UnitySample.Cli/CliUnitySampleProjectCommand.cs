@@ -2,7 +2,7 @@
 using Inscape.Compiler.Compilation;
 using Inscape.Tooling;
 
-namespace Inscape.Cli {
+namespace Inscape.UnitySample.Cli {
 
     static class CliUnitySampleProjectCommand {
 

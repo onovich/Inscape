@@ -1,7 +1,7 @@
-using System.Text;
+﻿using System.Text;
 using Inscape.Adapters.UnitySample;
 
-namespace Inscape.Cli {
+namespace Inscape.UnitySample.Cli {
 
     static class CliUnitySampleL10nMergeCommand {
 
@@ -16,8 +16,8 @@ namespace Inscape.Cli {
             }
 
             exitCode = Run(generatedPath,
-                           CliCore.ReadOption(args, "--from"),
-                           CliCore.ReadOption(args, "--report"),
+                           UnitySampleCli.ReadOption(args, "--from"),
+                           UnitySampleCli.ReadOption(args, "--report"),
                            outputPath);
             return true;
         }
@@ -42,9 +42,9 @@ namespace Inscape.Cli {
                 UnitySampleL10nMergePlanner planner = new UnitySampleL10nMergePlanner();
                 UnitySampleL10nMergeResult result = planner.Merge(File.ReadAllText(existingPath, Encoding.UTF8),
                                                                   File.ReadAllText(generatedPath, Encoding.UTF8));
-                CliCore.WriteOrPrint(outputPath, result.MergedCsv);
+                UnitySampleCli.WriteOrPrint(outputPath, result.MergedCsv);
                 if (!string.IsNullOrWhiteSpace(reportPath)) {
-                    CliCore.WriteOrPrint(reportPath, result.ReportCsv);
+                    UnitySampleCli.WriteOrPrint(reportPath, result.ReportCsv);
                 }
                 return 0;
             } catch (Exception ex) {

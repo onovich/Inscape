@@ -2,7 +2,7 @@
 
 状态：目录迁移进行中
 
-最后更新：2026-05-11
+最后更新：2026-05-13
 
 本文记录 Inscape 当前实际结构与目标结构。当前仓库仍处于“编译器 + 轻工具链”阶段，但长期架构已经收敛为：
 
@@ -29,11 +29,14 @@ src/
   ExternalSupport/
     UnityPlugin/
       Inscape.Adapters.UnitySample/ 当前 UnitySample 外部支持样例，已迁入 ExternalSupport 路径
+      Inscape.UnitySample.Cli/      UnitySample 样例命令入口，不进入默认 solution
       unity-bird-importer/          当前 Unity 外部导入原型，已迁入 ExternalSupport 路径
 tests/
   Internal/
     Inscape.Tests/              当前聚合测试项目，已迁入 Internal 测试路径
-  ExternalSupport/              测试目标骨架已建立
+  ExternalSupport/
+    UnityPlugin/
+      Inscape.UnitySample.Tests/    UnitySample 外部支持回归测试，不进入默认 solution
 docs/
   ...
 ```
@@ -41,8 +44,8 @@ docs/
 ## 当前最显眼的不符合点
 
 1. `src/Internal` 与 `src/ExternalSupport` 骨架已建立，Internal 项目、VSCode 前端和 Unity 原型均已先迁入目标路径。
-2. `Inscape.Compiler` 项目名已落地，但 C# 命名空间仍暂时保留 `Inscape.Compiler`，后续再单独迁移。
-3. `Inscape.Adapters.UnitySample` 已移出 `Inscape.slnx` 的直接项目清单，但当前仍会通过 CLI / tests 的项目引用被默认构建传递带入；后续需要拆分外部支持命令边界，才能完全退出默认编译链。
+2. `Inscape.Compiler` 项目名、命名空间与入口门面已完成迁移，源码已按业务角色分组；后续继续整理 Tooling / Cli / VSCode 的内部目录。
+3. `Inscape.Adapters.UnitySample`、`Inscape.UnitySample.Cli` 与 `Inscape.UnitySample.Tests` 均已位于 ExternalSupport，并已退出默认 `Inscape.slnx` 编译链；需要回归时单独构建 / 运行外部支持测试项目。
 4. `src/Internal/VSCode/vscode-inscape/` 已成为 VSCode 前端源码位置，但内部仍需继续按 provider / command / bridge / webview 拆分。
 5. `LanguageServer` 与 `Runtime` 已有目录骨架，但尚未创建项目或能力草案。
 6. `tests/Internal/Inscape.Tests` 仍是聚合测试项目，尚未按 Compiler / Tooling / Cli / ExternalSupport 进一步拆分。

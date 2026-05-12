@@ -34,14 +34,6 @@ namespace Inscape.Tests {
                 ("cli extract-l10n-project emits csv", CliExtractL10nProjectEmitsCsv),
                 ("cli update-l10n preserves translations", CliUpdateL10nPreservesTranslations),
                 ("cli update-l10n-project preserves translations", CliUpdateL10nProjectPreservesTranslations),
-                ("cli export-unity-sample-binding-template emits csv", CliExportUnitySampleBindingTemplateEmitsCsv),
-                ("cli export-unity-sample-role-template emits csv", CliExportUnitySampleRoleTemplateEmitsCsv),
-                ("cli export-unity-sample-role-template fills existing role ids", CliExportUnitySampleRoleTemplateFillsExistingRoleIds),
-                ("cli UnitySample commands read project config", CliUnitySampleCommandsReadProjectConfig),
-                ("cli export-unity-sample-project emits manifest and csv", CliExportUnitySampleProjectEmitsManifestAndCsv),
-                ("cli export-unity-sample-project reports unresolved host hooks", CliExportUnitySampleProjectReportsUnresolvedHostHooks),
-                ("UnitySample timeline hooks support explicit phases", UnitySampleTimelineHooksSupportExplicitPhases),
-                ("cli merge-unity-sample-l10n preserves and clears safely", CliMergeUnitySampleL10nPreservesAndClearsSafely),
             };
 
             int failed = 0;

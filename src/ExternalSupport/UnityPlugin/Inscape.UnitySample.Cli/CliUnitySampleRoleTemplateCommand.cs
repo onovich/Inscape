@@ -4,7 +4,7 @@ using Inscape.Compiler.Compilation;
 using Inscape.Compiler.Model;
 using Inscape.Tooling;
 
-namespace Inscape.Cli {
+namespace Inscape.UnitySample.Cli {
 
     static class CliUnitySampleRoleTemplateCommand {
 
@@ -12,7 +12,7 @@ namespace Inscape.Cli {
                                 string[] args,
                                 ToolConfigModel config,
                                 string? outputPath) {
-            if (!RoleNameBindingScanDomain.TryRead(CliCore.ReadOption(args, "--unity-sample-existing-role-name-csv") ?? config.UnitySample.ExistingRoleNameCsv,
+            if (!RoleNameBindingScanDomain.TryRead(UnitySampleCli.ReadOption(args, "--unity-sample-existing-role-name-csv") ?? config.UnitySample.ExistingRoleNameCsv,
                                                  out RoleNameBindingScanResultModel roleNameScan,
                                                  out string? roleNameError)) {
                 Console.Error.WriteLine(roleNameError);
@@ -20,17 +20,17 @@ namespace Inscape.Cli {
             }
 
             UnitySampleRoleTemplateWriter roleWriter = new UnitySampleRoleTemplateWriter();
-            CliCore.WriteOrPrint(outputPath, roleWriter.Write(result.Graph, roleNameScan.RoleIdsBySpeaker));
-            string? reportPath = CliCore.ReadOption(args, "--report");
+            UnitySampleCli.WriteOrPrint(outputPath, roleWriter.Write(result.Graph, roleNameScan.RoleIdsBySpeaker));
+            string? reportPath = UnitySampleCli.ReadOption(args, "--report");
             if (!string.IsNullOrWhiteSpace(reportPath)) {
-                CliCore.WriteOrPrint(reportPath,
+                UnitySampleCli.WriteOrPrint(reportPath,
                                      WriteRoleTemplateReport(result.Graph,
                                                              roleNameScan.RoleIdsBySpeaker,
                                                              roleNameScan.CandidatesBySpeaker,
                                                              roleNameScan.ScannedRoleNameCsv));
             }
 
-            CliCore.PrintDiagnostics(result.Diagnostics);
+            UnitySampleCli.PrintDiagnostics(result.Diagnostics);
             return result.HasErrors ? 1 : 0;
         }
 

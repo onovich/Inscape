@@ -4,7 +4,7 @@ using Inscape.Adapters.UnitySample;
 using Inscape.Compiler.Compilation;
 using Inscape.Tooling;
 
-namespace Inscape.Cli {
+namespace Inscape.UnitySample.Cli {
 
     static class CliUnitySampleProjectExportCommand {
 
@@ -25,7 +25,7 @@ namespace Inscape.Cli {
 
             UnitySampleExportResult export = exporter.Export(result, options);
             WriteExportFiles(outputPath, export, jsonOptions);
-            CliCore.PrintDiagnostics(result.Diagnostics);
+            UnitySampleCli.PrintDiagnostics(result.Diagnostics);
             return result.HasErrors ? 1 : 0;
         }
 
@@ -34,7 +34,7 @@ namespace Inscape.Cli {
                 TalkingIdStart = ReadIntOption(args, "--unity-sample-talking-start", config.UnitySample.TalkingIdStart ?? 100000),
             };
 
-            string? roleMapPath = CliCore.ReadOption(args, "--unity-sample-role-map") ?? config.UnitySample.RoleMap;
+            string? roleMapPath = UnitySampleCli.ReadOption(args, "--unity-sample-role-map") ?? config.UnitySample.RoleMap;
             if (!RoleMapReaderDomain.TryRead(roleMapPath,
                                              out Dictionary<string, int> roleIdsBySpeaker,
                                              out string? roleMapError)) {
@@ -46,7 +46,7 @@ namespace Inscape.Cli {
                 options.RoleIdsBySpeaker[pair.Key] = pair.Value;
             }
 
-            string? bindingMapPath = CliCore.ReadOption(args, "--unity-sample-binding-map") ?? config.UnitySample.BindingMap;
+            string? bindingMapPath = UnitySampleCli.ReadOption(args, "--unity-sample-binding-map") ?? config.UnitySample.BindingMap;
             if (!string.IsNullOrWhiteSpace(bindingMapPath)) {
                 if (!HostBindingMapReaderDomain.TryRead(bindingMapPath,
                                                         out List<HostBindingMapEntryModel> bindingEntries,
@@ -68,7 +68,7 @@ namespace Inscape.Cli {
                 }
             }
 
-            string? talkingRoot = CliCore.ReadOption(args, "--unity-sample-existing-talking-root") ?? config.UnitySample.ExistingTalkingRoot;
+            string? talkingRoot = UnitySampleCli.ReadOption(args, "--unity-sample-existing-talking-root") ?? config.UnitySample.ExistingTalkingRoot;
             if (!TalkingIdReservationScanDomain.TryRead(talkingRoot,
                                                         out HashSet<int> reservedTalkingIds,
                                                         out string? talkingError)) {
@@ -84,7 +84,7 @@ namespace Inscape.Cli {
         }
 
         static int ReadIntOption(string[] args, string optionName, int fallback) {
-            string? value = CliCore.ReadOption(args, optionName);
+            string? value = UnitySampleCli.ReadOption(args, optionName);
             if (string.IsNullOrWhiteSpace(value)) {
                 return fallback;
             }

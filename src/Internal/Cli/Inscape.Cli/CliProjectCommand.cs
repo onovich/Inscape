@@ -14,10 +14,6 @@ namespace Inscape.Cli {
                 return 1;
             }
 
-            if (CliUnitySampleProjectCommand.TryRun(command, result, args, config, outputPath, jsonOptions, out int unitySampleExitCode)) {
-                return unitySampleExitCode;
-            }
-
             switch (command) {
                 case "check-project":
                     CliCore.PrintDiagnostics(result.Diagnostics);
