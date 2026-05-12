@@ -66,7 +66,7 @@ Bird 的规律并不是“所有类都统一前后缀”，而是：
 
 - `CliProjectCompiler`、`CliSingleFileCompiler` 这类名字目前只视为过渡命名。
 - `CliUnitySampleSupport` 应被优先识别为待拆分类，而不是可长期保留的命名。
-- `CliCore`、`InscapeCore` 这类真正的模块入口门面可以暂时保留，但新入口类型优先使用 `Entry`。
+- `CliCore` 这类真正的模块入口门面可以暂时保留，但新入口类型优先使用 `Entry`；Compiler 侧入口门面已收敛为 `CompilerEntry`。
 - `UnityPlugin` 只在 ExternalSupport 内部使用，不作为 Internal 五层中的普通业务主语。
 
 ## 验证清单

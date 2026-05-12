@@ -14,14 +14,13 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 
 ### 2026-05-11 当前交接结论（最新）
 
-- 2026-05-12 已开始按目录优先蓝图执行实际迁移：目录骨架与规则 README 已提交，Internal 侧 `.NET` 项目已迁入新路径，当前路径为 `src/Internal/Compiler/Inscape.Compiler`、`src/Internal/Tooling/Inscape.Tooling`、`src/Internal/Cli/Inscape.Cli`。路径已稳定，Compiler 项目名已开始迁移；命名空间和类型名仍待后续小步处理。
-- 2026-05-12 已开始项目名迁移第一步：`src/Internal/Compiler/Inscape.Compiler/Inscape.Compiler.csproj` 已改为 `src/Internal/Compiler/Inscape.Compiler/Inscape.Compiler.csproj`。当前只改项目目录和 `.csproj` 名称，C# namespace 仍保留 `Inscape.Compiler`，下一步再单独迁。
+- 2026-05-12 已开始按目录优先蓝图执行实际迁移：目录骨架与规则 README 已提交，Internal 侧 `.NET` 项目已迁入新路径，当前路径为 `src/Internal/Compiler/Inscape.Compiler`、`src/Internal/Tooling/Inscape.Tooling`、`src/Internal/Cli/Inscape.Cli`。
+- 2026-05-12 已完成 Compiler 项目名、命名空间与入口门面收敛：`src/Internal/Compiler/Inscape.Core/Inscape.Core.csproj` 已迁为 `src/Internal/Compiler/Inscape.Compiler/Inscape.Compiler.csproj`，`Inscape.Core.*` 已改为 `Inscape.Compiler.*`，原 `InscapeCore` 门面已改为 `CompilerEntry`。真正执行单文件编译的 `Compilation/InscapeCompiler` 保持不变。
 - 2026-05-12 已同步更新 `Inscape.slnx`、`ProjectReference`、VSCode fallback CLI 项目路径、CLI 命令速查示例和相关文档命令路径。验证通过：`dotnet build Inscape.slnx --no-restore` 与 `dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build`。由于项目路径变化，执行过一次 `dotnet restore Inscape.slnx --configfile NuGet.Config` 来刷新项目图缓存。
 - 2026-05-12 已迁移 VSCode 前端源码：`tools/vscode-inscape` -> `src/Internal/VSCode/vscode-inscape`。扩展内部仍保留原 npm 包结构，后续再按 provider / command / preview bridge / style / workspace index 深拆。验证入口同步改为 `node --check src\Internal\VSCode\vscode-inscape\extension.js`。
 - 2026-05-12 已迁移 Unity 外部支持源码：`src/Inscape.Adapters.UnitySample` -> `src/ExternalSupport/UnityPlugin/Inscape.Adapters.UnitySample`，`tools/unity-bird-importer` -> `src/ExternalSupport/UnityPlugin/unity-bird-importer`。`Inscape.slnx` 已移除 UnitySample 的直接项目条目；但由于 CLI 与 tests 仍引用 UnitySample 命令/样例，默认构建仍会传递构建该项目，后续应拆分外部支持命令边界来完成彻底退出。
 - 2026-05-12 已迁移当前聚合测试项目：`tests/Inscape.Tests` -> `tests/Internal/Inscape.Tests`。这只是测试项目路径进入 Internal 测试树，测试内容尚未按 Compiler / Tooling / Cli / ExternalSupport 拆分。
 - 当前分支为 `main...origin/main`。本轮已把目录优先方案正式冻结为文档与 ADR；最新提交请以 `git log --oneline -1` 为准。
-- 当前工作区存在未提交变更：文档重构相关文件与 `samples/court-loop.inscape`。其中脚本文本修改不属于本轮架构文档同步的一部分，后续提交时应避免误带用户的样例脚本变更。
 - 本轮会话已确认新的重构铁律：先搭目录骨架与 `README.md` 规则文件，再迁大目录路径，再迁 solution / 项目路径，再迁项目名、命名空间和类型名；在此之前，不再把主要重构精力继续放在旧目录里的微观 helper 收口上。
 - 本轮会话已将该铁律落入 [目录优先重构蓝图](directory-first-reframe-plan.md) 与 [ADR 0012](adr/0012-directory-first-repository-reframe-order.md)。
 - 本轮会话已明确当前最显眼的不符合点：`src/` 仍未落成 `Internal / ExternalSupport` 主树；`Inscape.Compiler` 仍停留在旧路径；`Inscape.Adapters.UnitySample` 仍在默认 solution 编译链；VSCode 前端仍位于 `tools/`；`LanguageServer` 与 `Runtime` 仍没有目录骨架；测试目录尚未镜像层级结构。

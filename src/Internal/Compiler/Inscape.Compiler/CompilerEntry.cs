@@ -3,7 +3,7 @@ using Inscape.Compiler.Compilation;
 
 namespace Inscape.Compiler {
 
-    public sealed class InscapeCore {
+    public sealed class CompilerEntry {
 
         readonly InscapeCompiler compiler = new InscapeCompiler();
         readonly ProjectCompiler projectCompiler = new ProjectCompiler();
