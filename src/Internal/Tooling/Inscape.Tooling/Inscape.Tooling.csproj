@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Compiler\Inscape.Compiler\Inscape.Compiler.csproj" />
+    <ProjectReference Include="..\..\Compiler\Inscape.Compiler.csproj" />
   </ItemGroup>
 
 </Project>
