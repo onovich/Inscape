@@ -1,4 +1,4 @@
-namespace Inscape.Core.Diagnostics {
+﻿namespace Inscape.Compiler.Diagnostics {
 
     public enum DiagnosticSeverity {
 

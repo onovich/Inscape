@@ -1,7 +1,7 @@
-using System.Collections.Generic;
-using Inscape.Core.Compilation;
+﻿using System.Collections.Generic;
+using Inscape.Compiler.Compilation;
 
-namespace Inscape.Core {
+namespace Inscape.Compiler {
 
     public sealed class InscapeCore {
 

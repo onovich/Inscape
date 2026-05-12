@@ -1,6 +1,6 @@
-using System.Text;
+﻿using System.Text;
 
-namespace Inscape.Core.Text {
+namespace Inscape.Compiler.Text {
 
     public static class StableHash {
 

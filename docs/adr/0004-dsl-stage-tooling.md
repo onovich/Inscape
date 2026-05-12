@@ -1,4 +1,4 @@
-# 0004：DSL 阶段提供 VSCode 支持和 HTML 调试预览
+﻿# 0004：DSL 阶段提供 VSCode 支持和 HTML 调试预览
 
 状态：Accepted
 
@@ -22,4 +22,4 @@ DSL 阶段提供 VSCode 语言支持和轻量 HTML 调试预览。它们是语�
 - IR 需要足够稳定，让 HTML 预览直接消费。
 - 第一阶段工作范围先落地 TextMate 高亮、基础 snippets、CLI 诊断桥接和预览原型。
 - VSCode 诊断桥接应使用项目级编译，避免跨文件跳转被单文件诊断误报。
-- LSP 能力作为下一步增量设计，必须复用 `Inscape.Core`，避免 VSCode 扩展内出现第二套解析器。
+- LSP 能力作为下一步增量设计，必须复用 `Inscape.Compiler`，避免 VSCode 扩展内出现第二套解析器。

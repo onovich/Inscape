@@ -46,7 +46,7 @@ Open this folder as an extension development host, or launch VSCode with:
 code --extensionDevelopmentPath=src\Internal\VSCode\vscode-inscape .
 ```
 
-This package is not published yet. Later stages should add a language server that reuses `Inscape.Core` for diagnostics, completion, symbols, and definition/reference navigation.
+This package is not published yet. Later stages should add a language server that reuses `Inscape.Compiler` for diagnostics, completion, symbols, and definition/reference navigation.
 
 Preview command opens a VSCode custom editor beside the current source editor when possible:
 
@@ -87,7 +87,7 @@ kind,alias,unitySampleId,unityGuid,addressableKey,assetPath
 timeline,court_intro,12,,Timeline/CourtIntro,Assets/Resources_Runtime/Timeline/SO_Timeline_CourtIntro.asset
 ```
 
-The first supported contexts are `@timeline court_intro`, explicit phase forms such as `@timeline.node.enter court_intro`, and inline tags such as `[timeline: court_intro]`, `[timeline.node.exit: court_outro]`, or `[bg: classroom]`. Hover explains `@entry` / `@scene` metadata lines, while Ctrl+Click on `@timeline ...` and `[kind: alias]` opens the corresponding binding row when one exists. For inline tags, completion is generic by `kind`; compiler semantics still come from `Inscape.Core`, while UnitySample export remains an experimental adapter.
+The first supported contexts are `@timeline court_intro`, explicit phase forms such as `@timeline.node.enter court_intro`, and inline tags such as `[timeline: court_intro]`, `[timeline.node.exit: court_outro]`, or `[bg: classroom]`. Hover explains `@entry` / `@scene` metadata lines, while Ctrl+Click on `@timeline ...` and `[kind: alias]` opens the corresponding binding row when one exists. For inline tags, completion is generic by `kind`; compiler semantics still come from `Inscape.Compiler`, while UnitySample export remains an experimental adapter.
 
 Host schema files named `inscape.host.schema.json` or `*.host.schema.json` are validated by the bundled JSON Schema. The command `Inscape: Show Host Schema Capabilities` reads `inscape.config.json` `hostSchema`, lists configured queries/events, and opens the selected capability in the schema file.
 

@@ -6,7 +6,7 @@
 
 本文把 Inscape 的重构拆成大目标、中目标、小目标，目标是让代码逐步接近游戏项目中常见的清晰入口、生命周期式流程、数据/逻辑/表现/适配分层，同时不破坏当前 DSL、CLI、VSCode 和预览体验。当前长期结构已经收敛为：Internal 下的 `Compiler`、`Tooling`、`Cli`、`VSCode`、`LanguageServer`、`Runtime`，以及 ExternalSupport 下的 `UnityPlugin`。
 
-当前主动重构范围只覆盖 Internal 侧：`Inscape.Core`、`Inscape.Cli`、`src/Internal/VSCode/vscode-inscape` 与测试组织。`src/ExternalSupport/UnityPlugin/Inscape.Adapters.UnitySample` 和 `src/ExternalSupport/UnityPlugin/unity-bird-importer` 继续作为 ExternalSupport 过渡样例保留隔离，不纳入这一轮内部重构，只要求不反向污染 Compiler，并能继续承担 Host Bridge / UnityPlugin 回归素材。
+当前主动重构范围只覆盖 Internal 侧：`Inscape.Compiler`、`Inscape.Cli`、`src/Internal/VSCode/vscode-inscape` 与测试组织。`src/ExternalSupport/UnityPlugin/Inscape.Adapters.UnitySample` 和 `src/ExternalSupport/UnityPlugin/unity-bird-importer` 继续作为 ExternalSupport 过渡样例保留隔离，不纳入这一轮内部重构，只要求不反向污染 Compiler，并能继续承担 Host Bridge / UnityPlugin 回归素材。
 
 重构原则见 [编码与命名规范](coding-conventions.md)。本文只安排执行顺序和验收方式。
 
@@ -137,7 +137,7 @@ VSCode：4 / 10
 
 1. 先冻结目录规则，详见 [目录优先重构蓝图](directory-first-reframe-plan.md) 与 [ADR 0012](adr/0012-directory-first-repository-reframe-order.md)。
 2. 先创建 `src/Internal`、`src/ExternalSupport`、`tests/Internal`、`tests/ExternalSupport` 以及各 Layer / Business / Role 目录，并为稳定目录补 `README.md` 规则文件。
-3. 再迁 `Inscape.Core`、`Inscape.Tooling`、`Inscape.Cli`、VSCode 前端与 Unity 原型的大目录路径。
+3. 再迁 `Inscape.Compiler`、`Inscape.Tooling`、`Inscape.Cli`、VSCode 前端与 Unity 原型的大目录路径。
 4. 再更新 `Inscape.slnx` 与 `ProjectReference`，并把 UnityPlugin 相关项目移出默认 .NET solution 编译链。
 5. 只有在路径稳定后，才继续项目名、命名空间、类型名迁移，以及 Tooling / VSCode / LanguageServer 的逐层重构。
 

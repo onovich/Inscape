@@ -1,4 +1,4 @@
-namespace Inscape.Core.Parsing {
+﻿namespace Inscape.Compiler.Parsing {
 
     public static class NodeNameRules {
 

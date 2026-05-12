@@ -10,12 +10,12 @@
 
 Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原型。当前长期架构已经收敛为 Internal 与 ExternalSupport 两层：Internal 包含 `Compiler`、`Tooling`、`Cli`、`VSCode`、`LanguageServer` 与未来 `Runtime`；ExternalSupport 当前主要是 `UnityPlugin` 方向的样例和原型。UnitySample 实验 adapter 继续保留，但只作为 ExternalSupport 过渡样例，不代表最终 Host Bridge 方案。
 
-当前主动重构范围只覆盖 Internal 侧的 `Inscape.Core`、`Inscape.Cli`、`src/Internal/VSCode/vscode-inscape` 与测试组织；`src/ExternalSupport/UnityPlugin/Inscape.Adapters.UnitySample` 与 `src/ExternalSupport/UnityPlugin/unity-bird-importer` 视为 ExternalSupport 原型，暂不纳入这一轮内部重构，只保留隔离和回归样例职责。
+当前主动重构范围只覆盖 Internal 侧的 `Inscape.Compiler`、`Inscape.Cli`、`src/Internal/VSCode/vscode-inscape` 与测试组织；`src/ExternalSupport/UnityPlugin/Inscape.Adapters.UnitySample` 与 `src/ExternalSupport/UnityPlugin/unity-bird-importer` 视为 ExternalSupport 原型，暂不纳入这一轮内部重构，只保留隔离和回归样例职责。
 
 ### 2026-05-11 当前交接结论（最新）
 
 - 2026-05-12 已开始按目录优先蓝图执行实际迁移：目录骨架与规则 README 已提交，Internal 侧 `.NET` 项目已迁入新路径，当前路径为 `src/Internal/Compiler/Inscape.Compiler`、`src/Internal/Tooling/Inscape.Tooling`、`src/Internal/Cli/Inscape.Cli`。路径已稳定，Compiler 项目名已开始迁移；命名空间和类型名仍待后续小步处理。
-- 2026-05-12 已开始项目名迁移第一步：`src/Internal/Compiler/Inscape.Core/Inscape.Core.csproj` 已改为 `src/Internal/Compiler/Inscape.Compiler/Inscape.Compiler.csproj`。当前只改项目目录和 `.csproj` 名称，C# namespace 仍保留 `Inscape.Core`，下一步再单独迁。
+- 2026-05-12 已开始项目名迁移第一步：`src/Internal/Compiler/Inscape.Compiler/Inscape.Compiler.csproj` 已改为 `src/Internal/Compiler/Inscape.Compiler/Inscape.Compiler.csproj`。当前只改项目目录和 `.csproj` 名称，C# namespace 仍保留 `Inscape.Compiler`，下一步再单独迁。
 - 2026-05-12 已同步更新 `Inscape.slnx`、`ProjectReference`、VSCode fallback CLI 项目路径、CLI 命令速查示例和相关文档命令路径。验证通过：`dotnet build Inscape.slnx --no-restore` 与 `dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build`。由于项目路径变化，执行过一次 `dotnet restore Inscape.slnx --configfile NuGet.Config` 来刷新项目图缓存。
 - 2026-05-12 已迁移 VSCode 前端源码：`tools/vscode-inscape` -> `src/Internal/VSCode/vscode-inscape`。扩展内部仍保留原 npm 包结构，后续再按 provider / command / preview bridge / style / workspace index 深拆。验证入口同步改为 `node --check src\Internal\VSCode\vscode-inscape\extension.js`。
 - 2026-05-12 已迁移 Unity 外部支持源码：`src/Inscape.Adapters.UnitySample` -> `src/ExternalSupport/UnityPlugin/Inscape.Adapters.UnitySample`，`tools/unity-bird-importer` -> `src/ExternalSupport/UnityPlugin/unity-bird-importer`。`Inscape.slnx` 已移除 UnitySample 的直接项目条目；但由于 CLI 与 tests 仍引用 UnitySample 命令/样例，默认构建仍会传递构建该项目，后续应拆分外部支持命令边界来完成彻底退出。
@@ -24,10 +24,10 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - 当前工作区存在未提交变更：文档重构相关文件与 `samples/court-loop.inscape`。其中脚本文本修改不属于本轮架构文档同步的一部分，后续提交时应避免误带用户的样例脚本变更。
 - 本轮会话已确认新的重构铁律：先搭目录骨架与 `README.md` 规则文件，再迁大目录路径，再迁 solution / 项目路径，再迁项目名、命名空间和类型名；在此之前，不再把主要重构精力继续放在旧目录里的微观 helper 收口上。
 - 本轮会话已将该铁律落入 [目录优先重构蓝图](directory-first-reframe-plan.md) 与 [ADR 0012](adr/0012-directory-first-repository-reframe-order.md)。
-- 本轮会话已明确当前最显眼的不符合点：`src/` 仍未落成 `Internal / ExternalSupport` 主树；`Inscape.Core` 仍停留在旧路径；`Inscape.Adapters.UnitySample` 仍在默认 solution 编译链；VSCode 前端仍位于 `tools/`；`LanguageServer` 与 `Runtime` 仍没有目录骨架；测试目录尚未镜像层级结构。
+- 本轮会话已明确当前最显眼的不符合点：`src/` 仍未落成 `Internal / ExternalSupport` 主树；`Inscape.Compiler` 仍停留在旧路径；`Inscape.Adapters.UnitySample` 仍在默认 solution 编译链；VSCode 前端仍位于 `tools/`；`LanguageServer` 与 `Runtime` 仍没有目录骨架；测试目录尚未镜像层级结构。
 - 本轮会话已确认新的优先级：下一阶段应先做目录骨架与规则文件，再迁大目录路径与 solution 边界；Tooling 上提、VSCode 深拆、LanguageServer 细化与项目名迁移都排在目录外形稳定之后。
 - 本轮会话确认新的长期结构：Internal 为 `Compiler`、`Tooling`、`Cli`、`VSCode`、`LanguageServer`、`Runtime`；ExternalSupport 为 `UnityPlugin`。
-- 本轮会话确认：`Inscape.Core` 长期可向 `Compiler` 收敛；`Inscape.Cli` 当前同时承载了 `Cli` 与部分 `Tooling`，下一轮重构重点应是先抽出 `Tooling`。
+- 本轮会话确认：`Inscape.Compiler` 长期可向 `Compiler` 收敛；`Inscape.Cli` 当前同时承载了 `Cli` 与部分 `Tooling`，下一轮重构重点应是先抽出 `Tooling`。
 - 本轮会话已完成 Stage 1 的第一刀：新建 `src/Inscape.Tooling/`，迁出 ToolConfig 配置模型与读取/路径归一化逻辑；`Cli` 现在只保留 `--config` 参数解析和错误输出适配。
 - 本轮会话已完成 Stage 1 的第二刀：迁出 `.inscape` 项目源发现、排除目录、内容读取与 override 应用逻辑；`Cli` 现在只保留 `--override <source> <content>` 参数解析。
 - 本轮会话已完成 Stage 1 的第三刀：迁出 Preview 样式表模型与 JSON 读取逻辑；`Cli` 现在只保留 HTML 渲染与终端输出适配。
@@ -77,7 +77,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 
 ### 当前确认的模块命名
 
-- `Compiler`：编译期真相层；当前主要由 `Inscape.Core` 承载。内部主业务为 `DslScript`、`StoryGraph`、`Localization`。
+- `Compiler`：编译期真相层；当前主要由 `Inscape.Compiler` 承载。内部主业务为 `DslScript`、`StoryGraph`、`Localization`。
 - `Tooling`：共享用例层；长期用于承接项目扫描、ToolConfig、Preview、Localization、HostSchema、HostBinding 等流程。当前这些流程有相当一部分仍暂住在 `Inscape.Cli`。
 - `Tooling` 当前已实际落下一块稳定落点：`ToolConfig` 已迁入独立项目 `src/Inscape.Tooling/`。
 - `Tooling` 当前已实际落下第二块稳定落点：`ProjectSources` 已迁入独立项目 `src/Inscape.Tooling/`。
@@ -128,7 +128,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - 本地化：CSV 提取、按旧 CSV 精确继承译文、`current/new/removed` 状态标记。
 - VSCode 原型：TextMate 高亮、snippets、诊断桥接、节点补全、角色补全、宿主绑定别名补全、Outline、跳转定义、引用查找、Hover、block CodeLens、本地化导出/更新命令，以及可玩预览 custom editor。角色补全会读取 `inscape.config.json` 中的 `unitySample.roleMap`，并回退扫描工作区已有 speaker；角色 Ctrl+Click 会跳到 role map 对应行，Find All References 会列出工作区对白；block 标题 CodeLens 显示 `N 个引用`，用于追溯调用方；宿主绑定提示会读取 `unitySample.bindingMap`，覆盖 `@timeline ...` 和 `[kind: ...]` 位置；预览默认侧边打开，支持源码回跳、Back / Restart、点击正文继续和刷新后保留当前页进度。
 - Bird/Unity 初步调研：已梳理 `StorySystem`、`TalkingTM`、`L10N_Talking`、`DirectorSystem` 和 `TimelineEffectTM` 的边界，详见 [Bird / Unity 调研记录](bird-unity-research.md)。
-- UnitySample Adapter 实验样例：`export-unity-sample-role-template`、`export-unity-sample-binding-template`、`export-unity-sample-project` 和 `merge-unity-sample-l10n` 保留早期固定数据结构导出验证。它位于独立项目 `src/ExternalSupport/UnityPlugin/Inscape.Adapters.UnitySample`，只引用 `Inscape.Core`，不得反向污染 Core。详见 [UnitySample Adapter 实验样例](unity-sample-adapter.md)。
+- UnitySample Adapter 实验样例：`export-unity-sample-role-template`、`export-unity-sample-binding-template`、`export-unity-sample-project` 和 `merge-unity-sample-l10n` 保留早期固定数据结构导出验证。它位于独立项目 `src/ExternalSupport/UnityPlugin/Inscape.Adapters.UnitySample`，只引用 `Inscape.Compiler`，不得反向污染 Core。详见 [UnitySample Adapter 实验样例](unity-sample-adapter.md)。
 - 项目配置：CLI 会自动读取项目根目录 `inscape.config.json`，也支持 `--config path`。当前配置为 UnitySample 样例命令提供默认值：`talkingIdStart`、`roleMap`、`bindingMap`、`existingRoleNameCsv`、`existingTimelineRoot`、`existingTalkingRoot`；命令行参数优先级更高。这仍不是最终 Host Bridge。详见 [项目配置草案](project-config.md)。
 - 宿主 Schema 草案：新增 `hostSchema` 项目配置字段与 `export-host-schema-template` CLI 命令，用于生成 `inscape.host-schema` JSON 模板，先描述纯查询和宿主事件清单，不改变当前 DSL 解析或 UnitySample 导出行为。VSCode 已提供 `inscape.host.schema.json` / `*.host.schema.json` 的 JSON Schema 校验，以及 `Inscape: Show Host Schema Capabilities` 命令读取并浏览当前 query / event。详见 [宿主 Schema 草案](host-schema.md)。
 - Bird 角色绑定审查：`export-bird-role-template` 支持 `--report`，输出 `unique`、`ambiguous`、`missing`、`unscanned` 状态。2026-04-30 用 Bird 当前 `L10N_RoleName.csv` 试跑，当前样例中 `旁白` 为 `ambiguous`，候选 `1050|10001`；`成步堂` 和 `证人` 为 `missing`。因此当前导出的 `bird-roles.csv` 仍全部为空，需要人工补齐或更换测试文本中的角色名。
@@ -272,7 +272,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 设计决策溯源                       docs/adr/README.md, 对应 ADR
 DSL 语法                           docs/dsl-syntax-guide.md, docs/dsl-language.md, docs/syntax-comparison.md, docs/open-questions.md
 DSL 生态定位 / 竞品对比             docs/dsl-ecosystem-positioning.md, docs/adr/0007-dsl-benchmark-positioning.md
-代码结构 / 新模块                  docs/code-structure.md, docs/coding-conventions.md, docs/refactoring-plan.md, src/Inscape.Core, src/Inscape.Cli
+代码结构 / 新模块                  docs/code-structure.md, docs/coding-conventions.md, docs/refactoring-plan.md, src/Inscape.Compiler, src/Inscape.Cli
 VSCode 工具                        docs/vscode-tooling.md, src/Internal/VSCode/vscode-inscape/README.md
 HTML 预览                          src/Inscape.Tooling/PreviewHtmlRendererDomain.cs, docs/vscode-tooling.md
 本地化 / hash                      docs/hash-localization.md, docs/l10n-extraction.md
@@ -287,7 +287,7 @@ Unity / Host Bridge                docs/unity-sample-adapter.md, docs/project-co
 
 - 先看 `git status`，确认是否有未提交变更。
 - 修改设计、语法、IR、本地化、存档或编辑器交互时，同步更新文档；长期决策新增 ADR。
-- 保持 `Inscape.Core` 不依赖 Unity、VSCode、HTML 或第三方包。
+- 保持 `Inscape.Compiler` 不依赖 Unity、VSCode、HTML 或第三方包。
 - CLI 可以作为工具层封装 Core，但不要把核心语义只写在 CLI 里。
 - VSCode 扩展里可以做轻量行扫描，但语法真相必须来自 Core/CLI。
 - 修改后至少运行构建和测试；涉及 VSCode 时跑 Node 语法/JSON 检查。

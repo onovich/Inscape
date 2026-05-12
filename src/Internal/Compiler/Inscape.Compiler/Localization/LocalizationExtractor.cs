@@ -1,7 +1,7 @@
-using System.Collections.Generic;
-using Inscape.Core.Model;
+﻿using System.Collections.Generic;
+using Inscape.Compiler.Model;
 
-namespace Inscape.Core.Localization {
+namespace Inscape.Compiler.Localization {
 
     public sealed class LocalizationExtractor {
 

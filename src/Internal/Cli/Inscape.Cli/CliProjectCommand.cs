@@ -1,8 +1,8 @@
-using System.Text.Json;
-using Inscape.Core.Compilation;
-using Inscape.Core.Diagnostics;
-using Inscape.Core.Localization;
-using Inscape.Core.Model;
+﻿using System.Text.Json;
+using Inscape.Compiler.Compilation;
+using Inscape.Compiler.Diagnostics;
+using Inscape.Compiler.Localization;
+using Inscape.Compiler.Model;
 using Inscape.Tooling;
 
 namespace Inscape.Cli {

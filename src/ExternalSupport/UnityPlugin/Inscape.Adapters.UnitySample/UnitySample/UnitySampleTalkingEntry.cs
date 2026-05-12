@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using Inscape.Core.Model;
+using Inscape.Compiler.Model;
 
 namespace Inscape.Adapters.UnitySample {
 

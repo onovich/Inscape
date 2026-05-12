@@ -1,8 +1,8 @@
-using System.Collections.Generic;
-using Inscape.Core.Diagnostics;
-using Inscape.Core.Model;
+﻿using System.Collections.Generic;
+using Inscape.Compiler.Diagnostics;
+using Inscape.Compiler.Model;
 
-namespace Inscape.Core.Compilation {
+namespace Inscape.Compiler.Compilation {
 
     public sealed class ProjectCompilationResult {
 

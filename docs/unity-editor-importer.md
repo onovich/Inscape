@@ -10,7 +10,7 @@
 src/ExternalSupport/UnityPlugin/unity-bird-importer/Editor/InscapeBirdManifestImporter.cs
 ```
 
-该脚本不属于 `Inscape.Core`，也不会让 Core 依赖 Unity。它是 `export-bird-project` 之后的 Unity 侧导入工具草案，用于验证一个项目适配器如何把 Inscape 数据转成项目已有数据结构。
+该脚本不属于 `Inscape.Compiler`，也不会让 Core 依赖 Unity。它是 `export-bird-project` 之后的 Unity 侧导入工具草案，用于验证一个项目适配器如何把 Inscape 数据转成项目已有数据结构。
 
 通用 Unity 支持层后续应作为独立插件 / 适配包研究，不混在 VSCode 扩展中。它应以通用 IR、Host Schema 和 Host Bridge 配置为输入，再按项目选择 ScriptableObject、JSON、Addressables、自研资源表、代码生成或调用项目已有 importer。
 

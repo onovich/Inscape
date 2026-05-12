@@ -1,5 +1,5 @@
-using Inscape.Core.Diagnostics;
-using Inscape.Core.Model;
+﻿using Inscape.Compiler.Diagnostics;
+using Inscape.Compiler.Model;
 
 namespace Inscape.Cli {
 

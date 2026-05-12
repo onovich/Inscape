@@ -1,7 +1,7 @@
-using System.Text;
+﻿using System.Text;
 using System.Text.Json;
 using Inscape.Adapters.UnitySample;
-using Inscape.Core.Compilation;
+using Inscape.Compiler.Compilation;
 using Inscape.Tooling;
 
 namespace Inscape.Cli {

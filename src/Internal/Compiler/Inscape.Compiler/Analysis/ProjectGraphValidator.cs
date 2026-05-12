@@ -1,9 +1,9 @@
-using System.Collections.Generic;
-using Inscape.Core.Diagnostics;
-using Inscape.Core.Model;
-using Inscape.Core.Parsing;
+﻿using System.Collections.Generic;
+using Inscape.Compiler.Diagnostics;
+using Inscape.Compiler.Model;
+using Inscape.Compiler.Parsing;
 
-namespace Inscape.Core.Analysis {
+namespace Inscape.Compiler.Analysis {
 
     public sealed class ProjectGraphValidator {
 

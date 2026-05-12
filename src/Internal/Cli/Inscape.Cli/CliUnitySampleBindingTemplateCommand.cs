@@ -1,6 +1,6 @@
-using Inscape.Adapters.UnitySample;
-using Inscape.Core.Compilation;
-using Inscape.Core.Model;
+﻿using Inscape.Adapters.UnitySample;
+using Inscape.Compiler.Compilation;
+using Inscape.Compiler.Model;
 using Inscape.Tooling;
 
 namespace Inscape.Cli {

@@ -1,4 +1,4 @@
-namespace Inscape.Core.Compilation {
+﻿namespace Inscape.Compiler.Compilation {
 
     public sealed class ProjectSource {
 

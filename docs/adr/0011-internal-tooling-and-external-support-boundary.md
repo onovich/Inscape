@@ -1,4 +1,4 @@
-# 0011：采用 Internal / ExternalSupport 分层，并引入 Tooling 中间层
+﻿# 0011：采用 Internal / ExternalSupport 分层，并引入 Tooling 中间层
 
 状态：Accepted
 
@@ -28,7 +28,7 @@ Inscape 当前已经出现三类明显不同的代码边界：
    - `VSCode`
    - `LanguageServer`
    - `Runtime`
-3. `Compiler` 是编译期真相层；当前 `Inscape.Core` 长期可向该命名收敛。
+3. `Compiler` 是编译期真相层；当前 `Inscape.Compiler` 长期可向该命名收敛。
 4. 新增 `Tooling` 作为中间用例层，用于承接当前 Cli 中的共享项目扫描、配置读取、预览构建、本地化、HostSchema、HostBinding 等流程。
 5. `Cli` 只保留命令行入口职责：argv、stdout/stderr、退出码、命令目录与对 Tooling 的调用。
 6. `VSCode` 长期采用“薄扩展前端 + C# LanguageServer”结构，减少对 Cli 进程桥接的依赖。

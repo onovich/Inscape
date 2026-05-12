@@ -1,5 +1,5 @@
-using System.Text;
-using Inscape.Core.Compilation;
+﻿using System.Text;
+using Inscape.Compiler.Compilation;
 
 namespace Inscape.Tooling {
 

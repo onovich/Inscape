@@ -1,6 +1,6 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
-namespace Inscape.Core.Localization {
+namespace Inscape.Compiler.Localization {
 
     public sealed class LocalizationMerger {
 

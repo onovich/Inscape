@@ -8,8 +8,8 @@ This repository uses Chinese project documentation. Before making changes, read:
 
 Core rules:
 
-- Treat `Inscape.Core` as the source of compiler truth. Do not reimplement parser semantics in CLI or VSCode.
-- Keep `Inscape.Core` independent from Unity, VSCode, HTML rendering, and third-party packages.
+- Treat `Inscape.Compiler` as the source of compiler truth. Do not reimplement parser semantics in CLI or VSCode.
+- Keep `Inscape.Compiler` independent from Unity, VSCode, HTML rendering, and third-party packages.
 - Update docs and TODO together with code. Add an ADR for long-lived decisions.
 - Preserve uncertain syntax/editor/runtime ideas as drafts or open questions.
 - Run validation before committing:

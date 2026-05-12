@@ -1,7 +1,7 @@
-using Inscape.Core.Analysis;
-using Inscape.Core.Parsing;
+﻿using Inscape.Compiler.Analysis;
+using Inscape.Compiler.Parsing;
 
-namespace Inscape.Core.Compilation {
+namespace Inscape.Compiler.Compilation {
 
     public sealed class InscapeCompiler {
 

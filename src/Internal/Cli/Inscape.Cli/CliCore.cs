@@ -1,11 +1,11 @@
-using System.Text;
+﻿using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Inscape.Adapters.UnitySample;
-using Inscape.Core.Compilation;
-using Inscape.Core.Diagnostics;
-using Inscape.Core.Localization;
+using Inscape.Compiler.Compilation;
+using Inscape.Compiler.Diagnostics;
+using Inscape.Compiler.Localization;
 using Inscape.Tooling;
 
 namespace Inscape.Cli {

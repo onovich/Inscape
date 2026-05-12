@@ -1,5 +1,5 @@
-using System.Text.Json;
-using Inscape.Core.Compilation;
+﻿using System.Text.Json;
+using Inscape.Compiler.Compilation;
 using Inscape.Tooling;
 
 namespace Inscape.Cli {

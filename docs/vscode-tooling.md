@@ -11,9 +11,9 @@
 - 原型位置：`src/Internal/VSCode/vscode-inscape/`
 - 当前形态：TextMate grammar + snippets + VSCode extension runtime。
 
-高亮、括号配置、注释和 snippets 保持声明式。实时诊断通过 CLI 的 `diagnose-project` 命令调用 `Inscape.Core`，避免在 VSCode 插件里重写解析器。工作区节点补全、跳转定义、引用查找、悬浮说明和大纲先使用轻量行扫描，它们只做写作提示，不作为语法真相来源。
+高亮、括号配置、注释和 snippets 保持声明式。实时诊断通过 CLI 的 `diagnose-project` 命令调用 `Inscape.Compiler`，避免在 VSCode 插件里重写解析器。工作区节点补全、跳转定义、引用查找、悬浮说明和大纲先使用轻量行扫描，它们只做写作提示，不作为语法真相来源。
 
-后续更完整的项目语义能力应通过 Language Server 复用 `Inscape.Core`。
+后续更完整的项目语义能力应通过 Language Server 复用 `Inscape.Compiler`。
 
 ## 高亮哲学
 
@@ -100,7 +100,7 @@ Inscape 的默认阅读优先级应当是：
 
 ## 当前预览交互约定
 
-- 预览是作者体验层，不是脚本真相来源；语义仍由 `Inscape.Core` / CLI 决定。
+- 预览是作者体验层，不是脚本真相来源；语义仍由 `Inscape.Compiler` / CLI 决定。
 - 预览中的源码回跳只负责把作者带回对应源位置，不与源码编辑器内的 Ctrl+Click 做自动双向同步。
 - 预览刷新应尽量保持玩家当前上下文；只有源码结构变化导致当前位置失效时，才回退到新的可达起点。
 - `@` 与 `[]` 的目标是“让作者看得懂它们在做什么”：`@` 偏向轻量元数据说明，`[]` 偏向宿主绑定 / 行内标签说明；两者都应提供 Hover 和可导航的来源，但不在扩展里内建 Bird / Unity 运行时语义。

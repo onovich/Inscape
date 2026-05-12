@@ -1,4 +1,4 @@
-# 0012：采用目录骨架优先的仓库重构顺序
+﻿# 0012：采用目录骨架优先的仓库重构顺序
 
 状态：Accepted
 
@@ -16,7 +16,7 @@ Inscape 已经在文档层确认了多项长期结构结论：
 但当前仓库的可见结构仍明显滞后：
 
 - `src/` 仍以旧项目平铺为主
-- `Inscape.Core`、`Inscape.Adapters.UnitySample` 等旧路径仍是主入口
+- `Inscape.Compiler`、`Inscape.Adapters.UnitySample` 等旧路径仍是主入口
 - `tools/vscode-inscape` 仍承载长期产品代码
 - `LanguageServer` 与 `Runtime` 仍没有任何目录落点
 

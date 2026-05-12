@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
-using Inscape.Core.Compilation;
-using Inscape.Core.Model;
+using Inscape.Compiler.Compilation;
+using Inscape.Compiler.Model;
 
 namespace Inscape.Adapters.UnitySample {
 

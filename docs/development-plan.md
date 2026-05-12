@@ -10,7 +10,7 @@
 
 - Internal 架构收敛为：`Compiler`、`Tooling`、`Cli`、`VSCode`、`LanguageServer`、`Runtime`
 - ExternalSupport 当前只确认：`UnityPlugin`
-- 当前 `Inscape.Core` 视为 `Compiler` 雏形
+- 当前 `Inscape.Compiler` 视为 `Compiler` 雏形
 - 当前 `Inscape.Cli` 同时承载了 `Cli` 与部分 `Tooling`
 - 当前 `src/Internal/VSCode/vscode-inscape` 仍是前端与语义桥接混合体
 - Unity 支持长期不进入默认 .NET solution 编译链

@@ -1,8 +1,8 @@
-using System.Text;
+﻿using System.Text;
 using System.Text.Json;
 using Inscape.Adapters.UnitySample;
-using Inscape.Core.Compilation;
-using Inscape.Core.Diagnostics;
+using Inscape.Compiler.Compilation;
+using Inscape.Compiler.Diagnostics;
 using CliCore = Inscape.Cli.CliCore;
 
 namespace Inscape.Tests {

@@ -1,8 +1,8 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 
-namespace Inscape.Core.Localization {
+namespace Inscape.Compiler.Localization {
 
     public sealed class LocalizationCsvWriter {
 

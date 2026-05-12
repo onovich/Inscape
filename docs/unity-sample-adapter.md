@@ -17,7 +17,7 @@
 
 它不应该被视为：
 
-- `Inscape.Core` 的一部分。
+- `Inscape.Compiler` 的一部分。
 - 通用 Unity Runtime Host。
 - 最终 Host Bridge 格式。
 - 对任意项目数据结构都可直接复用的 adapter。

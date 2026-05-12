@@ -1,4 +1,4 @@
-namespace Inscape.Core.Model {
+﻿namespace Inscape.Compiler.Model {
 
     public sealed class NarrativeLine {
 

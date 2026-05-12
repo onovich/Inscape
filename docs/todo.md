@@ -14,7 +14,7 @@
 	- 先冻结并维护 [目录优先重构蓝图](directory-first-reframe-plan.md) 与 [ADR 0012](adr/0012-directory-first-repository-reframe-order.md)。
 	- 先创建 `src/Internal`、`src/ExternalSupport`、`tests/Internal`、`tests/ExternalSupport` 及其 Layer / Business / Role 目录。
 	- 先为稳定目录补 `README.md` 规则文件，再迁代码。
-	- 再迁 `Inscape.Core`、`Inscape.Tooling`、`Inscape.Cli`、VSCode 前端和 Unity 原型的大目录路径。
+	- 再迁 `Inscape.Compiler`、`Inscape.Tooling`、`Inscape.Cli`、VSCode 前端和 Unity 原型的大目录路径。
 	- 再更新 `Inscape.slnx` 与 `ProjectReference`，让 UnityPlugin 退出默认 .NET solution 编译链。
 	- 只有在路径稳定后，才继续项目名、命名空间、类型名和局部 helper 收口。
 	- 每完成一轮结构迁移，都同步更新 `docs/agent-handoff.md`、`docs/refactoring-plan.md`、`docs/code-structure.md`、[研发计划](development-plan.md) 和本 TODO。
@@ -35,7 +35,7 @@
 - [x] 完成 GitHub Copilot 接手巡检，记录当前 HEAD、未提交变更和验证结果。
 - [x] 沉淀 DSL 生态定位对比，明确 Yarn / Ink / Ren'Py / Arcweave / articy 等方案的分层参照关系。
 - [x] 建立 CLI 命令速查清单，并让 CLI 支持 `commands` / `help <command>` 终端查询。
-- [x] 将固定 Unity 项目适配 spike 从 `Inscape.Core` 迁出为 `Inscape.Adapters.UnitySample` 实验样例，并明确它不是最终 Host Bridge。
+- [x] 将固定 Unity 项目适配 spike 从 `Inscape.Compiler` 迁出为 `Inscape.Adapters.UnitySample` 实验样例，并明确它不是最终 Host Bridge。
 - [x] 固化 VSCode 扩展发布工作流，补充 `npm run rebuild:vsix` 与 `.vsix` 安装步骤，避免只改源码不更新到本机扩展。
 - [x] 建立编码与命名规范，明确入口、生命周期式方法、数据/逻辑/表现/适配分层和渐进式重构顺序。
 - [x] 将命名规范进一步收敛为 Bird 风格的“目录优先 + 主语/角色”模型，并以 ADR 0010 固化范围词与角色词约束。
@@ -51,15 +51,15 @@
 - [ ] 按目录优先铁律重构仓库骨架，让架构成果先在路径与 solution 边界上可见。
 	- [x] 已完成文档冻结：新增 [目录优先重构蓝图](directory-first-reframe-plan.md)，并以 [ADR 0012](adr/0012-directory-first-repository-reframe-order.md) 固化“先目录、后改名”的顺序。
 	- [x] 创建 `src/Internal`、`src/ExternalSupport`、`tests/Internal`、`tests/ExternalSupport` 及其 Layer / Business 目录骨架，并为稳定目录补 `README.md` 规则文件。
-	- [ ] 将 `Inscape.Core`、`Inscape.Tooling`、`Inscape.Cli`、VSCode 前端与 Unity 原型迁入新目录树。
-		- [x] 已先迁入 Internal 侧 `.NET` 项目路径：`Inscape.Core` -> `src/Internal/Compiler/Inscape.Compiler`，`Inscape.Tooling` -> `src/Internal/Tooling/Inscape.Tooling`，`Inscape.Cli` -> `src/Internal/Cli/Inscape.Cli`；Compiler 项目名已改，命名空间和类型名暂不改。
+	- [ ] 将 `Inscape.Compiler`、`Inscape.Tooling`、`Inscape.Cli`、VSCode 前端与 Unity 原型迁入新目录树。
+		- [x] 已先迁入 Internal 侧 `.NET` 项目路径：`Inscape.Compiler` -> `src/Internal/Compiler/Inscape.Compiler`，`Inscape.Tooling` -> `src/Internal/Tooling/Inscape.Tooling`，`Inscape.Cli` -> `src/Internal/Cli/Inscape.Cli`；Compiler 项目名已改，命名空间和类型名暂不改。
 		- [x] 已迁入 VSCode 前端路径：`src/Internal/VSCode/vscode-inscape`；扩展源码内部仍保留原 npm 包结构，后续再拆 provider / command / preview bridge。
 		- [x] 已迁入 Unity 外部支持路径：`src/ExternalSupport/UnityPlugin/Inscape.Adapters.UnitySample` 与 `src/ExternalSupport/UnityPlugin/unity-bird-importer`。
 	- [ ] 更新 `Inscape.slnx` 与 `ProjectReference`，并把 UnityPlugin 相关项目移出默认 .NET solution 编译链。
 		- [x] 已从 `Inscape.slnx` 直接项目清单移除 UnitySample；当前仍因 CLI / tests 直接引用而被默认构建传递带入，后续需拆分外部支持命令边界才能完全退出默认编译链。
 	- [x] 已将当前聚合测试项目迁入 `tests/Internal/Inscape.Tests`；后续再按 Compiler / Tooling / Cli / ExternalSupport 拆成更细测试边界。
-	- [ ] 在路径稳定后，再执行 `Inscape.Core -> Inscape.Compiler` 等项目名、命名空间和类型名迁移。
-		- [x] 已完成 Compiler 项目目录与 `.csproj` 改名：`Inscape.Core` -> `Inscape.Compiler`。
+	- [ ] 在路径稳定后，再执行 `Inscape.Compiler -> Inscape.Compiler` 等项目名、命名空间和类型名迁移。
+		- [x] 已完成 Compiler 项目目录与 `.csproj` 改名：`Inscape.Compiler` -> `Inscape.Compiler`。
 
 - [x] 按 [编码与命名规范](coding-conventions.md) 拆分测试文件，降低 `tests/Internal/Inscape.Tests/TestCore.cs` 的阅读成本，但不改变测试语义。
 - [x] 按 command 职责拆分 CLI 入口，避免 `src/Inscape.Cli/CliCore.cs` 继续承担过多命令分发和业务编排；已完成配置读取、顶层元命令、单文件命令和项目级命令分支拆分，项目 `.inscape` 源扫描/读取/override、预览样式读取等共享流程也已上提到 `Inscape.Tooling`，`CliCore` 仅保留入口分发与共享基础输出辅助，单文件/项目编译前置流程当前已分别收回 `CliSingleFileCommand` 与 `CliProjectCommand`。
@@ -137,7 +137,7 @@
 - [x] 设计 `.inscape` 文件扩展名和语言 ID。
 - [x] 编写 TextMate 语法高亮草案，弱化元信息并凸显剧情文本。
 - [x] 添加基础 snippets：节点、对白、选择组、跳转、元信息、行内标签。
-- [x] 添加 VSCode 实时诊断桥接，复用 CLI / `Inscape.Core` 输出。
+- [x] 添加 VSCode 实时诊断桥接，复用 CLI / `Inscape.Compiler` 输出。
 - [x] 添加工作区节点补全和当前文件 Outline 原型。
 - [x] 添加 `-> target` 的 VSCode 跳转定义原型。
 - [x] 添加节点声明和 `-> target` 的 VSCode 引用查找原型。

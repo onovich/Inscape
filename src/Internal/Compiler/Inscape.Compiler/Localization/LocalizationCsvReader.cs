@@ -1,9 +1,9 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
-using Inscape.Core.Model;
+using Inscape.Compiler.Model;
 
-namespace Inscape.Core.Localization {
+namespace Inscape.Compiler.Localization {
 
     public sealed class LocalizationCsvReader {
 

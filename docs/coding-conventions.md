@@ -1,4 +1,4 @@
-# 编码与命名规范
+﻿# 编码与命名规范
 
 状态：草案
 
@@ -248,7 +248,7 @@ src/<Root>/<Layer>/<Business>/<Role>/<Subject><Qualifier><Role>
 
 ## 迁移指针
 
-- `Inscape.Core` 长期可改名为 `Inscape.Compiler`
+- `Inscape.Compiler` 长期可改名为 `Inscape.Compiler`
 - 当前最高优先级不是继续在旧目录里做微观 helper 收口，而是先完成目录骨架迁移，详见 [目录优先重构蓝图](directory-first-reframe-plan.md)
 - 当前 `Inscape.Cli` 中大量共享流程会逐步上提为 `Inscape.Tooling`
 - `tools/vscode-inscape` 长期会迁入 `src/Internal/VSCode/`，再继续拆为薄扩展前端与 `Inscape.LanguageServer`

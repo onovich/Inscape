@@ -1,6 +1,6 @@
-using System.Text;
-using Inscape.Core.Localization;
-using Inscape.Core.Model;
+﻿using System.Text;
+using Inscape.Compiler.Localization;
+using Inscape.Compiler.Model;
 
 namespace Inscape.Tooling {
 

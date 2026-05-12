@@ -1,6 +1,6 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
-namespace Inscape.Core.Model {
+namespace Inscape.Compiler.Model {
 
     public sealed class NarrativeNode {
 

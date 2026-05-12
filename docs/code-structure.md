@@ -41,7 +41,7 @@ docs/
 ## 当前最显眼的不符合点
 
 1. `src/Internal` 与 `src/ExternalSupport` 骨架已建立，Internal 项目、VSCode 前端和 Unity 原型均已先迁入目标路径。
-2. `Inscape.Compiler` 项目名已落地，但 C# 命名空间仍暂时保留 `Inscape.Core`，后续再单独迁移。
+2. `Inscape.Compiler` 项目名已落地，但 C# 命名空间仍暂时保留 `Inscape.Compiler`，后续再单独迁移。
 3. `Inscape.Adapters.UnitySample` 已移出 `Inscape.slnx` 的直接项目清单，但当前仍会通过 CLI / tests 的项目引用被默认构建传递带入；后续需要拆分外部支持命令边界，才能完全退出默认编译链。
 4. `src/Internal/VSCode/vscode-inscape/` 已成为 VSCode 前端源码位置，但内部仍需继续按 provider / command / bridge / webview 拆分。
 5. `LanguageServer` 与 `Runtime` 已有目录骨架，但尚未创建项目或能力草案。

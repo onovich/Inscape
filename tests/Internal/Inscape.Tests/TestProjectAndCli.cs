@@ -1,10 +1,10 @@
-using System.Text;
+﻿using System.Text;
 using System.Text.Json;
-using Inscape.Core.Analysis;
+using Inscape.Compiler.Analysis;
 using Inscape.Adapters.UnitySample;
-using Inscape.Core.Compilation;
-using Inscape.Core.Diagnostics;
-using Inscape.Core.Model;
+using Inscape.Compiler.Compilation;
+using Inscape.Compiler.Diagnostics;
+using Inscape.Compiler.Model;
 using CliCore = Inscape.Cli.CliCore;
 
 namespace Inscape.Tests {

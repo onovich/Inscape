@@ -1,10 +1,10 @@
-using System.Collections.Generic;
-using Inscape.Core.Analysis;
-using Inscape.Core.Diagnostics;
-using Inscape.Core.Model;
-using Inscape.Core.Parsing;
+﻿using System.Collections.Generic;
+using Inscape.Compiler.Analysis;
+using Inscape.Compiler.Diagnostics;
+using Inscape.Compiler.Model;
+using Inscape.Compiler.Parsing;
 
-namespace Inscape.Core.Compilation {
+namespace Inscape.Compiler.Compilation {
 
     public sealed class ProjectCompiler {
 

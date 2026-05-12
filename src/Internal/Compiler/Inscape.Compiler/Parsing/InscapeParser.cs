@@ -1,11 +1,11 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
-using Inscape.Core.Compilation;
-using Inscape.Core.Diagnostics;
-using Inscape.Core.Model;
-using Inscape.Core.Text;
+using Inscape.Compiler.Compilation;
+using Inscape.Compiler.Diagnostics;
+using Inscape.Compiler.Model;
+using Inscape.Compiler.Text;
 
-namespace Inscape.Core.Parsing {
+namespace Inscape.Compiler.Parsing {
 
     public sealed class InscapeParser {
 

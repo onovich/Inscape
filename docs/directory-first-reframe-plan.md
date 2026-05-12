@@ -38,7 +38,7 @@
 | 编号 | 当前现实 | 目标结构 | 为什么现在必须先处理 |
 | --- | --- | --- | --- |
 | 1 | `src/` 仍是旧式平铺项目根 | `src/Internal` 与 `src/ExternalSupport` | 这是所有后续分层可见性的前提 |
-| 2 | `src/Inscape.Core/` 仍是当前 Compiler 雏形 | `src/Internal/Compiler/`，后续再迁 `Inscape.Compiler` | 文档已把 Compiler 定义为真相层，但仓库外形还看不出来 |
+| 2 | `src/Inscape.Compiler/` 仍是当前 Compiler 雏形 | `src/Internal/Compiler/`，后续再迁 `Inscape.Compiler` | 文档已把 Compiler 定义为真相层，但仓库外形还看不出来 |
 | 3 | `src/Inscape.Tooling/` 还未进入 Internal 树 | `src/Internal/Tooling/` | Tooling 虽已落项目，但路径上还不是正式 Layer |
 | 4 | `src/Inscape.Cli/` 还未进入 Internal 树 | `src/Internal/Cli/` | Cli 与 Tooling 的边界无法在路径上直接识别 |
 | 5 | `src/Internal/VSCode/vscode-inscape/` 仍承载长期产品代码 | `src/Internal/VSCode/` | VSCode 目前看起来像外围工具，而不是正式 Internal 一层 |
@@ -339,7 +339,7 @@ Role 目录通常不单独写规则文件，除非该 Role 在当前业务中有
 
 目标：
 
-- `src/Inscape.Core` 迁入 `src/Internal/Compiler`。
+- `src/Inscape.Compiler` 迁入 `src/Internal/Compiler`。
 - `src/Inscape.Tooling` 迁入 `src/Internal/Tooling`。
 - `src/Inscape.Cli` 迁入 `src/Internal/Cli`。
 - `src/Internal/VSCode/vscode-inscape` 迁入 `src/Internal/VSCode`。
@@ -366,7 +366,7 @@ Role 目录通常不单独写规则文件，除非该 Role 在当前业务中有
 
 目标：
 
-- `Inscape.Core` -> `Inscape.Compiler`
+- `Inscape.Compiler` -> `Inscape.Compiler`
 - `Inscape.Adapters.UnitySample` -> 正式 UnityPlugin 相关项目名
 - 其他项目名与新 Layer 对齐
 
@@ -379,7 +379,7 @@ Role 目录通常不单独写规则文件，除非该 Role 在当前业务中有
 目标：
 
 - 命名空间跟随新 Layer / Business 结构对齐。
-- 当前旧的 `Inscape.Core.*` 命名空间逐步退出。
+- 当前旧的 `Inscape.Compiler.*` 命名空间逐步退出。
 - 最后再继续收敛类型名。
 
 ### 阶段 6：恢复逐层重构
