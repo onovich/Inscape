@@ -152,7 +152,7 @@ unity-sample-export-report.txt
 
 ## Unity / Bird Importer 命令
 
-这些命令在 Unity 项目中执行，不属于 Inscape CLI。先将 `tools\unity-bird-importer\Editor\InscapeBirdManifestImporter.cs` 复制到 Bird 项目的 `Assets\Editor\`。
+这些命令在 Unity 项目中执行，不属于 Inscape CLI。先将 `src\ExternalSupport\UnityPlugin\unity-bird-importer\Editor\InscapeBirdManifestImporter.cs` 复制到 Bird 项目的 `Assets\Editor\`。
 
 生成一份可用于 Bird dry-run 的最小导出包：
 

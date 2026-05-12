@@ -1,4 +1,4 @@
-# Unity Editor Importer 草案
+﻿# Unity Editor Importer 草案
 
 状态：原型草案
 
@@ -7,7 +7,7 @@
 本文记录 Inscape 到 Bird Unity 项目的第一版 Editor Importer 方案。它是 Bird-specific 参考适配器，不是通用 Unity 插件方案。当前仓库提供可复制脚本：
 
 ```text
-tools/unity-bird-importer/Editor/InscapeBirdManifestImporter.cs
+src/ExternalSupport/UnityPlugin/unity-bird-importer/Editor/InscapeBirdManifestImporter.cs
 ```
 
 该脚本不属于 `Inscape.Core`，也不会让 Core 依赖 Unity。它是 `export-bird-project` 之后的 Unity 侧导入工具草案，用于验证一个项目适配器如何把 Inscape 数据转成项目已有数据结构。

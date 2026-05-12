@@ -1,4 +1,4 @@
-# TODO
+﻿# TODO
 
 状态：持续维护
 
@@ -54,7 +54,9 @@
 	- [ ] 将 `Inscape.Core`、`Inscape.Tooling`、`Inscape.Cli`、VSCode 前端与 Unity 原型迁入新目录树。
 		- [x] 已先迁入 Internal 侧 `.NET` 项目路径：`Inscape.Core` -> `src/Internal/Compiler/Inscape.Core`，`Inscape.Tooling` -> `src/Internal/Tooling/Inscape.Tooling`，`Inscape.Cli` -> `src/Internal/Cli/Inscape.Cli`；项目名、命名空间和类型名暂不改。
 		- [x] 已迁入 VSCode 前端路径：`src/Internal/VSCode/vscode-inscape`；扩展源码内部仍保留原 npm 包结构，后续再拆 provider / command / preview bridge。
+		- [x] 已迁入 Unity 外部支持路径：`src/ExternalSupport/UnityPlugin/Inscape.Adapters.UnitySample` 与 `src/ExternalSupport/UnityPlugin/unity-bird-importer`。
 	- [ ] 更新 `Inscape.slnx` 与 `ProjectReference`，并把 UnityPlugin 相关项目移出默认 .NET solution 编译链。
+		- [x] 已从 `Inscape.slnx` 直接项目清单移除 UnitySample；当前仍因 CLI / tests 直接引用而被默认构建传递带入，后续需拆分外部支持命令边界才能完全退出默认编译链。
 	- [ ] 在路径稳定后，再执行 `Inscape.Core -> Inscape.Compiler` 等项目名、命名空间和类型名迁移。
 
 - [x] 按 [编码与命名规范](coding-conventions.md) 拆分测试文件，降低 `tests/Inscape.Tests/TestCore.cs` 的阅读成本，但不改变测试语义。
@@ -106,7 +108,7 @@
 - [ ] 将 Cli、VSCode 和未来 LanguageServer 共享的项目级流程继续拆成显式职责模块，优先落到 `Tooling` 的 `ProjectSources`、`ToolConfig`、`Preview`、`Localization`、`HostSchema`、`HostBinding` 等模块；如未来确需统一门面，也应建立在这些模块之上，而不是先造一个大而泛的 `ProjectService`。
 - [ ] 统一 source map / reveal payload 数据契约，支撑预览、诊断、跳转、本地化和未来编辑器三视图。
 - [ ] Runtime Host 阶段再引入 `NarrativeRuntime`，采用生命周期式执行模型，不提前把 runtime loop 放进 Core 编译层。
-- [ ] 保持 `src/Inscape.Adapters.UnitySample` 与 `tools/unity-bird-importer` 作为 ExternalSupport 过渡样例，暂不纳入 Internal 主动重构范围；只在 Host Bridge / UnityPlugin 设计阶段把它们当验证样本使用。
+- [ ] 保持 `src/ExternalSupport/UnityPlugin/Inscape.Adapters.UnitySample` 与 `src/ExternalSupport/UnityPlugin/unity-bird-importer` 作为 ExternalSupport 过渡样例，暂不纳入 Internal 主动重构范围；只在 Host Bridge / UnityPlugin 设计阶段把它们当验证样本使用。
 
 ## 阶段 1：DSL 与轻工具链
 

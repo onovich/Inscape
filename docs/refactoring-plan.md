@@ -6,7 +6,7 @@
 
 本文把 Inscape 的重构拆成大目标、中目标、小目标，目标是让代码逐步接近游戏项目中常见的清晰入口、生命周期式流程、数据/逻辑/表现/适配分层，同时不破坏当前 DSL、CLI、VSCode 和预览体验。当前长期结构已经收敛为：Internal 下的 `Compiler`、`Tooling`、`Cli`、`VSCode`、`LanguageServer`、`Runtime`，以及 ExternalSupport 下的 `UnityPlugin`。
 
-当前主动重构范围只覆盖 Internal 侧：`Inscape.Core`、`Inscape.Cli`、`src/Internal/VSCode/vscode-inscape` 与测试组织。`src/Inscape.Adapters.UnitySample` 和 `tools/unity-bird-importer` 继续作为 ExternalSupport 过渡样例保留隔离，不纳入这一轮内部重构，只要求不反向污染 Compiler，并能继续承担 Host Bridge / UnityPlugin 回归素材。
+当前主动重构范围只覆盖 Internal 侧：`Inscape.Core`、`Inscape.Cli`、`src/Internal/VSCode/vscode-inscape` 与测试组织。`src/ExternalSupport/UnityPlugin/Inscape.Adapters.UnitySample` 和 `src/ExternalSupport/UnityPlugin/unity-bird-importer` 继续作为 ExternalSupport 过渡样例保留隔离，不纳入这一轮内部重构，只要求不反向污染 Compiler，并能继续承担 Host Bridge / UnityPlugin 回归素材。
 
 重构原则见 [编码与命名规范](coding-conventions.md)。本文只安排执行顺序和验收方式。
 
@@ -420,7 +420,7 @@ VSCode：4 / 10
 - 不要引入大型框架或第三方依赖。
 - 不要把 Preview 临时播放器升级成正式 Runtime。
 - 不要把 UnitySample 逻辑迁回 Core。
-- 不要把 `src/Inscape.Adapters.UnitySample` 纳入当前主动重构范围。
+- 不要把 `src/ExternalSupport/UnityPlugin/Inscape.Adapters.UnitySample` 纳入当前主动重构范围。
 - 不要在拆文件时顺手改输出格式。
 
 ## 每轮完成标准

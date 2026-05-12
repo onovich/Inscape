@@ -10,13 +10,14 @@
 
 Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原型。当前长期架构已经收敛为 Internal 与 ExternalSupport 两层：Internal 包含 `Compiler`、`Tooling`、`Cli`、`VSCode`、`LanguageServer` 与未来 `Runtime`；ExternalSupport 当前主要是 `UnityPlugin` 方向的样例和原型。UnitySample 实验 adapter 继续保留，但只作为 ExternalSupport 过渡样例，不代表最终 Host Bridge 方案。
 
-当前主动重构范围只覆盖 Internal 侧的 `Inscape.Core`、`Inscape.Cli`、`src/Internal/VSCode/vscode-inscape` 与测试组织；`src/Inscape.Adapters.UnitySample` 与 `tools/unity-bird-importer` 视为 ExternalSupport 原型，暂不纳入这一轮内部重构，只保留隔离和回归样例职责。
+当前主动重构范围只覆盖 Internal 侧的 `Inscape.Core`、`Inscape.Cli`、`src/Internal/VSCode/vscode-inscape` 与测试组织；`src/ExternalSupport/UnityPlugin/Inscape.Adapters.UnitySample` 与 `src/ExternalSupport/UnityPlugin/unity-bird-importer` 视为 ExternalSupport 原型，暂不纳入这一轮内部重构，只保留隔离和回归样例职责。
 
 ### 2026-05-11 当前交接结论（最新）
 
 - 2026-05-12 已开始按目录优先蓝图执行实际迁移：目录骨架与规则 README 已提交，Internal 侧 `.NET` 项目已迁入新路径，当前路径为 `src/Internal/Compiler/Inscape.Core`、`src/Internal/Tooling/Inscape.Tooling`、`src/Internal/Cli/Inscape.Cli`。这一阶段只改路径与项目引用，不改项目名、命名空间和类型名。
 - 2026-05-12 已同步更新 `Inscape.slnx`、`ProjectReference`、VSCode fallback CLI 项目路径、CLI 命令速查示例和相关文档命令路径。验证通过：`dotnet build Inscape.slnx --no-restore` 与 `dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj --no-build`。由于项目路径变化，执行过一次 `dotnet restore Inscape.slnx --configfile NuGet.Config` 来刷新项目图缓存。
 - 2026-05-12 已迁移 VSCode 前端源码：`tools/vscode-inscape` -> `src/Internal/VSCode/vscode-inscape`。扩展内部仍保留原 npm 包结构，后续再按 provider / command / preview bridge / style / workspace index 深拆。验证入口同步改为 `node --check src\Internal\VSCode\vscode-inscape\extension.js`。
+- 2026-05-12 已迁移 Unity 外部支持源码：`src/Inscape.Adapters.UnitySample` -> `src/ExternalSupport/UnityPlugin/Inscape.Adapters.UnitySample`，`tools/unity-bird-importer` -> `src/ExternalSupport/UnityPlugin/unity-bird-importer`。`Inscape.slnx` 已移除 UnitySample 的直接项目条目；但由于 CLI 与 tests 仍引用 UnitySample 命令/样例，默认构建仍会传递构建该项目，后续应拆分外部支持命令边界来完成彻底退出。
 - 当前分支为 `main...origin/main`。本轮已把目录优先方案正式冻结为文档与 ADR；最新提交请以 `git log --oneline -1` 为准。
 - 当前工作区存在未提交变更：文档重构相关文件与 `samples/court-loop.inscape`。其中脚本文本修改不属于本轮架构文档同步的一部分，后续提交时应避免误带用户的样例脚本变更。
 - 本轮会话已确认新的重构铁律：先搭目录骨架与 `README.md` 规则文件，再迁大目录路径，再迁 solution / 项目路径，再迁项目名、命名空间和类型名；在此之前，不再把主要重构精力继续放在旧目录里的微观 helper 收口上。
@@ -95,7 +96,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - `VSCode`：编辑器入口层；当前主要落在 `src/Internal/VSCode/vscode-inscape/extension.js`。
 - `LanguageServer`：C# 语义服务层；当前尚未创建项目，但已确认长期方向。
 - `Runtime`：未来运行期层；当前尚未实现。
-- `ExternalSupport/UnityPlugin`：Unity 环境下的外部支持层；当前由 `src/Inscape.Adapters.UnitySample` 与 `tools/unity-bird-importer` 作为过渡样例与原型承载。
+- `ExternalSupport/UnityPlugin`：Unity 环境下的外部支持层；当前由 `src/ExternalSupport/UnityPlugin/Inscape.Adapters.UnitySample` 与 `src/ExternalSupport/UnityPlugin/unity-bird-importer` 作为过渡样例与原型承载。
 
 ### 2026-04-30 GitHub Copilot 接手巡检
 
@@ -106,7 +107,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - VSCode 角色名、block 引用计数和 `-> target` 简短 Hover 已按用户最新反馈对齐；Timeline / 资源别名定义跳转、Host Schema 脚本内跳转和变量名追溯仍未实现。
 - 2026-05-01 继续修正 VSCode 角色名 Ctrl+Click 范围：不再尝试注册 `DocumentHighlightProvider`，改为在 `language-configuration.json` 的 `wordPattern` 中把全角冒号和常见中文标点作为词边界，使 `旁白：证物袋里只有一枚旧怀表。` 只把 `旁白` 识别为可跳转词。
 - 2026-05-01 用户补充新的架构约束：Host Schema 查询可参考 `?hasItem("badge")->node`，但 Inscape 可读 ID 与项目内部 ID 必须通过 Host Bridge 映射；`item` 是抽象叙事概念，不等同业务 Item；下层状态只被上层查询或内部使用，不反向查询上层；Bird 只是 Unity 支持参考需求方，不应绑定 Core、通用 Unity 插件、Addressables 或 ScriptableObject；Timeline Hook 长期应泛化为宿主自定义事件示例；Unity 上层支持层应作为独立插件 / 适配包研究。
-- 2026-05-01 已将原 Core 内的固定 Unity 项目适配 spike 迁出为 `src/Inscape.Adapters.UnitySample`，CLI 命令改为 `export-unity-sample-*` / `merge-unity-sample-l10n`。该项目明确标注为实验样例：它硬编码 `talkingId`、`roleId`、`L10N_Talking`、Timeline asset 和 manifest 字段，只用于验证导出 / L10N / hook / 绑定流程，不代表最终 Host Bridge 或通用 Unity Runtime Host。
+- 2026-05-01 已将原 Core 内的固定 Unity 项目适配 spike 迁出为 `src/ExternalSupport/UnityPlugin/Inscape.Adapters.UnitySample`，CLI 命令改为 `export-unity-sample-*` / `merge-unity-sample-l10n`。该项目明确标注为实验样例：它硬编码 `talkingId`、`roleId`、`L10N_Talking`、Timeline asset 和 manifest 字段，只用于验证导出 / L10N / hook / 绑定流程，不代表最终 Host Bridge 或通用 Unity Runtime Host。
 - 2026-05-01 用户补充 Unity 支持层候选方向：在 Unity 项目的类、字段、方法上加 `[Inscape]` 一类 Attribute，由 Unity 内代码生成脚本扫描并生成待配置桥接表；人工再完成 C# 类名 / 字段名与 Inscape 可读名的映射。拿到数据后上层是直接绑定事件、轮询触发，还是混合模型仍待定，不应提前写死。
 - 2026-05-01 已整理 VSCode 扩展发布工作流：扩展改动后不能只重启窗口，必须重新打包并覆盖安装；当前推荐入口是 `src/Internal/VSCode/vscode-inscape/` 下的 `npm run rebuild:vsix`，细则见 [VSCode 扩展发布工作流](vscode-release-workflow.md)。
 - 2026-05-01 VSCode 可玩预览已经落地到 custom editor：默认通过 `Inscape: Open Preview` / `Inscape: Toggle Preview` 在源码右侧打开，预览不再劫持 `.inscape` 源码标签页或 Ctrl+Click 跳转。当前交互是单栏沉浸式阅读体验，支持点击选项推进、无选项时点击正文继续、Back、Restart、diagnostics、源码回跳，以及编辑防抖刷新和保存后立即刷新。
@@ -125,12 +126,12 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - 本地化：CSV 提取、按旧 CSV 精确继承译文、`current/new/removed` 状态标记。
 - VSCode 原型：TextMate 高亮、snippets、诊断桥接、节点补全、角色补全、宿主绑定别名补全、Outline、跳转定义、引用查找、Hover、block CodeLens、本地化导出/更新命令，以及可玩预览 custom editor。角色补全会读取 `inscape.config.json` 中的 `unitySample.roleMap`，并回退扫描工作区已有 speaker；角色 Ctrl+Click 会跳到 role map 对应行，Find All References 会列出工作区对白；block 标题 CodeLens 显示 `N 个引用`，用于追溯调用方；宿主绑定提示会读取 `unitySample.bindingMap`，覆盖 `@timeline ...` 和 `[kind: ...]` 位置；预览默认侧边打开，支持源码回跳、Back / Restart、点击正文继续和刷新后保留当前页进度。
 - Bird/Unity 初步调研：已梳理 `StorySystem`、`TalkingTM`、`L10N_Talking`、`DirectorSystem` 和 `TimelineEffectTM` 的边界，详见 [Bird / Unity 调研记录](bird-unity-research.md)。
-- UnitySample Adapter 实验样例：`export-unity-sample-role-template`、`export-unity-sample-binding-template`、`export-unity-sample-project` 和 `merge-unity-sample-l10n` 保留早期固定数据结构导出验证。它位于独立项目 `src/Inscape.Adapters.UnitySample`，只引用 `Inscape.Core`，不得反向污染 Core。详见 [UnitySample Adapter 实验样例](unity-sample-adapter.md)。
+- UnitySample Adapter 实验样例：`export-unity-sample-role-template`、`export-unity-sample-binding-template`、`export-unity-sample-project` 和 `merge-unity-sample-l10n` 保留早期固定数据结构导出验证。它位于独立项目 `src/ExternalSupport/UnityPlugin/Inscape.Adapters.UnitySample`，只引用 `Inscape.Core`，不得反向污染 Core。详见 [UnitySample Adapter 实验样例](unity-sample-adapter.md)。
 - 项目配置：CLI 会自动读取项目根目录 `inscape.config.json`，也支持 `--config path`。当前配置为 UnitySample 样例命令提供默认值：`talkingIdStart`、`roleMap`、`bindingMap`、`existingRoleNameCsv`、`existingTimelineRoot`、`existingTalkingRoot`；命令行参数优先级更高。这仍不是最终 Host Bridge。详见 [项目配置草案](project-config.md)。
 - 宿主 Schema 草案：新增 `hostSchema` 项目配置字段与 `export-host-schema-template` CLI 命令，用于生成 `inscape.host-schema` JSON 模板，先描述纯查询和宿主事件清单，不改变当前 DSL 解析或 UnitySample 导出行为。VSCode 已提供 `inscape.host.schema.json` / `*.host.schema.json` 的 JSON Schema 校验，以及 `Inscape: Show Host Schema Capabilities` 命令读取并浏览当前 query / event。详见 [宿主 Schema 草案](host-schema.md)。
 - Bird 角色绑定审查：`export-bird-role-template` 支持 `--report`，输出 `unique`、`ambiguous`、`missing`、`unscanned` 状态。2026-04-30 用 Bird 当前 `L10N_RoleName.csv` 试跑，当前样例中 `旁白` 为 `ambiguous`，候选 `1050|10001`；`成步堂` 和 `证人` 为 `missing`。因此当前导出的 `bird-roles.csv` 仍全部为空，需要人工补齐或更换测试文本中的角色名。
 - Bird L10N 合并预览：`merge-bird-l10n <generated-L10N_Talking.csv> --from <existing-L10N_Talking.csv> --report report.csv -o merged.csv` 已实现。规则是保留 Bird 未涉及行、新增 Inscape 行、源文本未变时保留译文、源文本变化时清空目标语言列并把旧值写入 report。2026-04-29 已用 Bird 当前 `L10N_Talking.csv` 试跑，原表 270 行、合并预览 275 行、报告只包含 5 个 `added` 行，未改动 Bird 正式表。
-- Unity Editor Importer 原型：`tools/unity-bird-importer/Editor/InscapeBirdManifestImporter.cs` 可复制到 Bird 项目 `Assets/Editor/`，读取 manifest 并创建 / 更新 `TalkingSO`，将 `phase=talking.exit` 的 Timeline Hook 映射为 `TalkingEffectTM.PlayTimeline`，其他 phase 只报告 unsupported warning 并跳过；已提供 `Dry Run Import Manifest...` 菜单、`DryRunImportManifestFromCommandLine` 和 `ImportManifestFromCommandLine` batchmode 入口。Dry Run 输出创建 / 更新 / 缺失引用计划，报告既有 `TalkingTM` 的字段级变化，并在 manifest 同目录写入带 Inscape 节点、锚点和源位置的 `bird-import-dry-run-report.txt`。真实 Import 可加 `-inscapeApplyAddressables` 显式调用 Bird 现有 `TalkingSO.ApplyAA()`，将资源加入 `TM_Talking` group / label。详见 [Unity Editor Importer 草案](unity-editor-importer.md)。
+- Unity Editor Importer 原型：`src/ExternalSupport/UnityPlugin/unity-bird-importer/Editor/InscapeBirdManifestImporter.cs` 可复制到 Bird 项目 `Assets/Editor/`，读取 manifest 并创建 / 更新 `TalkingSO`，将 `phase=talking.exit` 的 Timeline Hook 映射为 `TalkingEffectTM.PlayTimeline`，其他 phase 只报告 unsupported warning 并跳过；已提供 `Dry Run Import Manifest...` 菜单、`DryRunImportManifestFromCommandLine` 和 `ImportManifestFromCommandLine` batchmode 入口。Dry Run 输出创建 / 更新 / 缺失引用计划，报告既有 `TalkingTM` 的字段级变化，并在 manifest 同目录写入带 Inscape 节点、锚点和源位置的 `bird-import-dry-run-report.txt`。真实 Import 可加 `-inscapeApplyAddressables` 显式调用 Bird 现有 `TalkingSO.ApplyAA()`，将资源加入 `TM_Talking` group / label。详见 [Unity Editor Importer 草案](unity-editor-importer.md)。
 - Bird 项目 batchmode 试跑：2026-04-29 已在 `D:\UnityProjects\Bird` 通过 Unity 2023.2.22f1 执行 `DryRunImportManifestFromCommandLine` 和 `ImportManifestFromCommandLine`。样例 manifest 先计划创建 5 个 `TalkingSO`、0 个 warning、0 个 Timeline Hook；真实 Import 后生成 `Assets/Resources_Runtime/Talking/InscapeGenerated/SO_Talking_Inscape_100000.asset` 到 `SO_Talking_Inscape_100004.asset`。二次 Dry Run 显示 5 个 UPDATE 且 `no field changes detected`。随后试跑 `-inscapeApplyAddressables`，只修改 `Assets/Plugins/UnityPlugin/AddressableAssetsData/AssetGroups/TM_Talking.asset`，新增 5 个 address 为资源简名、label 为 `TM_Talking` 的 entries。Bird 项目当前新增 importer、`.meta`、`InscapeGenerated` 资源并修改 `TM_Talking.asset`，尚未提交。
 
 尚未落地：
@@ -166,7 +167,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - 用户最新明确判断：`@` 与 `[]` 当前设计尚未收敛，作者侧几乎感受不到稳定差异；这不是理解问题，而是语法职责重叠。后续应把“是否保留两套壳、如何切分语义/时机与资源/别名绑定、是否保留 `@timeline` / `[timeline: ...]` 双写法”提升为近期重点，而不要继续带着模糊心智堆更多宿主功能。
 - 用户希望代码组织更接近 Bird 这类游戏项目的可读经验：有清晰入口、生命周期式流程、逻辑与表现分层、数据与逻辑分层、控制与业务分层，并且易于模块化加功能。已新增 [编码与命名规范](coding-conventions.md) 和 [渐进式重构计划](refactoring-plan.md)，后续重构应小步按该规范推进。
 - 当前已进一步收敛命名方向：架构文档仍用 `Dsl`、`Config`、`Preview`、`L10n`、`Host` 这类模块术语表达边界；具体类型命名则改为 Bird 风格的“具体主语 + 角色”模型，优先让目录承担层级与范围信息，不再把短层前缀扩张成所有类型的默认命名方式。
-- 当前重构边界也已收敛：`src/Inscape.Adapters.UnitySample` 继续作为实验样例存在，不参与这一轮 CLI / Core / VSCode 的可维护性重构，除非任务明确要求调整其回归样例角色。
+- 当前重构边界也已收敛：`src/ExternalSupport/UnityPlugin/Inscape.Adapters.UnitySample` 继续作为实验样例存在，不参与这一轮 CLI / Core / VSCode 的可维护性重构，除非任务明确要求调整其回归样例角色。
 - CLI 当前已完成多步低风险瘦身：顶层元命令、单文件命令与项目级命令分支都已从 `CliCore` 主入口中抽离；项目配置、项目源扫描、预览样式等共享流程已上提到 `Inscape.Tooling`，项目/单文件编译前置流程也已分别收回 `CliProjectCommand` 与 `CliSingleFileCommand`。当前下一步的正确方向不是继续扩张 Cli，而是继续按 ADR 0010 和分层规则，把仍然单命令单用途的局部编排收紧到入口，把真正共享的流程继续上提到 `Tooling`。
 - 2026-05-11 已开始执行 Tooling 抽取：当时 `CliConfigLoader` / `CliProjectConfig` 已被 `Inscape.Tooling` 内的 ToolConfig 模型与读取逻辑取代，`CliCompilerProject` 与 `CliCompilerSingleFile` 通过 `ToolConfigReaderDomain` 取配置。这一刀通过了 `dotnet build Inscape.slnx --no-restore` 和 `dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj --no-build`。
 - 2026-05-11 已继续执行 Tooling 抽取：当时 `CliDslSourceLoader` 已被 `Inscape.Tooling` 内的 `ProjectSourcesLoaderDomain` / `ProjectSourceOverrideModel` 取代，`CliCompilerProject` 只保留 `--override` 参数解释与编排调用。这一刀同样通过了 `dotnet build Inscape.slnx --no-restore` 和 `dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj --no-build`。

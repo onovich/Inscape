@@ -9,7 +9,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Internal\Compiler\Inscape.Core\Inscape.Core.csproj" />
-    <ProjectReference Include="..\..\src\Inscape.Adapters.UnitySample\Inscape.Adapters.UnitySample.csproj" />
+    <ProjectReference Include="..\..\src\ExternalSupport\UnityPlugin\Inscape.Adapters.UnitySample\Inscape.Adapters.UnitySample.csproj" />
     <ProjectReference Include="..\..\src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj" />
   </ItemGroup>
 

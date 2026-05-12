@@ -42,8 +42,8 @@
 | 3 | `src/Inscape.Tooling/` 还未进入 Internal 树 | `src/Internal/Tooling/` | Tooling 虽已落项目，但路径上还不是正式 Layer |
 | 4 | `src/Inscape.Cli/` 还未进入 Internal 树 | `src/Internal/Cli/` | Cli 与 Tooling 的边界无法在路径上直接识别 |
 | 5 | `src/Internal/VSCode/vscode-inscape/` 仍承载长期产品代码 | `src/Internal/VSCode/` | VSCode 目前看起来像外围工具，而不是正式 Internal 一层 |
-| 6 | `src/Inscape.Adapters.UnitySample/` 仍在默认 solution 中 | `src/ExternalSupport/UnityPlugin/`，并退出默认 .NET solution | 这直接违背 ExternalSupport 的既定边界 |
-| 7 | `tools/unity-bird-importer/` 仍在顶层 tools | `src/ExternalSupport/UnityPlugin/...` 或其他 ExternalSupport 子树 | Unity 外部原型仍未被收束到外部支持层 |
+| 6 | `src/ExternalSupport/UnityPlugin/Inscape.Adapters.UnitySample/` 仍在默认 solution 中 | `src/ExternalSupport/UnityPlugin/`，并退出默认 .NET solution | 这直接违背 ExternalSupport 的既定边界 |
+| 7 | `src/ExternalSupport/UnityPlugin/unity-bird-importer/` 仍在顶层 tools | `src/ExternalSupport/UnityPlugin/...` 或其他 ExternalSupport 子树 | Unity 外部原型仍未被收束到外部支持层 |
 | 8 | `LanguageServer` 仍只存在于文档里 | `src/Internal/LanguageServer/` 空骨架先落地 | 长期方向缺乏任何可见落点 |
 | 9 | `Runtime` 仍只存在于文档里 | `src/Internal/Runtime/` 空骨架先落地 | 未来阶段没有目录容器，会继续被无限推迟 |
 | 10 | `tests/` 尚未镜像 Internal / ExternalSupport | `tests/Internal/...` 与 `tests/ExternalSupport/...` | 未来目录迁移会让测试组织继续滞后 |
@@ -343,7 +343,7 @@ Role 目录通常不单独写规则文件，除非该 Role 在当前业务中有
 - `src/Inscape.Tooling` 迁入 `src/Internal/Tooling`。
 - `src/Inscape.Cli` 迁入 `src/Internal/Cli`。
 - `src/Internal/VSCode/vscode-inscape` 迁入 `src/Internal/VSCode`。
-- `src/Inscape.Adapters.UnitySample` 与 `tools/unity-bird-importer` 收束到 `src/ExternalSupport/UnityPlugin`。
+- `src/ExternalSupport/UnityPlugin/Inscape.Adapters.UnitySample` 与 `src/ExternalSupport/UnityPlugin/unity-bird-importer` 收束到 `src/ExternalSupport/UnityPlugin`。
 
 规则：
 

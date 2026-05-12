@@ -3,7 +3,6 @@
     <Project Path="src/Internal/Cli/Inscape.Cli/Inscape.Cli.csproj" />
     <Project Path="src/Internal/Compiler/Inscape.Core/Inscape.Core.csproj" />
     <Project Path="src/Internal/Tooling/Inscape.Tooling/Inscape.Tooling.csproj" />
-    <Project Path="src/Inscape.Adapters.UnitySample/Inscape.Adapters.UnitySample.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Inscape.Tests/Inscape.Tests.csproj" />

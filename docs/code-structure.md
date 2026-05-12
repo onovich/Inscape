@@ -27,23 +27,22 @@ src/
     LanguageServer/             目标目录骨架已建立
     Runtime/                    目标目录骨架已建立
   ExternalSupport/
-    UnityPlugin/                目标目录骨架已建立，Unity 原型仍待迁入
-  Inscape.Adapters.UnitySample/ 当前 ExternalSupport 原型样例，但仍在默认 solution 中
+    UnityPlugin/
+      Inscape.Adapters.UnitySample/ 当前 UnitySample 外部支持样例，已迁入 ExternalSupport 路径
+      unity-bird-importer/          当前 Unity 外部导入原型，已迁入 ExternalSupport 路径
 tests/
   Inscape.Tests/                当前测试项目，尚未镜像 Internal / ExternalSupport
   Internal/                     测试目标骨架已建立
   ExternalSupport/              测试目标骨架已建立
-tools/
-  unity-bird-importer/          当前 Unity 外部导入原型，尚未收束到 ExternalSupport
 docs/
   ...
 ```
 
 ## 当前最显眼的不符合点
 
-1. `src/Internal` 与 `src/ExternalSupport` 骨架已建立，Internal 的 `.NET` 项目与 VSCode 前端已先迁入目标路径，但 Unity 原型尚未迁完。
+1. `src/Internal` 与 `src/ExternalSupport` 骨架已建立，Internal 项目、VSCode 前端和 Unity 原型均已先迁入目标路径。
 2. `Inscape.Core` 已进入 `src/Internal/Compiler/Inscape.Core`，但仍保留旧项目名和命名空间。
-3. `Inscape.Adapters.UnitySample` 仍处于默认 .NET solution 编译链，尚未体现 UnityPlugin 外部支持层边界。
+3. `Inscape.Adapters.UnitySample` 已移出 `Inscape.slnx` 的直接项目清单，但当前仍会通过 CLI / tests 的项目引用被默认构建传递带入；后续需要拆分外部支持命令边界，才能完全退出默认编译链。
 4. `src/Internal/VSCode/vscode-inscape/` 已成为 VSCode 前端源码位置，但内部仍需继续按 provider / command / bridge / webview 拆分。
 5. `LanguageServer` 与 `Runtime` 已有目录骨架，但尚未创建项目或能力草案。
 6. `tests/` 已有 Internal / ExternalSupport 骨架，但测试项目本体尚未迁入镜像路径。
@@ -205,8 +204,8 @@ UnityPlugin 不属于 Internal 五层之一。它是 Unity 环境下的外部支
 - `src/Internal/Tooling/Inscape.Tooling/` → 当前 `Tooling` 项目，后续继续按 Business / Role 拆入目录
 - `src/Internal/Cli/Inscape.Cli/` → 当前 `Cli` 项目，后续继续按命令职责拆入目录
 - `src/Internal/VSCode/vscode-inscape/` → 当前 `VSCode` 前端，后续继续按 VSCode Layer 规则拆分
-- `src/Inscape.Adapters.UnitySample/` → 当前 `ExternalSupport/UnityPlugin` 过渡样例，下一阶段应迁到 `src/ExternalSupport/UnityPlugin/`
-- `tools/unity-bird-importer/` → 当前 `ExternalSupport/UnityPlugin` 导入原型，也应跟随迁入 ExternalSupport 目录树
+- `src/ExternalSupport/UnityPlugin/Inscape.Adapters.UnitySample/` → 当前 `ExternalSupport/UnityPlugin` 过渡样例，下一阶段应迁到 `src/ExternalSupport/UnityPlugin/`
+- `src/ExternalSupport/UnityPlugin/unity-bird-importer/` → 当前 `ExternalSupport/UnityPlugin` 导入原型，也应跟随迁入 ExternalSupport 目录树
 
 ## 命名树速记
 
