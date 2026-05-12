@@ -31,8 +31,8 @@ src/
       Inscape.Adapters.UnitySample/ 当前 UnitySample 外部支持样例，已迁入 ExternalSupport 路径
       unity-bird-importer/          当前 Unity 外部导入原型，已迁入 ExternalSupport 路径
 tests/
-  Inscape.Tests/                当前测试项目，尚未镜像 Internal / ExternalSupport
-  Internal/                     测试目标骨架已建立
+  Internal/
+    Inscape.Tests/              当前聚合测试项目，已迁入 Internal 测试路径
   ExternalSupport/              测试目标骨架已建立
 docs/
   ...
@@ -45,7 +45,7 @@ docs/
 3. `Inscape.Adapters.UnitySample` 已移出 `Inscape.slnx` 的直接项目清单，但当前仍会通过 CLI / tests 的项目引用被默认构建传递带入；后续需要拆分外部支持命令边界，才能完全退出默认编译链。
 4. `src/Internal/VSCode/vscode-inscape/` 已成为 VSCode 前端源码位置，但内部仍需继续按 provider / command / bridge / webview 拆分。
 5. `LanguageServer` 与 `Runtime` 已有目录骨架，但尚未创建项目或能力草案。
-6. `tests/` 已有 Internal / ExternalSupport 骨架，但测试项目本体尚未迁入镜像路径。
+6. `tests/Internal/Inscape.Tests` 仍是聚合测试项目，尚未按 Compiler / Tooling / Cli / ExternalSupport 进一步拆分。
 7. Layer / Business 目录已有统一 `README.md` 规则文件，后续迁移仍需补齐具体代码落位。
 
 ## 目标结构

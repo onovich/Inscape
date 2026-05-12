@@ -16,7 +16,7 @@ Core rules:
 
 ```powershell
 dotnet build Inscape.slnx --no-restore
-dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj --no-build
+dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build
 node --check src\Internal\VSCode\vscode-inscape\extension.js
 ```
 

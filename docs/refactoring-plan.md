@@ -113,9 +113,9 @@ VSCode：4 / 10
 
 验收标准：
 
-- `tests/Inscape.Tests/TestCore.cs` 不再承载全部测试实现。
+- `tests/Internal/Inscape.Tests/TestCore.cs` 不再承载全部测试实现。
 - 新增测试能快速放入对应文件。
-- `dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj --no-build` 继续通过。
+- `dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build` 继续通过。
 
 收益：高。
 
@@ -429,7 +429,7 @@ VSCode：4 / 10
 
 ```powershell
 dotnet build Inscape.slnx --no-restore
-dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj --no-build
+dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build
 node --check src\Internal\VSCode\vscode-inscape\extension.js
 ```
 

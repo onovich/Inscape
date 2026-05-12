@@ -401,7 +401,7 @@ Role 目录通常不单独写规则文件，除非该 Role 在当前业务中有
 
 ```powershell
 dotnet build Inscape.slnx --no-restore
-dotnet run --project tests\Inscape.Tests\Inscape.Tests.csproj --no-build
+dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build
 ```
 
 3. 若涉及 VSCode 前端路径或脚本迁移，额外执行：

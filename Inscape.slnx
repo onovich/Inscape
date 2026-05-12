@@ -5,6 +5,6 @@
     <Project Path="src/Internal/Tooling/Inscape.Tooling/Inscape.Tooling.csproj" />
   </Folder>
   <Folder Name="/tests/">
-    <Project Path="tests/Inscape.Tests/Inscape.Tests.csproj" />
+    <Project Path="tests/Internal/Inscape.Tests/Inscape.Tests.csproj" />
   </Folder>
 </Solution>
