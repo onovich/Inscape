@@ -7,6 +7,7 @@ const os = require("os");
 const path = require("path");
 const vscode = require("vscode");
 const { InscapeHostSchemaCommand } = require("./Commands/InscapeHostSchemaCommand");
+const { InscapeWorkspaceToolCommand } = require("./Commands/InscapeWorkspaceToolCommand");
 
 const languageSelector = { language: "inscape" };
 let outputChannel;
@@ -320,145 +321,15 @@ class InscapeLocalizationCommand {
 
 const localizationCommand = new InscapeLocalizationCommand();
 
-class InscapeWorkspaceToolCommand {
-
-    async openMenu(context) {
-        const items = [
-            {
-                label: "$(play) 在预览中定位当前文本",
-                description: "按当前光标或选区定位预览",
-                action: () => previewCommand.revealSelection(context)
-            },
-            {
-                label: "$(symbol-color) 编辑器样式",
-                description: "打开 inscape.editor-style.json",
-                action: () => this.openEditorStyle()
-            },
-            {
-                label: "$(paintcan) 预览样式",
-                description: "打开 inscape.preview-style.json",
-                action: () => this.openPreviewStyle()
-            },
-            {
-                label: "$(book) 极简语法速查",
-                description: "打开面向用户的语法速查文档",
-                action: () => this.openQuickSyntaxGuide()
-            }
-        ];
-
-        const selected = await vscode.window.showQuickPick(items, {
-            placeHolder: "Inscape 工具菜单"
-        });
-
-        if (selected && typeof selected.action === "function") {
-            await selected.action();
-        }
-    }
-
-    async openEditorStyle() {
-        const workspaceFolder = await this.resolvePreferredWorkspaceFolder();
-        if (!workspaceFolder) {
-            return;
-        }
-
-        const stylePath = await this.ensureStyleSupportFile(workspaceFolder, "editor");
-        if (!stylePath) {
-            return;
-        }
-
-        await this.openFile(stylePath);
-    }
-
-    async openPreviewStyle() {
-        const workspaceFolder = await this.resolvePreferredWorkspaceFolder();
-        if (!workspaceFolder) {
-            return;
-        }
-
-        const stylePath = await this.ensureStyleSupportFile(workspaceFolder, "preview");
-        if (!stylePath) {
-            return;
-        }
-
-        await this.openFile(stylePath);
-    }
-
-    async openQuickSyntaxGuide() {
-        const workspaceFolder = await this.resolvePreferredWorkspaceFolder();
-        if (!workspaceFolder) {
-            return;
-        }
-
-        await this.openFile(path.join(workspaceFolder.uri.fsPath, "docs", "quick-syntax-guide.md"));
-    }
-
-    async resolvePreferredWorkspaceFolder() {
-        const activeDocument = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.document : undefined;
-        if (activeDocument) {
-            const folder = vscode.workspace.getWorkspaceFolder(activeDocument.uri);
-            if (folder) {
-                return folder;
-            }
-        }
-
-        return selectWorkspaceFolder();
-    }
-
-    async ensureStyleSupportFile(workspaceFolder, kind) {
-        const workspacePath = workspaceFolder.uri.fsPath;
-        const configPath = path.join(workspacePath, "inscape.config.json");
-        let config = {};
-
-        if (fs.existsSync(configPath)) {
-            try {
-                config = JSON.parse(await fs.promises.readFile(configPath, "utf8"));
-            } catch {
-                config = {};
-            }
-        }
-
-        if (!config.styles || typeof config.styles !== "object") {
-            config.styles = {};
-        }
-
-        const defaultRelativePath = kind === "editor"
-            ? path.join("config", "inscape.editor-style.json")
-            : path.join("config", "inscape.preview-style.json");
-        const configuredRelativePath = typeof config.styles[kind] === "string" && config.styles[kind].trim()
-            ? config.styles[kind].trim()
-            : defaultRelativePath;
-        const targetPath = path.isAbsolute(configuredRelativePath)
-            ? configuredRelativePath
-            : path.resolve(path.dirname(configPath), configuredRelativePath);
-
-        config.styles[kind] = path.isAbsolute(configuredRelativePath)
-            ? configuredRelativePath
-            : configuredRelativePath.replace(/\\/g, "/");
-
-        await fs.promises.writeFile(configPath, JSON.stringify(config, null, 2) + "\n", "utf8");
-
-        await fs.promises.mkdir(path.dirname(targetPath), { recursive: true });
-        if (!fs.existsSync(targetPath)) {
-            const content = kind === "editor"
-                ? JSON.stringify(defaultEditorStyle, null, 2) + "\n"
-                : JSON.stringify(defaultPreviewStyle, null, 2) + "\n";
-            await fs.promises.writeFile(targetPath, content, "utf8");
-        }
-
-        return targetPath;
-    }
-
-    async openFile(filePath) {
-        const document = await vscode.workspace.openTextDocument(vscode.Uri.file(filePath));
-        await vscode.window.showTextDocument(document, {
-            preview: false,
-            preserveFocus: false
-        });
-    }
-
-}
-
-const workspaceToolCommand = new InscapeWorkspaceToolCommand();
+const workspaceToolCommand = new InscapeWorkspaceToolCommand({
+    vscode,
+    fs,
+    path,
+    previewCommand,
+    selectWorkspaceFolder,
+    defaultEditorStyle,
+    defaultPreviewStyle
+});
 
 const hostSchemaCommand = new InscapeHostSchemaCommand({
     vscode,
