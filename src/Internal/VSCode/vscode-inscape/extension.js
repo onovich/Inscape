@@ -7,6 +7,7 @@ const os = require("os");
 const path = require("path");
 const vscode = require("vscode");
 const { InscapeHostSchemaCommand } = require("./Commands/InscapeHostSchemaCommand");
+const { InscapeLocalizationCommand } = require("./Commands/InscapeLocalizationCommand");
 const { InscapeWorkspaceToolCommand } = require("./Commands/InscapeWorkspaceToolCommand");
 
 const languageSelector = { language: "inscape" };
@@ -163,163 +164,17 @@ class InscapePreviewCommand {
 
 const previewCommand = new InscapePreviewCommand();
 
-class InscapeLocalizationCommand {
-
-    async export(context) {
-        const workspaceFolder = await selectWorkspaceFolder();
-        if (!workspaceFolder) {
-            return;
-        }
-
-        const outputUri = await vscode.window.showSaveDialog({
-            defaultUri: vscode.Uri.file(path.join(workspaceFolder.uri.fsPath, "artifacts", "l10n.csv")),
-            filters: {
-                "CSV": ["csv"]
-            },
-            saveLabel: "Export Localization"
-        });
-
-        if (!outputUri) {
-            return;
-        }
-
-        await this.run(context, workspaceFolder, {
-            commandName: "extract-l10n-project",
-            outputPath: outputUri.fsPath,
-            progressTitle: "Exporting Inscape localization CSV"
-        });
-    }
-
-    async update(context) {
-        const workspaceFolder = await selectWorkspaceFolder();
-        if (!workspaceFolder) {
-            return;
-        }
-
-        const previousUris = await vscode.window.showOpenDialog({
-            defaultUri: vscode.Uri.file(path.join(workspaceFolder.uri.fsPath, "artifacts")),
-            canSelectFiles: true,
-            canSelectFolders: false,
-            canSelectMany: false,
-            filters: {
-                "CSV": ["csv"]
-            },
-            openLabel: "Select Previous Localization CSV"
-        });
-
-        if (!previousUris || previousUris.length === 0) {
-            return;
-        }
-
-        const outputUri = await vscode.window.showSaveDialog({
-            defaultUri: vscode.Uri.file(path.join(workspaceFolder.uri.fsPath, "artifacts", "l10n.updated.csv")),
-            filters: {
-                "CSV": ["csv"]
-            },
-            saveLabel: "Update Localization"
-        });
-
-        if (!outputUri) {
-            return;
-        }
-
-        await this.run(context, workspaceFolder, {
-            commandName: "update-l10n-project",
-            previousPath: previousUris[0].fsPath,
-            outputPath: outputUri.fsPath,
-            progressTitle: "Updating Inscape localization CSV"
-        });
-    }
-
-    async run(context, workspaceFolder, options) {
-        const editorDocument = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.document : undefined;
-        const activeDocument = editorDocument
-            && isInscapeDocument(editorDocument)
-            && this.isDocumentInWorkspaceFolder(editorDocument, workspaceFolder)
-            ? vscode.window.activeTextEditor.document
-            : undefined;
-        let tempPath;
-
-        try {
-            if (activeDocument) {
-                tempPath = writeTempDocument(activeDocument);
-            }
-
-            const invocation = this.createInvocation(context, workspaceFolder, options, activeDocument, tempPath);
-            await vscode.window.withProgress({
-                location: vscode.ProgressLocation.Notification,
-                title: options.progressTitle,
-                cancellable: false
-            }, () => this.execFile(invocation));
-
-            vscode.window.showInformationMessage("Inscape localization CSV written to " + options.outputPath);
-        } catch (error) {
-            vscode.window.showErrorMessage(error.message || String(error));
-        } finally {
-            if (tempPath) {
-                fs.unlink(tempPath, () => { });
-            }
-        }
-    }
-
-    createInvocation(context, workspaceFolder, options, activeDocument, tempPath) {
-        const configuration = vscode.workspace.getConfiguration("inscape", workspaceFolder.uri);
-        const command = configuration.get("compiler.command", "dotnet");
-        const cliProject = resolveCliProjectPath(context, workspaceFolder.uri.fsPath);
-        const args = [
-            "run",
-            "--project",
-            cliProject,
-            "--",
-            options.commandName,
-            workspaceFolder.uri.fsPath
-        ];
-
-        if (options.previousPath) {
-            args.push("--from", options.previousPath);
-        }
-
-        if (activeDocument && tempPath) {
-            args.push("--override", activeDocument.uri.fsPath, tempPath);
-        }
-
-        args.push("-o", options.outputPath);
-
-        return {
-            command,
-            args,
-            cwd: workspaceFolder.uri.fsPath
-        };
-    }
-
-    isDocumentInWorkspaceFolder(document, workspaceFolder) {
-        const folder = vscode.workspace.getWorkspaceFolder(document.uri);
-        return folder && normalizePath(folder.uri.fsPath) === normalizePath(workspaceFolder.uri.fsPath);
-    }
-
-    execFile(invocation) {
-        return new Promise((resolve, reject) => {
-            childProcess.execFile(invocation.command, invocation.args, {
-                cwd: invocation.cwd,
-                windowsHide: true,
-                maxBuffer: 1024 * 1024 * 8
-            }, (error, stdout, stderr) => {
-                if (error) {
-                    const detail = stderr && stderr.trim()
-                        ? stderr.trim()
-                        : (stdout && stdout.trim() ? stdout.trim() : error.message);
-                    reject(new Error(detail));
-                    return;
-                }
-
-                resolve(stdout);
-            });
-        });
-    }
-
-}
-
-const localizationCommand = new InscapeLocalizationCommand();
+const localizationCommand = new InscapeLocalizationCommand({
+    vscode,
+    childProcess,
+    fs,
+    path,
+    selectWorkspaceFolder,
+    isInscapeDocument,
+    writeTempDocument,
+    resolveCliProjectPath,
+    normalizePath
+});
 
 const workspaceToolCommand = new InscapeWorkspaceToolCommand({
     vscode,
