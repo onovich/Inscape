@@ -13,6 +13,7 @@ const { PreviewCommand } = require("./Commands/PreviewCommand");
 const { EditorAuthoringCommand } = require("./Commands/EditorAuthoringCommand");
 const { DslScriptCompletionProvider } = require("./LanguageFeatures/DslScriptCompletionProvider");
 const { DslScriptDefinitionProvider } = require("./LanguageFeatures/DslScriptDefinitionProvider");
+const { DslScriptDocumentSymbolProvider } = require("./LanguageFeatures/DslScriptDocumentSymbolProvider");
 const { DslScriptHoverProvider } = require("./LanguageFeatures/DslScriptHoverProvider");
 const { DslScriptReferenceProvider } = require("./LanguageFeatures/DslScriptReferenceProvider");
 const { HostBindingProvider } = require("./WorkspaceIndex/HostBindingProvider");
@@ -133,6 +134,10 @@ const dslScriptHoverProvider = new DslScriptHoverProvider({
     dslScriptMetadataProvider
 });
 
+const dslScriptDocumentSymbolProvider = new DslScriptDocumentSymbolProvider({
+    vscode
+});
+
 function activate(context) {
     outputChannel = vscode.window.createOutputChannel("Inscape");
     const diagnostics = vscode.languages.createDiagnosticCollection("inscape");
@@ -165,7 +170,7 @@ function activate(context) {
             }
         }),
         vscode.languages.registerCompletionItemProvider(languageSelector, dslScriptCompletionProvider, ">", ".", ":", "\uFF1A", "[", " "),
-        vscode.languages.registerDocumentSymbolProvider(languageSelector, new DslScriptDocumentSymbolProvider()),
+        vscode.languages.registerDocumentSymbolProvider(languageSelector, dslScriptDocumentSymbolProvider),
         vscode.languages.registerDefinitionProvider(languageSelector, dslScriptDefinitionProvider),
         vscode.languages.registerReferenceProvider(languageSelector, dslScriptReferenceProvider),
         vscode.languages.registerHoverProvider(languageSelector, dslScriptHoverProvider),
@@ -299,33 +304,6 @@ class DiagnosticScheduler {
         }
         this.timers.clear();
         this.runIds.clear();
-    }
-}
-
-class DslScriptDocumentSymbolProvider {
-
-    provideDocumentSymbols(document) {
-        const symbols = [];
-        const nodePattern = /^\s*::\s+([a-z][a-z0-9_-]*(?:\.[a-z][a-z0-9_-]*)*)\s*$/;
-
-        for (let line = 0; line < document.lineCount; line += 1) {
-            const textLine = document.lineAt(line);
-            const match = nodePattern.exec(textLine.text);
-            if (!match) {
-                continue;
-            }
-
-            const range = textLine.range;
-            symbols.push(new vscode.DocumentSymbol(
-                match[1],
-                "Inscape dialogue block",
-                vscode.SymbolKind.Namespace,
-                range,
-                range
-            ));
-        }
-
-        return symbols;
     }
 }
 
