@@ -124,6 +124,7 @@
 	- [x] 已继续收紧 workspace index 的 host binding provider 边界：host binding 补全上下文与光标位置解析已吸回 `HostBindingProvider`，Completion / Definition / Hover 不再直接依赖顶层 host binding helper。
 	- [x] 已继续收紧 host binding provider 拥有边界：host binding completion / hover / missing-hover markdown 构造已吸回 `HostBindingProvider`，相关 markdown helper 不再散在顶层函数区。
 	- [x] 已按命名规范收敛已拆出的 VSCode 文件与类型名：移除内部默认 `Inscape` 前缀和类型名里的 `Workspace` 前缀，让目录承担范围，类型名表达主语与角色。
+	- [x] 已迁出第一条 language feature provider：`DslScriptCompletionProvider` 进入 `LanguageFeatures/DslScriptCompletionProvider.js`，入口文件只保留依赖注入和 VSCode provider 注册。
 	- [x] 已顺手修复预览定位局部缺陷：`findDialogueSeparatorIndex` 中误残留的 preview reveal 调用与缺失的半角冒号解析已清理，避免说话人行的预览定位在运行时触发异常。
 - [ ] 创建 `Inscape.LanguageServer` 基线项目，先迁移诊断与定义跳转，再迁移引用、补全与 source map 相关语义能力。
 - [ ] 将 Cli、VSCode 和未来 LanguageServer 共享的项目级流程继续拆成显式职责模块，优先落到 `Tooling` 的 `ProjectSources`、`ToolConfig`、`Preview`、`Localization`、`HostSchema`、`HostBinding` 等模块；如未来确需统一门面，也应建立在这些模块之上，而不是先造一个大而泛的 `ProjectService`。

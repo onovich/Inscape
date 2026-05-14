@@ -11,6 +11,7 @@ const { HostSchemaCommand } = require("./Commands/HostSchemaCommand");
 const { LocalizationCommand } = require("./Commands/LocalizationCommand");
 const { PreviewCommand } = require("./Commands/PreviewCommand");
 const { EditorAuthoringCommand } = require("./Commands/EditorAuthoringCommand");
+const { DslScriptCompletionProvider } = require("./LanguageFeatures/DslScriptCompletionProvider");
 const { HostBindingProvider } = require("./WorkspaceIndex/HostBindingProvider");
 const { DslScriptMetadataProvider } = require("./WorkspaceIndex/DslScriptMetadataProvider");
 const { DslScriptNodeProvider } = require("./WorkspaceIndex/DslScriptNodeProvider");
@@ -102,6 +103,16 @@ const dslScriptMetadataProvider = new DslScriptMetadataProvider({
     collectWorkspaceTextSources
 });
 
+const dslScriptCompletionProvider = new DslScriptCompletionProvider({
+    vscode,
+    isInscapeDocument,
+    isJumpTargetContext,
+    isSpeakerCompletionContext,
+    dslScriptNodeProvider,
+    dslScriptSpeakerProvider,
+    hostBindingProvider
+});
+
 function activate(context) {
     outputChannel = vscode.window.createOutputChannel("Inscape");
     const diagnostics = vscode.languages.createDiagnosticCollection("inscape");
@@ -133,7 +144,7 @@ function activate(context) {
                 refreshEditorStylesForVisibleEditors(context);
             }
         }),
-        vscode.languages.registerCompletionItemProvider(languageSelector, new DslScriptCompletionProvider(), ">", ".", ":", "\uFF1A", "[", " "),
+        vscode.languages.registerCompletionItemProvider(languageSelector, dslScriptCompletionProvider, ">", ".", ":", "\uFF1A", "[", " "),
         vscode.languages.registerDocumentSymbolProvider(languageSelector, new DslScriptDocumentSymbolProvider()),
         vscode.languages.registerDefinitionProvider(languageSelector, new DslScriptDefinitionProvider()),
         vscode.languages.registerReferenceProvider(languageSelector, new DslScriptReferenceProvider()),
@@ -268,42 +279,6 @@ class DiagnosticScheduler {
         }
         this.timers.clear();
         this.runIds.clear();
-    }
-}
-
-class DslScriptCompletionProvider {
-
-    async provideCompletionItems(document, position) {
-        if (!isInscapeDocument(document)) {
-            return undefined;
-        }
-
-        const linePrefix = document.lineAt(position).text.slice(0, position.character);
-        if (isJumpTargetContext(linePrefix)) {
-            const nodes = await dslScriptNodeProvider.collectWorkspaceNodes(document);
-            return nodes.map((node) => {
-                const name = node.name;
-                const item = new vscode.CompletionItem(name, vscode.CompletionItemKind.Reference);
-                item.insertText = name;
-                item.detail = node.sourcePath === document.uri.fsPath ? "Inscape node in this file" : "Inscape project node";
-                item.documentation = node.sourcePath;
-                item.sortText = "0_" + name;
-                return item;
-            });
-        }
-
-        const hostBindingContext = hostBindingProvider.getBindingCompletionContext(linePrefix);
-        if (hostBindingContext) {
-            const bindings = await hostBindingProvider.collectWorkspaceBindings(document, hostBindingContext.kind);
-            return bindings.map((binding) => hostBindingProvider.createCompletionItem(binding));
-        }
-
-        if (isSpeakerCompletionContext(linePrefix)) {
-            const speakers = await dslScriptSpeakerProvider.collectWorkspaceSpeakers(document);
-            return speakers.map((speaker) => dslScriptSpeakerProvider.createCompletionItem(speaker));
-        }
-
-        return undefined;
     }
 }
 
