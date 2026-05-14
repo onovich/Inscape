@@ -130,6 +130,7 @@
 	- [x] 已迁出第四条 language feature provider：`DslScriptHoverProvider` 进入 `LanguageFeatures/DslScriptHoverProvider.js`，悬浮说明仍复用 workspace index。
 	- [x] 已迁出第五条 language feature provider：`DslScriptDocumentSymbolProvider` 进入 `LanguageFeatures/DslScriptDocumentSymbolProvider.js`，outline 仍只做当前文档节点扫描。
 	- [x] 已迁出第六条 language feature provider：`DslScriptCodeLensProvider` 进入 `LanguageFeatures/DslScriptCodeLensProvider.js`，节点入边计数仍复用 workspace index。
+	- [x] 已迁出 diagnostics 调度：`DslScriptDiagnosticScheduler` 进入 `LanguageFeatures/DslScriptDiagnosticScheduler.js`，入口文件只保留诊断集合创建和调度注册。
 	- [x] 已顺手修复预览定位局部缺陷：`findDialogueSeparatorIndex` 中误残留的 preview reveal 调用与缺失的半角冒号解析已清理，避免说话人行的预览定位在运行时触发异常。
 - [ ] 创建 `Inscape.LanguageServer` 基线项目，先迁移诊断与定义跳转，再迁移引用、补全与 source map 相关语义能力。
 - [ ] 将 Cli、VSCode 和未来 LanguageServer 共享的项目级流程继续拆成显式职责模块，优先落到 `Tooling` 的 `ProjectSources`、`ToolConfig`、`Preview`、`Localization`、`HostSchema`、`HostBinding` 等模块；如未来确需统一门面，也应建立在这些模块之上，而不是先造一个大而泛的 `ProjectService`。

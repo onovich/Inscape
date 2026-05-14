@@ -14,6 +14,7 @@ const { EditorAuthoringCommand } = require("./Commands/EditorAuthoringCommand");
 const { DslScriptCodeLensProvider } = require("./LanguageFeatures/DslScriptCodeLensProvider");
 const { DslScriptCompletionProvider } = require("./LanguageFeatures/DslScriptCompletionProvider");
 const { DslScriptDefinitionProvider } = require("./LanguageFeatures/DslScriptDefinitionProvider");
+const { DslScriptDiagnosticScheduler } = require("./LanguageFeatures/DslScriptDiagnosticScheduler");
 const { DslScriptDocumentSymbolProvider } = require("./LanguageFeatures/DslScriptDocumentSymbolProvider");
 const { DslScriptHoverProvider } = require("./LanguageFeatures/DslScriptHoverProvider");
 const { DslScriptReferenceProvider } = require("./LanguageFeatures/DslScriptReferenceProvider");
@@ -149,7 +150,18 @@ const dslScriptCodeLensProvider = new DslScriptCodeLensProvider({
 function activate(context) {
     outputChannel = vscode.window.createOutputChannel("Inscape");
     const diagnostics = vscode.languages.createDiagnosticCollection("inscape");
-    const scheduler = new DiagnosticScheduler(context, diagnostics);
+    const scheduler = new DslScriptDiagnosticScheduler({
+        childProcess,
+        fs,
+        vscode,
+        context,
+        diagnostics,
+        isInscapeDocument,
+        writeTempDocument,
+        createCompilerInvocation,
+        createExtensionDiagnostic,
+        applyDiagnostics
+    });
     logOutput("Activated Inscape extension from " + context.extensionPath);
 
     context.subscriptions.push(
@@ -220,99 +232,6 @@ function logOutput(message) {
     }
 
     outputChannel.appendLine("[" + new Date().toISOString() + "] " + message);
-}
-
-class DiagnosticScheduler {
-
-    constructor(context, diagnostics) {
-        this.context = context;
-        this.diagnostics = diagnostics;
-        this.timers = new Map();
-        this.runIds = new Map();
-    }
-
-    schedule(document, delayOverride) {
-        if (!isInscapeDocument(document)) {
-            return;
-        }
-
-        const configuration = vscode.workspace.getConfiguration("inscape", document.uri);
-        if (!configuration.get("diagnostics.enabled", true)) {
-            this.diagnostics.delete(document.uri);
-            return;
-        }
-
-        const key = document.uri.toString();
-        const existing = this.timers.get(key);
-        if (existing) {
-            clearTimeout(existing);
-        }
-
-        const delay = typeof delayOverride === "number"
-            ? delayOverride
-            : Math.max(100, configuration.get("diagnostics.debounceMs", 450));
-
-        this.timers.set(key, setTimeout(() => {
-            this.timers.delete(key);
-            this.run(document);
-        }, delay));
-    }
-
-    run(document) {
-        const key = document.uri.toString();
-        const runId = (this.runIds.get(key) || 0) + 1;
-        this.runIds.set(key, runId);
-
-        let tempPath;
-        try {
-            tempPath = writeTempDocument(document);
-        } catch (error) {
-            this.diagnostics.set(document.uri, [
-                createExtensionDiagnostic(document, "Unable to prepare Inscape diagnostics: " + error.message)
-            ]);
-            return;
-        }
-
-        const invocation = createCompilerInvocation(this.context, document, tempPath);
-        childProcess.execFile(invocation.command, invocation.args, {
-            cwd: invocation.cwd,
-            windowsHide: true,
-            maxBuffer: 1024 * 1024 * 8
-        }, (error, stdout, stderr) => {
-            fs.unlink(tempPath, () => { });
-
-            if (this.runIds.get(key) !== runId) {
-                return;
-            }
-
-            if (!stdout || !stdout.trim()) {
-                const message = stderr && stderr.trim()
-                    ? stderr.trim()
-                    : (error && error.message ? error.message : "Inscape compiler produced no diagnostic output.");
-                this.diagnostics.set(document.uri, [
-                    createExtensionDiagnostic(document, message)
-                ]);
-                return;
-            }
-
-            try {
-                const payload = JSON.parse(stdout);
-                applyDiagnostics(this.diagnostics, document, payload.diagnostics || []);
-            } catch (parseError) {
-                this.diagnostics.set(document.uri, [
-                    createExtensionDiagnostic(document, "Unable to parse Inscape diagnostics: " + parseError.message)
-                ]);
-            }
-        });
-    }
-
-    dispose() {
-        for (const timer of this.timers.values()) {
-            clearTimeout(timer);
-        }
-        this.timers.clear();
-        this.runIds.clear();
-    }
 }
 
 function refreshVisibleDocuments(scheduler) {
