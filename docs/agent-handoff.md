@@ -30,6 +30,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - 2026-05-13 已推进 VSCode 拆分 A2.3：`InscapeLocalizationCommand` 已从 `extension.js` 迁入 `Commands/InscapeLocalizationCommand.js`，导出 / 更新本地化命令仍由 `extension.js` 注册。
 - 2026-05-14 已推进 VSCode 拆分 A2.4：`InscapePreviewCommand` 已从 `extension.js` 迁入 `Commands/InscapePreviewCommand.js`，预览打开 / 切换 / selection reveal 命令仍由 `extension.js` 注册。
 - 2026-05-14 已推进 VSCode 拆分 A2.5：`InscapePreviewRevealBridge` 已从 `extension.js` 迁入 `Bridges/InscapePreviewRevealBridge.js`，selection-to-preview reveal 状态不再由入口文件内联承载。
+- 2026-05-14 已推进 VSCode 拆分 A2.6：`InscapeWorkspaceNodeProvider` 已从 `extension.js` 迁入 `WorkspaceIndex/InscapeWorkspaceNodeProvider.js`，节点声明、jump 引用、node/jump hover 与导航扫描不再由入口文件内联承载。
 - 2026-05-12 已迁移当前聚合测试项目：`tests/Inscape.Tests` -> `tests/Internal/Inscape.Tests`。这只是测试项目路径进入 Internal 测试树，测试内容尚未按 Compiler / Tooling / Cli / ExternalSupport 拆分。
 - 当前分支为 `main...origin/main`。本轮已把目录优先方案正式冻结为文档与 ADR；最新提交请以 `git log --oneline -1` 为准。
 - 本轮会话已确认新的重构铁律：先搭目录骨架与 `README.md` 规则文件，再迁大目录路径，再迁 solution / 项目路径，再迁项目名、命名空间和类型名；在此之前，不再把主要重构精力继续放在旧目录里的微观 helper 收口上。
