@@ -105,6 +105,7 @@
 	- [x] 已迁出第三条 VSCode command：`InscapeLocalizationCommand` 进入 `Commands/InscapeLocalizationCommand.js`，本地化导出 / 更新行为保持不变。
 	- [x] 已迁出第四条 VSCode command：`InscapePreviewCommand` 进入 `Commands/InscapePreviewCommand.js`，预览打开 / 切换 / selection reveal 行为保持不变。
 	- [x] 已先收口预览定位 selection bridge：原先散在 `extension.js` 顶层的 pending reveal 状态与相关函数已收为 `InscapePreviewRevealBridge`，使预览定位的 Ctrl+Click 链路拥有明确 `Bridge` 角色。
+	- [x] 已迁出第一条 VSCode bridge：`InscapePreviewRevealBridge` 进入 `Bridges/InscapePreviewRevealBridge.js`，入口文件只保留实例化和事件/命令注册。
 	- [x] 已继续收口预览命令入口：`openPreview`、`togglePreview`、`revealSelectionInPreview` 及其局部 helper 已收为 `InscapePreviewCommand`，预览命令不再散在 `extension.js` 顶层函数。
 	- [x] 已继续收紧 preview reveal bridge 边界：光标处 reveal 信息解析、definition link 构造与 reveal range 解析已吸回 `InscapePreviewRevealBridge`，preview reveal 顶层 helper 进一步退出函数区。
 	- [x] 已继续收口 localization 命令入口：`extractLocalization`、`updateLocalization` 及其局部执行链已收为 `InscapeLocalizationCommand`，顶层不再保留独立 localization command helper 串。
