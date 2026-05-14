@@ -1,6 +1,6 @@
-"use strict";
+﻿"use strict";
 
-class InscapeWorkspaceHostBindingProvider {
+class HostBindingProvider {
 
     constructor(dependencies) {
         this.vscode = dependencies.vscode;
@@ -271,5 +271,5 @@ class InscapeWorkspaceHostBindingProvider {
 }
 
 module.exports = {
-    InscapeWorkspaceHostBindingProvider
+    HostBindingProvider
 };

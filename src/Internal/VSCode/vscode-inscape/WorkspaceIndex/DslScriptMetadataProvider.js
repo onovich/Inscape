@@ -1,6 +1,6 @@
-"use strict";
+﻿"use strict";
 
-class InscapeWorkspaceMetadataProvider {
+class DslScriptMetadataProvider {
 
     constructor(dependencies) {
         this.vscode = dependencies.vscode;
@@ -90,5 +90,5 @@ class InscapeWorkspaceMetadataProvider {
 }
 
 module.exports = {
-    InscapeWorkspaceMetadataProvider
+    DslScriptMetadataProvider
 };

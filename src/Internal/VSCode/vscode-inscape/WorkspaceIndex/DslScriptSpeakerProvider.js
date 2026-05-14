@@ -1,6 +1,6 @@
-"use strict";
+﻿"use strict";
 
-class InscapeWorkspaceSpeakerProvider {
+class DslScriptSpeakerProvider {
 
     constructor(dependencies) {
         this.vscode = dependencies.vscode;
@@ -308,5 +308,5 @@ class InscapeWorkspaceSpeakerProvider {
 }
 
 module.exports = {
-    InscapeWorkspaceSpeakerProvider
+    DslScriptSpeakerProvider
 };

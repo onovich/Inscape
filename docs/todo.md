@@ -100,29 +100,30 @@
 	- [x] 已继续按薄门面规则收紧 `CliCore`：`IsHelp`、`ToCompileViewModel`、`ToProjectCompileViewModel` 与项目命令分发私有包装已收回拥有者文件，`CliCore` 进一步缩到入口分发与跨命令共享输出辅助。
 - [ ] 按 provider / command / preview bridge / style / workspace index 拆分 VSCode extension：在 VSCode 正式迁入 `src/Internal/VSCode` 后继续执行，保持现有作者体验不回归。
 	- [x] 已建立 VSCode 拆分骨架：`ExtensionEntry`、`Commands`、`LanguageFeatures`、`WorkspaceIndex`、`Bridges`、`PreviewWebview`、`Styles`、`Schemas`，并补齐目录规则 README；后续开始从 `extension.js` 逐类迁移。
-	- [x] 已迁出第一条 VSCode command：`InscapeHostSchemaCommand` 进入 `Commands/InscapeHostSchemaCommand.js`，`extension.js` 只保留实例化与注册。
-	- [x] 已迁出第二条 VSCode command：`InscapeWorkspaceToolCommand` 进入 `Commands/InscapeWorkspaceToolCommand.js`，样式与工具菜单行为保持不变。
-	- [x] 已迁出第三条 VSCode command：`InscapeLocalizationCommand` 进入 `Commands/InscapeLocalizationCommand.js`，本地化导出 / 更新行为保持不变。
-	- [x] 已迁出第四条 VSCode command：`InscapePreviewCommand` 进入 `Commands/InscapePreviewCommand.js`，预览打开 / 切换 / selection reveal 行为保持不变。
-	- [x] 已先收口预览定位 selection bridge：原先散在 `extension.js` 顶层的 pending reveal 状态与相关函数已收为 `InscapePreviewRevealBridge`，使预览定位的 Ctrl+Click 链路拥有明确 `Bridge` 角色。
-	- [x] 已迁出第一条 VSCode bridge：`InscapePreviewRevealBridge` 进入 `Bridges/InscapePreviewRevealBridge.js`，入口文件只保留实例化和事件/命令注册。
-	- [x] 已继续收口预览命令入口：`openPreview`、`togglePreview`、`revealSelectionInPreview` 及其局部 helper 已收为 `InscapePreviewCommand`，预览命令不再散在 `extension.js` 顶层函数。
-	- [x] 已继续收紧 preview reveal bridge 边界：光标处 reveal 信息解析、definition link 构造与 reveal range 解析已吸回 `InscapePreviewRevealBridge`，preview reveal 顶层 helper 进一步退出函数区。
-	- [x] 已继续收口 localization 命令入口：`extractLocalization`、`updateLocalization` 及其局部执行链已收为 `InscapeLocalizationCommand`，顶层不再保留独立 localization command helper 串。
-	- [x] 已继续收口工作区工具命令入口：`openToolsMenu`、`openEditorStyle`、`openPreviewStyle`、`openQuickSyntaxGuide` 及其局部样式文件 helper 已收为 `InscapeWorkspaceToolCommand`，样式/文档打开流程不再散在顶层函数。
-	- [x] 已继续收口 host schema 命令入口：`showHostSchemaCapabilities` 及其局部 schema 读取、QuickPick 组装与定位逻辑已收为 `InscapeHostSchemaCommand`，host schema 浏览流程不再散在顶层函数。
-	- [x] 已开始收口 workspace index：节点声明、jump 引用与节点导航这一小片已收为 `InscapeWorkspaceNodeProvider`，Definition / Reference / CodeLens / jump completion 不再直接依赖散落的 node/jump 顶层 helper。
-	- [x] 已迁出第一条 workspace index provider：`InscapeWorkspaceNodeProvider` 进入 `WorkspaceIndex/InscapeWorkspaceNodeProvider.js`，入口文件只保留实例化和 VSCode provider 注册。
-	- [x] 已继续收口 workspace index 的 speaker 子块：角色表读取、工作区 speaker 扫描、speaker completion / definition / reference 已收为 `InscapeWorkspaceSpeakerProvider`，顶层不再保留独立 speaker helper 串。
-	- [x] 已迁出第二条 workspace index provider：`InscapeWorkspaceSpeakerProvider` 进入 `WorkspaceIndex/InscapeWorkspaceSpeakerProvider.js`，入口文件只保留实例化和 VSCode provider 注册。
-	- [x] 已继续收口 workspace index 的 host binding 子块：binding map 读取、工作区 hook / inline tag 扫描以及 host binding completion / definition / hover 所需绑定列表已收为 `InscapeWorkspaceHostBindingProvider`，顶层不再保留独立 host binding helper 串。
-	- [x] 已迁出第三条 workspace index provider：`InscapeWorkspaceHostBindingProvider` 进入 `WorkspaceIndex/InscapeWorkspaceHostBindingProvider.js`，入口文件只保留实例化和 VSCode provider 注册。
-	- [x] 已继续收口 workspace index 的 metadata 子块：metadata 位置解析、工作区 metadata 引用扫描与 metadata hover 已收为 `InscapeWorkspaceMetadataProvider`，顶层不再保留独立 metadata helper 串。
-	- [x] 已迁出第四条 workspace index provider：`InscapeWorkspaceMetadataProvider` 进入 `WorkspaceIndex/InscapeWorkspaceMetadataProvider.js`，入口文件只保留实例化和 VSCode provider 注册。
-	- [x] 已继续收紧 workspace index 的 speaker provider 边界：speaker 位置解析与 hover markdown 已吸回 `InscapeWorkspaceSpeakerProvider`，Definition / Reference / Hover 不再直接依赖顶层 speaker helper。
-	- [x] 已继续收紧 workspace index 的 node provider 边界：节点声明 / jump target 位置解析与 node/jump hover markdown 已吸回 `InscapeWorkspaceNodeProvider`，相关顶层 node/jump helper 已退出函数区。
-	- [x] 已继续收紧 workspace index 的 host binding provider 边界：host binding 补全上下文与光标位置解析已吸回 `InscapeWorkspaceHostBindingProvider`，Completion / Definition / Hover 不再直接依赖顶层 host binding helper。
-	- [x] 已继续收紧 host binding provider 拥有边界：host binding completion / hover / missing-hover markdown 构造已吸回 `InscapeWorkspaceHostBindingProvider`，相关 markdown helper 不再散在顶层函数区。
+	- [x] 已迁出第一条 VSCode command：`HostSchemaCommand` 进入 `Commands/HostSchemaCommand.js`，`extension.js` 只保留实例化与注册。
+	- [x] 已迁出第二条 VSCode command：`EditorAuthoringCommand` 进入 `Commands/EditorAuthoringCommand.js`，样式与工具菜单行为保持不变。
+	- [x] 已迁出第三条 VSCode command：`LocalizationCommand` 进入 `Commands/LocalizationCommand.js`，本地化导出 / 更新行为保持不变。
+	- [x] 已迁出第四条 VSCode command：`PreviewCommand` 进入 `Commands/PreviewCommand.js`，预览打开 / 切换 / selection reveal 行为保持不变。
+	- [x] 已先收口预览定位 selection bridge：原先散在 `extension.js` 顶层的 pending reveal 状态与相关函数已收为 `PreviewRevealBridge`，使预览定位的 Ctrl+Click 链路拥有明确 `Bridge` 角色。
+	- [x] 已迁出第一条 VSCode bridge：`PreviewRevealBridge` 进入 `Bridges/PreviewRevealBridge.js`，入口文件只保留实例化和事件/命令注册。
+	- [x] 已继续收口预览命令入口：`openPreview`、`togglePreview`、`revealSelectionInPreview` 及其局部 helper 已收为 `PreviewCommand`，预览命令不再散在 `extension.js` 顶层函数。
+	- [x] 已继续收紧 preview reveal bridge 边界：光标处 reveal 信息解析、definition link 构造与 reveal range 解析已吸回 `PreviewRevealBridge`，preview reveal 顶层 helper 进一步退出函数区。
+	- [x] 已继续收口 localization 命令入口：`extractLocalization`、`updateLocalization` 及其局部执行链已收为 `LocalizationCommand`，顶层不再保留独立 localization command helper 串。
+	- [x] 已继续收口工作区工具命令入口：`openToolsMenu`、`openEditorStyle`、`openPreviewStyle`、`openQuickSyntaxGuide` 及其局部样式文件 helper 已收为 `EditorAuthoringCommand`，样式/文档打开流程不再散在顶层函数。
+	- [x] 已继续收口 host schema 命令入口：`showHostSchemaCapabilities` 及其局部 schema 读取、QuickPick 组装与定位逻辑已收为 `HostSchemaCommand`，host schema 浏览流程不再散在顶层函数。
+	- [x] 已开始收口 workspace index：节点声明、jump 引用与节点导航这一小片已收为 `DslScriptNodeProvider`，Definition / Reference / CodeLens / jump completion 不再直接依赖散落的 node/jump 顶层 helper。
+	- [x] 已迁出第一条 workspace index provider：`DslScriptNodeProvider` 进入 `WorkspaceIndex/DslScriptNodeProvider.js`，入口文件只保留实例化和 VSCode provider 注册。
+	- [x] 已继续收口 workspace index 的 speaker 子块：角色表读取、工作区 speaker 扫描、speaker completion / definition / reference 已收为 `DslScriptSpeakerProvider`，顶层不再保留独立 speaker helper 串。
+	- [x] 已迁出第二条 workspace index provider：`DslScriptSpeakerProvider` 进入 `WorkspaceIndex/DslScriptSpeakerProvider.js`，入口文件只保留实例化和 VSCode provider 注册。
+	- [x] 已继续收口 workspace index 的 host binding 子块：binding map 读取、工作区 hook / inline tag 扫描以及 host binding completion / definition / hover 所需绑定列表已收为 `HostBindingProvider`，顶层不再保留独立 host binding helper 串。
+	- [x] 已迁出第三条 workspace index provider：`HostBindingProvider` 进入 `WorkspaceIndex/HostBindingProvider.js`，入口文件只保留实例化和 VSCode provider 注册。
+	- [x] 已继续收口 workspace index 的 metadata 子块：metadata 位置解析、工作区 metadata 引用扫描与 metadata hover 已收为 `DslScriptMetadataProvider`，顶层不再保留独立 metadata helper 串。
+	- [x] 已迁出第四条 workspace index provider：`DslScriptMetadataProvider` 进入 `WorkspaceIndex/DslScriptMetadataProvider.js`，入口文件只保留实例化和 VSCode provider 注册。
+	- [x] 已继续收紧 workspace index 的 speaker provider 边界：speaker 位置解析与 hover markdown 已吸回 `DslScriptSpeakerProvider`，Definition / Reference / Hover 不再直接依赖顶层 speaker helper。
+	- [x] 已继续收紧 workspace index 的 node provider 边界：节点声明 / jump target 位置解析与 node/jump hover markdown 已吸回 `DslScriptNodeProvider`，相关顶层 node/jump helper 已退出函数区。
+	- [x] 已继续收紧 workspace index 的 host binding provider 边界：host binding 补全上下文与光标位置解析已吸回 `HostBindingProvider`，Completion / Definition / Hover 不再直接依赖顶层 host binding helper。
+	- [x] 已继续收紧 host binding provider 拥有边界：host binding completion / hover / missing-hover markdown 构造已吸回 `HostBindingProvider`，相关 markdown helper 不再散在顶层函数区。
+	- [x] 已按命名规范收敛已拆出的 VSCode 文件与类型名：移除内部默认 `Inscape` 前缀和类型名里的 `Workspace` 前缀，让目录承担范围，类型名表达主语与角色。
 	- [x] 已顺手修复预览定位局部缺陷：`findDialogueSeparatorIndex` 中误残留的 preview reveal 调用与缺失的半角冒号解析已清理，避免说话人行的预览定位在运行时触发异常。
 - [ ] 创建 `Inscape.LanguageServer` 基线项目，先迁移诊断与定义跳转，再迁移引用、补全与 source map 相关语义能力。
 - [ ] 将 Cli、VSCode 和未来 LanguageServer 共享的项目级流程继续拆成显式职责模块，优先落到 `Tooling` 的 `ProjectSources`、`ToolConfig`、`Preview`、`Localization`、`HostSchema`、`HostBinding` 等模块；如未来确需统一门面，也应建立在这些模块之上，而不是先造一个大而泛的 `ProjectService`。

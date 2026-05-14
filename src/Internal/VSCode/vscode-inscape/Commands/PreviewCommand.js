@@ -1,6 +1,6 @@
-"use strict";
+﻿"use strict";
 
-class InscapePreviewCommand {
+class PreviewCommand {
 
     constructor(dependencies) {
         this.vscode = dependencies.vscode;
@@ -116,5 +116,5 @@ class InscapePreviewCommand {
 }
 
 module.exports = {
-    InscapePreviewCommand
+    PreviewCommand
 };

@@ -1,6 +1,6 @@
-"use strict";
+﻿"use strict";
 
-class InscapeWorkspaceToolCommand {
+class EditorAuthoringCommand {
 
     constructor(dependencies) {
         this.vscode = dependencies.vscode;
@@ -149,5 +149,5 @@ class InscapeWorkspaceToolCommand {
 }
 
 module.exports = {
-    InscapeWorkspaceToolCommand
+    EditorAuthoringCommand
 };

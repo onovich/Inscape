@@ -1,6 +1,6 @@
-"use strict";
+﻿"use strict";
 
-class InscapeHostSchemaCommand {
+class HostSchemaCommand {
 
     constructor(dependencies) {
         this.vscode = dependencies.vscode;
@@ -175,5 +175,5 @@ class InscapeHostSchemaCommand {
 }
 
 module.exports = {
-    InscapeHostSchemaCommand
+    HostSchemaCommand
 };

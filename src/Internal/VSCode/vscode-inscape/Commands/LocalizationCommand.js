@@ -1,6 +1,6 @@
-"use strict";
+﻿"use strict";
 
-class InscapeLocalizationCommand {
+class LocalizationCommand {
 
     constructor(dependencies) {
         this.vscode = dependencies.vscode;
@@ -169,5 +169,5 @@ class InscapeLocalizationCommand {
 }
 
 module.exports = {
-    InscapeLocalizationCommand
+    LocalizationCommand
 };

@@ -6,15 +6,15 @@ const crypto = require("crypto");
 const os = require("os");
 const path = require("path");
 const vscode = require("vscode");
-const { InscapePreviewRevealBridge } = require("./Bridges/InscapePreviewRevealBridge");
-const { InscapeHostSchemaCommand } = require("./Commands/InscapeHostSchemaCommand");
-const { InscapeLocalizationCommand } = require("./Commands/InscapeLocalizationCommand");
-const { InscapePreviewCommand } = require("./Commands/InscapePreviewCommand");
-const { InscapeWorkspaceToolCommand } = require("./Commands/InscapeWorkspaceToolCommand");
-const { InscapeWorkspaceHostBindingProvider } = require("./WorkspaceIndex/InscapeWorkspaceHostBindingProvider");
-const { InscapeWorkspaceMetadataProvider } = require("./WorkspaceIndex/InscapeWorkspaceMetadataProvider");
-const { InscapeWorkspaceNodeProvider } = require("./WorkspaceIndex/InscapeWorkspaceNodeProvider");
-const { InscapeWorkspaceSpeakerProvider } = require("./WorkspaceIndex/InscapeWorkspaceSpeakerProvider");
+const { PreviewRevealBridge } = require("./Bridges/PreviewRevealBridge");
+const { HostSchemaCommand } = require("./Commands/HostSchemaCommand");
+const { LocalizationCommand } = require("./Commands/LocalizationCommand");
+const { PreviewCommand } = require("./Commands/PreviewCommand");
+const { EditorAuthoringCommand } = require("./Commands/EditorAuthoringCommand");
+const { HostBindingProvider } = require("./WorkspaceIndex/HostBindingProvider");
+const { DslScriptMetadataProvider } = require("./WorkspaceIndex/DslScriptMetadataProvider");
+const { DslScriptNodeProvider } = require("./WorkspaceIndex/DslScriptNodeProvider");
+const { DslScriptSpeakerProvider } = require("./WorkspaceIndex/DslScriptSpeakerProvider");
 
 const languageSelector = { language: "inscape" };
 let outputChannel;
@@ -66,16 +66,16 @@ const defaultPreviewStyle = Object.freeze({
 
 let previewCommand;
 let localizationCommand;
-let workspaceToolCommand;
+let editorAuthoringCommand;
 let hostSchemaCommand;
 
-const workspaceNodeProvider = new InscapeWorkspaceNodeProvider({
+const dslScriptNodeProvider = new DslScriptNodeProvider({
     vscode,
     collectWorkspaceTextSources,
     isJumpReferenceLine
 });
 
-const workspaceSpeakerProvider = new InscapeWorkspaceSpeakerProvider({
+const dslScriptSpeakerProvider = new DslScriptSpeakerProvider({
     vscode,
     fs,
     readProjectConfig,
@@ -86,7 +86,7 @@ const workspaceSpeakerProvider = new InscapeWorkspaceSpeakerProvider({
     formatDisplayPath
 });
 
-const workspaceHostBindingProvider = new InscapeWorkspaceHostBindingProvider({
+const hostBindingProvider = new HostBindingProvider({
     vscode,
     fs,
     readProjectConfig,
@@ -97,7 +97,7 @@ const workspaceHostBindingProvider = new InscapeWorkspaceHostBindingProvider({
     formatDisplayPath
 });
 
-const workspaceMetadataProvider = new InscapeWorkspaceMetadataProvider({
+const dslScriptMetadataProvider = new DslScriptMetadataProvider({
     vscode,
     collectWorkspaceTextSources
 });
@@ -133,27 +133,27 @@ function activate(context) {
                 refreshEditorStylesForVisibleEditors(context);
             }
         }),
-        vscode.languages.registerCompletionItemProvider(languageSelector, new InscapeCompletionProvider(), ">", ".", ":", "\uFF1A", "[", " "),
-        vscode.languages.registerDocumentSymbolProvider(languageSelector, new InscapeDocumentSymbolProvider()),
-        vscode.languages.registerDefinitionProvider(languageSelector, new InscapeDefinitionProvider()),
-        vscode.languages.registerReferenceProvider(languageSelector, new InscapeReferenceProvider()),
-        vscode.languages.registerHoverProvider(languageSelector, new InscapeHoverProvider()),
-        vscode.languages.registerCodeLensProvider(languageSelector, new InscapeCodeLensProvider()),
+        vscode.languages.registerCompletionItemProvider(languageSelector, new DslScriptCompletionProvider(), ">", ".", ":", "\uFF1A", "[", " "),
+        vscode.languages.registerDocumentSymbolProvider(languageSelector, new DslScriptDocumentSymbolProvider()),
+        vscode.languages.registerDefinitionProvider(languageSelector, new DslScriptDefinitionProvider()),
+        vscode.languages.registerReferenceProvider(languageSelector, new DslScriptReferenceProvider()),
+        vscode.languages.registerHoverProvider(languageSelector, new DslScriptHoverProvider()),
+        vscode.languages.registerCodeLensProvider(languageSelector, new DslScriptCodeLensProvider()),
         vscode.commands.registerCommand("inscape.showNodeIncomingReferences", (uri, position, locations) => showNodeIncomingReferences(uri, position, locations)),
         vscode.commands.registerCommand("inscape.openPreview", () => previewCommand.open()),
         vscode.commands.registerCommand("inscape.togglePreview", () => previewCommand.toggle()),
         vscode.commands.registerCommand("inscape.revealSelectionInPreview", () => previewCommand.revealSelection(context)),
-        vscode.commands.registerCommand("inscape.openToolsMenu", () => workspaceToolCommand.openMenu(context)),
-        vscode.commands.registerCommand("inscape.openEditorStyle", () => workspaceToolCommand.openEditorStyle()),
-        vscode.commands.registerCommand("inscape.openPreviewStyle", () => workspaceToolCommand.openPreviewStyle()),
-        vscode.commands.registerCommand("inscape.openQuickSyntaxGuide", () => workspaceToolCommand.openQuickSyntaxGuide()),
+        vscode.commands.registerCommand("inscape.openToolsMenu", () => editorAuthoringCommand.openMenu(context)),
+        vscode.commands.registerCommand("inscape.openEditorStyle", () => editorAuthoringCommand.openEditorStyle()),
+        vscode.commands.registerCommand("inscape.openPreviewStyle", () => editorAuthoringCommand.openPreviewStyle()),
+        vscode.commands.registerCommand("inscape.openQuickSyntaxGuide", () => editorAuthoringCommand.openQuickSyntaxGuide()),
         vscode.commands.registerCommand("inscape.revealInPreview", (payload) => previewRevealBridge.reveal(context, payload)),
         vscode.commands.registerCommand("inscape.extractLocalization", () => localizationCommand.export(context)),
         vscode.commands.registerCommand("inscape.updateLocalization", () => localizationCommand.update(context)),
         vscode.commands.registerCommand("inscape.showHostSchemaCapabilities", () => hostSchemaCommand.showCapabilities()),
         vscode.window.registerCustomEditorProvider(
             "inscape.preview",
-            new InscapePreviewEditorProvider(context),
+            new PreviewEditorProvider(context),
             {
                 webviewOptions: {
                     retainContextWhenHidden: true
@@ -271,7 +271,7 @@ class DiagnosticScheduler {
     }
 }
 
-class InscapeCompletionProvider {
+class DslScriptCompletionProvider {
 
     async provideCompletionItems(document, position) {
         if (!isInscapeDocument(document)) {
@@ -280,7 +280,7 @@ class InscapeCompletionProvider {
 
         const linePrefix = document.lineAt(position).text.slice(0, position.character);
         if (isJumpTargetContext(linePrefix)) {
-            const nodes = await workspaceNodeProvider.collectWorkspaceNodes(document);
+            const nodes = await dslScriptNodeProvider.collectWorkspaceNodes(document);
             return nodes.map((node) => {
                 const name = node.name;
                 const item = new vscode.CompletionItem(name, vscode.CompletionItemKind.Reference);
@@ -292,45 +292,45 @@ class InscapeCompletionProvider {
             });
         }
 
-        const hostBindingContext = workspaceHostBindingProvider.getBindingCompletionContext(linePrefix);
+        const hostBindingContext = hostBindingProvider.getBindingCompletionContext(linePrefix);
         if (hostBindingContext) {
-            const bindings = await workspaceHostBindingProvider.collectWorkspaceBindings(document, hostBindingContext.kind);
-            return bindings.map((binding) => workspaceHostBindingProvider.createCompletionItem(binding));
+            const bindings = await hostBindingProvider.collectWorkspaceBindings(document, hostBindingContext.kind);
+            return bindings.map((binding) => hostBindingProvider.createCompletionItem(binding));
         }
 
         if (isSpeakerCompletionContext(linePrefix)) {
-            const speakers = await workspaceSpeakerProvider.collectWorkspaceSpeakers(document);
-            return speakers.map((speaker) => workspaceSpeakerProvider.createCompletionItem(speaker));
+            const speakers = await dslScriptSpeakerProvider.collectWorkspaceSpeakers(document);
+            return speakers.map((speaker) => dslScriptSpeakerProvider.createCompletionItem(speaker));
         }
 
         return undefined;
     }
 }
 
-class InscapeDefinitionProvider {
+class DslScriptDefinitionProvider {
 
     async provideDefinition(document, position) {
         if (!isInscapeDocument(document)) {
             return undefined;
         }
 
-        const speakerInfo = workspaceSpeakerProvider.getSpeakerAtPosition(document, position);
+        const speakerInfo = dslScriptSpeakerProvider.getSpeakerAtPosition(document, position);
         if (speakerInfo) {
-            const definitions = await workspaceSpeakerProvider.collectConfiguredDefinitions(document, speakerInfo.name);
+            const definitions = await dslScriptSpeakerProvider.collectConfiguredDefinitions(document, speakerInfo.name);
             if (definitions.length > 0) {
                 return definitions.map((definition) => createLocation(definition));
             }
 
-            const references = await workspaceSpeakerProvider.collectWorkspaceReferences(document, speakerInfo.name);
+            const references = await dslScriptSpeakerProvider.collectWorkspaceReferences(document, speakerInfo.name);
             if (references.length > 0) {
                 return references.map((reference) => createLocation(reference));
             }
             return undefined;
         }
 
-        const hostBindingInfo = workspaceHostBindingProvider.getBindingAtPosition(document, position);
+        const hostBindingInfo = hostBindingProvider.getBindingAtPosition(document, position);
         if (hostBindingInfo) {
-            const bindings = await workspaceHostBindingProvider.collectWorkspaceBindings(document, hostBindingInfo.kind);
+            const bindings = await hostBindingProvider.collectWorkspaceBindings(document, hostBindingInfo.kind);
             const matchingBindings = bindings.filter((candidate) => candidate.alias === hostBindingInfo.alias)
                 .map((candidate) => createLocation(candidate));
             if (matchingBindings.length > 0) {
@@ -338,9 +338,9 @@ class InscapeDefinitionProvider {
             }
         }
 
-        const metadataInfo = workspaceMetadataProvider.getDirectiveAtPosition(document, position);
+        const metadataInfo = dslScriptMetadataProvider.getDirectiveAtPosition(document, position);
         if (metadataInfo) {
-            const locations = await workspaceMetadataProvider.collectWorkspaceReferences(document, metadataInfo);
+            const locations = await dslScriptMetadataProvider.collectWorkspaceReferences(document, metadataInfo);
             if (locations.length > 0) {
                 return uniqueLocations(locations.map((item) => createLocation(item)));
             }
@@ -352,12 +352,12 @@ class InscapeDefinitionProvider {
             return [previewRevealBridge.createDefinitionLink(document, previewRevealInfo)];
         }
 
-        const target = workspaceNodeProvider.getJumpTargetAtPosition(document, position);
+        const target = dslScriptNodeProvider.getJumpTargetAtPosition(document, position);
         if (!target) {
             return undefined;
         }
 
-        const nodes = await workspaceNodeProvider.collectWorkspaceNodes(document);
+        const nodes = await dslScriptNodeProvider.collectWorkspaceNodes(document);
         const locations = nodes.filter((node) => node.name === target)
             .map((node) => new vscode.Location(
                 vscode.Uri.file(node.sourcePath),
@@ -371,20 +371,20 @@ class InscapeDefinitionProvider {
     }
 }
 
-class InscapeReferenceProvider {
+class DslScriptReferenceProvider {
 
     async provideReferences(document, position, context) {
         if (!isInscapeDocument(document)) {
             return undefined;
         }
 
-        const speakerInfo = workspaceSpeakerProvider.getSpeakerAtPosition(document, position);
+        const speakerInfo = dslScriptSpeakerProvider.getSpeakerAtPosition(document, position);
         if (speakerInfo) {
-            const references = await workspaceSpeakerProvider.collectWorkspaceReferences(document, speakerInfo.name);
+            const references = await dslScriptSpeakerProvider.collectWorkspaceReferences(document, speakerInfo.name);
             let locations = references.map((reference) => createLocation(reference));
 
             if (context && context.includeDeclaration) {
-                const definitions = await workspaceSpeakerProvider.collectConfiguredDefinitions(document, speakerInfo.name);
+                const definitions = await dslScriptSpeakerProvider.collectConfiguredDefinitions(document, speakerInfo.name);
                 locations = definitions.map((definition) => createLocation(definition)).concat(locations);
             }
 
@@ -392,17 +392,17 @@ class InscapeReferenceProvider {
             return locations.length > 0 ? locations : undefined;
         }
 
-        const target = workspaceNodeProvider.getDeclaredNodeNameAtPosition(document, position)
-            || workspaceNodeProvider.getJumpTargetAtPosition(document, position);
+        const target = dslScriptNodeProvider.getDeclaredNodeNameAtPosition(document, position)
+            || dslScriptNodeProvider.getJumpTargetAtPosition(document, position);
         if (!target) {
             return undefined;
         }
 
-        const references = await workspaceNodeProvider.collectWorkspaceJumpReferences(document, target);
+        const references = await dslScriptNodeProvider.collectWorkspaceJumpReferences(document, target);
         let locations = references.map((reference) => createLocation(reference));
 
         if (context && context.includeDeclaration) {
-            const declarations = await workspaceNodeProvider.collectWorkspaceNodes(document);
+            const declarations = await dslScriptNodeProvider.collectWorkspaceNodes(document);
             locations = declarations.filter((node) => node.name === target)
                 .map((node) => createLocation(node))
                 .concat(locations);
@@ -413,57 +413,57 @@ class InscapeReferenceProvider {
     }
 }
 
-class InscapeHoverProvider {
+class DslScriptHoverProvider {
 
     async provideHover(document, position) {
         if (!isInscapeDocument(document)) {
             return undefined;
         }
 
-        const speakerInfo = workspaceSpeakerProvider.getSpeakerAtPosition(document, position);
+        const speakerInfo = dslScriptSpeakerProvider.getSpeakerAtPosition(document, position);
         if (speakerInfo) {
-            const speakers = await workspaceSpeakerProvider.collectWorkspaceSpeakers(document);
+            const speakers = await dslScriptSpeakerProvider.collectWorkspaceSpeakers(document);
             const speaker = speakers.find((candidate) => candidate.name === speakerInfo.name);
             if (speaker) {
-                return new vscode.Hover(workspaceSpeakerProvider.createHoverMarkdown(speaker), speakerInfo.range);
+                return new vscode.Hover(dslScriptSpeakerProvider.createHoverMarkdown(speaker), speakerInfo.range);
             }
         }
 
-        const hostBindingInfo = workspaceHostBindingProvider.getBindingAtPosition(document, position);
+        const hostBindingInfo = hostBindingProvider.getBindingAtPosition(document, position);
         if (hostBindingInfo) {
-            const bindings = await workspaceHostBindingProvider.collectWorkspaceBindings(document, hostBindingInfo.kind);
+            const bindings = await hostBindingProvider.collectWorkspaceBindings(document, hostBindingInfo.kind);
             const binding = bindings.find((candidate) => candidate.alias === hostBindingInfo.alias);
             if (binding) {
-                return new vscode.Hover(workspaceHostBindingProvider.createHoverMarkdown(binding), hostBindingInfo.range);
+                return new vscode.Hover(hostBindingProvider.createHoverMarkdown(binding), hostBindingInfo.range);
             }
 
-            return new vscode.Hover(workspaceHostBindingProvider.createMissingHoverMarkdown({
+            return new vscode.Hover(hostBindingProvider.createMissingHoverMarkdown({
                 kind: hostBindingInfo.kind,
                 alias: hostBindingInfo.alias,
                 sourcePath: document.uri.fsPath
             }), hostBindingInfo.range);
         }
 
-        const metadataInfo = workspaceMetadataProvider.getDirectiveAtPosition(document, position);
+        const metadataInfo = dslScriptMetadataProvider.getDirectiveAtPosition(document, position);
         if (metadataInfo) {
-            return new vscode.Hover(workspaceMetadataProvider.createHoverMarkdown(metadataInfo), metadataInfo.range);
+            return new vscode.Hover(dslScriptMetadataProvider.createHoverMarkdown(metadataInfo), metadataInfo.range);
         }
 
-        const declaredNode = workspaceNodeProvider.getDeclaredNodeAtPosition(document, position);
+        const declaredNode = dslScriptNodeProvider.getDeclaredNodeAtPosition(document, position);
         if (declaredNode) {
-            return new vscode.Hover(workspaceNodeProvider.createDeclarationHoverMarkdown(declaredNode.name), declaredNode.range);
+            return new vscode.Hover(dslScriptNodeProvider.createDeclarationHoverMarkdown(declaredNode.name), declaredNode.range);
         }
 
-        const jumpTarget = workspaceNodeProvider.getJumpTargetInfoAtPosition(document, position);
+        const jumpTarget = dslScriptNodeProvider.getJumpTargetInfoAtPosition(document, position);
         if (jumpTarget) {
-            return new vscode.Hover(workspaceNodeProvider.createJumpTargetHoverMarkdown(jumpTarget.name), jumpTarget.range);
+            return new vscode.Hover(dslScriptNodeProvider.createJumpTargetHoverMarkdown(jumpTarget.name), jumpTarget.range);
         }
 
         return undefined;
     }
 }
 
-class InscapeDocumentSymbolProvider {
+class DslScriptDocumentSymbolProvider {
 
     provideDocumentSymbols(document) {
         const symbols = [];
@@ -490,19 +490,19 @@ class InscapeDocumentSymbolProvider {
     }
 }
 
-class InscapeCodeLensProvider {
+class DslScriptCodeLensProvider {
 
     async provideCodeLenses(document) {
         if (!isInscapeDocument(document)) {
             return [];
         }
 
-        const currentDocumentNodes = workspaceNodeProvider.collectDocumentNodes(document);
+        const currentDocumentNodes = dslScriptNodeProvider.collectDocumentNodes(document);
         if (currentDocumentNodes.length === 0) {
             return [];
         }
 
-        const navigation = await workspaceNodeProvider.collectWorkspaceNavigation(document);
+        const navigation = await dslScriptNodeProvider.collectWorkspaceNavigation(document);
         const codeLenses = [];
         for (const node of currentDocumentNodes) {
             const range = new vscode.Range(node.line, node.character, node.line, node.character + node.length);
@@ -963,7 +963,7 @@ function hashDocumentText(document) {
     return crypto.createHash("sha1").update(document.getText(), "utf8").digest("hex");
 }
 
-class InscapePreviewEditorProvider {
+class PreviewEditorProvider {
 
     constructor(context) {
         this.context = context;
@@ -1101,7 +1101,7 @@ async function openPreviewSource(source, webviewPanel) {
     }
 }
 
-const previewRevealBridge = new InscapePreviewRevealBridge({
+const previewRevealBridge = new PreviewRevealBridge({
     vscode,
     previewPanels,
     refreshPreviewPanel,
@@ -1112,7 +1112,7 @@ const previewRevealBridge = new InscapePreviewRevealBridge({
     trimRange
 });
 
-previewCommand = new InscapePreviewCommand({
+previewCommand = new PreviewCommand({
     vscode,
     selectWorkspaceFolder,
     isInscapeDocument,
@@ -1120,7 +1120,7 @@ previewCommand = new InscapePreviewCommand({
     normalizePath
 });
 
-localizationCommand = new InscapeLocalizationCommand({
+localizationCommand = new LocalizationCommand({
     vscode,
     childProcess,
     fs,
@@ -1132,7 +1132,7 @@ localizationCommand = new InscapeLocalizationCommand({
     normalizePath
 });
 
-workspaceToolCommand = new InscapeWorkspaceToolCommand({
+editorAuthoringCommand = new EditorAuthoringCommand({
     vscode,
     fs,
     path,
@@ -1142,7 +1142,7 @@ workspaceToolCommand = new InscapeWorkspaceToolCommand({
     defaultPreviewStyle
 });
 
-hostSchemaCommand = new InscapeHostSchemaCommand({
+hostSchemaCommand = new HostSchemaCommand({
     vscode,
     fs,
     selectWorkspaceFolder,
