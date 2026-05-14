@@ -8,6 +8,7 @@ const path = require("path");
 const vscode = require("vscode");
 const { InscapeHostSchemaCommand } = require("./Commands/InscapeHostSchemaCommand");
 const { InscapeLocalizationCommand } = require("./Commands/InscapeLocalizationCommand");
+const { InscapePreviewCommand } = require("./Commands/InscapePreviewCommand");
 const { InscapeWorkspaceToolCommand } = require("./Commands/InscapeWorkspaceToolCommand");
 
 const languageSelector = { language: "inscape" };
@@ -58,144 +59,10 @@ const defaultPreviewStyle = Object.freeze({
     choiceRadius: "16px"
 });
 
-class InscapePreviewCommand {
-
-    async open() {
-        const document = await this.resolveDocument();
-        if (!document) {
-            return;
-        }
-
-        await this.openDocument(document);
-    }
-
-    async toggle() {
-        const document = await this.resolveDocument();
-        if (!document) {
-            return;
-        }
-
-        const openPreviewTab = this.findTab(document);
-        if (openPreviewTab && this.isActiveTab(openPreviewTab, document)) {
-            await vscode.window.tabGroups.close(openPreviewTab, true);
-            return;
-        }
-
-        await this.openDocument(document);
-    }
-
-    async revealSelection(context) {
-        const editor = vscode.window.activeTextEditor;
-        if (!editor || !isInscapeDocument(editor.document)) {
-            vscode.window.showWarningMessage("Open an .inscape file before revealing preview.");
-            return;
-        }
-
-        const selection = editor.selection;
-        const start = selection ? selection.start : new vscode.Position(0, 0);
-        const end = selection ? selection.end : start;
-        const payload = {
-            sourcePath: editor.document.uri.fsPath,
-            line: start.line,
-            character: start.character,
-            length: start.line === end.line ? Math.max(0, end.character - start.character) : 0
-        };
-
-        await previewRevealBridge.reveal(context, payload);
-    }
-
-    async openDocument(document) {
-        await vscode.commands.executeCommand("vscode.openWith", document.uri, "inscape.preview", {
-            viewColumn: vscode.ViewColumn.Beside,
-            preserveFocus: false,
-            preview: false
-        });
-    }
-
-    async resolveDocument() {
-        const activeDocument = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.document : undefined;
-        if (activeDocument && isInscapeDocument(activeDocument)) {
-            return activeDocument;
-        }
-
-        const workspaceFolder = await selectWorkspaceFolder();
-        if (!workspaceFolder) {
-            return undefined;
-        }
-
-        const candidates = await vscode.workspace.findFiles("**/*.inscape", "{**/.git/**,**/bin/**,**/obj/**,**/node_modules/**,**/artifacts/**}", 1);
-        if (candidates.length === 0) {
-            vscode.window.showWarningMessage("Open an .inscape file before opening the Inscape preview.");
-            return undefined;
-        }
-
-        return vscode.workspace.openTextDocument(candidates[0]);
-    }
-
-    findTab(document) {
-        const targetPath = normalizePath(document.uri.fsPath);
-        for (const group of vscode.window.tabGroups.all) {
-            for (const tab of group.tabs) {
-                const input = tab.input;
-                if (!input || input.viewType !== "inscape.preview" || !input.uri) {
-                    continue;
-                }
-
-                if (normalizePath(input.uri.fsPath) === targetPath) {
-                    return tab;
-                }
-            }
-        }
-
-        return undefined;
-    }
-
-    isActiveTab(tab, document) {
-        const activeTab = vscode.window.tabGroups.activeTabGroup.activeTab;
-        if (!activeTab || activeTab !== tab) {
-            return false;
-        }
-
-        const input = tab.input;
-        return input && input.viewType === "inscape.preview" && input.uri && normalizePath(input.uri.fsPath) === normalizePath(document.uri.fsPath);
-    }
-
-}
-
-const previewCommand = new InscapePreviewCommand();
-
-const localizationCommand = new InscapeLocalizationCommand({
-    vscode,
-    childProcess,
-    fs,
-    path,
-    selectWorkspaceFolder,
-    isInscapeDocument,
-    writeTempDocument,
-    resolveCliProjectPath,
-    normalizePath
-});
-
-const workspaceToolCommand = new InscapeWorkspaceToolCommand({
-    vscode,
-    fs,
-    path,
-    previewCommand,
-    selectWorkspaceFolder,
-    defaultEditorStyle,
-    defaultPreviewStyle
-});
-
-const hostSchemaCommand = new InscapeHostSchemaCommand({
-    vscode,
-    fs,
-    selectWorkspaceFolder,
-    readProjectConfigFromWorkspaceFolder,
-    resolveProjectConfigPath,
-    openLocation,
-    locationFromPayload,
-    escapeRegExp
-});
+let previewCommand;
+let localizationCommand;
+let workspaceToolCommand;
+let hostSchemaCommand;
 
 class InscapeWorkspaceNodeProvider {
 
@@ -2243,6 +2110,47 @@ class InscapePreviewRevealBridge {
 }
 
 const previewRevealBridge = new InscapePreviewRevealBridge();
+
+previewCommand = new InscapePreviewCommand({
+    vscode,
+    selectWorkspaceFolder,
+    isInscapeDocument,
+    previewRevealBridge,
+    normalizePath
+});
+
+localizationCommand = new InscapeLocalizationCommand({
+    vscode,
+    childProcess,
+    fs,
+    path,
+    selectWorkspaceFolder,
+    isInscapeDocument,
+    writeTempDocument,
+    resolveCliProjectPath,
+    normalizePath
+});
+
+workspaceToolCommand = new InscapeWorkspaceToolCommand({
+    vscode,
+    fs,
+    path,
+    previewCommand,
+    selectWorkspaceFolder,
+    defaultEditorStyle,
+    defaultPreviewStyle
+});
+
+hostSchemaCommand = new InscapeHostSchemaCommand({
+    vscode,
+    fs,
+    selectWorkspaceFolder,
+    readProjectConfigFromWorkspaceFolder,
+    resolveProjectConfigPath,
+    openLocation,
+    locationFromPayload,
+    escapeRegExp
+});
 
 function escapeHtml(value) {
     return String(value)
