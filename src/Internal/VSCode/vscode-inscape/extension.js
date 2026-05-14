@@ -511,7 +511,7 @@ function schedulePreviewRefresh(context, document, delayOverride) {
         return;
     }
 
-            action: () => previewCommand.revealSelection(context)
+    const sourceKey = normalizePath(document.uri.fsPath);
     const panels = previewPanels.get(sourceKey);
     if (!panels || panels.size === 0) {
         return;
