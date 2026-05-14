@@ -13,6 +13,7 @@ const { PreviewCommand } = require("./Commands/PreviewCommand");
 const { EditorAuthoringCommand } = require("./Commands/EditorAuthoringCommand");
 const { DslScriptCompletionProvider } = require("./LanguageFeatures/DslScriptCompletionProvider");
 const { DslScriptDefinitionProvider } = require("./LanguageFeatures/DslScriptDefinitionProvider");
+const { DslScriptHoverProvider } = require("./LanguageFeatures/DslScriptHoverProvider");
 const { DslScriptReferenceProvider } = require("./LanguageFeatures/DslScriptReferenceProvider");
 const { HostBindingProvider } = require("./WorkspaceIndex/HostBindingProvider");
 const { DslScriptMetadataProvider } = require("./WorkspaceIndex/DslScriptMetadataProvider");
@@ -123,6 +124,15 @@ const dslScriptReferenceProvider = new DslScriptReferenceProvider({
     dslScriptSpeakerProvider
 });
 
+const dslScriptHoverProvider = new DslScriptHoverProvider({
+    vscode,
+    isInscapeDocument,
+    dslScriptNodeProvider,
+    dslScriptSpeakerProvider,
+    hostBindingProvider,
+    dslScriptMetadataProvider
+});
+
 function activate(context) {
     outputChannel = vscode.window.createOutputChannel("Inscape");
     const diagnostics = vscode.languages.createDiagnosticCollection("inscape");
@@ -158,7 +168,7 @@ function activate(context) {
         vscode.languages.registerDocumentSymbolProvider(languageSelector, new DslScriptDocumentSymbolProvider()),
         vscode.languages.registerDefinitionProvider(languageSelector, dslScriptDefinitionProvider),
         vscode.languages.registerReferenceProvider(languageSelector, dslScriptReferenceProvider),
-        vscode.languages.registerHoverProvider(languageSelector, new DslScriptHoverProvider()),
+        vscode.languages.registerHoverProvider(languageSelector, dslScriptHoverProvider),
         vscode.languages.registerCodeLensProvider(languageSelector, new DslScriptCodeLensProvider()),
         vscode.commands.registerCommand("inscape.showNodeIncomingReferences", (uri, position, locations) => showNodeIncomingReferences(uri, position, locations)),
         vscode.commands.registerCommand("inscape.openPreview", () => previewCommand.open()),
@@ -289,56 +299,6 @@ class DiagnosticScheduler {
         }
         this.timers.clear();
         this.runIds.clear();
-    }
-}
-
-class DslScriptHoverProvider {
-
-    async provideHover(document, position) {
-        if (!isInscapeDocument(document)) {
-            return undefined;
-        }
-
-        const speakerInfo = dslScriptSpeakerProvider.getSpeakerAtPosition(document, position);
-        if (speakerInfo) {
-            const speakers = await dslScriptSpeakerProvider.collectWorkspaceSpeakers(document);
-            const speaker = speakers.find((candidate) => candidate.name === speakerInfo.name);
-            if (speaker) {
-                return new vscode.Hover(dslScriptSpeakerProvider.createHoverMarkdown(speaker), speakerInfo.range);
-            }
-        }
-
-        const hostBindingInfo = hostBindingProvider.getBindingAtPosition(document, position);
-        if (hostBindingInfo) {
-            const bindings = await hostBindingProvider.collectWorkspaceBindings(document, hostBindingInfo.kind);
-            const binding = bindings.find((candidate) => candidate.alias === hostBindingInfo.alias);
-            if (binding) {
-                return new vscode.Hover(hostBindingProvider.createHoverMarkdown(binding), hostBindingInfo.range);
-            }
-
-            return new vscode.Hover(hostBindingProvider.createMissingHoverMarkdown({
-                kind: hostBindingInfo.kind,
-                alias: hostBindingInfo.alias,
-                sourcePath: document.uri.fsPath
-            }), hostBindingInfo.range);
-        }
-
-        const metadataInfo = dslScriptMetadataProvider.getDirectiveAtPosition(document, position);
-        if (metadataInfo) {
-            return new vscode.Hover(dslScriptMetadataProvider.createHoverMarkdown(metadataInfo), metadataInfo.range);
-        }
-
-        const declaredNode = dslScriptNodeProvider.getDeclaredNodeAtPosition(document, position);
-        if (declaredNode) {
-            return new vscode.Hover(dslScriptNodeProvider.createDeclarationHoverMarkdown(declaredNode.name), declaredNode.range);
-        }
-
-        const jumpTarget = dslScriptNodeProvider.getJumpTargetInfoAtPosition(document, position);
-        if (jumpTarget) {
-            return new vscode.Hover(dslScriptNodeProvider.createJumpTargetHoverMarkdown(jumpTarget.name), jumpTarget.range);
-        }
-
-        return undefined;
     }
 }
 

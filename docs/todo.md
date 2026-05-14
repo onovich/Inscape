@@ -127,6 +127,7 @@
 	- [x] 已迁出第一条 language feature provider：`DslScriptCompletionProvider` 进入 `LanguageFeatures/DslScriptCompletionProvider.js`，入口文件只保留依赖注入和 VSCode provider 注册。
 	- [x] 已迁出第二条 language feature provider：`DslScriptDefinitionProvider` 进入 `LanguageFeatures/DslScriptDefinitionProvider.js`，定义跳转仍复用 workspace index 与 preview reveal bridge。
 	- [x] 已迁出第三条 language feature provider：`DslScriptReferenceProvider` 进入 `LanguageFeatures/DslScriptReferenceProvider.js`，引用查找仍复用 workspace index。
+	- [x] 已迁出第四条 language feature provider：`DslScriptHoverProvider` 进入 `LanguageFeatures/DslScriptHoverProvider.js`，悬浮说明仍复用 workspace index。
 	- [x] 已顺手修复预览定位局部缺陷：`findDialogueSeparatorIndex` 中误残留的 preview reveal 调用与缺失的半角冒号解析已清理，避免说话人行的预览定位在运行时触发异常。
 - [ ] 创建 `Inscape.LanguageServer` 基线项目，先迁移诊断与定义跳转，再迁移引用、补全与 source map 相关语义能力。
 - [ ] 将 Cli、VSCode 和未来 LanguageServer 共享的项目级流程继续拆成显式职责模块，优先落到 `Tooling` 的 `ProjectSources`、`ToolConfig`、`Preview`、`Localization`、`HostSchema`、`HostBinding` 等模块；如未来确需统一门面，也应建立在这些模块之上，而不是先造一个大而泛的 `ProjectService`。
