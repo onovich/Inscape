@@ -18,6 +18,7 @@ const { DslScriptDiagnosticScheduler } = require("./LanguageFeatures/DslScriptDi
 const { DslScriptDocumentSymbolProvider } = require("./LanguageFeatures/DslScriptDocumentSymbolProvider");
 const { DslScriptHoverProvider } = require("./LanguageFeatures/DslScriptHoverProvider");
 const { DslScriptReferenceProvider } = require("./LanguageFeatures/DslScriptReferenceProvider");
+const { PreviewEditorProvider } = require("./PreviewWebview/PreviewEditorProvider");
 const { HostBindingProvider } = require("./WorkspaceIndex/HostBindingProvider");
 const { DslScriptMetadataProvider } = require("./WorkspaceIndex/DslScriptMetadataProvider");
 const { DslScriptNodeProvider } = require("./WorkspaceIndex/DslScriptNodeProvider");
@@ -209,7 +210,16 @@ function activate(context) {
         vscode.commands.registerCommand("inscape.showHostSchemaCapabilities", () => hostSchemaCommand.showCapabilities()),
         vscode.window.registerCustomEditorProvider(
             "inscape.preview",
-            new PreviewEditorProvider(context),
+            new PreviewEditorProvider({
+                path,
+                context,
+                previewPanels,
+                normalizePath,
+                createPreviewLoadingHtml,
+                refreshPreviewPanel,
+                previewRevealBridge,
+                openPreviewSource
+            }),
             {
                 webviewOptions: {
                     retainContextWhenHidden: true
@@ -671,54 +681,6 @@ function resolveCliAssemblyPath(workspaceFolderPath, cliProject) {
 
 function hashDocumentText(document) {
     return crypto.createHash("sha1").update(document.getText(), "utf8").digest("hex");
-}
-
-class PreviewEditorProvider {
-
-    constructor(context) {
-        this.context = context;
-    }
-
-    resolveCustomTextEditor(document, webviewPanel) {
-        webviewPanel.webview.options = {
-            enableScripts: true
-        };
-
-        const sourceKey = normalizePath(document.uri.fsPath);
-        if (!previewPanels.has(sourceKey)) {
-            previewPanels.set(sourceKey, new Set());
-        }
-
-        const panels = previewPanels.get(sourceKey);
-        panels.add(webviewPanel);
-
-        webviewPanel.title = "Inscape Preview · " + path.basename(document.uri.fsPath);
-        webviewPanel.webview.html = createPreviewLoadingHtml(path.basename(document.uri.fsPath));
-
-        webviewPanel.onDidDispose(() => {
-            const currentPanels = previewPanels.get(sourceKey);
-            if (!currentPanels) {
-                return;
-            }
-
-            currentPanels.delete(webviewPanel);
-            if (currentPanels.size === 0) {
-                previewPanels.delete(sourceKey);
-            }
-        });
-
-        webviewPanel.webview.onDidReceiveMessage((message) => {
-            if (!message || message.type !== "openSource" || !message.source || !message.source.sourcePath) {
-                return;
-            }
-
-            openPreviewSource(message.source, webviewPanel);
-        });
-
-        refreshPreviewPanel(this.context, webviewPanel, document, true)
-            .then(() => previewRevealBridge.applyPending(webviewPanel, document));
-    }
-
 }
 
 function createTempPath(prefix, extension) {

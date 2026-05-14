@@ -42,6 +42,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - 2026-05-14 已推进 VSCode 拆分 A3.5：`DslScriptDocumentSymbolProvider` 已从 `extension.js` 迁入 `LanguageFeatures/DslScriptDocumentSymbolProvider.js`，outline 仍只做当前文档节点扫描。
 - 2026-05-14 已推进 VSCode 拆分 A3.6：`DslScriptCodeLensProvider` 已从 `extension.js` 迁入 `LanguageFeatures/DslScriptCodeLensProvider.js`，节点入边计数继续复用 workspace index。
 - 2026-05-14 已推进 VSCode 拆分 A3.7：`DslScriptDiagnosticScheduler` 已从 `extension.js` 迁入 `LanguageFeatures/DslScriptDiagnosticScheduler.js`；B3.1 LanguageFeatures provider / diagnostics 调度已补齐，`extension.js` 当前只保留注册与依赖注入。
+- 2026-05-14 已推进 VSCode 拆分 B3.2.1：`PreviewEditorProvider` 已从 `extension.js` 迁入 `PreviewWebview/PreviewEditorProvider.js`，custom editor 注册仍由入口文件负责。
 - 2026-05-12 已迁移当前聚合测试项目：`tests/Inscape.Tests` -> `tests/Internal/Inscape.Tests`。这只是测试项目路径进入 Internal 测试树，测试内容尚未按 Compiler / Tooling / Cli / ExternalSupport 拆分。
 - 当前分支为 `main...origin/main`。本轮已把目录优先方案正式冻结为文档与 ADR；最新提交请以 `git log --oneline -1` 为准。
 - 本轮会话已确认新的重构铁律：先搭目录骨架与 `README.md` 规则文件，再迁大目录路径，再迁 solution / 项目路径，再迁项目名、命名空间和类型名；在此之前，不再把主要重构精力继续放在旧目录里的微观 helper 收口上。
@@ -78,6 +79,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - 本轮会话已继续收紧 VSCode workspace index 的 host binding provider 边界：host binding 补全上下文与光标位置解析已吸回 `HostBindingProvider`，Completion / Definition / Hover 不再直接依赖顶层 host binding helper。
 - 本轮会话已继续收紧 `HostBindingProvider` 的拥有边界：host binding completion / hover / missing-hover markdown 构造已吸回 provider 自身，相关 markdown helper 不再散在顶层函数区。
 - 本轮会话已补齐 VSCode language features 拆分：`DslScriptCompletionProvider`、`DslScriptDefinitionProvider`、`DslScriptReferenceProvider`、`DslScriptHoverProvider`、`DslScriptDocumentSymbolProvider`、`DslScriptCodeLensProvider` 与 `DslScriptDiagnosticScheduler` 已进入 `LanguageFeatures`，补全、定义跳转、引用查找、悬浮说明、outline、CodeLens 与诊断调度逻辑继续复用 `WorkspaceIndex`、CLI 调用和 preview reveal bridge，不在编辑器层重建编译语义。
+- 本轮会话已开始推进 PreviewWebview 拆分：`PreviewEditorProvider` 已进入 `PreviewWebview`，下一步可继续迁出 loading / error HTML 与 webview 刷新渲染流程。
 - 本轮会话已顺手修复预览定位局部缺陷：`findDialogueSeparatorIndex` 中误残留的 preview reveal 调用与缺失的半角冒号解析已清理，避免说话人行的预览定位在运行时触发异常。
 - 本轮会话已继续收敛 CLI 总入口 runner 命名：`CliTopLevelCommandRunner`、`CliSingleFileCommandRunner`、`CliProjectCommandRunner` 已分别改为 `CliCommandTopLevelRunner`、`CliCommandSingleFileRunner`、`CliCommandProjectRunner`。
 - 本轮会话已继续按终局后缀白名单收口 CLI 命令入口：`CliCommandTopLevelRunner`、`CliCommandSingleFileRunner`、`CliCommandProjectRunner` 以及 `CliUnitySample*CommandRunner` 已统一去掉 `Runner`，收敛为 `CliTopLevelCommand`、`CliSingleFileCommand`、`CliProjectCommand` 与 `CliUnitySample*Command`。
