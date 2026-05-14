@@ -12,6 +12,7 @@ const { LocalizationCommand } = require("./Commands/LocalizationCommand");
 const { PreviewCommand } = require("./Commands/PreviewCommand");
 const { EditorAuthoringCommand } = require("./Commands/EditorAuthoringCommand");
 const { DslScriptCompletionProvider } = require("./LanguageFeatures/DslScriptCompletionProvider");
+const { DslScriptDefinitionProvider } = require("./LanguageFeatures/DslScriptDefinitionProvider");
 const { HostBindingProvider } = require("./WorkspaceIndex/HostBindingProvider");
 const { DslScriptMetadataProvider } = require("./WorkspaceIndex/DslScriptMetadataProvider");
 const { DslScriptNodeProvider } = require("./WorkspaceIndex/DslScriptNodeProvider");
@@ -146,7 +147,7 @@ function activate(context) {
         }),
         vscode.languages.registerCompletionItemProvider(languageSelector, dslScriptCompletionProvider, ">", ".", ":", "\uFF1A", "[", " "),
         vscode.languages.registerDocumentSymbolProvider(languageSelector, new DslScriptDocumentSymbolProvider()),
-        vscode.languages.registerDefinitionProvider(languageSelector, new DslScriptDefinitionProvider()),
+        vscode.languages.registerDefinitionProvider(languageSelector, dslScriptDefinitionProvider),
         vscode.languages.registerReferenceProvider(languageSelector, new DslScriptReferenceProvider()),
         vscode.languages.registerHoverProvider(languageSelector, new DslScriptHoverProvider()),
         vscode.languages.registerCodeLensProvider(languageSelector, new DslScriptCodeLensProvider()),
@@ -279,70 +280,6 @@ class DiagnosticScheduler {
         }
         this.timers.clear();
         this.runIds.clear();
-    }
-}
-
-class DslScriptDefinitionProvider {
-
-    async provideDefinition(document, position) {
-        if (!isInscapeDocument(document)) {
-            return undefined;
-        }
-
-        const speakerInfo = dslScriptSpeakerProvider.getSpeakerAtPosition(document, position);
-        if (speakerInfo) {
-            const definitions = await dslScriptSpeakerProvider.collectConfiguredDefinitions(document, speakerInfo.name);
-            if (definitions.length > 0) {
-                return definitions.map((definition) => createLocation(definition));
-            }
-
-            const references = await dslScriptSpeakerProvider.collectWorkspaceReferences(document, speakerInfo.name);
-            if (references.length > 0) {
-                return references.map((reference) => createLocation(reference));
-            }
-            return undefined;
-        }
-
-        const hostBindingInfo = hostBindingProvider.getBindingAtPosition(document, position);
-        if (hostBindingInfo) {
-            const bindings = await hostBindingProvider.collectWorkspaceBindings(document, hostBindingInfo.kind);
-            const matchingBindings = bindings.filter((candidate) => candidate.alias === hostBindingInfo.alias)
-                .map((candidate) => createLocation(candidate));
-            if (matchingBindings.length > 0) {
-                return uniqueLocations(matchingBindings);
-            }
-        }
-
-        const metadataInfo = dslScriptMetadataProvider.getDirectiveAtPosition(document, position);
-        if (metadataInfo) {
-            const locations = await dslScriptMetadataProvider.collectWorkspaceReferences(document, metadataInfo);
-            if (locations.length > 0) {
-                return uniqueLocations(locations.map((item) => createLocation(item)));
-            }
-        }
-
-        const previewRevealInfo = previewRevealBridge.getRevealInfoAtPosition(document, position);
-        if (previewRevealInfo) {
-            previewRevealBridge.rememberDefinition(document, previewRevealInfo);
-            return [previewRevealBridge.createDefinitionLink(document, previewRevealInfo)];
-        }
-
-        const target = dslScriptNodeProvider.getJumpTargetAtPosition(document, position);
-        if (!target) {
-            return undefined;
-        }
-
-        const nodes = await dslScriptNodeProvider.collectWorkspaceNodes(document);
-        const locations = nodes.filter((node) => node.name === target)
-            .map((node) => new vscode.Location(
-                vscode.Uri.file(node.sourcePath),
-                new vscode.Position(node.line, node.character)
-            ));
-
-        if (locations.length > 0) {
-            return locations;
-        }
-        return undefined;
     }
 }
 
@@ -1085,6 +1022,18 @@ const previewRevealBridge = new PreviewRevealBridge({
     isLikelyDialogueSpeaker,
     findDialogueSeparatorIndex,
     trimRange
+});
+
+const dslScriptDefinitionProvider = new DslScriptDefinitionProvider({
+    vscode,
+    isInscapeDocument,
+    createLocation,
+    uniqueLocations,
+    dslScriptNodeProvider,
+    dslScriptSpeakerProvider,
+    hostBindingProvider,
+    dslScriptMetadataProvider,
+    previewRevealBridge
 });
 
 previewCommand = new PreviewCommand({
