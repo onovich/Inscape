@@ -21,6 +21,7 @@ const { DslScriptReferenceProvider } = require("./LanguageFeatures/DslScriptRefe
 const { PreviewEditorProvider } = require("./PreviewWebview/PreviewEditorProvider");
 const { PreviewHtmlProvider } = require("./PreviewWebview/PreviewHtmlProvider");
 const { PreviewRefreshController } = require("./PreviewWebview/PreviewRefreshController");
+const { PreviewSourceController } = require("./PreviewWebview/PreviewSourceController");
 const { HostBindingProvider } = require("./WorkspaceIndex/HostBindingProvider");
 const { DslScriptMetadataProvider } = require("./WorkspaceIndex/DslScriptMetadataProvider");
 const { DslScriptNodeProvider } = require("./WorkspaceIndex/DslScriptNodeProvider");
@@ -165,6 +166,12 @@ const previewRefreshController = new PreviewRefreshController({
     logOutput
 });
 
+const previewSourceController = new PreviewSourceController({
+    vscode,
+    normalizePath,
+    openLocation
+});
+
 function activate(context) {
     outputChannel = vscode.window.createOutputChannel("Inscape");
     const diagnostics = vscode.languages.createDiagnosticCollection("inscape");
@@ -235,7 +242,7 @@ function activate(context) {
                 createPreviewLoadingHtml: (workspaceName) => previewHtmlProvider.createLoadingHtml(workspaceName),
                 refreshPreviewPanel,
                 previewRevealBridge,
-                openPreviewSource
+                openPreviewSource: (source, webviewPanel) => previewSourceController.openSource(source, webviewPanel)
             }),
             {
                 webviewOptions: {
@@ -614,32 +621,6 @@ function createTempPath(prefix, extension) {
         + extension;
 
     return path.join(directory, fileName);
-}
-
-async function openPreviewSource(source, webviewPanel) {
-    try {
-        const location = new vscode.Location(
-            vscode.Uri.file(source.sourcePath),
-            new vscode.Range(
-                Math.max(0, (source.line || 0)),
-                Math.max(0, (source.column || 0)),
-                Math.max(0, (source.line || 0)),
-                Math.max(0, (source.column || 0) + 1)
-            )
-        );
-
-        const existingEditor = findVisibleTextEditorForUri(location.uri, webviewPanel);
-        if (existingEditor) {
-            await focusExistingTextEditor(existingEditor, location.range);
-            return;
-        }
-
-        await openLocation(location, {
-            viewColumn: resolveSourceViewColumn(location.uri, webviewPanel)
-        });
-    } catch (error) {
-        vscode.window.showErrorMessage(error.message || String(error));
-    }
 }
 
 const previewRevealBridge = new PreviewRevealBridge({
@@ -1143,72 +1124,6 @@ async function openLocation(location, options = {}) {
     });
     editor.selection = new vscode.Selection(location.range.start, location.range.end);
     editor.revealRange(location.range, vscode.TextEditorRevealType.InCenter);
-}
-
-async function focusExistingTextEditor(editor, range) {
-    const activatedEditor = await vscode.window.showTextDocument(editor.document, {
-        viewColumn: editor.viewColumn,
-        preview: false,
-        preserveFocus: false,
-        selection: range
-    });
-    activatedEditor.selection = new vscode.Selection(range.start, range.end);
-    activatedEditor.revealRange(range, vscode.TextEditorRevealType.InCenter);
-}
-
-function findVisibleTextEditorForUri(targetUri, webviewPanel) {
-    const targetPath = normalizePath(targetUri.fsPath);
-    const exactMatch = vscode.window.visibleTextEditors.find((editor) => normalizePath(editor.document.uri.fsPath) === targetPath);
-    if (exactMatch) {
-        return exactMatch;
-    }
-
-    if (!webviewPanel) {
-        return undefined;
-    }
-
-    return vscode.window.visibleTextEditors.find((editor) => editor.viewColumn && editor.viewColumn !== webviewPanel.viewColumn);
-}
-
-function resolveSourceViewColumn(targetUri, webviewPanel) {
-    const visibleEditor = vscode.window.visibleTextEditors.find((editor) => normalizePath(editor.document.uri.fsPath) === normalizePath(targetUri.fsPath));
-    if (visibleEditor && visibleEditor.viewColumn) {
-        return visibleEditor.viewColumn;
-    }
-
-    const openTabColumn = findOpenTextTabViewColumn(targetUri);
-    if (openTabColumn) {
-        return openTabColumn;
-    }
-
-    const fallbackEditor = vscode.window.visibleTextEditors.find((editor) => editor.viewColumn && (!webviewPanel || editor.viewColumn !== webviewPanel.viewColumn));
-    if (fallbackEditor && fallbackEditor.viewColumn) {
-        return fallbackEditor.viewColumn;
-    }
-
-    if (webviewPanel && typeof webviewPanel.viewColumn === "number") {
-        return webviewPanel.viewColumn > 1 ? webviewPanel.viewColumn - 1 : vscode.ViewColumn.Beside;
-    }
-
-    return vscode.ViewColumn.Beside;
-}
-
-function findOpenTextTabViewColumn(targetUri) {
-    const targetPath = normalizePath(targetUri.fsPath);
-    for (const group of vscode.window.tabGroups.all) {
-        for (const tab of group.tabs) {
-            const input = tab.input;
-            if (!input || !input.uri || input.viewType === "inscape.preview") {
-                continue;
-            }
-
-            if (normalizePath(input.uri.fsPath) === targetPath && group.viewColumn) {
-                return group.viewColumn;
-            }
-        }
-    }
-
-    return undefined;
 }
 
 function uniqueLocations(locations) {
