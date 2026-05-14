@@ -11,6 +11,7 @@ const { HostSchemaCommand } = require("./Commands/HostSchemaCommand");
 const { LocalizationCommand } = require("./Commands/LocalizationCommand");
 const { PreviewCommand } = require("./Commands/PreviewCommand");
 const { EditorAuthoringCommand } = require("./Commands/EditorAuthoringCommand");
+const { DslScriptCodeLensProvider } = require("./LanguageFeatures/DslScriptCodeLensProvider");
 const { DslScriptCompletionProvider } = require("./LanguageFeatures/DslScriptCompletionProvider");
 const { DslScriptDefinitionProvider } = require("./LanguageFeatures/DslScriptDefinitionProvider");
 const { DslScriptDocumentSymbolProvider } = require("./LanguageFeatures/DslScriptDocumentSymbolProvider");
@@ -138,6 +139,13 @@ const dslScriptDocumentSymbolProvider = new DslScriptDocumentSymbolProvider({
     vscode
 });
 
+const dslScriptCodeLensProvider = new DslScriptCodeLensProvider({
+    vscode,
+    isInscapeDocument,
+    createLocation,
+    dslScriptNodeProvider
+});
+
 function activate(context) {
     outputChannel = vscode.window.createOutputChannel("Inscape");
     const diagnostics = vscode.languages.createDiagnosticCollection("inscape");
@@ -174,7 +182,7 @@ function activate(context) {
         vscode.languages.registerDefinitionProvider(languageSelector, dslScriptDefinitionProvider),
         vscode.languages.registerReferenceProvider(languageSelector, dslScriptReferenceProvider),
         vscode.languages.registerHoverProvider(languageSelector, dslScriptHoverProvider),
-        vscode.languages.registerCodeLensProvider(languageSelector, new DslScriptCodeLensProvider()),
+        vscode.languages.registerCodeLensProvider(languageSelector, dslScriptCodeLensProvider),
         vscode.commands.registerCommand("inscape.showNodeIncomingReferences", (uri, position, locations) => showNodeIncomingReferences(uri, position, locations)),
         vscode.commands.registerCommand("inscape.openPreview", () => previewCommand.open()),
         vscode.commands.registerCommand("inscape.togglePreview", () => previewCommand.toggle()),
@@ -304,40 +312,6 @@ class DiagnosticScheduler {
         }
         this.timers.clear();
         this.runIds.clear();
-    }
-}
-
-class DslScriptCodeLensProvider {
-
-    async provideCodeLenses(document) {
-        if (!isInscapeDocument(document)) {
-            return [];
-        }
-
-        const currentDocumentNodes = dslScriptNodeProvider.collectDocumentNodes(document);
-        if (currentDocumentNodes.length === 0) {
-            return [];
-        }
-
-        const navigation = await dslScriptNodeProvider.collectWorkspaceNavigation(document);
-        const codeLenses = [];
-        for (const node of currentDocumentNodes) {
-            const range = new vscode.Range(node.line, node.character, node.line, node.character + node.length);
-            const position = new vscode.Position(node.line, node.character);
-            const incoming = navigation.referencesByTarget.get(node.name) || [];
-
-            codeLenses.push(new vscode.CodeLens(range, {
-                title: incoming.length + " 个引用",
-                command: "inscape.showNodeIncomingReferences",
-                arguments: [
-                    vscode.Uri.file(node.sourcePath),
-                    position,
-                    incoming.map((reference) => createLocation(reference))
-                ]
-            }));
-        }
-
-        return codeLenses;
     }
 }
 
