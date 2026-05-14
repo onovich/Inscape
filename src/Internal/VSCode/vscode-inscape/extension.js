@@ -19,6 +19,7 @@ const { DslScriptDocumentSymbolProvider } = require("./LanguageFeatures/DslScrip
 const { DslScriptHoverProvider } = require("./LanguageFeatures/DslScriptHoverProvider");
 const { DslScriptReferenceProvider } = require("./LanguageFeatures/DslScriptReferenceProvider");
 const { PreviewEditorProvider } = require("./PreviewWebview/PreviewEditorProvider");
+const { PreviewHtmlProvider } = require("./PreviewWebview/PreviewHtmlProvider");
 const { HostBindingProvider } = require("./WorkspaceIndex/HostBindingProvider");
 const { DslScriptMetadataProvider } = require("./WorkspaceIndex/DslScriptMetadataProvider");
 const { DslScriptNodeProvider } = require("./WorkspaceIndex/DslScriptNodeProvider");
@@ -148,6 +149,8 @@ const dslScriptCodeLensProvider = new DslScriptCodeLensProvider({
     dslScriptNodeProvider
 });
 
+const previewHtmlProvider = new PreviewHtmlProvider();
+
 function activate(context) {
     outputChannel = vscode.window.createOutputChannel("Inscape");
     const diagnostics = vscode.languages.createDiagnosticCollection("inscape");
@@ -215,7 +218,7 @@ function activate(context) {
                 context,
                 previewPanels,
                 normalizePath,
-                createPreviewLoadingHtml,
+                createPreviewLoadingHtml: (workspaceName) => previewHtmlProvider.createLoadingHtml(workspaceName),
                 refreshPreviewPanel,
                 previewRevealBridge,
                 openPreviewSource
@@ -595,7 +598,7 @@ async function refreshPreviewPanel(context, panel, document, showProgress) {
         }
     } catch (error) {
         logOutput("Preview refresh failed: " + (error.message || String(error)));
-        panel.webview.html = createPreviewErrorHtml(error.message || String(error));
+        panel.webview.html = previewHtmlProvider.createErrorHtml(error.message || String(error));
         vscode.window.showErrorMessage(error.message || String(error));
     }
 }
@@ -699,54 +702,6 @@ function createTempPath(prefix, extension) {
     return path.join(directory, fileName);
 }
 
-function createPreviewLoadingHtml(workspaceName) {
-    return [
-        "<!DOCTYPE html>",
-        "<html lang=\"zh-CN\">",
-        "<head>",
-        "  <meta charset=\"utf-8\" />",
-        "  <title>Inscape Preview</title>",
-        "  <style>",
-        "    body { font-family: var(--vscode-font-family); color: var(--vscode-foreground); background: var(--vscode-editor-background); padding: 24px; }",
-        "    .card { max-width: 640px; border: 1px solid var(--vscode-panel-border); border-radius: 10px; padding: 16px 18px; background: var(--vscode-sideBar-background); }",
-        "    h1 { font-size: 18px; margin: 0 0 8px; }",
-        "    p { margin: 0; opacity: 0.85; line-height: 1.5; }",
-        "  </style>",
-        "</head>",
-        "<body>",
-        "  <div class=\"card\">",
-        "    <h1>正在生成预览</h1>",
-        "    <p>工作区：" + escapeHtml(workspaceName) + "</p>",
-        "  </div>",
-        "</body>",
-        "</html>"
-    ].join("\n");
-}
-
-function createPreviewErrorHtml(message) {
-    return [
-        "<!DOCTYPE html>",
-        "<html lang=\"zh-CN\">",
-        "<head>",
-        "  <meta charset=\"utf-8\" />",
-        "  <title>Inscape Preview Error</title>",
-        "  <style>",
-        "    body { font-family: var(--vscode-font-family); color: var(--vscode-foreground); background: var(--vscode-editor-background); padding: 24px; }",
-        "    .card { max-width: 760px; border: 1px solid var(--vscode-errorForeground); border-radius: 10px; padding: 16px 18px; background: var(--vscode-inputValidation-errorBackground); }",
-        "    h1 { font-size: 18px; margin: 0 0 8px; color: var(--vscode-errorForeground); }",
-        "    pre { white-space: pre-wrap; margin: 0; line-height: 1.5; }",
-        "  </style>",
-        "</head>",
-        "<body>",
-        "  <div class=\"card\">",
-        "    <h1>预览生成失败</h1>",
-        "    <pre>" + escapeHtml(message) + "</pre>",
-        "  </div>",
-        "</body>",
-        "</html>"
-    ].join("\n");
-}
-
 async function openPreviewSource(source, webviewPanel) {
     try {
         const location = new vscode.Location(
@@ -836,14 +791,6 @@ hostSchemaCommand = new HostSchemaCommand({
     locationFromPayload,
     escapeRegExp
 });
-
-function escapeHtml(value) {
-    return String(value)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/\"/g, "&quot;");
-}
 
 async function selectWorkspaceFolder() {
     const folders = vscode.workspace.workspaceFolders || [];
