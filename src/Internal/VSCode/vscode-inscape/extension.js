@@ -13,6 +13,7 @@ const { PreviewCommand } = require("./Commands/PreviewCommand");
 const { EditorAuthoringCommand } = require("./Commands/EditorAuthoringCommand");
 const { DslScriptCompletionProvider } = require("./LanguageFeatures/DslScriptCompletionProvider");
 const { DslScriptDefinitionProvider } = require("./LanguageFeatures/DslScriptDefinitionProvider");
+const { DslScriptReferenceProvider } = require("./LanguageFeatures/DslScriptReferenceProvider");
 const { HostBindingProvider } = require("./WorkspaceIndex/HostBindingProvider");
 const { DslScriptMetadataProvider } = require("./WorkspaceIndex/DslScriptMetadataProvider");
 const { DslScriptNodeProvider } = require("./WorkspaceIndex/DslScriptNodeProvider");
@@ -114,6 +115,14 @@ const dslScriptCompletionProvider = new DslScriptCompletionProvider({
     hostBindingProvider
 });
 
+const dslScriptReferenceProvider = new DslScriptReferenceProvider({
+    isInscapeDocument,
+    createLocation,
+    uniqueLocations,
+    dslScriptNodeProvider,
+    dslScriptSpeakerProvider
+});
+
 function activate(context) {
     outputChannel = vscode.window.createOutputChannel("Inscape");
     const diagnostics = vscode.languages.createDiagnosticCollection("inscape");
@@ -148,7 +157,7 @@ function activate(context) {
         vscode.languages.registerCompletionItemProvider(languageSelector, dslScriptCompletionProvider, ">", ".", ":", "\uFF1A", "[", " "),
         vscode.languages.registerDocumentSymbolProvider(languageSelector, new DslScriptDocumentSymbolProvider()),
         vscode.languages.registerDefinitionProvider(languageSelector, dslScriptDefinitionProvider),
-        vscode.languages.registerReferenceProvider(languageSelector, new DslScriptReferenceProvider()),
+        vscode.languages.registerReferenceProvider(languageSelector, dslScriptReferenceProvider),
         vscode.languages.registerHoverProvider(languageSelector, new DslScriptHoverProvider()),
         vscode.languages.registerCodeLensProvider(languageSelector, new DslScriptCodeLensProvider()),
         vscode.commands.registerCommand("inscape.showNodeIncomingReferences", (uri, position, locations) => showNodeIncomingReferences(uri, position, locations)),
@@ -280,48 +289,6 @@ class DiagnosticScheduler {
         }
         this.timers.clear();
         this.runIds.clear();
-    }
-}
-
-class DslScriptReferenceProvider {
-
-    async provideReferences(document, position, context) {
-        if (!isInscapeDocument(document)) {
-            return undefined;
-        }
-
-        const speakerInfo = dslScriptSpeakerProvider.getSpeakerAtPosition(document, position);
-        if (speakerInfo) {
-            const references = await dslScriptSpeakerProvider.collectWorkspaceReferences(document, speakerInfo.name);
-            let locations = references.map((reference) => createLocation(reference));
-
-            if (context && context.includeDeclaration) {
-                const definitions = await dslScriptSpeakerProvider.collectConfiguredDefinitions(document, speakerInfo.name);
-                locations = definitions.map((definition) => createLocation(definition)).concat(locations);
-            }
-
-            locations = uniqueLocations(locations);
-            return locations.length > 0 ? locations : undefined;
-        }
-
-        const target = dslScriptNodeProvider.getDeclaredNodeNameAtPosition(document, position)
-            || dslScriptNodeProvider.getJumpTargetAtPosition(document, position);
-        if (!target) {
-            return undefined;
-        }
-
-        const references = await dslScriptNodeProvider.collectWorkspaceJumpReferences(document, target);
-        let locations = references.map((reference) => createLocation(reference));
-
-        if (context && context.includeDeclaration) {
-            const declarations = await dslScriptNodeProvider.collectWorkspaceNodes(document);
-            locations = declarations.filter((node) => node.name === target)
-                .map((node) => createLocation(node))
-                .concat(locations);
-        }
-
-        locations = uniqueLocations(locations);
-        return locations.length > 0 ? locations : undefined;
     }
 }
 
