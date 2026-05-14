@@ -118,6 +118,7 @@
 	- [x] 已继续收口 workspace index 的 host binding 子块：binding map 读取、工作区 hook / inline tag 扫描以及 host binding completion / definition / hover 所需绑定列表已收为 `InscapeWorkspaceHostBindingProvider`，顶层不再保留独立 host binding helper 串。
 	- [x] 已迁出第三条 workspace index provider：`InscapeWorkspaceHostBindingProvider` 进入 `WorkspaceIndex/InscapeWorkspaceHostBindingProvider.js`，入口文件只保留实例化和 VSCode provider 注册。
 	- [x] 已继续收口 workspace index 的 metadata 子块：metadata 位置解析、工作区 metadata 引用扫描与 metadata hover 已收为 `InscapeWorkspaceMetadataProvider`，顶层不再保留独立 metadata helper 串。
+	- [x] 已迁出第四条 workspace index provider：`InscapeWorkspaceMetadataProvider` 进入 `WorkspaceIndex/InscapeWorkspaceMetadataProvider.js`，入口文件只保留实例化和 VSCode provider 注册。
 	- [x] 已继续收紧 workspace index 的 speaker provider 边界：speaker 位置解析与 hover markdown 已吸回 `InscapeWorkspaceSpeakerProvider`，Definition / Reference / Hover 不再直接依赖顶层 speaker helper。
 	- [x] 已继续收紧 workspace index 的 node provider 边界：节点声明 / jump target 位置解析与 node/jump hover markdown 已吸回 `InscapeWorkspaceNodeProvider`，相关顶层 node/jump helper 已退出函数区。
 	- [x] 已继续收紧 workspace index 的 host binding provider 边界：host binding 补全上下文与光标位置解析已吸回 `InscapeWorkspaceHostBindingProvider`，Completion / Definition / Hover 不再直接依赖顶层 host binding helper。
