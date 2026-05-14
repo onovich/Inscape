@@ -12,7 +12,7 @@ class PreviewRefreshController {
         this.hashDocumentText = dependencies.hashDocumentText;
         this.writeTempDocument = dependencies.writeTempDocument;
         this.createTempPath = dependencies.createTempPath;
-        this.createPreviewInvocation = dependencies.createPreviewInvocation;
+        this.previewInvocationProvider = dependencies.previewInvocationProvider;
         this.execFileDetailedPromise = dependencies.execFileDetailedPromise;
         this.getInvocationFailureDetail = dependencies.getInvocationFailureDetail;
         this.logOutput = dependencies.logOutput;
@@ -80,7 +80,7 @@ class PreviewRefreshController {
                     tempPath = this.writeTempDocument(document);
                 }
 
-                const invocation = this.createPreviewInvocation(context, document, tempPath, outputPath);
+                const invocation = this.previewInvocationProvider.createInvocation(context, document, tempPath, outputPath);
                 const result = await this.execFileDetailedPromise(invocation);
 
                 if (this.renderVersions.get(cacheKey) !== version) {

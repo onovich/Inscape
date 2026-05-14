@@ -135,6 +135,7 @@
 	- [x] 已迁出 preview HTML provider：`PreviewHtmlProvider` 进入 `PreviewWebview/PreviewHtmlProvider.js`，loading / error HTML 不再由入口文件承载。
 	- [x] 已迁出 preview refresh controller：`PreviewRefreshController` 进入 `PreviewWebview/PreviewRefreshController.js`，刷新定时器、渲染缓存与版本保护不再由入口文件承载。
 	- [x] 已迁出 preview source controller：`PreviewSourceController` 进入 `PreviewWebview/PreviewSourceController.js`，webview 源码回跳与 viewColumn 选择不再由入口文件承载。
+	- [x] 已迁出 preview invocation provider：`PreviewInvocationProvider` 进入 `PreviewWebview/PreviewInvocationProvider.js`，preview-project 的 CLI fallback 解析不再由入口文件承载。
 	- [x] 已顺手修复预览定位局部缺陷：`findDialogueSeparatorIndex` 中误残留的 preview reveal 调用与缺失的半角冒号解析已清理，避免说话人行的预览定位在运行时触发异常。
 - [ ] 创建 `Inscape.LanguageServer` 基线项目，先迁移诊断与定义跳转，再迁移引用、补全与 source map 相关语义能力。
 - [ ] 将 Cli、VSCode 和未来 LanguageServer 共享的项目级流程继续拆成显式职责模块，优先落到 `Tooling` 的 `ProjectSources`、`ToolConfig`、`Preview`、`Localization`、`HostSchema`、`HostBinding` 等模块；如未来确需统一门面，也应建立在这些模块之上，而不是先造一个大而泛的 `ProjectService`。

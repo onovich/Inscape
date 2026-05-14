@@ -20,6 +20,7 @@ const { DslScriptHoverProvider } = require("./LanguageFeatures/DslScriptHoverPro
 const { DslScriptReferenceProvider } = require("./LanguageFeatures/DslScriptReferenceProvider");
 const { PreviewEditorProvider } = require("./PreviewWebview/PreviewEditorProvider");
 const { PreviewHtmlProvider } = require("./PreviewWebview/PreviewHtmlProvider");
+const { PreviewInvocationProvider } = require("./PreviewWebview/PreviewInvocationProvider");
 const { PreviewRefreshController } = require("./PreviewWebview/PreviewRefreshController");
 const { PreviewSourceController } = require("./PreviewWebview/PreviewSourceController");
 const { HostBindingProvider } = require("./WorkspaceIndex/HostBindingProvider");
@@ -150,6 +151,14 @@ const dslScriptCodeLensProvider = new DslScriptCodeLensProvider({
 
 const previewHtmlProvider = new PreviewHtmlProvider();
 
+const previewInvocationProvider = new PreviewInvocationProvider({
+    fs,
+    path,
+    vscode,
+    getWorkspaceFolder,
+    resolveCliProjectPath
+});
+
 const previewRefreshController = new PreviewRefreshController({
     fs,
     vscode,
@@ -160,7 +169,7 @@ const previewRefreshController = new PreviewRefreshController({
     hashDocumentText,
     writeTempDocument,
     createTempPath,
-    createPreviewInvocation,
+    previewInvocationProvider,
     execFileDetailedPromise,
     getInvocationFailureDetail,
     logOutput
@@ -522,85 +531,6 @@ function schedulePreviewRefresh(context, document, delayOverride) {
 
 async function refreshPreviewPanel(context, panel, document, showProgress) {
     await previewRefreshController.refreshPanel(context, panel, document, showProgress);
-}
-
-function createPreviewInvocation(context, document, tempPath, outputPath) {
-    const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri);
-    const workspaceFolderPath = workspaceFolder ? workspaceFolder.uri.fsPath : getWorkspaceFolder(context, document);
-    const configuration = vscode.workspace.getConfiguration("inscape", workspaceFolder ? workspaceFolder.uri : document.uri);
-    const cliProject = resolveCliProjectPath(context, workspaceFolderPath);
-    const invocation = resolveCliInvocation(configuration.get("compiler.command", "dotnet"), cliProject, workspaceFolderPath);
-    const args = invocation.args.slice();
-
-    if (document && tempPath) {
-        args.push("--override", document.uri.fsPath, tempPath);
-    }
-
-    args.push("-o", outputPath);
-
-    return {
-        command: invocation.command,
-        args,
-        cwd: workspaceFolderPath
-    };
-}
-
-function resolveCliInvocation(defaultCommand, cliProject, workspaceFolderPath) {
-    const cliExecutable = resolveCliExecutablePath(cliProject);
-    if (cliExecutable) {
-        return {
-            command: cliExecutable,
-            args: ["preview-project", workspaceFolderPath]
-        };
-    }
-
-    const cliAssembly = resolveCliAssemblyPath(workspaceFolderPath, cliProject);
-    if (cliAssembly && fs.existsSync(cliAssembly)) {
-        return {
-            command: defaultCommand,
-            args: ["exec", cliAssembly, "preview-project", workspaceFolderPath]
-        };
-    }
-
-    return {
-        command: defaultCommand,
-        args: ["run", "--project", cliProject, "--", "preview-project", workspaceFolderPath]
-    };
-}
-
-function resolveCliExecutablePath(cliProject) {
-    const projectDirectory = path.dirname(cliProject);
-    const candidateFrameworks = ["net10.0", "net9.0", "net8.0"];
-    const candidateConfigurations = ["Debug", "Release"];
-    const executableName = process.platform === "win32" ? "Inscape.Cli.exe" : "Inscape.Cli";
-
-    for (const configuration of candidateConfigurations) {
-        for (const framework of candidateFrameworks) {
-            const candidate = path.join(projectDirectory, "bin", configuration, framework, executableName);
-            if (fs.existsSync(candidate)) {
-                return candidate;
-            }
-        }
-    }
-
-    return undefined;
-}
-
-function resolveCliAssemblyPath(workspaceFolderPath, cliProject) {
-    const projectDirectory = path.dirname(cliProject);
-    const candidateFrameworks = ["net10.0", "net9.0", "net8.0"];
-    const candidateConfigurations = ["Debug", "Release"];
-
-    for (const configuration of candidateConfigurations) {
-        for (const framework of candidateFrameworks) {
-            const candidate = path.join(projectDirectory, "bin", configuration, framework, "Inscape.Cli.dll");
-            if (fs.existsSync(candidate)) {
-                return candidate;
-            }
-        }
-    }
-
-    return undefined;
 }
 
 function hashDocumentText(document) {
