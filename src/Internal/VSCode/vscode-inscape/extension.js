@@ -20,6 +20,7 @@ const { DslScriptHoverProvider } = require("./LanguageFeatures/DslScriptHoverPro
 const { DslScriptReferenceProvider } = require("./LanguageFeatures/DslScriptReferenceProvider");
 const { PreviewEditorProvider } = require("./PreviewWebview/PreviewEditorProvider");
 const { PreviewHtmlProvider } = require("./PreviewWebview/PreviewHtmlProvider");
+const { PreviewRefreshController } = require("./PreviewWebview/PreviewRefreshController");
 const { HostBindingProvider } = require("./WorkspaceIndex/HostBindingProvider");
 const { DslScriptMetadataProvider } = require("./WorkspaceIndex/DslScriptMetadataProvider");
 const { DslScriptNodeProvider } = require("./WorkspaceIndex/DslScriptNodeProvider");
@@ -28,9 +29,6 @@ const { DslScriptSpeakerProvider } = require("./WorkspaceIndex/DslScriptSpeakerP
 const languageSelector = { language: "inscape" };
 let outputChannel;
 const previewPanels = new Map();
-const previewRefreshTimers = new Map();
-const previewRenderCache = new Map();
-const previewRenderVersions = new Map();
 const editorStyleStates = new Map();
 const editorStyleFileNames = new Set(["inscape.config.json", "inscape.editor-style.json", "inscape.preview-style.json"]);
 const defaultEditorStyle = Object.freeze({
@@ -150,6 +148,22 @@ const dslScriptCodeLensProvider = new DslScriptCodeLensProvider({
 });
 
 const previewHtmlProvider = new PreviewHtmlProvider();
+
+const previewRefreshController = new PreviewRefreshController({
+    fs,
+    vscode,
+    previewPanels,
+    previewHtmlProvider,
+    isInscapeDocument,
+    normalizePath,
+    hashDocumentText,
+    writeTempDocument,
+    createTempPath,
+    createPreviewInvocation,
+    execFileDetailedPromise,
+    getInvocationFailureDetail,
+    logOutput
+});
 
 function activate(context) {
     outputChannel = vscode.window.createOutputChannel("Inscape");
@@ -492,115 +506,15 @@ function pushTrimmedRange(bucket, lineNumber, text, start, end) {
 }
 
 async function refreshPreviewPanelsForDocument(context, document) {
-    if (!isInscapeDocument(document)) {
-        return;
-    }
-
-    const panels = previewPanels.get(normalizePath(document.uri.fsPath));
-    if (!panels || panels.size === 0) {
-        return;
-    }
-
-    for (const panel of panels) {
-        await refreshPreviewPanel(context, panel, document, false);
-    }
+    await previewRefreshController.refreshPanelsForDocument(context, document);
 }
 
 function schedulePreviewRefresh(context, document, delayOverride) {
-    if (!isInscapeDocument(document)) {
-        return;
-    }
-
-    const sourceKey = normalizePath(document.uri.fsPath);
-    const panels = previewPanels.get(sourceKey);
-    if (!panels || panels.size === 0) {
-        return;
-    }
-
-    const existing = previewRefreshTimers.get(sourceKey);
-    if (existing) {
-        clearTimeout(existing);
-    }
-
-    const delay = typeof delayOverride === "number" ? delayOverride : 250;
-    previewRefreshTimers.set(sourceKey, setTimeout(() => {
-        previewRefreshTimers.delete(sourceKey);
-        refreshPreviewPanelsForDocument(context, document);
-    }, delay));
+    previewRefreshController.scheduleRefresh(context, document, delayOverride);
 }
 
 async function refreshPreviewPanel(context, panel, document, showProgress) {
-    const runRefresh = async () => {
-        const cacheKey = normalizePath(document.uri.fsPath);
-        const documentHash = hashDocumentText(document);
-        const cached = previewRenderCache.get(cacheKey);
-        if (cached && cached.documentHash === documentHash && cached.html) {
-            panel.webview.html = cached.html;
-            return;
-        }
-
-        const version = (previewRenderVersions.get(cacheKey) || 0) + 1;
-        previewRenderVersions.set(cacheKey, version);
-
-        let tempPath;
-        const outputPath = createTempPath("preview", ".html");
-
-        try {
-            if (document && isInscapeDocument(document)) {
-                tempPath = writeTempDocument(document);
-            }
-
-            const invocation = createPreviewInvocation(context, document, tempPath, outputPath);
-            const result = await execFileDetailedPromise(invocation);
-
-            if (previewRenderVersions.get(cacheKey) !== version) {
-                return;
-            }
-
-            const hasOutput = fs.existsSync(outputPath);
-
-            if (!hasOutput) {
-                throw new Error(getInvocationFailureDetail(result.stderr, result.stdout, "Preview HTML was not generated."));
-            }
-
-            const html = await fs.promises.readFile(outputPath, "utf8");
-            previewRenderCache.set(cacheKey, {
-                documentHash,
-                html
-            });
-            panel.webview.html = html;
-
-            if (result.exitCode !== 0) {
-                const detail = getInvocationFailureDetail(result.stderr, result.stdout, "Preview rendered with compiler diagnostics.");
-                logOutput("Preview rendered with diagnostics for " + document.uri.fsPath + ": " + detail);
-                if (showProgress) {
-                    vscode.window.showWarningMessage("Inscape preview已刷新，但包含编译诊断。详情见 Problems 或输出面板。");
-                }
-            }
-        } finally {
-            if (tempPath) {
-                fs.unlink(tempPath, () => { });
-            }
-
-            fs.unlink(outputPath, () => { });
-        }
-    };
-
-    try {
-        if (showProgress) {
-            await vscode.window.withProgress({
-                location: vscode.ProgressLocation.Notification,
-                title: "Opening Inscape preview",
-                cancellable: false
-            }, runRefresh);
-        } else {
-            await runRefresh();
-        }
-    } catch (error) {
-        logOutput("Preview refresh failed: " + (error.message || String(error)));
-        panel.webview.html = previewHtmlProvider.createErrorHtml(error.message || String(error));
-        vscode.window.showErrorMessage(error.message || String(error));
-    }
+    await previewRefreshController.refreshPanel(context, panel, document, showProgress);
 }
 
 function createPreviewInvocation(context, document, tempPath, outputPath) {
