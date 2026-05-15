@@ -150,11 +150,14 @@
 	- [x] B3.5 B 阶段收口验收：对照 [渐进式重构计划](refactoring-plan.md) 与 [编码与命名规范](coding-conventions.md) 巡检 B1/B2/B3，确认 `extension.js` 已是注册入口而不是逻辑实现，跑完整验证并勾选 VSCode extension 拆分父项。
 	- [x] 已顺手修复预览定位局部缺陷：`findDialogueSeparatorIndex` 中误残留的 preview reveal 调用与缺失的半角冒号解析已清理，避免说话人行的预览定位在运行时触发异常。
 - [ ] C 阶段创建 `Inscape.LanguageServer` 基线项目，先迁移诊断与定义跳转，再迁移引用、补全与 source map 相关语义能力。
+	- [x] C4.1 已创建 `src/Internal/LanguageServer/Inscape.LanguageServer.csproj`，加入 `Inscape.slnx`，并提供可运行 `LanguageServerEntry --capabilities` 基线入口。
+	- [ ] C4.2 迁移 diagnostics 能力的第一层：LanguageServer 直接调用 Compiler / Tooling，不经由 CLI 或 VSCode 前端重写语义。
+	- [ ] C4.3 迁移 definition 的第一层：复用 workspace index / Compiler source map 契约。
 - [ ] 将 Cli、VSCode 和未来 LanguageServer 共享的项目级流程继续拆成显式职责模块，优先落到 `Tooling` 的 `DslScriptSources`、`ToolConfig`、`Preview`、`Localization`、`HostSchema`、`HostBinding` 等模块；如未来确需统一门面，也应建立在这些模块之上，而不是先造一个大而泛的 `ProjectService`。
 - [ ] 建立 workspace index 过渡模型，承接 VSCode 当前轻量扫描并为未来 LanguageServer 留出替换来源。
 	- [x] C3.1 已建立 [Workspace Index Contract](workspace-index-contract.md)，定义 nodes、node references、speakers、host bindings、metadata、schema capabilities 与统一 0-based 编辑器位置对象。
 	- [x] C3.2 对齐现有 VSCode `WorkspaceIndex` provider 输出字段：node references 补 `target`，speakers / host bindings 补 `sourceKind`，host bindings 补 `name`，metadata 补 `key` / `value`。
-	- [ ] C3.3 将 LanguageServer 基线读取/输出设计对齐 workspace index 契约。
+	- [x] C3.3 将 LanguageServer 基线读取/输出设计对齐 workspace index 契约：`EditorLocationModel` 使用 0-based `line` / `character` / `length`，能力入口显式引用 source location 与 workspace index 契约文档。
 - [ ] 统一 source map / reveal payload 数据契约，支撑预览、诊断、跳转、本地化和未来编辑器三视图。（B 阶段完成后的推荐大节点）
 	- [x] 已建立 [Source Location Contracts](source-location-contracts.md)，明确 Compiler source location 使用 1-based `line` / `column`，编辑器 reveal payload 使用 0-based `line` / `character` / `length`。
 	- [x] 已先修复 Preview HTML 的 Compiler source -> 编辑器坐标转换，让源码按钮、metadata 点击、源码侧 reveal 匹配与节点定位不再直接混用 Compiler 的 1-based 坐标。
