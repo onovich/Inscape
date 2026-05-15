@@ -30,6 +30,7 @@ const { HostBindingProvider } = require("./WorkspaceIndex/HostBindingProvider");
 const { DslScriptMetadataProvider } = require("./WorkspaceIndex/DslScriptMetadataProvider");
 const { DslScriptNodeProvider } = require("./WorkspaceIndex/DslScriptNodeProvider");
 const { DslScriptSpeakerProvider } = require("./WorkspaceIndex/DslScriptSpeakerProvider");
+const { EditorAuthoringDataProvider } = require("./WorkspaceIndex/EditorAuthoringDataProvider");
 
 const languageSelector = { language: "inscape" };
 const previewPanels = new Map();
@@ -38,23 +39,32 @@ let previewCommand;
 let localizationCommand;
 let editorAuthoringCommand;
 let hostSchemaCommand;
+let editorAuthoringDataProvider;
 let dslScriptDiagnosticController;
 let extensionLifecycleController;
 let extensionRegistrationController;
 
+editorAuthoringDataProvider = new EditorAuthoringDataProvider({
+    fs,
+    path,
+    vscode,
+    isInscapeDocument,
+    normalizePath
+});
+
 const dslScriptNodeProvider = new DslScriptNodeProvider({
     vscode,
-    collectWorkspaceTextSources,
+    collectWorkspaceTextSources: (document) => editorAuthoringDataProvider.collectTextSources(document),
     isJumpReferenceLine
 });
 
 const dslScriptSpeakerProvider = new DslScriptSpeakerProvider({
     vscode,
     fs,
-    readProjectConfig,
-    resolveProjectConfigPath,
-    parseCsvRows,
-    collectWorkspaceTextSources,
+    readProjectConfig: (document) => editorAuthoringDataProvider.readProjectConfig(document),
+    resolveProjectConfigPath: (configPath, value) => editorAuthoringDataProvider.resolveProjectConfigPath(configPath, value),
+    parseCsvRows: (text) => editorAuthoringDataProvider.parseCsvRows(text),
+    collectWorkspaceTextSources: (document) => editorAuthoringDataProvider.collectTextSources(document),
     isLikelyDialogueSpeaker,
     formatDisplayPath
 });
@@ -62,17 +72,17 @@ const dslScriptSpeakerProvider = new DslScriptSpeakerProvider({
 const hostBindingProvider = new HostBindingProvider({
     vscode,
     fs,
-    readProjectConfig,
-    resolveProjectConfigPath,
-    parseCsvRows,
-    collectWorkspaceTextSources,
+    readProjectConfig: (document) => editorAuthoringDataProvider.readProjectConfig(document),
+    resolveProjectConfigPath: (configPath, value) => editorAuthoringDataProvider.resolveProjectConfigPath(configPath, value),
+    parseCsvRows: (text) => editorAuthoringDataProvider.parseCsvRows(text),
+    collectWorkspaceTextSources: (document) => editorAuthoringDataProvider.collectTextSources(document),
     normalizeHostBindingKind,
     formatDisplayPath
 });
 
 const dslScriptMetadataProvider = new DslScriptMetadataProvider({
     vscode,
-    collectWorkspaceTextSources
+    collectWorkspaceTextSources: (document) => editorAuthoringDataProvider.collectTextSources(document)
 });
 
 const dslScriptCompletionProvider = new DslScriptCompletionProvider({
@@ -166,8 +176,8 @@ const previewSourceController = new PreviewSourceController({
 const editorStyleController = new EditorStyleController({
     vscode,
     fs,
-    readProjectConfig,
-    resolveProjectConfigPath,
+    readProjectConfig: (document) => editorAuthoringDataProvider.readProjectConfig(document),
+    resolveProjectConfigPath: (configPath, value) => editorAuthoringDataProvider.resolveProjectConfigPath(configPath, value),
     isInscapeDocument,
     isLikelyDialogueSpeaker,
     findDialogueSeparatorIndex,
@@ -293,8 +303,8 @@ hostSchemaCommand = new HostSchemaCommand({
     vscode,
     fs,
     selectWorkspaceFolder,
-    readProjectConfigFromWorkspaceFolder,
-    resolveProjectConfigPath,
+    readProjectConfigFromWorkspaceFolder: (folder) => editorAuthoringDataProvider.readProjectConfigFromWorkspaceFolder(folder),
+    resolveProjectConfigPath: (configPath, value) => editorAuthoringDataProvider.resolveProjectConfigPath(configPath, value),
     openLocation,
     locationFromPayload,
     escapeRegExp
@@ -468,87 +478,6 @@ function normalizeHostBindingKind(kind) {
     return kind;
 }
 
-async function readProjectConfig(document) {
-    const folder = vscode.workspace.getWorkspaceFolder(document.uri);
-    if (!folder) {
-        return undefined;
-    }
-
-    return readProjectConfigFromWorkspaceFolder(folder);
-}
-
-async function readProjectConfigFromWorkspaceFolder(folder) {
-    if (!folder) {
-        return undefined;
-    }
-
-    const configPath = path.join(folder.uri.fsPath, "inscape.config.json");
-    if (!fs.existsSync(configPath)) {
-        return undefined;
-    }
-
-    try {
-        const text = await fs.promises.readFile(configPath, "utf8");
-        return {
-            configPath,
-            config: JSON.parse(text)
-        };
-    } catch {
-        return undefined;
-    }
-}
-
-function resolveProjectConfigPath(configPath, value) {
-    return path.isAbsolute(value)
-        ? value
-        : path.resolve(path.dirname(configPath), value);
-}
-
-function parseCsvRows(text) {
-    const rows = [];
-    let row = [];
-    let field = "";
-    let inQuotes = false;
-
-    for (let index = 0; index < text.length; index += 1) {
-        const character = text[index];
-        if (inQuotes) {
-            if (character === "\"") {
-                if (text[index + 1] === "\"") {
-                    field += "\"";
-                    index += 1;
-                } else {
-                    inQuotes = false;
-                }
-            } else {
-                field += character;
-            }
-            continue;
-        }
-
-        if (character === "\"") {
-            inQuotes = true;
-        } else if (character === ",") {
-            row.push(field);
-            field = "";
-        } else if (character === "\n") {
-            row.push(field);
-            rows.push(row);
-            row = [];
-            field = "";
-        } else if (character !== "\r") {
-            field += character;
-        }
-    }
-
-    if (field.length > 0 || row.length > 0) {
-        row.push(field);
-        rows.push(row);
-    }
-
-    return rows.filter((csvRow) => csvRow.some((fieldValue) => fieldValue.trim().length > 0));
-}
-
 function isLikelyDialogueSpeaker(name) {
     return name.length > 0
         && !name.startsWith("::")
@@ -558,49 +487,6 @@ function isLikelyDialogueSpeaker(name) {
         && !name.startsWith("?")
         && !name.startsWith("-")
         && !name.startsWith("[");
-}
-
-async function collectWorkspaceTextSources(document) {
-    const sources = [];
-    const seen = new Set();
-
-    addWorkspaceTextSource(sources, seen, document.uri.fsPath, document.getText());
-
-    for (const textDocument of vscode.workspace.textDocuments) {
-        if (isInscapeDocument(textDocument)) {
-            addWorkspaceTextSource(sources, seen, textDocument.uri.fsPath, textDocument.getText());
-        }
-    }
-
-    const files = await vscode.workspace.findFiles("**/*.inscape", "{**/.git/**,**/bin/**,**/obj/**,**/node_modules/**,**/artifacts/**}", 2000);
-    for (const file of files) {
-        if (seen.has(normalizePath(file.fsPath))) {
-            continue;
-        }
-
-        const text = await readWorkspaceFileText(file);
-        addWorkspaceTextSource(sources, seen, file.fsPath, text);
-    }
-
-    return sources;
-}
-
-function addWorkspaceTextSource(sources, seen, sourcePath, text) {
-    const key = normalizePath(sourcePath);
-    if (seen.has(key)) {
-        return;
-    }
-
-    seen.add(key);
-    sources.push({
-        sourcePath,
-        text
-    });
-}
-
-async function readWorkspaceFileText(uri) {
-    const bytes = await vscode.workspace.fs.readFile(uri);
-    return Buffer.from(bytes).toString("utf8");
 }
 
 function findDialogueSeparatorIndex(line) {
