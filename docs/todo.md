@@ -141,7 +141,7 @@
 	- [x] 已迁出 VSCode 样式默认值：`StyleDefaults` 进入 `Styles/StyleDefaults.js`，editor / preview 默认样式不再由入口文件承载。
 	- [x] 已开始 ExtensionEntry 收口：`ExtensionRegistrationController` 进入 `ExtensionEntry/ExtensionRegistrationController.js`，VSCode subscription / provider / command / custom editor 注册顺序不再由 `activate()` 内联承载。
 	- [x] B3.4.2 继续压薄 ExtensionEntry：把 output channel / logging / diagnostics scheduler 创建收进 `ExtensionEntry`，让 `extension.js` 更接近纯入口；自检命名需符合 `Entry` / `Controller` 角色边界，不把功能行为塞回入口层。
-	- [ ] B3.4.3 收口 diagnostics 调用辅助：将 diagnostics scheduler 依赖的 CLI invocation、临时文件、diagnostic mapping 辅助从 `extension.js` 迁入 `LanguageFeatures` 或更合适的窄模块；自检不得让 VSCode 重写 parser 语义。
+	- [x] B3.4.3 收口 diagnostics 调用辅助：将 diagnostics scheduler 依赖的 CLI invocation、临时文件、diagnostic mapping 辅助从 `extension.js` 迁入 `LanguageFeatures` 或更合适的窄模块；自检不得让 VSCode 重写 parser 语义。
 	- [ ] B3.4.4 收口配置与工作区文本读取辅助：将 `readProjectConfig`、CSV 读取、workspace text source 收集等轻量 authoring 数据来源从入口文件移出；自检类型名避免 `Helper` / `Support` / 泛 `Workspace*` 前缀。
 	- [ ] B3.4.5 收口位置与范围辅助：将 `createLocation`、payload/open location、`trimRange`、display path 等编辑器定位适配从入口文件移出；自检不改变 source map / reveal payload 语义。
 	- [ ] B3.5 B 阶段收口验收：对照 [渐进式重构计划](refactoring-plan.md) 与 [编码与命名规范](coding-conventions.md) 巡检 B1/B2/B3，确认 `extension.js` 已是注册入口而不是逻辑实现，跑完整验证并勾选 VSCode extension 拆分父项。

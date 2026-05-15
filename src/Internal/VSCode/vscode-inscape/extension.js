@@ -15,6 +15,7 @@ const { ExtensionLifecycleController } = require("./ExtensionEntry/ExtensionLife
 const { ExtensionRegistrationController } = require("./ExtensionEntry/ExtensionRegistrationController");
 const { DslScriptCodeLensProvider } = require("./LanguageFeatures/DslScriptCodeLensProvider");
 const { DslScriptCompletionProvider } = require("./LanguageFeatures/DslScriptCompletionProvider");
+const { DslScriptDiagnosticController } = require("./LanguageFeatures/DslScriptDiagnosticController");
 const { DslScriptDefinitionProvider } = require("./LanguageFeatures/DslScriptDefinitionProvider");
 const { DslScriptDocumentSymbolProvider } = require("./LanguageFeatures/DslScriptDocumentSymbolProvider");
 const { DslScriptHoverProvider } = require("./LanguageFeatures/DslScriptHoverProvider");
@@ -37,6 +38,7 @@ let previewCommand;
 let localizationCommand;
 let editorAuthoringCommand;
 let hostSchemaCommand;
+let dslScriptDiagnosticController;
 let extensionLifecycleController;
 let extensionRegistrationController;
 
@@ -121,15 +123,22 @@ const previewInvocationProvider = new PreviewInvocationProvider({
     resolveCliProjectPath
 });
 
+dslScriptDiagnosticController = new DslScriptDiagnosticController({
+    fs,
+    os,
+    path,
+    vscode,
+    isInscapeDocument,
+    normalizePath,
+    clamp
+});
+
 extensionLifecycleController = new ExtensionLifecycleController({
     childProcess,
     fs,
     vscode,
     isInscapeDocument,
-    writeTempDocument,
-    createCompilerInvocation,
-    createExtensionDiagnostic,
-    applyDiagnostics
+    diagnosticController: dslScriptDiagnosticController
 });
 
 const previewRefreshController = new PreviewRefreshController({
@@ -404,27 +413,6 @@ function writeTempDocument(document) {
     return tempPath;
 }
 
-function createCompilerInvocation(context, document, tempPath) {
-    const configuration = vscode.workspace.getConfiguration("inscape", document.uri);
-    const command = configuration.get("compiler.command", "dotnet");
-    const configuredArgs = configuration.get("compiler.args", []);
-    const rawArgs = Array.isArray(configuredArgs) ? configuredArgs : [];
-    const workspaceFolder = getWorkspaceFolder(context, document);
-    const variables = {
-        "${workspaceFolder}": workspaceFolder,
-        "${extensionPath}": context.extensionPath,
-        "${file}": tempPath,
-        "${documentFile}": document.uri.fsPath
-    };
-
-    const args = rawArgs.map((value) => replaceVariables(String(value), variables));
-    return {
-        command,
-        args,
-        cwd: workspaceFolder
-    };
-}
-
 function getWorkspaceFolder(context, document) {
     const folder = vscode.workspace.getWorkspaceFolder(document.uri);
     if (folder) {
@@ -436,79 +424,6 @@ function getWorkspaceFolder(context, document) {
     }
 
     return path.resolve(context.extensionPath, "..", "..");
-}
-
-function replaceVariables(value, variables) {
-    let result = value;
-    for (const variableName of Object.keys(variables)) {
-        result = result.split(variableName).join(variables[variableName]);
-    }
-    return result;
-}
-
-function applyDiagnostics(collection, currentDocument, diagnostics) {
-    const documents = vscode.workspace.textDocuments.filter((document) => isInscapeDocument(document));
-    const mappedUris = new Set();
-
-    for (const document of documents) {
-        const mapped = mapDiagnosticsForDocument(document, diagnostics);
-        collection.set(document.uri, mapped);
-        mappedUris.add(document.uri.toString());
-    }
-
-    if (!mappedUris.has(currentDocument.uri.toString())) {
-        collection.set(currentDocument.uri, mapDiagnosticsForDocument(currentDocument, diagnostics));
-    }
-}
-
-function mapDiagnosticsForDocument(document, diagnostics) {
-    return diagnostics.filter((diagnostic) => diagnosticMatchesDocument(diagnostic, document))
-        .map((diagnostic) => {
-        const line = clamp((diagnostic.line || 1) - 1, 0, Math.max(0, document.lineCount - 1));
-        const textLine = document.lineAt(line);
-        const column = clamp((diagnostic.column || 1) - 1, 0, textLine.text.length);
-        const end = column < textLine.text.length ? textLine.text.length : Math.min(column + 1, textLine.text.length + 1);
-        const range = new vscode.Range(line, column, line, end);
-        const vscodeDiagnostic = new vscode.Diagnostic(
-            range,
-            diagnostic.message || "Inscape diagnostic",
-            mapSeverity(diagnostic.severity)
-        );
-
-        vscodeDiagnostic.code = diagnostic.code;
-        vscodeDiagnostic.source = "Inscape";
-        return vscodeDiagnostic;
-    });
-}
-
-function diagnosticMatchesDocument(diagnostic, document) {
-    if (!diagnostic || !diagnostic.sourcePath) {
-        return true;
-    }
-
-    return normalizePath(diagnostic.sourcePath) === normalizePath(document.uri.fsPath);
-}
-
-function createExtensionDiagnostic(document, message) {
-    const line = document.lineCount > 0 ? 0 : 0;
-    const range = document.lineCount > 0 ? document.lineAt(line).range : new vscode.Range(0, 0, 0, 1);
-    const diagnostic = new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Warning);
-    diagnostic.source = "Inscape VSCode";
-    return diagnostic;
-}
-
-function mapSeverity(severity) {
-    const value = String(severity || "").toLowerCase();
-    if (value === "error") {
-        return vscode.DiagnosticSeverity.Error;
-    }
-    if (value === "warning") {
-        return vscode.DiagnosticSeverity.Warning;
-    }
-    if (value === "information" || value === "info") {
-        return vscode.DiagnosticSeverity.Information;
-    }
-    return vscode.DiagnosticSeverity.Hint;
 }
 
 function showNodeIncomingReferences(uri, position, locations) {

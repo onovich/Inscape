@@ -6,10 +6,7 @@ class ExtensionLifecycleController {
         this.fs = dependencies.fs;
         this.vscode = dependencies.vscode;
         this.isInscapeDocument = dependencies.isInscapeDocument;
-        this.writeTempDocument = dependencies.writeTempDocument;
-        this.createCompilerInvocation = dependencies.createCompilerInvocation;
-        this.createExtensionDiagnostic = dependencies.createExtensionDiagnostic;
-        this.applyDiagnostics = dependencies.applyDiagnostics;
+        this.diagnosticController = dependencies.diagnosticController;
         this.outputChannel = undefined;
     }
 
@@ -23,10 +20,10 @@ class ExtensionLifecycleController {
             context,
             diagnostics,
             isInscapeDocument: this.isInscapeDocument,
-            writeTempDocument: this.writeTempDocument,
-            createCompilerInvocation: this.createCompilerInvocation,
-            createExtensionDiagnostic: this.createExtensionDiagnostic,
-            applyDiagnostics: this.applyDiagnostics
+            writeTempDocument: (document) => this.diagnosticController.writeTempDocument(document),
+            createCompilerInvocation: (diagnosticContext, document, tempPath) => this.diagnosticController.createCompilerInvocation(diagnosticContext, document, tempPath),
+            createExtensionDiagnostic: (document, message) => this.diagnosticController.createExtensionDiagnostic(document, message),
+            applyDiagnostics: (collection, currentDocument, diagnosticsPayload) => this.diagnosticController.applyDiagnostics(collection, currentDocument, diagnosticsPayload)
         });
 
         this.logOutput("Activated Inscape extension from " + context.extensionPath);
