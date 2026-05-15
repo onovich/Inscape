@@ -12,13 +12,14 @@ inscape.config.json
 
 也可以通过 `--config path` 显式指定配置文件。命令行参数优先级高于配置文件。
 
-## UnitySample 配置
+## Host Bridge 与 Legacy UnitySample 配置
 
-当前配置只覆盖 `Inscape.Adapters.UnitySample` 实验样例的常用路径，目的是减少重复输入长命令，并保留一套可用于验证 Host Bridge / 代码生成的样例输入。它不是最终项目桥接格式。
+当前配置已经支持通用 `hostBridge` 路径，并保留 `unitySample` 作为 ExternalSupport 实验样例的 legacy fallback。新项目应优先把 Inscape 可读 ID、资源坐标、事件处理器和查询实现放进 Host Bridge；`unitySample` 字段只用于旧样例命令和兼容 VSCode 提示。
 
 ```json
 {
   "hostSchema": "config/inscape.host.schema.json",
+  "hostBridge": "config/inscape.host.bridge.json",
   "unitySample": {
     "talkingIdStart": 100000,
     "roleMap": "config/unity-sample-roles.csv",
@@ -35,10 +36,11 @@ inscape.config.json
 当前读取这些字段的工具：
 
 - `export-host-schema-template`：可生成 `hostSchema` 的起始模板，但不会自动写入配置。
+- VSCode 扩展：优先读取 `hostBridge`，为 speaker、宿主事件 / 时机 hook 和 legacy inline host binding fallback 提供补全、Hover 与 Ctrl+Click。
 - `export-unity-sample-role-template`：读取 `existingRoleNameCsv`。
 - `export-unity-sample-binding-template`：读取 `existingTimelineRoot`。
 - `export-unity-sample-project`：读取 `talkingIdStart`、`roleMap`、`bindingMap`、`existingTalkingRoot`。
-- VSCode 扩展：读取 `roleMap`，在对白行开头提供 speaker 补全，并在 speaker 上显示 UnitySample `roleId` Hover；读取 `bindingMap`，在 `@timeline ...` 和 `[kind: ...]` 位置提供宿主别名补全与 Hover。
+- VSCode 扩展：如果没有 `hostBridge`，继续回退读取 legacy `unitySample.roleMap` 和 `unitySample.bindingMap`，用于旧项目维护。
 - VSCode 扩展：读取 `hostSchema`，通过命令面板列出宿主 query / event，并为 `inscape.host.schema.json` / `*.host.schema.json` 提供 JSON Schema 校验。
 
 仍未放进配置的内容：
@@ -49,8 +51,8 @@ inscape.config.json
 
 ## 设计边界
 
-这份配置不是最终宿主 Schema，也不是最终 Host Bridge。它只是样例 adapter 的“项目级默认值”，用于把当前 CSV 和样例路径稳定下来。后续如果引入宿主 Schema / Host Bridge，应考虑把角色、资源、Timeline、查询函数、回调事件和 Inscape ID 到项目内部 ID 的映射纳入更正式的配置或生成流程。
+`hostSchema` 和 `hostBridge` 是长期方向：前者描述查询 / 事件能力，后者描述 Inscape 可读 ID 到项目内部 ID、资源坐标、事件处理器和查询实现的映射。它们仍是草案，但已经是新配置口径。
 
-当前 `hostSchema` 是这个方向的第一步，详见 [宿主 Schema 草案](host-schema.md)。它用于描述查询函数和宿主事件清单，不替代 UnitySample 样例的 `roleMap` / `bindingMap`。
+`unitySample` 不是最终宿主 Schema，也不是最终 Host Bridge。它只是 ExternalSupport 样例 adapter 的“项目级默认值”，用于把当前 CSV 和样例路径稳定下来。详见 [UnitySample Adapter 实验样例](unity-sample-adapter.md)。
 
 `unitySample.bindingMap` 目前只能视为 Host Bridge 的实验样例输入：它把 Inscape 侧可读别名映射到样例整数 ID、Unity guid、Addressables key 或 asset path。通用 Host Bridge 后续需要支持更多项目和引擎，不应假设所有项目都使用这套字段、Addressables 或 ScriptableObject。

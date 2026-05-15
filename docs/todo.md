@@ -214,8 +214,8 @@
 - [x] 添加节点声明和 `-> target` 的 VSCode Hover 摘要。
 - [x] 添加 VSCode 命令：导出项目本地化 CSV。
 - [x] 添加 VSCode 命令：基于旧 CSV 更新项目本地化表。
-- [x] 接入 `bird.bindingMap` 的宿主绑定别名补全和 Hover，覆盖 `@timeline ...` 与 `[kind: ...]` 位置。
-- [x] 添加对白 speaker 的 Go to Definition 与 Find All References，连接脚本对白和 `bird.roleMap`。
+- [x] 接入 Host Bridge / legacy binding map 的宿主绑定别名补全和 Hover，覆盖 `@timeline ...` 与 legacy `[kind: ...]` 位置。
+- [x] 添加对白 speaker 的 Go to Definition 与 Find All References，优先连接 Host Bridge speaker，回退 legacy role map 和脚本对白引用。
 - [x] 修正 VSCode `wordPattern`，把全角冒号和常见中文标点视为词边界，避免 Ctrl+Click 角色名时把整行对白标为可跳转范围。
 - [x] 添加 block 级 CodeLens 双向导航：`入边` 追溯调用方，`出边` 跳转被调用方。
 - [x] 为宿主 Schema 文件提供 VSCode JSON Schema 校验，并增加命令查看当前 query / event 清单。
@@ -291,8 +291,8 @@
 - [x] F1.4 将作者语法指南、快速指南和 open questions 迁到 `@` 事件、`[]` 查询口径，把 `[bg]` / `[timeline]` 移入兼容旧写法。
 - [x] F1.5 评估是否调整 Compiler / VSCode / UnitySample 对 generic `[kind: alias]` 的长期行为，先不破坏 legacy 回归；详见 [Authoring Marker Behavior Decision](authoring-marker-behavior-decision.md)。
 - [x] F1.6 新增或迁移新规范样例：用 `@timeline.<phase>` 表达事件 / 时机，用 `[player.name]` / `[itemName]` 表达查询插值；旧 `[bg]` / `[timeline]` 样例只作为 legacy sample 或兼容说明存在。
-- [ ] F1.7 清理剩余文档里的旧阶段叙述：把过时的 `bird.*` / `UnitySample` 主口径迁到 Host Bridge / ExternalSupport 兼容说明，保留命令参考中的 legacy 用法。
-- [ ] 设计表达式只表达数据查询的模型，不在 DSL 中绑定具体业务实体或服务端。
+- [x] F1.7 清理剩余文档里的旧阶段叙述：把过时的 `bird.*` / `UnitySample` 主口径迁到 Host Bridge / ExternalSupport 兼容说明，保留命令参考中的 legacy 用法。
+- [ ] F1.8 设计表达式 / 查询插值的第一版语法边界：只读取数据，不触发事件，不绑定具体业务实体或服务端。
 - [x] 设计宿主查询 Schema 草案：谓词名、参数类型、返回类型、同步/异步、事件清单和副作用边界。
 - [x] 明确 Host Schema / Host Bridge 边界：Inscape 内 ID 可读且抽象，项目内部 ID、资源坐标和事件处理器由桥接层映射。
 - [x] 设计 Host Bridge 配置草案，覆盖 Inscape ID 到项目 ID、资源引用、宿主事件处理器和查询实现的映射。

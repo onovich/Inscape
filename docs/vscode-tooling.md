@@ -75,14 +75,14 @@ Inscape 的默认阅读优先级应当是：
 - 提供基础 snippets：节点、对白、选择组、跳转、元信息、Timeline Hook、行内标签。
 - 通过 `dotnet run --project src/Internal/Cli/Inscape.Cli/Inscape.Cli.csproj -- diagnose-project <workspace> --override <source> <temp-file>` 刷新实时诊断。
 - 在 `->` 跳转目标位置补全工作区内的节点名。
-- 在对白行开头补全角色名，优先读取 `inscape.config.json` 中 `unitySample.roleMap` 指向的 `speaker,roleId` 表；未配置时回退扫描工作区已有对白 speaker。
+- 在对白行开头补全角色名，优先读取 `inscape.config.json` 中 `hostBridge` 的 `kind: "speaker"` ID；没有 Host Bridge 时回退到 legacy `unitySample.roleMap`；未配置时再回退扫描工作区已有对白 speaker。
 - 在 `@timeline ...`、`@timeline.<phase> ...` 这类宿主事件 / 时机 hook 位置补全 Host Bridge ID；同时对 legacy `[kind: ...]` inline host binding 位置保留兼容补全。补全优先读取 `inscape.config.json` 中 `hostBridge`，再回退到 legacy `unitySample.bindingMap` 指向的 `kind,alias,unitySampleId,unityGuid,addressableKey,assetPath` 表；未配置时回退扫描工作区已有 hook / legacy inline tag。
 - 在 `->` 跳转目标上支持 Go to Definition / Ctrl+Click。
 - 在对白 speaker 上支持 Go to Definition / Ctrl+Click，优先跳到 `hostBridge` 中 `kind: "speaker"` 的配置项；没有 Host Bridge 时回退到 legacy `unitySample.roleMap` 中对应的 `speaker` 行；没有配置角色表时，再回退到工作区内该 speaker 的对白引用位置。语言配置会把 `：` 和常见中文标点视为词边界，使 Ctrl+Click 的可跳转下划线只覆盖 speaker 名称，而不是整句对白。
 - 在节点声明、`->` 跳转目标或对白 speaker 上支持 Find All References。
 - 在节点标题上显示 CodeLens：`N 个引用`，点击后使用 VSCode References Peek 追溯跳到当前 block 的调用方。
 - 在节点声明和 `->` 跳转目标上显示简短 Hover 类型说明，不在跳转目标上显示统计信息。
-- 在对白 speaker 上显示 Hover 摘要：角色名、UnitySample `roleId` 绑定状态和来源表。
+- 在对白 speaker 上显示 Hover 摘要：角色名、Host Bridge 或 legacy UnitySample 绑定状态和来源表。
 - 在 `@entry`、`@scene`、`@timeline` 这类 `@` 行上显示 Hover 解释，告诉作者 `@` 主要用于入口、场景标记、宿主事件、时机 hook 或其他会影响流程的作者意图。
 - 将 `@entry`、`@scene`、`@timeline` 等统一按 `@metadata` 语法层高亮；其中 `@timeline...` 的说明口径是宿主事件 / 时机 hook，不再把它解释成和 `[kind: alias]` 完全等价的资源标签。
 - 在 Host Bridge / legacy binding 别名上显示 Hover 摘要：`kind:alias`、Host asset id、legacy UnitySample id、Addressable、Unity guid、Asset path 和来源表。
@@ -145,13 +145,21 @@ Inscape 的默认阅读优先级应当是：
 
 ## 角色提示
 
-角色提示是第一版宿主配置接入 VSCode 的试点。扩展会读取工作区根目录的：
+角色提示是 Host Bridge 接入 VSCode 的第一批作者体验。扩展会读取工作区根目录的：
 
 ```text
 inscape.config.json
 ```
 
-并按配置文件所在目录解析 `unitySample.roleMap`：
+并优先按配置文件所在目录解析 `hostBridge`：
+
+```json
+{
+  "hostBridge": "config/inscape.host.bridge.json"
+}
+```
+
+Host Bridge 中 `kind: "speaker"` 的 ID 会用于 speaker 补全、Hover 和 Ctrl+Click。为了维护旧项目，扩展仍会回退读取 legacy `unitySample.roleMap`：
 
 ```json
 {
@@ -169,11 +177,11 @@ speaker,roleId
 成步堂,
 ```
 
-在对白行开头输入时，补全项会插入 `角色：`。如果 `roleId` 已绑定，补全详情显示 UnitySample `roleId`；如果为空，则显示未绑定状态。Hover 同样展示绑定状态和来源路径。
+在对白行开头输入时，补全项会插入 `角色：`。如果 Host Bridge 或 legacy role map 已绑定，补全详情显示对应绑定状态；如果为空，则显示未绑定状态。Hover 同样展示绑定状态和来源路径。
 
 对白 speaker 也支持导航：Ctrl+Click 会优先跳到配置的 `hostBridge` speaker 项；没有 Host Bridge 时回退到 legacy `unitySample.roleMap` 中对应 `speaker` 行；Find All References 会返回工作区内该 speaker 的全部对白行，并在 VSCode 请求 declaration 时包含配置行。如果未配置角色表，Ctrl+Click 会回退返回工作区内该 speaker 的对白引用位置，便于至少通过 Peek/跳转追溯用法。`language-configuration.json` 的 `wordPattern` 会把全角冒号和常见中文标点作为词边界，确保 `旁白：文本` 这类中文对白中只有 `旁白` 被标为可跳转词。
 
-这项能力只是写作提示，不改变编译结果。UnitySample 实验导出由 CLI 的 `export-unity-sample-project` 读取同一份 `roleMap` 完成；长期应由 Host Bridge 配置驱动。
+这项能力只是写作提示，不改变编译结果。UnitySample 实验导出仍可由 ExternalSupport CLI 读取 legacy `roleMap` 完成；长期主线由 Host Bridge 配置驱动。
 
 ## Block 双向导航
 
