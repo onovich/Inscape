@@ -45,7 +45,37 @@ namespace Inscape.LanguageServer {
                 return 0;
             }
 
-            Console.WriteLine("Inscape.LanguageServer baseline. Use --capabilities, --diagnose-file <path>, or --definition-file <path> <nodeName>.");
+            if (args.Length > 2 && args[0] == "--references-file") {
+                string sourcePath = Path.GetFullPath(args[1]);
+                string source = File.ReadAllText(sourcePath);
+                DslScriptReferenceProvider provider = new DslScriptReferenceProvider();
+                Console.WriteLine(JsonSerializer.Serialize(new {
+                    format = "inscape.language-server-references",
+                    formatVersion = 1,
+                    references = provider.GetNodeReferences(source, sourcePath, args[2])
+                }, new JsonSerializerOptions {
+                    WriteIndented = true,
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                }));
+                return 0;
+            }
+
+            if (args.Length > 1 && args[0] == "--completion-file") {
+                string sourcePath = Path.GetFullPath(args[1]);
+                string source = File.ReadAllText(sourcePath);
+                DslScriptCompletionProvider provider = new DslScriptCompletionProvider();
+                Console.WriteLine(JsonSerializer.Serialize(new {
+                    format = "inscape.language-server-completions",
+                    formatVersion = 1,
+                    completions = provider.GetNodeCompletions(source, sourcePath)
+                }, new JsonSerializerOptions {
+                    WriteIndented = true,
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                }));
+                return 0;
+            }
+
+            Console.WriteLine("Inscape.LanguageServer baseline. Use --capabilities, --diagnose-file <path>, --definition-file <path> <nodeName>, --references-file <path> <nodeName>, or --completion-file <path>.");
             return 0;
         }
 

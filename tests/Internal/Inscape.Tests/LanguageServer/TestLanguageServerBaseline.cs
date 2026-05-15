@@ -47,6 +47,33 @@ namespace Inscape.Tests {
             AssertEqual("second.node".Length, definition.Location.Length, "Definition editor length");
         }
 
+        static void LanguageServerReferencesAndCompletionsUseCompilerGraph() {
+            string source = """
+:: start
+旁白：开始。
+-> second.node
+
+  :: second.node
+旁白：第二页。
+""";
+
+            DslScriptReferenceProvider referenceProvider = new DslScriptReferenceProvider();
+            List<LanguageServerReferenceModel> references = referenceProvider.GetNodeReferences(source, "memory://references.inscape", "second.node");
+            AssertEqual(1, references.Count, "Reference count");
+            AssertEqual("second.node", references[0].Target, "Reference target");
+            AssertEqual(2, references[0].Location.Line, "Reference editor line");
+            AssertEqual(0, references[0].Location.Character, "Reference editor character");
+
+            DslScriptCompletionProvider completionProvider = new DslScriptCompletionProvider();
+            List<LanguageServerCompletionModel> completions = completionProvider.GetNodeCompletions(source, "memory://references.inscape");
+            AssertEqual(2, completions.Count, "Completion count");
+            AssertEqual("start", completions[0].Label, "First completion label");
+            AssertEqual("node", completions[0].Kind, "Completion kind");
+            AssertEqual("second.node", completions[1].Label, "Second completion label");
+            AssertEqual(4, completions[1].Location.Line, "Second completion editor line");
+            AssertEqual(2, completions[1].Location.Character, "Second completion editor character");
+        }
+
     }
 
 }
