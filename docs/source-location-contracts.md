@@ -45,8 +45,8 @@
 
 兼容字段：
 
-- Preview webview 当前发回 VSCode 的 `openSource` payload 仍使用 `column` 字段承载 0-based 编辑器字符位置。这是历史兼容字段，不应扩散到新的 reveal payload。
-- 读取旧 payload 时可以接受 `column` 作为 `character` 的 fallback；新 payload 应优先写 `character`。
+- Preview webview 发回 VSCode 的 `openSource` payload 应使用 `character` 字段承载 0-based 编辑器字符位置。
+- 读取旧 payload 时可以接受 `column` 作为 `character` 的 fallback；新 payload 应优先写 `character`，不再继续扩散 `column`。
 
 ## 转换规则
 
@@ -80,12 +80,12 @@ Preview -> VSCode 源码回跳：
   "source": {
     "sourcePath": "D:/path/story.inscape",
     "line": 0,
-    "column": 4
+    "character": 4
   }
 }
 ```
 
-说明：`line` 与 `column` 都是 0-based 编辑器坐标。`column` 是兼容字段，后续 C2 可迁为 `character`，同时保留读取 `column` 的 fallback。
+说明：`line` 与 `character` 都是 0-based 编辑器坐标。旧 payload 中的 `column` 只作为读取 fallback 保留，不再作为新消息字段。
 
 VSCode -> Preview 定位：
 
@@ -106,6 +106,6 @@ VSCode -> Preview 定位：
 ## C 阶段推进顺序
 
 1. 先把 Preview HTML 的 Compiler source -> Editor reveal 转换收口到单点，修复 1-based / 0-based 混用。
-2. 再把 Preview -> VSCode 的兼容 `column` 字段迁到 `character`，VSCode 侧保留 fallback。
+2. 再把 Preview -> VSCode 的兼容 `column` 字段迁到 `character`，VSCode 侧保留 fallback。（已完成 C2.1）
 3. 再为中文对白、选项、metadata、diagnostics 和跨文件 source map 增加测试样例。
 4. 最后让 LanguageServer 基线复用同一份契约，而不是重新定义编辑器坐标。

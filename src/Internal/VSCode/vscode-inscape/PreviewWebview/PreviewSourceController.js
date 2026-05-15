@@ -10,13 +10,15 @@ class PreviewSourceController {
 
     async openSource(source, webviewPanel) {
         try {
+            const line = Math.max(0, (source.line || 0));
+            const character = Math.max(0, (source.character ?? source.column ?? 0));
             const location = new this.vscode.Location(
                 this.vscode.Uri.file(source.sourcePath),
                 new this.vscode.Range(
-                    Math.max(0, (source.line || 0)),
-                    Math.max(0, (source.column || 0)),
-                    Math.max(0, (source.line || 0)),
-                    Math.max(0, (source.column || 0) + 1)
+                    line,
+                    character,
+                    line,
+                    character + 1
                 )
             );
 

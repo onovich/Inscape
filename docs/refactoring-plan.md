@@ -242,6 +242,8 @@ B 后修复：在进入 C 阶段前，Compiler 旧阶段产物已按角色后缀
 - 让 VSCode command、selection bridge、webview message 使用同一数据结构。
 - 文档化字段含义与兼容策略。
 
+当前进展：Preview -> VSCode 的 `openSource` payload 已从历史兼容 `column` 迁为 `character`；VSCode `PreviewSourceController` 读取 `character`，并保留旧 `column` fallback。
+
 验收标准：
 
 - `Inscape: Reveal Current Selection In Preview` 与 Ctrl+Click 文本定位走同一 reveal 逻辑。
