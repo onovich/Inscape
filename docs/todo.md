@@ -170,14 +170,14 @@
 	- [x] C5.1 已创建 `src/Internal/Runtime/Inscape.Runtime.csproj` 并加入 `Inscape.slnx`。
 	- [x] C5.2 已建立 `NarrativeRuntime` 最小 IR 消费生命周期：`LoadGraph`、`Start`、`Choose`、`Continue`、`Restore`；Runtime 不解析 `.inscape`，不依赖 VSCode / HTML Preview / UnitySample。
 - [ ] 保持 `src/ExternalSupport/UnityPlugin/Inscape.Adapters.UnitySample` 与 `src/ExternalSupport/UnityPlugin/unity-bird-importer` 作为 ExternalSupport 过渡样例，暂不纳入 Internal 主动重构范围；只在 Host Bridge / UnityPlugin 设计阶段把它们当验证样本使用。
-- [ ] 完成 D 阶段 Core 干净与 Host Bridge 隔离收口。
+- [x] 完成 D 阶段 Core 干净与 Host Bridge 隔离收口。
 	- [x] D1.1 Compiler 依赖巡检：确认 `Inscape.Compiler` 不依赖 Unity、VSCode、HTML、Bird、Addressables、ExternalSupport、Tooling、Cli、LanguageServer 或 Runtime；详见 [Core Boundary Audit](core-boundary-audit.md)。
 	- [x] D1.2 Compiler 角色目录与命名自检：对照命名规范检查 `Model` / `Parsing` / `Analysis` / `Localization` 角色边界，并修正文档过期口径。
 	- [x] D2.1 ExternalSupport 隔离自检：确认 UnitySample / importer 仍只在 ExternalSupport 路径与独立测试链路中出现，不反向污染 Internal；详见 [ExternalSupport Boundary Audit](external-support-boundary-audit.md)。
 	- [x] D2.2 Host Bridge 契约草案：定义可表达 UnitySample 当前能力、但不被 UnitySample 限死的配置模型；详见 [Host Bridge Contract](host-bridge-contract.md)。
 	- [ ] D3 后续迁移：把 `ToolConfigModel.UnitySample` / VSCode `UnitySample` 文案迁到通用 `hostBridge` 配置读取与展示，并保留旧字段 fallback。
 		- [x] D3.1 ToolConfig 支持通用 `hostBridge` 路径读取与归一化，保留 `unitySample` 旧字段 fallback。
-		- [ ] D3.2 VSCode HostBinding / speaker 展示文案迁到 Host Bridge 口径，保留 UnitySample fallback 文案。
+		- [x] D3.2 VSCode HostBinding / speaker 展示文案迁到 Host Bridge 口径，保留 UnitySample fallback 文案。
 
 ## 阶段 1：DSL 与轻工具链
 

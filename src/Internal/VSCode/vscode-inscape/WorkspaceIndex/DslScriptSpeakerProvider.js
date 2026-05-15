@@ -88,7 +88,7 @@ class DslScriptSpeakerProvider {
         const item = new this.vscode.CompletionItem(speaker.name, this.vscode.CompletionItemKind.Class);
         item.insertText = speaker.name + "\uFF1A";
         item.detail = speaker.roleId
-            ? "UnitySample roleId " + speaker.roleId
+            ? "Host roleId " + speaker.roleId
             : speaker.sourceLabel + " (unbound)";
         item.documentation = speaker.sourcePath;
         item.sortText = (speaker.sourceRank || 0) + "_" + speaker.name;
@@ -101,9 +101,9 @@ class DslScriptSpeakerProvider {
         markdown.appendMarkdown("**Inscape Speaker** `" + speaker.name + "`\n\n");
 
         if (speaker.roleId) {
-            markdown.appendMarkdown("UnitySample roleId: `" + speaker.roleId + "`\n\n");
+            markdown.appendMarkdown("Host roleId: `" + speaker.roleId + "`\n\n");
         } else {
-            markdown.appendMarkdown("UnitySample roleId: unbound\n\n");
+            markdown.appendMarkdown("Host roleId: unbound\n\n");
         }
 
         markdown.appendMarkdown("Source: `" + this.formatDisplayPath(speaker.sourcePath) + "`");
@@ -111,6 +111,51 @@ class DslScriptSpeakerProvider {
     }
 
     async readConfiguredRoleMapSpeakerRows(document) {
+        const hostBridgeSpeakers = await this.readConfiguredHostBridgeSpeakers(document);
+        const legacyRoleMapSpeakers = await this.readConfiguredLegacyRoleMapSpeakers(document);
+        return hostBridgeSpeakers.concat(legacyRoleMapSpeakers);
+    }
+
+    async readConfiguredHostBridgeSpeakers(document) {
+        const hostBridgePath = await this.getConfiguredHostBridgePath(document);
+        if (!hostBridgePath) {
+            return [];
+        }
+
+        const text = await this.fs.promises.readFile(hostBridgePath, "utf8");
+        let bridge;
+        try {
+            bridge = JSON.parse(text);
+        } catch {
+            return [];
+        }
+
+        if (!bridge || !Array.isArray(bridge.ids)) {
+            return [];
+        }
+
+        return bridge.ids
+            .filter((entry) => entry && entry.kind === "speaker" && typeof entry.name === "string" && entry.name.trim().length > 0)
+            .map((entry) => {
+                const roleId = entry.host && entry.host.roleId !== undefined && entry.host.roleId !== null
+                    ? String(entry.host.roleId)
+                    : "";
+                return {
+                    name: entry.name.trim(),
+                    roleId,
+                    displayName: typeof entry.displayName === "string" ? entry.displayName : "",
+                    sourcePath: hostBridgePath,
+                    sourceLabel: "Host Bridge",
+                    sourceKind: "hostBridge",
+                    sourceRank: 0,
+                    line: 0,
+                    character: 0,
+                    length: entry.name.trim().length
+                };
+            });
+    }
+
+    async readConfiguredLegacyRoleMapSpeakers(document) {
         const roleMapPath = await this.getConfiguredRoleMapPath(document);
         if (!roleMapPath) {
             return [];
@@ -118,6 +163,25 @@ class DslScriptSpeakerProvider {
 
         const text = await this.fs.promises.readFile(roleMapPath, "utf8");
         return this.parseRoleMapSpeakerRows(text, roleMapPath);
+    }
+
+    async getConfiguredHostBridgePath(document) {
+        const projectConfig = await this.readProjectConfig(document);
+        if (!projectConfig || !projectConfig.configPath || !projectConfig.config) {
+            return undefined;
+        }
+
+        const hostBridge = projectConfig.config.hostBridge;
+        if (!hostBridge) {
+            return undefined;
+        }
+
+        const hostBridgePath = this.resolveProjectConfigPath(projectConfig.configPath, hostBridge);
+        if (!this.fs.existsSync(hostBridgePath)) {
+            return undefined;
+        }
+
+        return hostBridgePath;
     }
 
     async getConfiguredRoleMapPath(document) {
@@ -188,9 +252,9 @@ class DslScriptSpeakerProvider {
                 name,
                 roleId: roleIdIndex >= 0 ? (row[roleIdIndex] || "").trim() : "",
                 sourcePath: roleMapPath,
-                sourceLabel: "UnitySample role map",
-                sourceKind: "roleMap",
-                sourceRank: 0,
+                sourceLabel: "Legacy UnitySample role map",
+                sourceKind: "legacyRoleMap",
+                sourceRank: 1,
                 line,
                 character: this.findCsvFieldValueStart(lines[line], speakerIndex, name),
                 length: name.length

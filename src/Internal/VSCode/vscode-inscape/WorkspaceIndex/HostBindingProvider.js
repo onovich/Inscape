@@ -113,6 +113,76 @@ class HostBindingProvider {
     }
 
     async readConfiguredBindings(document) {
+        const hostBridgeBindings = await this.readConfiguredHostBridgeBindings(document);
+        const legacyBindings = await this.readConfiguredLegacyBindings(document);
+        return hostBridgeBindings.concat(legacyBindings);
+    }
+
+    async readConfiguredHostBridgeBindings(document) {
+        const hostBridgePath = await this.getConfiguredHostBridgePath(document);
+        if (!hostBridgePath) {
+            return [];
+        }
+
+        const text = await this.fs.promises.readFile(hostBridgePath, "utf8");
+        let bridge;
+        try {
+            bridge = JSON.parse(text);
+        } catch {
+            return [];
+        }
+
+        if (!bridge || !Array.isArray(bridge.ids)) {
+            return [];
+        }
+
+        return bridge.ids
+            .filter((entry) => entry && typeof entry.kind === "string" && typeof entry.name === "string" && entry.kind !== "speaker")
+            .map((entry) => {
+                const host = entry.host || {};
+                const assetId = host.assetId !== undefined && host.assetId !== null ? String(host.assetId) : "";
+                const alias = entry.name.trim();
+                return {
+                    kind: this.normalizeHostBindingKind(entry.kind),
+                    name: alias,
+                    alias,
+                    assetId,
+                    unitySampleId: "",
+                    unityGuid: typeof host.unityGuid === "string" ? host.unityGuid : "",
+                    addressableKey: typeof host.addressableKey === "string" ? host.addressableKey : "",
+                    assetPath: typeof host.assetPath === "string" ? host.assetPath : "",
+                    sourcePath: hostBridgePath,
+                    sourceLabel: "Host Bridge",
+                    sourceKind: "hostBridge",
+                    sourceRank: 0,
+                    line: 0,
+                    character: 0,
+                    length: Math.max(alias.length, 1)
+                };
+            })
+            .filter((binding) => binding.kind.length > 0 && binding.alias.length > 0);
+    }
+
+    async getConfiguredHostBridgePath(document) {
+        const projectConfig = await this.readProjectConfig(document);
+        if (!projectConfig || !projectConfig.configPath || !projectConfig.config) {
+            return undefined;
+        }
+
+        const hostBridge = projectConfig.config.hostBridge;
+        if (!hostBridge) {
+            return undefined;
+        }
+
+        const hostBridgePath = this.resolveProjectConfigPath(projectConfig.configPath, hostBridge);
+        if (!this.fs.existsSync(hostBridgePath)) {
+            return undefined;
+        }
+
+        return hostBridgePath;
+    }
+
+    async readConfiguredLegacyBindings(document) {
         const projectConfig = await this.readProjectConfig(document);
         if (!projectConfig || !projectConfig.configPath || !projectConfig.config || !projectConfig.config.unitySample) {
             return [];
@@ -154,14 +224,15 @@ class HostBindingProvider {
                     kind: (row[kindIndex] || "").trim(),
                     name: alias,
                     alias,
+                    assetId: "",
                     unitySampleId: this.readOptionalCsvField(row, unitySampleIdIndex),
                     unityGuid: this.readOptionalCsvField(row, unityGuidIndex),
                     addressableKey: this.readOptionalCsvField(row, addressableKeyIndex),
                     assetPath: this.readOptionalCsvField(row, assetPathIndex),
                     sourcePath: bindingMapPath,
-                    sourceLabel: "UnitySample binding map",
-                    sourceKind: "bindingMap",
-                    sourceRank: 0,
+                    sourceLabel: "Legacy UnitySample binding map",
+                    sourceKind: "legacyBindingMap",
+                    sourceRank: 1,
                     line,
                     character: 0,
                     length: Math.max(alias.length, lineText.length)
@@ -186,6 +257,7 @@ class HostBindingProvider {
                     kind: "timeline",
                     name: alias,
                     alias,
+                    assetId: "",
                     unitySampleId: "",
                     unityGuid: "",
                     addressableKey: "",
@@ -211,6 +283,7 @@ class HostBindingProvider {
                         kind,
                         name: alias,
                         alias,
+                        assetId: "",
                         unitySampleId: "",
                         unityGuid: "",
                         addressableKey: "",
@@ -241,8 +314,11 @@ class HostBindingProvider {
 
     createDetail(binding) {
         const pieces = [binding.kind];
+        if (binding.assetId) {
+            pieces.push("Host asset " + binding.assetId);
+        }
         if (binding.unitySampleId) {
-            pieces.push("UnitySample " + binding.unitySampleId);
+            pieces.push("legacy UnitySample " + binding.unitySampleId);
         }
         if (binding.addressableKey) {
             pieces.push(binding.addressableKey);
@@ -258,7 +334,8 @@ class HostBindingProvider {
         markdown.isTrusted = false;
         markdown.appendMarkdown("**Inscape Host Binding** `" + binding.kind + ":" + binding.alias + "`\n\n");
         markdown.appendMarkdown("This is a host bridge hint. Ctrl+Click opens the configured mapping row or the first workspace occurrence.\n\n");
-        this.appendField(markdown, "UnitySample id", binding.unitySampleId);
+        this.appendField(markdown, "Host asset id", binding.assetId);
+        this.appendField(markdown, "Legacy UnitySample id", binding.unitySampleId);
         this.appendField(markdown, "Addressable", binding.addressableKey);
         this.appendField(markdown, "Asset", binding.assetPath);
         this.appendField(markdown, "Unity guid", binding.unityGuid);
