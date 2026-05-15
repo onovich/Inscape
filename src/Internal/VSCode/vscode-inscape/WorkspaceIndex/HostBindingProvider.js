@@ -106,7 +106,7 @@ class HostBindingProvider {
         const markdown = new this.vscode.MarkdownString(undefined, true);
         markdown.isTrusted = false;
         markdown.appendMarkdown("**Inscape Host Binding** `" + binding.kind + ":" + binding.alias + "`\n\n");
-        markdown.appendMarkdown("This looks like a host bridge hint, but no mapping row or scanned workspace occurrence was found yet.\n\n");
+        markdown.appendMarkdown("This looks like a host bridge reference, but no mapping row or scanned workspace occurrence was found yet. For `@timeline...`, this is a host event / timing hook; for `[` `kind: alias` `]`, this is legacy inline host binding fallback.\n\n");
         markdown.appendMarkdown("Add it to `inscape.config.json` or the binding CSV to make Ctrl+Click resolve it.\n\n");
         markdown.appendMarkdown("Source: `" + this.formatDisplayPath(binding.sourcePath) + "`");
         return markdown;
@@ -289,7 +289,7 @@ class HostBindingProvider {
                         addressableKey: "",
                         assetPath: "",
                         sourcePath,
-                        sourceLabel: "Workspace inline tag",
+                        sourceLabel: "Workspace legacy inline tag",
                         sourceKind: "script",
                         sourceRank: 1,
                         line: lineIndex,
@@ -333,7 +333,7 @@ class HostBindingProvider {
         const markdown = new this.vscode.MarkdownString(undefined, true);
         markdown.isTrusted = false;
         markdown.appendMarkdown("**Inscape Host Binding** `" + binding.kind + ":" + binding.alias + "`\n\n");
-        markdown.appendMarkdown("This is a host bridge hint. Ctrl+Click opens the configured mapping row or the first workspace occurrence.\n\n");
+        markdown.appendMarkdown("This resolves through Host Bridge or legacy binding data. `@timeline...` uses this as a host event / timing hook; `[` `kind: alias` `]` is kept as legacy inline host binding fallback. Ctrl+Click opens the configured mapping row or the first workspace occurrence.\n\n");
         this.appendField(markdown, "Host asset id", binding.assetId);
         this.appendField(markdown, "Legacy UnitySample id", binding.unitySampleId);
         this.appendField(markdown, "Addressable", binding.addressableKey);

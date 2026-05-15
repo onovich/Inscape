@@ -11,8 +11,8 @@ This is the first lightweight authoring layer for `.inscape` scripts. It keeps s
 - Refreshes diagnostics by invoking `dotnet run --project src/Internal/Cli/Inscape.Cli/Inscape.Cli.csproj -- diagnose-project <workspace> --override <source> <temp-file>`.
 - Provides workspace node completions in jump target positions.
 - Provides dialogue speaker completions from `inscape.config.json` `hostBridge`, with legacy `unitySample.roleMap` and workspace speaker fallback.
-- Provides host binding alias completions from `inscape.config.json` `hostBridge`, with legacy `unitySample.bindingMap` fallback for `@timeline ...`, `@timeline.<phase> ...`, and `[kind: ...]` inline tag positions.
-- Highlights host binding lines such as `@timeline court_intro` and `[bg: courtroom]` without the always-on link look, while Hover / Ctrl+Click still jumps to the matching mapping row or workspace occurrence.
+- Provides host event / timing hook completions from `inscape.config.json` `hostBridge`, with legacy `unitySample.bindingMap` fallback for `@timeline ...`, `@timeline.<phase> ...`, and legacy `[kind: ...]` inline host binding positions.
+- Highlights host hook lines such as `@timeline court_intro` and legacy inline host binding tags such as `[bg: courtroom]` without the always-on link look, while Hover / Ctrl+Click still jumps to the matching mapping row or workspace occurrence.
 - Supports Go to Definition / Ctrl+Click from jump targets to node declarations, and from dialogue speakers to configured role-map rows with dialogue-reference fallback; the clickable text stays visually plain until Ctrl is held.
 - Treats full-width colons and common Chinese punctuation as word boundaries so Ctrl+Click link styling on Chinese dialogue only covers the speaker name.
 - Supports Find All References from node declarations, jump targets, and dialogue speakers.
@@ -87,7 +87,7 @@ After installation, reload the VSCode window before judging behavior. Manual smo
 - Ctrl+Click on dialogue / option text opens or reuses preview and reveals the matching page.
 - `-> target` Go to Definition and Find All References still work.
 - Speaker completion, Hover, Go to Definition, and Find All References prefer `hostBridge` and still fall back to legacy `unitySample.roleMap`.
-- `@timeline ...` and `[kind: alias]` completion, Hover, and Ctrl+Click prefer `hostBridge` and still fall back to legacy `unitySample.bindingMap`.
+- `@timeline ...` host event / timing hook and legacy `[kind: alias]` inline host binding completion, Hover, and Ctrl+Click prefer `hostBridge` and still fall back to legacy `unitySample.bindingMap`.
 - Preview source buttons, diagnostics clicks, and metadata clicks still jump to the expected source location.
 
 If the environment cannot perform the manual click checks, say so in the handoff or final report instead of implying they were completed.
@@ -112,14 +112,14 @@ When no configured role map exists, the extension still scans open and workspace
 
 Ctrl+Click on a dialogue speaker jumps to the matching `speaker` row in the configured role map. If no configured row exists, it falls back to matching dialogue lines in the workspace. Find All References on a speaker lists all matching dialogue lines in the workspace and includes the role-map row when VSCode requests declarations.
 
-Host binding completion prefers `hostBridge` ids whose `kind` matches the authoring context, then falls back to legacy `unitySample.bindingMap` from the same project config. The legacy binding map format is:
+Host hook and legacy inline host binding completion prefer `hostBridge` ids whose `kind` matches the authoring context, then fall back to legacy `unitySample.bindingMap` from the same project config. The legacy binding map format is:
 
 ```csv
 kind,alias,unitySampleId,unityGuid,addressableKey,assetPath
 timeline,court_intro,12,,Timeline/CourtIntro,Assets/Resources_Runtime/Timeline/SO_Timeline_CourtIntro.asset
 ```
 
-The first supported contexts are `@timeline court_intro`, explicit phase forms such as `@timeline.node.enter court_intro`, and inline tags such as `[timeline: court_intro]`, `[timeline.node.exit: court_outro]`, or `[bg: classroom]`. Hover explains `@entry` / `@scene` metadata lines, while Ctrl+Click on `@timeline ...` and `[kind: alias]` opens the corresponding bridge entry, legacy binding row, or first workspace occurrence when one exists. For inline tags, completion is generic by `kind`; compiler semantics still come from `Inscape.Compiler`, while UnitySample export remains an experimental adapter.
+The first supported contexts are host event / timing hooks such as `@timeline court_intro` and `@timeline.node.enter court_intro`, plus legacy inline host binding tags such as `[timeline: court_intro]`, `[timeline.node.exit: court_outro]`, or `[bg: classroom]`. Hover explains `@entry` / `@scene` metadata lines, while Ctrl+Click on `@timeline ...` and legacy `[kind: alias]` opens the corresponding bridge entry, legacy binding row, or first workspace occurrence when one exists. For legacy inline tags, completion is still generic by `kind`; compiler semantics come from `Inscape.Compiler`, while UnitySample export remains an experimental adapter.
 
 Host schema files named `inscape.host.schema.json` or `*.host.schema.json` are validated by the bundled JSON Schema. The command `Inscape: Show Host Schema Capabilities` reads `inscape.config.json` `hostSchema`, lists configured queries/events, and opens the selected capability in the schema file.
 

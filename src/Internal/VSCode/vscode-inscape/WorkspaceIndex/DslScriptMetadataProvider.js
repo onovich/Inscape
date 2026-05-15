@@ -50,6 +50,8 @@ class DslScriptMetadataProvider {
             markdown.appendMarkdown("Marks the entry node for preview / project startup. It does not change dialogue text; it tells the compiler and preview where to begin.\n\n");
         } else if (metadataInfo.kind === "scene") {
             markdown.appendMarkdown("Scene metadata. Use it to label or group a block for host-side logic, asset loading, or authoring conventions.\n\n");
+        } else if (metadataInfo.kind === "timeline" || metadataInfo.kind.startsWith("timeline.")) {
+            markdown.appendMarkdown("Timeline host event / timing hook. It marks when a host-side presentation event should be requested; the actual project mapping lives in Host Bridge or legacy binding data.\n\n");
         } else {
             markdown.appendMarkdown("Generic `@` metadata line. Inscape keeps these as lightweight author-intent markers so hosts and adapters can interpret them later.\n\n");
         }
@@ -58,7 +60,7 @@ class DslScriptMetadataProvider {
             markdown.appendMarkdown("Value: `" + metadataInfo.value + "`\n\n");
         }
 
-        markdown.appendMarkdown("Tip: `@timeline ...` is a host binding hint; `[` `kind: alias` `]` is the inline equivalent.");
+        markdown.appendMarkdown("Tip: use `@...` for events, actions, timing, and state changes. `[` `kind: alias` `]` remains supported as a legacy inline host binding fallback, not the preferred model for new event syntax.");
         return markdown;
     }
 
