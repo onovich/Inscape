@@ -53,7 +53,7 @@ VSCode：4 / 10
 
 小目标：
 
-- 标注 Compiler 入口：`InscapeCompiler`、`ProjectCompiler`。
+- 标注 Compiler 入口：`DslScriptCompilerDomain`、`StoryGraphCompilerDomain` 和薄门面 `CompilerEntry`。
 - 标注内部工具入口：CLI `CliCore`、VSCode `activate()`；LanguageServer server entry 等 C 阶段真实基线出现后再补。
 - 在文档中明确：当前没有游戏式主循环，因为项目仍处于编译器 + 工具链阶段。
 - 明确未来运行时入口是 `NarrativeRuntime`；内部工具链短期继续按 `Tooling` 的共享业务模块推进，而不是预设 `InscapeProjectService` 一类总服务。
@@ -74,7 +74,7 @@ VSCode：4 / 10
 - 继续把项目级流程从 `Cli` 上提到 `Tooling`，按 `DslScriptSources`、`ToolConfig`、`Preview`、`Localization`、`HostSchema`、`HostBinding` 等共享业务模块拆分。
 - 具体类型命名采用 ADR 0010 的目录优先主语/角色模型：范围词不是类型名前缀的默认选择，`Support` / `Helper` 一类弱语义命名应优先被拆分。
 - CLI、VSCode 与未来 Language Server 逐步通过 `Tooling` + `Compiler` 复用共享流程与语义能力，而不是各自重新拼装，也不是先引入巨型门面。
-- 保留 `ProjectCompiler` 作为 Compiler 编译能力，不让它承担文件系统、配置和工具编排职责。
+- 保留 `StoryGraphCompilerDomain` 作为 Compiler 编译能力，不让它承担文件系统、配置和工具编排职责。
 
 验收标准：
 
