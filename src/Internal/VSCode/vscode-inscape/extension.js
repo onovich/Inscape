@@ -11,6 +11,7 @@ const { HostSchemaCommand } = require("./Commands/HostSchemaCommand");
 const { LocalizationCommand } = require("./Commands/LocalizationCommand");
 const { PreviewCommand } = require("./Commands/PreviewCommand");
 const { EditorAuthoringCommand } = require("./Commands/EditorAuthoringCommand");
+const { ExtensionRegistrationController } = require("./ExtensionEntry/ExtensionRegistrationController");
 const { DslScriptCodeLensProvider } = require("./LanguageFeatures/DslScriptCodeLensProvider");
 const { DslScriptCompletionProvider } = require("./LanguageFeatures/DslScriptCompletionProvider");
 const { DslScriptDefinitionProvider } = require("./LanguageFeatures/DslScriptDefinitionProvider");
@@ -18,7 +19,6 @@ const { DslScriptDiagnosticScheduler } = require("./LanguageFeatures/DslScriptDi
 const { DslScriptDocumentSymbolProvider } = require("./LanguageFeatures/DslScriptDocumentSymbolProvider");
 const { DslScriptHoverProvider } = require("./LanguageFeatures/DslScriptHoverProvider");
 const { DslScriptReferenceProvider } = require("./LanguageFeatures/DslScriptReferenceProvider");
-const { PreviewEditorProvider } = require("./PreviewWebview/PreviewEditorProvider");
 const { PreviewHtmlProvider } = require("./PreviewWebview/PreviewHtmlProvider");
 const { PreviewInvocationProvider } = require("./PreviewWebview/PreviewInvocationProvider");
 const { PreviewRefreshController } = require("./PreviewWebview/PreviewRefreshController");
@@ -38,6 +38,7 @@ let previewCommand;
 let localizationCommand;
 let editorAuthoringCommand;
 let hostSchemaCommand;
+let extensionRegistrationController;
 
 const dslScriptNodeProvider = new DslScriptNodeProvider({
     vscode,
@@ -170,72 +171,11 @@ function activate(context) {
     });
     logOutput("Activated Inscape extension from " + context.extensionPath);
 
-    context.subscriptions.push(
+    extensionRegistrationController.register(context, {
         outputChannel,
         diagnostics,
-        scheduler,
-        vscode.workspace.onDidOpenTextDocument((document) => scheduler.schedule(document)),
-        vscode.workspace.onDidChangeTextDocument((event) => {
-            scheduler.schedule(event.document);
-            schedulePreviewRefresh(context, event.document, 250);
-            editorStyleController.refreshDocument(context, event.document);
-        }),
-        vscode.workspace.onDidSaveTextDocument((document) => {
-            scheduler.schedule(document, 0);
-            refreshPreviewPanelsForDocument(context, document);
-            editorStyleController.refreshDocument(context, document);
-            editorStyleController.handleSupportDocumentSave(context, document, refreshVisiblePreviewPanels);
-        }),
-        vscode.workspace.onDidCloseTextDocument((document) => diagnostics.delete(document.uri)),
-        vscode.window.onDidChangeTextEditorSelection((event) => previewRevealBridge.handleSelectionChange(context, event)),
-        vscode.window.onDidChangeVisibleTextEditors(() => editorStyleController.refreshVisibleEditors(context)),
-        vscode.workspace.onDidChangeConfiguration((event) => {
-            if (event.affectsConfiguration("inscape")) {
-                refreshVisibleDocuments(scheduler);
-                editorStyleController.refreshVisibleEditors(context);
-            }
-        }),
-        vscode.languages.registerCompletionItemProvider(languageSelector, dslScriptCompletionProvider, ">", ".", ":", "\uFF1A", "[", " "),
-        vscode.languages.registerDocumentSymbolProvider(languageSelector, dslScriptDocumentSymbolProvider),
-        vscode.languages.registerDefinitionProvider(languageSelector, dslScriptDefinitionProvider),
-        vscode.languages.registerReferenceProvider(languageSelector, dslScriptReferenceProvider),
-        vscode.languages.registerHoverProvider(languageSelector, dslScriptHoverProvider),
-        vscode.languages.registerCodeLensProvider(languageSelector, dslScriptCodeLensProvider),
-        vscode.commands.registerCommand("inscape.showNodeIncomingReferences", (uri, position, locations) => showNodeIncomingReferences(uri, position, locations)),
-        vscode.commands.registerCommand("inscape.openPreview", () => previewCommand.open()),
-        vscode.commands.registerCommand("inscape.togglePreview", () => previewCommand.toggle()),
-        vscode.commands.registerCommand("inscape.revealSelectionInPreview", () => previewCommand.revealSelection(context)),
-        vscode.commands.registerCommand("inscape.openToolsMenu", () => editorAuthoringCommand.openMenu(context)),
-        vscode.commands.registerCommand("inscape.openEditorStyle", () => editorAuthoringCommand.openEditorStyle()),
-        vscode.commands.registerCommand("inscape.openPreviewStyle", () => editorAuthoringCommand.openPreviewStyle()),
-        vscode.commands.registerCommand("inscape.openQuickSyntaxGuide", () => editorAuthoringCommand.openQuickSyntaxGuide()),
-        vscode.commands.registerCommand("inscape.revealInPreview", (payload) => previewRevealBridge.reveal(context, payload)),
-        vscode.commands.registerCommand("inscape.extractLocalization", () => localizationCommand.export(context)),
-        vscode.commands.registerCommand("inscape.updateLocalization", () => localizationCommand.update(context)),
-        vscode.commands.registerCommand("inscape.showHostSchemaCapabilities", () => hostSchemaCommand.showCapabilities()),
-        vscode.window.registerCustomEditorProvider(
-            "inscape.preview",
-            new PreviewEditorProvider({
-                path,
-                context,
-                previewPanels,
-                normalizePath,
-                createPreviewLoadingHtml: (workspaceName) => previewHtmlProvider.createLoadingHtml(workspaceName),
-                refreshPreviewPanel,
-                previewRevealBridge,
-                openPreviewSource: (source, webviewPanel) => previewSourceController.openSource(source, webviewPanel)
-            }),
-            {
-                webviewOptions: {
-                    retainContextWhenHidden: true
-                },
-                supportsMultipleEditorsPerDocument: true
-            }
-        )
-    );
-
-    refreshVisibleDocuments(scheduler);
-    editorStyleController.refreshVisibleEditors(context);
+        scheduler
+    });
 }
 
 function deactivate() {
@@ -366,6 +306,34 @@ hostSchemaCommand = new HostSchemaCommand({
     openLocation,
     locationFromPayload,
     escapeRegExp
+});
+
+extensionRegistrationController = new ExtensionRegistrationController({
+    vscode,
+    path,
+    languageSelector,
+    previewPanels,
+    normalizePath,
+    previewHtmlProvider,
+    refreshPreviewPanel,
+    previewRevealBridge,
+    previewSourceController,
+    refreshPreviewPanelsForDocument,
+    schedulePreviewRefresh,
+    refreshVisiblePreviewPanels,
+    refreshVisibleDocuments,
+    editorStyleController,
+    dslScriptCompletionProvider,
+    dslScriptDocumentSymbolProvider,
+    dslScriptDefinitionProvider,
+    dslScriptReferenceProvider,
+    dslScriptHoverProvider,
+    dslScriptCodeLensProvider,
+    showNodeIncomingReferences,
+    previewCommand,
+    editorAuthoringCommand,
+    localizationCommand,
+    hostSchemaCommand
 });
 
 async function selectWorkspaceFolder() {

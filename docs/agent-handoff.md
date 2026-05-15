@@ -49,6 +49,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - 2026-05-14 已推进 VSCode 拆分 B3.2.5：`PreviewInvocationProvider` 已从 `extension.js` 迁入 `PreviewWebview/PreviewInvocationProvider.js`，preview-project 的 CLI executable / assembly / dotnet run fallback 解析不再由入口文件承载。
 - 2026-05-15 已推进 VSCode 拆分 B3.3.1：`EditorStyleController` 已从 `extension.js` 迁入 `Styles/EditorStyleController.js`，编辑器样式读取、decoration ranges 与状态清理不再由入口文件承载；默认 editor style 也由 Styles 模块导出供作者命令复用。
 - 2026-05-15 已推进 VSCode 拆分 B3.3.2：`StyleDefaults` 已进入 `Styles/StyleDefaults.js`，editor / preview 默认样式不再由 `extension.js` 承载；`EditorAuthoringCommand` 仍通过依赖注入复用默认样式创建配置文件。
+- 2026-05-15 已推进 VSCode 拆分 B3.4.1：`ExtensionRegistrationController` 已进入 `ExtensionEntry/ExtensionRegistrationController.js`，`activate()` 中的 VSCode subscription / provider / command / custom editor 注册顺序不再由入口函数内联承载。
 - 2026-05-12 已迁移当前聚合测试项目：`tests/Inscape.Tests` -> `tests/Internal/Inscape.Tests`。这只是测试项目路径进入 Internal 测试树，测试内容尚未按 Compiler / Tooling / Cli / ExternalSupport 拆分。
 - 当前分支为 `main...origin/main`。本轮已把目录优先方案正式冻结为文档与 ADR；最新提交请以 `git log --oneline -1` 为准。
 - 本轮会话已确认新的重构铁律：先搭目录骨架与 `README.md` 规则文件，再迁大目录路径，再迁 solution / 项目路径，再迁项目名、命名空间和类型名；在此之前，不再把主要重构精力继续放在旧目录里的微观 helper 收口上。
@@ -87,6 +88,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - 本轮会话已补齐 VSCode language features 拆分：`DslScriptCompletionProvider`、`DslScriptDefinitionProvider`、`DslScriptReferenceProvider`、`DslScriptHoverProvider`、`DslScriptDocumentSymbolProvider`、`DslScriptCodeLensProvider` 与 `DslScriptDiagnosticScheduler` 已进入 `LanguageFeatures`，补全、定义跳转、引用查找、悬浮说明、outline、CodeLens 与诊断调度逻辑继续复用 `WorkspaceIndex`、CLI 调用和 preview reveal bridge，不在编辑器层重建编译语义。
 - 本轮会话已推进 PreviewWebview 拆分：`PreviewEditorProvider`、`PreviewHtmlProvider`、`PreviewRefreshController`、`PreviewSourceController` 与 `PreviewInvocationProvider` 已进入 `PreviewWebview`，入口文件仅保留 custom editor 注册、preview refresh 薄 wrapper 和依赖注入。
 - 本轮会话已开始 Styles 拆分：`EditorStyleController` 与 `StyleDefaults` 已进入 `Styles`，入口文件只负责把 VSCode 事件转发给样式 controller，并把默认样式注入作者命令；样式读取、范围扫描、默认样式与 decoration 生命周期由 Styles 层拥有。
+- 本轮会话已开始 ExtensionEntry 收口：`ExtensionRegistrationController` 负责 VSCode 注册顺序，`activate()` 当前只创建 output channel、diagnostics 与 diagnostics scheduler，再委托注册 controller。
 - 本轮会话已顺手修复预览定位局部缺陷：`findDialogueSeparatorIndex` 中误残留的 preview reveal 调用与缺失的半角冒号解析已清理，避免说话人行的预览定位在运行时触发异常。
 - 本轮会话已继续收敛 CLI 总入口 runner 命名：`CliTopLevelCommandRunner`、`CliSingleFileCommandRunner`、`CliProjectCommandRunner` 已分别改为 `CliCommandTopLevelRunner`、`CliCommandSingleFileRunner`、`CliCommandProjectRunner`。
 - 本轮会话已继续按终局后缀白名单收口 CLI 命令入口：`CliCommandTopLevelRunner`、`CliCommandSingleFileRunner`、`CliCommandProjectRunner` 以及 `CliUnitySample*CommandRunner` 已统一去掉 `Runner`，收敛为 `CliTopLevelCommand`、`CliSingleFileCommand`、`CliProjectCommand` 与 `CliUnitySample*Command`。
