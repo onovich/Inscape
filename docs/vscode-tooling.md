@@ -78,7 +78,7 @@ Inscape 的默认阅读优先级应当是：
 - 在对白行开头补全角色名，优先读取 `inscape.config.json` 中 `unitySample.roleMap` 指向的 `speaker,roleId` 表；未配置时回退扫描工作区已有对白 speaker。
 - 在 `@timeline ...`、`@timeline.<phase> ...` 和 `[kind: ...]` 位置补全宿主绑定别名，优先读取 `inscape.config.json` 中 `unitySample.bindingMap` 指向的 `kind,alias,unitySampleId,unityGuid,addressableKey,assetPath` 表；未配置时回退扫描工作区已有 hook / inline tag。
 - 在 `->` 跳转目标上支持 Go to Definition / Ctrl+Click。
-- 在对白 speaker 上支持 Go to Definition / Ctrl+Click 到 `unitySample.roleMap` 中对应的 `speaker` 行；没有配置角色表时，回退到工作区内该 speaker 的对白引用位置。语言配置会把 `：` 和常见中文标点视为词边界，使 Ctrl+Click 的可跳转下划线只覆盖 speaker 名称，而不是整句对白。
+- 在对白 speaker 上支持 Go to Definition / Ctrl+Click，优先跳到 `hostBridge` 中 `kind: "speaker"` 的配置项；没有 Host Bridge 时回退到 legacy `unitySample.roleMap` 中对应的 `speaker` 行；没有配置角色表时，再回退到工作区内该 speaker 的对白引用位置。语言配置会把 `：` 和常见中文标点视为词边界，使 Ctrl+Click 的可跳转下划线只覆盖 speaker 名称，而不是整句对白。
 - 在节点声明、`->` 跳转目标或对白 speaker 上支持 Find All References。
 - 在节点标题上显示 CodeLens：`N 个引用`，点击后使用 VSCode References Peek 追溯跳到当前 block 的调用方。
 - 在节点声明和 `->` 跳转目标上显示简短 Hover 类型说明，不在跳转目标上显示统计信息。
@@ -86,7 +86,7 @@ Inscape 的默认阅读优先级应当是：
 - 在 `@entry`、`@scene` 这类 `@` 元信息上显示 Hover 解释，告诉作者它们是用于标记入口、场景或其他宿主可读意图的轻量元数据。
 - 将 `@entry`、`@scene`、`@timeline` 等统一按 `@metadata` 语法层高亮和解释，避免在主题或交互上把 `@timeline` 伪装成另一种核心语法。
 - 在宿主绑定别名上显示 Hover 摘要：`kind:alias`、UnitySample id、Addressable、Unity guid、Asset path 和来源表。
-- 在 `@timeline ...` 和 `[kind: alias]` 上支持 Ctrl+Click 跳转到对应的绑定行，让作者直接看到它们是如何映射到宿主桥接表的。
+- 在 `@timeline ...` 和 `[kind: alias]` 上支持 Ctrl+Click，优先跳转到 Host Bridge 配置项；没有 Host Bridge 时回退到 legacy binding map 行，让作者直接看到它们是如何映射到宿主桥接表的。
 - 为 VSCode Outline 提供当前文件节点列表。
 - 为 `inscape.host.schema.json` / `*.host.schema.json` 提供 JSON Schema 校验。
 - 提供命令 `Inscape: Show Host Schema Capabilities`，读取 `inscape.config.json` 的 `hostSchema` 并列出 query / event。
@@ -128,7 +128,7 @@ Inscape 的默认阅读优先级应当是：
 - 按住 Ctrl 并指向这些文本时，才显示链接态。
 - Ctrl+Click 正文 / 选项文本会打开或复用预览，并定位到对应页面。
 - 角色名、`-> target`、宿主绑定别名等已有导航不受影响。
-- 修改扩展后，必须重新打包并安装 `.vsix`，不能只依赖 Reload Window。
+- 修改扩展后，必须重新打包并安装 `.vsix`，再 Reload Window，不能只依赖 Reload Window。
 
 建议排查顺序：
 
@@ -171,7 +171,7 @@ speaker,roleId
 
 在对白行开头输入时，补全项会插入 `角色：`。如果 `roleId` 已绑定，补全详情显示 UnitySample `roleId`；如果为空，则显示未绑定状态。Hover 同样展示绑定状态和来源路径。
 
-对白 speaker 也支持导航：Ctrl+Click 会优先跳到配置的 `unitySample.roleMap` 中对应 `speaker` 行；Find All References 会返回工作区内该 speaker 的全部对白行，并在 VSCode 请求 declaration 时包含角色表行。如果未配置角色表，Ctrl+Click 会回退返回工作区内该 speaker 的对白引用位置，便于至少通过 Peek/跳转追溯用法。`language-configuration.json` 的 `wordPattern` 会把全角冒号和常见中文标点作为词边界，确保 `旁白：文本` 这类中文对白中只有 `旁白` 被标为可跳转词。
+对白 speaker 也支持导航：Ctrl+Click 会优先跳到配置的 `hostBridge` speaker 项；没有 Host Bridge 时回退到 legacy `unitySample.roleMap` 中对应 `speaker` 行；Find All References 会返回工作区内该 speaker 的全部对白行，并在 VSCode 请求 declaration 时包含配置行。如果未配置角色表，Ctrl+Click 会回退返回工作区内该 speaker 的对白引用位置，便于至少通过 Peek/跳转追溯用法。`language-configuration.json` 的 `wordPattern` 会把全角冒号和常见中文标点作为词边界，确保 `旁白：文本` 这类中文对白中只有 `旁白` 被标为可跳转词。
 
 这项能力只是写作提示，不改变编译结果。UnitySample 实验导出由 CLI 的 `export-unity-sample-project` 读取同一份 `roleMap` 完成；长期应由 Host Bridge 配置驱动。
 

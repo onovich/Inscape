@@ -109,6 +109,8 @@ npm run rebuild:vsix
 
 如果当前环境无法完成手动验证，在最终报告里明确说明“已重建安装，未手动 reload / 点击验证”。
 
+扩展侧同一份清单也维护在 `src/Internal/VSCode/vscode-inscape/README.md` 的 `Regression Checklist` 小节；修改 VSCode 行为时，两处口径要保持一致。
+
 ## 提交拆分规则
 
 一次提交只做一种主动作：
@@ -160,4 +162,3 @@ git -c safe.directory=D:/LabProjects/Inscape log --oneline --decorate -8
 ```
 
 工作树应回到干净状态，分支应显示 `main...origin/main`。
-

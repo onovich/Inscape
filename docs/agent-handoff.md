@@ -75,6 +75,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - 2026-05-16 已推进 D3.1：`ToolConfigModel` 新增通用 `HostBridge` 路径字段，`ToolConfigReaderDomain` 会按配置文件目录归一化 `hostBridge`；`unitySample` 旧字段继续保留作为 ExternalSupport fallback。下一步建议 D3.2：VSCode HostBinding / speaker 展示文案迁到 Host Bridge 口径。
 - 2026-05-16 已推进 D3.2：VSCode speaker / host binding provider 会优先读取 `inscape.config.json` 的 `hostBridge` ids，并回退到旧 `unitySample.roleMap` / `unitySample.bindingMap`；completion / hover 文案已改成 Host Bridge 口径，旧 CSV 标为 Legacy UnitySample fallback。
 - 2026-05-16 已推进 E1 / E3：新增 [Regression Workflow](regression-workflow.md)，把节点开始前、行为契约、命名 / 分层自检、验证命令、提交拆分、提交前检查和推送后检查固化为可执行清单。下一步建议 E2：把 VSCode 交互回归清单补进扩展文档。
+- 2026-05-16 已推进 E2：`src/Internal/VSCode/vscode-inscape/README.md` 新增 `Regression Checklist`，明确改 VSCode 后要 `node --check`、JSON parse、`npm run rebuild:vsix`、安装后 Reload Window，并手动检查正文 / 选项 Ctrl+Click、speaker、host binding、预览源码回跳等交互。
 - 2026-05-12 已迁移当前聚合测试项目：`tests/Inscape.Tests` -> `tests/Internal/Inscape.Tests`。这只是测试项目路径进入 Internal 测试树，测试内容尚未按 Compiler / Tooling / Cli / ExternalSupport 拆分。
 - 当前分支为 `main...origin/main`。本轮已把目录优先方案正式冻结为文档与 ADR；最新提交请以 `git log --oneline -1` 为准。
 - 本轮会话已确认新的重构铁律：先搭目录骨架与 `README.md` 规则文件，再迁大目录路径，再迁 solution / 项目路径，再迁项目名、命名空间和类型名；在此之前，不再把主要重构精力继续放在旧目录里的微观 helper 收口上。

@@ -60,6 +60,38 @@ Preview nodes, dialogue lines, choices, metadata tags, and diagnostics include a
 
 Dialogue, narration, prompt, and choice text inside the editor deliberately do not use `DocumentLinkProvider`. That provider made long text ranges render like always-on links, which caused persistent underline regressions. The stable pattern is: `DefinitionProvider` supplies the transient Ctrl+hover link affordance, and a short-lived selection bridge turns the resulting Ctrl+Click into preview reveal navigation. If you touch this area, rebuild and reinstall the `.vsix` before judging the result; reloading the window alone is not enough.
 
+## Regression Checklist
+
+Any change under `src/Internal/VSCode/vscode-inscape/` must be checked with the repository workflow in `docs/regression-workflow.md`.
+
+Run the static checks:
+
+```powershell
+node --check src\Internal\VSCode\vscode-inscape\extension.js
+node -e "JSON.parse(require('fs').readFileSync('src/Internal/VSCode/vscode-inscape/package.json','utf8')); JSON.parse(require('fs').readFileSync('src/Internal/VSCode/vscode-inscape/language-configuration.json','utf8')); JSON.parse(require('fs').readFileSync('src/Internal/VSCode/vscode-inscape/syntaxes/inscape.tmLanguage.json','utf8')); console.log('json ok')"
+```
+
+If a split module changed, run `node --check` on that module too.
+
+Then rebuild and install the extension:
+
+```powershell
+cd src\Internal\VSCode\vscode-inscape
+npm run rebuild:vsix
+```
+
+After installation, reload the VSCode window before judging behavior. Manual smoke checks:
+
+- Dialogue, narration, prompt, and choice text show no always-on underline.
+- Holding Ctrl over dialogue / option text shows the transient link affordance.
+- Ctrl+Click on dialogue / option text opens or reuses preview and reveals the matching page.
+- `-> target` Go to Definition and Find All References still work.
+- Speaker completion, Hover, Go to Definition, and Find All References prefer `hostBridge` and still fall back to legacy `unitySample.roleMap`.
+- `@timeline ...` and `[kind: alias]` completion, Hover, and Ctrl+Click prefer `hostBridge` and still fall back to legacy `unitySample.bindingMap`.
+- Preview source buttons, diagnostics clicks, and metadata clicks still jump to the expected source location.
+
+If the environment cannot perform the manual click checks, say so in the handoff or final report instead of implying they were completed.
+
 Localization commands invoke:
 
 ```powershell
