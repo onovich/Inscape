@@ -92,9 +92,9 @@ class DslScriptDiagnosticController {
             .map((diagnostic) => {
             const line = this.clamp((diagnostic.line || 1) - 1, 0, Math.max(0, document.lineCount - 1));
             const textLine = document.lineAt(line);
-            const column = this.clamp((diagnostic.column || 1) - 1, 0, textLine.text.length);
-            const end = column < textLine.text.length ? textLine.text.length : Math.min(column + 1, textLine.text.length + 1);
-            const range = new this.vscode.Range(line, column, line, end);
+            const character = this.clamp((diagnostic.column || 1) - 1, 0, textLine.text.length);
+            const end = character < textLine.text.length ? textLine.text.length : Math.min(character + 1, textLine.text.length + 1);
+            const range = new this.vscode.Range(line, character, line, end);
             const vscodeDiagnostic = new this.vscode.Diagnostic(
                 range,
                 diagnostic.message || "Inscape diagnostic",
