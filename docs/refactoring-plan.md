@@ -263,6 +263,8 @@ B 后修复：在进入 C 阶段前，Compiler 旧阶段产物已按角色后缀
 - VSCode 当前扫描逻辑先收敛到 index，未来 Language Server 可替换 index 来源。
 - 区分 authoring hint 与 Core 语义真相。
 
+当前进展：已建立 [Workspace Index Contract](workspace-index-contract.md)，明确 workspace index 只承载 authoring hint，不替代 Compiler 语义真相；索引位置对象统一使用 0-based `line` / `character` / `length`。
+
 验收标准：
 
 - Provider 不直接散落扫描文件。
