@@ -74,6 +74,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - 2026-05-15 已推进 D2.2：新增 [Host Bridge Contract](host-bridge-contract.md)，明确 Host Schema 是能力清单、Host Bridge 是 Inscape 可读 ID 到宿主 ID / 资源 / 事件处理器 / 查询实现的映射；该草案可覆盖 UnitySample 当前 role map、binding map 与 timeline hook，但不把 UnitySample 字段升级为 Core 概念。D 阶段第一轮已收口，下一步建议进入 D3：迁移 `ToolConfigModel.UnitySample` 与 VSCode `UnitySample` 文案到通用 `hostBridge` 配置读取与展示。
 - 2026-05-16 已推进 D3.1：`ToolConfigModel` 新增通用 `HostBridge` 路径字段，`ToolConfigReaderDomain` 会按配置文件目录归一化 `hostBridge`；`unitySample` 旧字段继续保留作为 ExternalSupport fallback。下一步建议 D3.2：VSCode HostBinding / speaker 展示文案迁到 Host Bridge 口径。
 - 2026-05-16 已推进 D3.2：VSCode speaker / host binding provider 会优先读取 `inscape.config.json` 的 `hostBridge` ids，并回退到旧 `unitySample.roleMap` / `unitySample.bindingMap`；completion / hover 文案已改成 Host Bridge 口径，旧 CSV 标为 Legacy UnitySample fallback。
+- 2026-05-16 已推进 E1 / E3：新增 [Regression Workflow](regression-workflow.md)，把节点开始前、行为契约、命名 / 分层自检、验证命令、提交拆分、提交前检查和推送后检查固化为可执行清单。下一步建议 E2：把 VSCode 交互回归清单补进扩展文档。
 - 2026-05-12 已迁移当前聚合测试项目：`tests/Inscape.Tests` -> `tests/Internal/Inscape.Tests`。这只是测试项目路径进入 Internal 测试树，测试内容尚未按 Compiler / Tooling / Cli / ExternalSupport 拆分。
 - 当前分支为 `main...origin/main`。本轮已把目录优先方案正式冻结为文档与 ADR；最新提交请以 `git log --oneline -1` 为准。
 - 本轮会话已确认新的重构铁律：先搭目录骨架与 `README.md` 规则文件，再迁大目录路径，再迁 solution / 项目路径，再迁项目名、命名空间和类型名；在此之前，不再把主要重构精力继续放在旧目录里的微观 helper 收口上。
@@ -338,6 +339,7 @@ DSL 语法                           docs/dsl-syntax-guide.md, docs/dsl-language
 DSL 生态定位 / 竞品对比             docs/dsl-ecosystem-positioning.md, docs/adr/0007-dsl-benchmark-positioning.md
 代码结构 / 新模块                  docs/code-structure.md, docs/coding-conventions.md, docs/refactoring-plan.md, src/Inscape.Compiler, src/Inscape.Cli
 VSCode 工具                        docs/vscode-tooling.md, src/Internal/VSCode/vscode-inscape/README.md
+防回归工作流                       docs/regression-workflow.md, docs/refactoring-plan.md
 HTML 预览                          src/Inscape.Tooling/PreviewHtmlRendererDomain.cs, docs/vscode-tooling.md
 本地化 / hash                      docs/hash-localization.md, docs/l10n-extraction.md
 宿主 Schema / 查询事件             docs/host-schema.md, docs/dsl-language.md, docs/open-questions.md, docs/todo.md

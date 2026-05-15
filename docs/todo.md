@@ -178,6 +178,9 @@
 	- [ ] D3 后续迁移：把 `ToolConfigModel.UnitySample` / VSCode `UnitySample` 文案迁到通用 `hostBridge` 配置读取与展示，并保留旧字段 fallback。
 		- [x] D3.1 ToolConfig 支持通用 `hostBridge` 路径读取与归一化，保留 `unitySample` 旧字段 fallback。
 		- [x] D3.2 VSCode HostBinding / speaker 展示文案迁到 Host Bridge 口径，保留 UnitySample fallback 文案。
+- [ ] 完成 E 阶段防回归工作流固化。
+	- [x] E1/E3 建立 [Regression Workflow](regression-workflow.md)：固化节点开始前、行为契约、命名 / 分层自检、验证命令、提交拆分、提交前检查和推送后检查。
+	- [ ] E2 固化 VSCode 交互回归清单到扩展文档，并明确 `.vsix` 重建 / 安装 / reload 边界。
 
 ## 阶段 1：DSL 与轻工具链
 
