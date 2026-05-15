@@ -2,13 +2,25 @@
 
 状态：执行中
 
-最后更新：2026-05-11
+最后更新：2026-05-15
 
 本文把 Inscape 的重构拆成大目标、中目标、小目标，目标是让代码逐步接近游戏项目中常见的清晰入口、生命周期式流程、数据/逻辑/表现/适配分层，同时不破坏当前 DSL、CLI、VSCode 和预览体验。当前长期结构已经收敛为：Internal 下的 `Compiler`、`Tooling`、`Cli`、`VSCode`、`LanguageServer`、`Runtime`，以及 ExternalSupport 下的 `UnityPlugin`。
 
 当前主动重构范围只覆盖 Internal 侧：`Inscape.Compiler`、`Inscape.Cli`、`src/Internal/VSCode/vscode-inscape` 与测试组织。`src/ExternalSupport/UnityPlugin/Inscape.Adapters.UnitySample` 和 `src/ExternalSupport/UnityPlugin/unity-bird-importer` 继续作为 ExternalSupport 过渡样例保留隔离，不纳入这一轮内部重构，只要求不反向污染 Compiler，并能继续承担 Host Bridge / UnityPlugin 回归素材。
 
 重构原则见 [编码与命名规范](coding-conventions.md)。本文只安排执行顺序和验收方式。
+
+## 计划地图
+
+本文的大目标按 A 到 E 排列，不是单一路线的全部阶段都必须串行完成：
+
+- 大目标 A：建立入口和生命周期心智，回答“当前工具从哪里进，未来 Runtime 从哪里进”。
+- 大目标 B：拆解大文件，降低阅读和回归成本；当前 B3 是其中的 VSCode extension 拆分，不代表整个重构计划只剩 B 系列。
+- 大目标 C：强化数据契约，统一 source map、preview reveal payload 和 workspace index 过渡模型。
+- 大目标 D：保持 Core 干净，隔离表现层和宿主业务，尤其是 UnitySample 与未来 Host Bridge。
+- 大目标 E：建立防回归工作流，把踩坑经验固化为验证清单、提交拆分规则和发布流程。
+
+当前短线主战场是 B3，因为 `src/Internal/VSCode/vscode-inscape/extension.js` 仍是最显眼的大文件风险；B3 收口后，优先转向 C 系列的数据契约和 LanguageServer 基线，而不是在 B 系列里无限细拆。
 
 ## 评分目标
 
@@ -347,10 +359,15 @@ VSCode：4 / 10
 
 小目标：
 
+- 每轮先确认 `git status`，读取 `docs/agent-handoff.md`、`docs/todo.md` 和目标目录 README。
+- 从大目标里切出一个小节点，先声明本轮边界：搬什么、重命名什么、明确不碰什么。
+- 一次提交只做纯移动、纯重命名、纯行为修复、纯文档决策中的一种；确实需要混合时，在提交说明和文档中说明原因。
 - 单独提交纯移动 / 重命名。
 - 单独提交行为变更。
-- 单独提交文档和 ADR。
+- 长期规则、工作流和踩坑复盘要进入文档；单纯记录型文档可跟随对应节点提交，长期决策仍单独新增或更新 ADR。
 - 每个提交保持测试可运行。
+- 提交前先做局部静态检查，再跑规定验证；涉及 VSCode 真实体验的改动，还要把 `.vsix` 重建、安装和 reload 纳入验证。
+- 提交后立即 push，保证远端始终可接续。
 
 验收标准：
 

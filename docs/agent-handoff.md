@@ -234,6 +234,9 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - 只要改了 `src/Internal/VSCode/vscode-inscape/`，就必须 `npm run rebuild:vsix` 并安装；否则很容易把“旧扩展效果”误判成“新代码回归”。
 - 最终稳定方案已经明确分层：`DefinitionProvider` 只负责 Ctrl+指向的瞬时链接态，selection bridge 只负责把 Ctrl+Click 转成 `inscape.revealInPreview`，显式命令只做兜底。
 - 如果未来再改正文 / 选项的导航体验，优先在 provider / selection 流程里排查，不要先去改主题、TextMate scope 或样式 JSON。
+- 重构时不要把“顺手清理”混进当前节点；`extension.js` 这类大文件只能按 provider / controller / command 等小边界逐次迁移。
+- 命名不是装饰，而是规范约束；`Support` / `Helper` / `Manager` 这类弱命名应视为待拆信号，目录承担范围，类型名表达主语和角色。
+- 文档口径滞后会直接制造下一轮误判；每个阶段性节点都要同步更新 handoff / TODO，长期规则或方向变化要进入 refactoring plan 或 ADR。
 
 ## 下一步优先队列
 
@@ -317,12 +320,15 @@ Unity / Host Bridge                docs/unity-sample-adapter.md, docs/project-co
 ## 工作方法
 
 - 先看 `git status`，确认是否有未提交变更。
+- 每轮先读 `docs/agent-handoff.md`、`docs/todo.md` 和目标目录 `README.md`；只在需要时读取 1 到 3 个任务相关文档。
+- 从大目标中切一个小节点执行，先明确本轮边界：只搬什么、只改什么、哪些相邻问题留到下一节点。
 - 修改设计、语法、IR、本地化、存档或编辑器交互时，同步更新文档；长期决策新增 ADR。
 - 保持 `Inscape.Compiler` 不依赖 Unity、VSCode、HTML 或第三方包。
 - CLI 可以作为工具层封装 Core，但不要把核心语义只写在 CLI 里。
 - VSCode 扩展里可以做轻量行扫描，但语法真相必须来自 Core/CLI。
-- 修改后至少运行构建和测试；涉及 VSCode 时跑 Node 语法/JSON 检查。
-- 每个阶段完成后提交并推送，保持远端可接续。
+- 修改后先跑局部静态检查，再运行规定构建和测试；涉及 VSCode 时跑 Node 语法/JSON 检查。
+- 提交前看 `git diff --stat` 和关键 diff，确认没有越界改动。
+- 每个阶段完成后提交并推送，保持远端可接续；提交粒度优先是一小节点一提交。
 - 若改动发生在 `src/Internal/VSCode/vscode-inscape/`，默认把“打包 + 安装 + reload”纳入验证流程，而不要把源码修改误认为发布完成。
 
 ## 常用命令
