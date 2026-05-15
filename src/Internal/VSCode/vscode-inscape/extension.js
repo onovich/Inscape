@@ -23,6 +23,7 @@ const { PreviewHtmlProvider } = require("./PreviewWebview/PreviewHtmlProvider");
 const { PreviewInvocationProvider } = require("./PreviewWebview/PreviewInvocationProvider");
 const { PreviewRefreshController } = require("./PreviewWebview/PreviewRefreshController");
 const { PreviewSourceController } = require("./PreviewWebview/PreviewSourceController");
+const { EditorStyleController, defaultEditorStyle } = require("./Styles/EditorStyleController");
 const { HostBindingProvider } = require("./WorkspaceIndex/HostBindingProvider");
 const { DslScriptMetadataProvider } = require("./WorkspaceIndex/DslScriptMetadataProvider");
 const { DslScriptNodeProvider } = require("./WorkspaceIndex/DslScriptNodeProvider");
@@ -31,24 +32,6 @@ const { DslScriptSpeakerProvider } = require("./WorkspaceIndex/DslScriptSpeakerP
 const languageSelector = { language: "inscape" };
 let outputChannel;
 const previewPanels = new Map();
-const editorStyleStates = new Map();
-const editorStyleFileNames = new Set(["inscape.config.json", "inscape.editor-style.json", "inscape.preview-style.json"]);
-const defaultEditorStyle = Object.freeze({
-    nodeNameColor: "#d7ba7d",
-    speakerColor: "#569cd6",
-    speakerFontWeight: "600",
-    speakerTextDecoration: "",
-    dialogueColor: "#dcdcaa",
-    dialogueTextDecoration: "",
-    narrationColor: "#dcdcaa",
-    choicePromptColor: "#c586c0",
-    choicePromptTextDecoration: "none",
-    choiceTextColor: "#dcdcaa",
-    choiceTextDecoration: "none",
-    jumpTargetColor: "#4ec9b0",
-    metadataColor: "#6a9955",
-    inlineTagColor: "#6a9955"
-});
 const defaultPreviewStyle = Object.freeze({
     fontFamily: "Inter, \"Segoe UI\", sans-serif",
     pageBackground: "#f6f4ee",
@@ -181,6 +164,17 @@ const previewSourceController = new PreviewSourceController({
     openLocation
 });
 
+const editorStyleController = new EditorStyleController({
+    vscode,
+    fs,
+    readProjectConfig,
+    resolveProjectConfigPath,
+    isInscapeDocument,
+    isLikelyDialogueSpeaker,
+    findDialogueSeparatorIndex,
+    trimRange
+});
+
 function activate(context) {
     outputChannel = vscode.window.createOutputChannel("Inscape");
     const diagnostics = vscode.languages.createDiagnosticCollection("inscape");
@@ -206,21 +200,21 @@ function activate(context) {
         vscode.workspace.onDidChangeTextDocument((event) => {
             scheduler.schedule(event.document);
             schedulePreviewRefresh(context, event.document, 250);
-            refreshEditorStylesForDocument(context, event.document);
+            editorStyleController.refreshDocument(context, event.document);
         }),
         vscode.workspace.onDidSaveTextDocument((document) => {
             scheduler.schedule(document, 0);
             refreshPreviewPanelsForDocument(context, document);
-            refreshEditorStylesForDocument(context, document);
-            handleStyleSupportDocumentSave(context, document);
+            editorStyleController.refreshDocument(context, document);
+            editorStyleController.handleSupportDocumentSave(context, document, refreshVisiblePreviewPanels);
         }),
         vscode.workspace.onDidCloseTextDocument((document) => diagnostics.delete(document.uri)),
         vscode.window.onDidChangeTextEditorSelection((event) => previewRevealBridge.handleSelectionChange(context, event)),
-        vscode.window.onDidChangeVisibleTextEditors(() => refreshEditorStylesForVisibleEditors(context)),
+        vscode.window.onDidChangeVisibleTextEditors(() => editorStyleController.refreshVisibleEditors(context)),
         vscode.workspace.onDidChangeConfiguration((event) => {
             if (event.affectsConfiguration("inscape")) {
                 refreshVisibleDocuments(scheduler);
-                refreshEditorStylesForVisibleEditors(context);
+                editorStyleController.refreshVisibleEditors(context);
             }
         }),
         vscode.languages.registerCompletionItemProvider(languageSelector, dslScriptCompletionProvider, ">", ".", ":", "\uFF1A", "[", " "),
@@ -263,7 +257,7 @@ function activate(context) {
     );
 
     refreshVisibleDocuments(scheduler);
-    refreshEditorStylesForVisibleEditors(context);
+    editorStyleController.refreshVisibleEditors(context);
 }
 
 function deactivate() {
@@ -283,20 +277,6 @@ function refreshVisibleDocuments(scheduler) {
     }
 }
 
-function handleStyleSupportDocumentSave(context, document) {
-    if (!document || document.uri.scheme !== "file") {
-        return;
-    }
-
-    const fileName = path.basename(document.uri.fsPath).toLowerCase();
-    if (!editorStyleFileNames.has(fileName)) {
-        return;
-    }
-
-    refreshEditorStylesForVisibleEditors(context);
-    refreshVisiblePreviewPanels(context);
-}
-
 function refreshVisiblePreviewPanels(context) {
     const seen = new Set();
     for (const editor of vscode.window.visibleTextEditors) {
@@ -312,213 +292,6 @@ function refreshVisiblePreviewPanels(context) {
         seen.add(key);
         refreshPreviewPanelsForDocument(context, editor.document);
     }
-}
-
-function refreshEditorStylesForVisibleEditors(context) {
-    for (const editor of vscode.window.visibleTextEditors) {
-        applyEditorStyleSheet(context, editor);
-    }
-}
-
-function refreshEditorStylesForDocument(context, document) {
-    if (!document || document.uri.scheme !== "file") {
-        return;
-    }
-
-    for (const editor of vscode.window.visibleTextEditors) {
-        if (normalizePath(editor.document.uri.fsPath) === normalizePath(document.uri.fsPath)) {
-            applyEditorStyleSheet(context, editor);
-        }
-    }
-}
-
-async function applyEditorStyleSheet(context, editor) {
-    clearEditorStyleState(editor);
-
-    if (!editor || !isInscapeDocument(editor.document)) {
-        return;
-    }
-
-    const style = await readEditorStyleSheet(editor.document);
-    const ranges = collectEditorStyleRanges(editor.document);
-    const entries = createEditorStyleEntries(style);
-    const key = getEditorStyleStateKey(editor);
-    editorStyleStates.set(key, entries);
-
-    for (const entry of entries) {
-        editor.setDecorations(entry.decoration, ranges[entry.key] || []);
-    }
-}
-
-function getEditorStyleStateKey(editor) {
-    return editor.document.uri.toString() + "::" + String(editor.viewColumn || 0);
-}
-
-function clearEditorStyleState(editor) {
-    const key = getEditorStyleStateKey(editor);
-    const existing = editorStyleStates.get(key);
-    if (!existing) {
-        return;
-    }
-
-    editorStyleStates.delete(key);
-    for (const entry of existing) {
-        entry.decoration.dispose();
-    }
-}
-
-async function readEditorStyleSheet(document) {
-    const projectConfig = await readProjectConfig(document);
-    const configuredPath = projectConfig && projectConfig.config && projectConfig.config.styles
-        ? projectConfig.config.styles.editor
-        : undefined;
-
-    if (!projectConfig || !projectConfig.configPath || !configuredPath) {
-        return Object.assign({}, defaultEditorStyle);
-    }
-
-    const stylePath = resolveProjectConfigPath(projectConfig.configPath, configuredPath);
-    try {
-        const text = await fs.promises.readFile(stylePath, "utf8");
-        return normalizeEditorStyleSheet(JSON.parse(text));
-    } catch {
-        return Object.assign({}, defaultEditorStyle);
-    }
-}
-
-function normalizeEditorStyleSheet(value) {
-    const style = Object.assign({}, defaultEditorStyle);
-    if (!value || typeof value !== "object") {
-        return style;
-    }
-
-    for (const key of Object.keys(defaultEditorStyle)) {
-        if (typeof value[key] === "string" && value[key].trim()) {
-            style[key] = value[key].trim();
-        }
-    }
-
-    return style;
-}
-
-function createEditorStyleEntries(style) {
-    return [
-        createEditorStyleEntry("nodeName", { color: style.nodeNameColor }),
-        createEditorStyleEntry("jumpTarget", { color: style.jumpTargetColor }),
-        createEditorStyleEntry("metadata", { color: style.metadataColor }),
-        createEditorStyleEntry("inlineTag", { color: style.inlineTagColor })
-    ];
-}
-
-function buildEditorDecorationOptions(options) {
-    const result = {};
-    for (const [key, value] of Object.entries(options)) {
-        if (typeof value === "string" && value.trim()) {
-            result[key] = value.trim();
-        }
-    }
-    return result;
-}
-
-function createEditorStyleEntry(key, options) {
-    return {
-        key,
-        decoration: vscode.window.createTextEditorDecorationType(options)
-    };
-}
-
-function collectEditorStyleRanges(document) {
-    const ranges = {
-        nodeName: [],
-        speaker: [],
-        dialogue: [],
-        narration: [],
-        choicePrompt: [],
-        choiceText: [],
-        jumpTarget: [],
-        metadata: [],
-        inlineTag: []
-    };
-
-    for (let lineNumber = 0; lineNumber < document.lineCount; lineNumber += 1) {
-        const text = document.lineAt(lineNumber).text;
-        if (!text || !text.trim() || /^\s*\/\//.test(text)) {
-            continue;
-        }
-
-        let match = /^(\s*)(::)(\s*)([a-z][a-z0-9_-]*(?:\.[a-z][a-z0-9_-]*)*)\s*$/.exec(text);
-        if (match) {
-            pushEditorStyleRange(ranges.nodeName, lineNumber, match.index + match[1].length + match[2].length + match[3].length, match[4].length);
-            continue;
-        }
-
-        match = /^(\s*)(@)([A-Za-z_][A-Za-z0-9_.-]*)(?:((?::|\s+).*))?$/.exec(text);
-        if (match) {
-            pushTrimmedRange(ranges.metadata, lineNumber, text, 0, text.length);
-            continue;
-        }
-
-        if (/^\s*\[[^\]\r\n]*\]\s*$/.test(text)) {
-            pushTrimmedRange(ranges.inlineTag, lineNumber, text, 0, text.length);
-            continue;
-        }
-
-        match = /^(\s*)(->)(\s*)([a-z][a-z0-9_-]*(?:\.[a-z][a-z0-9_-]*)*)\s*$/.exec(text);
-        if (match) {
-            pushEditorStyleRange(ranges.jumpTarget, lineNumber, match.index + match[1].length + match[2].length + match[3].length, match[4].length);
-            continue;
-        }
-
-        match = /^(\s*\?\s*)(.*)$/.exec(text);
-        if (match) {
-            pushTrimmedRange(ranges.choicePrompt, lineNumber, text, match[1].length, text.length);
-            continue;
-        }
-
-        match = /^(\s*-\s*)(.*?)(\s+->\s*[A-Za-z0-9_.-]+)?\s*$/.exec(text);
-        if (match) {
-            pushTrimmedRange(ranges.choiceText, lineNumber, text, match[1].length, match[1].length + match[2].length);
-            const targetIndex = text.indexOf("->", match[1].length);
-            if (targetIndex >= 0) {
-                pushTrimmedRange(ranges.jumpTarget, lineNumber, text, targetIndex + 2, text.length);
-            }
-            continue;
-        }
-
-        const dialogueSeparator = findDialogueSeparatorIndex(text);
-        if (dialogueSeparator >= 0) {
-            const speakerRange = trimRange(text, 0, dialogueSeparator);
-            const dialogueRange = trimRange(text, dialogueSeparator + 1, text.length);
-            if (speakerRange && isLikelyDialogueSpeaker(text.slice(speakerRange.start, speakerRange.end))) {
-                ranges.speaker.push(new vscode.Range(lineNumber, speakerRange.start, lineNumber, speakerRange.end));
-                if (dialogueRange) {
-                    ranges.dialogue.push(new vscode.Range(lineNumber, dialogueRange.start, lineNumber, dialogueRange.end));
-                }
-                continue;
-            }
-        }
-
-        pushTrimmedRange(ranges.narration, lineNumber, text, 0, text.length);
-    }
-
-    return ranges;
-}
-
-function pushEditorStyleRange(bucket, lineNumber, start, length) {
-    if (length <= 0) {
-        return;
-    }
-
-    bucket.push(new vscode.Range(lineNumber, start, lineNumber, start + length));
-}
-
-function pushTrimmedRange(bucket, lineNumber, text, start, end) {
-    const range = trimRange(text, start, end);
-    if (!range) {
-        return;
-    }
-
-    bucket.push(new vscode.Range(lineNumber, range.start, lineNumber, range.end));
 }
 
 async function refreshPreviewPanelsForDocument(context, document) {
