@@ -155,7 +155,7 @@
 	- [x] 已建立 [Source Location Contracts](source-location-contracts.md)，明确 Compiler source location 使用 1-based `line` / `column`，编辑器 reveal payload 使用 0-based `line` / `character` / `length`。
 	- [x] 已先修复 Preview HTML 的 Compiler source -> 编辑器坐标转换，让源码按钮、metadata 点击、源码侧 reveal 匹配与节点定位不再直接混用 Compiler 的 1-based 坐标。
 	- [x] C2.1 将 Preview -> VSCode 的历史兼容 `column` 字段迁到 `character`，VSCode 侧保留读取 `column` 的 fallback。
-	- [ ] C2.2 收敛 reveal payload 的测试覆盖：源码按钮、diagnostics 点击、metadata 点击与旧 `column` fallback 都要有回归约束。
+	- [x] C2.2 收敛 reveal payload 的测试覆盖：源码按钮、diagnostics 点击、metadata 点击与旧 `column` fallback 都已有回归约束。
 	- [ ] C2.3 对照 source location 契约巡检 VSCode selection reveal、preview reveal、openSource 和 location provider 的字段命名，移除新的 `column` 扩散点。
 	- [ ] 为中文对白、选项、metadata、diagnostics 和跨文件 source map 增加测试样例。
 - [ ] Runtime Host 阶段再引入 `NarrativeRuntime`，采用生命周期式执行模型，不提前把 runtime loop 放进 Core 编译层。

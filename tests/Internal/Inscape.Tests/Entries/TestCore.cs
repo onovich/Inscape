@@ -31,6 +31,7 @@ namespace Inscape.Tests {
                 ("cli preview-project emits html", CliPreviewProjectEmitsHtml),
                 ("cli preview-project applies entry override", CliPreviewProjectAppliesEntryOverride),
                 ("preview html converts compiler source coordinates", PreviewHtmlConvertsCompilerSourceCoordinates),
+                ("preview source controller keeps column fallback", PreviewSourceControllerKeepsColumnFallback),
                 ("cli extract-l10n emits csv", CliExtractL10nEmitsCsv),
                 ("cli extract-l10n-project emits csv", CliExtractL10nProjectEmitsCsv),
                 ("cli update-l10n preserves translations", CliUpdateL10nPreservesTranslations),

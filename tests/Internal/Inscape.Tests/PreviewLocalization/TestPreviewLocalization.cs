@@ -107,8 +107,16 @@ Narrator: Source mapped line.
             AssertTrue(html.Contains("function sourcePayload(source) { return source && source.sourcePath ? { sourcePath: source.sourcePath, line: Math.max(0, (source.line ?? 1) - 1), character: Math.max(0, (source.column ?? 1) - 1) }"), "Preview should convert Compiler 1-based source coordinates before editor reveal.");
             AssertTrue(html.Contains("function editorSourcePayload(source)"), "Preview should keep editor reveal payloads separate from Compiler source payloads.");
             AssertTrue(html.Contains("character: Math.max(0, (source.character ?? source.column ?? 0))"), "Preview should prefer character and keep column only as fallback.");
+            AssertTrue(html.Contains("button.onclick = event => { event.stopPropagation(); openSource(payload); };"), "Preview source button should post the converted editor payload.");
             AssertTrue(html.Contains("character: Math.max(0, (d.column ?? 1) - 1)"), "Preview diagnostics source jump should emit editor character.");
             AssertTrue(html.Contains("pill.onclick = () => openSource(sourcePayload(line.source));"), "Preview metadata source jump should use converted source payload.");
+        }
+
+        static void PreviewSourceControllerKeepsColumnFallback() {
+            string controller = File.ReadAllText(RepositoryFile("src/Internal/VSCode/vscode-inscape/PreviewWebview/PreviewSourceController.js"));
+
+            AssertTrue(controller.Contains("const character = Math.max(0, (source.character ?? source.column ?? 0));"), "Preview source controller should prefer character while accepting old column payloads.");
+            AssertTrue(controller.Contains("new this.vscode.Range(\n                    line,\n                    character,\n                    line,\n                    character + 1"), "Preview source controller should use normalized editor coordinates.");
         }
 
         static void CliExtractL10nEmitsCsv() {

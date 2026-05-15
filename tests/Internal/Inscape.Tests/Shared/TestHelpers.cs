@@ -108,6 +108,20 @@ namespace Inscape.Tests {
             return output.ToString();
         }
 
+        static string RepositoryFile(string relativePath) {
+            DirectoryInfo? directory = new DirectoryInfo(AppContext.BaseDirectory);
+            while (directory != null) {
+                string candidate = Path.Combine(directory.FullName, relativePath);
+                if (File.Exists(candidate)) {
+                    return candidate;
+                }
+
+                directory = directory.Parent;
+            }
+
+            throw new FileNotFoundException("Could not find repository file.", relativePath);
+        }
+
         static void AssertTrue(bool value, string message) {
             if (!value) {
                 throw new InvalidOperationException(message);
