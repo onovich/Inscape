@@ -176,6 +176,8 @@
 	- [x] D2.1 ExternalSupport 隔离自检：确认 UnitySample / importer 仍只在 ExternalSupport 路径与独立测试链路中出现，不反向污染 Internal；详见 [ExternalSupport Boundary Audit](external-support-boundary-audit.md)。
 	- [x] D2.2 Host Bridge 契约草案：定义可表达 UnitySample 当前能力、但不被 UnitySample 限死的配置模型；详见 [Host Bridge Contract](host-bridge-contract.md)。
 	- [ ] D3 后续迁移：把 `ToolConfigModel.UnitySample` / VSCode `UnitySample` 文案迁到通用 `hostBridge` 配置读取与展示，并保留旧字段 fallback。
+		- [x] D3.1 ToolConfig 支持通用 `hostBridge` 路径读取与归一化，保留 `unitySample` 旧字段 fallback。
+		- [ ] D3.2 VSCode HostBinding / speaker 展示文案迁到 Host Bridge 口径，保留 UnitySample fallback 文案。
 
 ## 阶段 1：DSL 与轻工具链
 

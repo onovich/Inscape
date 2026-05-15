@@ -4,6 +4,8 @@ namespace Inscape.Tooling {
 
         public string? HostSchema { get; set; }
 
+        public string? HostBridge { get; set; }
+
         public ToolConfigStyleModel Styles { get; set; } = new ToolConfigStyleModel();
 
         public ToolConfigUnitySampleModel UnitySample { get; set; } = new ToolConfigUnitySampleModel();

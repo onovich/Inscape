@@ -39,6 +39,7 @@ namespace Inscape.Tooling {
         static void NormalizeProjectConfigPaths(ToolConfigModel config, string configPath) {
             string configDirectory = Path.GetDirectoryName(configPath) ?? Directory.GetCurrentDirectory();
             config.HostSchema = ResolveConfigPath(configDirectory, config.HostSchema);
+            config.HostBridge = ResolveConfigPath(configDirectory, config.HostBridge);
             config.Styles.Editor = ResolveConfigPath(configDirectory, config.Styles.Editor);
             config.Styles.Preview = ResolveConfigPath(configDirectory, config.Styles.Preview);
             config.UnitySample.RoleMap = ResolveConfigPath(configDirectory, config.UnitySample.RoleMap);

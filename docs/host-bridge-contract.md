@@ -38,7 +38,7 @@ inscape.host.bridge.json
 }
 ```
 
-当前 `unitySample.roleMap` / `unitySample.bindingMap` 暂时保留为兼容字段。迁移时应先让工具同时读取新旧字段，再逐步把 VSCode 文案和 ExternalSupport CLI 参数迁到通用 Host Bridge。
+当前 `unitySample.roleMap` / `unitySample.bindingMap` 暂时保留为兼容字段。2026-05-16 起，`ToolConfigModel` 已能读取并归一化 `hostBridge` 路径；后续迁移应继续让 VSCode 展示和 ExternalSupport CLI 参数消费通用 Host Bridge，同时保留旧字段 fallback。
 
 ## 格式草案
 
@@ -154,4 +154,3 @@ unitySample.bindingMap kind,alias,birdId,unityGuid,addressableKey,assetPath
 - Host Bridge 与 Host Schema 分工已明确：Schema 是能力清单，Bridge 是项目映射。
 - Host Bridge 能覆盖 UnitySample 当前 role map、binding map 和 timeline hook 需求，但不把 UnitySample 字段升级为通用模型。
 - 下一阶段应把 `ToolConfigModel.UnitySample` / VSCode `UnitySample` 文案迁到通用 `hostBridge` 配置读取与展示，再保留旧字段作为兼容 fallback。
-
