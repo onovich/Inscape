@@ -99,6 +99,7 @@
 	- [x] 已继续按显式宿主动作入口规则收紧 UnitySample L10N 合并命令：`merge-unity-sample-l10n` 已从 `CliCore` 私有分支抽为独立 `CliUnitySampleL10nMergeCommand`，`CliCore` 仅保留分发。
 	- [x] 已继续按薄门面规则收紧 `CliCore`：`IsHelp`、`ToCompileViewModel`、`ToProjectCompileViewModel` 与项目命令分发私有包装已收回拥有者文件，`CliCore` 进一步缩到入口分发与跨命令共享输出辅助。
 - [ ] 按 provider / command / preview bridge / style / workspace index 拆分 VSCode extension：在 VSCode 正式迁入 `src/Internal/VSCode` 后继续执行，保持现有作者体验不回归。
+	- [x] 已将 B 阶段剩余工作拆成 4 个实现节点与 1 个收口节点；后续每完成一项都要自检命名 / 边界、推送并勾选对应 TODO。
 	- [x] 已建立 VSCode 拆分骨架：`ExtensionEntry`、`Commands`、`LanguageFeatures`、`WorkspaceIndex`、`Bridges`、`PreviewWebview`、`Styles`、`Schemas`，并补齐目录规则 README；后续开始从 `extension.js` 逐类迁移。
 	- [x] 已迁出第一条 VSCode command：`HostSchemaCommand` 进入 `Commands/HostSchemaCommand.js`，`extension.js` 只保留实例化与注册。
 	- [x] 已迁出第二条 VSCode command：`EditorAuthoringCommand` 进入 `Commands/EditorAuthoringCommand.js`，样式与工具菜单行为保持不变。
@@ -139,6 +140,11 @@
 	- [x] 已开始 Styles 拆分：`EditorStyleController` 进入 `Styles/EditorStyleController.js`，编辑器样式读取、decoration ranges 与状态清理不再由入口文件承载。
 	- [x] 已迁出 VSCode 样式默认值：`StyleDefaults` 进入 `Styles/StyleDefaults.js`，editor / preview 默认样式不再由入口文件承载。
 	- [x] 已开始 ExtensionEntry 收口：`ExtensionRegistrationController` 进入 `ExtensionEntry/ExtensionRegistrationController.js`，VSCode subscription / provider / command / custom editor 注册顺序不再由 `activate()` 内联承载。
+	- [ ] B3.4.2 继续压薄 ExtensionEntry：把 output channel / logging / diagnostics scheduler 创建收进 `ExtensionEntry`，让 `extension.js` 更接近纯入口；自检命名需符合 `Entry` / `Controller` 角色边界，不把功能行为塞回入口层。
+	- [ ] B3.4.3 收口 diagnostics 调用辅助：将 diagnostics scheduler 依赖的 CLI invocation、临时文件、diagnostic mapping 辅助从 `extension.js` 迁入 `LanguageFeatures` 或更合适的窄模块；自检不得让 VSCode 重写 parser 语义。
+	- [ ] B3.4.4 收口配置与工作区文本读取辅助：将 `readProjectConfig`、CSV 读取、workspace text source 收集等轻量 authoring 数据来源从入口文件移出；自检类型名避免 `Helper` / `Support` / 泛 `Workspace*` 前缀。
+	- [ ] B3.4.5 收口位置与范围辅助：将 `createLocation`、payload/open location、`trimRange`、display path 等编辑器定位适配从入口文件移出；自检不改变 source map / reveal payload 语义。
+	- [ ] B3.5 B 阶段收口验收：对照 [渐进式重构计划](refactoring-plan.md) 与 [编码与命名规范](coding-conventions.md) 巡检 B1/B2/B3，确认 `extension.js` 已是注册入口而不是逻辑实现，跑完整验证并勾选 VSCode extension 拆分父项。
 	- [x] 已顺手修复预览定位局部缺陷：`findDialogueSeparatorIndex` 中误残留的 preview reveal 调用与缺失的半角冒号解析已清理，避免说话人行的预览定位在运行时触发异常。
 - [ ] 创建 `Inscape.LanguageServer` 基线项目，先迁移诊断与定义跳转，再迁移引用、补全与 source map 相关语义能力。
 - [ ] 将 Cli、VSCode 和未来 LanguageServer 共享的项目级流程继续拆成显式职责模块，优先落到 `Tooling` 的 `ProjectSources`、`ToolConfig`、`Preview`、`Localization`、`HostSchema`、`HostBinding` 等模块；如未来确需统一门面，也应建立在这些模块之上，而不是先造一个大而泛的 `ProjectService`。
