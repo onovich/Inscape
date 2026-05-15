@@ -11,6 +11,7 @@
     <ProjectReference Include="..\..\..\src\Internal\Compiler\Inscape.Compiler.csproj" />
     <ProjectReference Include="..\..\..\src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj" />
     <ProjectReference Include="..\..\..\src\Internal\LanguageServer\Inscape.LanguageServer.csproj" />
+    <ProjectReference Include="..\..\..\src\Internal\Runtime\Inscape.Runtime.csproj" />
   </ItemGroup>
 
 </Project>

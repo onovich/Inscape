@@ -20,6 +20,7 @@ namespace Inscape.Tests {
                 ("language server diagnostics use editor coordinates", LanguageServerDiagnosticsUseEditorCoordinates),
                 ("language server definitions use compiler source map", LanguageServerDefinitionsUseCompilerSourceMap),
                 ("language server references and completions use compiler graph", LanguageServerReferencesAndCompletionsUseCompilerGraph),
+                ("narrative runtime consumes compiler graph", NarrativeRuntimeConsumesCompilerGraph),
                 ("cli diagnose emits json", CliDiagnoseEmitsJson),
                 ("cli commands lists command reference", CliCommandsListsCommandReference),
                 ("cli help emits command details", CliHelpEmitsCommandDetails),

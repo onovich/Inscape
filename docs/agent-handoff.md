@@ -68,6 +68,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - 2026-05-15 已推进 C4.2：新增 `DslScriptDiagnosticProvider`，LanguageServer diagnostics 直接调用 Compiler，并把 Compiler 1-based `line` / `column` 转换为 editor 0-based `line` / `character`；内部测试已覆盖该转换。
 - 2026-05-15 已推进 C4.3：新增 `DslScriptDefinitionProvider` 和 `EditorLocationMapperDomain`，LanguageServer definition 第一层直接复用 Compiler node source span 输出 editor location；内部测试已覆盖缩进节点的 0-based location。
 - 2026-05-15 已推进 C4.4：新增 `DslScriptReferenceProvider` 与 `DslScriptCompletionProvider`，references / completion 第一层直接读取 Compiler graph 输出；内部测试已覆盖引用定位和节点补全 location。
+- 2026-05-15 已推进 C5.1 / C5.2：创建 `src/Internal/Runtime/Inscape.Runtime.csproj` 并加入 `Inscape.slnx`；新增 `NarrativeRuntime` 最小 IR 消费生命周期，支持 `LoadGraph`、`Start`、`Choose`、`Continue`、`Restore`，不解析 `.inscape`，不依赖 VSCode / HTML Preview / UnitySample。
 - 2026-05-12 已迁移当前聚合测试项目：`tests/Inscape.Tests` -> `tests/Internal/Inscape.Tests`。这只是测试项目路径进入 Internal 测试树，测试内容尚未按 Compiler / Tooling / Cli / ExternalSupport 拆分。
 - 当前分支为 `main...origin/main`。本轮已把目录优先方案正式冻结为文档与 ADR；最新提交请以 `git log --oneline -1` 为准。
 - 本轮会话已确认新的重构铁律：先搭目录骨架与 `README.md` 规则文件，再迁大目录路径，再迁 solution / 项目路径，再迁项目名、命名空间和类型名；在此之前，不再把主要重构精力继续放在旧目录里的微观 helper 收口上。

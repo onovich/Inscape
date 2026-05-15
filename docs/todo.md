@@ -166,7 +166,9 @@
 	- [x] C2.2 收敛 reveal payload 的测试覆盖：源码按钮、diagnostics 点击、metadata 点击与旧 `column` fallback 都已有回归约束。
 	- [x] C2.3 对照 source location 契约巡检 VSCode selection reveal、preview reveal、openSource 和 location provider 的字段命名；`column` 仅保留在 Compiler / diagnostic 输入和旧 payload fallback 边界。
 	- [x] C1.1 为中文对白、选项、metadata、diagnostics 和跨文件 source map 增加测试样例。
-- [ ] Runtime Host 阶段再引入 `NarrativeRuntime`，采用生命周期式执行模型，不提前把 runtime loop 放进 Core 编译层。
+- [x] Runtime Host 阶段再引入 `NarrativeRuntime`，采用生命周期式执行模型，不提前把 runtime loop 放进 Core 编译层。
+	- [x] C5.1 已创建 `src/Internal/Runtime/Inscape.Runtime.csproj` 并加入 `Inscape.slnx`。
+	- [x] C5.2 已建立 `NarrativeRuntime` 最小 IR 消费生命周期：`LoadGraph`、`Start`、`Choose`、`Continue`、`Restore`；Runtime 不解析 `.inscape`，不依赖 VSCode / HTML Preview / UnitySample。
 - [ ] 保持 `src/ExternalSupport/UnityPlugin/Inscape.Adapters.UnitySample` 与 `src/ExternalSupport/UnityPlugin/unity-bird-importer` 作为 ExternalSupport 过渡样例，暂不纳入 Internal 主动重构范围；只在 Host Bridge / UnityPlugin 设计阶段把它们当验证样本使用。
 
 ## 阶段 1：DSL 与轻工具链
