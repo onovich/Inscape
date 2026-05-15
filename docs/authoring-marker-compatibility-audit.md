@@ -36,7 +36,7 @@ F 阶段迁移不应一次性删除旧行为。正确顺序是：
 | `tests/ExternalSupport/UnityPlugin/Inscape.UnitySample.Tests/TestUnitySample.cs` | `[timeline: court.close]`、`[timeline.node.exit: court.node_exit]` 等 bracket timeline 回归 | `compatible` | 保留，作为旧项目兼容测试。后续新增一个 `@timeline.<phase>` 推荐写法测试，不删除旧测。 |
 | `src/Internal/VSCode/vscode-inscape/WorkspaceIndex/HostBindingProvider.js` | 识别 `@timeline...` 和 `[kind: alias]` completion / definition / hover 上下文 | `defer-behavior` | F1.3 先改 hover / completion 文案；行为继续保留 legacy fallback。 |
 | `src/Internal/VSCode/vscode-inscape/WorkspaceIndex/DslScriptMetadataProvider.js` | hover 提示称 `@timeline ...` 是 host binding hint，`[kind: alias]` 是 inline equivalent | `migrate-tooling-copy` | F1.3 改成 `@timeline` 是事件挂载，bracket 只是 legacy inline host binding。 |
-| `samples/court-loop.inscape` | `[bg: courtroom]`、`[emotion: tense]` 等 inline 演出标签 | `migrate-docs` | 样例目前服务预览和旧语法展示；后续需要一版新规范样例，旧样例可重命名或注释为 legacy authoring sample。 |
+| `samples/court-loop.inscape` | 已迁为新规范样例；旧 `[bg: courtroom]`、`[emotion: tense]` 文本保存在 `samples/legacy/court-loop-legacy-inline-tags.txt` | `compatible` | 主样例使用 `@timeline.<phase>` / `@emit` / `@scene` 与查询插值；legacy 文本只作为旧写法参考，不参与项目级编译。 |
 
 ## 文档残留
 
@@ -92,6 +92,11 @@ F 阶段迁移不应一次性删除旧行为。正确顺序是：
 - Compiler 当前不收集 generic inline host binding；它只把整行 `[...]` 作为 metadata 保留，不解释宿主语义。
 - UnitySample 继续保留 bracket timeline 导出作为 legacy 兼容，但不把 generic `[kind: alias]` 扩展成通用 host hook。
 - VSCode 继续提供 `[kind: alias]` fallback 的补全、Hover 和 Ctrl+Click，用于旧项目维护；文案必须持续标记为 legacy inline host binding fallback。
+
+### F1.6：样例迁移
+
+- `samples/court-loop.inscape` 已迁到新规范口径：`@timeline.talking.exit` / `@emit` / `@scene` 承载事件、时机和场景意图，`[player.name]` / `[itemName]` 承载文本查询插值。
+- 旧 inline host binding 文本保存在 `samples/legacy/court-loop-legacy-inline-tags.txt`，使用 `.txt` 后缀避免项目级编译扫描到重复节点。
 
 ## F1.2 自检结论
 

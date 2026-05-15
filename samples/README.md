@@ -8,8 +8,14 @@
 - 回环：节点可以跳回已经访问过的节点
 - 项目入口：`@entry`
 - 元信息：`@scene court` 暂作为不可执行 metadata 保留
+- 宿主事件 / 时机：`@timeline.talking.exit court_intro`
+- 查询插值：`[player.name]`、`[itemName]`
 - 多阶段推进：案件概要、证言拆解、证物检查、组合反驳、供述与结案
 - 可试玩反馈：正确推进分支、错误指控后的回收分支，以及结案后的重开入口
+
+`court-loop.inscape` 是新规范样例：`@` 用于事件、动作、时机和状态变化，`[]` 用于查询、读取和文本插值。
+
+`legacy/` 目录保存旧 inline host binding 写法的参考文本，例如 `[bg: courtroom]`、`[emotion: tense]`。这些文件使用 `.txt` 后缀，避免 `check-project samples` 把 legacy 节点作为当前项目源码一起编译。
 
 `variants/` 目录保存同一剧情的 Yarn-like、Ink-like、Ren'Py-like 风格草案，用于比较语法哲学和映射成本。
 
