@@ -14,7 +14,7 @@ class EditorStyleController {
         this.styleFileNames = new Set(["inscape.config.json", "inscape.editor-style.json", "inscape.preview-style.json"]);
     }
 
-    handleSupportDocumentSave(context, document, refreshPreviewPanels) {
+    handleStyleDocumentSave(context, document, refreshPreviewPanels) {
         if (!document || document.uri.scheme !== "file") {
             return;
         }

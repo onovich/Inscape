@@ -47,7 +47,7 @@ class ExtensionRegistrationController {
                 scheduler.schedule(document, 0);
                 this.refreshPreviewPanelsForDocument(context, document);
                 this.editorStyleController.refreshDocument(context, document);
-                this.editorStyleController.handleSupportDocumentSave(context, document, this.refreshVisiblePreviewPanels);
+                this.editorStyleController.handleStyleDocumentSave(context, document, this.refreshVisiblePreviewPanels);
             }),
             this.vscode.workspace.onDidCloseTextDocument((document) => diagnostics.delete(document.uri)),
             this.vscode.window.onDidChangeTextEditorSelection((event) => this.previewRevealBridge.handleSelectionChange(context, event)),

@@ -20,7 +20,7 @@
 - 大目标 D：保持 Core 干净，隔离表现层和宿主业务，尤其是 UnitySample 与未来 Host Bridge。
 - 大目标 E：建立防回归工作流，把踩坑经验固化为验证清单、提交拆分规则和发布流程。
 
-当前短线主战场是 B3，因为 `src/Internal/VSCode/vscode-inscape/extension.js` 仍是最显眼的大文件风险；B3 收口后，优先转向 C 系列的数据契约和 LanguageServer 基线，而不是在 B 系列里无限细拆。
+当前 B3 已完成阶段性收口：`src/Internal/VSCode/vscode-inscape/extension.js` 已从大逻辑文件收敛为 VSCode 注册入口、实例装配和少量入口级 glue。后续优先转向 C 系列的数据契约和 LanguageServer 基线，而不是在 B 系列里无限细拆。
 
 ## 评分目标
 
@@ -196,6 +196,8 @@ VSCode：4 / 10
 - `src/Internal/VSCode/vscode-inscape/extension.js` 变成注册入口，而不是全部逻辑实现。
 - 正文 / 选项文本链接态回归清单全部通过。
 - 修改单个 provider 不应影响 preview bridge 或 style loader。
+
+当前进展：已完成。`extension.js` 不再承载 command、workspace index、language feature、preview webview、style、diagnostics、location/range 等主体逻辑；已拆入 `Commands`、`WorkspaceIndex`、`LanguageFeatures`、`PreviewWebview`、`Styles`、`Bridges` 与 `ExtensionEntry`。B3.5 巡检同时清理了 VSCode JS 中已知 `Helper` / `Support` / `Manager` / `Utils` 弱语义命名残留，并确认没有回退到 `DocumentLinkProvider`。
 
 收益：最高。
 

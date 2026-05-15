@@ -51,7 +51,7 @@ class EditorAuthoringCommand {
             return;
         }
 
-        const stylePath = await this.ensureStyleSupportFile(workspaceFolder, "editor");
+        const stylePath = await this.ensureStyleFile(workspaceFolder, "editor");
         if (!stylePath) {
             return;
         }
@@ -65,7 +65,7 @@ class EditorAuthoringCommand {
             return;
         }
 
-        const stylePath = await this.ensureStyleSupportFile(workspaceFolder, "preview");
+        const stylePath = await this.ensureStyleFile(workspaceFolder, "preview");
         if (!stylePath) {
             return;
         }
@@ -94,7 +94,7 @@ class EditorAuthoringCommand {
         return this.selectWorkspaceFolder();
     }
 
-    async ensureStyleSupportFile(workspaceFolder, kind) {
+    async ensureStyleFile(workspaceFolder, kind) {
         const workspacePath = workspaceFolder.uri.fsPath;
         const configPath = this.path.join(workspacePath, "inscape.config.json");
         let config = {};
