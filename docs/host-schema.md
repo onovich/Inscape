@@ -128,7 +128,7 @@ kind,alias,birdId,unityGuid,addressableKey,assetPath
 - `bindingMap` 回答“这个别名指向哪个资源或宿主对象”。
 - `hostSchema` 回答“剧本可以表达哪些查询和事件，以及它们需要哪些参数”。
 
-后续需要在两者之上抽象出更通用的 Host Bridge：既能描述能力清单，也能描述 Inscape 可读 ID 到项目内部 ID / 资源坐标 / 代码处理器的映射。Bird 当前的 CSV 只是该方向的参考实现。
+后续需要在两者之上抽象出更通用的 Host Bridge：既能描述能力清单，也能描述 Inscape 可读 ID 到项目内部 ID / 资源坐标 / 代码处理器的映射。Bird 当前的 CSV 只是该方向的参考实现。第一版草案见 [Host Bridge Contract](host-bridge-contract.md)。
 
 未来如果需要，可以让宿主 Schema 引用绑定表，或由统一烘焙器同时生成两类文件。
 
@@ -139,4 +139,4 @@ kind,alias,birdId,unityGuid,addressableKey,assetPath
 3. VSCode 读取 `hostSchema` 后，为查询名、事件名和参数名提供补全与 Hover。
 4. Unity / Bird 连接层可扫描带特定属性的方法，生成或校验 `hostSchema`。
 5. 未来如果进入代码生成阶段，可以从 Schema 生成宿主注册代码，避免运行时才发现未注册能力。
-6. 设计 Host Bridge 映射表或生成流程，解决 Inscape 可读 ID 与项目内部 ID 不一致的问题。
+6. 按 [Host Bridge Contract](host-bridge-contract.md) 继续推进映射表、VSCode 展示和生成流程，解决 Inscape 可读 ID 与项目内部 ID 不一致的问题。

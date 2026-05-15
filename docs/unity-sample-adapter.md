@@ -39,7 +39,7 @@
 长期方案应拆成三层：
 
 1. Host Schema：声明项目提供哪些查询、事件、资源类型和参数。
-2. Host Bridge：把 Inscape 可读 ID 映射到项目内部 ID、资源坐标、事件处理器和查询实现。
+2. Host Bridge：把 Inscape 可读 ID 映射到项目内部 ID、资源坐标、事件处理器和查询实现，第一版草案见 [Host Bridge Contract](host-bridge-contract.md)。
 3. Adapter Generator：根据 schema / bridge / 项目约定生成或配置具体 adapter，而不是手写固定数据结构。
 
 UnitySample 后续可以继续保留为 generator 的回归样例：当 Host Bridge 草案成形后，用它验证“同样的输出能否由配置和代码生成得到”。
