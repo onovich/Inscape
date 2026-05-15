@@ -13,8 +13,8 @@
 2. `@` 与 `[]` 到底要如何分工？
    - 已形成当前方向：`@` 主要表达事件 / 动作 / 时机 / 状态变化，`[]` 主要表达查询 / 读取 / 文本插值。
    - 已建立 [Authoring Marker Contract](authoring-marker-contract.md) 与 [Authoring Marker Compatibility Audit](authoring-marker-compatibility-audit.md)。
-   - 剩余问题不是“如何分工”，而是如何迁移历史 `[timeline: ...]`、`[bg: ...]`、`[kind: alias]` 兼容写法，以及是否长期保留相关 parser / VSCode / UnitySample 行为。
-   - F1.5 需要评估是否继续支持 generic `[kind: alias]` host binding，还是仅作为 legacy 项目模式存在。
+   - 剩余问题不是“如何分工”，而是如何给旧 `[timeline: ...]`、`[bg: ...]`、`[kind: alias]` 兼容写法设计迁移节奏。
+   - F1.5 已形成行为决策：Compiler 不解释 generic `[kind: alias]` 宿主语义；UnitySample 只保留 bracket timeline 兼容；VSCode 继续把 generic `[kind: alias]` 作为 legacy authoring fallback。详见 [Authoring Marker Behavior Decision](authoring-marker-behavior-decision.md)。
 
 3. 节点重命名、重复文本插入和文本微调如何迁移锚点？
    - 第一版 `line-v1` 已确认不依赖文件路径和绝对行号，并通过 `occurrence` 区分同节点重复文本。
@@ -48,7 +48,7 @@
 - 条件表达式候选可类似 `?hasItem("badge")->node`，但参数 ID 必须允许通过 Host Bridge 映射到项目内部编码。
 - 选项语法如何兼顾阅读和结构化。
 - 查询插值是否支持函数参数、命名参数或格式化参数。
-- 第一版暂不支持作者自定义标签；legacy `[kind: alias]` 需确认是否长期保留，还是迁到 Host Bridge / adapter 兼容层。
+- 第一版暂不支持作者自定义标签；legacy `[kind: alias]` 保留在 VSCode / adapter 兼容层，不升级为新推荐语义。
 - 是否需要宏或模板。
 - 跨文件结构如何组织章节、场景和跳转。
 

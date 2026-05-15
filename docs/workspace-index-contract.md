@@ -79,7 +79,9 @@ Workspace index 不可以做：
 
 ### Host Bindings
 
-用于 `@timeline ...`、`[timeline: ...]` 和未来 host binding 补全、定义与 hover。
+用于 `@timeline ...`、`@timeline.<phase> ...` 这类宿主事件 / 时机 hook，以及 legacy `[kind: alias]` inline host binding fallback 的补全、定义与 hover。
+
+该索引项只代表作者体验层 hint，不代表新推荐语法，也不让 Workspace Index 拥有 Compiler 语义。
 
 字段：
 

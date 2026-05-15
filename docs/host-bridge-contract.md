@@ -135,11 +135,11 @@ unitySample.roleMap speaker,roleId
 unitySample.bindingMap kind,alias,birdId,unityGuid,addressableKey,assetPath
   -> ids[{ kind, name: alias, host.assetId, host.unityGuid, host.addressableKey, host.assetPath }]
 
-@timeline alias / [timeline: alias]
+@timeline alias / legacy [timeline: alias]
   -> ids[kind="timeline", name=alias] + event play_timeline
 ```
 
-这说明 Host Bridge 可以表达当前样例能力，但不会继承 `talkingId`、`roleId`、Addressables 或 ScriptableObject 作为通用 Core 概念。
+这说明 Host Bridge 可以表达当前样例能力，但不会继承 `talkingId`、`roleId`、Addressables 或 ScriptableObject 作为通用 Core 概念。`[timeline: alias]` 只作为旧项目兼容入口保留；新事件 / 时机写法优先使用 `@timeline...`。
 
 ## 分层边界
 

@@ -87,11 +87,11 @@ F 阶段迁移不应一次性删除旧行为。正确顺序是：
 
 ### F1.5：行为迁移评估
 
-等文档和工具提示迁完后再决定是否动行为：
+结论见 [Authoring Marker Behavior Decision](authoring-marker-behavior-decision.md)。
 
-- Compiler 是否继续收集 generic inline host binding。
-- UnitySample 是否长期保留 bracket timeline 导出。
-- VSCode 是否继续对所有 `[kind: alias]` 提供 host binding 补全，还是仅对 legacy 项目启用。
+- Compiler 当前不收集 generic inline host binding；它只把整行 `[...]` 作为 metadata 保留，不解释宿主语义。
+- UnitySample 继续保留 bracket timeline 导出作为 legacy 兼容，但不把 generic `[kind: alias]` 扩展成通用 host hook。
+- VSCode 继续提供 `[kind: alias]` fallback 的补全、Hover 和 Ctrl+Click，用于旧项目维护；文案必须持续标记为 legacy inline host binding fallback。
 
 ## F1.2 自检结论
 
