@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Text.Json;
 
 namespace Inscape.LanguageServer {
@@ -14,7 +15,22 @@ namespace Inscape.LanguageServer {
                 return 0;
             }
 
-            Console.WriteLine("Inscape.LanguageServer baseline. Use --capabilities to inspect the current contract.");
+            if (args.Length > 1 && args[0] == "--diagnose-file") {
+                string sourcePath = Path.GetFullPath(args[1]);
+                string source = File.ReadAllText(sourcePath);
+                DslScriptDiagnosticProvider provider = new DslScriptDiagnosticProvider();
+                Console.WriteLine(JsonSerializer.Serialize(new {
+                    format = "inscape.language-server-diagnostics",
+                    formatVersion = 1,
+                    diagnostics = provider.GetDiagnostics(source, sourcePath)
+                }, new JsonSerializerOptions {
+                    WriteIndented = true,
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                }));
+                return 0;
+            }
+
+            Console.WriteLine("Inscape.LanguageServer baseline. Use --capabilities or --diagnose-file <path>.");
             return 0;
         }
 

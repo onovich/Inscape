@@ -6,7 +6,9 @@ Current baseline:
 
 - `Inscape.LanguageServer.csproj` is an executable project in `Inscape.slnx`.
 - `Entries/LanguageServerEntry.cs` exposes `--capabilities` so the project has a real, buildable entry point before full LSP transport is introduced.
+- `Entries/LanguageServerEntry.cs` also exposes `--diagnose-file <path>` as a temporary diagnostics probe that calls `DslScriptDiagnosticProvider` directly.
 - `Models/EditorLocationModel.cs` follows `docs/source-location-contracts.md`: editor positions use 0-based `line` / `character` / `length`.
+- `DslScript/Domains/DslScriptDiagnosticProvider.cs` converts Compiler diagnostics from 1-based `line` / `column` into editor locations.
 
 Allowed business areas: `Entries`, `Models`, `DslScript`, `StoryGraph`, and `HostSchema`.
 

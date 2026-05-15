@@ -17,6 +17,7 @@ namespace Inscape.Tests {
                 ("anchor validator detects collisions", StoryGraphAnchorValidatorDetectsCollisions),
                 ("source spans cover authoring elements", SourceSpansCoverAuthoringElements),
                 ("project diagnostics preserve cross-file source", ProjectDiagnosticsPreserveCrossFileSource),
+                ("language server diagnostics use editor coordinates", LanguageServerDiagnosticsUseEditorCoordinates),
                 ("cli diagnose emits json", CliDiagnoseEmitsJson),
                 ("cli commands lists command reference", CliCommandsListsCommandReference),
                 ("cli help emits command details", CliHelpEmitsCommandDetails),
