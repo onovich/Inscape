@@ -173,7 +173,7 @@
 - [ ] 完成 D 阶段 Core 干净与 Host Bridge 隔离收口。
 	- [x] D1.1 Compiler 依赖巡检：确认 `Inscape.Compiler` 不依赖 Unity、VSCode、HTML、Bird、Addressables、ExternalSupport、Tooling、Cli、LanguageServer 或 Runtime；详见 [Core Boundary Audit](core-boundary-audit.md)。
 	- [x] D1.2 Compiler 角色目录与命名自检：对照命名规范检查 `Model` / `Parsing` / `Analysis` / `Localization` 角色边界，并修正文档过期口径。
-	- [ ] D2.1 ExternalSupport 隔离自检：确认 UnitySample / importer 仍只在 ExternalSupport 路径与独立测试链路中出现，不反向污染 Internal。
+	- [x] D2.1 ExternalSupport 隔离自检：确认 UnitySample / importer 仍只在 ExternalSupport 路径与独立测试链路中出现，不反向污染 Internal；详见 [ExternalSupport Boundary Audit](external-support-boundary-audit.md)。
 	- [ ] D2.2 Host Bridge 契约草案：定义可表达 UnitySample 当前能力、但不被 UnitySample 限死的配置模型。
 
 ## 阶段 1：DSL 与轻工具链
