@@ -16,11 +16,11 @@
 
 - 大目标 A：建立入口和生命周期心智，回答“当前工具从哪里进，未来 Runtime 从哪里进”。
 - 大目标 B：拆解大文件，降低阅读和回归成本；当前 B3 是其中的 VSCode extension 拆分，不代表整个重构计划只剩 B 系列。
-- 大目标 C：强化数据契约，统一 source map、preview reveal payload 和 workspace index 过渡模型。
+- 大目标 C：强化数据契约，统一 source map、preview reveal payload 和 workspace index 过渡模型，并在此阶段启动 LanguageServer / Runtime 的真实基线，而不是在 B 阶段提前占位。
 - 大目标 D：保持 Core 干净，隔离表现层和宿主业务，尤其是 UnitySample 与未来 Host Bridge。
 - 大目标 E：建立防回归工作流，把踩坑经验固化为验证清单、提交拆分规则和发布流程。
 
-当前 B3 已完成阶段性收口：`src/Internal/VSCode/vscode-inscape/extension.js` 已从大逻辑文件收敛为 VSCode 注册入口、实例装配和少量入口级 glue。后续优先转向 C 系列的数据契约和 LanguageServer 基线，而不是在 B 系列里无限细拆。
+当前 B3 已完成阶段性收口：`src/Internal/VSCode/vscode-inscape/extension.js` 已从大逻辑文件收敛为 VSCode 注册入口、实例装配和少量入口级 glue。进入 C 阶段前，先清掉纯规划占位目录并完成旧命名收敛；随后再推进 source map / reveal payload、LanguageServer 与 Runtime 基线。
 
 ## 评分目标
 
@@ -54,7 +54,7 @@ VSCode：4 / 10
 小目标：
 
 - 标注 Compiler 入口：`InscapeCompiler`、`ProjectCompiler`。
-- 标注内部工具入口：CLI `CliCore`、VSCode `activate()`、LanguageServer server entry。
+- 标注内部工具入口：CLI `CliCore`、VSCode `activate()`；LanguageServer server entry 等 C 阶段真实基线出现后再补。
 - 在文档中明确：当前没有游戏式主循环，因为项目仍处于编译器 + 工具链阶段。
 - 明确未来运行时入口是 `NarrativeRuntime`；内部工具链短期继续按 `Tooling` 的共享业务模块推进，而不是预设 `InscapeProjectService` 一类总服务。
 - 新增或重命名类型时，优先把层级和范围信息放进目录或命名空间，而不是继续扩张 `CliProject*`、`CliSingleFile*` 一类前导范围词。
@@ -71,7 +71,7 @@ VSCode：4 / 10
 小目标：
 
 - 不预设 `InscapeProjectService`、`Workspace`、`ProjectSystem` 之类大而泛的工具链总服务。
-- 继续把项目级流程从 `Cli` 上提到 `Tooling`，按 `ProjectSources`、`ToolConfig`、`Preview`、`Localization`、`HostSchema`、`HostBinding` 等共享业务模块拆分。
+- 继续把项目级流程从 `Cli` 上提到 `Tooling`，按 `DslScriptSources`、`ToolConfig`、`Preview`、`Localization`、`HostSchema`、`HostBinding` 等共享业务模块拆分。
 - 具体类型命名采用 ADR 0010 的目录优先主语/角色模型：范围词不是类型名前缀的默认选择，`Support` / `Helper` 一类弱语义命名应优先被拆分。
 - CLI、VSCode 与未来 Language Server 逐步通过 `Tooling` + `Compiler` 复用共享流程与语义能力，而不是各自重新拼装，也不是先引入巨型门面。
 - 保留 `ProjectCompiler` 作为 Compiler 编译能力，不让它承担文件系统、配置和工具编排职责。

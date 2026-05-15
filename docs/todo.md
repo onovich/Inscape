@@ -12,12 +12,13 @@
 
 1. 执行目录优先重构主线（最高优先级）：先把目标结构做成仓库外形事实，再恢复各层内部的小步重构。
 	- 先冻结并维护 [目录优先重构蓝图](directory-first-reframe-plan.md) 与 [ADR 0012](adr/0012-directory-first-repository-reframe-order.md)。
-	- 先创建 `src/Internal`、`src/ExternalSupport`、`tests/Internal`、`tests/ExternalSupport` 及其 Layer / Business / Role 目录。
+	- 先创建 `src/Internal`、`src/ExternalSupport`、`tests/Internal`、`tests/ExternalSupport` 及其真实承载源码的 Layer / Business / Role 目录。
 	- 先为稳定目录补 `README.md` 规则文件，再迁代码。
 	- 再迁 `Inscape.Compiler`、`Inscape.Tooling`、`Inscape.Cli`、VSCode 前端和 Unity 原型的大目录路径。
 	- 再更新 `Inscape.slnx` 与 `ProjectReference`，让 UnityPlugin 退出默认 .NET solution 编译链。
 	- 只有在路径稳定后，才继续项目名、命名空间、类型名和局部 helper 收口。
 	- 每完成一轮结构迁移，都同步更新 `docs/agent-handoff.md`、`docs/refactoring-plan.md`、`docs/code-structure.md`、[研发计划](development-plan.md) 和本 TODO。
+	- 不再保留纯规划占位目录；LanguageServer / Runtime 与数据契约作为 C 阶段真实任务推进。
 2. 收敛 `@` 与 `[]` 的语法分工：当前两套提示语法的职责重叠过高，作者心智不稳定；需要明确二者是否保留并存、如何区分“语义/时机”与“资源/别名绑定”，以及 `@timeline ...` / `[timeline: ...]` 是否还应继续双写法共存。
 3. 设计 Host Bridge 草案：解决 Inscape 可读 ID 与项目内部 ID / 资源 / 事件处理器的映射，不被 UnitySample、Addressables 或 ScriptableObject 绑定。
 4. 调研 Unity `[Inscape]` Attribute 扫描与 Unity 内代码生成：生成待配置桥接表，再由人工完成 C# 成员与 Inscape 名称映射。
@@ -50,7 +51,8 @@
 
 - [ ] 按目录优先铁律重构仓库骨架，让架构成果先在路径与 solution 边界上可见。
 	- [x] 已完成文档冻结：新增 [目录优先重构蓝图](directory-first-reframe-plan.md)，并以 [ADR 0012](adr/0012-directory-first-repository-reframe-order.md) 固化“先目录、后改名”的顺序。
-	- [x] 创建 `src/Internal`、`src/ExternalSupport`、`tests/Internal`、`tests/ExternalSupport` 及其 Layer / Business 目录骨架，并为稳定目录补 `README.md` 规则文件。
+	- [x] 创建 `src/Internal`、`src/ExternalSupport`、`tests/Internal`、`tests/ExternalSupport` 及其已承载源码的 Layer / Business 目录，并为稳定目录补 `README.md` 规则文件。
+	- [x] 清理纯规划占位目录，避免把 C 阶段的 LanguageServer / Runtime 和未来外部支持结构误当成 B 阶段成果。
 	- [ ] 将 `Inscape.Compiler`、`Inscape.Tooling`、`Inscape.Cli`、VSCode 前端与 Unity 原型迁入新目录树。
 		- [x] 已先迁入 Internal 侧 `.NET` 项目路径：`Inscape.Compiler` -> `src/Internal/Compiler/Inscape.Compiler`，`Inscape.Tooling` -> `src/Internal/Tooling`，`Inscape.Cli` -> `src/Internal/Cli/Inscape.Cli`；Compiler 项目名已改，命名空间和类型名暂不改。
 		- [x] 已迁入 VSCode 前端路径：`src/Internal/VSCode/vscode-inscape`；扩展源码内部仍保留原 npm 包结构，后续再拆 provider / command / preview bridge。
@@ -146,7 +148,7 @@
 	- [x] B3.4.5 收口位置与范围辅助：将 `createLocation`、payload/open location、`trimRange`、display path 等编辑器定位适配从入口文件移出；自检不改变 source map / reveal payload 语义。
 	- [x] B3.5 B 阶段收口验收：对照 [渐进式重构计划](refactoring-plan.md) 与 [编码与命名规范](coding-conventions.md) 巡检 B1/B2/B3，确认 `extension.js` 已是注册入口而不是逻辑实现，跑完整验证并勾选 VSCode extension 拆分父项。
 	- [x] 已顺手修复预览定位局部缺陷：`findDialogueSeparatorIndex` 中误残留的 preview reveal 调用与缺失的半角冒号解析已清理，避免说话人行的预览定位在运行时触发异常。
-- [ ] 创建 `Inscape.LanguageServer` 基线项目，先迁移诊断与定义跳转，再迁移引用、补全与 source map 相关语义能力。
+- [ ] C 阶段创建 `Inscape.LanguageServer` 基线项目，先迁移诊断与定义跳转，再迁移引用、补全与 source map 相关语义能力。
 - [ ] 将 Cli、VSCode 和未来 LanguageServer 共享的项目级流程继续拆成显式职责模块，优先落到 `Tooling` 的 `ProjectSources`、`ToolConfig`、`Preview`、`Localization`、`HostSchema`、`HostBinding` 等模块；如未来确需统一门面，也应建立在这些模块之上，而不是先造一个大而泛的 `ProjectService`。
 - [ ] 统一 source map / reveal payload 数据契约，支撑预览、诊断、跳转、本地化和未来编辑器三视图。（B 阶段完成后的推荐大节点）
 - [ ] Runtime Host 阶段再引入 `NarrativeRuntime`，采用生命周期式执行模型，不提前把 runtime loop 放进 Core 编译层。

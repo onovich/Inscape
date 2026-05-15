@@ -97,7 +97,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - 本轮会话已开始 ExtensionEntry 收口：`ExtensionRegistrationController` 负责 VSCode 注册顺序，`ExtensionLifecycleController` 负责 output/logging/diagnostics lifecycle；`activate()` 当前只委托 lifecycle controller。
 - 本轮会话已继续收口 diagnostics 边界：`DslScriptDiagnosticController` 负责 VSCode Diagnostic 映射与 compiler invocation 适配，`DslScriptDiagnosticScheduler` 仍只负责防抖与异步调度。
 - 本轮会话已继续收口 authoring 数据来源：`EditorAuthoringDataProvider` 负责配置、CSV 与 `.inscape` 文本源读取，WorkspaceIndex provider 继续只消费注入的数据来源。
-- 本轮会话已完成 B 阶段剩余顺序：ExtensionEntry / diagnostics / config-source / location-range 四个实现节点与 B3.5 总验收均已提交并推送；不要在 B 阶段无限细拆，下一步转向 C 系列数据契约与 LanguageServer 基线。
+- 本轮会话已完成 B 阶段剩余顺序：ExtensionEntry / diagnostics / config-source / location-range 四个实现节点与 B3.5 总验收均已提交并推送；不要在 B 阶段无限细拆。进入 C 阶段前，先按命名规范清理旧类型名、Compiler 角色后缀、Tooling 业务主语和纯规划占位目录。
 - 本轮会话已顺手修复预览定位局部缺陷：`findDialogueSeparatorIndex` 中误残留的 preview reveal 调用与缺失的半角冒号解析已清理，避免说话人行的预览定位在运行时触发异常。
 - 本轮会话已继续收敛 CLI 总入口 runner 命名：`CliTopLevelCommandRunner`、`CliSingleFileCommandRunner`、`CliProjectCommandRunner` 已分别改为 `CliCommandTopLevelRunner`、`CliCommandSingleFileRunner`、`CliCommandProjectRunner`。
 - 本轮会话已继续按终局后缀白名单收口 CLI 命令入口：`CliCommandTopLevelRunner`、`CliCommandSingleFileRunner`、`CliCommandProjectRunner` 以及 `CliUnitySample*CommandRunner` 已统一去掉 `Runner`，收敛为 `CliTopLevelCommand`、`CliSingleFileCommand`、`CliProjectCommand` 与 `CliUnitySample*Command`。
@@ -256,7 +256,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 
 1. 当前重构收口（最高优先级）：
    - 先抽出 `Tooling`，把当前 Cli 中的共享流程从命令行入口层移走。
-   - 建立 `LanguageServer` 基线，让 VSCode 长期走“薄前端 + C# server”方向。
+   - C 阶段再建立 `LanguageServer` 基线，让 VSCode 长期走“薄前端 + C# server”方向。
    - VSCode B 阶段拆分已收口；下一步应统一 source map / reveal payload 数据契约，减少 VSCode、CLI、Preview 各自推断。
    - Unity 支持继续留在仓库内，但明确收束到 `ExternalSupport/UnityPlugin`，不进入默认 .NET solution 编译链。
    - 每轮小步重构后同步更新 handoff / todo / refactoring-plan / code-structure / development-plan，避免文档口径再次滞后。

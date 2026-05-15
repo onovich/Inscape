@@ -13,7 +13,7 @@
 
 ## 总体原则
 
-- 目录和命名空间先表达层级与业务。
+- 目录先表达层级与业务；命名空间保持适度粗粒度，不追求和每个目录一一对应。
 - 类型名只表达业务主语、二级限定和角色。
 - 先落目录骨架，再做项目名、命名空间和类型名迁移。
 - `Config` 作为后缀家族存在，不作为一级业务主语。
@@ -29,6 +29,7 @@
 
 - 代码主树只允许：`src/Internal` 与 `src/ExternalSupport`
 - 测试主树对应为：`tests/Internal` 与 `tests/ExternalSupport`
+- `Internal` / `ExternalSupport` 的边界优先由目录表达；Internal 不需要进入命名空间，ExternalSupport 可以在命名空间中体现宿主或支持方向。
 - `tools/` 只保留脚本、打包和开发辅助，不再承载长期产品源码
 
 ### 目录公式
@@ -45,23 +46,23 @@
 
 ### 目录规则文件
 
-- Git 空目录统一用 `README.md` 占位
+- Git 空目录不再用 `README.md` 提前占位；只在目录已经承载真实源码或稳定规则时保留 `README.md`
 - 每个稳定 Layer 目录都必须有 `README.md`
-- 每个稳定 Business 目录都必须有 `README.md`
+- 每个稳定 Business 目录在承载真实源码或长期规则后补 `README.md`
 - 该文件同时承担目录职责、允许内容、禁止内容与依赖边界说明
 
 ### 迁移顺序
 
 - 固定顺序为：目录路径 -> 项目路径 / solution -> 项目名 -> 命名空间 -> 类型名
 - 不再接受只改类型名、不改目录的长期过渡做法
-- 进入任一目录继续重构前，先阅读该目录 `README.md`
+- 进入任一有 `README.md` 的目录继续重构前，先阅读该目录规则
 
 ## 架构层级
 
 ### Internal
 
 - `Compiler`：编译期真相层。只承载 DSLScript、StoryGraph、Localization 与诊断契约，不碰文件系统、命令行、VSCode 或 Unity API。
-- `Tooling`：共享用例层。承载项目扫描、配置读取、预览构建、本地化流程、HostSchema / HostBinding 流程等，可被 Cli、VSCode 和未来外部支持复用。
+- `Tooling`：共享用例层。承载脚本源加载、工具配置读取、预览构建、本地化流程、HostSchema / HostBinding 流程等，可被 Cli、VSCode 和未来外部支持复用。
 - `Cli`：命令行入口层。只负责 argv、stdout/stderr、退出码、命令目录和对 Tooling 的调用。
 - `VSCode`：编辑器入口层。负责 VSCode API、前端交互、Webview、样式和轻量客户端逻辑。
 - `LanguageServer`：C# 语义服务层。长期承担诊断、跳转、引用、补全、source map 等重语义能力。
@@ -188,7 +189,7 @@
 
 ### Tooling
 
-- 允许主语：`ProjectSources`、`ToolConfig`、`Preview`、`Localization`、`HostSchema`、`HostBinding`
+- 允许主语：`DslScriptSources`、`ToolConfig`、`Preview`、`Localization`、`HostSchema`、`HostBinding`
 - 终局后缀以 `Domain`、`Model`、`ViewModel`、`Controller` 为主
 - 这里拥有共享流程，不拥有编译期真相
 
@@ -250,6 +251,6 @@ src/<Root>/<Layer>/<Business>/<Role>/<Subject><Qualifier><Role>
 
 - `Inscape.Compiler` 长期可改名为 `Inscape.Compiler`
 - 当前最高优先级不是继续在旧目录里做微观 helper 收口，而是先完成目录骨架迁移，详见 [目录优先重构蓝图](directory-first-reframe-plan.md)
-- 当前 `Inscape.Cli` 中大量共享流程会逐步上提为 `Inscape.Tooling`
+- 当前 `Inscape.Cli` 中大量共享流程会逐步上提为 `Inscape.Tooling`；`Inscape.Tooling` 这个命名空间粒度可以保留，不需要继续细分到每个业务目录
 - `tools/vscode-inscape` 长期会迁入 `src/Internal/VSCode/`，再继续拆为薄扩展前端与 `Inscape.LanguageServer`
 - 当前 `UnitySample` / `unity-bird-importer` 属于 `ExternalSupport/UnityPlugin` 的过渡素材，而不是内部五层的一部分
