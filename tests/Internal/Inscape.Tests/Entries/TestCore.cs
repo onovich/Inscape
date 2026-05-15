@@ -30,6 +30,7 @@ namespace Inscape.Tests {
                 ("project compiler reports fallback entry", StoryGraphCompilerDomainReportsFallbackEntry),
                 ("cli preview-project emits html", CliPreviewProjectEmitsHtml),
                 ("cli preview-project applies entry override", CliPreviewProjectAppliesEntryOverride),
+                ("preview html converts compiler source coordinates", PreviewHtmlConvertsCompilerSourceCoordinates),
                 ("cli extract-l10n emits csv", CliExtractL10nEmitsCsv),
                 ("cli extract-l10n-project emits csv", CliExtractL10nProjectEmitsCsv),
                 ("cli update-l10n preserves translations", CliUpdateL10nPreservesTranslations),

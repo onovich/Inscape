@@ -87,6 +87,28 @@ Narrator: Temporary entry.
             AssertTrue(html.Contains("\"entryNodeName\": \"second.node\""), "Preview-project should serialize entry override.");
         }
 
+        static void PreviewHtmlConvertsCompilerSourceCoordinates() {
+            string directory = Path.Combine(Path.GetTempPath(), "inscape-tests", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory);
+
+            File.WriteAllText(Path.Combine(directory, "story.inscape"), """
+:: start
+@entry
+Narrator: Source mapped line.
+""", Encoding.UTF8);
+
+            string html;
+            try {
+                html = RunCliForOutput(new[] { "preview-project", directory });
+            } finally {
+                Directory.Delete(directory, true);
+            }
+
+            AssertTrue(html.Contains("function sourcePayload(source) { return source && source.sourcePath ? { sourcePath: source.sourcePath, line: Math.max(0, (source.line ?? 1) - 1), column: Math.max(0, (source.column ?? 1) - 1) }"), "Preview should convert Compiler 1-based source coordinates before editor reveal.");
+            AssertTrue(html.Contains("function editorSourcePayload(source)"), "Preview should keep editor reveal payloads separate from Compiler source payloads.");
+            AssertTrue(html.Contains("pill.onclick = () => openSource(sourcePayload(line.source));"), "Preview metadata source jump should use converted source payload.");
+        }
+
         static void CliExtractL10nEmitsCsv() {
             string directory = Path.Combine(Path.GetTempPath(), "inscape-tests", Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(directory);
