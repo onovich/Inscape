@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace Inscape.Tests {
@@ -14,20 +14,20 @@ namespace Inscape.Tests {
                 ("hash ignores file path", HashIgnoresFilePath),
                 ("hash ignores line movement", HashIgnoresLineMovement),
                 ("hash distinguishes duplicate text", HashDistinguishesDuplicateText),
-                ("anchor validator detects collisions", AnchorValidatorDetectsCollisions),
+                ("anchor validator detects collisions", StoryGraphAnchorValidatorDetectsCollisions),
                 ("cli diagnose emits json", CliDiagnoseEmitsJson),
                 ("cli commands lists command reference", CliCommandsListsCommandReference),
                 ("cli help emits command details", CliHelpEmitsCommandDetails),
                 ("cli export-host-schema-template emits json", CliExportHostSchemaTemplateEmitsJson),
-                ("project compiler resolves cross-file targets", ProjectCompilerResolvesCrossFileTargets),
-                ("project compiler diagnoses duplicate nodes", ProjectCompilerDiagnosesDuplicateNodes),
+                ("project compiler resolves cross-file targets", StoryGraphCompilerDomainResolvesCrossFileTargets),
+                ("project compiler diagnoses duplicate nodes", StoryGraphCompilerDomainDiagnosesDuplicateNodes),
                 ("cli diagnose-project applies override", CliDiagnoseProjectAppliesOverride),
                 ("cli compile-project emits project ir", CliCompileProjectEmitsProjectIr),
-                ("project compiler uses entry metadata", ProjectCompilerUsesEntryMetadata),
-                ("project compiler applies entry override", ProjectCompilerAppliesEntryOverride),
-                ("project compiler diagnoses missing entry override", ProjectCompilerDiagnosesMissingEntryOverride),
-                ("project compiler diagnoses multiple entries", ProjectCompilerDiagnosesMultipleEntries),
-                ("project compiler reports fallback entry", ProjectCompilerReportsFallbackEntry),
+                ("project compiler uses entry metadata", StoryGraphCompilerDomainUsesEntryMetadata),
+                ("project compiler applies entry override", StoryGraphCompilerDomainAppliesEntryOverride),
+                ("project compiler diagnoses missing entry override", StoryGraphCompilerDomainDiagnosesMissingEntryOverride),
+                ("project compiler diagnoses multiple entries", StoryGraphCompilerDomainDiagnosesMultipleEntries),
+                ("project compiler reports fallback entry", StoryGraphCompilerDomainReportsFallbackEntry),
                 ("cli preview-project emits html", CliPreviewProjectEmitsHtml),
                 ("cli preview-project applies entry override", CliPreviewProjectAppliesEntryOverride),
                 ("cli extract-l10n emits csv", CliExtractL10nEmitsCsv),

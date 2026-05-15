@@ -8,7 +8,7 @@ namespace Inscape.UnitySample.Cli {
 
     static class CliUnitySampleRoleTemplateCommand {
 
-        internal static int Run(ProjectCompilationResult result,
+        internal static int Run(StoryGraphCompilationResultModel result,
                                 string[] args,
                                 ToolConfigModel config,
                                 string? outputPath) {
@@ -34,7 +34,7 @@ namespace Inscape.UnitySample.Cli {
             return result.HasErrors ? 1 : 0;
         }
 
-        static string WriteRoleTemplateReport(InscapeDocument graph,
+        static string WriteRoleTemplateReport(DslScriptDocumentModel graph,
                                               IReadOnlyDictionary<string, int> roleIdsBySpeaker,
                                               IReadOnlyDictionary<string, List<RoleNameBindingCandidateModel>> candidatesBySpeaker,
                                               bool scannedRoleNameCsv) {
@@ -79,13 +79,13 @@ namespace Inscape.UnitySample.Cli {
             return "missing";
         }
 
-        static SortedSet<string> CollectDialogueSpeakers(InscapeDocument graph) {
+        static SortedSet<string> CollectDialogueSpeakers(DslScriptDocumentModel graph) {
             SortedSet<string> speakers = new SortedSet<string>(StringComparer.Ordinal);
             for (int nodeIndex = 0; nodeIndex < graph.Nodes.Count; nodeIndex += 1) {
-                NarrativeNode node = graph.Nodes[nodeIndex];
+                StoryGraphNodeModel node = graph.Nodes[nodeIndex];
                 for (int lineIndex = 0; lineIndex < node.Lines.Count; lineIndex += 1) {
-                    NarrativeLine line = node.Lines[lineIndex];
-                    if (line.Kind == NarrativeLineKind.Dialogue && !string.IsNullOrWhiteSpace(line.Speaker)) {
+                    DslScriptLineModel line = node.Lines[lineIndex];
+                    if (line.Kind == DslScriptLineKindModel.Dialogue && !string.IsNullOrWhiteSpace(line.Speaker)) {
                         speakers.Add(line.Speaker.Trim());
                     }
                 }

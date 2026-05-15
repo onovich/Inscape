@@ -126,15 +126,15 @@ Narrator: Start.
             AssertEqual("open_window", root.GetProperty("events")[0].GetProperty("name").GetString(), "Host schema event example name");
         }
 
-        static void ProjectCompilerResolvesCrossFileTargets() {
-            ProjectCompiler compiler = new ProjectCompiler();
-            ProjectCompilationResult result = compiler.Compile(new List<ProjectSource> {
-                new ProjectSource("memory://a.inscape", """
+        static void StoryGraphCompilerDomainResolvesCrossFileTargets() {
+            StoryGraphCompilerDomain compiler = new StoryGraphCompilerDomain();
+            StoryGraphCompilationResultModel result = compiler.Compile(new List<DslScriptSourceModel> {
+                new DslScriptSourceModel("memory://a.inscape", """
 :: start
 Narrator: Start.
 -> second.node
 """),
-                new ProjectSource("memory://b.inscape", """
+                new DslScriptSourceModel("memory://b.inscape", """
 :: second.node
 Narrator: Second page.
 """),
@@ -145,14 +145,14 @@ Narrator: Second page.
             AssertEqual(1, result.Graph.Edges.Count, "Project graph edge count");
         }
 
-        static void ProjectCompilerDiagnosesDuplicateNodes() {
-            ProjectCompiler compiler = new ProjectCompiler();
-            ProjectCompilationResult result = compiler.Compile(new List<ProjectSource> {
-                new ProjectSource("memory://a.inscape", """
+        static void StoryGraphCompilerDomainDiagnosesDuplicateNodes() {
+            StoryGraphCompilerDomain compiler = new StoryGraphCompilerDomain();
+            StoryGraphCompilationResultModel result = compiler.Compile(new List<DslScriptSourceModel> {
+                new DslScriptSourceModel("memory://a.inscape", """
 :: same.node
 Narrator: First copy.
 """),
-                new ProjectSource("memory://b.inscape", """
+                new DslScriptSourceModel("memory://b.inscape", """
 :: same.node
 Narrator: Second copy.
 """),
@@ -250,14 +250,14 @@ Narrator: Second page.
             AssertEqual("start", root.GetProperty("entryNodeName").GetString(), "Compile-project entry node");
         }
 
-        static void ProjectCompilerUsesEntryMetadata() {
-            ProjectCompiler compiler = new ProjectCompiler();
-            ProjectCompilationResult result = compiler.Compile(new List<ProjectSource> {
-                new ProjectSource("memory://00-orphan.inscape", """
+        static void StoryGraphCompilerDomainUsesEntryMetadata() {
+            StoryGraphCompilerDomain compiler = new StoryGraphCompilerDomain();
+            StoryGraphCompilationResultModel result = compiler.Compile(new List<DslScriptSourceModel> {
+                new DslScriptSourceModel("memory://00-orphan.inscape", """
 :: orphan.node
 Narrator: This file sorts first.
 """),
-                new ProjectSource("memory://01-start.inscape", """
+                new DslScriptSourceModel("memory://01-start.inscape", """
 :: start
 @entry
 Narrator: Real entry.
@@ -271,14 +271,14 @@ Narrator: Real entry.
             AssertEqual("start", result.EntryNodeName, "@entry node name");
         }
 
-        static void ProjectCompilerAppliesEntryOverride() {
-            ProjectCompiler compiler = new ProjectCompiler();
-            ProjectCompilationResult result = compiler.Compile(new List<ProjectSource> {
-                new ProjectSource("memory://00-orphan.inscape", """
+        static void StoryGraphCompilerDomainAppliesEntryOverride() {
+            StoryGraphCompilerDomain compiler = new StoryGraphCompilerDomain();
+            StoryGraphCompilationResultModel result = compiler.Compile(new List<DslScriptSourceModel> {
+                new DslScriptSourceModel("memory://00-orphan.inscape", """
 :: orphan.node
 Narrator: First by file order.
 """),
-                new ProjectSource("memory://01-start.inscape", """
+                new DslScriptSourceModel("memory://01-start.inscape", """
 :: start
 Narrator: Temporary debug entry.
 -> orphan.node
@@ -291,10 +291,10 @@ Narrator: Temporary debug entry.
             AssertFalse(ContainsAnyCode(result, "INS032"), "Entry override should suppress fallback diagnostic.");
         }
 
-        static void ProjectCompilerDiagnosesMissingEntryOverride() {
-            ProjectCompiler compiler = new ProjectCompiler();
-            ProjectCompilationResult result = compiler.Compile(new List<ProjectSource> {
-                new ProjectSource("memory://a.inscape", """
+        static void StoryGraphCompilerDomainDiagnosesMissingEntryOverride() {
+            StoryGraphCompilerDomain compiler = new StoryGraphCompilerDomain();
+            StoryGraphCompilationResultModel result = compiler.Compile(new List<DslScriptSourceModel> {
+                new DslScriptSourceModel("memory://a.inscape", """
 :: start
 Narrator: Start.
 """),
@@ -305,15 +305,15 @@ Narrator: Start.
             AssertEqual("", result.EntryNodeName, "Missing entry override should not resolve an entry.");
         }
 
-        static void ProjectCompilerDiagnosesMultipleEntries() {
-            ProjectCompiler compiler = new ProjectCompiler();
-            ProjectCompilationResult result = compiler.Compile(new List<ProjectSource> {
-                new ProjectSource("memory://a.inscape", """
+        static void StoryGraphCompilerDomainDiagnosesMultipleEntries() {
+            StoryGraphCompilerDomain compiler = new StoryGraphCompilerDomain();
+            StoryGraphCompilationResultModel result = compiler.Compile(new List<DslScriptSourceModel> {
+                new DslScriptSourceModel("memory://a.inscape", """
 :: first.entry
 @entry
 Narrator: Entry one.
 """),
-                new ProjectSource("memory://b.inscape", """
+                new DslScriptSourceModel("memory://b.inscape", """
 :: second.entry
 @entry
 Narrator: Entry two.
@@ -324,10 +324,10 @@ Narrator: Entry two.
             AssertTrue(ContainsCode(result, "INS031"), "Expected INS031 multiple entry diagnostic.");
         }
 
-        static void ProjectCompilerReportsFallbackEntry() {
-            ProjectCompiler compiler = new ProjectCompiler();
-            ProjectCompilationResult result = compiler.Compile(new List<ProjectSource> {
-                new ProjectSource("memory://a.inscape", """
+        static void StoryGraphCompilerDomainReportsFallbackEntry() {
+            StoryGraphCompilerDomain compiler = new StoryGraphCompilerDomain();
+            StoryGraphCompilationResultModel result = compiler.Compile(new List<DslScriptSourceModel> {
+                new DslScriptSourceModel("memory://a.inscape", """
 :: start
 Narrator: No explicit entry.
 """),

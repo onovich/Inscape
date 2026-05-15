@@ -99,7 +99,7 @@ src/Internal/Compiler/
 ```text
 src/Internal/Tooling/
   README.md
-  ProjectSources/
+  DslScriptSources/
     README.md
     Domains/
     Models/

@@ -7,7 +7,7 @@ namespace Inscape.UnitySample.Cli {
 
     static class CliUnitySampleBindingTemplateCommand {
 
-        internal static int Run(ProjectCompilationResult result,
+        internal static int Run(StoryGraphCompilationResultModel result,
                                 string[] args,
                                 ToolConfigModel config,
                                 string? outputPath) {
@@ -39,7 +39,7 @@ namespace Inscape.UnitySample.Cli {
             return true;
         }
 
-        static string WriteBindingTemplate(InscapeDocument graph,
+        static string WriteBindingTemplate(DslScriptDocumentModel graph,
                                            IReadOnlyDictionary<string, TimelineAssetBindingModel> bindingsByAlias) {
             Dictionary<string, UnitySampleTimelineAssetBinding> unitySampleBindingsByAlias = new Dictionary<string, UnitySampleTimelineAssetBinding>(StringComparer.Ordinal);
             foreach (KeyValuePair<string, TimelineAssetBindingModel> pair in bindingsByAlias) {

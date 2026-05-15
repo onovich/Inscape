@@ -173,7 +173,7 @@ VSCode：4 / 10
 - 命令帮助、错误码、JSON/CSV/HTML 输出保持兼容。
 - CLI 测试全部通过。
 
-当前进展：顶层元命令（`help` / `commands` / `export-host-schema-template`）、单文件命令分支和项目级命令分支都已从 `CliCore` 主入口中抽离；项目 `.inscape` 源扫描/读取/override、预览样式读取等共享流程已上提到 `Inscape.Tooling`；单文件/项目编译前置流程也已分别收回 `CliSingleFileCommand` 与 `CliProjectCommand`，不再保留独立 `CliCompiler*` 过渡 helper。当前下一步应继续把真正共享的流程上提到 `Tooling`，并把仍停留在 `Cli` 的单命令局部编排继续收紧到各自入口，而不是继续放大 `ProjectService`、`Workspace` 或 `Support` 大层。
+当前进展：顶层元命令（`help` / `commands` / `export-host-schema-template`）、单文件命令分支和项目级命令分支都已从 `CliCore` 主入口中抽离；项目 `.inscape` 源扫描/读取/override、预览样式读取等共享流程已上提到 `Inscape.Tooling`；单文件/项目编译前置流程也已分别收回 `CliDslScriptCommand` 与 `CliStoryGraphCommand`，不再保留独立 `CliCompiler*` 过渡 helper。当前下一步应继续把真正共享的流程上提到 `Tooling`，并把仍停留在 `Cli` 的单命令局部编排继续收紧到各自入口，而不是继续放大 `ProjectService`、`Workspace` 或 `Support` 大层。
 
 收益：高。
 
@@ -198,6 +198,8 @@ VSCode：4 / 10
 - 修改单个 provider 不应影响 preview bridge 或 style loader。
 
 当前进展：已完成。`extension.js` 不再承载 command、workspace index、language feature、preview webview、style、diagnostics、location/range 等主体逻辑；已拆入 `Commands`、`WorkspaceIndex`、`LanguageFeatures`、`PreviewWebview`、`Styles`、`Bridges` 与 `ExtensionEntry`。B3.5 巡检同时清理了 VSCode JS 中已知 `Helper` / `Support` / `Manager` / `Utils` 弱语义命名残留，并确认没有回退到 `DocumentLinkProvider`。
+
+B 后修复：在进入 C 阶段前，Compiler 旧阶段产物已按角色后缀收敛为 `DslScript*Domain`、`StoryGraph*Domain`、`Localization*Domain`、`*Model` 命名；命名空间保持 `Inscape.Compiler.*` 粗粒度，不继续按每个目录细分。
 
 收益：最高。
 

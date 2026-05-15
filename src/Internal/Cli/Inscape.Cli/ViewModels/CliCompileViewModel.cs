@@ -9,9 +9,9 @@ namespace Inscape.Cli {
 
         public int FormatVersion { get; set; }
 
-        public InscapeDocument Document { get; set; } = new InscapeDocument();
+        public DslScriptDocumentModel Document { get; set; } = new DslScriptDocumentModel();
 
-        public List<Diagnostic> Diagnostics { get; set; } = new List<Diagnostic>();
+        public List<DiagnosticModel> Diagnostics { get; set; } = new List<DiagnosticModel>();
 
         public bool HasErrors { get; set; }
 

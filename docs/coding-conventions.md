@@ -95,7 +95,7 @@
 - `Node`
 - `Choice`
 - `Entry`
-- `Diagnostic`
+- `DiagnosticModel`
 - `SourceMap`
 - `Reveal`
 - `Selection`

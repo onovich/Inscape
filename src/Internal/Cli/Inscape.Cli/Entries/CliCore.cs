@@ -24,10 +24,10 @@ namespace Inscape.Cli {
             string? previousLocalizationPath = ReadOption(args, "--from");
 
             if (CliCommandProvider.IsProjectCommand(command)) {
-                return CliProjectCommand.Run(command, inputPath, args, outputPath, JsonOptions);
+                return CliStoryGraphCommand.Run(command, inputPath, args, outputPath, JsonOptions);
             }
 
-            if (CliSingleFileCommand.TryRun(command, inputPath, args, outputPath, previousLocalizationPath, JsonOptions, out exitCode)) {
+            if (CliDslScriptCommand.TryRun(command, inputPath, args, outputPath, previousLocalizationPath, JsonOptions, out exitCode)) {
                 return exitCode;
             }
 
@@ -36,9 +36,9 @@ namespace Inscape.Cli {
             return 1;
         }
 
-        internal static void PrintDiagnostics(IReadOnlyList<Diagnostic> diagnostics) {
+        internal static void PrintDiagnostics(IReadOnlyList<DiagnosticModel> diagnostics) {
             for (int i = 0; i < diagnostics.Count; i += 1) {
-                Diagnostic diagnostic = diagnostics[i];
+                DiagnosticModel diagnostic = diagnostics[i];
                 Console.Error.WriteLine(diagnostic.SourcePath
                                       + "(" + diagnostic.Line + "," + diagnostic.Column + "): "
                                       + diagnostic.Severity.ToString().ToLowerInvariant()

@@ -20,7 +20,7 @@ namespace Inscape.Adapters.UnitySample {
 
         public string UnitySampleField { get; set; }
 
-        public SourceSpan Source { get; set; }
+        public SourceSpanModel Source { get; set; }
 
         public UnitySampleLocalizationMapping() {
             Anchor = string.Empty;
@@ -31,7 +31,7 @@ namespace Inscape.Adapters.UnitySample {
             TalkingId = null;
             TalkingIndex = null;
             UnitySampleField = string.Empty;
-            Source = SourceSpan.Empty;
+            Source = SourceSpanModel.Empty;
         }
 
     }

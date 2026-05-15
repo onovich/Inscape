@@ -29,7 +29,7 @@ namespace Inscape.Adapters.UnitySample {
 
         public List<UnitySampleChoiceOptionEntry> Options { get; set; }
 
-        public SourceSpan Source { get; set; }
+        public SourceSpanModel Source { get; set; }
 
         public UnitySampleTalkingEntry() {
             TalkingId = 0;
@@ -44,7 +44,7 @@ namespace Inscape.Adapters.UnitySample {
             TalkingIndex = 0;
             NextTalkingId = null;
             Options = new List<UnitySampleChoiceOptionEntry>();
-            Source = SourceSpan.Empty;
+            Source = SourceSpanModel.Empty;
         }
 
     }

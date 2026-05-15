@@ -8,17 +8,17 @@ namespace Inscape.Adapters.UnitySample {
 
     public sealed class UnitySampleBindingTemplateWriter {
 
-        public string Write(InscapeDocument graph) {
+        public string Write(DslScriptDocumentModel graph) {
             return Write(graph, new Dictionary<string, UnitySampleTimelineAssetBinding>(StringComparer.Ordinal));
         }
 
-        public string Write(InscapeDocument graph, IReadOnlyDictionary<string, UnitySampleTimelineAssetBinding> timelineBindingsByAlias) {
+        public string Write(DslScriptDocumentModel graph, IReadOnlyDictionary<string, UnitySampleTimelineAssetBinding> timelineBindingsByAlias) {
             SortedSet<string> timelineAliases = new SortedSet<string>(StringComparer.Ordinal);
             for (int nodeIndex = 0; nodeIndex < graph.Nodes.Count; nodeIndex += 1) {
-                NarrativeNode node = graph.Nodes[nodeIndex];
+                StoryGraphNodeModel node = graph.Nodes[nodeIndex];
                 for (int lineIndex = 0; lineIndex < node.Lines.Count; lineIndex += 1) {
-                    NarrativeLine line = node.Lines[lineIndex];
-                    if (line.Kind != NarrativeLineKind.Metadata) {
+                    DslScriptLineModel line = node.Lines[lineIndex];
+                    if (line.Kind != DslScriptLineKindModel.Metadata) {
                         continue;
                     }
 

@@ -7,7 +7,7 @@ namespace Inscape.UnitySample.Cli {
     static class CliUnitySampleProjectCommand {
 
         internal static bool TryRun(string command,
-                                    ProjectCompilationResult result,
+                                    StoryGraphCompilationResultModel result,
                                     string[] args,
                                     ToolConfigModel config,
                                     string? outputPath,

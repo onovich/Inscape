@@ -1,4 +1,4 @@
-# Diagnostics
+﻿# Diagnostics
 
 Owns compiler diagnostic models, severities, and diagnostic construction rules.
 

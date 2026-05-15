@@ -1,0 +1,71 @@
+﻿using System.Collections.Generic;
+using System.Globalization;
+using System.Text;
+
+namespace Inscape.Compiler.Localization {
+
+    public sealed class LocalizationCsvWriterDomain {
+
+        public string Write(IReadOnlyList<LocalizationEntryModel> entries) {
+            return Write(entries, false);
+        }
+
+        public string Write(IReadOnlyList<LocalizationEntryModel> entries, bool includeStatus) {
+            StringBuilder builder = new StringBuilder();
+            if (includeStatus) {
+                builder.AppendLine("anchor,node,kind,speaker,text,translation,status,sourcePath,line,column");
+            } else {
+                builder.AppendLine("anchor,node,kind,speaker,text,translation,sourcePath,line,column");
+            }
+
+            for (int i = 0; i < entries.Count; i += 1) {
+                LocalizationEntryModel entry = entries[i];
+                AppendField(builder, entry.Anchor);
+                builder.Append(',');
+                AppendField(builder, entry.NodeName);
+                builder.Append(',');
+                AppendField(builder, entry.Kind);
+                builder.Append(',');
+                AppendField(builder, entry.Speaker);
+                builder.Append(',');
+                AppendField(builder, entry.Text);
+                builder.Append(',');
+                AppendField(builder, entry.Translation);
+                if (includeStatus) {
+                    builder.Append(',');
+                    AppendField(builder, entry.Status);
+                }
+                builder.Append(',');
+                AppendField(builder, entry.Source.SourcePath);
+                builder.Append(',');
+                AppendField(builder, entry.Source.Line.ToString(CultureInfo.InvariantCulture));
+                builder.Append(',');
+                AppendField(builder, entry.Source.Column.ToString(CultureInfo.InvariantCulture));
+                builder.AppendLine();
+            }
+
+            return builder.ToString();
+        }
+
+        static void AppendField(StringBuilder builder, string value) {
+            bool needsQuotes = value.IndexOfAny(new[] { ',', '"', '\r', '\n' }) >= 0;
+            if (!needsQuotes) {
+                builder.Append(value);
+                return;
+            }
+
+            builder.Append('"');
+            for (int i = 0; i < value.Length; i += 1) {
+                char c = value[i];
+                if (c == '"') {
+                    builder.Append("\"\"");
+                } else {
+                    builder.Append(c);
+                }
+            }
+            builder.Append('"');
+        }
+
+    }
+
+}

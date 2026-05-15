@@ -6,23 +6,23 @@ namespace Inscape.Tooling {
 
     public static class LocalizationCsvFlowDomain {
 
-        public static string Extract(InscapeDocument document) {
-            LocalizationExtractor extractor = new LocalizationExtractor();
-            LocalizationCsvWriter writer = new LocalizationCsvWriter();
+        public static string Extract(DslScriptDocumentModel document) {
+            LocalizationExtractorDomain extractor = new LocalizationExtractorDomain();
+            LocalizationCsvWriterDomain writer = new LocalizationCsvWriterDomain();
             return writer.Write(extractor.Extract(document));
         }
 
-        public static string Update(InscapeDocument document, IReadOnlyList<LocalizationEntry> previousEntries) {
-            LocalizationExtractor extractor = new LocalizationExtractor();
-            LocalizationMerger merger = new LocalizationMerger();
-            LocalizationCsvWriter writer = new LocalizationCsvWriter();
+        public static string Update(DslScriptDocumentModel document, IReadOnlyList<LocalizationEntryModel> previousEntries) {
+            LocalizationExtractorDomain extractor = new LocalizationExtractorDomain();
+            LocalizationMergerDomain merger = new LocalizationMergerDomain();
+            LocalizationCsvWriterDomain writer = new LocalizationCsvWriterDomain();
             return writer.Write(merger.Merge(extractor.Extract(document), previousEntries), true);
         }
 
         public static bool TryReadPreviousEntries(string? previousLocalizationPath,
-                                                  out List<LocalizationEntry> entries,
+                                                  out List<LocalizationEntryModel> entries,
                                                   out string? errorMessage) {
-            entries = new List<LocalizationEntry>();
+            entries = new List<LocalizationEntryModel>();
             errorMessage = null;
             if (string.IsNullOrWhiteSpace(previousLocalizationPath)) {
                 errorMessage = "Missing required option: --from <old.csv>";
@@ -34,7 +34,7 @@ namespace Inscape.Tooling {
                 return false;
             }
 
-            LocalizationCsvReader reader = new LocalizationCsvReader();
+            LocalizationCsvReaderDomain reader = new LocalizationCsvReaderDomain();
             entries = reader.Read(File.ReadAllText(previousLocalizationPath, Encoding.UTF8));
             return true;
         }

@@ -7,17 +7,17 @@ namespace Inscape.Adapters.UnitySample {
 
     public sealed class UnitySampleRoleTemplateWriter {
 
-        public string Write(InscapeDocument graph) {
+        public string Write(DslScriptDocumentModel graph) {
             return Write(graph, new Dictionary<string, int>(StringComparer.Ordinal));
         }
 
-        public string Write(InscapeDocument graph, IReadOnlyDictionary<string, int> roleIdsBySpeaker) {
+        public string Write(DslScriptDocumentModel graph, IReadOnlyDictionary<string, int> roleIdsBySpeaker) {
             SortedSet<string> speakers = new SortedSet<string>(StringComparer.Ordinal);
             for (int nodeIndex = 0; nodeIndex < graph.Nodes.Count; nodeIndex += 1) {
-                NarrativeNode node = graph.Nodes[nodeIndex];
+                StoryGraphNodeModel node = graph.Nodes[nodeIndex];
                 for (int lineIndex = 0; lineIndex < node.Lines.Count; lineIndex += 1) {
-                    NarrativeLine line = node.Lines[lineIndex];
-                    if (line.Kind != NarrativeLineKind.Dialogue || string.IsNullOrWhiteSpace(line.Speaker)) {
+                    DslScriptLineModel line = node.Lines[lineIndex];
+                    if (line.Kind != DslScriptLineKindModel.Dialogue || string.IsNullOrWhiteSpace(line.Speaker)) {
                         continue;
                     }
 

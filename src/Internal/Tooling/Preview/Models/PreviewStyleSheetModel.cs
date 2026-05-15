@@ -1,4 +1,4 @@
-namespace Inscape.Tooling {
+﻿namespace Inscape.Tooling {
 
     public sealed class PreviewStyleSheetModel {
 
@@ -32,9 +32,9 @@ namespace Inscape.Tooling {
 
         public string ChoicePromptColor { get; set; } = "#807663";
 
-        public string DiagnosticBackground { get; set; } = "#f2e6de";
+        public string DiagnosticModelBackground { get; set; } = "#f2e6de";
 
-        public string DiagnosticTextColor { get; set; } = "#7f2f18";
+        public string DiagnosticModelTextColor { get; set; } = "#7f2f18";
 
         public string StoryFontSize { get; set; } = "28px";
 

@@ -5,18 +5,18 @@ namespace Inscape.Compiler {
 
     public sealed class CompilerEntry {
 
-        readonly InscapeCompiler compiler = new InscapeCompiler();
-        readonly ProjectCompiler projectCompiler = new ProjectCompiler();
+        readonly DslScriptCompilerDomain compiler = new DslScriptCompilerDomain();
+        readonly StoryGraphCompilerDomain projectCompiler = new StoryGraphCompilerDomain();
 
-        public CompilationResult CompileDocument(string source, string sourcePath) {
+        public DslScriptCompilationResultModel CompileDocument(string source, string sourcePath) {
             return compiler.Compile(source, sourcePath);
         }
 
-        public ProjectCompilationResult CompileProject(IReadOnlyList<ProjectSource> sources, string rootPath) {
+        public StoryGraphCompilationResultModel CompileProject(IReadOnlyList<DslScriptSourceModel> sources, string rootPath) {
             return projectCompiler.Compile(sources, rootPath);
         }
 
-        public ProjectCompilationResult CompileProject(IReadOnlyList<ProjectSource> sources,
+        public StoryGraphCompilationResultModel CompileProject(IReadOnlyList<DslScriptSourceModel> sources,
                                                        string rootPath,
                                                        string entryOverrideName) {
             return projectCompiler.Compile(sources, rootPath, entryOverrideName);

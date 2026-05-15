@@ -8,15 +8,15 @@ namespace Inscape.Adapters.UnitySample {
 
         public string Message { get; set; }
 
-        public SourceSpan Source { get; set; }
+        public SourceSpanModel Source { get; set; }
 
         public UnitySampleExportWarning() {
             Code = string.Empty;
             Message = string.Empty;
-            Source = SourceSpan.Empty;
+            Source = SourceSpanModel.Empty;
         }
 
-        public UnitySampleExportWarning(string code, string message, SourceSpan source) {
+        public UnitySampleExportWarning(string code, string message, SourceSpanModel source) {
             Code = code;
             Message = message;
             Source = source;

@@ -52,7 +52,7 @@
 
 优先模块：
 
-1. `ProjectSources`
+1. `DslScriptSources`
 2. `ToolConfig`
 3. `Preview`
 4. `Localization`
@@ -62,7 +62,7 @@
 具体任务：
 
 1. 为 `Inscape.Tooling` 建立项目壳或目录边界。
-   - 当前已落地：`src/Internal/Tooling/Inscape.Tooling.csproj` 位于 Tooling 根目录，源码已按 `ProjectSources`、`ToolConfig`、`Preview`、`Localization`、`HostSchema`、`HostBinding` 的 `Domains` / `Models` 目录组织。
+   - 当前已落地：`src/Internal/Tooling/Inscape.Tooling.csproj` 位于 Tooling 根目录，源码已按 `DslScriptSources`、`ToolConfig`、`Preview`、`Localization`、`HostSchema`、`HostBinding` 的 `Domains` / `Models` 目录组织。
 2. 把配置读取、项目源发现、预览样式等共享能力上提到 `Tooling`，并保持 `Cli` 仅保留参数与输出适配。
 3. 把只服务单个入口的项目/单文件编译前置流程收回各自 `Command`；若未来出现真实共享面，再由 `Tooling` 统一调 `Compiler`。
 4. 把预览构建、本地化导出更新、HostSchema 模板导出收束到 `Tooling`。

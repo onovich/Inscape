@@ -8,7 +8,7 @@ namespace Inscape.UnitySample.Cli {
 
     static class CliUnitySampleProjectExportCommand {
 
-        internal static int Run(ProjectCompilationResult result,
+        internal static int Run(StoryGraphCompilationResultModel result,
                                 string[] args,
                                 ToolConfigModel config,
                                 string? outputPath,

@@ -1,4 +1,4 @@
-# 0010：采用目录优先的主语/角色命名模型
+﻿# 0010：采用目录优先的主语/角色命名模型
 
 状态：Accepted
 
@@ -9,7 +9,7 @@
 Inscape 近期持续在做 Compiler、Tooling、Cli、VSCode 和文档层面的可维护性收口，但现有命名规范仍然带有明显的过渡痕迹：
 
 - 类型名里同时混入了层级词、范围词、主语词和职责词。
-- 例如 `CliProjectCompiler`、`CliSingleFileCompiler`、`CliProjectCommandRunner`、`CliUnitySampleSupport` 这类名字，会让维护者先猜“它是在讲范围，还是在讲业务，还是在讲职责”。
+- 例如 `CliProjectCompiler`、`CliSingleFileCompiler`、`CliStoryGraphCommandRunner`、`CliUnitySampleSupport` 这类名字，会让维护者先猜“它是在讲范围，还是在讲业务，还是在讲职责”。
 - 现有后缀候选也过宽，容易把本该由目录和命名空间承担的信息继续堆到类名后半段。
 
 用户希望命名体验更接近 Bird：即使不熟悉项目，也能先根据架构风格推理“某层代码在哪”“某业务代码在哪”，而不是先记忆一套平铺文件名。
@@ -24,7 +24,7 @@ Bird 的规律并不是“所有类都统一前后缀”，而是：
 1. Inscape 采用“目录优先，类型名次之”的命名模型。
 2. 目录和命名空间优先表达层级、范围和模块；类型名只表达当前模块里的业务主语、二级限定和角色。
 3. 一级业务主语收敛为：`DslScript`、`StoryGraph`、`Localization`、`Preview`、`ToolConfig`、`HostSchema`、`HostBinding`、`EditorAuthoring`；`UnityPlugin` 仅限 ExternalSupport。
-4. `Node`、`Choice`、`Entry`、`Diagnostic`、`SourceMap`、`Reveal`、`Selection`、`Style`、`RoleMap`、`BindingMap`、`Timeline`、`Template`、`Manifest` 等词只作为二级限定，不作为一级主语。
+4. `Node`、`Choice`、`Entry`、`DiagnosticModel`、`SourceMap`、`Reveal`、`Selection`、`Style`、`RoleMap`、`BindingMap`、`Timeline`、`Template`、`Manifest` 等词只作为二级限定，不作为一级主语。
 5. 终局后缀收敛为：`Domain`、`Model`、`ViewModel`、`Controller`、`Bridge`、`Context`、`Events`、`Factory`；`Command`、`Provider`、`Entry` 只用于宿主入口语境；`System` 只用于 Runtime。
 6. `Parser`、`Compiler`、`Validator`、`Resolver`、`Reader`、`Writer`、`Loader`、`Scanner`、`Exporter`、`Importer`、`Renderer`、`Merger`、`Builder` 视为准后缀，通常放在 `Domain` 前。
 7. `Config` 作为后缀家族存在，而不是一级业务前缀。

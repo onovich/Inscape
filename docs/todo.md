@@ -66,16 +66,17 @@
 		- [x] 已完成 Compiler 项目目录与 `.csproj` 改名：`Inscape.Core` -> `Inscape.Compiler`。
 		- [x] 已完成 Compiler 命名空间迁移：`Inscape.Core.*` -> `Inscape.Compiler.*`。
 		- [x] 已将 Compiler 门面类型 `InscapeCore` 收敛为 `CompilerEntry`。
+		- [x] 已按角色后缀收敛 Compiler 旧类型名：`InscapeParser` / `InscapeCompiler` / `ProjectCompiler` / `GraphValidator` / `AnchorValidator` 等已改为 `DslScript*Domain`、`StoryGraph*Domain`、`*Model` 命名；命名空间仍保持 `Inscape.Compiler.*` 适度粗粒度。
 
 - [x] 按 [编码与命名规范](coding-conventions.md) 拆分测试文件，降低 `tests/Internal/Inscape.Tests/TestCore.cs` 的阅读成本，但不改变测试语义。
 	- [x] 已将 `tests/Internal/Inscape.Tests` 初步整理为 `Entries`、`Shared`、`Compiler`、`Cli`、`PreviewLocalization` 目录，保持原有轻量测试 runner 不变。
-- [x] 按 command 职责拆分 CLI 入口，避免 `src/Inscape.Cli/CliCore.cs` 继续承担过多命令分发和业务编排；已完成配置读取、顶层元命令、单文件命令和项目级命令分支拆分，项目 `.inscape` 源扫描/读取/override、预览样式读取等共享流程也已上提到 `Inscape.Tooling`，`CliCore` 仅保留入口分发与共享基础输出辅助，单文件/项目编译前置流程当前已分别收回 `CliSingleFileCommand` 与 `CliProjectCommand`。
+- [x] 按 command 职责拆分 CLI 入口，避免 `src/Inscape.Cli/CliCore.cs` 继续承担过多命令分发和业务编排；已完成配置读取、顶层元命令、单文件命令和项目级命令分支拆分，项目 `.inscape` 源扫描/读取/override、预览样式读取等共享流程也已上提到 `Inscape.Tooling`，`CliCore` 仅保留入口分发与共享基础输出辅助，单文件/项目编译前置流程当前已分别收回 `CliDslScriptCommand` 与 `CliStoryGraphCommand`。
 	- [x] 已将 `src/Internal/Cli/Inscape.Cli` 内部整理为 `Entries`、`Commands`、`Providers`、`ViewModels` 目录，分别承载入口、具体命令、命令元数据和输出 DTO。
 	- [x] 已继续收口 UnitySample 命令输出职责：将导出目录写盘拆到 `CliUnitySampleExportWriter`，将 role template report 输出拆到 `CliUnitySampleRoleTemplateReportWriter`，`CliUnitySampleSupport` 不再混放输出 writer。
-	- [x] 已继续收口 UnitySample 项目级命令分支：`CliProjectCommand` 不再直接编排 `export-unity-sample-binding-template`、`export-unity-sample-role-template`、`export-unity-sample-project`，改为委托 `CliUnitySampleProjectCommand`。
-	- [x] 已将 UnitySample 命令从 Internal CLI 迁入 ExternalSupport 独立 CLI，`CliProjectCommand` 与 `CliCore` 不再分发 UnitySample 命令。
+	- [x] 已继续收口 UnitySample 项目级命令分支：`CliStoryGraphCommand` 不再直接编排 `export-unity-sample-binding-template`、`export-unity-sample-role-template`、`export-unity-sample-project`，改为委托 `CliUnitySampleProjectCommand`。
+	- [x] 已将 UnitySample 命令从 Internal CLI 迁入 ExternalSupport 独立 CLI，`CliStoryGraphCommand` 与 `CliCore` 不再分发 UnitySample 命令。
 - [ ] 抽出 `Tooling` 中间层：在目录骨架迁移完成后，继续上提项目扫描、配置读取、预览构建、本地化流程、HostSchema / HostBinding 流程，降低 `Cli` 的共享业务负担。
-	- [x] 已将 `Inscape.Tooling.csproj` 提到 `src/Internal/Tooling` 根目录，并把源码按 `ProjectSources`、`ToolConfig`、`Preview`、`Localization`、`HostSchema`、`HostBinding` 的 `Domains` / `Models` 目录落位；命名空间暂保留 `Inscape.Tooling`。
+	- [x] 已将 `Inscape.Tooling.csproj` 提到 `src/Internal/Tooling` 根目录，并把源码按 `DslScriptSources`、`ToolConfig`、`Preview`、`Localization`、`HostSchema`、`HostBinding` 的 `Domains` / `Models` 目录落位；命名空间暂保留 `Inscape.Tooling`。
 	- [x] 已完成第一刀：创建 `src/Inscape.Tooling/`，将 ToolConfig 配置模型与读取/路径归一化逻辑迁出 `Inscape.Cli`，`Cli` 仅保留 `--config` 参数解析和错误输出适配。
 	- [x] 已完成第二刀：将 `.inscape` 项目源发现、目录排除、内容读取与 override 应用逻辑迁出 `Inscape.Cli`，`Cli` 仅保留 `--override <source> <content>` 参数解析。
 	- [x] 已完成第三刀：将 Preview 样式表模型与 JSON 读取逻辑迁出 `Inscape.Cli`，`Cli` 仅保留 HTML 渲染与终端输出适配。
@@ -87,11 +88,11 @@
 	- [x] 已完成第九刀：将 `speaker -> roleId` 的 role map 读取流程迁出 `Inscape.Cli`，`Cli` 仅保留 UnitySample role id 适配。
 	- [x] 已完成第十刀：将既有 talking 资产扫描与保留 talkingId 收集流程迁出 `Inscape.Cli`，`Cli` 仅保留 UnitySample reserved id 适配。
 - [ ] 按 ADR 0010 整理 CLI 与 VSCode 命名：优先消除 `Support` / `Helper` 弱语义命名，并逐步把 `Project` / `SingleFile` 这类范围词从类型名前缀移到目录、命名空间或主语后的限定词。
-	- [x] 已先收敛 CLI 总入口 runner 命名：`CliTopLevelCommandRunner`、`CliSingleFileCommandRunner`、`CliProjectCommandRunner` 已分别改为 `CliCommandTopLevelRunner`、`CliCommandSingleFileRunner`、`CliCommandProjectRunner`，将范围词后移到 `Command` 主语之后。
-	- [x] 已继续按终局后缀白名单收口 CLI 命令入口：`CliCommandTopLevelRunner`、`CliCommandSingleFileRunner`、`CliCommandProjectRunner` 以及 `CliUnitySample*CommandRunner` 已统一去掉 `Runner`，收敛为 `CliTopLevelCommand`、`CliSingleFileCommand`、`CliProjectCommand` 与 `CliUnitySample*Command`。
-	- [x] 已继续按终局后缀白名单收口 CLI 展示与命令元数据类型：`CliCompileOutput`、`CliProjectCompileOutput` 已分别改为 `CliCompileViewModel`、`CliProjectCompileViewModel`，`CliCommandCatalog` 已改为 `CliCommandProvider`，内部 `CliCommandDefinition` 也已改为 `CliCommandModel`。
+	- [x] 已先收敛 CLI 总入口 runner 命名：`CliTopLevelCommandRunner`、`CliDslScriptCommandRunner`、`CliStoryGraphCommandRunner` 已分别改为 `CliCommandTopLevelRunner`、`CliCommandSingleFileRunner`、`CliCommandProjectRunner`，将范围词后移到 `Command` 主语之后。
+	- [x] 已继续按终局后缀白名单收口 CLI 命令入口：`CliCommandTopLevelRunner`、`CliCommandSingleFileRunner`、`CliCommandProjectRunner` 以及 `CliUnitySample*CommandRunner` 已统一去掉 `Runner`，收敛为 `CliTopLevelCommand`、`CliDslScriptCommand`、`CliStoryGraphCommand` 与 `CliUnitySample*Command`。
+	- [x] 已继续按终局后缀白名单收口 CLI 展示与命令元数据类型：`CliCompileOutput`、`CliProjectCompileOutput` 已分别改为 `CliCompileViewModel`、`CliStoryGraphCompileViewModel`，`CliCommandCatalog` 已改为 `CliCommandProvider`，内部 `CliCommandDefinition` 也已改为 `CliCommandModel`。
 	- [x] 已继续按分层规则上提 CLI 共享预览逻辑：`CliPreviewHtmlRenderer` 已迁入 `Inscape.Tooling` 并改为 `PreviewHtmlRendererDomain`，CLI 侧只保留 preview 命令路由、样式读取与输出适配。
-	- [x] 已继续按 CLI 入口边界收紧编译前置流程：`CliCompilerProject`、`CliCompilerSingleFile` 已退出源码，相关项目/单文件编译前置逻辑分别收回 `CliProjectCommand` 与 `CliSingleFileCommand`，CLI 不再保留独立 compiler helper。
+	- [x] 已继续按 CLI 入口边界收紧编译前置流程：`CliCompilerProject`、`CliCompilerSingleFile` 已退出源码，相关项目/单文件编译前置逻辑分别收回 `CliStoryGraphCommand` 与 `CliDslScriptCommand`，CLI 不再保留独立 compiler helper。
 	- [x] 已先处理 UnitySample 命令侧的弱语义命名：`CliUnitySampleSupport` 已退出源码，拆为 `CliUnitySampleExportOptionsReader` 与 `CliUnitySampleTemplateBindingReader`。
 	- [x] 已继续收敛 binding-template 命令的适配边界：`CliUnitySampleTemplateBindingReader` 现在只返回 `TimelineAssetBindingModel`，最后一层 UnitySample 类型适配已拆到 `CliUnitySampleBindingTemplateWriter`。
 	- [x] 已继续压薄 binding-template 项目级命令编排：`CliUnitySampleProjectCommand` 不再直接承载 binding template 读取、CSV 输出和诊断输出，相关逻辑已迁入 `CliUnitySampleBindingTemplateCommand`。
@@ -133,7 +134,7 @@
 	- [x] 已迁出第四条 language feature provider：`DslScriptHoverProvider` 进入 `LanguageFeatures/DslScriptHoverProvider.js`，悬浮说明仍复用 workspace index。
 	- [x] 已迁出第五条 language feature provider：`DslScriptDocumentSymbolProvider` 进入 `LanguageFeatures/DslScriptDocumentSymbolProvider.js`，outline 仍只做当前文档节点扫描。
 	- [x] 已迁出第六条 language feature provider：`DslScriptCodeLensProvider` 进入 `LanguageFeatures/DslScriptCodeLensProvider.js`，节点入边计数仍复用 workspace index。
-	- [x] 已迁出 diagnostics 调度：`DslScriptDiagnosticScheduler` 进入 `LanguageFeatures/DslScriptDiagnosticScheduler.js`，入口文件只保留诊断集合创建和调度注册。
+	- [x] 已迁出 diagnostics 调度：`DslScriptDiagnosticModelScheduler` 进入 `LanguageFeatures/DslScriptDiagnosticModelScheduler.js`，入口文件只保留诊断集合创建和调度注册。
 	- [x] 已开始 PreviewWebview 拆分：`PreviewEditorProvider` 进入 `PreviewWebview/PreviewEditorProvider.js`，入口文件只保留 custom editor 注册和依赖注入。
 	- [x] 已迁出 preview HTML provider：`PreviewHtmlProvider` 进入 `PreviewWebview/PreviewHtmlProvider.js`，loading / error HTML 不再由入口文件承载。
 	- [x] 已迁出 preview refresh controller：`PreviewRefreshController` 进入 `PreviewWebview/PreviewRefreshController.js`，刷新定时器、渲染缓存与版本保护不再由入口文件承载。
@@ -149,7 +150,7 @@
 	- [x] B3.5 B 阶段收口验收：对照 [渐进式重构计划](refactoring-plan.md) 与 [编码与命名规范](coding-conventions.md) 巡检 B1/B2/B3，确认 `extension.js` 已是注册入口而不是逻辑实现，跑完整验证并勾选 VSCode extension 拆分父项。
 	- [x] 已顺手修复预览定位局部缺陷：`findDialogueSeparatorIndex` 中误残留的 preview reveal 调用与缺失的半角冒号解析已清理，避免说话人行的预览定位在运行时触发异常。
 - [ ] C 阶段创建 `Inscape.LanguageServer` 基线项目，先迁移诊断与定义跳转，再迁移引用、补全与 source map 相关语义能力。
-- [ ] 将 Cli、VSCode 和未来 LanguageServer 共享的项目级流程继续拆成显式职责模块，优先落到 `Tooling` 的 `ProjectSources`、`ToolConfig`、`Preview`、`Localization`、`HostSchema`、`HostBinding` 等模块；如未来确需统一门面，也应建立在这些模块之上，而不是先造一个大而泛的 `ProjectService`。
+- [ ] 将 Cli、VSCode 和未来 LanguageServer 共享的项目级流程继续拆成显式职责模块，优先落到 `Tooling` 的 `DslScriptSources`、`ToolConfig`、`Preview`、`Localization`、`HostSchema`、`HostBinding` 等模块；如未来确需统一门面，也应建立在这些模块之上，而不是先造一个大而泛的 `ProjectService`。
 - [ ] 统一 source map / reveal payload 数据契约，支撑预览、诊断、跳转、本地化和未来编辑器三视图。（B 阶段完成后的推荐大节点）
 - [ ] Runtime Host 阶段再引入 `NarrativeRuntime`，采用生命周期式执行模型，不提前把 runtime loop 放进 Core 编译层。
 - [ ] 保持 `src/ExternalSupport/UnityPlugin/Inscape.Adapters.UnitySample` 与 `src/ExternalSupport/UnityPlugin/unity-bird-importer` 作为 ExternalSupport 过渡样例，暂不纳入 Internal 主动重构范围；只在 Host Bridge / UnityPlugin 设计阶段把它们当验证样本使用。

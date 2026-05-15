@@ -22,7 +22,7 @@ namespace Inscape.Adapters.UnitySample {
 
         public string AssetPath { get; set; }
 
-        public SourceSpan Source { get; set; }
+        public SourceSpanModel Source { get; set; }
 
         public UnitySampleHostHook() {
             Kind = string.Empty;
@@ -34,7 +34,7 @@ namespace Inscape.Adapters.UnitySample {
             UnityGuid = string.Empty;
             AddressableKey = string.Empty;
             AssetPath = string.Empty;
-            Source = SourceSpan.Empty;
+            Source = SourceSpanModel.Empty;
         }
 
     }

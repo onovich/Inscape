@@ -8,39 +8,39 @@ namespace Inscape.Tests {
 
     public static partial class TestCore {
 
-        static CompilationResult Compile(string source) {
-            InscapeCompiler compiler = new InscapeCompiler();
+        static DslScriptCompilationResultModel Compile(string source) {
+            DslScriptCompilerDomain compiler = new DslScriptCompilerDomain();
             return compiler.Compile(source, "memory://test.inscape");
         }
 
-        static bool ContainsCode(CompilationResult result, string code) {
+        static bool ContainsCode(DslScriptCompilationResultModel result, string code) {
             for (int i = 0; i < result.Diagnostics.Count; i += 1) {
-                if (result.Diagnostics[i].Code == code && result.Diagnostics[i].Severity == DiagnosticSeverity.Error) {
+                if (result.Diagnostics[i].Code == code && result.Diagnostics[i].Severity == DiagnosticSeverityModel.Error) {
                     return true;
                 }
             }
             return false;
         }
 
-        static bool ContainsCode(ProjectCompilationResult result, string code) {
+        static bool ContainsCode(StoryGraphCompilationResultModel result, string code) {
             for (int i = 0; i < result.Diagnostics.Count; i += 1) {
-                if (result.Diagnostics[i].Code == code && result.Diagnostics[i].Severity == DiagnosticSeverity.Error) {
+                if (result.Diagnostics[i].Code == code && result.Diagnostics[i].Severity == DiagnosticSeverityModel.Error) {
                     return true;
                 }
             }
             return false;
         }
 
-        static bool ContainsCode(List<Diagnostic> diagnostics, string code) {
+        static bool ContainsCode(List<DiagnosticModel> diagnostics, string code) {
             for (int i = 0; i < diagnostics.Count; i += 1) {
-                if (diagnostics[i].Code == code && diagnostics[i].Severity == DiagnosticSeverity.Error) {
+                if (diagnostics[i].Code == code && diagnostics[i].Severity == DiagnosticSeverityModel.Error) {
                     return true;
                 }
             }
             return false;
         }
 
-        static bool ContainsAnyCode(ProjectCompilationResult result, string code) {
+        static bool ContainsAnyCode(StoryGraphCompilationResultModel result, string code) {
             for (int i = 0; i < result.Diagnostics.Count; i += 1) {
                 if (result.Diagnostics[i].Code == code) {
                     return true;

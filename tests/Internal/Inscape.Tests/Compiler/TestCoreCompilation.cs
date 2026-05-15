@@ -31,12 +31,12 @@ Narrator: The evidence bag holds an old watch.
 -> court.intro
 """;
 
-            CompilationResult result = Compile(source);
+            DslScriptCompilationResultModel result = Compile(source);
             AssertFalse(result.HasErrors, "Expected valid graph.");
             AssertEqual(3, result.Document.Nodes.Count, "Node count");
             AssertEqual(4, result.Document.Edges.Count, "Edge count");
 
-            NarrativeNode intro = result.Document.Nodes[0];
+            StoryGraphNodeModel intro = result.Document.Nodes[0];
             AssertEqual("court.intro", intro.Name, "First node name");
             AssertEqual(2, intro.Lines.Count, "Intro line count");
             AssertEqual(1, intro.Choices.Count, "Choice group count");
@@ -50,7 +50,7 @@ Narrator: Start.
 -> missing.node
 """;
 
-            CompilationResult result = Compile(source);
+            DslScriptCompilationResultModel result = Compile(source);
             AssertTrue(result.HasErrors, "Missing target should be an error.");
             AssertTrue(ContainsCode(result, "INS020"), "Expected INS020 missing target diagnostic.");
         }
@@ -62,7 +62,7 @@ Narrator: Start.
 -> missing/target
 """;
 
-            CompilationResult result = Compile(source);
+            DslScriptCompilationResultModel result = Compile(source);
             AssertTrue(result.HasErrors, "Invalid node names should be errors.");
             AssertTrue(ContainsCode(result, "INS009"), "Expected INS009 invalid node diagnostic.");
             AssertTrue(ContainsCode(result, "INS010"), "Expected INS010 invalid target diagnostic.");
@@ -74,8 +74,8 @@ Narrator: Start.
 Narrator: Same text.
 """;
 
-            CompilationResult first = Compile(source);
-            CompilationResult second = Compile(source);
+            DslScriptCompilationResultModel first = Compile(source);
+            DslScriptCompilationResultModel second = Compile(source);
             string a = first.Document.Nodes[0].Lines[0].Anchor;
             string b = second.Document.Nodes[0].Lines[0].Anchor;
 
@@ -90,9 +90,9 @@ Narrator: Same text.
 Narrator: Same text.
 """;
 
-            InscapeCompiler compiler = new InscapeCompiler();
-            CompilationResult first = compiler.Compile(source, "memory://first.inscape");
-            CompilationResult second = compiler.Compile(source, "memory://moved/second.inscape");
+            DslScriptCompilerDomain compiler = new DslScriptCompilerDomain();
+            DslScriptCompilationResultModel first = compiler.Compile(source, "memory://first.inscape");
+            DslScriptCompilationResultModel second = compiler.Compile(source, "memory://moved/second.inscape");
 
             AssertEqual(first.Document.Nodes[0].Lines[0].Anchor,
                         second.Document.Nodes[0].Lines[0].Anchor,
@@ -112,8 +112,8 @@ Narrator: Same text.
 Narrator: Same text.
 """;
 
-            CompilationResult a = Compile(first);
-            CompilationResult b = Compile(second);
+            DslScriptCompilationResultModel a = Compile(first);
+            DslScriptCompilationResultModel b = Compile(second);
 
             AssertEqual(a.Document.Nodes[0].Lines[0].Anchor,
                         b.Document.Nodes[0].Lines[1].Anchor,
@@ -127,45 +127,45 @@ Narrator: Repeated text.
 Narrator: Repeated text.
 """;
 
-            CompilationResult result = Compile(source);
+            DslScriptCompilationResultModel result = Compile(source);
             string first = result.Document.Nodes[0].Lines[0].Anchor;
             string second = result.Document.Nodes[0].Lines[1].Anchor;
 
             AssertFalse(first == second, "Duplicate text in the same node should receive distinct anchors.");
         }
 
-        static void AnchorValidatorDetectsCollisions() {
-            InscapeDocument document = new InscapeDocument();
+        static void StoryGraphAnchorValidatorDetectsCollisions() {
+            DslScriptDocumentModel document = new DslScriptDocumentModel();
 
-            NarrativeNode firstNode = new NarrativeNode {
+            StoryGraphNodeModel firstNode = new StoryGraphNodeModel {
                 Name = "first.node",
-                Source = new SourceSpan("memory://collision.inscape", 1, 1),
+                Source = new SourceSpanModel("memory://collision.inscape", 1, 1),
             };
-            firstNode.Lines.Add(new NarrativeLine {
-                Kind = NarrativeLineKind.Narration,
+            firstNode.Lines.Add(new DslScriptLineModel {
+                Kind = DslScriptLineKindModel.Narration,
                 Text = "First",
                 Raw = "First",
                 Anchor = "l1_collision",
-                Source = new SourceSpan("memory://collision.inscape", 2, 1),
+                Source = new SourceSpanModel("memory://collision.inscape", 2, 1),
             });
 
-            NarrativeNode secondNode = new NarrativeNode {
+            StoryGraphNodeModel secondNode = new StoryGraphNodeModel {
                 Name = "second.node",
-                Source = new SourceSpan("memory://collision.inscape", 4, 1),
+                Source = new SourceSpanModel("memory://collision.inscape", 4, 1),
             };
-            secondNode.Lines.Add(new NarrativeLine {
-                Kind = NarrativeLineKind.Narration,
+            secondNode.Lines.Add(new DslScriptLineModel {
+                Kind = DslScriptLineKindModel.Narration,
                 Text = "Second",
                 Raw = "Second",
                 Anchor = "l1_collision",
-                Source = new SourceSpan("memory://collision.inscape", 5, 1),
+                Source = new SourceSpanModel("memory://collision.inscape", 5, 1),
             });
 
             document.Nodes.Add(firstNode);
             document.Nodes.Add(secondNode);
 
-            List<Diagnostic> diagnostics = new List<Diagnostic>();
-            new AnchorValidator().Validate(document, diagnostics);
+            List<DiagnosticModel> diagnostics = new List<DiagnosticModel>();
+            new StoryGraphAnchorValidatorDomain().Validate(document, diagnostics);
 
             AssertTrue(ContainsCode(diagnostics, "INS040"), "Expected INS040 anchor collision diagnostic.");
         }

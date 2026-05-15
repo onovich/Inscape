@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using System.Text.Json;
 
 namespace Inscape.Tooling {
@@ -41,8 +41,8 @@ namespace Inscape.Tooling {
                 + " --inscape-speaker-color: " + Css(style.SpeakerColor) + ";"
                 + " --inscape-choice-background: " + Css(style.ChoiceBackground) + ";"
                 + " --inscape-choice-prompt-color: " + Css(style.ChoicePromptColor) + ";"
-                + " --inscape-diagnostic-background: " + Css(style.DiagnosticBackground) + ";"
-                + " --inscape-diagnostic-text-color: " + Css(style.DiagnosticTextColor) + ";"
+                + " --inscape-diagnostic-background: " + Css(style.DiagnosticModelBackground) + ";"
+                + " --inscape-diagnostic-text-color: " + Css(style.DiagnosticModelTextColor) + ";"
                 + " --inscape-story-font-size: " + Css(style.StoryFontSize) + ";"
                 + " --inscape-story-line-height: " + Css(style.StoryLineHeight) + ";"
                 + " --inscape-card-radius: " + Css(style.CardRadius) + ";"

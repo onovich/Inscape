@@ -9,11 +9,11 @@ namespace Inscape.Adapters.UnitySample {
 
     public sealed class UnitySampleProjectExporter {
 
-        public UnitySampleExportResult Export(ProjectCompilationResult project) {
+        public UnitySampleExportResult Export(StoryGraphCompilationResultModel project) {
             return Export(project, new UnitySampleExportOptions());
         }
 
-        public UnitySampleExportResult Export(ProjectCompilationResult project, UnitySampleExportOptions options) {
+        public UnitySampleExportResult Export(StoryGraphCompilationResultModel project, UnitySampleExportOptions options) {
             UnitySampleManifest manifest = CreateManifest(project, options);
             string l10nTalkingCsv = WriteL10nTalkingCsv(manifest, options);
             string anchorMapCsv = WriteAnchorMapCsv(manifest.Localization);
@@ -21,7 +21,7 @@ namespace Inscape.Adapters.UnitySample {
             return new UnitySampleExportResult(manifest, l10nTalkingCsv, anchorMapCsv, reportText);
         }
 
-        static UnitySampleManifest CreateManifest(ProjectCompilationResult project, UnitySampleExportOptions options) {
+        static UnitySampleManifest CreateManifest(StoryGraphCompilationResultModel project, UnitySampleExportOptions options) {
             UnitySampleManifest manifest = new UnitySampleManifest();
             manifest.RootPath = project.RootPath;
             manifest.EntryNodeName = project.EntryNodeName;
@@ -36,7 +36,7 @@ namespace Inscape.Adapters.UnitySample {
 
             int nextTalkingId = options.TalkingIdStart;
             for (int nodeIndex = 0; nodeIndex < project.Graph.Nodes.Count; nodeIndex += 1) {
-                NarrativeNode node = project.Graph.Nodes[nodeIndex];
+                StoryGraphNodeModel node = project.Graph.Nodes[nodeIndex];
                 UnitySampleNodeEntry nodeEntry = new UnitySampleNodeEntry {
                     Name = node.Name,
                     DefaultNextNodeName = node.DefaultNext,
@@ -116,17 +116,17 @@ namespace Inscape.Adapters.UnitySample {
                 if (!seenKeys.Add(key)) {
                     manifest.Warnings.Add(new UnitySampleExportWarning("UnitySample001",
                                                                 "Duplicate host binding '" + binding.Kind + ":" + binding.Alias + "'. The first matching binding will be used.",
-                                                                SourceSpan.Empty));
+                                                                SourceSpanModel.Empty));
                 }
             }
         }
 
-        static List<Segment> CollectSegments(NarrativeNode node) {
+        static List<Segment> CollectSegments(StoryGraphNodeModel node) {
             List<Segment> segments = new List<Segment>();
 
             for (int i = 0; i < node.Lines.Count; i += 1) {
-                NarrativeLine line = node.Lines[i];
-                if (line.Kind == NarrativeLineKind.Metadata || string.IsNullOrWhiteSpace(line.Text)) {
+                DslScriptLineModel line = node.Lines[i];
+                if (line.Kind == DslScriptLineKindModel.Metadata || string.IsNullOrWhiteSpace(line.Text)) {
                     continue;
                 }
 
@@ -134,7 +134,7 @@ namespace Inscape.Adapters.UnitySample {
             }
 
             for (int choiceIndex = 0; choiceIndex < node.Choices.Count; choiceIndex += 1) {
-                ChoiceGroup choice = node.Choices[choiceIndex];
+                DslScriptChoiceGroupModel choice = node.Choices[choiceIndex];
                 if (!string.IsNullOrWhiteSpace(choice.Prompt)) {
                     segments.Add(new Segment("ChoicePrompt", choice.Anchor, string.Empty, choice.Prompt, choice.Source));
                 }
@@ -143,7 +143,7 @@ namespace Inscape.Adapters.UnitySample {
             return segments;
         }
 
-        static bool HasChoices(NarrativeNode node) {
+        static bool HasChoices(StoryGraphNodeModel node) {
             for (int i = 0; i < node.Choices.Count; i += 1) {
                 if (node.Choices[i].Options.Count > 0) {
                     return true;
@@ -173,7 +173,7 @@ namespace Inscape.Adapters.UnitySample {
             return talkingId;
         }
 
-        static void LinkTalkings(InscapeDocument graph,
+        static void LinkTalkings(DslScriptDocumentModel graph,
                                  Dictionary<string, int> entryTalkingIdsByNodeName,
                                  Dictionary<string, UnitySampleNodeEntry> nodesByName,
                                  UnitySampleManifest manifest) {
@@ -188,7 +188,7 @@ namespace Inscape.Adapters.UnitySample {
             }
 
             for (int nodeIndex = 0; nodeIndex < graph.Nodes.Count; nodeIndex += 1) {
-                NarrativeNode node = graph.Nodes[nodeIndex];
+                StoryGraphNodeModel node = graph.Nodes[nodeIndex];
                 if (!talkingsByNodeName.TryGetValue(node.Name, out List<UnitySampleTalkingEntry>? nodeTalkings) || nodeTalkings.Count == 0) {
                     continue;
                 }
@@ -211,14 +211,14 @@ namespace Inscape.Adapters.UnitySample {
             }
         }
 
-        static void AttachChoices(NarrativeNode node,
+        static void AttachChoices(StoryGraphNodeModel node,
                                   Dictionary<string, int> entryTalkingIdsByNodeName,
                                   UnitySampleManifest manifest,
                                   UnitySampleTalkingEntry terminalTalking) {
             for (int choiceIndex = 0; choiceIndex < node.Choices.Count; choiceIndex += 1) {
-                ChoiceGroup choice = node.Choices[choiceIndex];
+                DslScriptChoiceGroupModel choice = node.Choices[choiceIndex];
                 for (int optionIndex = 0; optionIndex < choice.Options.Count; optionIndex += 1) {
-                    ChoiceOption option = choice.Options[optionIndex];
+                    DslScriptChoiceOptionModel option = choice.Options[optionIndex];
                     int? nextTalkingId = null;
                     if (entryTalkingIdsByNodeName.TryGetValue(option.Target, out int targetTalkingId)) {
                         nextTalkingId = targetTalkingId;
@@ -267,14 +267,14 @@ namespace Inscape.Adapters.UnitySample {
             });
         }
 
-        static void ExtractHostHooks(InscapeDocument graph, UnitySampleManifest manifest) {
+        static void ExtractHostHooks(DslScriptDocumentModel graph, UnitySampleManifest manifest) {
             Dictionary<string, List<UnitySampleTalkingEntry>> talkingsByNodeName = BuildTalkingsByNodeName(manifest);
 
             for (int nodeIndex = 0; nodeIndex < graph.Nodes.Count; nodeIndex += 1) {
-                NarrativeNode node = graph.Nodes[nodeIndex];
+                StoryGraphNodeModel node = graph.Nodes[nodeIndex];
                 for (int lineIndex = 0; lineIndex < node.Lines.Count; lineIndex += 1) {
-                    NarrativeLine line = node.Lines[lineIndex];
-                    if (line.Kind != NarrativeLineKind.Metadata) {
+                    DslScriptLineModel line = node.Lines[lineIndex];
+                    if (line.Kind != DslScriptLineKindModel.Metadata) {
                         continue;
                     }
 
@@ -510,9 +510,9 @@ namespace Inscape.Adapters.UnitySample {
 
             public string Text { get; private set; }
 
-            public SourceSpan Source { get; private set; }
+            public SourceSpanModel Source { get; private set; }
 
-            public Segment(string kind, string anchor, string speaker, string text, SourceSpan source) {
+            public Segment(string kind, string anchor, string speaker, string text, SourceSpanModel source) {
                 Kind = kind;
                 Anchor = anchor;
                 Speaker = speaker;

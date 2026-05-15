@@ -406,9 +406,9 @@ Narrator: Hello.
         }
 
         static void UnitySampleTimelineHooksSupportExplicitPhases() {
-            ProjectCompiler compiler = new ProjectCompiler();
-            ProjectCompilationResult project = compiler.Compile(new List<ProjectSource> {
-                new ProjectSource("memory://story.inscape", """
+            StoryGraphCompilerDomain compiler = new StoryGraphCompilerDomain();
+            StoryGraphCompilationResultModel project = compiler.Compile(new List<DslScriptSourceModel> {
+                new DslScriptSourceModel("memory://story.inscape", """
 :: start
 @entry
 @timeline.node.enter court.node_enter

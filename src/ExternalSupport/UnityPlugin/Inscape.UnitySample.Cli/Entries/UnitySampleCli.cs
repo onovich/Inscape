@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -37,7 +37,7 @@ namespace Inscape.UnitySample.Cli {
                 return exitCode;
             }
 
-            if (!TryCompile(inputPath, args, out ToolConfigModel config, out ProjectCompilationResult result)) {
+            if (!TryCompile(inputPath, args, out ToolConfigModel config, out StoryGraphCompilationResultModel result)) {
                 return 1;
             }
 
@@ -50,9 +50,9 @@ namespace Inscape.UnitySample.Cli {
             return 1;
         }
 
-        internal static void PrintDiagnostics(IReadOnlyList<Diagnostic> diagnostics) {
+        internal static void PrintDiagnostics(IReadOnlyList<DiagnosticModel> diagnostics) {
             for (int i = 0; i < diagnostics.Count; i += 1) {
-                Diagnostic diagnostic = diagnostics[i];
+                DiagnosticModel diagnostic = diagnostics[i];
                 Console.Error.WriteLine(diagnostic.SourcePath
                                       + "(" + diagnostic.Line + "," + diagnostic.Column + "): "
                                       + diagnostic.Severity.ToString().ToLowerInvariant()
@@ -87,7 +87,7 @@ namespace Inscape.UnitySample.Cli {
         static bool TryCompile(string rootPath,
                                string[] args,
                                out ToolConfigModel config,
-                               out ProjectCompilationResult result) {
+                               out StoryGraphCompilationResultModel result) {
             config = new ToolConfigModel();
             result = CreateEmptyResult();
 
@@ -105,31 +105,31 @@ namespace Inscape.UnitySample.Cli {
                 return false;
             }
 
-            ProjectSourceOverrideModel? sourceOverride = ReadSourceOverride(args);
-            List<ProjectSource> sources = ProjectSourcesLoaderDomain.LoadProjectSources(rootPath, sourceOverride);
+            DslScriptSourceOverrideModel? sourceOverride = ReadSourceOverride(args);
+            List<DslScriptSourceModel> sources = DslScriptSourcesLoaderDomain.Load(rootPath, sourceOverride);
             if (sources.Count == 0) {
                 Console.Error.WriteLine("No .inscape files found under: " + rootPath);
                 return false;
             }
 
             string? entryOverrideName = ReadOption(args, "--entry");
-            ProjectCompiler compiler = new ProjectCompiler();
+            StoryGraphCompilerDomain compiler = new StoryGraphCompilerDomain();
             result = compiler.Compile(sources, Path.GetFullPath(rootPath), entryOverrideName ?? string.Empty);
             return true;
         }
 
-        static ProjectCompilationResult CreateEmptyResult() {
-            return new ProjectCompilationResult(string.Empty,
-                                                new List<InscapeDocument>(),
-                                                new InscapeDocument(),
+        static StoryGraphCompilationResultModel CreateEmptyResult() {
+            return new StoryGraphCompilationResultModel(string.Empty,
+                                                new List<DslScriptDocumentModel>(),
+                                                new DslScriptDocumentModel(),
                                                 string.Empty,
-                                                new List<Diagnostic>());
+                                                new List<DiagnosticModel>());
         }
 
-        static ProjectSourceOverrideModel? ReadSourceOverride(string[] args) {
+        static DslScriptSourceOverrideModel? ReadSourceOverride(string[] args) {
             for (int i = 0; i < args.Length - 2; i += 1) {
                 if (args[i] == "--override") {
-                    return new ProjectSourceOverrideModel(args[i + 1], args[i + 2]);
+                    return new DslScriptSourceOverrideModel(args[i + 1], args[i + 2]);
                 }
             }
 

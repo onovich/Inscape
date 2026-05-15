@@ -12,14 +12,14 @@ namespace Inscape.Adapters.UnitySample {
 
         public int? NextTalkingId { get; set; }
 
-        public SourceSpan Source { get; set; }
+        public SourceSpanModel Source { get; set; }
 
         public UnitySampleChoiceOptionEntry() {
             Text = string.Empty;
             Anchor = string.Empty;
             TargetNodeName = string.Empty;
             NextTalkingId = null;
-            Source = SourceSpan.Empty;
+            Source = SourceSpanModel.Empty;
         }
 
     }

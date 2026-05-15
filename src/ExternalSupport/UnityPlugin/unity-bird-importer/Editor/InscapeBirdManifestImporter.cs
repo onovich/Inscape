@@ -1,4 +1,4 @@
-#if UNITY_EDITOR
+﻿#if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -625,7 +625,7 @@ namespace Inscape.Unity.BirdImporter {
             return builder.ToString();
         }
 
-        static void AppendSourceContext(StringBuilder builder, BirdSourceSpan source) {
+        static void AppendSourceContext(StringBuilder builder, BirdSourceSpanModel source) {
             if (source == null || string.IsNullOrEmpty(source.sourcePath)) {
                 return;
             }
@@ -661,7 +661,7 @@ namespace Inscape.Unity.BirdImporter {
             public int? roleId;
             public int textAnchorIndex;
             public BirdChoiceOptionEntry[] options;
-            public BirdSourceSpan source;
+            public BirdSourceSpanModel source;
         }
 
         [Serializable]
@@ -670,7 +670,7 @@ namespace Inscape.Unity.BirdImporter {
             public string anchor;
             public string targetNodeName;
             public int? nextTalkingId;
-            public BirdSourceSpan source;
+            public BirdSourceSpanModel source;
         }
 
         [Serializable]
@@ -683,11 +683,11 @@ namespace Inscape.Unity.BirdImporter {
             public int? birdId;
             public string unityGuid;
             public string assetPath;
-            public BirdSourceSpan source;
+            public BirdSourceSpanModel source;
         }
 
         [Serializable]
-        sealed class BirdSourceSpan {
+        sealed class BirdSourceSpanModel {
             public string sourcePath;
             public int line;
             public int column;
