@@ -143,7 +143,7 @@
 	- [x] B3.4.2 继续压薄 ExtensionEntry：把 output channel / logging / diagnostics scheduler 创建收进 `ExtensionEntry`，让 `extension.js` 更接近纯入口；自检命名需符合 `Entry` / `Controller` 角色边界，不把功能行为塞回入口层。
 	- [x] B3.4.3 收口 diagnostics 调用辅助：将 diagnostics scheduler 依赖的 CLI invocation、临时文件、diagnostic mapping 辅助从 `extension.js` 迁入 `LanguageFeatures` 或更合适的窄模块；自检不得让 VSCode 重写 parser 语义。
 	- [x] B3.4.4 收口配置与工作区文本读取辅助：将 `readProjectConfig`、CSV 读取、workspace text source 收集等轻量 authoring 数据来源从入口文件移出；自检类型名避免 `Helper` / `Support` / 泛 `Workspace*` 前缀。
-	- [ ] B3.4.5 收口位置与范围辅助：将 `createLocation`、payload/open location、`trimRange`、display path 等编辑器定位适配从入口文件移出；自检不改变 source map / reveal payload 语义。
+	- [x] B3.4.5 收口位置与范围辅助：将 `createLocation`、payload/open location、`trimRange`、display path 等编辑器定位适配从入口文件移出；自检不改变 source map / reveal payload 语义。
 	- [ ] B3.5 B 阶段收口验收：对照 [渐进式重构计划](refactoring-plan.md) 与 [编码与命名规范](coding-conventions.md) 巡检 B1/B2/B3，确认 `extension.js` 已是注册入口而不是逻辑实现，跑完整验证并勾选 VSCode extension 拆分父项。
 	- [x] 已顺手修复预览定位局部缺陷：`findDialogueSeparatorIndex` 中误残留的 preview reveal 调用与缺失的半角冒号解析已清理，避免说话人行的预览定位在运行时触发异常。
 - [ ] 创建 `Inscape.LanguageServer` 基线项目，先迁移诊断与定义跳转，再迁移引用、补全与 source map 相关语义能力。

@@ -54,6 +54,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - 2026-05-15 已完成 B3.4.2：`ExtensionLifecycleController` 已进入 `ExtensionEntry/ExtensionLifecycleController.js`，output channel、logging、diagnostics collection 与 diagnostics scheduler 创建不再由 `extension.js` 承载；`activate()` 当前只委托 lifecycle controller。
 - 2026-05-15 已完成 B3.4.3：`DslScriptDiagnosticController` 已进入 `LanguageFeatures/DslScriptDiagnosticController.js`，diagnostics scheduler 依赖的 compiler invocation、diagnostic mapping 与 extension diagnostic 构造不再由 `extension.js` 承载；VSCode 侧仍只消费 CLI / Compiler 输出，不重写 parser 语义。
 - 2026-05-15 已完成 B3.4.4：`EditorAuthoringDataProvider` 已进入 `WorkspaceIndex/EditorAuthoringDataProvider.js`，项目配置读取、CSV 解析和 `.inscape` 文本源收集不再由 `extension.js` 承载；类型名未使用 `Helper` / `Support` / 泛 `Workspace*` 前缀。
+- 2026-05-15 已完成 B3.4.5：`EditorAuthoringLocationProvider` 已进入 `LanguageFeatures/EditorAuthoringLocationProvider.js`，location/payload/open location、range trim、display path 与 clamp 不再由 `extension.js` 承载；source map / reveal payload 字段语义保持不变。
 - 2026-05-12 已迁移当前聚合测试项目：`tests/Inscape.Tests` -> `tests/Internal/Inscape.Tests`。这只是测试项目路径进入 Internal 测试树，测试内容尚未按 Compiler / Tooling / Cli / ExternalSupport 拆分。
 - 当前分支为 `main...origin/main`。本轮已把目录优先方案正式冻结为文档与 ADR；最新提交请以 `git log --oneline -1` 为准。
 - 本轮会话已确认新的重构铁律：先搭目录骨架与 `README.md` 规则文件，再迁大目录路径，再迁 solution / 项目路径，再迁项目名、命名空间和类型名；在此之前，不再把主要重构精力继续放在旧目录里的微观 helper 收口上。

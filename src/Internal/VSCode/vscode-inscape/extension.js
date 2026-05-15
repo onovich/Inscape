@@ -18,6 +18,7 @@ const { DslScriptCompletionProvider } = require("./LanguageFeatures/DslScriptCom
 const { DslScriptDiagnosticController } = require("./LanguageFeatures/DslScriptDiagnosticController");
 const { DslScriptDefinitionProvider } = require("./LanguageFeatures/DslScriptDefinitionProvider");
 const { DslScriptDocumentSymbolProvider } = require("./LanguageFeatures/DslScriptDocumentSymbolProvider");
+const { EditorAuthoringLocationProvider } = require("./LanguageFeatures/EditorAuthoringLocationProvider");
 const { DslScriptHoverProvider } = require("./LanguageFeatures/DslScriptHoverProvider");
 const { DslScriptReferenceProvider } = require("./LanguageFeatures/DslScriptReferenceProvider");
 const { PreviewHtmlProvider } = require("./PreviewWebview/PreviewHtmlProvider");
@@ -40,6 +41,7 @@ let localizationCommand;
 let editorAuthoringCommand;
 let hostSchemaCommand;
 let editorAuthoringDataProvider;
+let editorAuthoringLocationProvider;
 let dslScriptDiagnosticController;
 let extensionLifecycleController;
 let extensionRegistrationController;
@@ -49,6 +51,12 @@ editorAuthoringDataProvider = new EditorAuthoringDataProvider({
     path,
     vscode,
     isInscapeDocument,
+    normalizePath
+});
+
+editorAuthoringLocationProvider = new EditorAuthoringLocationProvider({
+    path,
+    vscode,
     normalizePath
 });
 
@@ -66,7 +74,7 @@ const dslScriptSpeakerProvider = new DslScriptSpeakerProvider({
     parseCsvRows: (text) => editorAuthoringDataProvider.parseCsvRows(text),
     collectWorkspaceTextSources: (document) => editorAuthoringDataProvider.collectTextSources(document),
     isLikelyDialogueSpeaker,
-    formatDisplayPath
+    formatDisplayPath: (sourcePath) => editorAuthoringLocationProvider.formatDisplayPath(sourcePath)
 });
 
 const hostBindingProvider = new HostBindingProvider({
@@ -77,7 +85,7 @@ const hostBindingProvider = new HostBindingProvider({
     parseCsvRows: (text) => editorAuthoringDataProvider.parseCsvRows(text),
     collectWorkspaceTextSources: (document) => editorAuthoringDataProvider.collectTextSources(document),
     normalizeHostBindingKind,
-    formatDisplayPath
+    formatDisplayPath: (sourcePath) => editorAuthoringLocationProvider.formatDisplayPath(sourcePath)
 });
 
 const dslScriptMetadataProvider = new DslScriptMetadataProvider({
@@ -97,8 +105,8 @@ const dslScriptCompletionProvider = new DslScriptCompletionProvider({
 
 const dslScriptReferenceProvider = new DslScriptReferenceProvider({
     isInscapeDocument,
-    createLocation,
-    uniqueLocations,
+    createLocation: (item) => editorAuthoringLocationProvider.createLocation(item),
+    uniqueLocations: (locations) => editorAuthoringLocationProvider.uniqueLocations(locations),
     dslScriptNodeProvider,
     dslScriptSpeakerProvider
 });
@@ -119,7 +127,7 @@ const dslScriptDocumentSymbolProvider = new DslScriptDocumentSymbolProvider({
 const dslScriptCodeLensProvider = new DslScriptCodeLensProvider({
     vscode,
     isInscapeDocument,
-    createLocation,
+    createLocation: (item) => editorAuthoringLocationProvider.createLocation(item),
     dslScriptNodeProvider
 });
 
@@ -140,7 +148,7 @@ dslScriptDiagnosticController = new DslScriptDiagnosticController({
     vscode,
     isInscapeDocument,
     normalizePath,
-    clamp
+    clamp: (value, minimum, maximum) => editorAuthoringLocationProvider.clamp(value, minimum, maximum)
 });
 
 extensionLifecycleController = new ExtensionLifecycleController({
@@ -170,7 +178,7 @@ const previewRefreshController = new PreviewRefreshController({
 const previewSourceController = new PreviewSourceController({
     vscode,
     normalizePath,
-    openLocation
+    openLocation: (location, options) => editorAuthoringLocationProvider.openLocation(location, options)
 });
 
 const editorStyleController = new EditorStyleController({
@@ -180,8 +188,8 @@ const editorStyleController = new EditorStyleController({
     resolveProjectConfigPath: (configPath, value) => editorAuthoringDataProvider.resolveProjectConfigPath(configPath, value),
     isInscapeDocument,
     isLikelyDialogueSpeaker,
-    findDialogueSeparatorIndex,
-    trimRange
+    findDialogueSeparatorIndex: (line) => editorAuthoringLocationProvider.findDialogueSeparatorIndex(line),
+    trimRange: (line, start, end) => editorAuthoringLocationProvider.trimRange(line, start, end)
 });
 
 function activate(context) {
@@ -253,15 +261,15 @@ const previewRevealBridge = new PreviewRevealBridge({
     isInscapeDocument,
     normalizePath,
     isLikelyDialogueSpeaker,
-    findDialogueSeparatorIndex,
-    trimRange
+    findDialogueSeparatorIndex: (line) => editorAuthoringLocationProvider.findDialogueSeparatorIndex(line),
+    trimRange: (line, start, end) => editorAuthoringLocationProvider.trimRange(line, start, end)
 });
 
 const dslScriptDefinitionProvider = new DslScriptDefinitionProvider({
     vscode,
     isInscapeDocument,
-    createLocation,
-    uniqueLocations,
+    createLocation: (item) => editorAuthoringLocationProvider.createLocation(item),
+    uniqueLocations: (locations) => editorAuthoringLocationProvider.uniqueLocations(locations),
     dslScriptNodeProvider,
     dslScriptSpeakerProvider,
     hostBindingProvider,
@@ -305,8 +313,8 @@ hostSchemaCommand = new HostSchemaCommand({
     selectWorkspaceFolder,
     readProjectConfigFromWorkspaceFolder: (folder) => editorAuthoringDataProvider.readProjectConfigFromWorkspaceFolder(folder),
     resolveProjectConfigPath: (configPath, value) => editorAuthoringDataProvider.resolveProjectConfigPath(configPath, value),
-    openLocation,
-    locationFromPayload,
+    openLocation: (location, options) => editorAuthoringLocationProvider.openLocation(location, options),
+    locationFromPayload: (payload) => editorAuthoringLocationProvider.locationFromPayload(payload),
     escapeRegExp
 });
 
@@ -489,108 +497,9 @@ function isLikelyDialogueSpeaker(name) {
         && !name.startsWith("[");
 }
 
-function findDialogueSeparatorIndex(line) {
-    const halfWidth = line.indexOf(":");
-    const fullWidth = line.indexOf("\uFF1A");
-    if (halfWidth < 0) {
-        return fullWidth;
-    }
-
-    if (fullWidth < 0) {
-        return halfWidth;
-    }
-
-    return Math.min(halfWidth, fullWidth);
-}
-
-function trimRange(line, start, end) {
-    let rangeStart = Math.max(0, start);
-    let rangeEnd = Math.max(rangeStart, end);
-
-    while (rangeStart < rangeEnd && /\s/.test(line[rangeStart])) {
-        rangeStart += 1;
-    }
-
-    while (rangeEnd > rangeStart && /\s/.test(line[rangeEnd - 1])) {
-        rangeEnd -= 1;
-    }
-
-    if (rangeEnd <= rangeStart) {
-        return undefined;
-    }
-
-    return { start: rangeStart, end: rangeEnd };
-}
-
 function isJumpReferenceLine(line) {
     const trimmed = line.trim();
     return trimmed.startsWith("->") || trimmed.startsWith("-");
-}
-
-function createLocation(item) {
-    return new vscode.Location(
-        vscode.Uri.file(item.sourcePath),
-        new vscode.Range(item.line, item.character, item.line, item.character + (item.length || 0))
-    );
-}
-
-function locationPayloadFromItem(item) {
-    return {
-        sourcePath: item.sourcePath,
-        line: item.line,
-        character: item.character,
-        length: item.length || 0
-    };
-}
-
-function locationFromPayload(payload) {
-    return createLocation(payload);
-}
-
-async function openLocation(location, options = {}) {
-    const document = await vscode.workspace.openTextDocument(location.uri);
-    const editor = await vscode.window.showTextDocument(document, {
-        viewColumn: options.viewColumn,
-        preview: false,
-        preserveFocus: false,
-        selection: location.range
-    });
-    editor.selection = new vscode.Selection(location.range.start, location.range.end);
-    editor.revealRange(location.range, vscode.TextEditorRevealType.InCenter);
-}
-
-function uniqueLocations(locations) {
-    const seen = new Set();
-    const result = [];
-
-    for (const location of locations) {
-        const key = normalizePath(location.uri.fsPath)
-            + ":" + location.range.start.line
-            + ":" + location.range.start.character
-            + ":" + location.range.end.character;
-        if (seen.has(key)) {
-            continue;
-        }
-
-        seen.add(key);
-        result.push(location);
-    }
-
-    return result;
-}
-
-function formatSourceLocation(item) {
-    return formatDisplayPath(item.sourcePath) + ":" + (item.line + 1);
-}
-
-function formatDisplayPath(sourcePath) {
-    const uri = vscode.Uri.file(sourcePath);
-    const folder = vscode.workspace.getWorkspaceFolder(uri);
-    if (!folder) {
-        return sourcePath;
-    }
-
-    return path.relative(folder.uri.fsPath, sourcePath).replace(/\\/g, "/");
 }
 
 function normalizePath(value) {
@@ -599,10 +508,6 @@ function normalizePath(value) {
 
 function escapeRegExp(value) {
     return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-function clamp(value, minimum, maximum) {
-    return Math.max(minimum, Math.min(value, maximum));
 }
 
 module.exports = {
