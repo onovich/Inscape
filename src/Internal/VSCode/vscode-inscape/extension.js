@@ -23,7 +23,8 @@ const { PreviewHtmlProvider } = require("./PreviewWebview/PreviewHtmlProvider");
 const { PreviewInvocationProvider } = require("./PreviewWebview/PreviewInvocationProvider");
 const { PreviewRefreshController } = require("./PreviewWebview/PreviewRefreshController");
 const { PreviewSourceController } = require("./PreviewWebview/PreviewSourceController");
-const { EditorStyleController, defaultEditorStyle } = require("./Styles/EditorStyleController");
+const { EditorStyleController } = require("./Styles/EditorStyleController");
+const { defaultEditorStyle, defaultPreviewStyle } = require("./Styles/StyleDefaults");
 const { HostBindingProvider } = require("./WorkspaceIndex/HostBindingProvider");
 const { DslScriptMetadataProvider } = require("./WorkspaceIndex/DslScriptMetadataProvider");
 const { DslScriptNodeProvider } = require("./WorkspaceIndex/DslScriptNodeProvider");
@@ -32,29 +33,6 @@ const { DslScriptSpeakerProvider } = require("./WorkspaceIndex/DslScriptSpeakerP
 const languageSelector = { language: "inscape" };
 let outputChannel;
 const previewPanels = new Map();
-const defaultPreviewStyle = Object.freeze({
-    fontFamily: "Inter, \"Segoe UI\", sans-serif",
-    pageBackground: "#f6f4ee",
-    textColor: "#211d18",
-    cardBackground: "#fbfaf6",
-    nodeTitleColor: "#8d846f",
-    mutedTextColor: "#8d8068",
-    toolbarButtonBackground: "#ece7db",
-    toolbarButtonHoverBackground: "#e1dacb",
-    sourceButtonBackground: "#efeadf",
-    sourceButtonHoverBackground: "#e2dccd",
-    metaBackground: "#efeadf",
-    metaTextColor: "#706754",
-    speakerColor: "#7d5a34",
-    choiceBackground: "#efeadf",
-    choicePromptColor: "#807663",
-    diagnosticBackground: "#f2e6de",
-    diagnosticTextColor: "#7f2f18",
-    storyFontSize: "28px",
-    storyLineHeight: "1.84",
-    cardRadius: "24px",
-    choiceRadius: "16px"
-});
 
 let previewCommand;
 let localizationCommand;
