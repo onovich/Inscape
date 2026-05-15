@@ -17,7 +17,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - 2026-05-12 已开始按目录优先蓝图执行实际迁移：目录骨架与规则 README 已提交，Internal 侧 `.NET` 项目已迁入新路径，当前路径为 `src/Internal/Compiler/Inscape.Compiler`、`src/Internal/Tooling`、`src/Internal/Cli/Inscape.Cli`。
 - 2026-05-12 已完成 Compiler 项目名、命名空间与入口门面收敛：`src/Internal/Compiler/Inscape.Core/Inscape.Core.csproj` 已迁为 `src/Internal/Compiler/Inscape.Compiler.csproj`，`Inscape.Core.*` 已改为 `Inscape.Compiler.*`，原 `InscapeCore` 门面已改为 `CompilerEntry`。真正执行单文件编译的 `DslScript/Domains/InscapeCompiler` 保持不变。
 - 2026-05-12 已同步更新 `Inscape.slnx`、`ProjectReference`、VSCode fallback CLI 项目路径、CLI 命令速查示例和相关文档命令路径。验证通过：`dotnet build Inscape.slnx --no-restore` 与 `dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build`。由于项目路径变化，执行过一次 `dotnet restore Inscape.slnx --configfile NuGet.Config` 来刷新项目图缓存。
-- 2026-05-12 已迁移 VSCode 前端源码：`tools/vscode-inscape` -> `src/Internal/VSCode/vscode-inscape`。扩展内部仍保留原 npm 包结构，后续再按 provider / command / preview bridge / style / workspace index 深拆。验证入口同步改为 `node --check src\Internal\VSCode\vscode-inscape\extension.js`。
+- 2026-05-12 已迁移 VSCode 前端源码：`tools/vscode-inscape` -> `src/Internal/VSCode/vscode-inscape`。到 2026-05-15，扩展内部已按 `Commands`、`WorkspaceIndex`、`LanguageFeatures`、`PreviewWebview`、`Styles`、`Bridges` 与 `ExtensionEntry` 完成 B 阶段拆分；验证入口为 `node --check src\Internal\VSCode\vscode-inscape\extension.js`。
 - 2026-05-12 已迁移 Unity 外部支持源码：`src/Inscape.Adapters.UnitySample` -> `src/ExternalSupport/UnityPlugin/Inscape.Adapters.UnitySample`，`tools/unity-bird-importer` -> `src/ExternalSupport/UnityPlugin/unity-bird-importer`。当日 `Inscape.slnx` 已移除 UnitySample 的直接项目条目，但 CLI 与 tests 仍会传递构建该项目；这个遗留点已在 2026-05-13 通过外部支持命令边界拆分解决。
 - 2026-05-13 已完成外部支持命令边界拆分：UnitySample 命令迁入 `src/ExternalSupport/UnityPlugin/Inscape.UnitySample.Cli`，UnitySample 回归测试迁入 `tests/ExternalSupport/UnityPlugin/Inscape.UnitySample.Tests`。`src/Internal/Cli/Inscape.Cli` 与 `tests/Internal/Inscape.Tests` 不再引用 UnitySample，默认 `Inscape.slnx` 构建不再传递构建 UnityPlugin。
 - 2026-05-13 已开始整理 Tooling 内部目录：`Inscape.Tooling.csproj` 已提到 `src/Internal/Tooling` 根目录，源码按 `ProjectSources`、`ToolConfig`、`Preview`、`Localization`、`HostSchema`、`HostBinding` 的 `Domains` / `Models` 目录落位。命名空间暂保留 `Inscape.Tooling`，后续再按业务目录决定是否拆命名空间。
@@ -97,7 +97,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - 本轮会话已开始 ExtensionEntry 收口：`ExtensionRegistrationController` 负责 VSCode 注册顺序，`ExtensionLifecycleController` 负责 output/logging/diagnostics lifecycle；`activate()` 当前只委托 lifecycle controller。
 - 本轮会话已继续收口 diagnostics 边界：`DslScriptDiagnosticController` 负责 VSCode Diagnostic 映射与 compiler invocation 适配，`DslScriptDiagnosticScheduler` 仍只负责防抖与异步调度。
 - 本轮会话已继续收口 authoring 数据来源：`EditorAuthoringDataProvider` 负责配置、CSV 与 `.inscape` 文本源读取，WorkspaceIndex provider 继续只消费注入的数据来源。
-- 本轮会话已明确 B 阶段剩余顺序：先完成 ExtensionEntry / diagnostics / config-source / location-range 四个实现节点，再做 B3.5 总验收；不要在 B 阶段无限细拆，B3 收口后转向 C 系列数据契约与 LanguageServer 基线。
+- 本轮会话已完成 B 阶段剩余顺序：ExtensionEntry / diagnostics / config-source / location-range 四个实现节点与 B3.5 总验收均已提交并推送；不要在 B 阶段无限细拆，下一步转向 C 系列数据契约与 LanguageServer 基线。
 - 本轮会话已顺手修复预览定位局部缺陷：`findDialogueSeparatorIndex` 中误残留的 preview reveal 调用与缺失的半角冒号解析已清理，避免说话人行的预览定位在运行时触发异常。
 - 本轮会话已继续收敛 CLI 总入口 runner 命名：`CliTopLevelCommandRunner`、`CliSingleFileCommandRunner`、`CliProjectCommandRunner` 已分别改为 `CliCommandTopLevelRunner`、`CliCommandSingleFileRunner`、`CliCommandProjectRunner`。
 - 本轮会话已继续按终局后缀白名单收口 CLI 命令入口：`CliCommandTopLevelRunner`、`CliCommandSingleFileRunner`、`CliCommandProjectRunner` 以及 `CliUnitySample*CommandRunner` 已统一去掉 `Runner`，收敛为 `CliTopLevelCommand`、`CliSingleFileCommand`、`CliProjectCommand` 与 `CliUnitySample*Command`。
@@ -257,7 +257,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 1. 当前重构收口（最高优先级）：
    - 先抽出 `Tooling`，把当前 Cli 中的共享流程从命令行入口层移走。
    - 建立 `LanguageServer` 基线，让 VSCode 长期走“薄前端 + C# server”方向。
-   - VSCode 继续按 provider / command / preview bridge / style / workspace index 拆分 `extension.js`。
+   - VSCode B 阶段拆分已收口；下一步应统一 source map / reveal payload 数据契约，减少 VSCode、CLI、Preview 各自推断。
    - Unity 支持继续留在仓库内，但明确收束到 `ExternalSupport/UnityPlugin`，不进入默认 .NET solution 编译链。
    - 每轮小步重构后同步更新 handoff / todo / refactoring-plan / code-structure / development-plan，避免文档口径再次滞后。
 
