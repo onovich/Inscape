@@ -21,6 +21,7 @@ class DslScriptMetadataProvider {
 
         if (position.character >= start && position.character <= Math.max(start, end)) {
             return {
+                key: kind,
                 kind,
                 value,
                 raw: line.trim(),
@@ -79,6 +80,8 @@ class DslScriptMetadataProvider {
 
             const start = line.indexOf("@" + kind);
             references.push({
+                key: kind,
+                value,
                 sourcePath,
                 line: lineIndex,
                 character: Math.max(0, start),

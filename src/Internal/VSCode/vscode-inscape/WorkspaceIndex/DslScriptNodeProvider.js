@@ -154,6 +154,7 @@ class DslScriptNodeProvider {
                 const character = jumpMatch.index + jumpMatch[0].length - target.length;
                 this.addToMapList(referencesByTarget, target, {
                     name: target,
+                    target,
                     sourcePath,
                     line,
                     character,
@@ -182,6 +183,7 @@ class DslScriptNodeProvider {
                     const character = match.index + match[0].length - target.length;
                     references.push({
                         name: target,
+                        target,
                         sourcePath,
                         line,
                         character,

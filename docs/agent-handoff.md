@@ -63,6 +63,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - 2026-05-15 已推进 C2.3：已巡检 VSCode selection reveal、preview reveal、openSource 与 location provider，`column` 仅保留在 Compiler / diagnostic 输入和旧 payload fallback 边界；diagnostic 映射内部变量已改为 editor `character` 语义。
 - 2026-05-15 已推进 C1.1：内部测试已覆盖 source map 的节点、metadata、中文对白、选项提示、选项项、默认跳转 source span，以及跨文件缺失目标 diagnostic 的 sourcePath / line / column。
 - 2026-05-15 已推进 C3.1：新增 [Workspace Index Contract](workspace-index-contract.md)，定义 VSCode 当前轻量扫描与未来 LanguageServer 可共享的 nodes、node references、speakers、host bindings、metadata、schema capabilities 过渡模型；该模型只承载 authoring hint，不替代 Compiler 语义真相。
+- 2026-05-15 已推进 C3.2：VSCode `WorkspaceIndex` provider 输出已非破坏式补齐契约字段：node references 增加 `target`，speakers / host bindings 增加 `sourceKind`，host bindings 增加 `name`，metadata 增加 `key` / `value`。
 - 2026-05-12 已迁移当前聚合测试项目：`tests/Inscape.Tests` -> `tests/Internal/Inscape.Tests`。这只是测试项目路径进入 Internal 测试树，测试内容尚未按 Compiler / Tooling / Cli / ExternalSupport 拆分。
 - 当前分支为 `main...origin/main`。本轮已把目录优先方案正式冻结为文档与 ADR；最新提交请以 `git log --oneline -1` 为准。
 - 本轮会话已确认新的重构铁律：先搭目录骨架与 `README.md` 规则文件，再迁大目录路径，再迁 solution / 项目路径，再迁项目名、命名空间和类型名；在此之前，不再把主要重构精力继续放在旧目录里的微观 helper 收口上。

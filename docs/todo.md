@@ -153,7 +153,7 @@
 - [ ] 将 Cli、VSCode 和未来 LanguageServer 共享的项目级流程继续拆成显式职责模块，优先落到 `Tooling` 的 `DslScriptSources`、`ToolConfig`、`Preview`、`Localization`、`HostSchema`、`HostBinding` 等模块；如未来确需统一门面，也应建立在这些模块之上，而不是先造一个大而泛的 `ProjectService`。
 - [ ] 建立 workspace index 过渡模型，承接 VSCode 当前轻量扫描并为未来 LanguageServer 留出替换来源。
 	- [x] C3.1 已建立 [Workspace Index Contract](workspace-index-contract.md)，定义 nodes、node references、speakers、host bindings、metadata、schema capabilities 与统一 0-based 编辑器位置对象。
-	- [ ] C3.2 对齐现有 VSCode `WorkspaceIndex` provider 输出字段，确保不再出现新的 `column` 坐标或 VSCode-only 位置模型。
+	- [x] C3.2 对齐现有 VSCode `WorkspaceIndex` provider 输出字段：node references 补 `target`，speakers / host bindings 补 `sourceKind`，host bindings 补 `name`，metadata 补 `key` / `value`。
 	- [ ] C3.3 将 LanguageServer 基线读取/输出设计对齐 workspace index 契约。
 - [ ] 统一 source map / reveal payload 数据契约，支撑预览、诊断、跳转、本地化和未来编辑器三视图。（B 阶段完成后的推荐大节点）
 	- [x] 已建立 [Source Location Contracts](source-location-contracts.md)，明确 Compiler source location 使用 1-based `line` / `column`，编辑器 reveal payload 使用 0-based `line` / `character` / `length`。

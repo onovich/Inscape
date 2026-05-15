@@ -152,6 +152,7 @@ class HostBindingProvider {
                 const alias = (row[aliasIndex] || "").trim();
                 return {
                     kind: (row[kindIndex] || "").trim(),
+                    name: alias,
                     alias,
                     unitySampleId: this.readOptionalCsvField(row, unitySampleIdIndex),
                     unityGuid: this.readOptionalCsvField(row, unityGuidIndex),
@@ -159,6 +160,7 @@ class HostBindingProvider {
                     assetPath: this.readOptionalCsvField(row, assetPathIndex),
                     sourcePath: bindingMapPath,
                     sourceLabel: "UnitySample binding map",
+                    sourceKind: "bindingMap",
                     sourceRank: 0,
                     line,
                     character: 0,
@@ -182,6 +184,7 @@ class HostBindingProvider {
                 const start = line.indexOf(alias, metadataMatch.index);
                 this.addBinding(bindings, seen, {
                     kind: "timeline",
+                    name: alias,
                     alias,
                     unitySampleId: "",
                     unityGuid: "",
@@ -189,6 +192,7 @@ class HostBindingProvider {
                     assetPath: "",
                     sourcePath,
                     sourceLabel: "Workspace timeline hook",
+                    sourceKind: "script",
                     sourceRank: 1,
                     line: lineIndex,
                     character: Math.max(0, start),
@@ -205,6 +209,7 @@ class HostBindingProvider {
                     const aliasStart = inlineMatch.index + inlineMatch[0].lastIndexOf(inlineMatch[2]);
                     this.addBinding(bindings, seen, {
                         kind,
+                        name: alias,
                         alias,
                         unitySampleId: "",
                         unityGuid: "",
@@ -212,6 +217,7 @@ class HostBindingProvider {
                         assetPath: "",
                         sourcePath,
                         sourceLabel: "Workspace inline tag",
+                        sourceKind: "script",
                         sourceRank: 1,
                         line: lineIndex,
                         character: Math.max(0, aliasStart),

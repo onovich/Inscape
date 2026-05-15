@@ -189,6 +189,7 @@ class DslScriptSpeakerProvider {
                 roleId: roleIdIndex >= 0 ? (row[roleIdIndex] || "").trim() : "",
                 sourcePath: roleMapPath,
                 sourceLabel: "UnitySample role map",
+                sourceKind: "roleMap",
                 sourceRank: 0,
                 line,
                 character: this.findCsvFieldValueStart(lines[line], speakerIndex, name),
@@ -217,6 +218,7 @@ class DslScriptSpeakerProvider {
                 roleId: "",
                 sourcePath,
                 sourceLabel: "Workspace speaker",
+                sourceKind: "script",
                 sourceRank: 1,
                 line,
                 character: this.getTrimmedMatchStart(lines[line], match[1], name),
@@ -241,6 +243,7 @@ class DslScriptSpeakerProvider {
             references.push({
                 name,
                 sourcePath,
+                sourceKind: "script",
                 line,
                 character: this.getTrimmedMatchStart(lines[line], match[1], name),
                 length: name.length
