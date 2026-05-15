@@ -122,23 +122,24 @@ Inscape 的源文件不是线性脚本，也不是完整游戏引擎语言。它
 - 多行对白如何表达。
 - 角色别名、本地化显示名、语音资源如何绑定。
 
-### 行内标签
+### 查询插值与旧行内标签
 
-第一版只把演出指令当作 metadata 保留，不执行。后续再决定它们是节点元信息、Timeline Hook，还是宿主命令。
+`[]` 的新设计方向是文本内查询 / 插值：它只读取当前上下文中的值，不负责触发事件或修改状态。
 
 ```inscape
-[bg: classroom]
-[show: akari happy at center]
-明里：今天的教室好安静。
+旁白：[player.name]推开了门。
+系统：获得了[itemName]。
+老板娘：你还剩[player.gold]枚金币。
 ```
 
 待确认：
 
-- 标签语法是否统一为 `[command: args]`。
-- 标签是否允许多个参数、命名参数和字符串。
-- 标签是否可以出现在对白行内部，还是只能独立成行。
-- 标签失败时是编译错误、运行时错误，还是可降级警告。
-- 更关键的新增问题是：它与 `@metadata` 的分工到底是什么。如果作者无法稳定判断何时该写 `@scene ...`、`@timeline ...`，何时该写 `[kind: alias]`，那说明两套外壳的职责还没有设计好。
+- 查询路径 / 表达式语法是否只允许简单路径，例如 `[player.gold]`，还是允许函数。
+- 查询失败时显示 fallback、产生诊断，还是运行时中断。
+- 查询值是否允许异步，以及异步值如何影响打字机、预览和本地化。
+- 查询插值如何与本地化占位符稳定结合。
+
+历史原型曾使用 `[bg: classroom]`、`[show: akari happy at center]`、`[timeline: alias]` 表达资源别名或宿主绑定。它们当前只能视为兼容旧写法，不再作为 `[]` 的推荐主线。
 
 ### Timeline Hook 原型
 
@@ -152,7 +153,7 @@ Inscape 的源文件不是线性脚本，也不是完整游戏引擎语言。它
 成步堂：现在开始吧。
 ```
 
-等价候选写法：
+兼容旧写法：
 
 ```inscape
 [timeline: court.opening.pan]
@@ -160,7 +161,8 @@ Inscape 的源文件不是线性脚本，也不是完整游戏引擎语言。它
 
 当前语义：
 
-- `@timeline alias` / `[timeline: alias]` 是 metadata，不参与本地化，不生成行级文本锚点。
+- `@timeline alias` 是 metadata / host event hook，不参与本地化，不生成行级文本锚点。
+- `[timeline: alias]` 是历史兼容写法，当前仍可能被 UnitySample / VSCode 识别，但不再作为新推荐模型。
 - 默认 phase 为 `talking.exit`，兼容 Bird 当前 `TalkingEffectTM.PlayTimeline` 的落点。
 - 可显式写出 phase：
 
@@ -179,7 +181,7 @@ Inscape 的源文件不是线性脚本，也不是完整游戏引擎语言。它
 - UnitySample Adapter 会把它导出为 manifest 的 `hostHooks`，保留 `phase` 和 `targetTalkingId`。
 - 当前这仍是实验 adapter 行为。长期应把 Timeline 视为宿主事件示例，避免 DSL 提前变成完整演出时间轴。
 - 它只表达“这里引用一个宿主演出资源”，不描述 Timeline 内部的轨道、关键帧、时长或资源组合。
-- 但当前作者反馈表明：`@timeline alias` 与 `[timeline: alias]` 的双写法让心智模型进一步重叠，因此这一点不应视为已稳定设计，而应回到语法收敛阶段重新审视。
+- 当前作者反馈已经收敛为：新写法优先用 `@timeline.<phase> alias` 表达宿主事件 / 时机；bracket timeline 只作为兼容残留审计。
 
 待确认：
 
@@ -241,8 +243,9 @@ Inscape 的源文件不是线性脚本，也不是完整游戏引擎语言。它
 - `- option -> target`：选项文本与目标节点。
 - `-> target`：显式跳转到节点。
 - `@entry`：项目入口节点声明。
-- `@timeline alias` / `[timeline: alias]`：Timeline Hook 原型，只引用宿主演出资源，不表达时间轴内部逻辑。
-- `@timeline.<phase> alias` / `[timeline.<phase>: alias]`：显式 Timeline Hook phase。当前支持 `talking.enter`、`talking.exit`、`node.enter`、`node.exit`。
+- `@timeline alias`：Timeline Hook 原型，只引用宿主演出事件，不表达时间轴内部逻辑。
+- `@timeline.<phase> alias`：显式 Timeline Hook phase。当前支持 `talking.enter`、`talking.exit`、`node.enter`、`node.exit`。
+- `[timeline: alias]` / `[timeline.<phase>: alias]`：兼容旧写法，不作为新推荐语法扩展。
 - `# 标题`：更写作化的块级候选语法，尚未采用。
 - `call` / `return`：子场景调用，是否需要待确认。
 - `include`：物理包含或导入语义是否需要待确认；第一版跨文件跳转不依赖 `include`。
@@ -260,7 +263,7 @@ Inscape 的源文件不是线性脚本，也不是完整游戏引擎语言。它
 
 ## 下一步建议
 
-1. 先收敛 `@` / `[]` 的职责边界，再继续扩展更多宿主标签或 hook 语法；否则作者心智会继续恶化。
+1. 继续迁移 `@` / `[]` 的兼容残留：新示例使用 `@` 表达事件 / 时机，用 `[]` 表达查询 / 插值；旧 `[kind: alias]` 只在兼容说明中出现。
 2. 明确 `:: node.name` 与 `# 标题` 两类块语法的取舍，尤其是“跳转目标命名”和“标题可读性”是否必须解耦。
 3. 基于显式 Timeline Hook phase 做一次带真实绑定的 Bird Import Dry Run，确认 `talking.exit` 落地和其他 phase warning 是否符合预期。
 4. 设计节点重命名、重复文本插入和文本轻微改写时的迁移策略。

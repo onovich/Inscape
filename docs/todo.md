@@ -288,7 +288,7 @@
 - [x] F1.1 冻结 `@` / `[]` 作者心智模型：`@` 负责事件 / 动作 / 状态变化，`[]` 负责查询 / 读取 / 文本插值；详见 [Authoring Marker Contract](authoring-marker-contract.md)。
 - [x] F1.2 审计当前文档、样例、VSCode 提示和 UnitySample 回归中 `[timeline: ...]` / `[kind: alias]` 的兼容残留，区分“保留兼容”和“推荐写法”；详见 [Authoring Marker Compatibility Audit](authoring-marker-compatibility-audit.md)。
 - [x] F1.3 将 VSCode hover / completion 文案迁到 `@` 事件、`[]` 查询口径，同时保留 legacy host binding fallback。
-- [ ] F1.4 将作者语法指南、快速指南和 open questions 迁到 `@` 事件、`[]` 查询口径，把 `[bg]` / `[timeline]` 移入兼容旧写法。
+- [x] F1.4 将作者语法指南、快速指南和 open questions 迁到 `@` 事件、`[]` 查询口径，把 `[bg]` / `[timeline]` 移入兼容旧写法。
 - [ ] F1.5 评估是否调整 Compiler / VSCode / UnitySample 对 generic `[kind: alias]` 的长期行为，先不破坏 legacy 回归。
 - [ ] 设计表达式只表达数据查询的模型，不在 DSL 中绑定具体业务实体或服务端。
 - [x] 设计宿主查询 Schema 草案：谓词名、参数类型、返回类型、同步/异步、事件清单和副作用边界。

@@ -14,9 +14,9 @@
 :: court.intro
 
 @entry
-[bg: courtroom]
+@timeline.talking.exit court_intro
 旁白：法庭里很安静。
-成步堂：现在开始吧。
+成步堂：[player.name]，现在开始吧。
 
 ? 你想做什么？
   - 继续询问 -> court.ask
@@ -27,14 +27,17 @@
 
 - `@entry`：把当前块标成入口。
 - `@scene court`：写一个轻量场景标签。
-- `[bg: courtroom]`：写一个行内宿主标签，比如背景、情绪、Timeline 别名。
+- `@timeline.talking.exit court_intro`：在指定时机触发宿主演出事件。
+- `[player.name]` / `[itemName]`：从当前上下文读取值并拼进文本。
 
 ## 写作时怎么用
 
 - 用一个 `:: node.name` 开头，写一小段对白或旁白。
 - 需要分支时，先写 `? 提示`，再写若干条 `- 选项 -> 目标块`。
 - 需要直接续到别处时，写 `-> target.node`。
-- 先不用把 `@...` 和 `[...]` 想得太复杂，把它们当作给宿主或工具看的轻量标记即可。
+- `@...` 主要表达事件、动作、时机和状态变化。
+- `[...]` 主要表达查询、读取和文本插值。
+- 旧项目里的 `[bg: courtroom]`、`[timeline: court_intro]` 仍可能被工具识别，但新写法不要把它当成推荐模型。
 
 ## VS Code 里可直接用
 

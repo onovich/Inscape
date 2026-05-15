@@ -11,10 +11,10 @@
    - 尚未确认第一版最终块语法是继续使用 `:: node.name`，还是改为 `# 标题` + 空行分块的更写作化形式。
 
 2. `@` 与 `[]` 到底要如何分工？
-   - 当前作者反馈已经很明确：二者在实际使用中差异不够大，心智模型不稳定。
-   - 需要明确它们是否要继续并存；如果继续并存，`@` 是否只保留 metadata / phase / 入口语义，`[]` 是否只保留 `kind:alias` 绑定语义。
-   - 需要明确 `@timeline alias` 与 `[timeline: alias]` 是否保留双写法，还是收敛为单一表达。
-   - 如果无法给作者形成稳定判断规则，需要考虑直接合并或取消其中一套外壳。
+   - 已形成当前方向：`@` 主要表达事件 / 动作 / 时机 / 状态变化，`[]` 主要表达查询 / 读取 / 文本插值。
+   - 已建立 [Authoring Marker Contract](authoring-marker-contract.md) 与 [Authoring Marker Compatibility Audit](authoring-marker-compatibility-audit.md)。
+   - 剩余问题不是“如何分工”，而是如何迁移历史 `[timeline: ...]`、`[bg: ...]`、`[kind: alias]` 兼容写法，以及是否长期保留相关 parser / VSCode / UnitySample 行为。
+   - F1.5 需要评估是否继续支持 generic `[kind: alias]` host binding，还是仅作为 legacy 项目模式存在。
 
 3. 节点重命名、重复文本插入和文本微调如何迁移锚点？
    - 第一版 `line-v1` 已确认不依赖文件路径和绝对行号，并通过 `occurrence` 区分同节点重复文本。
@@ -47,8 +47,8 @@
 - 第一版暂不设计条件块；第二版需要确认表达式和宿主查询 Schema。
 - 条件表达式候选可类似 `?hasItem("badge")->node`，但参数 ID 必须允许通过 Host Bridge 映射到项目内部编码。
 - 选项语法如何兼顾阅读和结构化。
-- 标签参数是否支持命名参数。
-- 第一版暂不支持作者自定义标签；后续需确认它属于节点元信息、宿主命令还是 Timeline 效果。
+- 查询插值是否支持函数参数、命名参数或格式化参数。
+- 第一版暂不支持作者自定义标签；legacy `[kind: alias]` 需确认是否长期保留，还是迁到 Host Bridge / adapter 兼容层。
 - 是否需要宏或模板。
 - 跨文件结构如何组织章节、场景和跳转。
 
