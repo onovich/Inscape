@@ -139,5 +139,11 @@ namespace Inscape.Tests {
                 throw new InvalidOperationException(message + ". Expected: " + expected + ", Actual: " + actual);
             }
         }
+
+        static void AssertSource(string sourcePath, int line, int column, Inscape.Compiler.Model.SourceSpanModel actual, string message) {
+            AssertEqual(sourcePath, actual.SourcePath, message + " path");
+            AssertEqual(line, actual.Line, message + " line");
+            AssertEqual(column, actual.Column, message + " column");
+        }
     }
 }

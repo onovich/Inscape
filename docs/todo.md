@@ -157,7 +157,7 @@
 	- [x] C2.1 将 Preview -> VSCode 的历史兼容 `column` 字段迁到 `character`，VSCode 侧保留读取 `column` 的 fallback。
 	- [x] C2.2 收敛 reveal payload 的测试覆盖：源码按钮、diagnostics 点击、metadata 点击与旧 `column` fallback 都已有回归约束。
 	- [x] C2.3 对照 source location 契约巡检 VSCode selection reveal、preview reveal、openSource 和 location provider 的字段命名；`column` 仅保留在 Compiler / diagnostic 输入和旧 payload fallback 边界。
-	- [ ] 为中文对白、选项、metadata、diagnostics 和跨文件 source map 增加测试样例。
+	- [x] C1.1 为中文对白、选项、metadata、diagnostics 和跨文件 source map 增加测试样例。
 - [ ] Runtime Host 阶段再引入 `NarrativeRuntime`，采用生命周期式执行模型，不提前把 runtime loop 放进 Core 编译层。
 - [ ] 保持 `src/ExternalSupport/UnityPlugin/Inscape.Adapters.UnitySample` 与 `src/ExternalSupport/UnityPlugin/unity-bird-importer` 作为 ExternalSupport 过渡样例，暂不纳入 Internal 主动重构范围；只在 Host Bridge / UnityPlugin 设计阶段把它们当验证样本使用。
 

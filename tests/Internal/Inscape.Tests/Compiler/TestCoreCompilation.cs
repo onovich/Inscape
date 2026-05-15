@@ -169,5 +169,72 @@ Narrator: Repeated text.
 
             AssertTrue(ContainsCode(diagnostics, "INS040"), "Expected INS040 anchor collision diagnostic.");
         }
+
+        static void SourceSpansCoverAuthoringElements() {
+            DslScriptCompilerDomain compiler = new DslScriptCompilerDomain();
+            DslScriptCompilationResultModel result = compiler.Compile("""
+:: start
+@entry
+  旁白：第一句中文对白。
+? 选择路径
+  - 追问证人 -> second.node
+  - 查看证物 -> second.node
+-> second.node
+
+:: second.node
+旁白：第二句。
+""", "memory://source-map.inscape");
+
+            AssertFalse(result.HasErrors, "Source map fixture should be valid at single-file parse stage.");
+
+            StoryGraphNodeModel start = result.Document.Nodes[0];
+            AssertSource("memory://source-map.inscape", 1, 1, start.Source, "Node source");
+            AssertSource("memory://source-map.inscape", 2, 1, start.Lines[0].Source, "Metadata source");
+            AssertEqual(DslScriptLineKindModel.Metadata, start.Lines[0].Kind, "Metadata kind");
+            AssertSource("memory://source-map.inscape", 3, 3, start.Lines[1].Source, "Chinese dialogue source");
+            AssertEqual(DslScriptLineKindModel.Dialogue, start.Lines[1].Kind, "Dialogue kind");
+            AssertEqual("旁白", start.Lines[1].Speaker, "Dialogue speaker");
+
+            DslScriptChoiceGroupModel choices = start.Choices[0];
+            AssertSource("memory://source-map.inscape", 4, 1, choices.Source, "Choice prompt source");
+            AssertSource("memory://source-map.inscape", 5, 3, choices.Options[0].Source, "First choice option source");
+            AssertSource("memory://source-map.inscape", 6, 3, choices.Options[1].Source, "Second choice option source");
+
+            AssertEqual(3, result.Document.Edges.Count, "Edge count");
+            AssertSource("memory://source-map.inscape", 5, 3, result.Document.Edges[0].Source, "First choice edge source");
+            AssertSource("memory://source-map.inscape", 6, 3, result.Document.Edges[1].Source, "Second choice edge source");
+            AssertSource("memory://source-map.inscape", 7, 1, result.Document.Edges[2].Source, "Default jump edge source");
+        }
+
+        static void ProjectDiagnosticsPreserveCrossFileSource() {
+            StoryGraphCompilerDomain compiler = new StoryGraphCompilerDomain();
+            StoryGraphCompilationResultModel result = compiler.Compile(new List<DslScriptSourceModel> {
+                new DslScriptSourceModel("memory://a.inscape", """
+:: start
+旁白：开始。
+-> second.node
+"""),
+                new DslScriptSourceModel("memory://b.inscape", """
+:: second.node
+旁白：第二页。
+  - 错误选项 -> missing.node
+"""),
+            }, "memory://project");
+
+            DiagnosticModel missingTarget = result.Diagnostics[0];
+            bool foundMissingTarget = false;
+            foreach (DiagnosticModel diagnostic in result.Diagnostics) {
+                if (diagnostic.Code == "INS020") {
+                    missingTarget = diagnostic;
+                    foundMissingTarget = true;
+                    break;
+                }
+            }
+
+            AssertTrue(foundMissingTarget, "Expected cross-file missing target diagnostic.");
+            AssertEqual("memory://b.inscape", missingTarget.SourcePath, "Missing target source path");
+            AssertEqual(3, missingTarget.Line, "Missing target line");
+            AssertEqual(3, missingTarget.Column, "Missing target column");
+        }
     }
 }

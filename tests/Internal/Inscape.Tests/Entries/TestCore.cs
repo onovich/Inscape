@@ -15,6 +15,8 @@ namespace Inscape.Tests {
                 ("hash ignores line movement", HashIgnoresLineMovement),
                 ("hash distinguishes duplicate text", HashDistinguishesDuplicateText),
                 ("anchor validator detects collisions", StoryGraphAnchorValidatorDetectsCollisions),
+                ("source spans cover authoring elements", SourceSpansCoverAuthoringElements),
+                ("project diagnostics preserve cross-file source", ProjectDiagnosticsPreserveCrossFileSource),
                 ("cli diagnose emits json", CliDiagnoseEmitsJson),
                 ("cli commands lists command reference", CliCommandsListsCommandReference),
                 ("cli help emits command details", CliHelpEmitsCommandDetails),

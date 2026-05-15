@@ -61,6 +61,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - 2026-05-15 已推进 C2.1：Preview -> VSCode 的 `openSource` payload 已优先发 `character`，VSCode `PreviewSourceController` 读取 `character` 并保留旧 `column` fallback；Compiler / diagnostics 的 `column` 只在转换边界内使用。
 - 2026-05-15 已推进 C2.2：内部测试已覆盖源码按钮、diagnostics 点击、metadata 点击和 VSCode 旧 `column` fallback，防止 reveal payload 再次退回混用字段。
 - 2026-05-15 已推进 C2.3：已巡检 VSCode selection reveal、preview reveal、openSource 与 location provider，`column` 仅保留在 Compiler / diagnostic 输入和旧 payload fallback 边界；diagnostic 映射内部变量已改为 editor `character` 语义。
+- 2026-05-15 已推进 C1.1：内部测试已覆盖 source map 的节点、metadata、中文对白、选项提示、选项项、默认跳转 source span，以及跨文件缺失目标 diagnostic 的 sourcePath / line / column。
 - 2026-05-12 已迁移当前聚合测试项目：`tests/Inscape.Tests` -> `tests/Internal/Inscape.Tests`。这只是测试项目路径进入 Internal 测试树，测试内容尚未按 Compiler / Tooling / Cli / ExternalSupport 拆分。
 - 当前分支为 `main...origin/main`。本轮已把目录优先方案正式冻结为文档与 ADR；最新提交请以 `git log --oneline -1` 为准。
 - 本轮会话已确认新的重构铁律：先搭目录骨架与 `README.md` 规则文件，再迁大目录路径，再迁 solution / 项目路径，再迁项目名、命名空间和类型名；在此之前，不再把主要重构精力继续放在旧目录里的微观 helper 收口上。
