@@ -11,11 +11,11 @@ const { HostSchemaCommand } = require("./Commands/HostSchemaCommand");
 const { LocalizationCommand } = require("./Commands/LocalizationCommand");
 const { PreviewCommand } = require("./Commands/PreviewCommand");
 const { EditorAuthoringCommand } = require("./Commands/EditorAuthoringCommand");
+const { ExtensionLifecycleController } = require("./ExtensionEntry/ExtensionLifecycleController");
 const { ExtensionRegistrationController } = require("./ExtensionEntry/ExtensionRegistrationController");
 const { DslScriptCodeLensProvider } = require("./LanguageFeatures/DslScriptCodeLensProvider");
 const { DslScriptCompletionProvider } = require("./LanguageFeatures/DslScriptCompletionProvider");
 const { DslScriptDefinitionProvider } = require("./LanguageFeatures/DslScriptDefinitionProvider");
-const { DslScriptDiagnosticScheduler } = require("./LanguageFeatures/DslScriptDiagnosticScheduler");
 const { DslScriptDocumentSymbolProvider } = require("./LanguageFeatures/DslScriptDocumentSymbolProvider");
 const { DslScriptHoverProvider } = require("./LanguageFeatures/DslScriptHoverProvider");
 const { DslScriptReferenceProvider } = require("./LanguageFeatures/DslScriptReferenceProvider");
@@ -31,13 +31,13 @@ const { DslScriptNodeProvider } = require("./WorkspaceIndex/DslScriptNodeProvide
 const { DslScriptSpeakerProvider } = require("./WorkspaceIndex/DslScriptSpeakerProvider");
 
 const languageSelector = { language: "inscape" };
-let outputChannel;
 const previewPanels = new Map();
 
 let previewCommand;
 let localizationCommand;
 let editorAuthoringCommand;
 let hostSchemaCommand;
+let extensionLifecycleController;
 let extensionRegistrationController;
 
 const dslScriptNodeProvider = new DslScriptNodeProvider({
@@ -121,6 +121,17 @@ const previewInvocationProvider = new PreviewInvocationProvider({
     resolveCliProjectPath
 });
 
+extensionLifecycleController = new ExtensionLifecycleController({
+    childProcess,
+    fs,
+    vscode,
+    isInscapeDocument,
+    writeTempDocument,
+    createCompilerInvocation,
+    createExtensionDiagnostic,
+    applyDiagnostics
+});
+
 const previewRefreshController = new PreviewRefreshController({
     fs,
     vscode,
@@ -134,7 +145,7 @@ const previewRefreshController = new PreviewRefreshController({
     previewInvocationProvider,
     execFileDetailedPromise,
     getInvocationFailureDetail,
-    logOutput
+    logOutput: (message) => extensionLifecycleController.logOutput(message)
 });
 
 const previewSourceController = new PreviewSourceController({
@@ -155,38 +166,10 @@ const editorStyleController = new EditorStyleController({
 });
 
 function activate(context) {
-    outputChannel = vscode.window.createOutputChannel("Inscape");
-    const diagnostics = vscode.languages.createDiagnosticCollection("inscape");
-    const scheduler = new DslScriptDiagnosticScheduler({
-        childProcess,
-        fs,
-        vscode,
-        context,
-        diagnostics,
-        isInscapeDocument,
-        writeTempDocument,
-        createCompilerInvocation,
-        createExtensionDiagnostic,
-        applyDiagnostics
-    });
-    logOutput("Activated Inscape extension from " + context.extensionPath);
-
-    extensionRegistrationController.register(context, {
-        outputChannel,
-        diagnostics,
-        scheduler
-    });
+    extensionLifecycleController.activate(context, extensionRegistrationController);
 }
 
 function deactivate() {
-}
-
-function logOutput(message) {
-    if (!outputChannel) {
-        return;
-    }
-
-    outputChannel.appendLine("[" + new Date().toISOString() + "] " + message);
 }
 
 function refreshVisibleDocuments(scheduler) {
