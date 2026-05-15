@@ -19,7 +19,7 @@
 	- 只有在路径稳定后，才继续项目名、命名空间、类型名和局部 helper 收口。
 	- 每完成一轮结构迁移，都同步更新 `docs/agent-handoff.md`、`docs/refactoring-plan.md`、`docs/code-structure.md`、[研发计划](development-plan.md) 和本 TODO。
 	- 不再保留纯规划占位目录；LanguageServer / Runtime 与数据契约作为 C 阶段真实任务推进。
-2. 收敛 `@` 与 `[]` 的语法分工：当前两套提示语法的职责重叠过高，作者心智不稳定；需要明确二者是否保留并存、如何区分“语义/时机”与“资源/别名绑定”，以及 `@timeline ...` / `[timeline: ...]` 是否还应继续双写法共存。
+2. 收敛 `@` 与 `[]` 的语法分工：当前方向已明确为 `@` 主要表达事件 / 动作 / 状态变化，`[]` 主要表达查询 / 读取 / 文本插值；下一步按 [Authoring Marker Contract](authoring-marker-contract.md) 审计旧 `[timeline: ...]`、`[kind: alias]` 兼容写法，并逐步迁移工具提示与示例。
 3. 设计 Host Bridge 草案：解决 Inscape 可读 ID 与项目内部 ID / 资源 / 事件处理器的映射，不被 UnitySample、Addressables 或 ScriptableObject 绑定。
 4. 调研 Unity `[Inscape]` Attribute 扫描与 Unity 内代码生成：生成待配置桥接表，再由人工完成 C# 成员与 Inscape 名称映射。
 5. 继续打磨 VSCode 可玩预览：补未保存内容的更细粒度热刷新、刷新中状态提示，以及可选的预览 / 源码同步策略。
@@ -285,6 +285,9 @@
 ## 变量与状态查询，第二版前置调研
 
 - [ ] 对比 Yarn、Ink、Ren'Py、Twine 的变量、函数和宿主 API 边界。
+- [x] F1.1 冻结 `@` / `[]` 作者心智模型：`@` 负责事件 / 动作 / 状态变化，`[]` 负责查询 / 读取 / 文本插值；详见 [Authoring Marker Contract](authoring-marker-contract.md)。
+- [ ] F1.2 审计当前文档、样例、VSCode 提示和 UnitySample 回归中 `[timeline: ...]` / `[kind: alias]` 的兼容残留，区分“保留兼容”和“推荐写法”。
+- [ ] F1.3 将 VSCode hover / completion 文案迁到 `@` 事件、`[]` 查询口径，同时保留 legacy host binding fallback。
 - [ ] 设计表达式只表达数据查询的模型，不在 DSL 中绑定具体业务实体或服务端。
 - [x] 设计宿主查询 Schema 草案：谓词名、参数类型、返回类型、同步/异步、事件清单和副作用边界。
 - [x] 明确 Host Schema / Host Bridge 边界：Inscape 内 ID 可读且抽象，项目内部 ID、资源坐标和事件处理器由桥接层映射。

@@ -76,6 +76,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - 2026-05-16 已推进 D3.2：VSCode speaker / host binding provider 会优先读取 `inscape.config.json` 的 `hostBridge` ids，并回退到旧 `unitySample.roleMap` / `unitySample.bindingMap`；completion / hover 文案已改成 Host Bridge 口径，旧 CSV 标为 Legacy UnitySample fallback。
 - 2026-05-16 已推进 E1 / E3：新增 [Regression Workflow](regression-workflow.md)，把节点开始前、行为契约、命名 / 分层自检、验证命令、提交拆分、提交前检查和推送后检查固化为可执行清单。下一步建议 E2：把 VSCode 交互回归清单补进扩展文档。
 - 2026-05-16 已推进 E2：`src/Internal/VSCode/vscode-inscape/README.md` 新增 `Regression Checklist`，明确改 VSCode 后要 `node --check`、JSON parse、`npm run rebuild:vsix`、安装后 Reload Window，并手动检查正文 / 选项 Ctrl+Click、speaker、host binding、预览源码回跳等交互。
+- 2026-05-16 已启动 F 阶段语法收敛：新增 [Authoring Marker Contract](authoring-marker-contract.md)，将 `@` / `[]` 的作者心智模型收敛为 `@` 主要表达事件、动作、时机和状态变化，`[]` 主要表达查询、读取和文本插值。历史 `[timeline: ...]` / `[kind: alias]` inline host binding 写法暂保留为兼容事实，但不再作为新示例和新工具提示的推荐方向。
 - 2026-05-12 已迁移当前聚合测试项目：`tests/Inscape.Tests` -> `tests/Internal/Inscape.Tests`。这只是测试项目路径进入 Internal 测试树，测试内容尚未按 Compiler / Tooling / Cli / ExternalSupport 拆分。
 - 当前分支为 `main...origin/main`。本轮已把目录优先方案正式冻结为文档与 ADR；最新提交请以 `git log --oneline -1` 为准。
 - 本轮会话已确认新的重构铁律：先搭目录骨架与 `README.md` 规则文件，再迁大目录路径，再迁 solution / 项目路径，再迁项目名、命名空间和类型名；在此之前，不再把主要重构精力继续放在旧目录里的微观 helper 收口上。
@@ -283,7 +284,8 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 
 2. `@` / `[]` 语法收敛：
    - 当前作者反馈已经非常明确：这两套语法的职责重叠过高，使用者难以形成稳定心智模型。
-   - 下一步需要明确：`@` 是否保留为纯 metadata / 时机声明，`[]` 是否保留为纯 `kind:alias` 宿主绑定；`@timeline ...` 与 `[timeline: ...]` 是否保留双写法，还是收敛到单一表达。
+   - 当前方向已明确：`@` 主要表达事件 / 动作 / 状态变化，`[]` 主要表达查询 / 读取 / 文本插值；详见 [Authoring Marker Contract](authoring-marker-contract.md)。
+   - 下一步需要审计旧 `[timeline: ...]` / `[kind: alias]` 写法，将它们标记为兼容遗留或迁移到 `@timeline.<phase> alias` 等事件写法；不要继续扩大 `[]` 作为资源别名的推荐面。
    - 这项工作优先级高于继续扩展更多宿主标签或事件语法，否则只会扩大歧义面。
 
 3. Host Bridge 草案与 UnitySample 生成化：
@@ -337,6 +339,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 项目快照 / 接手                    docs/agent-handoff.md, docs/todo.md, docs/roadmap.md
 设计决策溯源                       docs/adr/README.md, 对应 ADR
 DSL 语法                           docs/dsl-syntax-guide.md, docs/dsl-language.md, docs/syntax-comparison.md, docs/open-questions.md
+`@` / `[]` 语法分工                 docs/authoring-marker-contract.md, docs/dsl-syntax-guide.md, docs/dsl-language.md, docs/host-bridge-contract.md
 DSL 生态定位 / 竞品对比             docs/dsl-ecosystem-positioning.md, docs/adr/0007-dsl-benchmark-positioning.md
 代码结构 / 新模块                  docs/code-structure.md, docs/coding-conventions.md, docs/refactoring-plan.md, src/Inscape.Compiler, src/Inscape.Cli
 VSCode 工具                        docs/vscode-tooling.md, src/Internal/VSCode/vscode-inscape/README.md
