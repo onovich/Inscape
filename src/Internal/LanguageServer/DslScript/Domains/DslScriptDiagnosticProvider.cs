@@ -28,17 +28,11 @@ namespace Inscape.LanguageServer {
                 Code = diagnostic.Code,
                 Severity = diagnostic.Severity.ToString(),
                 Message = diagnostic.Message,
-                Location = new EditorLocationModel {
-                    SourcePath = diagnostic.SourcePath,
-                    Line = ToEditorCoordinate(diagnostic.Line),
-                    Character = ToEditorCoordinate(diagnostic.Column),
-                    Length = 1
-                }
+                Location = EditorLocationMapperDomain.FromCompilerSource(new Inscape.Compiler.Model.SourceSpanModel(
+                    diagnostic.SourcePath,
+                    diagnostic.Line,
+                    diagnostic.Column))
             };
-        }
-
-        static int ToEditorCoordinate(int compilerCoordinate) {
-            return compilerCoordinate <= 1 ? 0 : compilerCoordinate - 1;
         }
 
     }

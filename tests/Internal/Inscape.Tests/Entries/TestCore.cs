@@ -18,6 +18,7 @@ namespace Inscape.Tests {
                 ("source spans cover authoring elements", SourceSpansCoverAuthoringElements),
                 ("project diagnostics preserve cross-file source", ProjectDiagnosticsPreserveCrossFileSource),
                 ("language server diagnostics use editor coordinates", LanguageServerDiagnosticsUseEditorCoordinates),
+                ("language server definitions use compiler source map", LanguageServerDefinitionsUseCompilerSourceMap),
                 ("cli diagnose emits json", CliDiagnoseEmitsJson),
                 ("cli commands lists command reference", CliCommandsListsCommandReference),
                 ("cli help emits command details", CliHelpEmitsCommandDetails),

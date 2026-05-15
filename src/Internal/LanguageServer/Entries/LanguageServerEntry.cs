@@ -30,7 +30,22 @@ namespace Inscape.LanguageServer {
                 return 0;
             }
 
-            Console.WriteLine("Inscape.LanguageServer baseline. Use --capabilities or --diagnose-file <path>.");
+            if (args.Length > 2 && args[0] == "--definition-file") {
+                string sourcePath = Path.GetFullPath(args[1]);
+                string source = File.ReadAllText(sourcePath);
+                DslScriptDefinitionProvider provider = new DslScriptDefinitionProvider();
+                Console.WriteLine(JsonSerializer.Serialize(new {
+                    format = "inscape.language-server-definition",
+                    formatVersion = 1,
+                    definition = provider.GetNodeDefinition(source, sourcePath, args[2])
+                }, new JsonSerializerOptions {
+                    WriteIndented = true,
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                }));
+                return 0;
+            }
+
+            Console.WriteLine("Inscape.LanguageServer baseline. Use --capabilities, --diagnose-file <path>, or --definition-file <path> <nodeName>.");
             return 0;
         }
 

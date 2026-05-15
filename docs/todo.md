@@ -152,7 +152,7 @@
 - [ ] C 阶段创建 `Inscape.LanguageServer` 基线项目，先迁移诊断与定义跳转，再迁移引用、补全与 source map 相关语义能力。
 	- [x] C4.1 已创建 `src/Internal/LanguageServer/Inscape.LanguageServer.csproj`，加入 `Inscape.slnx`，并提供可运行 `LanguageServerEntry --capabilities` 基线入口。
 	- [x] C4.2 迁移 diagnostics 能力的第一层：`DslScriptDiagnosticProvider` 直接调用 Compiler，并把 Compiler 1-based `line` / `column` 转换为编辑器 0-based `line` / `character`。
-	- [ ] C4.3 迁移 definition 的第一层：复用 workspace index / Compiler source map 契约。
+	- [x] C4.3 迁移 definition 的第一层：`DslScriptDefinitionProvider` 直接复用 Compiler source span，并通过 `EditorLocationMapperDomain` 输出 editor location。
 - [ ] 将 Cli、VSCode 和未来 LanguageServer 共享的项目级流程继续拆成显式职责模块，优先落到 `Tooling` 的 `DslScriptSources`、`ToolConfig`、`Preview`、`Localization`、`HostSchema`、`HostBinding` 等模块；如未来确需统一门面，也应建立在这些模块之上，而不是先造一个大而泛的 `ProjectService`。
 - [ ] 建立 workspace index 过渡模型，承接 VSCode 当前轻量扫描并为未来 LanguageServer 留出替换来源。
 	- [x] C3.1 已建立 [Workspace Index Contract](workspace-index-contract.md)，定义 nodes、node references、speakers、host bindings、metadata、schema capabilities 与统一 0-based 编辑器位置对象。

@@ -66,6 +66,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - 2026-05-15 已推进 C3.2：VSCode `WorkspaceIndex` provider 输出已非破坏式补齐契约字段：node references 增加 `target`，speakers / host bindings 增加 `sourceKind`，host bindings 增加 `name`，metadata 增加 `key` / `value`。
 - 2026-05-15 已推进 C3.3 / C4.1：创建 `src/Internal/LanguageServer/Inscape.LanguageServer.csproj` 并加入 `Inscape.slnx`；当前入口 `LanguageServerEntry --capabilities` 输出基线能力清单，`EditorLocationModel` 对齐 source location / workspace index 的 0-based `line` / `character` / `length` 契约。
 - 2026-05-15 已推进 C4.2：新增 `DslScriptDiagnosticProvider`，LanguageServer diagnostics 直接调用 Compiler，并把 Compiler 1-based `line` / `column` 转换为 editor 0-based `line` / `character`；内部测试已覆盖该转换。
+- 2026-05-15 已推进 C4.3：新增 `DslScriptDefinitionProvider` 和 `EditorLocationMapperDomain`，LanguageServer definition 第一层直接复用 Compiler node source span 输出 editor location；内部测试已覆盖缩进节点的 0-based location。
 - 2026-05-12 已迁移当前聚合测试项目：`tests/Inscape.Tests` -> `tests/Internal/Inscape.Tests`。这只是测试项目路径进入 Internal 测试树，测试内容尚未按 Compiler / Tooling / Cli / ExternalSupport 拆分。
 - 当前分支为 `main...origin/main`。本轮已把目录优先方案正式冻结为文档与 ADR；最新提交请以 `git log --oneline -1` 为准。
 - 本轮会话已确认新的重构铁律：先搭目录骨架与 `README.md` 规则文件，再迁大目录路径，再迁 solution / 项目路径，再迁项目名、命名空间和类型名；在此之前，不再把主要重构精力继续放在旧目录里的微观 helper 收口上。

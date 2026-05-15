@@ -29,6 +29,24 @@ namespace Inscape.Tests {
             AssertEqual(1, missingTarget.Location.Length, "Diagnostic editor length");
         }
 
+        static void LanguageServerDefinitionsUseCompilerSourceMap() {
+            DslScriptDefinitionProvider provider = new DslScriptDefinitionProvider();
+            LanguageServerDefinitionModel? definition = provider.GetNodeDefinition("""
+  :: start
+旁白：开始。
+
+    :: second.node
+旁白：第二页。
+""", "memory://definition.inscape", "second.node");
+
+            AssertTrue(definition != null, "LanguageServer definition should find node by Compiler source map.");
+            AssertEqual("second.node", definition!.Name, "Definition name");
+            AssertEqual("memory://definition.inscape", definition.Location.SourcePath, "Definition source path");
+            AssertEqual(3, definition.Location.Line, "Definition editor line should be 0-based");
+            AssertEqual(4, definition.Location.Character, "Definition editor character should be 0-based");
+            AssertEqual("second.node".Length, definition.Location.Length, "Definition editor length");
+        }
+
     }
 
 }
