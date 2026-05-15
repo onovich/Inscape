@@ -219,7 +219,7 @@ B 后修复：在进入 C 阶段前，Compiler 旧阶段产物已按角色后缀
 - 让预览跳源码、诊断定位、Ctrl+Click 文本定位预览、本地化 anchor 回查尽量使用同一套 source map。
 - 给 source map 加测试样例，覆盖中文对白、选项、metadata 和跨文件。
 
-当前进展：已建立 [Source Location Contracts](source-location-contracts.md)，明确 Compiler source location 使用 1-based `line` / `column`，编辑器 reveal location 使用 0-based `line` / `character` / `length`。Preview HTML 已先把 Compiler source 转换为编辑器坐标后再做源码按钮、metadata 点击、源码侧 reveal 匹配和节点定位，避免继续混用两套坐标。
+当前进展：已完成。已建立 [Source Location Contracts](source-location-contracts.md)，明确 Compiler source location 使用 1-based `line` / `column`，编辑器 reveal location 使用 0-based `line` / `character` / `length`。Preview HTML 已先把 Compiler source 转换为编辑器坐标后再做源码按钮、metadata 点击、源码侧 reveal 匹配和节点定位，避免继续混用两套坐标；内部测试已覆盖中文对白、选项、metadata、diagnostics 和跨文件 source map。
 
 验收标准：
 
@@ -242,7 +242,7 @@ B 后修复：在进入 C 阶段前，Compiler 旧阶段产物已按角色后缀
 - 让 VSCode command、selection bridge、webview message 使用同一数据结构。
 - 文档化字段含义与兼容策略。
 
-当前进展：Preview -> VSCode 的 `openSource` payload 已从历史兼容 `column` 迁为 `character`；VSCode `PreviewSourceController` 读取 `character`，并保留旧 `column` fallback。
+当前进展：已完成。Preview -> VSCode 的 `openSource` payload 已从历史兼容 `column` 迁为 `character`；VSCode `PreviewSourceController` 读取 `character`，并保留旧 `column` fallback。源码按钮、diagnostics 点击、metadata 点击和 fallback 均已有回归约束。
 
 验收标准：
 
@@ -263,7 +263,7 @@ B 后修复：在进入 C 阶段前，Compiler 旧阶段产物已按角色后缀
 - VSCode 当前扫描逻辑先收敛到 index，未来 Language Server 可替换 index 来源。
 - 区分 authoring hint 与 Core 语义真相。
 
-当前进展：已建立 [Workspace Index Contract](workspace-index-contract.md)，明确 workspace index 只承载 authoring hint，不替代 Compiler 语义真相；索引位置对象统一使用 0-based `line` / `character` / `length`。
+当前进展：已完成。已建立 [Workspace Index Contract](workspace-index-contract.md)，明确 workspace index 只承载 authoring hint，不替代 Compiler 语义真相；索引位置对象统一使用 0-based `line` / `character` / `length`。VSCode `WorkspaceIndex` provider 已非破坏式补齐契约字段，LanguageServer 基线也已对齐该契约。
 
 验收标准：
 

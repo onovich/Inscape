@@ -73,7 +73,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - 当前分支为 `main...origin/main`。本轮已把目录优先方案正式冻结为文档与 ADR；最新提交请以 `git log --oneline -1` 为准。
 - 本轮会话已确认新的重构铁律：先搭目录骨架与 `README.md` 规则文件，再迁大目录路径，再迁 solution / 项目路径，再迁项目名、命名空间和类型名；在此之前，不再把主要重构精力继续放在旧目录里的微观 helper 收口上。
 - 本轮会话已将该铁律落入 [目录优先重构蓝图](directory-first-reframe-plan.md) 与 [ADR 0012](adr/0012-directory-first-repository-reframe-order.md)。
-- 本轮会话已明确当前最显眼的不符合点已从“大目录不成形 / UnitySample 仍在默认编译链”转为“VSCode 目录骨架已建但 `extension.js` 尚未拆分，Cli / Tooling 命名空间仍未细分，LanguageServer 与 Runtime 仍只有骨架，测试项目仍可继续按更细领域拆分”。
+- 本轮会话已明确当前最显眼的不符合点已从“大目录不成形 / UnitySample 仍在默认编译链”转为“VSCode 前端还未接入 LanguageServer、Tooling 共享流程仍可继续下沉为更窄模块、测试项目仍可继续按更细领域拆分”。
 - 本轮会话已确认新的优先级：下一阶段应先做目录骨架与规则文件，再迁大目录路径与 solution 边界；Tooling 上提、VSCode 深拆、LanguageServer 细化与项目名迁移都排在目录外形稳定之后。
 - 本轮会话确认新的长期结构：Internal 为 `Compiler`、`Tooling`、`Cli`、`VSCode`、`LanguageServer`、`Runtime`；ExternalSupport 为 `UnityPlugin`。
 - 本轮会话确认：`Inscape.Compiler` 长期可向 `Compiler` 收敛；`Inscape.Cli` 当前同时承载了 `Cli` 与部分 `Tooling`，下一轮重构重点应是先抽出 `Tooling`。
@@ -152,7 +152,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - `Cli` 的 role-template 项目级命令当前也已形成更清楚的局部边界：`CliUnitySampleProjectCommand` 只做分派，具体 role template 读取、主 CSV 输出和 report 输出由 `CliUnitySampleRoleTemplateCommand` 承载。
 - `Cli` 的 project-export 项目级命令当前也已形成更清楚的局部边界：`CliUnitySampleProjectCommand` 只做分派，具体导出参数校验、导出执行和写盘输出由 `CliUnitySampleProjectExportCommand` 承载。
 - `VSCode`：编辑器入口层；当前主要落在 `src/Internal/VSCode/vscode-inscape/extension.js`。
-- `LanguageServer`：C# 语义服务层；当前尚未创建项目，但已确认长期方向。
+- `LanguageServer`：C# 语义服务层；当前已有 `Inscape.LanguageServer` 基线项目，diagnostics / definition / references / completion 第一层已直接复用 Compiler。
 - `Runtime`：未来运行期层；当前尚未实现。
 - `ExternalSupport/UnityPlugin`：Unity 环境下的外部支持层；当前由 `src/ExternalSupport/UnityPlugin/Inscape.Adapters.UnitySample` 与 `src/ExternalSupport/UnityPlugin/unity-bird-importer` 作为过渡样例与原型承载。
 
