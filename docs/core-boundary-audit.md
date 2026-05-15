@@ -40,3 +40,43 @@ Get-Content -Raw src\Internal\Compiler\Inscape.Compiler.csproj
 - D1.1 通过。Compiler 本体仍保持可移植、无宿主依赖、无默认外部支持污染。
 - 暂不做代码改动，避免把测试组织整理混入依赖巡检提交。
 
+## D1.2 Compiler 角色目录与命名自检
+
+日期：2026-05-15
+
+范围：
+
+- `src/Internal/Compiler/DslScript`
+- `src/Internal/Compiler/StoryGraph`
+- `src/Internal/Compiler/Localization`
+- `src/Internal/Compiler/Diagnostics`
+- `src/Internal/Compiler/TextContracts`
+- `src/Internal/Compiler/Entries`
+
+对照规则：
+
+- 目录表达 `Layer / Business / Role`，命名空间保持适度粗粒度。
+- Compiler 允许主语为 `DslScript`、`StoryGraph`、`Localization`、`Diagnostics`、`TextContracts`。
+- Compiler 类型终局后缀以 `Domain`、`Model` 为主；入口薄门面可使用 `Entry`。
+- `Parser`、`Compiler`、`Validator`、`Resolver`、`Builder` 等动词角色应作为 `Domain` 前的动作限定，不单独作为终局后缀。
+- 不保留 `Support`、`Helper`、`Manager`、`Utils`、`InscapeCore`、`InscapeParser`、`InscapeCompiler`、`ProjectCompiler` 等旧阶段命名。
+
+检查命令：
+
+```powershell
+rg -n "namespace Inscape\.Compiler\.(Model|Parsing|Analysis|Compilation|Localization|Diagnostics|Text)|class .*Domain|class .*Model|enum .*Model|class .*Entry" src\Internal\Compiler
+rg -n "\b(Helper|Support|Manager|Utils|ProjectService|Workspace|InscapeCore|InscapeParser|InscapeCompiler|ProjectCompiler|GraphValidator|AnchorValidator)\b" src\Internal\Compiler
+```
+
+结果：
+
+- `DslScript`、`StoryGraph`、`Localization`、`Diagnostics`、`TextContracts` 均只承载 `Domains` / `Models` 角色目录；`Entries/CompilerEntry.cs` 是 Compiler 薄入口。
+- 类型名已按 `DslScript*Domain`、`StoryGraph*Domain`、`Localization*Domain`、`*Model` 和 `CompilerEntry` 收敛。
+- 命名空间当前保持在 `Inscape.Compiler.Model`、`Inscape.Compiler.Parsing`、`Inscape.Compiler.Analysis`、`Inscape.Compiler.Compilation`、`Inscape.Compiler.Localization`、`Inscape.Compiler.Diagnostics` 与 `Inscape.Compiler.Text` 这一级，没有继续按目录过细拆分。
+- 弱语义和旧阶段命名未在 Compiler 本体命中。
+- 已修正过期文档口径：Compiler 项目文件实际位于 `src/Internal/Compiler/Inscape.Compiler.csproj`，不再写成 `src/Internal/Compiler/Inscape.Compiler/` 子目录；`extension.js` 已完成 B 阶段拆分，不再描述为“尚未真正拆入目录”。
+
+自检结论：
+
+- D1.2 通过。Compiler 当前结构符合“目录表达层级与业务、类型表达主语与角色、命名空间适度粗粒度”的规范。
+

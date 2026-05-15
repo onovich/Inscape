@@ -54,7 +54,7 @@
 	- [x] 创建 `src/Internal`、`src/ExternalSupport`、`tests/Internal`、`tests/ExternalSupport` 及其已承载源码的 Layer / Business 目录，并为稳定目录补 `README.md` 规则文件。
 	- [x] 清理纯规划占位目录，避免把 C 阶段的 LanguageServer / Runtime 和未来外部支持结构误当成 B 阶段成果。
 	- [ ] 将 `Inscape.Compiler`、`Inscape.Tooling`、`Inscape.Cli`、VSCode 前端与 Unity 原型迁入新目录树。
-		- [x] 已先迁入 Internal 侧 `.NET` 项目路径：`Inscape.Compiler` -> `src/Internal/Compiler/Inscape.Compiler`，`Inscape.Tooling` -> `src/Internal/Tooling`，`Inscape.Cli` -> `src/Internal/Cli/Inscape.Cli`；Compiler 项目名已改，命名空间和类型名暂不改。
+		- [x] 已先迁入 Internal 侧 `.NET` 项目路径：`Inscape.Compiler` -> `src/Internal/Compiler/Inscape.Compiler.csproj`，`Inscape.Tooling` -> `src/Internal/Tooling`，`Inscape.Cli` -> `src/Internal/Cli/Inscape.Cli`；Compiler 项目名、命名空间和旧类型名均已完成收敛。
 		- [x] 已迁入 VSCode 前端路径：`src/Internal/VSCode/vscode-inscape`；扩展源码内部仍保留原 npm 包结构，后续再拆 provider / command / preview bridge。
 		- [x] 已迁入 Unity 外部支持路径：`src/ExternalSupport/UnityPlugin/Inscape.Adapters.UnitySample` 与 `src/ExternalSupport/UnityPlugin/unity-bird-importer`。
 	- [ ] 更新 `Inscape.slnx` 与 `ProjectReference`，并把 UnityPlugin 相关项目移出默认 .NET solution 编译链。
@@ -172,7 +172,7 @@
 - [ ] 保持 `src/ExternalSupport/UnityPlugin/Inscape.Adapters.UnitySample` 与 `src/ExternalSupport/UnityPlugin/unity-bird-importer` 作为 ExternalSupport 过渡样例，暂不纳入 Internal 主动重构范围；只在 Host Bridge / UnityPlugin 设计阶段把它们当验证样本使用。
 - [ ] 完成 D 阶段 Core 干净与 Host Bridge 隔离收口。
 	- [x] D1.1 Compiler 依赖巡检：确认 `Inscape.Compiler` 不依赖 Unity、VSCode、HTML、Bird、Addressables、ExternalSupport、Tooling、Cli、LanguageServer 或 Runtime；详见 [Core Boundary Audit](core-boundary-audit.md)。
-	- [ ] D1.2 Compiler 角色目录与命名自检：对照命名规范检查 `Model` / `Parsing` / `Analysis` / `Localization` 角色边界，并修正文档过期口径。
+	- [x] D1.2 Compiler 角色目录与命名自检：对照命名规范检查 `Model` / `Parsing` / `Analysis` / `Localization` 角色边界，并修正文档过期口径。
 	- [ ] D2.1 ExternalSupport 隔离自检：确认 UnitySample / importer 仍只在 ExternalSupport 路径与独立测试链路中出现，不反向污染 Internal。
 	- [ ] D2.2 Host Bridge 契约草案：定义可表达 UnitySample 当前能力、但不被 UnitySample 限死的配置模型。
 

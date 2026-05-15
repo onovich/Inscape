@@ -29,7 +29,7 @@ src/
     Cli/
       Inscape.Cli/              当前 Cli 项目，已按 Entries / Commands / Providers / ViewModels 初步分目录
     VSCode/
-      vscode-inscape/           当前 VSCode 前端扩展，已建立 ExtensionEntry / Commands / LanguageFeatures 等拆分骨架
+      vscode-inscape/           当前 VSCode 前端扩展，已按 ExtensionEntry / Commands / LanguageFeatures 等目录完成 B 阶段拆分
     LanguageServer/             当前 LanguageServer 基线项目，已接入 diagnostics / definition / references / completion 第一层
     Runtime/                    当前 Runtime 基线项目，已建立 NarrativeRuntime 最小 IR 消费生命周期
   ExternalSupport/
@@ -52,7 +52,7 @@ docs/
 1. `src/Internal` 与 `src/ExternalSupport` 骨架已建立，Internal 项目、VSCode 前端和 Unity 原型均已先迁入目标路径。
 2. `Inscape.Compiler` 项目名、命名空间与入口门面已完成迁移，源码已按业务角色分组；后续继续整理 Tooling / Cli / VSCode 的内部目录。
 3. `Inscape.Adapters.UnitySample`、`Inscape.UnitySample.Cli` 与 `Inscape.UnitySample.Tests` 均已位于 ExternalSupport，并已退出默认 `Inscape.slnx` 编译链；需要回归时单独构建 / 运行外部支持测试项目。
-4. `src/Internal/VSCode/vscode-inscape/` 已成为 VSCode 前端源码位置，且已建立 `ExtensionEntry`、`Commands`、`LanguageFeatures`、`WorkspaceIndex`、`Bridges`、`PreviewWebview`、`Styles`、`Schemas` 骨架；当前 `extension.js` 尚未真正拆入这些目录。
+4. `src/Internal/VSCode/vscode-inscape/` 已成为 VSCode 前端源码位置，且已完成 `ExtensionEntry`、`Commands`、`LanguageFeatures`、`WorkspaceIndex`、`Bridges`、`PreviewWebview`、`Styles`、`Schemas` 拆分；当前 `extension.js` 主要保留注册入口、实例装配和入口级 glue。
 5. `LanguageServer` 与 `Runtime` 已从纯目录骨架推进为可构建基线项目；后续重点是让 VSCode 前端逐步接入 LanguageServer，并继续扩展 Runtime Host / HostBridge 设计。
 6. `tests/Internal/Inscape.Tests` 仍是聚合测试项目，但已按现有文件边界初步拆入 `Entries`、`Shared`、`Compiler`、`Cli`、`PreviewLocalization`；后续可继续把 Tooling、Preview、Localization 分成更细项目或目录。
 7. Layer / Business 目录已有统一 `README.md` 规则文件，后续迁移仍需补齐具体代码落位。
@@ -211,7 +211,7 @@ UnityPlugin 不属于 Internal 五层之一。它是 Unity 环境下的外部支
 
 ## 当前代码映射
 
-- `src/Internal/Compiler/Inscape.Compiler/` → 当前 `Compiler` 项目，后续再迁 C# 命名空间与类型名
+- `src/Internal/Compiler/Inscape.Compiler.csproj` + `src/Internal/Compiler/{DslScript,StoryGraph,Localization,Diagnostics,TextContracts}/` → 当前 `Compiler` 项目，项目名、命名空间与旧类型名已完成收敛
 - `src/Internal/Tooling/Inscape.Tooling.csproj` + `src/Internal/Tooling/{DslScriptSources,ToolConfig,Preview,Localization,HostSchema,HostBinding}/` → 当前 `Tooling` 项目，已开始按 Business / Role 目录落位
 - `src/Internal/Cli/Inscape.Cli/{Entries,Commands,Providers,ViewModels}/` → 当前 `Cli` 项目，已按入口、命令、命令元数据和输出 DTO 初步分目录
 - `src/Internal/VSCode/vscode-inscape/` → 当前 `VSCode` 前端，后续继续按 VSCode Layer 规则拆分

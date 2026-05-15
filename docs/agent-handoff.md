@@ -14,7 +14,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 
 ### 2026-05-11 当前交接结论（最新）
 
-- 2026-05-12 已开始按目录优先蓝图执行实际迁移：目录骨架与规则 README 已提交，Internal 侧 `.NET` 项目已迁入新路径，当前路径为 `src/Internal/Compiler/Inscape.Compiler`、`src/Internal/Tooling`、`src/Internal/Cli/Inscape.Cli`。
+- 2026-05-12 已开始按目录优先蓝图执行实际迁移：目录骨架与规则 README 已提交，Internal 侧 `.NET` 项目已迁入新路径，当前 Compiler 项目文件为 `src/Internal/Compiler/Inscape.Compiler.csproj`，Tooling 位于 `src/Internal/Tooling`，Cli 位于 `src/Internal/Cli/Inscape.Cli`。
 - 2026-05-12 已完成 Compiler 项目名、命名空间与入口门面收敛：`src/Internal/Compiler/Inscape.Core/Inscape.Core.csproj` 已迁为 `src/Internal/Compiler/Inscape.Compiler.csproj`，`Inscape.Core.*` 已改为 `Inscape.Compiler.*`，原 `InscapeCore` 门面已改为 `CompilerEntry`。2026-05-15 已继续把执行单文件编译的实现收敛为 `DslScript/Domains/DslScriptCompilerDomain`。
 - 2026-05-12 已同步更新 `Inscape.slnx`、`ProjectReference`、VSCode fallback CLI 项目路径、CLI 命令速查示例和相关文档命令路径。验证通过：`dotnet build Inscape.slnx --no-restore` 与 `dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build`。由于项目路径变化，执行过一次 `dotnet restore Inscape.slnx --configfile NuGet.Config` 来刷新项目图缓存。
 - 2026-05-12 已迁移 VSCode 前端源码：`tools/vscode-inscape` -> `src/Internal/VSCode/vscode-inscape`。到 2026-05-15，扩展内部已按 `Commands`、`WorkspaceIndex`、`LanguageFeatures`、`PreviewWebview`、`Styles`、`Bridges` 与 `ExtensionEntry` 完成 B 阶段拆分；验证入口为 `node --check src\Internal\VSCode\vscode-inscape\extension.js`。
@@ -69,6 +69,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - 2026-05-15 已推进 C4.3：新增 `DslScriptDefinitionProvider` 和 `EditorLocationMapperDomain`，LanguageServer definition 第一层直接复用 Compiler node source span 输出 editor location；内部测试已覆盖缩进节点的 0-based location。
 - 2026-05-15 已推进 C4.4：新增 `DslScriptReferenceProvider` 与 `DslScriptCompletionProvider`，references / completion 第一层直接读取 Compiler graph 输出；内部测试已覆盖引用定位和节点补全 location。
 - 2026-05-15 已推进 C5.1 / C5.2：创建 `src/Internal/Runtime/Inscape.Runtime.csproj` 并加入 `Inscape.slnx`；新增 `NarrativeRuntime` 最小 IR 消费生命周期，支持 `LoadGraph`、`Start`、`Choose`、`Continue`、`Restore`，不解析 `.inscape`，不依赖 VSCode / HTML Preview / UnitySample。
+- 2026-05-15 已推进 D1.1 / D1.2：新增 [Core Boundary Audit](core-boundary-audit.md)，确认 Compiler 本体无 Unity、VSCode、HTML、Bird、Addressables、ExternalSupport、Tooling、Cli、LanguageServer 或 Runtime 依赖；Compiler 角色目录与类型后缀符合当前命名规范，命名空间保持 `Inscape.Compiler.*` 粗粒度。
 - 2026-05-12 已迁移当前聚合测试项目：`tests/Inscape.Tests` -> `tests/Internal/Inscape.Tests`。这只是测试项目路径进入 Internal 测试树，测试内容尚未按 Compiler / Tooling / Cli / ExternalSupport 拆分。
 - 当前分支为 `main...origin/main`。本轮已把目录优先方案正式冻结为文档与 ADR；最新提交请以 `git log --oneline -1` 为准。
 - 本轮会话已确认新的重构铁律：先搭目录骨架与 `README.md` 规则文件，再迁大目录路径，再迁 solution / 项目路径，再迁项目名、命名空间和类型名；在此之前，不再把主要重构精力继续放在旧目录里的微观 helper 收口上。

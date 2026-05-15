@@ -6,4 +6,4 @@ Allowed business areas: `DslScript`, `StoryGraph`, `Localization`, `Diagnostics`
 
 Do not depend on Unity, VSCode, HTML rendering, CLI presentation, or third-party host packages.
 
-The current project name may remain `Inscape.Compiler` during path migration. Rename projects, namespaces, and types only after paths and project references are stable.
+The current project file is `src/Internal/Compiler/Inscape.Compiler.csproj`. Keep namespaces coarse under `Inscape.Compiler.*`; do not mirror every business or role directory in the namespace unless a stable public boundary needs it.
