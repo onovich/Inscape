@@ -2,7 +2,7 @@
 
 状态：基线
 
-最后更新：2026-05-15
+最后更新：2026-05-16
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
@@ -88,6 +88,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - 2026-05-16 已推进 F1.10：新增 [Query Interpolation Tooling Decision](query-interpolation-tooling-decision.md)，结论是先做 VSCode authoring hint 原型：只消费 Host Schema，未知 query 只给提示，不改 Compiler，不改本地化 / 预览输出；LanguageServer 等 VSCode 原型稳定后复用同一 `query-interpolation` 数据契约。下一步建议 F1.11：新增 VSCode query interpolation provider 骨架，先做 Host Schema queries 读取和 `[query.path]` 范围识别，不接 completion / hover。
 - 2026-05-16 已推进 F1.11：新增 `src/Internal/VSCode/vscode-inscape/WorkspaceIndex/DslScriptQueryInterpolationProvider.js`，可读取当前工作区 Host Schema 的零参数简单 `queries[]`，识别 `[itemName]` / `[player.gold]` 这类简单路径范围，并天然排除带冒号的 legacy `[kind: alias]`；入口已装配 provider，但暂未接入 completion / hover，不改变用户可见行为、Compiler、预览或本地化输出。下一步建议 F1.12：接入 VSCode completion / hover，未知 query 只提示，不改 Compiler。
 - 2026-05-16 已推进 F1.12：VSCode completion / Hover 已接入 `[]` 查询插值。`[` / `[partial` 位置会基于 Host Schema 零参数简单 query 补全；`[query.path]` Hover 会展示 `returnType`、`isAsync`、description 和 schema 来源。未知 query 只显示作者提示，不新增 Problems 诊断，不改 Compiler / 本地化 / 预览语义；legacy `[kind: alias]` 仍优先走 Host Bridge / legacy binding 路径。下一步建议 F1.13：评估该原型是否迁入 LanguageServer 或增加 workspace audit。
+- 2026-05-16 已推进 F1.13：新增 [Query Interpolation Follow-up Decision](query-interpolation-follow-up-decision.md)，结论是暂不把 `[]` 查询插值立即迁入 LanguageServer，也不新增 Compiler diagnostics；VSCode 原型继续作为反馈面。下一步建议 F1.14：先设计显式 workspace audit 的输出格式和命令入口，保持非阻断、可选、不接默认 Problems。
 - 2026-05-12 已迁移当前聚合测试项目：`tests/Inscape.Tests` -> `tests/Internal/Inscape.Tests`。这只是测试项目路径进入 Internal 测试树，测试内容尚未按 Compiler / Tooling / Cli / ExternalSupport 拆分。
 - 当前分支为 `main...origin/main`。本轮已把目录优先方案正式冻结为文档与 ADR；最新提交请以 `git log --oneline -1` 为准。
 - 本轮会话已确认新的重构铁律：先搭目录骨架与 `README.md` 规则文件，再迁大目录路径，再迁 solution / 项目路径，再迁项目名、命名空间和类型名；在此之前，不再把主要重构精力继续放在旧目录里的微观 helper 收口上。
