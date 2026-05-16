@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Inscape.LanguageServer;
 
 namespace Inscape.Tests {
@@ -111,6 +112,86 @@ namespace Inscape.Tests {
             AssertTrue(jumpHover.Markdown.Contains("jump target"), "Jump hover markdown");
             AssertEqual(2, jumpHover.Location.Line, "Jump hover editor line");
             AssertEqual(0, jumpHover.Location.Character, "Jump hover editor character");
+        }
+
+        static void LanguageServerEntryProbesEmitStableJson() {
+            string source = """
+:: start
+旁白：开始。
+-> second.node
+-> missing.node
+
+  :: second.node
+旁白：第二页。
+""";
+
+            string sourcePath = Path.Combine(Path.GetTempPath(), "inscape-language-server-probes.inscape");
+            File.WriteAllText(sourcePath, source);
+            try {
+                JsonElement diagnostics = RunLanguageServerForJson(new[] { "--diagnose-file", sourcePath });
+                AssertEqual("inscape.language-server-diagnostics", diagnostics.GetProperty("format").GetString(), "Diagnostics probe format");
+                AssertEqual(1, diagnostics.GetProperty("formatVersion").GetInt32(), "Diagnostics probe format version");
+                AssertTrue(CountJsonItemsWithString(diagnostics.GetProperty("diagnostics"), "code", "INS020") > 0, "Diagnostics probe should include missing target");
+
+                JsonElement definition = RunLanguageServerForJson(new[] { "--definition-file", sourcePath, "second.node" });
+                AssertEqual("inscape.language-server-definition", definition.GetProperty("format").GetString(), "Definition probe format");
+                JsonElement definitionLocation = definition.GetProperty("definition").GetProperty("location");
+                AssertEqual("second.node", definition.GetProperty("definition").GetProperty("name").GetString(), "Definition probe name");
+                AssertEqual(5, definitionLocation.GetProperty("line").GetInt32(), "Definition probe editor line");
+                AssertEqual(2, definitionLocation.GetProperty("character").GetInt32(), "Definition probe editor character");
+
+                JsonElement references = RunLanguageServerForJson(new[] { "--references-file", sourcePath, "second.node" });
+                AssertEqual("inscape.language-server-references", references.GetProperty("format").GetString(), "References probe format");
+                JsonElement firstReference = references.GetProperty("references")[0];
+                AssertEqual("second.node", firstReference.GetProperty("target").GetString(), "References probe target");
+                AssertEqual(2, firstReference.GetProperty("location").GetProperty("line").GetInt32(), "References probe editor line");
+
+                JsonElement completions = RunLanguageServerForJson(new[] { "--completion-file", sourcePath });
+                AssertEqual("inscape.language-server-completions", completions.GetProperty("format").GetString(), "Completions probe format");
+                AssertTrue(CountJsonItemsWithString(completions.GetProperty("completions"), "label", "start") == 1, "Completions probe should include start");
+                AssertTrue(CountJsonItemsWithString(completions.GetProperty("completions"), "label", "second.node") == 1, "Completions probe should include second.node");
+
+                JsonElement symbols = RunLanguageServerForJson(new[] { "--document-symbols-file", sourcePath });
+                AssertEqual("inscape.language-server-document-symbols", symbols.GetProperty("format").GetString(), "Symbols probe format");
+                AssertTrue(CountJsonItemsWithString(symbols.GetProperty("symbols"), "name", "second.node") == 1, "Symbols probe should include second.node");
+
+                JsonElement hover = RunLanguageServerForJson(new[] { "--hover-file", sourcePath, "jump", "second.node" });
+                AssertEqual("inscape.language-server-hover", hover.GetProperty("format").GetString(), "Hover probe format");
+                AssertEqual("second.node", hover.GetProperty("hover").GetProperty("label").GetString(), "Hover probe label");
+                AssertEqual("jump", hover.GetProperty("hover").GetProperty("kind").GetString(), "Hover probe kind");
+            } finally {
+                if (File.Exists(sourcePath)) {
+                    File.Delete(sourcePath);
+                }
+            }
+        }
+
+        static JsonElement RunLanguageServerForJson(string[] args) {
+            TextWriter originalOut = Console.Out;
+            StringWriter output = new StringWriter();
+
+            int exitCode;
+            try {
+                Console.SetOut(output);
+                exitCode = LanguageServerEntry.Main(args);
+            } finally {
+                Console.SetOut(originalOut);
+            }
+
+            AssertEqual(0, exitCode, "LanguageServer probe exit code");
+            using JsonDocument document = JsonDocument.Parse(output.ToString());
+            return document.RootElement.Clone();
+        }
+
+        static int CountJsonItemsWithString(JsonElement items, string propertyName, string value) {
+            int count = 0;
+            foreach (JsonElement item in items.EnumerateArray()) {
+                if (item.TryGetProperty(propertyName, out JsonElement property) && property.GetString() == value) {
+                    count += 1;
+                }
+            }
+
+            return count;
         }
 
     }

@@ -18,6 +18,8 @@ Current baseline:
 
 VSCode client migration order and fallback boundaries are tracked in `docs/vscode-language-server-migration-plan.md`. Keep probe parity stable before moving VSCode hot paths from JS providers to LanguageServer.
 
+Temporary probes are covered by internal parity tests. If you add or rename a probe, update `tests/Internal/Inscape.Tests/LanguageServer/TestLanguageServerBaseline.cs` in the same node.
+
 Allowed business areas: `Entries`, `Models`, `DslScript`, `StoryGraph`, and `HostSchema`.
 
 Do not create a broad project service here before narrower Compiler and Tooling contracts are stable.

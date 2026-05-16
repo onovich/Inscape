@@ -216,7 +216,7 @@
 - [ ] 继续验证正文 / 选项文本的 `DefinitionProvider` 链接态与 selection bridge 是否稳定满足“默认无下划线、Ctrl+指向才显示链接态、Ctrl+Click 复用预览定位”；若后续调整实现，仍需保持这一交互不回退到 `DocumentLinkProvider`。
 - [x] 补齐 C# Language Server 第一版能力范围：diagnostics、definition、references、completion、outline、hover 都已有基线 probe。
 - [x] 设计 VSCode 前端何时从 JS provider 切到 LanguageServer，并保留哪些 fallback 边界；详见 [VSCode LanguageServer Migration Plan](vscode-language-server-migration-plan.md)。
-- [ ] 为 LanguageServer diagnostics / definition / references / completion / outline / hover 建立 probe parity 测试，作为 VSCode client 切换前置条件。
+- [x] 为 LanguageServer diagnostics / definition / references / completion / outline / hover 建立 probe parity 测试，作为 VSCode client 切换前置条件。
 - [ ] 设计 LanguageServer 项目级 diagnostics endpoint，覆盖 unsaved override，并让 VSCode 保留 CLI diagnostics fallback。
 - [x] 设计补全数据来源：当前文件节点、项目节点、角色表、宿主绑定表、宿主 Schema 查询 / 事件清单。
 - [x] 将 `hostSchema` 中的事件清单接入 `.inscape` 脚本补全与 Hover，不改变当前 DSL 编译语义。
