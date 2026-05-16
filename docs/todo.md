@@ -298,7 +298,7 @@
 - [x] F1.11 新增 VSCode query interpolation provider 骨架：读取 Host Schema queries，识别简单 `[query.path]` 范围，排除 legacy `[kind: alias]`，暂不接入 completion / hover。
 - [x] F1.12 接入 VSCode `[]` 查询插值 completion / hover：已知 query 显示 returnType / isAsync / description，未知 query 只给提示，不改 Compiler。
 - [x] F1.13 评估 `[]` 查询插值原型是否迁入 LanguageServer 或增加 workspace audit：结论是暂不迁 LanguageServer、不新增 Compiler 诊断，下一步优先设计显式 workspace audit；详见 [Query Interpolation Follow-up Decision](query-interpolation-follow-up-decision.md)。
-- [ ] F1.14 设计 query interpolation workspace audit 输出格式和命令入口，先文档化，不实现默认 Problems。
+- [x] F1.14 设计 query interpolation workspace audit 输出格式和命令入口，先文档化，不实现默认 Problems；详见 [Query Interpolation Workspace Audit](query-interpolation-workspace-audit.md)。
 - [ ] F1.15 评估 Host Schema query 读取逻辑应落到 Tooling 还是 LanguageServer，避免 VSCode / LanguageServer 复制 JSON 读取语义。
 - [x] 设计宿主查询 Schema 草案：谓词名、参数类型、返回类型、同步/异步、事件清单和副作用边界。
 - [x] 明确 Host Schema / Host Bridge 边界：Inscape 内 ID 可读且抽象，项目内部 ID、资源坐标和事件处理器由桥接层映射。
