@@ -10,24 +10,14 @@
 
 下一位接手者建议按以下顺序推进：
 
-1. 执行目录优先重构主线（最高优先级）：先把目标结构做成仓库外形事实，再恢复各层内部的小步重构。
-	- 先冻结并维护 [目录优先重构蓝图](directory-first-reframe-plan.md) 与 [ADR 0012](adr/0012-directory-first-repository-reframe-order.md)。
-	- 先创建 `src/Internal`、`src/ExternalSupport`、`tests/Internal`、`tests/ExternalSupport` 及其真实承载源码的 Layer / Business / Role 目录。
-	- 先为稳定目录补 `README.md` 规则文件，再迁代码。
-	- 再迁 `Inscape.Compiler`、`Inscape.Tooling`、`Inscape.Cli`、VSCode 前端和 Unity 原型的大目录路径。
-	- 再更新 `Inscape.slnx` 与 `ProjectReference`，让 UnityPlugin 退出默认 .NET solution 编译链。
-	- 只有在路径稳定后，才继续项目名、命名空间、类型名和局部 helper 收口。
-	- 每完成一轮结构迁移，都同步更新 `docs/agent-handoff.md`、`docs/refactoring-plan.md`、`docs/code-structure.md`、[研发计划](development-plan.md) 和本 TODO。
-	- 不再保留纯规划占位目录；LanguageServer / Runtime 与数据契约作为 C 阶段真实任务推进。
-2. 收敛 `@` 与 `[]` 的语法分工：当前方向已明确为 `@` 主要表达事件 / 动作 / 状态变化，`[]` 主要表达查询 / 读取 / 文本插值；下一步按 [Authoring Marker Contract](authoring-marker-contract.md) 审计旧 `[timeline: ...]`、`[kind: alias]` 兼容写法，并逐步迁移工具提示与示例。
-3. 设计 Host Bridge 草案：解决 Inscape 可读 ID 与项目内部 ID / 资源 / 事件处理器的映射，不被 UnitySample、Addressables 或 ScriptableObject 绑定。
-4. 调研 Unity `[Inscape]` Attribute 扫描与 Unity 内代码生成：生成待配置桥接表，再由人工完成 C# 成员与 Inscape 名称映射。
-5. 继续打磨 VSCode 可玩预览：补未保存内容的更细粒度热刷新、刷新中状态提示，以及可选的预览 / 源码同步策略。
+1. 接入 Host Schema query / event 到 `.inscape` 作者体验：复用当前 `Inscape.Tooling` Host Schema query reader 与 VSCode query interpolation 原型，把 query / event 补全和 Hover 做到脚本编辑面；仍不改变 Compiler 语义，不接默认 Problems。
+2. 继续打磨 VSCode 可玩预览：补未保存内容的更细粒度热刷新、刷新中状态提示，以及可选的预览 / 源码同步策略。
 	- 正文 / 选项文本不再用 `DocumentLinkProvider`，因为它会导致整段文本常驻下划线；当前用 `DefinitionProvider` 恢复“默认无下划线、Ctrl+指向才显示链接态”的编辑体验，并通过 selection bridge 在 Ctrl+Click 后执行预览定位，显式命令仅作为兜底。
-6. 将 `Inscape.Adapters.UnitySample` 作为实验样例继续隔离，后续验证它能否由 Host Bridge 配置和代码生成替代。
-7. 决定 Bird 项目内 importer 与生成的 `InscapeGenerated` 资源是否提交，或先清理后保留 Inscape 侧原型。
-8. 设计本地化模糊匹配与人工确认报告，不要直接自动复用相似文本译文。
-9. 收敛第一版块语法：继续使用 `:: node.name`，还是转向 `# 标题` + 空行分块。
+3. 补齐 LanguageServer 第一版范围：已有 diagnostics / definition / references / completion 基线，下一步补 outline / hover 规划和 VSCode 前端迁移边界。
+4. 设计本地化模糊匹配与人工确认报告，不要直接自动复用相似文本译文。
+5. 设计节点重命名迁移策略、显式稳定 ID 或迁移表，用于处理节点重命名和重复文本插入。
+6. 收敛第一版块语法：继续使用 `:: node.name`，还是转向 `# 标题` + 空行分块。
+7. Unity / Bird 相关继续只做准备和计划，等设计方案落实后再研发：包括 Attribute 扫描、Host Bridge 到 adapter 生成、Bird importer 提交策略和带真实 Timeline 的 Dry Run。
 
 ## 文档与接手效率
 
@@ -43,26 +33,26 @@
 - [x] 明确 Internal / ExternalSupport 边界，并以 ADR 0011 固化 Tooling 中间层与 UnityPlugin 外部支持层定位。
 - [x] 建立渐进式重构计划，按大目标/中目标/小目标安排入口、测试、CLI、VSCode、source map、Host Bridge 和 Runtime 前置设计。
 - [x] 建立 [研发计划](development-plan.md)，把 Compiler / Tooling / Cli / VSCode / LanguageServer / ExternalSupport 的推进顺序显式写出。
-- [ ] 每次完成阶段性提交后，同步更新 [Agent 接手指南](agent-handoff.md) 的当前快照。
+- [ ] 每次完成阶段性提交后，同步更新 [Agent 接手指南](agent-handoff.md) 的当前快照。（持续规则，不作为一次性完成项）
 
 ## 代码质量与渐进式重构
 
 执行顺序和验收标准见 [渐进式重构计划](refactoring-plan.md)。
 
-- [ ] 按目录优先铁律重构仓库骨架，让架构成果先在路径与 solution 边界上可见。
+- [x] 按目录优先铁律重构仓库骨架，让架构成果先在路径与 solution 边界上可见。
 	- [x] 已完成文档冻结：新增 [目录优先重构蓝图](directory-first-reframe-plan.md)，并以 [ADR 0012](adr/0012-directory-first-repository-reframe-order.md) 固化“先目录、后改名”的顺序。
 	- [x] 创建 `src/Internal`、`src/ExternalSupport`、`tests/Internal`、`tests/ExternalSupport` 及其已承载源码的 Layer / Business 目录，并为稳定目录补 `README.md` 规则文件。
 	- [x] 清理纯规划占位目录，避免把 C 阶段的 LanguageServer / Runtime 和未来外部支持结构误当成 B 阶段成果。
-	- [ ] 将 `Inscape.Compiler`、`Inscape.Tooling`、`Inscape.Cli`、VSCode 前端与 Unity 原型迁入新目录树。
+	- [x] 将 `Inscape.Compiler`、`Inscape.Tooling`、`Inscape.Cli`、VSCode 前端与 Unity 原型迁入新目录树。
 		- [x] 已先迁入 Internal 侧 `.NET` 项目路径：`Inscape.Compiler` -> `src/Internal/Compiler/Inscape.Compiler.csproj`，`Inscape.Tooling` -> `src/Internal/Tooling`，`Inscape.Cli` -> `src/Internal/Cli/Inscape.Cli`；Compiler 项目名、命名空间和旧类型名均已完成收敛。
 		- [x] 已迁入 VSCode 前端路径：`src/Internal/VSCode/vscode-inscape`；扩展源码内部仍保留原 npm 包结构，后续再拆 provider / command / preview bridge。
 		- [x] 已迁入 Unity 外部支持路径：`src/ExternalSupport/UnityPlugin/Inscape.Adapters.UnitySample` 与 `src/ExternalSupport/UnityPlugin/unity-bird-importer`。
-	- [ ] 更新 `Inscape.slnx` 与 `ProjectReference`，并把 UnityPlugin 相关项目移出默认 .NET solution 编译链。
+	- [x] 更新 `Inscape.slnx` 与 `ProjectReference`，并把 UnityPlugin 相关项目移出默认 .NET solution 编译链。
 		- [x] 已从 `Inscape.slnx` 直接项目清单移除 UnitySample。
 		- [x] 已将 UnitySample 命令迁入 `src/ExternalSupport/UnityPlugin/Inscape.UnitySample.Cli`，并将 UnitySample 回归测试迁入 `tests/ExternalSupport/UnityPlugin/Inscape.UnitySample.Tests`；Internal CLI / Internal tests 不再引用 UnitySample，默认 solution 编译链已退出 UnityPlugin。
 		- [x] 已将 UnitySample CLI 内部整理为 `Entries` / `Commands`，避免 ExternalSupport 命令入口继续平铺。
 	- [x] 已将当前聚合测试项目迁入 `tests/Internal/Inscape.Tests`；后续再按 Compiler / Tooling / Cli / ExternalSupport 拆成更细测试边界。
-	- [ ] 在路径稳定后，再执行 Compiler 项目名、命名空间和类型名迁移。
+	- [x] 在路径稳定后，再执行 Compiler 项目名、命名空间和类型名迁移。
 		- [x] 已完成 Compiler 项目目录与 `.csproj` 改名：`Inscape.Core` -> `Inscape.Compiler`。
 		- [x] 已完成 Compiler 命名空间迁移：`Inscape.Core.*` -> `Inscape.Compiler.*`。
 		- [x] 已将 Compiler 门面类型 `InscapeCore` 收敛为 `CompilerEntry`。
@@ -75,7 +65,7 @@
 	- [x] 已继续收口 UnitySample 命令输出职责：将导出目录写盘拆到 `CliUnitySampleExportWriter`，将 role template report 输出拆到 `CliUnitySampleRoleTemplateReportWriter`，`CliUnitySampleSupport` 不再混放输出 writer。
 	- [x] 已继续收口 UnitySample 项目级命令分支：`CliStoryGraphCommand` 不再直接编排 `export-unity-sample-binding-template`、`export-unity-sample-role-template`、`export-unity-sample-project`，改为委托 `CliUnitySampleProjectCommand`。
 	- [x] 已将 UnitySample 命令从 Internal CLI 迁入 ExternalSupport 独立 CLI，`CliStoryGraphCommand` 与 `CliCore` 不再分发 UnitySample 命令。
-- [ ] 抽出 `Tooling` 中间层：在目录骨架迁移完成后，继续上提项目扫描、配置读取、预览构建、本地化流程、HostSchema / HostBinding 流程，降低 `Cli` 的共享业务负担。
+- [x] 抽出 `Tooling` 中间层第一轮：项目扫描、配置读取、预览构建、本地化流程、HostSchema / HostBinding 流程已从 `Cli` 上提到窄职责模块，`Cli` 保持入口、参数和输出适配。
 	- [x] 已将 `Inscape.Tooling.csproj` 提到 `src/Internal/Tooling` 根目录，并把源码按 `DslScriptSources`、`ToolConfig`、`Preview`、`Localization`、`HostSchema`、`HostBinding` 的 `Domains` / `Models` 目录落位；命名空间暂保留 `Inscape.Tooling`。
 	- [x] 已完成第一刀：创建 `src/Inscape.Tooling/`，将 ToolConfig 配置模型与读取/路径归一化逻辑迁出 `Inscape.Cli`，`Cli` 仅保留 `--config` 参数解析和错误输出适配。
 	- [x] 已完成第二刀：将 `.inscape` 项目源发现、目录排除、内容读取与 override 应用逻辑迁出 `Inscape.Cli`，`Cli` 仅保留 `--override <source> <content>` 参数解析。
@@ -87,7 +77,7 @@
 	- [x] 已完成第八刀：将 timeline 资产扫描与 alias 归并流程迁出 `Inscape.Cli`，`Cli` 仅保留 UnitySample timeline 绑定结果适配。
 	- [x] 已完成第九刀：将 `speaker -> roleId` 的 role map 读取流程迁出 `Inscape.Cli`，`Cli` 仅保留 UnitySample role id 适配。
 	- [x] 已完成第十刀：将既有 talking 资产扫描与保留 talkingId 收集流程迁出 `Inscape.Cli`，`Cli` 仅保留 UnitySample reserved id 适配。
-- [ ] 按 ADR 0010 整理 CLI 与 VSCode 命名：优先消除 `Support` / `Helper` 弱语义命名，并逐步把 `Project` / `SingleFile` 这类范围词从类型名前缀移到目录、命名空间或主语后的限定词。
+- [x] 按 ADR 0010 整理 CLI 与 VSCode 命名：优先消除 `Support` / `Helper` 弱语义命名，并逐步把 `Project` / `SingleFile` 这类范围词从类型名前缀移到目录、命名空间或主语后的限定词。
 	- [x] 已先收敛 CLI 总入口 runner 命名：`CliTopLevelCommandRunner`、`CliDslScriptCommandRunner`、`CliStoryGraphCommandRunner` 已分别改为 `CliCommandTopLevelRunner`、`CliCommandSingleFileRunner`、`CliCommandProjectRunner`，将范围词后移到 `Command` 主语之后。
 	- [x] 已继续按终局后缀白名单收口 CLI 命令入口：`CliCommandTopLevelRunner`、`CliCommandSingleFileRunner`、`CliCommandProjectRunner` 以及 `CliUnitySample*CommandRunner` 已统一去掉 `Runner`，收敛为 `CliTopLevelCommand`、`CliDslScriptCommand`、`CliStoryGraphCommand` 与 `CliUnitySample*Command`。
 	- [x] 已继续按终局后缀白名单收口 CLI 展示与命令元数据类型：`CliCompileOutput`、`CliProjectCompileOutput` 已分别改为 `CliCompileViewModel`、`CliStoryGraphCompileViewModel`，`CliCommandCatalog` 已改为 `CliCommandProvider`，内部 `CliCommandDefinition` 也已改为 `CliCommandModel`。
@@ -154,7 +144,7 @@
 	- [x] C4.2 迁移 diagnostics 能力的第一层：`DslScriptDiagnosticProvider` 直接调用 Compiler，并把 Compiler 1-based `line` / `column` 转换为编辑器 0-based `line` / `character`。
 	- [x] C4.3 迁移 definition 的第一层：`DslScriptDefinitionProvider` 直接复用 Compiler source span，并通过 `EditorLocationMapperDomain` 输出 editor location。
 	- [x] C4.4 迁移 references / completion 的第一层：`DslScriptReferenceProvider` 和 `DslScriptCompletionProvider` 直接读取 Compiler graph 输出。
-- [ ] 将 Cli、VSCode 和未来 LanguageServer 共享的项目级流程继续拆成显式职责模块，优先落到 `Tooling` 的 `DslScriptSources`、`ToolConfig`、`Preview`、`Localization`、`HostSchema`、`HostBinding` 等模块；如未来确需统一门面，也应建立在这些模块之上，而不是先造一个大而泛的 `ProjectService`。
+- [ ] 继续收敛 Cli、VSCode 和未来 LanguageServer 共享的项目级流程：优先落到 `Tooling` 的 `DslScriptSources`、`ToolConfig`、`Preview`、`Localization`、`HostSchema`、`HostBinding` 等窄模块；如未来确需统一门面，也应建立在这些模块之上，而不是先造一个大而泛的 `ProjectService`。
 - [x] 建立 workspace index 过渡模型，承接 VSCode 当前轻量扫描并为未来 LanguageServer 留出替换来源。
 	- [x] C3.1 已建立 [Workspace Index Contract](workspace-index-contract.md)，定义 nodes、node references、speakers、host bindings、metadata、schema capabilities 与统一 0-based 编辑器位置对象。
 	- [x] C3.2 对齐现有 VSCode `WorkspaceIndex` provider 输出字段：node references 补 `target`，speakers / host bindings 补 `sourceKind`，host bindings 补 `name`，metadata 补 `key` / `value`。
@@ -169,16 +159,16 @@
 - [x] Runtime Host 阶段再引入 `NarrativeRuntime`，采用生命周期式执行模型，不提前把 runtime loop 放进 Core 编译层。
 	- [x] C5.1 已创建 `src/Internal/Runtime/Inscape.Runtime.csproj` 并加入 `Inscape.slnx`。
 	- [x] C5.2 已建立 `NarrativeRuntime` 最小 IR 消费生命周期：`LoadGraph`、`Start`、`Choose`、`Continue`、`Restore`；Runtime 不解析 `.inscape`，不依赖 VSCode / HTML Preview / UnitySample。
-- [ ] 保持 `src/ExternalSupport/UnityPlugin/Inscape.Adapters.UnitySample` 与 `src/ExternalSupport/UnityPlugin/unity-bird-importer` 作为 ExternalSupport 过渡样例，暂不纳入 Internal 主动重构范围；只在 Host Bridge / UnityPlugin 设计阶段把它们当验证样本使用。
+- [x] 保持 `src/ExternalSupport/UnityPlugin/Inscape.Adapters.UnitySample` 与 `src/ExternalSupport/UnityPlugin/unity-bird-importer` 作为 ExternalSupport 过渡样例，暂不纳入 Internal 主动重构范围；只在 Host Bridge / UnityPlugin 设计阶段把它们当验证样本使用。
 - [x] 完成 D 阶段 Core 干净与 Host Bridge 隔离收口。
 	- [x] D1.1 Compiler 依赖巡检：确认 `Inscape.Compiler` 不依赖 Unity、VSCode、HTML、Bird、Addressables、ExternalSupport、Tooling、Cli、LanguageServer 或 Runtime；详见 [Core Boundary Audit](core-boundary-audit.md)。
 	- [x] D1.2 Compiler 角色目录与命名自检：对照命名规范检查 `Model` / `Parsing` / `Analysis` / `Localization` 角色边界，并修正文档过期口径。
 	- [x] D2.1 ExternalSupport 隔离自检：确认 UnitySample / importer 仍只在 ExternalSupport 路径与独立测试链路中出现，不反向污染 Internal；详见 [ExternalSupport Boundary Audit](external-support-boundary-audit.md)。
 	- [x] D2.2 Host Bridge 契约草案：定义可表达 UnitySample 当前能力、但不被 UnitySample 限死的配置模型；详见 [Host Bridge Contract](host-bridge-contract.md)。
-	- [ ] D3 后续迁移：把 `ToolConfigModel.UnitySample` / VSCode `UnitySample` 文案迁到通用 `hostBridge` 配置读取与展示，并保留旧字段 fallback。
+	- [x] D3 后续迁移：把 `ToolConfigModel.UnitySample` / VSCode `UnitySample` 文案迁到通用 `hostBridge` 配置读取与展示，并保留旧字段 fallback。
 		- [x] D3.1 ToolConfig 支持通用 `hostBridge` 路径读取与归一化，保留 `unitySample` 旧字段 fallback。
 		- [x] D3.2 VSCode HostBinding / speaker 展示文案迁到 Host Bridge 口径，保留 UnitySample fallback 文案。
-- [ ] 完成 E 阶段防回归工作流固化。
+- [x] 完成 E 阶段防回归工作流固化。
 	- [x] E1/E3 建立 [Regression Workflow](regression-workflow.md)：固化节点开始前、行为契约、命名 / 分层自检、验证命令、提交拆分、提交前检查和推送后检查。
 	- [x] E2 固化 VSCode 交互回归清单到扩展文档，并明确 `.vsix` 重建 / 安装 / reload 边界。
 
@@ -224,9 +214,9 @@
 - [x] 为编辑器语法配色与预览 UI 提供独立样式配置文件，允许开发者通过 `inscape.config.json` 指向简洁 JSON 样式表并在本机快速调参。
 - [ ] 为 VSCode 预览补充更细粒度的未保存内容热刷新、局部更新与状态提示。
 - [ ] 继续验证正文 / 选项文本的 `DefinitionProvider` 链接态与 selection bridge 是否稳定满足“默认无下划线、Ctrl+指向才显示链接态、Ctrl+Click 复用预览定位”；若后续调整实现，仍需保持这一交互不回退到 `DocumentLinkProvider`。
-- [ ] 设计并实现 C# Language Server 第一版能力范围：诊断、跳转定义、引用查找、补全、大纲、悬浮说明。
+- [ ] 补齐 C# Language Server 第一版能力范围：diagnostics、definition、references、completion 已有基线；下一步补 outline / hover 规划，并设计 VSCode 前端何时从 JS provider 切到 LanguageServer。
 - [x] 设计补全数据来源：当前文件节点、项目节点、角色表、宿主绑定表、宿主 Schema 查询 / 事件清单。
-- [ ] 将 `hostSchema` 中的查询 / 事件清单接入 `.inscape` 脚本补全与 Hover，但不改变当前 DSL 编译语义。
+- [ ] 将 `hostSchema` 中的事件清单接入 `.inscape` 脚本补全与 Hover，并评估现有 JS query interpolation provider 是否应复用 Tooling audit / reader 契约；不改变当前 DSL 编译语义。
 - [x] 定义第一版诊断清单：重复节点、非法节点名、缺失目标、不可达节点、空节点、选项语法问题。
 
 ## HTML 调试预览

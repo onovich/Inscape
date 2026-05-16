@@ -1,8 +1,8 @@
 ﻿# 研发计划
 
-状态：草案
+状态：持续维护
 
-最后更新：2026-05-11
+最后更新：2026-05-16
 
 本文用于把当前已经确认的架构结论转成研发顺序。它不替代 [路线图](roadmap.md)，而是把接下来 1 到 3 轮可执行工作压成具体阶段。
 
@@ -10,16 +10,19 @@
 
 - Internal 架构收敛为：`Compiler`、`Tooling`、`Cli`、`VSCode`、`LanguageServer`、`Runtime`
 - ExternalSupport 当前只确认：`UnityPlugin`
-- 当前 `Inscape.Compiler` 视为 `Compiler` 雏形
-- 当前 `Inscape.Cli` 同时承载了 `Cli` 与部分 `Tooling`
-- 当前 `src/Internal/VSCode/vscode-inscape` 仍是前端与语义桥接混合体
+- 当前 `Inscape.Compiler` 已完成项目名、命名空间与主要角色后缀收敛
+- 当前 `Inscape.Cli` 已退回命令入口、参数和输出适配层，主要共享流程已上提到 `Tooling`
+- 当前 `src/Internal/VSCode/vscode-inscape` 已完成 B 阶段拆分，`extension.js` 主要保留注册入口、实例装配和少量 glue
 - Unity 支持长期不进入默认 .NET solution 编译链
+- LanguageServer 与 Runtime 已建立 Internal 基线项目，但 VSCode 前端尚未切到 C# LanguageServer 主路径
 
 当前研发顺序已新增一个更高优先级前置阶段：先完成目录骨架与目录规则，再恢复 Tooling、VSCode、LanguageServer 和 UnityPlugin 的细粒度重构。详见 [目录优先重构蓝图](directory-first-reframe-plan.md)。
 
 ## 阶段 -1：目录骨架与目录规则前置
 
 目标：先让长期结构在仓库外形中可见。
+
+状态：已完成第一轮。
 
 具体任务：
 
@@ -50,6 +53,8 @@
 
 目标：把当前 Cli 里的共享流程移到可复用的 Tooling。
 
+状态：已完成第一轮。后续只在出现真实共享面时继续拆窄模块，不引入大而泛的 `ProjectService`。
+
 优先模块：
 
 1. `DslScriptSources`
@@ -77,6 +82,8 @@
 
 目标：让 VSCode 的重语义能力开始摆脱 CLI 进程桥接。
 
+状态：已建立基线。当前已具备 diagnostics、definition、references、completion 的第一层 provider；下一步补 outline / hover 范围和 VSCode 前端迁移边界。
+
 第一批能力：
 
 1. 诊断
@@ -100,6 +107,8 @@
 ## 阶段 3：拆分 VSCode 前端
 
 目标：把 `extension.js` 从单文件入口拆成可维护模块。
+
+状态：已完成 B 阶段拆分。后续重点转向 Host Schema query / event 作者体验、预览增量体验和 LanguageServer client 迁移。
 
 目标模块：
 
@@ -126,6 +135,8 @@
 
 目标：让 Unity 支持从样例适配过渡到受控的外部支持链路。
 
+状态：已完成非 Unity 研发与 Unity 计划准备。Unity 相关继续先做设计和计划，等方案落实后再进入代码研发。
+
 具体任务：
 
 1. 明确 `HostSchema` 与 `HostBinding` 的 Tooling 流程边界。
@@ -141,6 +152,8 @@
 ## 阶段 5：Runtime 前置设计
 
 目标：在不污染 Compiler 的前提下，为长期 Runtime 做准备。
+
+状态：已建立 `NarrativeRuntime` 最小 IR 消费生命周期。后续再扩展 Host Bridge / Runtime Host，不回灌 Compiler。
 
 具体任务：
 
