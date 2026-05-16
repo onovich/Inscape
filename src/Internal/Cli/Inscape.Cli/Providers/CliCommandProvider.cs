@@ -32,6 +32,11 @@
                                      "inscape export-host-schema-template [-o inscape.host.schema.json]",
                                      "dotnet run --project src\\Internal\\Cli\\Inscape.Cli\\Inscape.Cli.csproj -- export-host-schema-template -o config\\inscape.host.schema.json",
                                      "The template is a versioned design scaffold. It does not change current DSL parsing or UnitySample export behavior."),
+            new CliCommandModel("audit-query-interpolation-project", "Host schema", true,
+                                     "Audit [] query interpolation names against the configured Host Schema without changing compiler diagnostics.",
+                                     "inscape audit-query-interpolation-project <root> [--format json|text] [-o audit.json]",
+                                     "dotnet run --project src\\Internal\\Cli\\Inscape.Cli\\Inscape.Cli.csproj -- audit-query-interpolation-project samples --format json",
+                                     "Warnings are explicit authoring audit output. They do not change compile-project or diagnose-project behavior."),
             new CliCommandModel("check-project", "Project", true,
                                      "Validate all .inscape files under a project root.",
                                      "inscape check-project <root> [--entry node.name]",
@@ -76,6 +81,7 @@
             Console.WriteLine("  inscape commands");
             Console.WriteLine("  inscape help <command>");
             Console.WriteLine("  inscape export-host-schema-template [-o inscape.host.schema.json]");
+            Console.WriteLine("  inscape audit-query-interpolation-project <root> [--format json|text] [-o audit.json]");
             Console.WriteLine("  inscape check <file.inscape>");
             Console.WriteLine("  inscape diagnose <file.inscape> [-o diagnostics.json]");
             Console.WriteLine("  inscape extract-l10n <file.inscape> [-o strings.csv]");

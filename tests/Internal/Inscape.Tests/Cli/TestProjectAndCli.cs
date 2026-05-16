@@ -69,6 +69,7 @@ Narrator: Start.
             AssertTrue(text.Contains("Single-file:"), "Commands should list single-file group.");
             AssertTrue(text.Contains("Host schema:"), "Commands should list host schema group.");
             AssertTrue(text.Contains("export-host-schema-template"), "Commands should list host schema template command.");
+            AssertTrue(text.Contains("audit-query-interpolation-project"), "Commands should list query interpolation audit command.");
             AssertFalse(text.Contains("export-unity-sample-role-template"), "Internal CLI should not list UnitySample role template command.");
             AssertTrue(text.Contains("Run `inscape help <command>`"), "Commands should explain command help.");
         }
@@ -124,6 +125,49 @@ Narrator: Start.
             AssertTrue(root.GetProperty("events").GetArrayLength() > 0, "Host schema should include event examples.");
             AssertEqual("has_item", root.GetProperty("queries")[0].GetProperty("name").GetString(), "Host schema query example name");
             AssertEqual("open_window", root.GetProperty("events")[0].GetProperty("name").GetString(), "Host schema event example name");
+        }
+
+        static void CliAuditQueryInterpolationProjectEmitsJson() {
+            string directory = Path.Combine(Path.GetTempPath(), "inscape-cli-query-audit-" + Guid.NewGuid().ToString("N"));
+            string configDirectory = Path.Combine(directory, "config");
+            Directory.CreateDirectory(configDirectory);
+            try {
+                File.WriteAllText(Path.Combine(directory, "inscape.config.json"), """
+{
+  "hostSchema": "config/inscape.host.schema.json"
+}
+""", Encoding.UTF8);
+
+                File.WriteAllText(Path.Combine(configDirectory, "inscape.host.schema.json"), """
+{
+  "format": "inscape.host-schema",
+  "formatVersion": 1,
+  "queries": [
+    { "name": "player.gold", "returnType": "number", "isAsync": false, "parameters": [] },
+    { "name": "has_item", "returnType": "bool", "isAsync": false, "parameters": [{ "name": "itemId", "type": "string" }] }
+  ]
+}
+""", Encoding.UTF8);
+
+                File.WriteAllText(Path.Combine(directory, "story.inscape"), """
+:: start
+旁白：金币 [player.gold]，物品 [has_item]，未知 [player.godl]。
+旁白：[timeline: court_intro] 是 legacy binding，不是 query。
+""", Encoding.UTF8);
+
+                string output = RunCliForOutput(new[] { "audit-query-interpolation-project", directory, "--format", "json" });
+                using JsonDocument document = JsonDocument.Parse(output);
+                JsonElement root = document.RootElement;
+                AssertEqual("inscape.query-interpolation.audit", root.GetProperty("format").GetString(), "Audit format");
+                AssertEqual(3, root.GetProperty("summary").GetProperty("interpolationCount").GetInt32(), "Audit interpolation count");
+                AssertEqual(2, root.GetProperty("summary").GetProperty("diagnosticCount").GetInt32(), "Audit diagnostic count");
+                AssertEqual(1, CountDiagnostics(root, "IQI001"), "Audit unknown query diagnostic count");
+                AssertEqual(1, CountDiagnostics(root, "IQI002"), "Audit parameterized query diagnostic count");
+            } finally {
+                if (Directory.Exists(directory)) {
+                    Directory.Delete(directory, true);
+                }
+            }
         }
 
         static void StoryGraphCompilerDomainResolvesCrossFileTargets() {

@@ -10,6 +10,10 @@ namespace Inscape.Cli {
     static class CliStoryGraphCommand {
 
         public static int Run(string command, string rootPath, string[] args, string? outputPath, JsonSerializerOptions jsonOptions) {
+            if (command == "audit-query-interpolation-project") {
+                return RunQueryInterpolationAudit(rootPath, args, outputPath, jsonOptions);
+            }
+
             if (!TryCompile(rootPath, args, jsonOptions, out ToolConfigModel config, out StoryGraphCompilationResultModel result)) {
                 return 1;
             }
@@ -61,6 +65,87 @@ namespace Inscape.Cli {
                     CliCommandProvider.PrintUsage();
                     return 1;
             }
+        }
+
+        static int RunQueryInterpolationAudit(string rootPath, string[] args, string? outputPath, JsonSerializerOptions jsonOptions) {
+            if (!Directory.Exists(rootPath)) {
+                Console.Error.WriteLine("Project root not found: " + rootPath);
+                return 3;
+            }
+
+            if (!ToolConfigReaderDomain.TryReadProjectConfig(rootPath,
+                                                             CliCore.ReadOption(args, "--config"),
+                                                             jsonOptions,
+                                                             out ToolConfigModel config,
+                                                             out string? errorMessage)) {
+                Console.Error.WriteLine(errorMessage);
+                return 3;
+            }
+
+            List<DslScriptSourceModel> sources = DslScriptSourcesLoaderDomain.Load(rootPath, null);
+            if (sources.Count == 0) {
+                Console.Error.WriteLine("No .inscape files found under: " + rootPath);
+                return 3;
+            }
+
+            HostSchemaQueryReadResultModel hostSchemaQueries = HostSchemaQueryReaderDomain.Read(config.HostSchema, jsonOptions);
+            QueryInterpolationAuditModel audit = QueryInterpolationAuditDomain.Audit(rootPath, config, sources, hostSchemaQueries);
+            string format = CliCore.ReadOption(args, "--format") ?? "text";
+            if (format == "json") {
+                CliCore.WriteOrPrint(outputPath, JsonSerializer.Serialize(audit, jsonOptions));
+                return 0;
+            }
+
+            if (format != "text") {
+                Console.Error.WriteLine("Unsupported audit format: " + format);
+                return 2;
+            }
+
+            CliCore.WriteOrPrint(outputPath, CreateQueryInterpolationAuditText(audit));
+            return 0;
+        }
+
+        static string CreateQueryInterpolationAuditText(QueryInterpolationAuditModel audit) {
+            System.Text.StringBuilder builder = new System.Text.StringBuilder();
+            builder.AppendLine("Query interpolation audit: " + audit.Workspace);
+            if (!string.IsNullOrWhiteSpace(audit.HostSchema.ConfiguredPath)) {
+                builder.AppendLine("Host Schema: " + audit.HostSchema.ConfiguredPath);
+            }
+            builder.AppendLine();
+
+            if (audit.Diagnostics.Count == 0) {
+                builder.AppendLine("No query interpolation issues found.");
+            } else {
+                for (int i = 0; i < audit.Diagnostics.Count; i += 1) {
+                    QueryInterpolationAuditDiagnosticModel diagnostic = audit.Diagnostics[i];
+                    builder.Append(diagnostic.Severity)
+                           .Append(' ')
+                           .Append(diagnostic.Code)
+                           .Append(' ')
+                           .Append(diagnostic.Source.Path);
+                    if (diagnostic.Source.Line > 0 && diagnostic.Source.Column > 0) {
+                        builder.Append(':')
+                               .Append(diagnostic.Source.Line)
+                               .Append(':')
+                               .Append(diagnostic.Source.Column);
+                    }
+                    if (!string.IsNullOrWhiteSpace(diagnostic.Raw)) {
+                        builder.Append(' ')
+                               .Append(diagnostic.Raw);
+                    }
+
+                    builder.AppendLine();
+                    builder.AppendLine("  " + diagnostic.Message);
+                    builder.AppendLine();
+                }
+            }
+
+            builder.Append("Summary: ")
+                   .Append(audit.Summary.InterpolationCount)
+                   .Append(audit.Summary.InterpolationCount == 1 ? " interpolation, " : " interpolations, ")
+                   .Append(audit.Summary.DiagnosticCount)
+                   .Append(audit.Summary.DiagnosticCount == 1 ? " diagnostic." : " diagnostics.");
+            return builder.ToString();
         }
 
         static bool TryCompile(string rootPath,
