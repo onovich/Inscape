@@ -165,6 +165,16 @@
           "scope": "resource",
           "description": "Delay before refreshing diagnostics after document changes."
         },
+        "inscape.diagnostics.backend": {
+          "type": "string",
+          "default": "languageServer",
+          "enum": [
+            "languageServer",
+            "compiler"
+          ],
+          "scope": "resource",
+          "description": "Diagnostics backend. languageServer uses Inscape.LanguageServer first and falls back to the configured compiler invocation; compiler uses only inscape.compiler.command and inscape.compiler.args."
+        },
         "inscape.compiler.command": {
           "type": "string",
           "default": "dotnet",

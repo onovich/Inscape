@@ -59,37 +59,54 @@ class DslScriptDiagnosticScheduler {
             return;
         }
 
-        const invocation = this.createCompilerInvocation(this.context, document, tempPath);
+        const invocationOrInvocations = this.createCompilerInvocation(this.context, document, tempPath);
+        const invocations = Array.isArray(invocationOrInvocations)
+            ? invocationOrInvocations
+            : [invocationOrInvocations];
+
+        this.runInvocation(document, tempPath, key, runId, invocations, 0);
+    }
+
+    runInvocation(document, tempPath, key, runId, invocations, index) {
+        const invocation = invocations[index];
         this.childProcess.execFile(invocation.command, invocation.args, {
             cwd: invocation.cwd,
             windowsHide: true,
             maxBuffer: 1024 * 1024 * 8
         }, (error, stdout, stderr) => {
-            this.fs.unlink(tempPath, () => { });
-
             if (this.runIds.get(key) !== runId) {
+                this.fs.unlink(tempPath, () => { });
                 return;
             }
 
             if (!stdout || !stdout.trim()) {
-                const message = stderr && stderr.trim()
-                    ? stderr.trim()
-                    : (error && error.message ? error.message : "Inscape compiler produced no diagnostic output.");
-                this.diagnostics.set(document.uri, [
-                    this.createExtensionDiagnostic(document, message)
-                ]);
+                this.tryFallbackOrReport(document, tempPath, key, runId, invocations, index, stderr, error, "Inscape diagnostics produced no output.");
                 return;
             }
 
             try {
                 const payload = JSON.parse(stdout);
                 this.applyDiagnostics(this.diagnostics, document, payload.diagnostics || []);
+                this.fs.unlink(tempPath, () => { });
             } catch (parseError) {
-                this.diagnostics.set(document.uri, [
-                    this.createExtensionDiagnostic(document, "Unable to parse Inscape diagnostics: " + parseError.message)
-                ]);
+                this.tryFallbackOrReport(document, tempPath, key, runId, invocations, index, stderr, parseError, "Unable to parse Inscape diagnostics: " + parseError.message);
             }
         });
+    }
+
+    tryFallbackOrReport(document, tempPath, key, runId, invocations, index, stderr, error, fallbackMessage) {
+        if (index + 1 < invocations.length) {
+            this.runInvocation(document, tempPath, key, runId, invocations, index + 1);
+            return;
+        }
+
+        this.fs.unlink(tempPath, () => { });
+        const message = stderr && stderr.trim()
+            ? stderr.trim()
+            : (error && error.message ? error.message : fallbackMessage);
+        this.diagnostics.set(document.uri, [
+            this.createExtensionDiagnostic(document, message)
+        ]);
     }
 
     dispose() {

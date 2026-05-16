@@ -8,7 +8,7 @@ This is the first lightweight authoring layer for `.inscape` scripts. It keeps s
 - Highlights node headers, dialogue speakers, narration, choices, jumps, metadata lines, inline tags, and invalid node or jump target spellings.
 - Provides basic snippets for nodes, dialogue, choices, jumps, metadata, and inline tags.
 - Keeps metadata and inline tags on comment-like scopes so themes can visually soften them while prose remains readable.
-- Refreshes diagnostics by invoking `dotnet run --project src/Internal/Cli/Inscape.Cli/Inscape.Cli.csproj -- diagnose-project <workspace> --override <source> <temp-file>`.
+- Refreshes diagnostics through `Inscape.LanguageServer --diagnose-project <workspace> --override <source> <temp-file>` first, then falls back to the configured CLI `diagnose-project` invocation if the LanguageServer probe is unavailable.
 - Provides workspace node completions in jump target positions.
 - Provides dialogue speaker completions from `inscape.config.json` `hostBridge`, with legacy `unitySample.roleMap` and workspace speaker fallback.
 - Provides host event / timing hook completions from `inscape.config.json` `hostBridge`, with legacy `unitySample.bindingMap` fallback for `@timeline ...`, `@timeline.<phase> ...`, and legacy `[kind: ...]` inline host binding positions.
@@ -143,5 +143,6 @@ If that endpoint cannot run, VSCode falls back to direct Host Schema JSON readin
 
 - `inscape.diagnostics.enabled`: turns compiler-backed diagnostics on or off.
 - `inscape.diagnostics.debounceMs`: changes the refresh delay after edits.
+- `inscape.diagnostics.backend`: chooses `languageServer` first with compiler fallback, or `compiler` only.
 - `inscape.compiler.command`: command used to run the compiler. Defaults to `dotnet`.
 - `inscape.compiler.args`: arguments passed to the compiler command. The default path assumes VSCode is opened at the repository root.

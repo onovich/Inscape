@@ -9,6 +9,7 @@ class DslScriptDiagnosticController {
         this.isInscapeDocument = dependencies.isInscapeDocument;
         this.normalizePath = dependencies.normalizePath;
         this.clamp = dependencies.clamp;
+        this.resolveLanguageServerProjectPath = dependencies.resolveLanguageServerProjectPath;
     }
 
     writeTempDocument(document) {
@@ -35,10 +36,39 @@ class DslScriptDiagnosticController {
             "${documentFile}": document.uri.fsPath
         };
 
-        const args = rawArgs.map((value) => this.replaceVariables(String(value), variables));
-        return {
+        const fallbackArgs = rawArgs.map((value) => this.replaceVariables(String(value), variables));
+        const invocations = [];
+        const diagnosticsBackend = configuration.get("diagnostics.backend", "languageServer");
+
+        if (diagnosticsBackend !== "compiler") {
+            invocations.push(this.createLanguageServerDiagnosticInvocation(command, workspaceFolder, document, tempPath));
+        }
+
+        invocations.push({
+            name: "compiler",
             command,
-            args,
+            args: fallbackArgs,
+            cwd: workspaceFolder
+        });
+
+        return invocations;
+    }
+
+    createLanguageServerDiagnosticInvocation(command, workspaceFolder, document, tempPath) {
+        return {
+            name: "languageServer",
+            command,
+            args: [
+                "run",
+                "--project",
+                this.resolveLanguageServerProjectPath(workspaceFolder),
+                "--",
+                "--diagnose-project",
+                workspaceFolder,
+                "--override",
+                document.uri.fsPath,
+                tempPath
+            ],
             cwd: workspaceFolder
         };
     }
@@ -88,12 +118,14 @@ class DslScriptDiagnosticController {
     }
 
     mapDiagnosticsForDocument(document, diagnostics) {
-        return diagnostics.filter((diagnostic) => this.diagnosticMatchesDocument(diagnostic, document))
+        return diagnostics.map((diagnostic) => this.normalizeDiagnostic(diagnostic))
+            .filter((diagnostic) => this.diagnosticMatchesDocument(diagnostic, document))
             .map((diagnostic) => {
-            const line = this.clamp((diagnostic.line || 1) - 1, 0, Math.max(0, document.lineCount - 1));
+            const line = this.clamp(diagnostic.line, 0, Math.max(0, document.lineCount - 1));
             const textLine = document.lineAt(line);
-            const character = this.clamp((diagnostic.column || 1) - 1, 0, textLine.text.length);
-            const end = character < textLine.text.length ? textLine.text.length : Math.min(character + 1, textLine.text.length + 1);
+            const character = this.clamp(diagnostic.character, 0, textLine.text.length);
+            const length = typeof diagnostic.length === "number" && diagnostic.length > 0 ? diagnostic.length : 1;
+            const end = this.clamp(character + length, character + 1, Math.max(character + 1, textLine.text.length));
             const range = new this.vscode.Range(line, character, line, end);
             const vscodeDiagnostic = new this.vscode.Diagnostic(
                 range,
@@ -105,6 +137,31 @@ class DslScriptDiagnosticController {
             vscodeDiagnostic.source = "Inscape";
             return vscodeDiagnostic;
         });
+    }
+
+    normalizeDiagnostic(diagnostic) {
+        const location = diagnostic && diagnostic.location ? diagnostic.location : undefined;
+        if (location) {
+            return {
+                code: diagnostic.code,
+                severity: diagnostic.severity,
+                message: diagnostic.message,
+                sourcePath: location.sourcePath,
+                line: typeof location.line === "number" ? location.line : 0,
+                character: typeof location.character === "number" ? location.character : 0,
+                length: typeof location.length === "number" ? location.length : 1
+            };
+        }
+
+        return {
+            code: diagnostic ? diagnostic.code : undefined,
+            severity: diagnostic ? diagnostic.severity : undefined,
+            message: diagnostic ? diagnostic.message : undefined,
+            sourcePath: diagnostic ? diagnostic.sourcePath : undefined,
+            line: diagnostic && typeof diagnostic.line === "number" ? diagnostic.line - 1 : 0,
+            character: diagnostic && typeof diagnostic.column === "number" ? diagnostic.column - 1 : 0,
+            length: 1
+        };
     }
 
     diagnosticMatchesDocument(diagnostic, document) {

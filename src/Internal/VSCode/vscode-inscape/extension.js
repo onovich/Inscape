@@ -181,7 +181,8 @@ dslScriptDiagnosticController = new DslScriptDiagnosticController({
     vscode,
     isInscapeDocument,
     normalizePath,
-    clamp: (value, minimum, maximum) => editorAuthoringLocationProvider.clamp(value, minimum, maximum)
+    clamp: (value, minimum, maximum) => editorAuthoringLocationProvider.clamp(value, minimum, maximum),
+    resolveLanguageServerProjectPath: (workspaceFolderPath) => resolveLanguageServerProjectPathFromBase(workspaceFolderPath, __dirname)
 });
 
 extensionLifecycleController = new ExtensionLifecycleController({
@@ -403,6 +404,21 @@ async function selectWorkspaceFolder() {
 
 function resolveCliProjectPath(context, workspaceFolderPath) {
     return resolveCliProjectPathFromBase(workspaceFolderPath, context.extensionPath);
+}
+
+function resolveLanguageServerProjectPathFromBase(workspaceFolderPath, extensionBasePath) {
+    const candidates = [
+        path.join(workspaceFolderPath, "src", "Internal", "LanguageServer", "Inscape.LanguageServer.csproj"),
+        path.resolve(extensionBasePath, "..", "..", "LanguageServer", "Inscape.LanguageServer.csproj")
+    ];
+
+    for (const candidate of candidates) {
+        if (fs.existsSync(candidate)) {
+            return candidate;
+        }
+    }
+
+    return candidates[0];
 }
 
 function resolveCliProjectPathFromBase(workspaceFolderPath, extensionBasePath) {
