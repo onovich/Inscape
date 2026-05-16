@@ -66,6 +66,14 @@ Inscape: Show Host Schema Capabilities
 
 Tooling 侧已经提供 `HostSchemaQueryReaderDomain` 与 `HostSchemaEventReaderDomain`，分别把 `queries[]`、`events[]` 归一化成带 source location 的能力模型。VSCode 当前仍保留轻量 JS reader，原因是扩展直接启动 .NET Tooling 会增加编辑延迟和发布复杂度；后续应优先通过 C# LanguageServer 或显式 CLI capability endpoint 复用 Tooling 契约。
 
+当前显式 CLI endpoint 是：
+
+```powershell
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- inspect-host-schema-project samples -o artifacts\host-schema-capabilities.json
+```
+
+它输出 `inscape.host-schema.capabilities` JSON，包含 Host Schema 读取状态、归一化 queries 和 events。该命令不编译 `.inscape`，也不扫描脚本文本。
+
 ## 格式草案
 
 ```json

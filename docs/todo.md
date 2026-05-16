@@ -10,7 +10,7 @@
 
 下一位接手者建议按以下顺序推进：
 
-1. 收敛 Host Schema 脚本作者体验后续：Tooling 已有 query / event reader，VSCode 已接入 `[]` query 与 `@emit` event 补全 / Hover；下一步通过 LanguageServer 或显式 CLI capability endpoint 复用 Tooling 契约，避免 VSCode 与 CLI 长期各自解析 Host Schema。
+1. 收敛 Host Schema 脚本作者体验后续：Tooling 已有 query / event reader，CLI 已提供 `inspect-host-schema-project` capability endpoint，VSCode 已接入 `[]` query 与 `@emit` event 补全 / Hover；下一步让 VSCode 或 LanguageServer 消费该 endpoint / Tooling 契约，逐步移除 JS 重复解析。
 2. 继续打磨 VSCode 可玩预览：补未保存内容的更细粒度热刷新、刷新中状态提示，以及可选的预览 / 源码同步策略。
 	- 正文 / 选项文本不再用 `DocumentLinkProvider`，因为它会导致整段文本常驻下划线；当前用 `DefinitionProvider` 恢复“默认无下划线、Ctrl+指向才显示链接态”的编辑体验，并通过 selection bridge 在 Ctrl+Click 后执行预览定位，显式命令仅作为兜底。
 3. 补齐 LanguageServer 第一版范围：已有 diagnostics / definition / references / completion 基线，下一步补 outline / hover 规划和 VSCode 前端迁移边界。
@@ -218,7 +218,8 @@
 - [x] 设计补全数据来源：当前文件节点、项目节点、角色表、宿主绑定表、宿主 Schema 查询 / 事件清单。
 - [x] 将 `hostSchema` 中的事件清单接入 `.inscape` 脚本补全与 Hover，不改变当前 DSL 编译语义。
 - [x] 评估 VSCode JS query / event provider 是否应复用 `Inscape.Tooling` Host Schema reader / audit 契约：结论是 Tooling 先补齐 event reader，VSCode 暂保留轻量 JS reader；后续通过 LanguageServer 或显式 CLI capability endpoint 复用 Tooling，避免直接从扩展热路径启动 .NET。
-- [ ] 设计 Host Schema capability endpoint：由 LanguageServer 或 CLI 输出 query / event 能力清单，供 VSCode 复用 Tooling reader，而不是长期维护 JS 重复解析。
+- [x] 设计并实现 Host Schema capability endpoint：Internal CLI 新增 `inspect-host-schema-project <root> [-o capabilities.json]`，输出 `inscape.host-schema.capabilities`，供 VSCode / LanguageServer 后续复用 Tooling reader。
+- [ ] 让 VSCode 或 LanguageServer 消费 Host Schema capability endpoint / Tooling 契约，逐步移除 JS query / event provider 的重复 JSON 解析。
 - [x] 定义第一版诊断清单：重复节点、非法节点名、缺失目标、不可达节点、空节点、选项语法问题。
 
 ## HTML 调试预览

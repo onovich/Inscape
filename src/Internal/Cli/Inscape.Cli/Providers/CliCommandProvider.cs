@@ -37,6 +37,11 @@
                                      "inscape audit-query-interpolation-project <root> [--format json|text] [-o audit.json]",
                                      "dotnet run --project src\\Internal\\Cli\\Inscape.Cli\\Inscape.Cli.csproj -- audit-query-interpolation-project samples --format json",
                                      "Warnings are explicit authoring audit output. They do not change compile-project or diagnose-project behavior."),
+            new CliCommandModel("inspect-host-schema-project", "Host schema", true,
+                                     "Read configured Host Schema queries and events as a reusable capability catalog.",
+                                     "inscape inspect-host-schema-project <root> [-o capabilities.json]",
+                                     "dotnet run --project src\\Internal\\Cli\\Inscape.Cli\\Inscape.Cli.csproj -- inspect-host-schema-project samples -o artifacts\\host-schema-capabilities.json",
+                                     "This endpoint is for editor and LanguageServer integration. It does not compile .inscape files."),
             new CliCommandModel("check-project", "Project", true,
                                      "Validate all .inscape files under a project root.",
                                      "inscape check-project <root> [--entry node.name]",
@@ -82,6 +87,7 @@
             Console.WriteLine("  inscape help <command>");
             Console.WriteLine("  inscape export-host-schema-template [-o inscape.host.schema.json]");
             Console.WriteLine("  inscape audit-query-interpolation-project <root> [--format json|text] [-o audit.json]");
+            Console.WriteLine("  inscape inspect-host-schema-project <root> [-o capabilities.json]");
             Console.WriteLine("  inscape check <file.inscape>");
             Console.WriteLine("  inscape diagnose <file.inscape> [-o diagnostics.json]");
             Console.WriteLine("  inscape extract-l10n <file.inscape> [-o strings.csv]");

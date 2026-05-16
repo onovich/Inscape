@@ -28,6 +28,7 @@ namespace Inscape.Tests {
                 ("cli commands lists command reference", CliCommandsListsCommandReference),
                 ("cli help emits command details", CliHelpEmitsCommandDetails),
                 ("cli audit-query-interpolation-project emits json", CliAuditQueryInterpolationProjectEmitsJson),
+                ("cli inspect-host-schema-project emits json", CliInspectHostSchemaProjectEmitsJson),
                 ("cli export-host-schema-template emits json", CliExportHostSchemaTemplateEmitsJson),
                 ("project compiler resolves cross-file targets", StoryGraphCompilerDomainResolvesCrossFileTargets),
                 ("project compiler diagnoses duplicate nodes", StoryGraphCompilerDomainDiagnosesDuplicateNodes),

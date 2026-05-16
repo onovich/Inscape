@@ -70,6 +70,7 @@ Narrator: Start.
             AssertTrue(text.Contains("Host schema:"), "Commands should list host schema group.");
             AssertTrue(text.Contains("export-host-schema-template"), "Commands should list host schema template command.");
             AssertTrue(text.Contains("audit-query-interpolation-project"), "Commands should list query interpolation audit command.");
+            AssertTrue(text.Contains("inspect-host-schema-project"), "Commands should list host schema inspection command.");
             AssertFalse(text.Contains("export-unity-sample-role-template"), "Internal CLI should not list UnitySample role template command.");
             AssertTrue(text.Contains("Run `inscape help <command>`"), "Commands should explain command help.");
         }
@@ -163,6 +164,47 @@ Narrator: Start.
                 AssertEqual(2, root.GetProperty("summary").GetProperty("diagnosticCount").GetInt32(), "Audit diagnostic count");
                 AssertEqual(1, CountDiagnostics(root, "IQI001"), "Audit unknown query diagnostic count");
                 AssertEqual(1, CountDiagnostics(root, "IQI002"), "Audit parameterized query diagnostic count");
+            } finally {
+                if (Directory.Exists(directory)) {
+                    Directory.Delete(directory, true);
+                }
+            }
+        }
+
+        static void CliInspectHostSchemaProjectEmitsJson() {
+            string directory = Path.Combine(Path.GetTempPath(), "inscape-cli-host-schema-" + Guid.NewGuid().ToString("N"));
+            string configDirectory = Path.Combine(directory, "config");
+            Directory.CreateDirectory(configDirectory);
+            try {
+                File.WriteAllText(Path.Combine(directory, "inscape.config.json"), """
+{
+  "hostSchema": "config/inscape.host.schema.json"
+}
+""", Encoding.UTF8);
+
+                File.WriteAllText(Path.Combine(configDirectory, "inscape.host.schema.json"), """
+{
+  "format": "inscape.host-schema",
+  "formatVersion": 1,
+  "queries": [
+    { "name": "player.gold", "returnType": "int", "isAsync": false, "parameters": [] }
+  ],
+  "events": [
+    { "name": "open_window", "delivery": "blocking", "sideEffects": true, "parameters": [{ "name": "windowId", "type": "string" }] }
+  ]
+}
+""", Encoding.UTF8);
+
+                string output = RunCliForOutput(new[] { "inspect-host-schema-project", directory });
+                using JsonDocument document = JsonDocument.Parse(output);
+                JsonElement root = document.RootElement;
+                AssertEqual("inscape.host-schema.capabilities", root.GetProperty("format").GetString(), "Host schema capabilities format");
+                AssertTrue(root.GetProperty("hostSchema").GetProperty("loaded").GetBoolean(), "Host schema should be loaded.");
+                AssertEqual(1, root.GetProperty("queries").GetArrayLength(), "Host schema capability query count");
+                AssertEqual(1, root.GetProperty("events").GetArrayLength(), "Host schema capability event count");
+                AssertEqual("player.gold", root.GetProperty("queries")[0].GetProperty("name").GetString(), "Host schema capability query name");
+                AssertEqual("open_window", root.GetProperty("events")[0].GetProperty("name").GetString(), "Host schema capability event name");
+                AssertEqual("blocking", root.GetProperty("events")[0].GetProperty("delivery").GetString(), "Host schema capability event delivery");
             } finally {
                 if (Directory.Exists(directory)) {
                     Directory.Delete(directory, true);

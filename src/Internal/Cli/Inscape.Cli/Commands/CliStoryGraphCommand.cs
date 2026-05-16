@@ -10,6 +10,10 @@ namespace Inscape.Cli {
     static class CliStoryGraphCommand {
 
         public static int Run(string command, string rootPath, string[] args, string? outputPath, JsonSerializerOptions jsonOptions) {
+            if (command == "inspect-host-schema-project") {
+                return RunHostSchemaInspection(rootPath, args, outputPath, jsonOptions);
+            }
+
             if (command == "audit-query-interpolation-project") {
                 return RunQueryInterpolationAudit(rootPath, args, outputPath, jsonOptions);
             }
@@ -65,6 +69,26 @@ namespace Inscape.Cli {
                     CliCommandProvider.PrintUsage();
                     return 1;
             }
+        }
+
+        static int RunHostSchemaInspection(string rootPath, string[] args, string? outputPath, JsonSerializerOptions jsonOptions) {
+            if (!Directory.Exists(rootPath)) {
+                Console.Error.WriteLine("Project root not found: " + rootPath);
+                return 3;
+            }
+
+            if (!ToolConfigReaderDomain.TryReadProjectConfig(rootPath,
+                                                             CliCore.ReadOption(args, "--config"),
+                                                             jsonOptions,
+                                                             out ToolConfigModel config,
+                                                             out string? errorMessage)) {
+                Console.Error.WriteLine(errorMessage);
+                return 3;
+            }
+
+            HostSchemaCapabilityCatalogModel catalog = HostSchemaCapabilityCatalogDomain.Read(rootPath, config.HostSchema, jsonOptions);
+            CliCore.WriteOrPrint(outputPath, JsonSerializer.Serialize(catalog, jsonOptions));
+            return catalog.HostSchema.ErrorMessage == null ? 0 : 3;
         }
 
         static int RunQueryInterpolationAudit(string rootPath, string[] args, string? outputPath, JsonSerializerOptions jsonOptions) {
