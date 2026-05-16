@@ -30,6 +30,7 @@ const { defaultEditorStyle, defaultPreviewStyle } = require("./Styles/StyleDefau
 const { HostBindingProvider } = require("./WorkspaceIndex/HostBindingProvider");
 const { DslScriptMetadataProvider } = require("./WorkspaceIndex/DslScriptMetadataProvider");
 const { DslScriptNodeProvider } = require("./WorkspaceIndex/DslScriptNodeProvider");
+const { DslScriptQueryInterpolationProvider } = require("./WorkspaceIndex/DslScriptQueryInterpolationProvider");
 const { DslScriptSpeakerProvider } = require("./WorkspaceIndex/DslScriptSpeakerProvider");
 const { EditorAuthoringDataProvider } = require("./WorkspaceIndex/EditorAuthoringDataProvider");
 
@@ -91,6 +92,14 @@ const hostBindingProvider = new HostBindingProvider({
 const dslScriptMetadataProvider = new DslScriptMetadataProvider({
     vscode,
     collectWorkspaceTextSources: (document) => editorAuthoringDataProvider.collectTextSources(document)
+});
+
+const dslScriptQueryInterpolationProvider = new DslScriptQueryInterpolationProvider({
+    vscode,
+    fs,
+    readProjectConfig: (document) => editorAuthoringDataProvider.readProjectConfig(document),
+    resolveProjectConfigPath: (configPath, value) => editorAuthoringDataProvider.resolveProjectConfigPath(configPath, value),
+    formatDisplayPath: (sourcePath) => editorAuthoringLocationProvider.formatDisplayPath(sourcePath)
 });
 
 const dslScriptCompletionProvider = new DslScriptCompletionProvider({
