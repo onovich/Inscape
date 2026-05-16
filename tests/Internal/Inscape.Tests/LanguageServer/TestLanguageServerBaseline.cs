@@ -166,6 +166,45 @@ namespace Inscape.Tests {
             }
         }
 
+        static void LanguageServerProjectDiagnosticsApplyOverride() {
+            string directory = Path.Combine(Path.GetTempPath(), "inscape-language-server-project-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory);
+            string startPath = Path.Combine(directory, "start.inscape");
+            string targetPath = Path.Combine(directory, "target.inscape");
+            string overridePath = Path.Combine(directory, "target.override.tmp");
+
+            File.WriteAllText(startPath, """
+:: start
+旁白：开始。
+-> target.node
+""");
+
+            File.WriteAllText(targetPath, """
+:: old.node
+旁白：旧节点。
+""");
+
+            File.WriteAllText(overridePath, """
+:: target.node
+旁白：编辑器未保存的新节点。
+""");
+
+            try {
+                JsonElement initial = RunLanguageServerForJson(new[] { "--diagnose-project", directory });
+                AssertEqual("inscape.language-server-project-diagnostics", initial.GetProperty("format").GetString(), "Project diagnostics probe format");
+                AssertEqual(1, initial.GetProperty("formatVersion").GetInt32(), "Project diagnostics probe format version");
+                AssertTrue(CountJsonItemsWithString(initial.GetProperty("diagnostics"), "code", "INS020") == 1, "Project diagnostics should report missing target before override");
+
+                JsonElement overridden = RunLanguageServerForJson(new[] { "--diagnose-project", directory, "--override", targetPath, overridePath });
+                AssertEqual("inscape.language-server-project-diagnostics", overridden.GetProperty("format").GetString(), "Project diagnostics override probe format");
+                AssertTrue(CountJsonItemsWithString(overridden.GetProperty("diagnostics"), "code", "INS020") == 0, "Project diagnostics should apply unsaved override content");
+            } finally {
+                if (Directory.Exists(directory)) {
+                    Directory.Delete(directory, true);
+                }
+            }
+        }
+
         static JsonElement RunLanguageServerForJson(string[] args) {
             TextWriter originalOut = Console.Out;
             StringWriter output = new StringWriter();

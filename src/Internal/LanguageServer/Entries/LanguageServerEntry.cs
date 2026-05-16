@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Text.Json;
+using Inscape.Tooling;
 
 namespace Inscape.LanguageServer {
 
@@ -23,6 +24,23 @@ namespace Inscape.LanguageServer {
                     format = "inscape.language-server-diagnostics",
                     formatVersion = 1,
                     diagnostics = provider.GetDiagnostics(source, sourcePath)
+                }, new JsonSerializerOptions {
+                    WriteIndented = true,
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                }));
+                return 0;
+            }
+
+            if (args.Length > 1 && args[0] == "--diagnose-project") {
+                string rootPath = Path.GetFullPath(args[1]);
+                DslScriptProjectDiagnosticProvider provider = new DslScriptProjectDiagnosticProvider();
+                Console.WriteLine(JsonSerializer.Serialize(new {
+                    format = "inscape.language-server-project-diagnostics",
+                    formatVersion = 1,
+                    rootPath,
+                    diagnostics = provider.GetDiagnostics(rootPath,
+                                                          ReadSourceOverride(args),
+                                                          ReadOption(args, "--entry") ?? string.Empty)
                 }, new JsonSerializerOptions {
                     WriteIndented = true,
                     PropertyNamingPolicy = JsonNamingPolicy.CamelCase
@@ -108,8 +126,28 @@ namespace Inscape.LanguageServer {
                 return 0;
             }
 
-            Console.WriteLine("Inscape.LanguageServer baseline. Use --capabilities, --diagnose-file <path>, --definition-file <path> <nodeName>, --references-file <path> <nodeName>, --completion-file <path>, --document-symbols-file <path>, or --hover-file <path> <node|jump> <name>.");
+            Console.WriteLine("Inscape.LanguageServer baseline. Use --capabilities, --diagnose-file <path>, --diagnose-project <root> [--entry node.name] [--override source.inscape temp.inscape], --definition-file <path> <nodeName>, --references-file <path> <nodeName>, --completion-file <path>, --document-symbols-file <path>, or --hover-file <path> <node|jump> <name>.");
             return 0;
+        }
+
+        static string? ReadOption(string[] args, string optionName) {
+            for (int i = 0; i < args.Length - 1; i += 1) {
+                if (args[i] == optionName) {
+                    return args[i + 1];
+                }
+            }
+
+            return null;
+        }
+
+        static DslScriptSourceOverrideModel? ReadSourceOverride(string[] args) {
+            for (int i = 0; i < args.Length - 2; i += 1) {
+                if (args[i] == "--override") {
+                    return new DslScriptSourceOverrideModel(args[i + 1], args[i + 2]);
+                }
+            }
+
+            return null;
         }
 
         static LanguageServerCapabilityModel CreateCapabilities() {

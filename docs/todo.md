@@ -217,7 +217,7 @@
 - [x] 补齐 C# Language Server 第一版能力范围：diagnostics、definition、references、completion、outline、hover 都已有基线 probe。
 - [x] 设计 VSCode 前端何时从 JS provider 切到 LanguageServer，并保留哪些 fallback 边界；详见 [VSCode LanguageServer Migration Plan](vscode-language-server-migration-plan.md)。
 - [x] 为 LanguageServer diagnostics / definition / references / completion / outline / hover 建立 probe parity 测试，作为 VSCode client 切换前置条件。
-- [ ] 设计 LanguageServer 项目级 diagnostics endpoint，覆盖 unsaved override，并让 VSCode 保留 CLI diagnostics fallback。
+- [x] 设计并实现 LanguageServer 项目级 diagnostics endpoint：`--diagnose-project <root> [--entry node.name] [--override source.inscape temp.inscape]`，覆盖 unsaved override；VSCode 仍保留 CLI diagnostics fallback。
 - [x] 设计补全数据来源：当前文件节点、项目节点、角色表、宿主绑定表、宿主 Schema 查询 / 事件清单。
 - [x] 将 `hostSchema` 中的事件清单接入 `.inscape` 脚本补全与 Hover，不改变当前 DSL 编译语义。
 - [x] 评估 VSCode JS query / event provider 是否应复用 `Inscape.Tooling` Host Schema reader / audit 契约：结论是 Tooling 先补齐 event reader，VSCode 暂保留轻量 JS reader；后续通过 LanguageServer 或显式 CLI capability endpoint 复用 Tooling，避免直接从扩展热路径启动 .NET。
