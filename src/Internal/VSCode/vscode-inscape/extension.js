@@ -28,6 +28,7 @@ const { PreviewSourceController } = require("./PreviewWebview/PreviewSourceContr
 const { EditorStyleController } = require("./Styles/EditorStyleController");
 const { defaultEditorStyle, defaultPreviewStyle } = require("./Styles/StyleDefaults");
 const { HostBindingProvider } = require("./WorkspaceIndex/HostBindingProvider");
+const { HostSchemaCapabilityProvider } = require("./WorkspaceIndex/HostSchemaCapabilityProvider");
 const { DslScriptHostEventProvider } = require("./WorkspaceIndex/DslScriptHostEventProvider");
 const { DslScriptMetadataProvider } = require("./WorkspaceIndex/DslScriptMetadataProvider");
 const { DslScriptNodeProvider } = require("./WorkspaceIndex/DslScriptNodeProvider");
@@ -90,6 +91,14 @@ const hostBindingProvider = new HostBindingProvider({
     formatDisplayPath: (sourcePath) => editorAuthoringLocationProvider.formatDisplayPath(sourcePath)
 });
 
+const hostSchemaCapabilityProvider = new HostSchemaCapabilityProvider({
+    childProcess,
+    fs,
+    path,
+    vscode,
+    resolveCliProjectPath: (workspaceFolderPath) => resolveCliProjectPathFromBase(workspaceFolderPath, __dirname)
+});
+
 const dslScriptMetadataProvider = new DslScriptMetadataProvider({
     vscode,
     collectWorkspaceTextSources: (document) => editorAuthoringDataProvider.collectTextSources(document)
@@ -100,7 +109,8 @@ const dslScriptQueryInterpolationProvider = new DslScriptQueryInterpolationProvi
     fs,
     readProjectConfig: (document) => editorAuthoringDataProvider.readProjectConfig(document),
     resolveProjectConfigPath: (configPath, value) => editorAuthoringDataProvider.resolveProjectConfigPath(configPath, value),
-    formatDisplayPath: (sourcePath) => editorAuthoringLocationProvider.formatDisplayPath(sourcePath)
+    formatDisplayPath: (sourcePath) => editorAuthoringLocationProvider.formatDisplayPath(sourcePath),
+    hostSchemaCapabilityProvider
 });
 
 const dslScriptHostEventProvider = new DslScriptHostEventProvider({
@@ -108,7 +118,8 @@ const dslScriptHostEventProvider = new DslScriptHostEventProvider({
     fs,
     readProjectConfig: (document) => editorAuthoringDataProvider.readProjectConfig(document),
     resolveProjectConfigPath: (configPath, value) => editorAuthoringDataProvider.resolveProjectConfigPath(configPath, value),
-    formatDisplayPath: (sourcePath) => editorAuthoringLocationProvider.formatDisplayPath(sourcePath)
+    formatDisplayPath: (sourcePath) => editorAuthoringLocationProvider.formatDisplayPath(sourcePath),
+    hostSchemaCapabilityProvider
 });
 
 const dslScriptCompletionProvider = new DslScriptCompletionProvider({
@@ -391,9 +402,13 @@ async function selectWorkspaceFolder() {
 }
 
 function resolveCliProjectPath(context, workspaceFolderPath) {
+    return resolveCliProjectPathFromBase(workspaceFolderPath, context.extensionPath);
+}
+
+function resolveCliProjectPathFromBase(workspaceFolderPath, extensionBasePath) {
     const candidates = [
         path.join(workspaceFolderPath, "src", "Internal", "Cli", "Inscape.Cli", "Inscape.Cli.csproj"),
-        path.resolve(context.extensionPath, "..", "..", "Cli", "Inscape.Cli", "Inscape.Cli.csproj")
+        path.resolve(extensionBasePath, "..", "..", "Cli", "Inscape.Cli", "Inscape.Cli.csproj")
     ];
 
     for (const candidate of candidates) {

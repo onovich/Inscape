@@ -12,8 +12,8 @@ This is the first lightweight authoring layer for `.inscape` scripts. It keeps s
 - Provides workspace node completions in jump target positions.
 - Provides dialogue speaker completions from `inscape.config.json` `hostBridge`, with legacy `unitySample.roleMap` and workspace speaker fallback.
 - Provides host event / timing hook completions from `inscape.config.json` `hostBridge`, with legacy `unitySample.bindingMap` fallback for `@timeline ...`, `@timeline.<phase> ...`, and legacy `[kind: ...]` inline host binding positions.
-- Provides `[]` query interpolation completions and Hover from configured Host Schema zero-parameter simple queries such as `[player.gold]`; unknown queries are authoring hints only, not compiler errors.
-- Provides `@emit` host event completions and Hover from configured Host Schema `events[]`; unknown events are authoring hints only, not compiler errors.
+- Provides `[]` query interpolation completions and Hover from configured Host Schema zero-parameter simple queries such as `[player.gold]`; unknown queries are authoring hints only, not compiler errors. The provider prefers the CLI `inspect-host-schema-project` capability endpoint and falls back to direct JSON reading if the endpoint is unavailable.
+- Provides `@emit` host event completions and Hover from configured Host Schema `events[]`; unknown events are authoring hints only, not compiler errors. This uses the same capability endpoint with direct JSON fallback.
 - Highlights host hook lines such as `@timeline court_intro` and legacy inline host binding tags such as `[bg: courtroom]` without the always-on link look, while Hover / Ctrl+Click still jumps to the matching mapping row or workspace occurrence.
 - Supports Go to Definition / Ctrl+Click from jump targets to node declarations, and from dialogue speakers to configured role-map rows with dialogue-reference fallback; the clickable text stays visually plain until Ctrl is held.
 - Treats full-width colons and common Chinese punctuation as word boundaries so Ctrl+Click link styling on Chinese dialogue only covers the speaker name.
@@ -130,6 +130,14 @@ Host schema files named `inscape.host.schema.json` or `*.host.schema.json` are v
 Script authoring also reads the same configured Host Schema for `[]` query interpolation hints. In text such as `[player.gold]`, completion offers zero-parameter simple query names and Hover shows `returnType`, `isAsync`, description, and schema source. Unknown query Hover is deliberately informational: it means the current Host Schema did not declare that query, not that `Inscape.Compiler` rejects the script. Legacy `[kind: alias]` inline host binding remains separate and continues to use Host Bridge / legacy binding fallback.
 
 For host events, `@emit eventName` completion offers Host Schema `events[]` names and Hover shows delivery, side effect, parameter, description, and schema source information. This is still an authoring hint: `Inscape.Compiler` keeps treating the line as metadata, and `@timeline...` keeps using Host Bridge / legacy binding data because it references a timed host resource hook rather than a generic schema event.
+
+The query and event providers prefer the Internal CLI endpoint:
+
+```powershell
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- inspect-host-schema-project <workspace>
+```
+
+If that endpoint cannot run, VSCode falls back to direct Host Schema JSON reading so basic authoring still works in extension-development and partially built environments.
 
 ## Settings
 

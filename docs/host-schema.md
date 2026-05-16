@@ -74,6 +74,8 @@ dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- inspect-
 
 它输出 `inscape.host-schema.capabilities` JSON，包含 Host Schema 读取状态、归一化 queries 和 events。该命令不编译 `.inscape`，也不扫描脚本文本。
 
+VSCode 的 query / event 作者提示会优先调用该 endpoint，消费 Tooling 归一化后的 capability catalog；如果 endpoint 不可用，则回退直接读取 Host Schema JSON，保证扩展开发环境或未构建 CLI 时仍有基础提示。
+
 ## 格式草案
 
 ```json

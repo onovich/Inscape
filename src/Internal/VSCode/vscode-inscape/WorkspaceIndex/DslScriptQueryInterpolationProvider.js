@@ -8,6 +8,7 @@ class DslScriptQueryInterpolationProvider {
         this.readProjectConfig = dependencies.readProjectConfig;
         this.resolveProjectConfigPath = dependencies.resolveProjectConfigPath;
         this.formatDisplayPath = dependencies.formatDisplayPath;
+        this.hostSchemaCapabilityProvider = dependencies.hostSchemaCapabilityProvider;
     }
 
     getCompletionContext(linePrefix) {
@@ -57,6 +58,11 @@ class DslScriptQueryInterpolationProvider {
     }
 
     async collectSchemaQueries(document) {
+        const catalogQueries = await this.collectCatalogQueries(document);
+        if (catalogQueries) {
+            return catalogQueries;
+        }
+
         const schemaInfo = await this.readConfiguredSchema(document);
         if (!schemaInfo || !schemaInfo.schema || !Array.isArray(schemaInfo.schema.queries)) {
             return [];
@@ -88,6 +94,40 @@ class DslScriptQueryInterpolationProvider {
                 line: location.line,
                 character: location.character,
                 length: location.length
+            });
+        }
+
+        return queries.sort((left, right) => left.name.localeCompare(right.name));
+    }
+
+    async collectCatalogQueries(document) {
+        if (!this.hostSchemaCapabilityProvider) {
+            return undefined;
+        }
+
+        const catalog = await this.hostSchemaCapabilityProvider.collectCapabilityCatalog(document);
+        if (!catalog || !catalog.hostSchema || catalog.hostSchema.loaded !== true || !Array.isArray(catalog.queries)) {
+            return undefined;
+        }
+
+        const queries = [];
+        for (const query of catalog.queries) {
+            if (!query || typeof query.name !== "string" || !this.isTextInterpolationQuery(query)) {
+                continue;
+            }
+
+            queries.push({
+                name: query.name.trim(),
+                returnType: typeof query.returnType === "string" ? query.returnType : "",
+                isAsync: query.isAsync === true,
+                description: typeof query.description === "string" ? query.description : "",
+                parameters: Array.isArray(query.parameters) ? query.parameters : [],
+                sourcePath: typeof query.sourcePath === "string" ? query.sourcePath : "",
+                sourceLabel: "Host Schema",
+                sourceKind: "hostSchemaCapabilityEndpoint",
+                line: Math.max(0, (query.line || 1) - 1),
+                character: Math.max(0, (query.column || 1) - 1),
+                length: Math.max(query.length || query.name.length, 1)
             });
         }
 

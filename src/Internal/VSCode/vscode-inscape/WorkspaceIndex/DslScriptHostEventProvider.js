@@ -8,6 +8,7 @@ class DslScriptHostEventProvider {
         this.readProjectConfig = dependencies.readProjectConfig;
         this.resolveProjectConfigPath = dependencies.resolveProjectConfigPath;
         this.formatDisplayPath = dependencies.formatDisplayPath;
+        this.hostSchemaCapabilityProvider = dependencies.hostSchemaCapabilityProvider;
     }
 
     getEventCompletionContext(linePrefix) {
@@ -47,6 +48,11 @@ class DslScriptHostEventProvider {
     }
 
     async collectSchemaEvents(document) {
+        const catalogEvents = await this.collectCatalogEvents(document);
+        if (catalogEvents) {
+            return catalogEvents;
+        }
+
         const schemaInfo = await this.readConfiguredSchema(document);
         if (!schemaInfo || !schemaInfo.schema || !Array.isArray(schemaInfo.schema.events)) {
             return [];
@@ -78,6 +84,45 @@ class DslScriptHostEventProvider {
                 line: location.line,
                 character: location.character,
                 length: location.length
+            });
+        }
+
+        return events.sort((left, right) => left.name.localeCompare(right.name));
+    }
+
+    async collectCatalogEvents(document) {
+        if (!this.hostSchemaCapabilityProvider) {
+            return undefined;
+        }
+
+        const catalog = await this.hostSchemaCapabilityProvider.collectCapabilityCatalog(document);
+        if (!catalog || !catalog.hostSchema || catalog.hostSchema.loaded !== true || !Array.isArray(catalog.events)) {
+            return undefined;
+        }
+
+        const events = [];
+        for (const hostEvent of catalog.events) {
+            if (!hostEvent || typeof hostEvent.name !== "string") {
+                continue;
+            }
+
+            const name = hostEvent.name.trim();
+            if (!this.isEventName(name)) {
+                continue;
+            }
+
+            events.push({
+                name,
+                delivery: typeof hostEvent.delivery === "string" ? hostEvent.delivery : "fire-and-forget",
+                sideEffects: hostEvent.sideEffects !== false,
+                description: typeof hostEvent.description === "string" ? hostEvent.description : "",
+                parameters: Array.isArray(hostEvent.parameters) ? hostEvent.parameters : [],
+                sourcePath: typeof hostEvent.sourcePath === "string" ? hostEvent.sourcePath : "",
+                sourceLabel: "Host Schema",
+                sourceKind: "hostSchemaCapabilityEndpoint",
+                line: Math.max(0, (hostEvent.line || 1) - 1),
+                character: Math.max(0, (hostEvent.column || 1) - 1),
+                length: Math.max(hostEvent.length || name.length, 1)
             });
         }
 
