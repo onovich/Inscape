@@ -126,6 +126,8 @@ Inscape 的源文件不是线性脚本，也不是完整游戏引擎语言。它
 
 `[]` 的新设计方向是文本内查询 / 插值：它只读取当前上下文中的值，不负责触发事件或修改状态。
 
+F1.8 已将第一版边界冻结到 [Authoring Query Interpolation Contract](authoring-query-interpolation-contract.md)：文本插值优先使用简单路径，例如 `[player.gold]`、`[itemName]`、`[delta.affection]`；函数调用、异步查询和失败策略保留为后续设计；`[]` 不用于事件、资源调度、状态修改或具体宿主 API 调用。
+
 ```inscape
 旁白：[player.name]推开了门。
 系统：获得了[itemName]。
@@ -134,7 +136,6 @@ Inscape 的源文件不是线性脚本，也不是完整游戏引擎语言。它
 
 待确认：
 
-- 查询路径 / 表达式语法是否只允许简单路径，例如 `[player.gold]`，还是允许函数。
 - 查询失败时显示 fallback、产生诊断，还是运行时中断。
 - 查询值是否允许异步，以及异步值如何影响打字机、预览和本地化。
 - 查询插值如何与本地化占位符稳定结合。
