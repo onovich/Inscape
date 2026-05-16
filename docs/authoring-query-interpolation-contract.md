@@ -96,7 +96,7 @@
 获得了[itemName]。
 ```
 
-后续如果引入本地化占位符规范，可以把 `[itemName]` 映射为翻译表中的参数名，但不要在提取阶段替换成某个具体物品名。
+后续如果引入本地化占位符规范，可以把 `[itemName]` 映射为翻译表中的参数名，但不要在提取阶段替换成某个具体物品名。跨本地化、预览和 Host Schema 提示的最小数据形态见 [Query Interpolation Data Contract](query-interpolation-data-contract.md)。
 
 HTML 预览和 VSCode 预览在没有 Runtime Host 时，可以保留原占位符或使用调试假值；这只是预览策略，不改变 DSL 语义。
 

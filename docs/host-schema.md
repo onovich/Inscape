@@ -60,6 +60,8 @@ Inscape: Show Host Schema Capabilities
 
 该命令读取工作区 `inscape.config.json` 的 `hostSchema` 字段，列出当前可用 query / event，并可跳转到 schema 文件中对应的 `name`。这只是配置检查与浏览能力，不代表 `.inscape` 脚本中已经有正式查询或事件语法。
 
+对于 `[]` 查询插值，Host Schema 第一版只作为作者提示来源：可以驱动补全、Hover、未知查询提示和返回类型说明，但不应让 Compiler 依赖 Host Schema。具体数据边界见 [Query Interpolation Data Contract](query-interpolation-data-contract.md)。
+
 ## 格式草案
 
 ```json

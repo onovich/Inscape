@@ -84,6 +84,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - 2026-05-16 已推进 F1.6：`samples/court-loop.inscape` 已迁为新规范主样例，使用 `@timeline.talking.exit` / `@emit` / `@scene` 表达事件、时机和场景意图，使用 `[player.name]` / `[itemName]` 表达查询插值；旧 inline host binding 文本保存在 `samples/legacy/court-loop-legacy-inline-tags.txt`，不参与项目级编译。下一步建议 F1.7：清理剩余文档里的旧 `bird.*` / `UnitySample` 主口径，把它们收回 Host Bridge / ExternalSupport 兼容说明。
 - 2026-05-16 已推进 F1.7：`docs/project-config.md` 与 `docs/vscode-tooling.md` 已把 speaker / binding 提示的主口径迁到 Host Bridge，`unitySample.roleMap` / `unitySample.bindingMap` 只作为 legacy fallback；TODO 中旧 `bird.bindingMap` / `bird.roleMap` 的 VSCode 描述也已收敛。命令参考和 Bird / UnitySample 专文保留 legacy 用法，因为它们本身就是 ExternalSupport / 原型说明。下一步建议 F1.8：设计表达式 / 查询插值第一版语法边界。
 - 2026-05-16 已推进 F1.8：新增 [Authoring Query Interpolation Contract](authoring-query-interpolation-contract.md)，冻结 `[]` 第一版为只读查询 / 文本插值：优先简单路径，不触发事件，不修改状态，不调度资源，不绑定 Unity / 服务端 / 业务 API；函数调用、异步查询、失败策略、本地化占位和预览 fallback 留到后续数据契约。下一步建议 F1.9：设计查询插值与本地化占位符、预览 fallback、Host Schema 提示之间的最小数据契约。
+- 2026-05-16 已推进 F1.9：新增 [Query Interpolation Data Contract](query-interpolation-data-contract.md)，定义 `[]` 简单路径插值在本地化、预览 fallback、Host Schema 提示和 Host Bridge 映射之间的最小对象形态与分层诊断：本地化保留占位符，预览无宿主时保留 `[query]` 或使用显式调试假值，Host Schema 只做提示不成为 Compiler 真相，legacy `[kind: alias]` 与新 `query-interpolation` 分开。下一步建议 F1.10：评估 VSCode / LanguageServer 是否先做简单路径提示原型。
 - 2026-05-12 已迁移当前聚合测试项目：`tests/Inscape.Tests` -> `tests/Internal/Inscape.Tests`。这只是测试项目路径进入 Internal 测试树，测试内容尚未按 Compiler / Tooling / Cli / ExternalSupport 拆分。
 - 当前分支为 `main...origin/main`。本轮已把目录优先方案正式冻结为文档与 ADR；最新提交请以 `git log --oneline -1` 为准。
 - 本轮会话已确认新的重构铁律：先搭目录骨架与 `README.md` 规则文件，再迁大目录路径，再迁 solution / 项目路径，再迁项目名、命名空间和类型名；在此之前，不再把主要重构精力继续放在旧目录里的微观 helper 收口上。
@@ -346,7 +347,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 项目快照 / 接手                    docs/agent-handoff.md, docs/todo.md, docs/roadmap.md
 设计决策溯源                       docs/adr/README.md, 对应 ADR
 DSL 语法                           docs/dsl-syntax-guide.md, docs/dsl-language.md, docs/syntax-comparison.md, docs/open-questions.md
-`@` / `[]` 语法分工                 docs/authoring-marker-contract.md, docs/authoring-query-interpolation-contract.md, docs/dsl-syntax-guide.md, docs/dsl-language.md, docs/host-bridge-contract.md
+`@` / `[]` 语法分工                 docs/authoring-marker-contract.md, docs/authoring-query-interpolation-contract.md, docs/query-interpolation-data-contract.md, docs/dsl-syntax-guide.md, docs/dsl-language.md, docs/host-bridge-contract.md
 `@` / `[]` 兼容残留审计             docs/authoring-marker-compatibility-audit.md, docs/vscode-tooling.md, src/Internal/VSCode/vscode-inscape/README.md
 DSL 生态定位 / 竞品对比             docs/dsl-ecosystem-positioning.md, docs/adr/0007-dsl-benchmark-positioning.md
 代码结构 / 新模块                  docs/code-structure.md, docs/coding-conventions.md, docs/refactoring-plan.md, src/Inscape.Compiler, src/Inscape.Cli

@@ -70,6 +70,8 @@ anchor,node,kind,speaker,text,translation,status,sourcePath,line,column
 - 节点名。
 - 跳转目标。
 
+`[]` 查询插值的第一版约定见 [Query Interpolation Data Contract](query-interpolation-data-contract.md)：本地化提取保留原占位符文本，不执行查询，不把 `[itemName]` 替换成具体运行时值，也不因为 Host Schema 未声明某个查询而拒绝提取。未来如果需要给翻译工具提供参数清单，应作为额外字段或报告输出，不能改变 `text` 字段的稳定原文。
+
 ## 后续问题
 
 - 是否需要直接输出 PO/XLIFF。

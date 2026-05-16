@@ -293,7 +293,8 @@
 - [x] F1.6 新增或迁移新规范样例：用 `@timeline.<phase>` 表达事件 / 时机，用 `[player.name]` / `[itemName]` 表达查询插值；旧 `[bg]` / `[timeline]` 样例只作为 legacy sample 或兼容说明存在。
 - [x] F1.7 清理剩余文档里的旧阶段叙述：把过时的 `bird.*` / `UnitySample` 主口径迁到 Host Bridge / ExternalSupport 兼容说明，保留命令参考中的 legacy 用法。
 - [x] F1.8 设计表达式 / 查询插值的第一版语法边界：只读取数据，不触发事件，不绑定具体业务实体或服务端；详见 [Authoring Query Interpolation Contract](authoring-query-interpolation-contract.md)。
-- [ ] F1.9 设计查询插值与本地化占位符、预览 fallback、Host Schema 提示之间的最小数据契约，不急于改 Compiler 语义。
+- [x] F1.9 设计查询插值与本地化占位符、预览 fallback、Host Schema 提示之间的最小数据契约，不急于改 Compiler 语义；详见 [Query Interpolation Data Contract](query-interpolation-data-contract.md)。
+- [ ] F1.10 评估是否先在 VSCode / LanguageServer 做 `[]` 简单路径的提示原型：只消费 Host Schema，未知查询只给 info/warning，不改 Compiler。
 - [x] 设计宿主查询 Schema 草案：谓词名、参数类型、返回类型、同步/异步、事件清单和副作用边界。
 - [x] 明确 Host Schema / Host Bridge 边界：Inscape 内 ID 可读且抽象，项目内部 ID、资源坐标和事件处理器由桥接层映射。
 - [x] 设计 Host Bridge 配置草案，覆盖 Inscape ID 到项目 ID、资源引用、宿主事件处理器和查询实现的映射。
