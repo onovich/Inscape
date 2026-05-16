@@ -11,6 +11,7 @@ class DslScriptCompletionProvider {
         this.dslScriptSpeakerProvider = dependencies.dslScriptSpeakerProvider;
         this.hostBindingProvider = dependencies.hostBindingProvider;
         this.dslScriptQueryInterpolationProvider = dependencies.dslScriptQueryInterpolationProvider;
+        this.dslScriptHostEventProvider = dependencies.dslScriptHostEventProvider;
     }
 
     async provideCompletionItems(document, position) {
@@ -36,6 +37,20 @@ class DslScriptCompletionProvider {
         if (hostBindingContext) {
             const bindings = await this.hostBindingProvider.collectWorkspaceBindings(document, hostBindingContext.kind);
             return bindings.map((binding) => this.hostBindingProvider.createCompletionItem(binding));
+        }
+
+        const hostEventContext = this.dslScriptHostEventProvider.getEventCompletionContext(linePrefix);
+        if (hostEventContext) {
+            const events = await this.dslScriptHostEventProvider.collectSchemaEvents(document);
+            return events.map((hostEvent) => {
+                const item = this.dslScriptHostEventProvider.createCompletionItem(hostEvent);
+                item.range = new this.vscode.Range(
+                    position.line,
+                    hostEventContext.startCharacter,
+                    position.line,
+                    hostEventContext.endCharacter);
+                return item;
+            });
         }
 
         const queryInterpolationContext = this.dslScriptQueryInterpolationProvider.getCompletionContext(linePrefix);

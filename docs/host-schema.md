@@ -62,6 +62,8 @@ Inscape: Show Host Schema Capabilities
 
 对于 `[]` 查询插值，Host Schema 第一版只作为作者提示来源：可以驱动补全、Hover、未知查询提示和返回类型说明，但不应让 Compiler 依赖 Host Schema。具体数据边界见 [Query Interpolation Data Contract](query-interpolation-data-contract.md)。
 
+对于 `@emit eventName`，VSCode 会读取 Host Schema `events[]` 提供 event 名补全与 Hover，展示 delivery、sideEffects、parameters、description 和 schema 来源。未知 event 只作为作者提示，不进入默认 Problems，也不改变 Compiler 行为。`@timeline...` 仍走 Host Bridge / legacy binding，因为它表达带时机的宿主资源 hook，而不是通用 schema event。
+
 ## 格式草案
 
 ```json

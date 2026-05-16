@@ -28,6 +28,7 @@ const { PreviewSourceController } = require("./PreviewWebview/PreviewSourceContr
 const { EditorStyleController } = require("./Styles/EditorStyleController");
 const { defaultEditorStyle, defaultPreviewStyle } = require("./Styles/StyleDefaults");
 const { HostBindingProvider } = require("./WorkspaceIndex/HostBindingProvider");
+const { DslScriptHostEventProvider } = require("./WorkspaceIndex/DslScriptHostEventProvider");
 const { DslScriptMetadataProvider } = require("./WorkspaceIndex/DslScriptMetadataProvider");
 const { DslScriptNodeProvider } = require("./WorkspaceIndex/DslScriptNodeProvider");
 const { DslScriptQueryInterpolationProvider } = require("./WorkspaceIndex/DslScriptQueryInterpolationProvider");
@@ -102,6 +103,14 @@ const dslScriptQueryInterpolationProvider = new DslScriptQueryInterpolationProvi
     formatDisplayPath: (sourcePath) => editorAuthoringLocationProvider.formatDisplayPath(sourcePath)
 });
 
+const dslScriptHostEventProvider = new DslScriptHostEventProvider({
+    vscode,
+    fs,
+    readProjectConfig: (document) => editorAuthoringDataProvider.readProjectConfig(document),
+    resolveProjectConfigPath: (configPath, value) => editorAuthoringDataProvider.resolveProjectConfigPath(configPath, value),
+    formatDisplayPath: (sourcePath) => editorAuthoringLocationProvider.formatDisplayPath(sourcePath)
+});
+
 const dslScriptCompletionProvider = new DslScriptCompletionProvider({
     vscode,
     isInscapeDocument,
@@ -110,7 +119,8 @@ const dslScriptCompletionProvider = new DslScriptCompletionProvider({
     dslScriptNodeProvider,
     dslScriptSpeakerProvider,
     hostBindingProvider,
-    dslScriptQueryInterpolationProvider
+    dslScriptQueryInterpolationProvider,
+    dslScriptHostEventProvider
 });
 
 const dslScriptReferenceProvider = new DslScriptReferenceProvider({
@@ -128,7 +138,8 @@ const dslScriptHoverProvider = new DslScriptHoverProvider({
     dslScriptSpeakerProvider,
     hostBindingProvider,
     dslScriptMetadataProvider,
-    dslScriptQueryInterpolationProvider
+    dslScriptQueryInterpolationProvider,
+    dslScriptHostEventProvider
 });
 
 const dslScriptDocumentSymbolProvider = new DslScriptDocumentSymbolProvider({

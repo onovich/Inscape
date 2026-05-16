@@ -10,7 +10,7 @@
 
 下一位接手者建议按以下顺序推进：
 
-1. 接入 Host Schema query / event 到 `.inscape` 作者体验：复用当前 `Inscape.Tooling` Host Schema query reader 与 VSCode query interpolation 原型，把 query / event 补全和 Hover 做到脚本编辑面；仍不改变 Compiler 语义，不接默认 Problems。
+1. 收敛 Host Schema 脚本作者体验后续：VSCode 已接入 `[]` query 与 `@emit` event 补全 / Hover；下一步评估 JS provider 是否复用 `Inscape.Tooling` 的 Host Schema reader / audit 契约，避免 VSCode 与 CLI 长期各自解析 Host Schema。
 2. 继续打磨 VSCode 可玩预览：补未保存内容的更细粒度热刷新、刷新中状态提示，以及可选的预览 / 源码同步策略。
 	- 正文 / 选项文本不再用 `DocumentLinkProvider`，因为它会导致整段文本常驻下划线；当前用 `DefinitionProvider` 恢复“默认无下划线、Ctrl+指向才显示链接态”的编辑体验，并通过 selection bridge 在 Ctrl+Click 后执行预览定位，显式命令仅作为兜底。
 3. 补齐 LanguageServer 第一版范围：已有 diagnostics / definition / references / completion 基线，下一步补 outline / hover 规划和 VSCode 前端迁移边界。
@@ -216,7 +216,8 @@
 - [ ] 继续验证正文 / 选项文本的 `DefinitionProvider` 链接态与 selection bridge 是否稳定满足“默认无下划线、Ctrl+指向才显示链接态、Ctrl+Click 复用预览定位”；若后续调整实现，仍需保持这一交互不回退到 `DocumentLinkProvider`。
 - [ ] 补齐 C# Language Server 第一版能力范围：diagnostics、definition、references、completion 已有基线；下一步补 outline / hover 规划，并设计 VSCode 前端何时从 JS provider 切到 LanguageServer。
 - [x] 设计补全数据来源：当前文件节点、项目节点、角色表、宿主绑定表、宿主 Schema 查询 / 事件清单。
-- [ ] 将 `hostSchema` 中的事件清单接入 `.inscape` 脚本补全与 Hover，并评估现有 JS query interpolation provider 是否应复用 Tooling audit / reader 契约；不改变当前 DSL 编译语义。
+- [x] 将 `hostSchema` 中的事件清单接入 `.inscape` 脚本补全与 Hover，不改变当前 DSL 编译语义。
+- [ ] 评估 VSCode JS query / event provider 是否应复用 `Inscape.Tooling` Host Schema reader / audit 契约，避免 CLI audit 与编辑器提示长期各自解析 Host Schema。
 - [x] 定义第一版诊断清单：重复节点、非法节点名、缺失目标、不可达节点、空节点、选项语法问题。
 
 ## HTML 调试预览

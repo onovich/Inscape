@@ -10,6 +10,7 @@ class DslScriptHoverProvider {
         this.hostBindingProvider = dependencies.hostBindingProvider;
         this.dslScriptMetadataProvider = dependencies.dslScriptMetadataProvider;
         this.dslScriptQueryInterpolationProvider = dependencies.dslScriptQueryInterpolationProvider;
+        this.dslScriptHostEventProvider = dependencies.dslScriptHostEventProvider;
     }
 
     async provideHover(document, position) {
@@ -52,6 +53,19 @@ class DslScriptHoverProvider {
             return new this.vscode.Hover(
                 this.dslScriptQueryInterpolationProvider.createUnknownHoverMarkdown(queryInterpolationInfo),
                 queryInterpolationInfo.range);
+        }
+
+        const hostEventInfo = this.dslScriptHostEventProvider.getEventAtPosition(document, position);
+        if (hostEventInfo) {
+            const events = await this.dslScriptHostEventProvider.collectSchemaEvents(document);
+            const hostEvent = events.find((candidate) => candidate.name === hostEventInfo.name);
+            if (hostEvent) {
+                return new this.vscode.Hover(this.dslScriptHostEventProvider.createHoverMarkdown(hostEvent), hostEventInfo.range);
+            }
+
+            return new this.vscode.Hover(
+                this.dslScriptHostEventProvider.createUnknownHoverMarkdown(hostEventInfo),
+                hostEventInfo.range);
         }
 
         const metadataInfo = this.dslScriptMetadataProvider.getDirectiveAtPosition(document, position);
