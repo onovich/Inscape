@@ -303,8 +303,8 @@
 - [x] 设计宿主查询 Schema 草案：谓词名、参数类型、返回类型、同步/异步、事件清单和副作用边界。
 - [x] 明确 Host Schema / Host Bridge 边界：Inscape 内 ID 可读且抽象，项目内部 ID、资源坐标和事件处理器由桥接层映射。
 - [x] 设计 Host Bridge 配置草案，覆盖 Inscape ID 到项目 ID、资源引用、宿主事件处理器和查询实现的映射。
-- [ ] 调研 Unity `[Inscape]` Attribute 扫描和 Unity Editor 代码生成流程，生成待配置 Host Bridge 表并保留人工确认步骤。
-- [ ] 设计 Host Bridge 到 adapter 代码生成的最小闭环，用 UnitySample 当前输出作为回归样例，逐步替代硬编码样例结构。
-- [ ] 明确 Unity 上层消费事件数据的模型：直接事件绑定、轮询叙事状态，还是混合模式。
+- [x] 调研 Unity `[Inscape]` Attribute 扫描和 Unity Editor 代码生成流程，生成待配置 Host Bridge 表并保留人工确认步骤；当前只完成准备计划，不进入研发实现，详见 [Unity Host Bridge Preparation Plan](unity-host-bridge-preparation-plan.md)。
+- [x] 设计 Host Bridge 到 adapter 代码生成的最小闭环，用 UnitySample 当前输出作为回归样例，逐步替代硬编码样例结构；当前只完成准备计划，不进入研发实现，详见 [Unity Host Bridge Preparation Plan](unity-host-bridge-preparation-plan.md)。
+- [x] 明确 Unity 上层消费事件数据的模型：短期以 hybrid 作为设计假设，明确事件 hook 与状态轮询边界；当前只完成准备计划，不进入研发实现，详见 [Unity Host Bridge Preparation Plan](unity-host-bridge-preparation-plan.md)。
 - [x] 明确查询表达式是否允许副作用：第一版 `[]` 查询插值不允许副作用，事件和状态变化保留给 `@` / Runtime Host；详见 [Host Query and Event Registration Strategy](host-query-event-registration-strategy.md)。
 - [x] 设计宿主查询 / 回调 / 事件清单的注册或代码生成策略，避免 DSL 直接控制反转进业务层；详见 [Host Query and Event Registration Strategy](host-query-event-registration-strategy.md)。
