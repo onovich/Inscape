@@ -16,6 +16,8 @@ Current baseline:
 - `DslScript/Domains/DslScriptReferenceProvider.cs` and `DslScriptCompletionProvider.cs` read Compiler graph output for references and node completion items.
 - `DslScript/Domains/DslScriptDocumentSymbolProvider.cs` and `DslScriptHoverProvider.cs` read Compiler graph output for node outline and basic node / jump hover.
 
+VSCode client migration order and fallback boundaries are tracked in `docs/vscode-language-server-migration-plan.md`. Keep probe parity stable before moving VSCode hot paths from JS providers to LanguageServer.
+
 Allowed business areas: `Entries`, `Models`, `DslScript`, `StoryGraph`, and `HostSchema`.
 
 Do not create a broad project service here before narrower Compiler and Tooling contracts are stable.

@@ -48,7 +48,7 @@ Open this folder as an extension development host, or launch VSCode with:
 code --extensionDevelopmentPath=src\Internal\VSCode\vscode-inscape .
 ```
 
-This package is not published yet. Later stages should add a language server that reuses `Inscape.Compiler` for diagnostics, completion, symbols, and definition/reference navigation.
+This package is not published yet. Later stages should add a language server that reuses `Inscape.Compiler` for diagnostics, completion, symbols, and definition/reference navigation. The migration order and fallback boundaries are tracked in `docs/vscode-language-server-migration-plan.md`.
 
 Preview command opens a VSCode custom editor beside the current source editor when possible:
 
