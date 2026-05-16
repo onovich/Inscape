@@ -22,6 +22,7 @@ namespace Inscape.Tests {
                 ("language server references and completions use compiler graph", LanguageServerReferencesAndCompletionsUseCompilerGraph),
                 ("narrative runtime consumes compiler graph", NarrativeRuntimeConsumesCompilerGraph),
                 ("tool config resolves host bridge path", ToolConfigResolvesHostBridgePath),
+                ("host schema event reader reports schema events", HostSchemaEventReaderReportsSchemaEvents),
                 ("query interpolation audit reports host schema hints", QueryInterpolationAuditReportsHostSchemaHints),
                 ("cli diagnose emits json", CliDiagnoseEmitsJson),
                 ("cli commands lists command reference", CliCommandsListsCommandReference),

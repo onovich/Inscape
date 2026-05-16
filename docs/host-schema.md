@@ -64,6 +64,8 @@ Inscape: Show Host Schema Capabilities
 
 对于 `@emit eventName`，VSCode 会读取 Host Schema `events[]` 提供 event 名补全与 Hover，展示 delivery、sideEffects、parameters、description 和 schema 来源。未知 event 只作为作者提示，不进入默认 Problems，也不改变 Compiler 行为。`@timeline...` 仍走 Host Bridge / legacy binding，因为它表达带时机的宿主资源 hook，而不是通用 schema event。
 
+Tooling 侧已经提供 `HostSchemaQueryReaderDomain` 与 `HostSchemaEventReaderDomain`，分别把 `queries[]`、`events[]` 归一化成带 source location 的能力模型。VSCode 当前仍保留轻量 JS reader，原因是扩展直接启动 .NET Tooling 会增加编辑延迟和发布复杂度；后续应优先通过 C# LanguageServer 或显式 CLI capability endpoint 复用 Tooling 契约。
+
 ## 格式草案
 
 ```json
