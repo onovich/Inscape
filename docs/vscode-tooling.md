@@ -141,7 +141,7 @@ Inscape 的默认阅读优先级应当是：
 
 - 正式 Language Server。
 - 更细粒度的未保存内容热刷新、局部更新和刷新中状态提示；当前版本已支持编辑防抖刷新和保存后立即刷新，但还不是 Markdown 级别的无感体验。
-- 宿主 Schema 查询 / 事件清单驱动的脚本内补全。
+- 宿主 Schema 查询 / 事件清单驱动的脚本内补全。F1.10 已决定可以先做 `[]` 简单路径查询插值的 VSCode 提示原型，但只作为作者提示层，不改变 Compiler 语义；详见 [Query Interpolation Tooling Decision](query-interpolation-tooling-decision.md)。
 
 ## 角色提示
 
@@ -239,6 +239,8 @@ inscape.host.schema.json
 - `Inscape: Show Host Schema Capabilities`
 
 该命令读取工作区根目录 `inscape.config.json` 的 `hostSchema` 字段，列出当前配置的 query / event，并可跳转到 schema 文件里的对应 `name` 字段。当前它只验证数据通路，不把 query / event 注入 `.inscape` 脚本补全，因为条件语法和事件语法还未定稿。
+
+`[]` 查询插值的第一版工具路线见 [Query Interpolation Tooling Decision](query-interpolation-tooling-decision.md)：先在 VSCode 中基于 Host Schema 做 completion / hover 原型，未知 query 只作为提示，不升级为 Compiler 错误；LanguageServer 后续再复用同一数据契约。
 
 ## 诊断桥接
 
