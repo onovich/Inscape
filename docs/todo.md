@@ -284,7 +284,7 @@
 
 ## 变量与状态查询，第二版前置调研
 
-- [ ] 对比 Yarn、Ink、Ren'Py、Twine 的变量、函数和宿主 API 边界。
+- [x] 对比 Yarn、Ink、Ren'Py、Twine 的变量、函数和宿主 API 边界，明确 Inscape 第一阶段采用 Host Schema / Host Bridge / Runtime Host 分层，不把宿主 API 直接暴露给 DSL；详见 [Host Query and Event Registration Strategy](host-query-event-registration-strategy.md)。
 - [x] F1.1 冻结 `@` / `[]` 作者心智模型：`@` 负责事件 / 动作 / 状态变化，`[]` 负责查询 / 读取 / 文本插值；详见 [Authoring Marker Contract](authoring-marker-contract.md)。
 - [x] F1.2 审计当前文档、样例、VSCode 提示和 UnitySample 回归中 `[timeline: ...]` / `[kind: alias]` 的兼容残留，区分“保留兼容”和“推荐写法”；详见 [Authoring Marker Compatibility Audit](authoring-marker-compatibility-audit.md)。
 - [x] F1.3 将 VSCode hover / completion 文案迁到 `@` 事件、`[]` 查询口径，同时保留 legacy host binding fallback。
@@ -306,5 +306,5 @@
 - [ ] 调研 Unity `[Inscape]` Attribute 扫描和 Unity Editor 代码生成流程，生成待配置 Host Bridge 表并保留人工确认步骤。
 - [ ] 设计 Host Bridge 到 adapter 代码生成的最小闭环，用 UnitySample 当前输出作为回归样例，逐步替代硬编码样例结构。
 - [ ] 明确 Unity 上层消费事件数据的模型：直接事件绑定、轮询叙事状态，还是混合模式。
-- [ ] 明确查询表达式是否允许副作用。当前倾向是不允许。
-- [ ] 设计宿主查询 / 回调 / 事件清单的注册或代码生成策略，避免 DSL 直接控制反转进业务层。
+- [x] 明确查询表达式是否允许副作用：第一版 `[]` 查询插值不允许副作用，事件和状态变化保留给 `@` / Runtime Host；详见 [Host Query and Event Registration Strategy](host-query-event-registration-strategy.md)。
+- [x] 设计宿主查询 / 回调 / 事件清单的注册或代码生成策略，避免 DSL 直接控制反转进业务层；详见 [Host Query and Event Registration Strategy](host-query-event-registration-strategy.md)。
