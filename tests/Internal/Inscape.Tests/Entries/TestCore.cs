@@ -20,6 +20,7 @@ namespace Inscape.Tests {
                 ("language server diagnostics use editor coordinates", LanguageServerDiagnosticsUseEditorCoordinates),
                 ("language server definitions use compiler source map", LanguageServerDefinitionsUseCompilerSourceMap),
                 ("language server references and completions use compiler graph", LanguageServerReferencesAndCompletionsUseCompilerGraph),
+                ("language server symbols and hover use compiler graph", LanguageServerSymbolsAndHoverUseCompilerGraph),
                 ("narrative runtime consumes compiler graph", NarrativeRuntimeConsumesCompilerGraph),
                 ("tool config resolves host bridge path", ToolConfigResolvesHostBridgePath),
                 ("host schema event reader reports schema events", HostSchemaEventReaderReportsSchemaEvents),

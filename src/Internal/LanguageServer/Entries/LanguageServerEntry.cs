@@ -75,7 +75,40 @@ namespace Inscape.LanguageServer {
                 return 0;
             }
 
-            Console.WriteLine("Inscape.LanguageServer baseline. Use --capabilities, --diagnose-file <path>, --definition-file <path> <nodeName>, --references-file <path> <nodeName>, or --completion-file <path>.");
+            if (args.Length > 1 && args[0] == "--document-symbols-file") {
+                string sourcePath = Path.GetFullPath(args[1]);
+                string source = File.ReadAllText(sourcePath);
+                DslScriptDocumentSymbolProvider provider = new DslScriptDocumentSymbolProvider();
+                Console.WriteLine(JsonSerializer.Serialize(new {
+                    format = "inscape.language-server-document-symbols",
+                    formatVersion = 1,
+                    symbols = provider.GetDocumentSymbols(source, sourcePath)
+                }, new JsonSerializerOptions {
+                    WriteIndented = true,
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                }));
+                return 0;
+            }
+
+            if (args.Length > 3 && args[0] == "--hover-file") {
+                string sourcePath = Path.GetFullPath(args[1]);
+                string source = File.ReadAllText(sourcePath);
+                DslScriptHoverProvider provider = new DslScriptHoverProvider();
+                LanguageServerHoverModel? hover = args[2] == "jump"
+                    ? provider.GetJumpHover(source, sourcePath, args[3])
+                    : provider.GetNodeHover(source, sourcePath, args[3]);
+                Console.WriteLine(JsonSerializer.Serialize(new {
+                    format = "inscape.language-server-hover",
+                    formatVersion = 1,
+                    hover
+                }, new JsonSerializerOptions {
+                    WriteIndented = true,
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                }));
+                return 0;
+            }
+
+            Console.WriteLine("Inscape.LanguageServer baseline. Use --capabilities, --diagnose-file <path>, --definition-file <path> <nodeName>, --references-file <path> <nodeName>, --completion-file <path>, --document-symbols-file <path>, or --hover-file <path> <node|jump> <name>.");
             return 0;
         }
 

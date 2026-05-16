@@ -74,6 +74,45 @@ namespace Inscape.Tests {
             AssertEqual(2, completions[1].Location.Character, "Second completion editor character");
         }
 
+        static void LanguageServerSymbolsAndHoverUseCompilerGraph() {
+            string source = """
+:: start
+鏃佺櫧锛氬紑濮嬰€?
+-> second.node
+
+  :: second.node
+鏃佺櫧锛氱浜岄〉銆?
+""";
+
+            DslScriptDocumentSymbolProvider symbolProvider = new DslScriptDocumentSymbolProvider();
+            List<LanguageServerDocumentSymbolModel> symbols = symbolProvider.GetDocumentSymbols(source, "memory://symbols.inscape");
+            AssertEqual(2, symbols.Count, "Document symbol count");
+            AssertEqual("start", symbols[0].Name, "First symbol name");
+            AssertEqual("node", symbols[0].Kind, "First symbol kind");
+            AssertEqual(0, symbols[0].Location.Line, "First symbol editor line");
+            AssertEqual(0, symbols[0].Location.Character, "First symbol editor character");
+            AssertEqual("second.node", symbols[1].Name, "Second symbol name");
+            AssertEqual(4, symbols[1].Location.Line, "Second symbol editor line");
+            AssertEqual(2, symbols[1].Location.Character, "Second symbol editor character");
+
+            DslScriptHoverProvider hoverProvider = new DslScriptHoverProvider();
+            LanguageServerHoverModel? nodeHover = hoverProvider.GetNodeHover(source, "memory://symbols.inscape", "second.node");
+            AssertTrue(nodeHover != null, "Node hover should resolve from Compiler graph.");
+            AssertEqual("second.node", nodeHover!.Label, "Node hover label");
+            AssertEqual("node", nodeHover.Kind, "Node hover kind");
+            AssertTrue(nodeHover.Markdown.Contains("Inscape node"), "Node hover markdown");
+            AssertEqual(4, nodeHover.Location.Line, "Node hover editor line");
+            AssertEqual(2, nodeHover.Location.Character, "Node hover editor character");
+
+            LanguageServerHoverModel? jumpHover = hoverProvider.GetJumpHover(source, "memory://symbols.inscape", "second.node");
+            AssertTrue(jumpHover != null, "Jump hover should resolve from Compiler graph.");
+            AssertEqual("second.node", jumpHover!.Label, "Jump hover label");
+            AssertEqual("jump", jumpHover.Kind, "Jump hover kind");
+            AssertTrue(jumpHover.Markdown.Contains("jump target"), "Jump hover markdown");
+            AssertEqual(2, jumpHover.Location.Line, "Jump hover editor line");
+            AssertEqual(0, jumpHover.Location.Character, "Jump hover editor character");
+        }
+
     }
 
 }

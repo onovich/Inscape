@@ -13,7 +13,7 @@
 1. 收敛 Host Schema 脚本作者体验后续：Tooling 已有 query / event reader，CLI 已提供 `inspect-host-schema-project` capability endpoint，VSCode 已优先消费该 endpoint 并保留直接 JSON fallback；下一步考虑是否把 capability endpoint 下沉到 LanguageServer，或继续清理 JS fallback 重复解析。
 2. 继续打磨 VSCode 可玩预览：补未保存内容的更细粒度热刷新、刷新中状态提示，以及可选的预览 / 源码同步策略。
 	- 正文 / 选项文本不再用 `DocumentLinkProvider`，因为它会导致整段文本常驻下划线；当前用 `DefinitionProvider` 恢复“默认无下划线、Ctrl+指向才显示链接态”的编辑体验，并通过 selection bridge 在 Ctrl+Click 后执行预览定位，显式命令仅作为兜底。
-3. 补齐 LanguageServer 第一版范围：已有 diagnostics / definition / references / completion 基线，下一步补 outline / hover 规划和 VSCode 前端迁移边界。
+3. 规划 VSCode 前端何时从 JS provider 切到 LanguageServer：LanguageServer 已有 diagnostics / definition / references / completion / outline / hover 基线；下一步明确 client 接入顺序和 fallback 边界。
 4. 设计本地化模糊匹配与人工确认报告，不要直接自动复用相似文本译文。
 5. 设计节点重命名迁移策略、显式稳定 ID 或迁移表，用于处理节点重命名和重复文本插入。
 6. 收敛第一版块语法：继续使用 `:: node.name`，还是转向 `# 标题` + 空行分块。
@@ -214,7 +214,8 @@
 - [x] 为编辑器语法配色与预览 UI 提供独立样式配置文件，允许开发者通过 `inscape.config.json` 指向简洁 JSON 样式表并在本机快速调参。
 - [ ] 为 VSCode 预览补充更细粒度的未保存内容热刷新、局部更新与状态提示。
 - [ ] 继续验证正文 / 选项文本的 `DefinitionProvider` 链接态与 selection bridge 是否稳定满足“默认无下划线、Ctrl+指向才显示链接态、Ctrl+Click 复用预览定位”；若后续调整实现，仍需保持这一交互不回退到 `DocumentLinkProvider`。
-- [ ] 补齐 C# Language Server 第一版能力范围：diagnostics、definition、references、completion 已有基线；下一步补 outline / hover 规划，并设计 VSCode 前端何时从 JS provider 切到 LanguageServer。
+- [x] 补齐 C# Language Server 第一版能力范围：diagnostics、definition、references、completion、outline、hover 都已有基线 probe。
+- [ ] 设计 VSCode 前端何时从 JS provider 切到 LanguageServer，并保留哪些 fallback 边界。
 - [x] 设计补全数据来源：当前文件节点、项目节点、角色表、宿主绑定表、宿主 Schema 查询 / 事件清单。
 - [x] 将 `hostSchema` 中的事件清单接入 `.inscape` 脚本补全与 Hover，不改变当前 DSL 编译语义。
 - [x] 评估 VSCode JS query / event provider 是否应复用 `Inscape.Tooling` Host Schema reader / audit 契约：结论是 Tooling 先补齐 event reader，VSCode 暂保留轻量 JS reader；后续通过 LanguageServer 或显式 CLI capability endpoint 复用 Tooling，避免直接从扩展热路径启动 .NET。
