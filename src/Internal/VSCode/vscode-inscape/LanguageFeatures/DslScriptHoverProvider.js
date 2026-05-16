@@ -9,6 +9,7 @@ class DslScriptHoverProvider {
         this.dslScriptSpeakerProvider = dependencies.dslScriptSpeakerProvider;
         this.hostBindingProvider = dependencies.hostBindingProvider;
         this.dslScriptMetadataProvider = dependencies.dslScriptMetadataProvider;
+        this.dslScriptQueryInterpolationProvider = dependencies.dslScriptQueryInterpolationProvider;
     }
 
     async provideHover(document, position) {
@@ -38,6 +39,19 @@ class DslScriptHoverProvider {
                 alias: hostBindingInfo.alias,
                 sourcePath: document.uri.fsPath
             }), hostBindingInfo.range);
+        }
+
+        const queryInterpolationInfo = this.dslScriptQueryInterpolationProvider.getInterpolationAtPosition(document, position);
+        if (queryInterpolationInfo) {
+            const queries = await this.dslScriptQueryInterpolationProvider.collectSchemaQueries(document);
+            const query = queries.find((candidate) => candidate.name === queryInterpolationInfo.query);
+            if (query) {
+                return new this.vscode.Hover(this.dslScriptQueryInterpolationProvider.createHoverMarkdown(query), queryInterpolationInfo.range);
+            }
+
+            return new this.vscode.Hover(
+                this.dslScriptQueryInterpolationProvider.createUnknownHoverMarkdown(queryInterpolationInfo),
+                queryInterpolationInfo.range);
         }
 
         const metadataInfo = this.dslScriptMetadataProvider.getDirectiveAtPosition(document, position);

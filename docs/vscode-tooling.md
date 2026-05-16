@@ -90,6 +90,7 @@ Inscape 的默认阅读优先级应当是：
 - 为 VSCode Outline 提供当前文件节点列表。
 - 为 `inscape.host.schema.json` / `*.host.schema.json` 提供 JSON Schema 校验。
 - 提供命令 `Inscape: Show Host Schema Capabilities`，读取 `inscape.config.json` 的 `hostSchema` 并列出 query / event。
+- 在正文 `[]` 查询插值位置提供 Host Schema query 补全和 Hover。当前只读取零参数简单 query，如 `[player.gold]` / `[itemName]`；Hover 显示 `returnType`、`isAsync`、description 和来源。未知 query 只作为作者提示，不升级为 Compiler 错误；legacy `[kind: alias]` 仍走 Host Bridge / legacy binding 路径。
 - 提供命令 `Inscape: Open Preview`，以 VSCode custom editor 方式打开可玩预览；它默认会在源码旁边以侧边编辑器打开。如果当前活动 `.inscape` 文件未保存，会通过 `--override` 使用编辑器中的临时内容。
 - 编辑器右上角提供 `Inscape: Toggle Preview` 按钮，可以快速在源码和预览之间切换；当前实现会优先复用已有预览标签页，避免重复打开。扩展清单把 custom editor 设为 `option` 而不是 `default`，避免预览劫持源码标签页、Definition 跳转或普通文件打开行为。
 - 预览当前采用单栏沉浸式界面展示正文和选项；点击选项推进、无选项时点击正文继续、支持 Back / Restart 和 diagnostics；编辑时会防抖刷新，保存工作区内 `.inscape` 文件后立即刷新打开的预览编辑器，并尽量保留当前 `{ current, path }` 进度，而不是每次都回到第一页。
@@ -141,7 +142,7 @@ Inscape 的默认阅读优先级应当是：
 
 - 正式 Language Server。
 - 更细粒度的未保存内容热刷新、局部更新和刷新中状态提示；当前版本已支持编辑防抖刷新和保存后立即刷新，但还不是 Markdown 级别的无感体验。
-- 宿主 Schema 查询 / 事件清单驱动的脚本内补全。F1.10 已决定可以先做 `[]` 简单路径查询插值的 VSCode 提示原型，但只作为作者提示层，不改变 Compiler 语义；详见 [Query Interpolation Tooling Decision](query-interpolation-tooling-decision.md)。
+- 宿主 Schema 事件清单、条件语法和更完整表达式驱动的脚本内补全。`[]` 简单路径查询插值的 VSCode completion / Hover 已有第一版原型，但仍只作为作者提示层，不改变 Compiler 语义；详见 [Query Interpolation Tooling Decision](query-interpolation-tooling-decision.md)。
 
 ## 角色提示
 
@@ -238,9 +239,9 @@ inscape.host.schema.json
 
 - `Inscape: Show Host Schema Capabilities`
 
-该命令读取工作区根目录 `inscape.config.json` 的 `hostSchema` 字段，列出当前配置的 query / event，并可跳转到 schema 文件里的对应 `name` 字段。当前它只验证数据通路，不把 query / event 注入 `.inscape` 脚本补全，因为条件语法和事件语法还未定稿。
+该命令读取工作区根目录 `inscape.config.json` 的 `hostSchema` 字段，列出当前配置的 query / event，并可跳转到 schema 文件里的对应 `name` 字段。VSCode 现在会把零参数简单 query 注入 `[]` 查询插值 completion / Hover；event、条件语法和函数式查询仍未注入脚本补全，因为对应语法还未定稿。
 
-`[]` 查询插值的第一版工具路线见 [Query Interpolation Tooling Decision](query-interpolation-tooling-decision.md)：先在 VSCode 中基于 Host Schema 做 completion / hover 原型，未知 query 只作为提示，不升级为 Compiler 错误；LanguageServer 后续再复用同一数据契约。
+`[]` 查询插值的第一版工具路线见 [Query Interpolation Tooling Decision](query-interpolation-tooling-decision.md)：当前 VSCode 已基于 Host Schema 做 completion / Hover 原型，未知 query 只作为提示，不升级为 Compiler 错误；LanguageServer 后续再复用同一数据契约。
 
 ## 诊断桥接
 

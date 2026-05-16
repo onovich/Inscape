@@ -94,6 +94,37 @@ class DslScriptQueryInterpolationProvider {
         return queries.sort((left, right) => left.name.localeCompare(right.name));
     }
 
+    createCompletionItem(query) {
+        const item = new this.vscode.CompletionItem(query.name, this.vscode.CompletionItemKind.Value);
+        item.insertText = query.name;
+        item.detail = this.createDetail(query);
+        item.documentation = this.createHoverMarkdown(query);
+        item.sortText = "0_" + query.name;
+        return item;
+    }
+
+    createHoverMarkdown(query) {
+        const markdown = new this.vscode.MarkdownString();
+        markdown.appendMarkdown("**Inscape query interpolation** `" + query.name + "`\n\n");
+        markdown.appendMarkdown("`[]` reads a value for text interpolation. Host Schema provides this authoring hint; Compiler behavior is unchanged.\n\n");
+        this.appendField(markdown, "Return type", query.returnType || "unspecified");
+        this.appendField(markdown, "Async", query.isAsync ? "yes" : "no");
+        if (query.description) {
+            this.appendField(markdown, "Description", query.description);
+        }
+
+        this.appendField(markdown, "Source", this.createSourceDetail(query));
+        return markdown;
+    }
+
+    createUnknownHoverMarkdown(interpolation) {
+        const markdown = new this.vscode.MarkdownString();
+        markdown.appendMarkdown("**Unknown Inscape query interpolation** `" + interpolation.query + "`\n\n");
+        markdown.appendMarkdown("No zero-parameter simple query with this name was found in the configured Host Schema. This is an authoring hint, not a Compiler error.\n\n");
+        markdown.appendMarkdown("Use `[]` for read-only text interpolation. Keep events, actions, timing hooks, and legacy resource binding out of new `[]` usage.");
+        return markdown;
+    }
+
     async readConfiguredSchema(document) {
         const projectConfig = await this.readProjectConfig(document);
         if (!projectConfig || !projectConfig.configPath || !projectConfig.config) {
@@ -175,6 +206,21 @@ class DslScriptQueryInterpolationProvider {
         return this.formatDisplayPath
             ? this.formatDisplayPath(query.sourcePath)
             : query.sourcePath;
+    }
+
+    createDetail(query) {
+        const parts = [];
+        if (query.returnType) {
+            parts.push(query.returnType);
+        }
+
+        parts.push(query.isAsync ? "async query" : "query");
+        parts.push(query.sourceLabel || "Host Schema");
+        return parts.join(" - ");
+    }
+
+    appendField(markdown, label, value) {
+        markdown.appendMarkdown("- **" + label + ":** " + String(value) + "\n");
     }
 
 }

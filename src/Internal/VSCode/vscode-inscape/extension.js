@@ -109,7 +109,8 @@ const dslScriptCompletionProvider = new DslScriptCompletionProvider({
     isSpeakerCompletionContext,
     dslScriptNodeProvider,
     dslScriptSpeakerProvider,
-    hostBindingProvider
+    hostBindingProvider,
+    dslScriptQueryInterpolationProvider
 });
 
 const dslScriptReferenceProvider = new DslScriptReferenceProvider({
@@ -126,7 +127,8 @@ const dslScriptHoverProvider = new DslScriptHoverProvider({
     dslScriptNodeProvider,
     dslScriptSpeakerProvider,
     hostBindingProvider,
-    dslScriptMetadataProvider
+    dslScriptMetadataProvider,
+    dslScriptQueryInterpolationProvider
 });
 
 const dslScriptDocumentSymbolProvider = new DslScriptDocumentSymbolProvider({
