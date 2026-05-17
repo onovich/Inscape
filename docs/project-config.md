@@ -14,7 +14,7 @@ inscape.config.json
 
 ## Host Bridge 与 ExternalSupport UnitySample 配置
 
-当前配置已经支持通用 `hostBridge` 路径，并保留 `unitySample` 作为 ExternalSupport 实验样例命令的配置入口。新项目应把 Inscape 可读 ID、资源坐标、事件处理器和查询实现放进 Host Bridge；Internal VSCode authoring 不再读取 `unitySample` 作为 fallback。
+当前配置已经支持通用 `hostBridge` 路径，并保留 `unitySample` 作为 ExternalSupport 实验样例命令的配置入口。新项目应把 Inscape 可读 ID、资源坐标、事件处理器和查询实现放进 Host Bridge；VSCode 编辑器扩展作者体验不再读取 `unitySample` 作为 fallback。
 
 ```json
 {

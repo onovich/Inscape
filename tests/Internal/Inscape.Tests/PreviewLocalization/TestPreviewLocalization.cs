@@ -139,7 +139,7 @@ Narrator: Gold [player.gold].
         }
 
         static void PreviewSourceControllerKeepsColumnFallback() {
-            string controller = File.ReadAllText(RepositoryFile("src/Internal/VSCode/vscode-inscape/PreviewWebview/PreviewSourceController.js"));
+            string controller = File.ReadAllText(RepositoryFile("src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape/PreviewWebview/PreviewSourceController.js"));
 
             AssertTrue(controller.Contains("const character = Math.max(0, (source.character ?? source.column ?? 0));"), "Preview source controller should prefer character while accepting old column payloads.");
             AssertTrue(controller.Contains("new this.vscode.Range(\n                    line,\n                    character,\n                    line,\n                    character + 1"), "Preview source controller should use normalized editor coordinates.");

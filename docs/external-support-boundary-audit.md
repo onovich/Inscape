@@ -49,4 +49,4 @@ rg -n "ProjectReference|PackageReference" src\Internal tests\Internal
 自检结论：
 
 - D2.1 通过。ExternalSupport 没有进入默认 solution，也没有被 Internal 项目反向引用。
-- Goal 0 后，VSCode / Internal authoring 不再读取 UnitySample fallback；`ToolConfigModel.UnitySample` 只服务 ExternalSupport 样例命令配置。
+- Goal 0 后，VSCode 编辑器扩展作者体验不再读取 UnitySample fallback；`ToolConfigModel.UnitySample` 只服务 ExternalSupport 样例命令配置。

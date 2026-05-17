@@ -81,7 +81,7 @@ UnitySample 当前可用来验证：
 
 - 同一 `.inscape` 样例能导出等价的 host hooks。
 - 缺失绑定仍产生审查报告，而不是静默跳过。
-- `unitySample` 配置字段只作为 ExternalSupport 样例命令输入；Internal / VSCode authoring 不再把它作为 Host Bridge fallback。
+- `unitySample` 配置字段只作为 ExternalSupport 样例命令输入；VSCode 编辑器扩展作者体验不再把它作为 Host Bridge fallback。
 - ExternalSupport 不反向污染 Internal / Compiler。
 
 ## Unity 上层消费模型

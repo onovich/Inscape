@@ -88,5 +88,5 @@ UnitySample 当前只把 timeline key 解析为 host hook：
 
 - 本决策不新增代码类型，不触碰命名空间。
 - Compiler 仍不依赖 Unity、VSCode、HTML、Bird、Addressables、Tooling、Cli、LanguageServer、Runtime 或 ExternalSupport。
-- Internal / ExternalSupport 边界不变：VSCode 是作者体验层，UnitySample 是 ExternalSupport 兼容样例。
+- Internal / ExternalSupport 边界不变：VSCode 是 ExternalSupport 下的编辑器扩展作者体验层，UnitySample 是 ExternalSupport 兼容样例。
 - `[]` 的新语义不绑定具体业务实体；查询能力仍应由 Host Schema / Host Bridge 声明与映射。

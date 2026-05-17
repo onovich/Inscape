@@ -1,4 +1,4 @@
-﻿# CLI 命令速查
+# CLI 命令速查
 
 状态：基线
 
@@ -226,7 +226,7 @@ artifacts\bird-trial\export\bird-import-dry-run-report.txt
 ```powershell
 dotnet build Inscape.slnx --no-restore
 dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build
-node --check src\Internal\VSCode\vscode-inscape\extension.js
-node -e "JSON.parse(require('fs').readFileSync('src/Internal/VSCode/vscode-inscape/package.json','utf8')); JSON.parse(require('fs').readFileSync('src/Internal/VSCode/vscode-inscape/language-configuration.json','utf8')); JSON.parse(require('fs').readFileSync('src/Internal/VSCode/vscode-inscape/syntaxes/inscape.tmLanguage.json','utf8')); console.log('json ok')"
+node --check src\ExternalSupport\EditorExtensions\VSCode\vscode-inscape\extension.js
+node -e "JSON.parse(require('fs').readFileSync('src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape/package.json','utf8')); JSON.parse(require('fs').readFileSync('src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape/language-configuration.json','utf8')); JSON.parse(require('fs').readFileSync('src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape/syntaxes/inscape.tmLanguage.json','utf8')); console.log('json ok')"
 git -c safe.directory=D:/LabProjects/Inscape diff --check
 ```

@@ -1,4 +1,4 @@
-﻿# VSCode 轻工具链
+# VSCode 轻工具链
 
 状态：草案 + 原型
 
@@ -8,7 +8,7 @@
 
 - 文件扩展名：`.inscape`
 - VSCode language ID：`inscape`
-- 原型位置：`src/Internal/VSCode/vscode-inscape/`
+- 原型位置：`src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape/`
 - 当前形态：TextMate grammar + snippets + VSCode extension runtime。
 
 高亮、括号配置、注释和 snippets 保持声明式。实时诊断通过 CLI 的 `diagnose-project` 命令调用 `Inscape.Compiler`，避免在 VSCode 插件里重写解析器。工作区节点补全、跳转定义、引用查找、悬浮说明和大纲先使用轻量行扫描，它们只做写作提示，不作为语法真相来源。
@@ -122,7 +122,7 @@ Inscape 的默认阅读优先级应当是：
 - 根因优先级是 provider 语义 > decorations / theme / 样式文件；常驻下划线通常不是颜色问题，而是 provider 选型错误。
 - `inscape.editor-style.json` 只负责视觉调参，不应该承担“修正导航语义”的职责；如果要靠 `...TextDecoration` 去掩盖行为，通常说明方案已经偏了。
 - `DefinitionProvider` 负责“何时出现 Ctrl+指向链接态”，selection bridge 负责“Ctrl+Click 后做什么”；两者分工清楚后，样式和交互才不会反复互相打架。
-- 只改 `src/Internal/VSCode/vscode-inscape/` 源码但不重建 / 重装 `.vsix`，非常容易把旧扩展行为误判成新回归；这个链路必须当成验证的一部分，而不是发布后的附加动作。
+- 只改 `src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape/` 源码但不重建 / 重装 `.vsix`，非常容易把旧扩展行为误判成新回归；这个链路必须当成验证的一部分，而不是发布后的附加动作。
 
 可操作的回归检查：
 
@@ -165,7 +165,7 @@ Host Bridge 中 `kind: "speaker"` 的 ID 会用于 speaker 补全、Hover 和 Ct
 
 对白 speaker 也支持导航：Ctrl+Click 会优先跳到配置的 `hostBridge` speaker 项；没有 Host Bridge 时回退返回工作区内该 speaker 的对白引用位置，便于至少通过 Peek/跳转追溯用法。Find All References 会返回工作区内该 speaker 的全部对白行，并在 VSCode 请求 declaration 时包含 Host Bridge 配置行。`language-configuration.json` 的 `wordPattern` 会把全角冒号和常见中文标点作为词边界，确保 `旁白：文本` 这类中文对白中只有 `旁白` 被标为可跳转词。
 
-这项能力只是写作提示，不改变编译结果。UnitySample 实验导出仍由 ExternalSupport CLI 自己处理；Internal VSCode authoring 不再读取 `unitySample.roleMap` 作为 fallback。
+这项能力只是写作提示，不改变编译结果。UnitySample 实验导出仍由 ExternalSupport CLI 自己处理；VSCode 编辑器扩展作者体验不再读取 `unitySample.roleMap` 作为 fallback。
 
 ## Block 双向导航
 
@@ -247,17 +247,17 @@ dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- update-l
 可在仓库根目录用 VSCode 扩展开发模式加载：
 
 ```powershell
-code --extensionDevelopmentPath=src\Internal\VSCode\vscode-inscape .
+code --extensionDevelopmentPath=src\ExternalSupport\EditorExtensions\VSCode\vscode-inscape .
 ```
 
-也可以直接打开 `src/Internal/VSCode/vscode-inscape/` 作为扩展项目，启动 Extension Development Host 后再打开 `.inscape` 文件验证高亮。
+也可以直接打开 `src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape/` 作为扩展项目，启动 Extension Development Host 后再打开 `.inscape` 文件验证高亮。
 
 ## 发布工作流
 
 当扩展改动需要让本机 VS Code 立刻看到效果时，先重新打包再覆盖安装，而不是只重启窗口。当前建议使用：
 
 ```powershell
-cd src\Internal\VSCode\vscode-inscape
+cd src\ExternalSupport\EditorExtensions\VSCode\vscode-inscape
 npm run rebuild:vsix
 ```
 

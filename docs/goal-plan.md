@@ -153,15 +153,16 @@
 
 ## Goal 9：项目资源 / 代码分层收口
 
-状态：待推进。
+状态：已启动。VSCode 归属边界已由 ADR 0015 修正，编辑器扩展包已迁入 ExternalSupport / EditorExtensions；资源 / 脚本边界仍待继续推进。
 
 目标：按 ADR 0014 让未来可能独立拆仓的项目在自身根目录内区分源码、资源和开发脚本，并清理规划占位目录。
 
-候选节点：
+小节点：
 
-- VSCode package 内部资源目录收口：图标、schema、snippet、TextMate grammar、打包脚本和 README 说明统一到明确资源 / 脚本边界。
-- Preview HTML/CSS/JS 模板从 `PreviewHtmlRendererDomain` 的 C# 字符串中拆出为可维护资源，同时保持 CLI / VSCode preview 可用。
-- UnityPlugin 真实包结构确定后，再按具体包根建立 `Scripts` / `Resources`；不保留空规划目录。
+- [x] G9.0 修正 VSCode 归属边界：作为第一方维护的外部编辑器平台支持迁入 `src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape`，清除 `src/Internal/VSCode` 空规划目录。
+- [ ] G9.1 VSCode package 内部资源目录收口：图标、schema、snippet、TextMate grammar、打包脚本和 README 说明统一到明确资源 / 脚本边界。
+- [ ] G9.2 Preview HTML/CSS/JS 模板从 `PreviewHtmlRendererDomain` 的 C# 字符串中拆出为可维护资源，同时保持 CLI / VSCode preview 可用。
+- [ ] G9.3 UnityPlugin 真实包结构确定后，再按具体包根建立 `Scripts` / `Resources`；不保留空规划目录。
 
 ## Goal 8：Unity / Bird 准备与计划
 

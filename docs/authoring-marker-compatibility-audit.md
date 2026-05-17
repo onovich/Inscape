@@ -34,8 +34,8 @@ F 阶段迁移不应一次性删除旧行为。正确顺序是：
 | 位置 | 残留 | 分类 | 处理意见 |
 | --- | --- | --- | --- |
 | `tests/ExternalSupport/UnityPlugin/Inscape.UnitySample.Tests/TestUnitySample.cs` | `[timeline: court.close]`、`[timeline.node.exit: court.node_exit]` 等 bracket timeline 回归 | `compatible` | 保留，作为旧项目兼容测试。后续新增一个 `@timeline.<phase>` 推荐写法测试，不删除旧测。 |
-| `src/Internal/VSCode/vscode-inscape/WorkspaceIndex/HostBindingProvider.js` | 识别 `@timeline...` 和 `[kind: alias]` completion / definition / hover 上下文 | `defer-behavior` | F1.3 先改 hover / completion 文案；行为继续保留 legacy fallback。 |
-| `src/Internal/VSCode/vscode-inscape/WorkspaceIndex/DslScriptMetadataProvider.js` | hover 提示称 `@timeline ...` 是 host binding hint，`[kind: alias]` 是 inline equivalent | `migrate-tooling-copy` | F1.3 改成 `@timeline` 是事件挂载，bracket 只是 legacy inline host binding。 |
+| `src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape/WorkspaceIndex/HostBindingProvider.js` | 识别 `@timeline...` 和 `[kind: alias]` completion / definition / hover 上下文 | `defer-behavior` | F1.3 先改 hover / completion 文案；行为继续保留 legacy fallback。 |
+| `src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape/WorkspaceIndex/DslScriptMetadataProvider.js` | hover 提示称 `@timeline ...` 是 host binding hint，`[kind: alias]` 是 inline equivalent | `migrate-tooling-copy` | F1.3 改成 `@timeline` 是事件挂载，bracket 只是 legacy inline host binding。 |
 | `samples/court-loop.inscape` | 已迁为新规范样例；旧 `[bg: courtroom]`、`[emotion: tense]` 文本保存在 `samples/legacy/court-loop-legacy-inline-tags.txt` | `compatible` | 主样例使用 `@timeline.<phase>` / `@emit` / `@scene` 与查询插值；legacy 文本只作为旧写法参考，不参与项目级编译。 |
 
 ## 文档残留
@@ -46,7 +46,7 @@ F 阶段迁移不应一次性删除旧行为。正确顺序是：
 | `docs/dsl-language.md` | 行内标签章节仍把 `[bg]`、`[show]`、`[timeline]` 作为候选语法核心 | `migrate-docs` | 改为“历史候选 / 兼容写法”，新增查询表达式小节。 |
 | `docs/quick-syntax-guide.md` | `[bg: courtroom]` 被当作快速示例 | `migrate-docs` | 后续快速指南应优先展示 `@entry`、`@timeline.<phase>`、`[player.name]`、`[itemName]`。 |
 | `docs/vscode-tooling.md` | 宿主绑定提示章节仍把 `[kind: alias]` 与 `@timeline` 并列 | `migrate-tooling-copy` | F1.3 与 VSCode README 一起迁文案。 |
-| `src/Internal/VSCode/vscode-inscape/README.md` | README 仍写 host binding alias completions cover `[kind: ...]` inline tag positions | `migrate-tooling-copy` | F1.3 改成 legacy inline host binding fallback。 |
+| `src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape/README.md` | README 仍写 host binding alias completions cover `[kind: ...]` inline tag positions | `migrate-tooling-copy` | F1.3 改成 legacy inline host binding fallback。 |
 | `docs/workspace-index-contract.md` | workspace index 用于 `@timeline ...`、`[timeline: ...]` | `migrate-tooling-copy` | 改为 workspace index 仍索引 legacy host binding authoring hint，不代表推荐语法。 |
 | `docs/bird-adapter.md` | 明确 `[timeline: alias]` 会导出 `hostHooks` | `compatible` | 保留为 Bird / UnitySample 历史行为，补注“不推荐新写法”。 |
 | `docs/host-schema.md`、`docs/host-bridge-contract.md` | 仍把 `[kind: alias]` 作为资源 / timeline 坐标服务对象 | `migrate-docs` | 后续改成 Host Bridge 服务 `@` 事件和 legacy inline host binding；`[]` 查询走 Host Schema / Host Bridge 查询实现。 |
@@ -61,7 +61,7 @@ F 阶段迁移不应一次性删除旧行为。正确顺序是：
 
 - `DslScriptMetadataProvider` hover 文案。
 - `HostBindingProvider` completion / hover 文案。
-- `src/Internal/VSCode/vscode-inscape/README.md`。
+- `src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape/README.md`。
 - `docs/vscode-tooling.md`。
 
 原则：

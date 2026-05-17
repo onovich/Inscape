@@ -1,4 +1,4 @@
-﻿# TODO
+# TODO
 
 状态：持续维护
 
@@ -13,7 +13,7 @@
 1. 按 [/goal 后续目标计划](goal-plan.md) 推进 Goal 6：Host Schema endpoint 收口到 LanguageServer / Tooling 契约，移除 JS direct JSON fallback。
 2. 继续打磨 VSCode 可玩预览：补未保存内容的更细粒度热刷新、刷新中状态提示，以及可选的预览 / 源码同步策略。
 	- 正文 / 选项文本不再用 `DocumentLinkProvider`，因为它会导致整段文本常驻下划线；当前用 `DefinitionProvider` 恢复“默认无下划线、Ctrl+指向才显示链接态”的编辑体验，并通过 selection bridge 在 Ctrl+Click 后执行预览定位，显式命令仅作为兜底。
-3. 推进项目级资源 / 代码分层收口：按 ADR 0014 检查 VSCode package 与 Preview HTML 模板，逐步把图标、schema、snippet、TextMate grammar、HTML/CSS/JS 模板和打包脚本从代码逻辑中分离到项目内 Resources / Scripts 边界。
+3. 推进项目级资源 / 代码分层收口：按 ADR 0014 / ADR 0015 检查 VSCode package 与 Preview HTML 模板，逐步把图标、schema、snippet、TextMate grammar、HTML/CSS/JS 模板和打包脚本从代码逻辑中分离到项目内 Resources / Scripts 边界。
 4. Unity / Bird 相关继续只做准备和计划，等设计方案落实后再研发：包括 Attribute 扫描、Host Bridge 到 adapter 生成、Bird importer 提交策略和带真实 Timeline 的 Dry Run。
 
 ## 文档与接手效率
@@ -49,7 +49,7 @@
 	- [x] 清理纯规划占位目录，避免把 C 阶段的 LanguageServer / Runtime 和未来外部支持结构误当成 B 阶段成果。
 	- [x] 将 `Inscape.Compiler`、`Inscape.Tooling`、`Inscape.Cli`、VSCode 前端与 Unity 原型迁入新目录树。
 		- [x] 已先迁入 Internal 侧 `.NET` 项目路径：`Inscape.Compiler` -> `src/Internal/Compiler/Inscape.Compiler.csproj`，`Inscape.Tooling` -> `src/Internal/Tooling`，`Inscape.Cli` -> `src/Internal/Cli/Inscape.Cli`；Compiler 项目名、命名空间和旧类型名均已完成收敛。
-		- [x] 已迁入 VSCode 前端路径：`src/Internal/VSCode/vscode-inscape`；扩展源码内部仍保留原 npm 包结构，后续再拆 provider / command / preview bridge。
+		- [x] 已迁入 VSCode 前端路径：`src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape`；VSCode 作为外部编辑器平台支持归属 ExternalSupport / EditorExtensions，扩展源码内部仍保留原 npm 包结构，后续再做资源 / 脚本边界收口。
 		- [x] 已迁入 Unity 外部支持路径：`src/ExternalSupport/UnityPlugin/Inscape.Adapters.UnitySample` 与 `src/ExternalSupport/UnityPlugin/unity-bird-importer`。
 	- [x] 更新 `Inscape.slnx` 与 `ProjectReference`，并把 UnityPlugin 相关项目移出默认 .NET solution 编译链。
 		- [x] 已从 `Inscape.slnx` 直接项目清单移除 UnitySample。
@@ -95,7 +95,7 @@
 	- [x] 已继续按 CLI 入口边界收紧 UnitySample 命令实现：binding-template、role-template、project-export 三个命令的单用途读取/适配/写盘/报表辅助已全部内联回各自 `CliUnitySample*Command`，当前 CLI 不再保留独立 `CliUnitySample*Reader/Writer` 辅助类型。
 	- [x] 已继续按显式宿主动作入口规则收紧 UnitySample L10N 合并命令：`merge-unity-sample-l10n` 已从 `CliCore` 私有分支抽为独立 `CliUnitySampleL10nMergeCommand`，`CliCore` 仅保留分发。
 	- [x] 已继续按薄门面规则收紧 `CliCore`：`IsHelp`、`ToCompileViewModel`、`ToProjectCompileViewModel` 与项目命令分发私有包装已收回拥有者文件，`CliCore` 进一步缩到入口分发与跨命令共享输出辅助。
-- [x] 按 provider / command / preview bridge / style / workspace index 拆分 VSCode extension：在 VSCode 正式迁入 `src/Internal/VSCode` 后继续执行，保持现有作者体验不回归。
+- [x] 按 provider / command / preview bridge / style / workspace index 拆分 VSCode extension：在 VSCode 正式迁入 `src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape` 后继续执行，保持现有作者体验不回归。
 	- [x] 已将 B 阶段剩余工作拆成 4 个实现节点与 1 个收口节点；后续每完成一项都要自检命名 / 边界、推送并勾选对应 TODO。
 	- [x] 已建立 VSCode 拆分骨架：`ExtensionEntry`、`Commands`、`LanguageFeatures`、`WorkspaceIndex`、`Bridges`、`PreviewWebview`、`Styles`、`Schemas`，并补齐目录规则 README；后续开始从 `extension.js` 逐类迁移。
 	- [x] 已迁出第一条 VSCode command：`HostSchemaCommand` 进入 `Commands/HostSchemaCommand.js`，`extension.js` 只保留实例化与注册。

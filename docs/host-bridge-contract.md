@@ -28,7 +28,7 @@ inscape.host.bridge.json
 }
 ```
 
-Internal VSCode authoring 只读取 `hostBridge`。ExternalSupport 的 `unitySample` 配置字段只属于样例命令，不作为 Internal fallback。
+VSCode 编辑器扩展作者体验只读取 `hostBridge`。ExternalSupport 的 `unitySample` 配置字段只属于样例命令，不作为 Internal fallback。
 
 ## 格式草案
 
@@ -133,4 +133,4 @@ Internal VSCode authoring 只读取 `hostBridge`。ExternalSupport 的 `unitySam
 
 - Host Schema 与 Host Bridge 分工明确：Schema 是能力清单，Bridge 是项目映射。
 - Host Bridge 能表达 UnitySample 当前 role map、binding map 和 timeline hook 需求，但不把 UnitySample 字段升级为通用模型。
-- Goal 0 后，Internal VSCode authoring 不再读取 UnitySample fallback；后续 UnitySample 迁移应走 ExternalSupport / Host Bridge 生成计划。
+- Goal 0 后，VSCode 编辑器扩展作者体验不再读取 UnitySample fallback；后续 UnitySample 迁移应走 ExternalSupport / Host Bridge 生成计划。

@@ -6,7 +6,8 @@
 
 本文用于把 Inscape 的代码组织成可推理、可迁移、可演进的结构。当前长期目标已经收敛为：
 
-- Internal：`Compiler`、`Tooling`、`Cli`、`VSCode`、`LanguageServer`、`Runtime`
+- Internal：`Compiler`、`Tooling`、`Cli`、`LanguageServer`、`Runtime`
+- ExternalSupport：`EditorExtensions`、`UnityPlugin`
 - ExternalSupport：`UnityPlugin`
 
 命名的首要目标不是“整齐”，而是让陌生维护者只看目录和类型名，就能推断代码在哪一层、属于哪个大业务、扮演什么角色。
@@ -236,7 +237,7 @@ src/<Root>/<Layer>/<Business>/<Role>/<Subject><Qualifier><Role>
 - `src/Internal/Compiler/StoryGraph/Domains/StoryGraphEntryResolverDomain`
 - `src/Internal/Tooling/Preview/Controllers/PreviewFlowController`
 - `src/Internal/Cli/Localization/Commands/LocalizationExportCommand`
-- `src/Internal/VSCode/PreviewWebview/Bridges/PreviewRevealBridge`
+- `src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape/Bridges/PreviewRevealBridge`
 - `src/Internal/LanguageServer/DslScript/Providers/DslScriptCompletionProvider`
 - `src/ExternalSupport/UnityPlugin/AssetConfigure/Controllers/UnityPluginAssetConfigureController`
 
@@ -252,5 +253,5 @@ src/<Root>/<Layer>/<Business>/<Role>/<Subject><Qualifier><Role>
 - `Inscape.Compiler` 长期可改名为 `Inscape.Compiler`
 - 当前最高优先级不是继续在旧目录里做微观 helper 收口，而是先完成目录骨架迁移，详见 [目录优先重构蓝图](directory-first-reframe-plan.md)
 - 当前 `Inscape.Cli` 中大量共享流程会逐步上提为 `Inscape.Tooling`；`Inscape.Tooling` 这个命名空间粒度可以保留，不需要继续细分到每个业务目录
-- `tools/vscode-inscape` 长期会迁入 `src/Internal/VSCode/`，再继续拆为薄扩展前端与 `Inscape.LanguageServer`
+- `tools/vscode-inscape` 长期会迁入 `src/ExternalSupport/EditorExtensions/VSCode/`，再继续拆为薄扩展前端与 `Inscape.LanguageServer`
 - 当前 `UnitySample` / `unity-bird-importer` 属于 `ExternalSupport/UnityPlugin` 的过渡素材，而不是内部五层的一部分

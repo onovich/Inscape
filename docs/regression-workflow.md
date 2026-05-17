@@ -88,22 +88,22 @@ Inscape 当前仍处于研发期，没有已发布版本和真实用户项目需
 dotnet build Inscape.slnx --no-restore
 dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build
 dotnet run --project tests\ExternalSupport\UnityPlugin\Inscape.UnitySample.Tests\Inscape.UnitySample.Tests.csproj --no-build
-node --check src\Internal\VSCode\vscode-inscape\extension.js
-node -e "JSON.parse(require('fs').readFileSync('src/Internal/VSCode/vscode-inscape/package.json','utf8')); JSON.parse(require('fs').readFileSync('src/Internal/VSCode/vscode-inscape/language-configuration.json','utf8')); JSON.parse(require('fs').readFileSync('src/Internal/VSCode/vscode-inscape/syntaxes/inscape.tmLanguage.json','utf8')); console.log('json ok')"
+node --check src\ExternalSupport\EditorExtensions\VSCode\vscode-inscape\extension.js
+node -e "JSON.parse(require('fs').readFileSync('src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape/package.json','utf8')); JSON.parse(require('fs').readFileSync('src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape/language-configuration.json','utf8')); JSON.parse(require('fs').readFileSync('src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape/syntaxes/inscape.tmLanguage.json','utf8')); console.log('json ok')"
 ```
 
 如果改了具体 VSCode 模块，额外检查对应文件：
 
 ```powershell
-node --check src\Internal\VSCode\vscode-inscape\WorkspaceIndex\HostBindingProvider.js
-node --check src\Internal\VSCode\vscode-inscape\WorkspaceIndex\DslScriptSpeakerProvider.js
+node --check src\ExternalSupport\EditorExtensions\VSCode\vscode-inscape\WorkspaceIndex\HostBindingProvider.js
+node --check src\ExternalSupport\EditorExtensions\VSCode\vscode-inscape\WorkspaceIndex\DslScriptSpeakerProvider.js
 ```
 
 按实际改动替换文件路径。
 
 ## VSCode 发布与交互回归
 
-只要改了 `src/Internal/VSCode/vscode-inscape/`，默认执行：
+只要改了 `src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape/`，默认执行：
 
 ```powershell
 npm run rebuild:vsix
@@ -121,7 +121,7 @@ npm run rebuild:vsix
 
 如果当前环境无法完成手动验证，在最终报告里明确说明“已重建安装，未手动 reload / 点击验证”。
 
-扩展侧同一份清单也维护在 `src/Internal/VSCode/vscode-inscape/README.md` 的 `Regression Checklist` 小节；修改 VSCode 行为时，两处口径要保持一致。
+扩展侧同一份清单也维护在 `src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape/README.md` 的 `Regression Checklist` 小节；修改 VSCode 行为时，两处口径要保持一致。
 
 ## 提交拆分规则
 

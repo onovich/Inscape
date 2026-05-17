@@ -23,3 +23,5 @@ ADR 用于记录影响项目长期方向的决定。每条 ADR 应说明背景�
 - [0011：采用 Internal / ExternalSupport 分层，并引入 Tooling 中间层](0011-internal-tooling-and-external-support-boundary.md)
 - [0012：采用目录骨架优先的仓库重构顺序](0012-directory-first-repository-reframe-order.md)
 - [0013：作者标题与稳定节点 ID 分离](0013-author-title-and-stable-node-id.md)
+- [0014：第一方工具与资源目录边界](0014-first-party-tooling-and-resource-boundaries.md)
+- [0015：编辑器扩展归属外部支持层](0015-editor-extension-external-support-boundary.md)
