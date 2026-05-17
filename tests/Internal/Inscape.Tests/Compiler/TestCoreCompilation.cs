@@ -65,6 +65,19 @@ Narrator: Start.
             AssertTrue(ContainsCode(result, "INS010"), "Expected INS010 invalid target diagnostic.");
         }
 
+        static void DiagnoseLegacyNodeMarkerAsContent() {
+            string source = """
+:: old.node
+Narrator: Start.
+""";
+
+            DslScriptCompilationResultModel result = Compile(source);
+            AssertTrue(result.HasErrors, "Legacy node markers should not create nodes.");
+            AssertEqual(0, result.Document.Nodes.Count, "Legacy marker should not create a node");
+            AssertTrue(ContainsCode(result, "INS001"), "Expected INS001 for content outside a '# Title' node.");
+            AssertTrue(ContainsCode(result, "INS008"), "Expected INS008 when no current nodes are declared.");
+        }
+
         static void ParseHashTitleGraphWithChineseJump() {
             string source = """
 # 法庭开场

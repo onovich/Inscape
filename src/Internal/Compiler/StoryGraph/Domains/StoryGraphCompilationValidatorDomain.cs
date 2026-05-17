@@ -118,10 +118,10 @@ namespace Inscape.Compiler.Analysis {
                                                 Dictionary<string, StoryGraphNodeModel> nodesByName,
                                                 string entryOverrideName) {
             string entryName = entryOverrideName.Trim();
-            if (!DslScriptNodeNameValidatorDomain.IsValid(entryName)) {
+            if (!DslScriptNodeTitleValidatorDomain.IsValid(entryName)) {
                 diagnostics.Add(new DiagnosticModel("INS033",
                                                DiagnosticSeverityModel.Error,
-                                               "Invalid project entry override '" + entryName + "'. " + DslScriptNodeNameValidatorDomain.Description,
+                                               "Invalid project entry override '" + entryName + "'. " + DslScriptNodeTitleValidatorDomain.Description,
                                                graph.SourcePath,
                                                1,
                                                1));

@@ -126,7 +126,7 @@ namespace Inscape.LanguageServer {
                 return 0;
             }
 
-            Console.WriteLine("Inscape.LanguageServer baseline. Use --capabilities, --diagnose-file <path>, --diagnose-project <root> [--entry node.name] [--override source.inscape temp.inscape], --definition-file <path> <nodeName>, --references-file <path> <nodeName>, --completion-file <path>, --document-symbols-file <path>, or --hover-file <path> <node|jump> <name>.");
+            Console.WriteLine("Inscape.LanguageServer baseline. Use --capabilities, --diagnose-file <path>, --diagnose-project <root> [--entry title] [--override source.inscape temp.inscape], --definition-file <path> <title>, --references-file <path> <title>, --completion-file <path>, --document-symbols-file <path>, or --hover-file <path> <node|jump> <title>.");
             return 0;
         }
 

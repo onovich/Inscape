@@ -7,7 +7,7 @@ Current baseline:
 - `Inscape.LanguageServer.csproj` is an executable project in `Inscape.slnx`.
 - `Entries/LanguageServerEntry.cs` exposes `--capabilities` so the project has a real, buildable entry point before full LSP transport is introduced.
 - `Entries/LanguageServerEntry.cs` also exposes `--diagnose-file <path>` as a temporary diagnostics probe that calls `DslScriptDiagnosticProvider` directly.
-- `Entries/LanguageServerEntry.cs` exposes `--diagnose-project <root> [--entry node.name] [--override source.inscape temp.inscape]` as a temporary project diagnostics probe that uses Tooling source loading and Compiler project diagnostics without calling CLI.
+- `Entries/LanguageServerEntry.cs` exposes `--diagnose-project <root> [--entry title] [--override source.inscape temp.inscape]` as a temporary project diagnostics probe that uses Tooling source loading and Compiler project diagnostics without calling CLI.
 - `Entries/LanguageServerEntry.cs` exposes `--definition-file <path> <nodeName>` as a temporary definition probe that calls `DslScriptDefinitionProvider` directly.
 - `Entries/LanguageServerEntry.cs` exposes `--references-file <path> <nodeName>` and `--completion-file <path>` as temporary probes for graph-backed references and node completions.
 - `Entries/LanguageServerEntry.cs` exposes `--document-symbols-file <path>` and `--hover-file <path> <node|jump> <name>` as temporary probes for outline and hover data.

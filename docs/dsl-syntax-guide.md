@@ -9,7 +9,7 @@
 Inscape 当前可以先理解成五类东西：
 
 1. `# 标题`
-   - 定义一个可跳转的剧情块；旧项目里的 `:: node.name` 仍兼容。
+   - 定义一个可跳转的剧情块。
 2. `角色：对白` / `旁白文本`
    - 写剧情正文。
 3. `? 提示` + `- 选项 -> target`
@@ -55,7 +55,7 @@ Inscape 当前可以先理解成五类东西：
 - 项目内标题必须全局唯一。
 - `# 标题` 本身结束上一个节点并开始新节点。
 - 标题前建议留一个空行；漏空行只会产生 style hint，不会阻止编译。
-- 旧 `:: node.name` 仍兼容，用于旧项目和迁移期。
+- `:: node.name` 已退出当前 Compiler 语法，不再作为可编译块声明。
 
 你可以把标题理解成“这个剧情页给人看的名字”。长期机器身份由 stable node id 维护，详见 [Stable Node ID Contract](stable-node-id-contract.md)。
 
@@ -311,7 +311,7 @@ Witness: I know nothing.
 ## 9. 一个稍完整的例子
 
 ```inscape
-:: court.opening
+# 法庭开场
 
 @entry
 @scene courtroom
@@ -321,16 +321,16 @@ Witness: I know nothing.
 成步堂：[player.name]，先从证言开始吧。
 
 ? 你要做什么
-- 询问证言 -> court.questioning
-- 查看证物 -> court.evidence
+- 询问证言 -> 询问证人
+- 查看证物 -> 查看证物
 
-:: court.questioning
+# 询问证人
 
 证人：我什么都不知道。
 成步堂：那就从头再问一遍。
--> court.opening
+-> 法庭开场
 
-:: court.evidence
+# 查看证物
 
 旁白：证物袋里只有一枚旧怀表。
 ```

@@ -34,7 +34,8 @@
 - [ ] 每次完成阶段性提交后，同步更新 [Agent 接手指南](agent-handoff.md) 的当前快照。（持续规则，不作为一次性完成项）
 - [ ] 清除研发期 legacy / fallback。
 	- [x] 将主样例和内部测试从 `:: node.name` 迁到 `# 标题`。
-	- [ ] 移除 Compiler / LanguageServer / VSCode 对 `:: node.name` 的解析、扫描、高亮和 snippet。
+	- [x] 移除 Compiler / LanguageServer 对 `:: node.name` 的解析和诊断兼容文案。
+	- [ ] 移除 VSCode 对 `:: node.name` 的扫描、高亮和 snippet。
 	- [ ] 移除 legacy `[kind: alias]` / `[timeline: alias]` inline host binding 行为、样例和工具提示。
 	- [ ] 移除 `unitySample.roleMap` / `unitySample.bindingMap` fallback，统一使用 `hostBridge`。
 	- [ ] 清理当前行为文档中的 legacy / compatibility 口径，只在 ADR 或历史审计文档保留背景。

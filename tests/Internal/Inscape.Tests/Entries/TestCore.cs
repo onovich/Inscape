@@ -10,6 +10,7 @@ namespace Inscape.Tests {
                 ("parse graph with loop", ParseGraphWithLoop),
                 ("diagnose missing target", DiagnoseMissingTarget),
                 ("diagnose invalid node names", DiagnoseInvalidNodeNames),
+                ("diagnose legacy node marker as content", DiagnoseLegacyNodeMarkerAsContent),
                 ("parse hash title graph with Chinese jump", ParseHashTitleGraphWithChineseJump),
                 ("diagnose duplicate hash titles", DiagnoseDuplicateHashTitles),
                 ("warns when hash title missing leading blank line", WarnsWhenHashTitleMissingLeadingBlankLine),

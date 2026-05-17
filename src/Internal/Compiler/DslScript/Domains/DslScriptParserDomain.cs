@@ -30,13 +30,6 @@ namespace Inscape.Compiler.Parsing {
                     continue;
                 }
 
-                if (trimmed.StartsWith("::", StringComparison.Ordinal)) {
-                    currentNode = ParseLegacyNode(document, diagnostics, nodesByName, sourcePath, lineNumber, raw, trimmed);
-                    currentAnchorOccurrences = currentNode == null ? null : new Dictionary<string, int>(StringComparer.Ordinal);
-                    currentChoice = null;
-                    continue;
-                }
-
                 if (trimmed.StartsWith("#", StringComparison.Ordinal)) {
                     AddMissingBlankBeforeTitleDiagnostic(diagnostics, sourcePath, lineNumber, raw, lines, i);
                     currentNode = ParseTitleNode(document, diagnostics, nodesByName, sourcePath, lineNumber, raw, trimmed);
@@ -48,7 +41,7 @@ namespace Inscape.Compiler.Parsing {
                 if (currentNode == null) {
                     diagnostics.Add(new DiagnosticModel("INS001",
                                                    DiagnosticSeverityModel.Error,
-                                                   "Content must appear inside an explicit node declared with '# Title' or legacy ':: node.name'.",
+                                                   "Content must appear inside an explicit node declared with '# Title'.",
                                                    sourcePath,
                                                    lineNumber,
                                                    FirstNonWhitespaceColumn(raw)));
@@ -85,51 +78,6 @@ namespace Inscape.Compiler.Parsing {
             }
 
             return new DslScriptCompilationResultModel(document, diagnostics);
-        }
-
-        static StoryGraphNodeModel? ParseLegacyNode(DslScriptDocumentModel document,
-                                        List<DiagnosticModel> diagnostics,
-                                        Dictionary<string, StoryGraphNodeModel> nodesByName,
-                                        string sourcePath,
-                                        int lineNumber,
-                                        string raw,
-                                        string trimmed) {
-            string name = trimmed.Substring(2).Trim();
-            if (name.Length == 0) {
-                diagnostics.Add(new DiagnosticModel("INS002",
-                                               DiagnosticSeverityModel.Error,
-                                               "Node name is required after '::'.",
-                                               sourcePath,
-                                               lineNumber,
-                                               FirstNonWhitespaceColumn(raw)));
-                return null;
-            }
-            if (!DslScriptNodeNameValidatorDomain.IsValid(name)) {
-                diagnostics.Add(new DiagnosticModel("INS009",
-                                               DiagnosticSeverityModel.Error,
-                                               "Invalid node name '" + name + "'. " + DslScriptNodeNameValidatorDomain.Description,
-                                               sourcePath,
-                                               lineNumber,
-                                               FirstNonWhitespaceColumn(raw) + 2));
-            }
-
-            StoryGraphNodeModel node = new StoryGraphNodeModel();
-            node.Name = name;
-            node.Source = new SourceSpanModel(sourcePath, lineNumber, FirstNonWhitespaceColumn(raw));
-            document.Nodes.Add(node);
-
-            if (nodesByName.ContainsKey(name)) {
-                diagnostics.Add(new DiagnosticModel("INS003",
-                                               DiagnosticSeverityModel.Error,
-                                               "Duplicate node name '" + name + "'.",
-                                               sourcePath,
-                                               lineNumber,
-                                               FirstNonWhitespaceColumn(raw)));
-            } else {
-                nodesByName.Add(name, node);
-            }
-
-            return node;
         }
 
         static StoryGraphNodeModel? ParseTitleNode(DslScriptDocumentModel document,
@@ -253,7 +201,7 @@ namespace Inscape.Compiler.Parsing {
                 } else if (!IsValidNodeReference(option.Target)) {
                     diagnostics.Add(new DiagnosticModel("INS010",
                                                    DiagnosticSeverityModel.Error,
-                                                   "Invalid jump target '" + option.Target + "'. Use a legacy node name or a valid '# Title' target.",
+                                                   "Invalid jump target '" + option.Target + "'. Use a valid '# Title' target.",
                                                    sourcePath,
                                                    lineNumber,
                                                    raw.IndexOf("->", StringComparison.Ordinal) + 3));
@@ -314,7 +262,7 @@ namespace Inscape.Compiler.Parsing {
             if (!IsValidNodeReference(target)) {
                 diagnostics.Add(new DiagnosticModel("INS010",
                                                DiagnosticSeverityModel.Error,
-                                               "Invalid jump target '" + target + "'. Use a legacy node name or a valid '# Title' target.",
+                                               "Invalid jump target '" + target + "'. Use a valid '# Title' target.",
                                                sourcePath,
                                                lineNumber,
                                                raw.IndexOf("->", StringComparison.Ordinal) + 3));
@@ -379,8 +327,7 @@ namespace Inscape.Compiler.Parsing {
         }
 
         static bool IsValidNodeReference(string target) {
-            return DslScriptNodeNameValidatorDomain.IsValid(target)
-                || DslScriptNodeTitleValidatorDomain.IsValid(target);
+            return DslScriptNodeTitleValidatorDomain.IsValid(target);
         }
 
         static int FindDialogueSeparator(string text) {

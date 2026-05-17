@@ -14,7 +14,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 
 项目级研发认知：当前没有已发布版本和真实用户项目，因此不应为了旧版语法、旧配置或旧工具行为承担兼容成本。任何 legacy / fallback 都默认视为待迁移、待删除的研发债；只有为了短期切换验证才允许临时保留，并且必须同时记录删除节点。
 
-2026-05-17 已启动 Goal 0 研发期 legacy 清除：G0.1 已将主样例 `samples/court-loop.inscape` 从 `:: node.name` 迁到中文 `# 标题`，同步更新所有主样例跳转目标，并将内部测试 fixture 全部迁到 `#` 标题。下一步应推进 G0.2：移除 Compiler / LanguageServer 对 `:: node.name` 的解析和诊断兼容文案。
+2026-05-17 已启动 Goal 0 研发期 legacy 清除：G0.1 已将主样例 `samples/court-loop.inscape` 从 `:: node.name` 迁到中文 `# 标题`，同步更新所有主样例跳转目标，并将内部测试 fixture 全部迁到 `#` 标题。G0.2 已移除 Compiler / LanguageServer 对 `:: node.name` 的解析和诊断兼容文案；`:: old.node` 当前会作为节点外内容报错，不再创建节点。下一步应推进 G0.3：移除 VSCode 对 `:: node.name` 的扫描、高亮和 snippet。
 
 ### 2026-05-11 当前交接结论（最新）
 
