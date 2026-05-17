@@ -14,7 +14,7 @@ inscape.config.json
 
 ## Host Bridge 与 Legacy UnitySample 配置
 
-当前配置已经支持通用 `hostBridge` 路径，并保留 `unitySample` 作为 ExternalSupport 实验样例的 legacy fallback。新项目应优先把 Inscape 可读 ID、资源坐标、事件处理器和查询实现放进 Host Bridge；`unitySample` 字段只用于旧样例命令和兼容 VSCode 提示。
+当前配置已经支持通用 `hostBridge` 路径，并保留 `unitySample` 作为 ExternalSupport 实验样例命令的配置入口。新项目应把 Inscape 可读 ID、资源坐标、事件处理器和查询实现放进 Host Bridge；Internal VSCode authoring 不再读取 `unitySample` 作为 fallback。
 
 ```json
 {
@@ -40,7 +40,7 @@ inscape.config.json
 - `export-unity-sample-role-template`：读取 `existingRoleNameCsv`。
 - `export-unity-sample-binding-template`：读取 `existingTimelineRoot`。
 - `export-unity-sample-project`：读取 `talkingIdStart`、`roleMap`、`bindingMap`、`existingTalkingRoot`。
-- VSCode 扩展：如果没有 `hostBridge`，继续回退读取 legacy `unitySample.roleMap` 和 `unitySample.bindingMap`，用于旧项目维护。
+- VSCode 扩展：读取 `hostBridge`，为 speaker 和宿主事件 / 时机 hook 提供补全、Hover 与 Ctrl+Click；没有 Host Bridge 时只回退扫描工作区脚本文本。
 - VSCode 扩展：读取 `hostSchema`，通过命令面板列出宿主 query / event，并为 `inscape.host.schema.json` / `*.host.schema.json` 提供 JSON Schema 校验。
 
 仍未放进配置的内容：
@@ -55,4 +55,4 @@ inscape.config.json
 
 `unitySample` 不是最终宿主 Schema，也不是最终 Host Bridge。它只是 ExternalSupport 样例 adapter 的“项目级默认值”，用于把当前 CSV 和样例路径稳定下来。详见 [UnitySample Adapter 实验样例](unity-sample-adapter.md)。
 
-`unitySample.bindingMap` 目前只能视为 Host Bridge 的实验样例输入：它把 Inscape 侧可读别名映射到样例整数 ID、Unity guid、Addressables key 或 asset path。通用 Host Bridge 后续需要支持更多项目和引擎，不应假设所有项目都使用这套字段、Addressables 或 ScriptableObject。
+`unitySample.bindingMap` 目前只能视为 ExternalSupport UnitySample 命令的实验样例输入：它把 Inscape 侧可读别名映射到样例整数 ID、Unity guid、Addressables key 或 asset path。通用 Host Bridge 后续需要支持更多项目和引擎，不应假设所有项目都使用这套字段、Addressables 或 ScriptableObject。

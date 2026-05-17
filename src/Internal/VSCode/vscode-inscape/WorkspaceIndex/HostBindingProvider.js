@@ -7,7 +7,6 @@ class HostBindingProvider {
         this.fs = dependencies.fs;
         this.readProjectConfig = dependencies.readProjectConfig;
         this.resolveProjectConfigPath = dependencies.resolveProjectConfigPath;
-        this.parseCsvRows = dependencies.parseCsvRows;
         this.collectWorkspaceTextSources = dependencies.collectWorkspaceTextSources;
         this.normalizeHostBindingKind = dependencies.normalizeHostBindingKind;
         this.formatDisplayPath = dependencies.formatDisplayPath;
@@ -88,9 +87,7 @@ class HostBindingProvider {
     }
 
     async readConfiguredBindings(document) {
-        const hostBridgeBindings = await this.readConfiguredHostBridgeBindings(document);
-        const legacyBindings = await this.readConfiguredLegacyBindings(document);
-        return hostBridgeBindings.concat(legacyBindings);
+        return this.readConfiguredHostBridgeBindings(document);
     }
 
     async readConfiguredHostBridgeBindings(document) {
@@ -122,7 +119,6 @@ class HostBindingProvider {
                     name: alias,
                     alias,
                     assetId,
-                    unitySampleId: "",
                     unityGuid: typeof host.unityGuid === "string" ? host.unityGuid : "",
                     addressableKey: typeof host.addressableKey === "string" ? host.addressableKey : "",
                     assetPath: typeof host.assetPath === "string" ? host.assetPath : "",
@@ -157,69 +153,6 @@ class HostBindingProvider {
         return hostBridgePath;
     }
 
-    async readConfiguredLegacyBindings(document) {
-        const projectConfig = await this.readProjectConfig(document);
-        if (!projectConfig || !projectConfig.configPath || !projectConfig.config || !projectConfig.config.unitySample) {
-            return [];
-        }
-
-        const bindingMap = projectConfig.config.unitySample.bindingMap;
-        if (!bindingMap) {
-            return [];
-        }
-
-        const bindingMapPath = this.resolveProjectConfigPath(projectConfig.configPath, bindingMap);
-        if (!this.fs.existsSync(bindingMapPath)) {
-            return [];
-        }
-
-        const text = await this.fs.promises.readFile(bindingMapPath, "utf8");
-        const sourceLines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
-        const rows = this.parseCsvRows(text).filter((row) => !(row[0] || "").trim().startsWith("#"));
-        if (rows.length === 0) {
-            return [];
-        }
-
-        const headers = rows[0].map((header) => header.trim());
-        const hasHeader = headers.includes("kind") && headers.includes("alias");
-        const kindIndex = hasHeader ? headers.indexOf("kind") : 0;
-        const aliasIndex = hasHeader ? headers.indexOf("alias") : 1;
-        const unitySampleIdIndex = hasHeader ? headers.indexOf("unitySampleId") : 2;
-        const unityGuidIndex = hasHeader ? headers.indexOf("unityGuid") : 3;
-        const addressableKeyIndex = hasHeader ? headers.indexOf("addressableKey") : 4;
-        const assetPathIndex = hasHeader ? headers.indexOf("assetPath") : 5;
-        const dataRows = hasHeader ? rows.slice(1) : rows;
-
-        return dataRows
-            .map((row, index) => {
-                const line = hasHeader ? index + 1 : index;
-                const lineText = sourceLines[line] || row.join(",");
-                const alias = (row[aliasIndex] || "").trim();
-                return {
-                    kind: (row[kindIndex] || "").trim(),
-                    name: alias,
-                    alias,
-                    assetId: "",
-                    unitySampleId: this.readOptionalCsvField(row, unitySampleIdIndex),
-                    unityGuid: this.readOptionalCsvField(row, unityGuidIndex),
-                    addressableKey: this.readOptionalCsvField(row, addressableKeyIndex),
-                    assetPath: this.readOptionalCsvField(row, assetPathIndex),
-                    sourcePath: bindingMapPath,
-                    sourceLabel: "Legacy UnitySample binding map",
-                    sourceKind: "legacyBindingMap",
-                    sourceRank: 1,
-                    line,
-                    character: 0,
-                    length: Math.max(alias.length, lineText.length)
-                };
-            })
-            .filter((binding) => binding.kind.length > 0 && binding.alias.length > 0);
-    }
-
-    readOptionalCsvField(row, index) {
-        return index >= 0 && index < row.length ? (row[index] || "").trim() : "";
-    }
-
     collectBindingsFromText(text, sourcePath, requestedKind, bindings, seen) {
         const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
         for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
@@ -233,7 +166,6 @@ class HostBindingProvider {
                     name: alias,
                     alias,
                     assetId: "",
-                    unitySampleId: "",
                     unityGuid: "",
                     addressableKey: "",
                     assetPath: "",
@@ -264,9 +196,6 @@ class HostBindingProvider {
         if (binding.assetId) {
             pieces.push("Host asset " + binding.assetId);
         }
-        if (binding.unitySampleId) {
-            pieces.push("legacy UnitySample " + binding.unitySampleId);
-        }
         if (binding.addressableKey) {
             pieces.push(binding.addressableKey);
         }
@@ -280,9 +209,8 @@ class HostBindingProvider {
         const markdown = new this.vscode.MarkdownString(undefined, true);
         markdown.isTrusted = false;
         markdown.appendMarkdown("**Inscape Host Binding** `" + binding.kind + ":" + binding.alias + "`\n\n");
-        markdown.appendMarkdown("This resolves through Host Bridge or legacy binding data. `@timeline...` uses this as a host event / timing hook. Ctrl+Click opens the configured mapping row or the first workspace occurrence.\n\n");
+        markdown.appendMarkdown("This resolves through Host Bridge data or a scanned workspace `@timeline` hook. `@timeline...` uses this as a host event / timing hook. Ctrl+Click opens the configured mapping row or the first workspace occurrence.\n\n");
         this.appendField(markdown, "Host asset id", binding.assetId);
-        this.appendField(markdown, "Legacy UnitySample id", binding.unitySampleId);
         this.appendField(markdown, "Addressable", binding.addressableKey);
         this.appendField(markdown, "Asset", binding.assetPath);
         this.appendField(markdown, "Unity guid", binding.unityGuid);

@@ -15,10 +15,7 @@ namespace Inscape.Tests {
                 File.WriteAllText(configPath, """
 {
   "hostSchema": "config/inscape.host.schema.json",
-  "hostBridge": "config/inscape.host.bridge.json",
-  "unitySample": {
-    "roleMap": "config/unity-sample-roles.csv"
-  }
+  "hostBridge": "config/inscape.host.bridge.json"
 }
 """, Encoding.UTF8);
 
@@ -32,7 +29,6 @@ namespace Inscape.Tests {
                 AssertEqual(null, error, "Tool config error");
                 AssertEqual(Path.Combine(configDirectory, "inscape.host.schema.json"), config.HostSchema, "Host schema path");
                 AssertEqual(Path.Combine(configDirectory, "inscape.host.bridge.json"), config.HostBridge, "Host bridge path");
-                AssertEqual(Path.Combine(configDirectory, "unity-sample-roles.csv"), config.UnitySample.RoleMap, "Legacy UnitySample role map path");
             } finally {
                 if (Directory.Exists(directory)) {
                     Directory.Delete(directory, true);

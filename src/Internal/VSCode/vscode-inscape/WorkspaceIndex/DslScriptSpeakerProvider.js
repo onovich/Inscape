@@ -7,7 +7,6 @@ class DslScriptSpeakerProvider {
         this.fs = dependencies.fs;
         this.readProjectConfig = dependencies.readProjectConfig;
         this.resolveProjectConfigPath = dependencies.resolveProjectConfigPath;
-        this.parseCsvRows = dependencies.parseCsvRows;
         this.collectWorkspaceTextSources = dependencies.collectWorkspaceTextSources;
         this.isLikelyDialogueSpeaker = dependencies.isLikelyDialogueSpeaker;
         this.formatDisplayPath = dependencies.formatDisplayPath;
@@ -111,9 +110,7 @@ class DslScriptSpeakerProvider {
     }
 
     async readConfiguredRoleMapSpeakerRows(document) {
-        const hostBridgeSpeakers = await this.readConfiguredHostBridgeSpeakers(document);
-        const legacyRoleMapSpeakers = await this.readConfiguredLegacyRoleMapSpeakers(document);
-        return hostBridgeSpeakers.concat(legacyRoleMapSpeakers);
+        return this.readConfiguredHostBridgeSpeakers(document);
     }
 
     async readConfiguredHostBridgeSpeakers(document) {
@@ -155,16 +152,6 @@ class DslScriptSpeakerProvider {
             });
     }
 
-    async readConfiguredLegacyRoleMapSpeakers(document) {
-        const roleMapPath = await this.getConfiguredRoleMapPath(document);
-        if (!roleMapPath) {
-            return [];
-        }
-
-        const text = await this.fs.promises.readFile(roleMapPath, "utf8");
-        return this.parseRoleMapSpeakerRows(text, roleMapPath);
-    }
-
     async getConfiguredHostBridgePath(document) {
         const projectConfig = await this.readProjectConfig(document);
         if (!projectConfig || !projectConfig.configPath || !projectConfig.config) {
@@ -182,86 +169,6 @@ class DslScriptSpeakerProvider {
         }
 
         return hostBridgePath;
-    }
-
-    async getConfiguredRoleMapPath(document) {
-        const projectConfig = await this.readProjectConfig(document);
-        if (!projectConfig || !projectConfig.configPath || !projectConfig.config || !projectConfig.config.unitySample) {
-            return undefined;
-        }
-
-        const roleMap = projectConfig.config.unitySample.roleMap;
-        if (!roleMap) {
-            return undefined;
-        }
-
-        const roleMapPath = this.resolveProjectConfigPath(projectConfig.configPath, roleMap);
-        if (!this.fs.existsSync(roleMapPath)) {
-            return undefined;
-        }
-
-        return roleMapPath;
-    }
-
-    parseRoleMapSpeakerRows(text, roleMapPath) {
-        const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
-        let headerLine = -1;
-        let headers = [];
-
-        for (let line = 0; line < lines.length; line += 1) {
-            const trimmed = lines[line].trim();
-            if (!trimmed || trimmed.startsWith("#")) {
-                continue;
-            }
-
-            const parsed = this.parseCsvRows(lines[line]);
-            if (parsed.length === 0) {
-                continue;
-            }
-
-            headers = parsed[0].map((header) => header.trim());
-            headerLine = line;
-            break;
-        }
-
-        const speakerIndex = headers.indexOf("speaker");
-        const roleIdIndex = headers.indexOf("roleId");
-        if (headerLine < 0 || speakerIndex < 0) {
-            return [];
-        }
-
-        const speakers = [];
-        for (let line = headerLine + 1; line < lines.length; line += 1) {
-            const trimmed = lines[line].trim();
-            if (!trimmed || trimmed.startsWith("#")) {
-                continue;
-            }
-
-            const parsed = this.parseCsvRows(lines[line]);
-            if (parsed.length === 0) {
-                continue;
-            }
-
-            const row = parsed[0];
-            const name = (row[speakerIndex] || "").trim();
-            if (!name) {
-                continue;
-            }
-
-            speakers.push({
-                name,
-                roleId: roleIdIndex >= 0 ? (row[roleIdIndex] || "").trim() : "",
-                sourcePath: roleMapPath,
-                sourceLabel: "Legacy UnitySample role map",
-                sourceKind: "legacyRoleMap",
-                sourceRank: 1,
-                line,
-                character: this.findCsvFieldValueStart(lines[line], speakerIndex, name),
-                length: name.length
-            });
-        }
-
-        return speakers;
     }
 
     collectSpeakersFromText(text, sourcePath, speakers, seen) {

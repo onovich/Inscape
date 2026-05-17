@@ -4,6 +4,6 @@ Owns tool configuration models and config file reading shared across toolchain e
 
 Allowed roles: `Domains` and `Models`.
 
-`hostSchema` and `hostBridge` are generic host integration config paths. Legacy `unitySample` fields may remain as compatibility input for ExternalSupport until adapter commands migrate to Host Bridge.
+`hostSchema` and `hostBridge` are generic host integration config paths. `unitySample` fields are ExternalSupport sample-command inputs, not Internal authoring fallbacks.
 
 Do not include command output, VSCode settings UI, or host adapter implementation.

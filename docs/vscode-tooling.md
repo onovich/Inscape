@@ -75,18 +75,18 @@ Inscape 的默认阅读优先级应当是：
 - 提供基础 snippets：节点、对白、选择组、跳转、元信息、Timeline Hook、查询插值。
 - 通过 `dotnet run --project src/Internal/Cli/Inscape.Cli/Inscape.Cli.csproj -- diagnose-project <workspace> --override <source> <temp-file>` 刷新实时诊断。
 - 在 `->` 跳转目标位置补全工作区内的标题节点和旧节点名。
-- 在对白行开头补全角色名，优先读取 `inscape.config.json` 中 `hostBridge` 的 `kind: "speaker"` ID；没有 Host Bridge 时回退到 legacy `unitySample.roleMap`；未配置时再回退扫描工作区已有对白 speaker。
-- 在 `@timeline ...`、`@timeline.<phase> ...` 这类宿主事件 / 时机 hook 位置补全 Host Bridge ID。补全优先读取 `inscape.config.json` 中 `hostBridge`，再回退到 legacy `unitySample.bindingMap` 指向的 `kind,alias,unitySampleId,unityGuid,addressableKey,assetPath` 表；未配置时回退扫描工作区已有 `@timeline` hook。
+- 在对白行开头补全角色名，优先读取 `inscape.config.json` 中 `hostBridge` 的 `kind: "speaker"` ID；未配置时再回退扫描工作区已有对白 speaker。
+- 在 `@timeline ...`、`@timeline.<phase> ...` 这类宿主事件 / 时机 hook 位置补全 Host Bridge ID。补全优先读取 `inscape.config.json` 中 `hostBridge`；未配置时回退扫描工作区已有 `@timeline` hook。
 - 在 `->` 跳转目标上支持 Go to Definition / Ctrl+Click。
-- 在对白 speaker 上支持 Go to Definition / Ctrl+Click，优先跳到 `hostBridge` 中 `kind: "speaker"` 的配置项；没有 Host Bridge 时回退到 legacy `unitySample.roleMap` 中对应的 `speaker` 行；没有配置角色表时，再回退到工作区内该 speaker 的对白引用位置。语言配置会把 `：` 和常见中文标点视为词边界，使 Ctrl+Click 的可跳转下划线只覆盖 speaker 名称，而不是整句对白。
+- 在对白 speaker 上支持 Go to Definition / Ctrl+Click，优先跳到 `hostBridge` 中 `kind: "speaker"` 的配置项；没有 Host Bridge 时，再回退到工作区内该 speaker 的对白引用位置。语言配置会把 `：` 和常见中文标点视为词边界，使 Ctrl+Click 的可跳转下划线只覆盖 speaker 名称，而不是整句对白。
 - 在节点声明、`->` 跳转目标或对白 speaker 上支持 Find All References；节点索引只识别当前 `# 标题` 语法。
 - 在节点标题上显示 CodeLens：`N 个引用`，点击后使用 VSCode References Peek 追溯跳到当前 block 的调用方。
 - 在节点声明和 `->` 跳转目标上显示简短 Hover 类型说明，不在跳转目标上显示统计信息。
-- 在对白 speaker 上显示 Hover 摘要：角色名、Host Bridge 或 legacy UnitySample 绑定状态和来源表。
+- 在对白 speaker 上显示 Hover 摘要：角色名、Host Bridge 绑定状态和来源表。
 - 在 `@entry`、`@scene`、`@timeline` 这类 `@` 行上显示 Hover 解释，告诉作者 `@` 主要用于入口、场景标记、宿主事件、时机 hook 或其他会影响流程的作者意图。
 - 将 `@entry`、`@scene`、`@timeline` 等统一按 `@metadata` 语法层高亮；其中 `@timeline...` 的说明口径是宿主事件 / 时机 hook，不再解释成 `[]` 资源标签。
-- 在 Host Bridge / legacy binding 别名上显示 Hover 摘要：`kind:alias`、Host asset id、legacy UnitySample id、Addressable、Unity guid、Asset path 和来源表。
-- 在 `@timeline ...` 上支持 Ctrl+Click，优先跳转到 Host Bridge 配置项；没有 Host Bridge 时回退到 legacy binding map 行，让作者直接看到它们是如何映射到宿主桥接表的。
+- 在 Host Bridge 别名上显示 Hover 摘要：`kind:alias`、Host asset id、Addressable、Unity guid、Asset path 和来源表。
+- 在 `@timeline ...` 上支持 Ctrl+Click，优先跳转到 Host Bridge 配置项；没有 Host Bridge 时回退到工作区内第一处 `@timeline...` hook。
 - 为 VSCode Outline 提供当前文件节点列表。
 - 提供 `Inscape: Insert Node Title` 命令；命令创建同名标题时会自动追加 `_01` 这类后缀，手动改成重名则继续交给 Compiler diagnostics 报错。
 - 为 `inscape.host.schema.json` / `*.host.schema.json` 提供 JSON Schema 校验。
@@ -161,29 +161,11 @@ inscape.config.json
 }
 ```
 
-Host Bridge 中 `kind: "speaker"` 的 ID 会用于 speaker 补全、Hover 和 Ctrl+Click。为了维护旧项目，扩展仍会回退读取 legacy `unitySample.roleMap`：
+Host Bridge 中 `kind: "speaker"` 的 ID 会用于 speaker 补全、Hover 和 Ctrl+Click。在对白行开头输入时，补全项会插入 `角色：`。如果 Host Bridge 已绑定，补全详情显示对应绑定状态；如果为空，则显示未绑定状态。Hover 同样展示绑定状态和来源路径。
 
-```json
-{
-  "unitySample": {
-    "roleMap": "config/unity-sample-roles.csv"
-  }
-}
-```
+对白 speaker 也支持导航：Ctrl+Click 会优先跳到配置的 `hostBridge` speaker 项；没有 Host Bridge 时回退返回工作区内该 speaker 的对白引用位置，便于至少通过 Peek/跳转追溯用法。Find All References 会返回工作区内该 speaker 的全部对白行，并在 VSCode 请求 declaration 时包含 Host Bridge 配置行。`language-configuration.json` 的 `wordPattern` 会把全角冒号和常见中文标点作为词边界，确保 `旁白：文本` 这类中文对白中只有 `旁白` 被标为可跳转词。
 
-角色表格式为：
-
-```csv
-speaker,roleId
-旁白,1050
-成步堂,
-```
-
-在对白行开头输入时，补全项会插入 `角色：`。如果 Host Bridge 或 legacy role map 已绑定，补全详情显示对应绑定状态；如果为空，则显示未绑定状态。Hover 同样展示绑定状态和来源路径。
-
-对白 speaker 也支持导航：Ctrl+Click 会优先跳到配置的 `hostBridge` speaker 项；没有 Host Bridge 时回退到 legacy `unitySample.roleMap` 中对应 `speaker` 行；Find All References 会返回工作区内该 speaker 的全部对白行，并在 VSCode 请求 declaration 时包含配置行。如果未配置角色表，Ctrl+Click 会回退返回工作区内该 speaker 的对白引用位置，便于至少通过 Peek/跳转追溯用法。`language-configuration.json` 的 `wordPattern` 会把全角冒号和常见中文标点作为词边界，确保 `旁白：文本` 这类中文对白中只有 `旁白` 被标为可跳转词。
-
-这项能力只是写作提示，不改变编译结果。UnitySample 实验导出仍可由 ExternalSupport CLI 读取 legacy `roleMap` 完成；长期主线由 Host Bridge 配置驱动。
+这项能力只是写作提示，不改变编译结果。UnitySample 实验导出仍由 ExternalSupport CLI 自己处理；Internal VSCode authoring 不再读取 `unitySample.roleMap` 作为 fallback。
 
 ## Block 双向导航
 
@@ -197,30 +179,14 @@ Inscape 的 block 之间是图关系，不应只能顺着 `-> target` 单向跳�
 
 ## 宿主 Hook 与绑定提示
 
-宿主事件 / 时机 hook 的提示优先读取 Host Bridge。为了兼容 UnitySample 实验样例，扩展仍会回退读取 legacy 绑定表：
-
-```json
-{
-  "unitySample": {
-    "bindingMap": "config/unity-sample-bindings.csv"
-  }
-}
-```
-
-绑定表格式为：
-
-```csv
-kind,alias,unitySampleId,unityGuid,addressableKey,assetPath
-timeline,court_intro,12,,Timeline/CourtIntro,Assets/Resources_Runtime/Timeline/SO_Timeline_CourtIntro.asset
-bg,classroom,,,BG/Classroom,Assets/Art/BG/classroom.png
-```
+宿主事件 / 时机 hook 的提示读取 Host Bridge。
 
 当前 VSCode 扩展支持这些位置：
 
 - `@timeline court_intro`
 - `@timeline.node.enter court_intro`
 
-补全按 `kind` 过滤，Hover 显示 Host asset id、legacy UnitySample id、Addressable、Unity guid 和 asset path。未配置绑定表时，扩展会从工作区已有 `@timeline` hook 中扫描别名作为轻量回退。`@entry` / `@scene` 这类普通 `@` 元信息则用于入口、场景或其他宿主语义说明，本身不参与绑定解析。
+补全按 `kind` 过滤，Hover 显示 Host asset id、Addressable、Unity guid 和 asset path。未配置 Host Bridge 时，扩展会从工作区已有 `@timeline` hook 中扫描别名作为轻量回退。`@entry` / `@scene` 这类普通 `@` 元信息则用于入口、场景或其他宿主语义说明，本身不参与绑定解析。
 
 注意：这仍然只是作者体验层。当前 UnitySample 导出只对已支持的 hook 赋予样例 adapter 意义，例如 `timeline`；不代表 Core 已经承诺资源系统语义。新写法应把事件和时机表达放在 `@`，把玩家可见文本里的动态值读取放在 `[]`。
 

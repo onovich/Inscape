@@ -75,7 +75,7 @@ Workspace index 不可以做：
 - `line`
 - `character`
 - `length`
-- `sourceKind`：`script`、`roleMap` 或未来其它来源。
+- `sourceKind`：`script`、`hostBridge` 或未来其它来源。
 
 ### Host Bindings
 
@@ -91,7 +91,7 @@ Workspace index 不可以做：
 - `line`
 - `character`
 - `length`
-- `sourceKind`：`bindingMap`、`hostSchema` 或未来其它来源。
+- `sourceKind`：`script`、`hostBridge` 或未来其它来源。
 
 ### Metadata
 

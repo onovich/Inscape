@@ -37,7 +37,7 @@
 	- [x] 移除 Compiler / LanguageServer 对 `:: node.name` 的解析和诊断兼容文案。
 	- [x] 移除 VSCode 对 `:: node.name` 的扫描、高亮和 snippet。
 	- [x] 移除 legacy `[kind: alias]` / `[timeline: alias]` inline host binding 行为、样例和工具提示。
-	- [ ] 移除 `unitySample.roleMap` / `unitySample.bindingMap` fallback，统一使用 `hostBridge`。
+	- [x] 移除 `unitySample.roleMap` / `unitySample.bindingMap` fallback，统一使用 `hostBridge`。
 	- [ ] 清理当前行为文档中的 legacy / compatibility 口径，只在 ADR 或历史审计文档保留背景。
 
 ## 代码质量与渐进式重构
@@ -170,9 +170,9 @@
 	- [x] D1.2 Compiler 角色目录与命名自检：对照命名规范检查 `Model` / `Parsing` / `Analysis` / `Localization` 角色边界，并修正文档过期口径。
 	- [x] D2.1 ExternalSupport 隔离自检：确认 UnitySample / importer 仍只在 ExternalSupport 路径与独立测试链路中出现，不反向污染 Internal；详见 [ExternalSupport Boundary Audit](external-support-boundary-audit.md)。
 	- [x] D2.2 Host Bridge 契约草案：定义可表达 UnitySample 当前能力、但不被 UnitySample 限死的配置模型；详见 [Host Bridge Contract](host-bridge-contract.md)。
-	- [x] D3 后续迁移：把 `ToolConfigModel.UnitySample` / VSCode `UnitySample` 文案迁到通用 `hostBridge` 配置读取与展示，并保留旧字段 fallback。
-		- [x] D3.1 ToolConfig 支持通用 `hostBridge` 路径读取与归一化，保留 `unitySample` 旧字段 fallback。
-		- [x] D3.2 VSCode HostBinding / speaker 展示文案迁到 Host Bridge 口径，保留 UnitySample fallback 文案。
+	- [x] D3 后续迁移：把 VSCode `UnitySample` fallback 迁到通用 `hostBridge` 配置读取与展示；ExternalSupport 的 `unitySample` 字段只作为样例命令配置入口。
+		- [x] D3.1 ToolConfig 支持通用 `hostBridge` 路径读取与归一化，ExternalSupport 的 `unitySample` 配置继续隔离在样例命令中。
+		- [x] D3.2 VSCode HostBinding / speaker 展示和读取迁到 Host Bridge 口径，不再读取 UnitySample fallback。
 - [x] 完成 E 阶段防回归工作流固化。
 	- [x] E1/E3 建立 [Regression Workflow](regression-workflow.md)：固化节点开始前、行为契约、命名 / 分层自检、验证命令、提交拆分、提交前检查和推送后检查。
 	- [x] E2 固化 VSCode 交互回归清单到扩展文档，并明确 `.vsix` 重建 / 安装 / reload 边界。
@@ -215,7 +215,7 @@
 - [x] 添加 VSCode 命令：导出项目本地化 CSV。
 - [x] 添加 VSCode 命令：基于旧 CSV 更新项目本地化表。
 - [x] 接入 Host Bridge / legacy binding map 的宿主绑定别名补全和 Hover，覆盖 `@timeline ...` 位置；legacy `[kind: ...]` inline host binding 入口已在 Goal 0 移除。
-- [x] 添加对白 speaker 的 Go to Definition 与 Find All References，优先连接 Host Bridge speaker，回退 legacy role map 和脚本对白引用。
+- [x] 添加对白 speaker 的 Go to Definition 与 Find All References，优先连接 Host Bridge speaker，回退脚本对白引用。
 - [x] 修正 VSCode `wordPattern`，把全角冒号和常见中文标点视为词边界，避免 Ctrl+Click 角色名时把整行对白标为可跳转范围。
 - [x] 添加 block 级 CodeLens 双向导航：`入边` 追溯调用方，`出边` 跳转被调用方。
 - [x] 为宿主 Schema 文件提供 VSCode JSON Schema 校验，并增加命令查看当前 query / event 清单。
