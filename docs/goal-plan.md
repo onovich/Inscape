@@ -114,7 +114,7 @@
 
 - [x] G5.1 接入 document symbols / outline。
 - [x] G5.2 接入 node completion。
-- [ ] G5.3 接入 node definition / references，并删除对应 JS node definition / reference fallback。
+- [x] G5.3 接入 node definition / references，并删除对应 JS node definition / reference fallback。
 - [ ] G5.4 接入 node / jump hover，并删除对应 JS node hover fallback。
 - [ ] G5.5 清理 G5.1 / G5.2 已存在的 JS fallback，或改成明确的错误提示 / output 日志。
 

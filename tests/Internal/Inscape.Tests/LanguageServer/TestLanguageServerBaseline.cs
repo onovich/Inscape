@@ -205,6 +205,53 @@ namespace Inscape.Tests {
             }
         }
 
+        static void LanguageServerProjectNavigationUsesProjectGraphAndOverride() {
+            string directory = Path.Combine(Path.GetTempPath(), "inscape-language-server-navigation-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory);
+            string startPath = Path.Combine(directory, "start.inscape");
+            string targetPath = Path.Combine(directory, "target.inscape");
+            string overridePath = Path.Combine(directory, "target.override.tmp");
+
+            File.WriteAllText(startPath, """
+# start
+旁白：开始。
+-> target.node
+""");
+
+            File.WriteAllText(targetPath, """
+# old.node
+旁白：旧节点。
+""");
+
+            File.WriteAllText(overridePath, """
+# target.node
+旁白：编辑器未保存的新节点。
+""");
+
+            try {
+                JsonElement initial = RunLanguageServerForJson(new[] { "--definition-project", directory, "target.node" });
+                AssertEqual("inscape.language-server-project-definition", initial.GetProperty("format").GetString(), "Project definition probe format");
+                AssertTrue(initial.GetProperty("definition").ValueKind == JsonValueKind.Null, "Project definition should not find target before override");
+
+                JsonElement definition = RunLanguageServerForJson(new[] { "--definition-project", directory, "target.node", "--override", targetPath, overridePath });
+                AssertEqual("target.node", definition.GetProperty("definition").GetProperty("name").GetString(), "Project definition should apply override");
+                JsonElement definitionLocation = definition.GetProperty("definition").GetProperty("location");
+                AssertEqual(targetPath, definitionLocation.GetProperty("sourcePath").GetString(), "Project definition override source path");
+                AssertEqual(0, definitionLocation.GetProperty("line").GetInt32(), "Project definition editor line");
+
+                JsonElement references = RunLanguageServerForJson(new[] { "--references-project", directory, "target.node", "--override", targetPath, overridePath });
+                AssertEqual("inscape.language-server-project-references", references.GetProperty("format").GetString(), "Project references probe format");
+                JsonElement firstReference = references.GetProperty("references")[0];
+                AssertEqual("target.node", firstReference.GetProperty("target").GetString(), "Project reference target");
+                AssertEqual(startPath, firstReference.GetProperty("location").GetProperty("sourcePath").GetString(), "Project reference source path");
+                AssertEqual(2, firstReference.GetProperty("location").GetProperty("line").GetInt32(), "Project reference editor line");
+            } finally {
+                if (Directory.Exists(directory)) {
+                    Directory.Delete(directory, true);
+                }
+            }
+        }
+
         static JsonElement RunLanguageServerForJson(string[] args) {
             TextWriter originalOut = Console.Out;
             StringWriter output = new StringWriter();

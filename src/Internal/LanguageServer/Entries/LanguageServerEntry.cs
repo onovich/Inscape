@@ -63,6 +63,21 @@ namespace Inscape.LanguageServer {
                 return 0;
             }
 
+            if (args.Length > 2 && args[0] == "--definition-project") {
+                string rootPath = Path.GetFullPath(args[1]);
+                DslScriptProjectNavigationProvider provider = new DslScriptProjectNavigationProvider();
+                Console.WriteLine(JsonSerializer.Serialize(new {
+                    format = "inscape.language-server-project-definition",
+                    formatVersion = 1,
+                    rootPath,
+                    definition = provider.GetNodeDefinition(rootPath, args[2], ReadSourceOverride(args))
+                }, new JsonSerializerOptions {
+                    WriteIndented = true,
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                }));
+                return 0;
+            }
+
             if (args.Length > 2 && args[0] == "--references-file") {
                 string sourcePath = Path.GetFullPath(args[1]);
                 string source = File.ReadAllText(sourcePath);
@@ -71,6 +86,21 @@ namespace Inscape.LanguageServer {
                     format = "inscape.language-server-references",
                     formatVersion = 1,
                     references = provider.GetNodeReferences(source, sourcePath, args[2])
+                }, new JsonSerializerOptions {
+                    WriteIndented = true,
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                }));
+                return 0;
+            }
+
+            if (args.Length > 2 && args[0] == "--references-project") {
+                string rootPath = Path.GetFullPath(args[1]);
+                DslScriptProjectNavigationProvider provider = new DslScriptProjectNavigationProvider();
+                Console.WriteLine(JsonSerializer.Serialize(new {
+                    format = "inscape.language-server-project-references",
+                    formatVersion = 1,
+                    rootPath,
+                    references = provider.GetNodeReferences(rootPath, args[2], ReadSourceOverride(args))
                 }, new JsonSerializerOptions {
                     WriteIndented = true,
                     PropertyNamingPolicy = JsonNamingPolicy.CamelCase
@@ -126,7 +156,7 @@ namespace Inscape.LanguageServer {
                 return 0;
             }
 
-            Console.WriteLine("Inscape.LanguageServer baseline. Use --capabilities, --diagnose-file <path>, --diagnose-project <root> [--entry title] [--override source.inscape temp.inscape], --definition-file <path> <title>, --references-file <path> <title>, --completion-file <path>, --document-symbols-file <path>, or --hover-file <path> <node|jump> <title>.");
+            Console.WriteLine("Inscape.LanguageServer baseline. Use --capabilities, --diagnose-file <path>, --diagnose-project <root> [--entry title] [--override source.inscape temp.inscape], --definition-file <path> <title>, --definition-project <root> <title> [--override source.inscape temp.inscape], --references-file <path> <title>, --references-project <root> <title> [--override source.inscape temp.inscape], --completion-file <path>, --document-symbols-file <path>, or --hover-file <path> <node|jump> <title>.");
             return 0;
         }
 

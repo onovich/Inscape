@@ -16,9 +16,9 @@ This is the first lightweight authoring layer for `.inscape` scripts. It keeps s
 - Provides `[]` query interpolation completions and Hover from configured Host Schema zero-parameter simple queries such as `[player.gold]`; unknown queries are authoring hints only, not compiler errors. The provider prefers the CLI `inspect-host-schema-project` capability endpoint and falls back to direct JSON reading if the endpoint is unavailable.
 - Provides `@emit` host event completions and Hover from configured Host Schema `events[]`; unknown events are authoring hints only, not compiler errors. This uses the same capability endpoint with direct JSON fallback.
 - Highlights host hook lines such as `@timeline court_intro` without the always-on link look, while Hover / Ctrl+Click still jumps to the matching mapping row or workspace occurrence.
-- Supports Go to Definition / Ctrl+Click from jump targets to node declarations, and from dialogue speakers to configured Host Bridge speaker rows or dialogue references; the clickable text stays visually plain until Ctrl is held.
+- Supports Go to Definition / Ctrl+Click from jump targets to node declarations through `Inscape.LanguageServer --definition-project`, and from dialogue speakers to configured Host Bridge speaker rows or dialogue references; the clickable text stays visually plain until Ctrl is held.
 - Treats full-width colons and common Chinese punctuation as word boundaries so Ctrl+Click link styling on Chinese dialogue only covers the speaker name.
-- Supports Find All References from node declarations, jump targets, and dialogue speakers.
+- Supports Find All References from node declarations and jump targets through `Inscape.LanguageServer --references-project`; dialogue speaker references remain a VSCode authoring scan.
 - Shows node CodeLens entries as `N 个引用` on the referenced block header; clicking opens VSCode References Peek for incoming jumps.
 - Shows concise hover summaries for node declarations, jump targets, dialogue speakers, and host binding aliases.
 - Provides an outline view that prefers `Inscape.LanguageServer --document-symbols-file` and falls back to visible node-header scanning when the probe is unavailable.
@@ -89,7 +89,7 @@ After installation, reload the VSCode window before judging behavior. Manual smo
 - Dialogue, narration, prompt, and choice text show no always-on underline.
 - Holding Ctrl over dialogue / option text shows the transient link affordance.
 - Ctrl+Click on dialogue / option text opens or reuses preview and reveals the matching page.
-- `-> target` Go to Definition and Find All References still work.
+- `-> target` Go to Definition and Find All References are served by LanguageServer project navigation and still work across files.
 - `# 标题` appears in highlighting, Outline, jump completion, Go to Definition, Find All References, Hover, and node CodeLens.
 - Outline is served by LanguageServer first; if that probe fails, the extension falls back to the JS node scanner instead of breaking the view.
 - Jump target node completion is served by LanguageServer first, then augmented by the JS workspace scanner so cross-file authoring remains available.

@@ -140,9 +140,15 @@ const dslScriptCompletionProvider = new DslScriptCompletionProvider({
 });
 
 const dslScriptReferenceProvider = new DslScriptReferenceProvider({
+    childProcess,
+    fs,
+    os,
+    path,
+    vscode,
     isInscapeDocument,
     createLocation: (item) => editorAuthoringLocationProvider.createLocation(item),
     uniqueLocations: (locations) => editorAuthoringLocationProvider.uniqueLocations(locations),
+    resolveLanguageServerProjectPath: (workspaceFolderPath) => resolveLanguageServerProjectPathFromBase(workspaceFolderPath, __dirname),
     dslScriptNodeProvider,
     dslScriptSpeakerProvider
 });
@@ -311,10 +317,15 @@ const previewRevealBridge = new PreviewRevealBridge({
 });
 
 const dslScriptDefinitionProvider = new DslScriptDefinitionProvider({
+    childProcess,
+    fs,
+    os,
+    path,
     vscode,
     isInscapeDocument,
     createLocation: (item) => editorAuthoringLocationProvider.createLocation(item),
     uniqueLocations: (locations) => editorAuthoringLocationProvider.uniqueLocations(locations),
+    resolveLanguageServerProjectPath: (workspaceFolderPath) => resolveLanguageServerProjectPathFromBase(workspaceFolderPath, __dirname),
     dslScriptNodeProvider,
     dslScriptSpeakerProvider,
     hostBindingProvider,

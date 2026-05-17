@@ -27,6 +27,7 @@ namespace Inscape.Tests {
                 ("language server symbols and hover use compiler graph", LanguageServerSymbolsAndHoverUseCompilerGraph),
                 ("language server entry probes emit stable json", LanguageServerEntryProbesEmitStableJson),
                 ("language server project diagnostics apply override", LanguageServerProjectDiagnosticsApplyOverride),
+                ("language server project navigation uses project graph and override", LanguageServerProjectNavigationUsesProjectGraphAndOverride),
                 ("narrative runtime consumes compiler graph", NarrativeRuntimeConsumesCompilerGraph),
                 ("tool config resolves host bridge path", ToolConfigResolvesHostBridgePath),
                 ("host schema event reader reports schema events", HostSchemaEventReaderReportsSchemaEvents),

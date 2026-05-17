@@ -57,7 +57,7 @@ fallback：
 
 ### L3：Node definition / references
 
-迁移节点声明与 `-> target` 的 definition / references。迁移后，节点语义由 LanguageServer / Compiler graph 输出，JS workspace index 仅作为失败兜底。
+迁移节点声明与 `-> target` 的 definition / references。当前进展：已完成。VSCode 通过 `Inscape.LanguageServer --definition-project` / `--references-project` 获取项目级节点导航，支持跨文件和 unsaved override；节点语义不再使用 JS workspace index fallback。
 
 保留边界：
 
