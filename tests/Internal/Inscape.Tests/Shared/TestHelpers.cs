@@ -49,6 +49,15 @@ namespace Inscape.Tests {
             return false;
         }
 
+        static bool ContainsAnyCode(DslScriptCompilationResultModel result, string code) {
+            for (int i = 0; i < result.Diagnostics.Count; i += 1) {
+                if (result.Diagnostics[i].Code == code) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         static int CountDiagnostics(JsonElement root, string code) {
             int count = 0;
             foreach (JsonElement diagnostic in root.GetProperty("diagnostics").EnumerateArray()) {

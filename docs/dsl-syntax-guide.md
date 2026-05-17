@@ -8,8 +8,8 @@
 
 Inscape 当前可以先理解成五类东西：
 
-1. `:: node.name`
-   - 定义一个可跳转的剧情块。
+1. `# 标题`
+   - 定义一个可跳转的剧情块；旧项目里的 `:: node.name` 仍兼容。
 2. `角色：对白` / `旁白文本`
    - 写剧情正文。
 3. `? 提示` + `- 选项 -> target`
@@ -22,7 +22,7 @@ Inscape 当前可以先理解成五类东西：
 ## 最小例子
 
 ```inscape
-:: court.opening
+# 法庭开场
 
 @entry
 @scene courtroom
@@ -32,31 +32,32 @@ Inscape 当前可以先理解成五类东西：
 成步堂：[player.name]，先从证言开始吧。
 
 ? 你要做什么
-- 询问证言 -> court.questioning
-- 查看证物 -> court.evidence
+- 询问证言 -> 询问证人
+- 查看证物 -> 查看证物
 
-:: court.questioning
+# 询问证人
 
 证人：我什么都不知道。
--> court.opening
+-> 法庭开场
 ```
 
-## 1. 节点：`:: node.name`
+## 1. 节点：`# 标题`
 
 节点是 Inscape 的基本叙事块。
 
 ```inscape
-:: court.opening
+# 法庭开场
 ```
 
 规则：
 
-- 节点名当前使用小写 ASCII 层级名。
-- 允许字母、数字、下划线、短横线和点。
-- 点表示层级，例如 `court.cross_exam.loop`。
-- 项目内节点名必须全局唯一。
+- 标题是作者可见的剧情块名称。
+- 项目内标题必须全局唯一。
+- `# 标题` 本身结束上一个节点并开始新节点。
+- 标题前建议留一个空行；漏空行只会产生 style hint，不会阻止编译。
+- 旧 `:: node.name` 仍兼容，用于旧项目和迁移期。
 
-你可以把它理解成“这个剧情页的机器名”。
+你可以把标题理解成“这个剧情页给人看的名字”。长期机器身份由 stable node id 维护，详见 [Stable Node ID Contract](stable-node-id-contract.md)。
 
 ## 2. 正文：对白与旁白
 

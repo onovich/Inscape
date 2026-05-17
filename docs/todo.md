@@ -10,9 +10,9 @@
 
 下一位接手者建议按以下顺序推进：
 
-1. 按 [/goal 后续目标计划](goal-plan.md) 推进 Goal 3：`# 标题` 语法第一刀，保留旧 `:: node.name` 兼容路径。
-2. 按 [/goal 后续目标计划](goal-plan.md) 推进 Goal 4：VSCode 标题语法体验，让高亮、Outline、补全、跳转和自动 `_01` 编号跟上新块语法。
-3. 按 [/goal 后续目标计划](goal-plan.md) 推进 Goal 5：LanguageServer 接管 VSCode 更多语义能力，优先 outline / node completion。
+1. 按 [/goal 后续目标计划](goal-plan.md) 推进 Goal 4：VSCode 标题语法体验，让高亮、Outline、补全、跳转和自动 `_01` 编号跟上新块语法。
+2. 按 [/goal 后续目标计划](goal-plan.md) 推进 Goal 5：LanguageServer 接管 VSCode 更多语义能力，优先 outline / node completion。
+3. 按 [/goal 后续目标计划](goal-plan.md) 推进 Goal 6：Host Schema endpoint 收口，评估是否下沉到 LanguageServer。
 4. 收敛 Host Schema 脚本作者体验后续：Tooling 已有 query / event reader，CLI 已提供 `inspect-host-schema-project` capability endpoint，VSCode 已优先消费该 endpoint 并保留直接 JSON fallback；下一步按 [VSCode LanguageServer Migration Plan](vscode-language-server-migration-plan.md) 评估是否把 capability endpoint 下沉到 LanguageServer，或继续清理 JS fallback 重复解析。
 5. 继续打磨 VSCode 可玩预览：补未保存内容的更细粒度热刷新、刷新中状态提示，以及可选的预览 / 源码同步策略。
 	- 正文 / 选项文本不再用 `DocumentLinkProvider`，因为它会导致整段文本常驻下划线；当前用 `DefinitionProvider` 恢复“默认无下划线、Ctrl+指向才显示链接态”的编辑体验，并通过 selection bridge 在 Ctrl+Click 后执行预览定位，显式命令仅作为兜底。
@@ -233,7 +233,8 @@
 - [x] 让 VSCode 消费 Host Schema capability endpoint / Tooling 契约：query / event provider 优先调用 `inspect-host-schema-project`，失败时回退直接 JSON 读取。
 - [ ] 按 [VSCode LanguageServer Migration Plan](vscode-language-server-migration-plan.md) 评估是否把 Host Schema capability endpoint 下沉到 LanguageServer，并在 VSCode 稳定后移除 JS provider 的重复 JSON fallback。
 - [x] 定义第一版诊断清单：重复节点、非法节点名、缺失目标、不可达节点、空节点、选项语法问题。
-- [ ] 迁移第一版块语法到 `# 标题`：保留 `:: node.name` 兼容计划，新增标题唯一诊断、标题前缺空行 style hint、创建新节点 `_01` 自动编号策略。
+- [x] Compiler 第一刀支持 `# 标题`：保留 `:: node.name` 兼容路径，新增标题唯一诊断、标题前缺空行 info 级 style hint，并覆盖中文标题跳转测试。
+- [ ] VSCode 标题语法体验：TextMate 高亮、snippets、Outline / completion / definition / references 识别标题，以及创建新节点 `_01` 自动编号策略。
 
 ## HTML 调试预览
 

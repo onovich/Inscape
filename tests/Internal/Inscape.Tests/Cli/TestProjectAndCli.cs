@@ -248,6 +248,23 @@ Narrator: Second copy.
             AssertTrue(ContainsCode(result, "INS030"), "Expected INS030 duplicate project node diagnostic.");
         }
 
+        static void StoryGraphCompilerDomainDiagnosesDuplicateHashTitles() {
+            StoryGraphCompilerDomain compiler = new StoryGraphCompilerDomain();
+            StoryGraphCompilationResultModel result = compiler.Compile(new List<DslScriptSourceModel> {
+                new DslScriptSourceModel("memory://a.inscape", """
+# 法庭开场
+旁白：第一版。
+"""),
+                new DslScriptSourceModel("memory://b.inscape", """
+# 法庭开场
+旁白：第二版。
+"""),
+            }, "memory://project");
+
+            AssertTrue(result.HasErrors, "Project duplicate hash title should be an error.");
+            AssertTrue(ContainsCode(result, "INS030"), "Expected INS030 duplicate project title diagnostic.");
+        }
+
         static void CliDiagnoseProjectAppliesOverride() {
             string directory = Path.Combine(Path.GetTempPath(), "inscape-tests", Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(directory);

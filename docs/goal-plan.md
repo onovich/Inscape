@@ -71,6 +71,8 @@
 
 ## Goal 3：`# 标题` 语法第一刀
 
+状态：已完成 Compiler 第一刀；VSCode authoring 体验见 Goal 4。
+
 目标：Compiler 支持新块标题，同时保留旧 `:: node.name` 兼容路径。
 
 产出：
@@ -82,10 +84,10 @@
 
 小节点：
 
-- G3.1 增加 parser 测试和语法设计说明，先锁行为。
-- G3.2 实现 `# 标题` 解析与 source span。
-- G3.3 实现项目级 duplicate title diagnostic。
-- G3.4 明确旧 `:: node.name` 的兼容 warning / 迁移提示节奏。
+- [x] G3.1 增加 parser 测试和语法设计说明，先锁行为。
+- [x] G3.2 实现 `# 标题` 解析与 source span。
+- [x] G3.3 实现项目级 duplicate title diagnostic。
+- [x] G3.4 明确旧 `:: node.name` 的兼容 warning / 迁移提示节奏。
 
 验收：
 

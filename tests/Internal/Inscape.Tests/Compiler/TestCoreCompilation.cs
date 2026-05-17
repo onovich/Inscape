@@ -68,6 +68,54 @@ Narrator: Start.
             AssertTrue(ContainsCode(result, "INS010"), "Expected INS010 invalid target diagnostic.");
         }
 
+        static void ParseHashTitleGraphWithChineseJump() {
+            string source = """
+# 法庭开场
+
+旁白：雨声很重。
+-> 证人登场
+
+# 证人登场
+
+艾琳：我到了。
+""";
+
+            DslScriptCompilationResultModel result = Compile(source);
+            AssertFalse(result.HasErrors, "Hash title graph should compile.");
+            AssertEqual(2, result.Document.Nodes.Count, "Hash title node count");
+            AssertEqual("法庭开场", result.Document.Nodes[0].Name, "First title node name");
+            AssertEqual("证人登场", result.Document.Nodes[1].Name, "Second title node name");
+            AssertEqual(1, result.Document.Edges.Count, "Hash title edge count");
+            AssertEqual("证人登场", result.Document.Edges[0].To, "Hash title jump target");
+        }
+
+        static void DiagnoseDuplicateHashTitles() {
+            string source = """
+# 法庭开场
+旁白：第一版。
+
+# 法庭开场
+旁白：第二版。
+""";
+
+            DslScriptCompilationResultModel result = Compile(source);
+            AssertTrue(result.HasErrors, "Duplicate hash titles should be an error.");
+            AssertTrue(ContainsCode(result, "INS003"), "Expected INS003 duplicate title diagnostic.");
+        }
+
+        static void WarnsWhenHashTitleMissingLeadingBlankLine() {
+            string source = """
+# 法庭开场
+旁白：第一版。
+# 证人登场
+艾琳：我到了。
+""";
+
+            DslScriptCompilationResultModel result = Compile(source);
+            AssertFalse(result.HasErrors, "Missing title blank line should not block compilation.");
+            AssertTrue(ContainsAnyCode(result, "INS012"), "Expected INS012 title spacing hint.");
+        }
+
         static void HashesAreStable() {
             string source = """
 :: start
