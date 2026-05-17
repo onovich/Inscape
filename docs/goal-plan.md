@@ -23,6 +23,8 @@
 
 ## Goal 1：stable node id 契约
 
+状态：已完成设计，见 [Stable Node ID Contract](stable-node-id-contract.md)。
+
 目标：把 [ADR 0013](adr/0013-author-title-and-stable-node-id.md) 落成可实现的数据契约，先不改 parser。
 
 产出：
@@ -34,9 +36,9 @@
 
 小节点：
 
-- G1.1 设计 stable node id / title map JSON 契约。
-- G1.2 设计标题重命名识别流程：source range、相邻文本锚点、旧标题、前后节点关系与人工确认。
-- G1.3 设计 `:: node.name` 到 `# 标题` 的兼容迁移策略。
+- [x] G1.1 设计 stable node id / title map JSON 契约。
+- [x] G1.2 设计标题重命名识别流程：source range、相邻文本锚点、旧标题、前后节点关系与人工确认。
+- [x] G1.3 设计 `:: node.name` 到 `# 标题` 的兼容迁移策略。
 
 验收：
 
