@@ -21,7 +21,7 @@ This is the first lightweight authoring layer for `.inscape` scripts. It keeps s
 - Supports Find All References from node declarations, jump targets, and dialogue speakers.
 - Shows node CodeLens entries as `N 个引用` on the referenced block header; clicking opens VSCode References Peek for incoming jumps.
 - Shows concise hover summaries for node declarations, jump targets, dialogue speakers, and host binding aliases.
-- Provides an outline view backed by visible node headers.
+- Provides an outline view that prefers `Inscape.LanguageServer --document-symbols-file` and falls back to visible node-header scanning when the probe is unavailable.
 - Provides JSON validation for `inscape.host.schema.json` / `*.host.schema.json`.
 - Exposes command palette actions for localization:
   - `Inscape: Open Preview`
@@ -91,6 +91,7 @@ After installation, reload the VSCode window before judging behavior. Manual smo
 - Ctrl+Click on dialogue / option text opens or reuses preview and reveals the matching page.
 - `-> target` Go to Definition and Find All References still work.
 - `# 标题` appears in highlighting, Outline, jump completion, Go to Definition, Find All References, Hover, and node CodeLens.
+- Outline is served by LanguageServer first; if that probe fails, the extension falls back to the JS node scanner instead of breaking the view.
 - Speaker completion, Hover, Go to Definition, and Find All References prefer `hostBridge` and still fall back to legacy `unitySample.roleMap`.
 - `@timeline ...` host event / timing hook and legacy `[kind: alias]` inline host binding completion, Hover, and Ctrl+Click prefer `hostBridge` and still fall back to legacy `unitySample.bindingMap`.
 - `[query.path]` query interpolation completion and Hover read Host Schema queries, while legacy `[kind: alias]` remains in the Host Bridge / legacy binding path.

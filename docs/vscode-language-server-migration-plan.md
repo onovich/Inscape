@@ -46,6 +46,8 @@
 
 ### L2：Document symbols 与节点 completion
 
+进度：document symbols / Outline 已完成第一步接入。VSCode 现在会先调用 `Inscape.LanguageServer --document-symbols-file`，并在失败时回退 JS `DslScriptNodeProvider` 扫描；节点 completion 仍待迁移。
+
 迁移当前文档 outline 和节点跳转补全。这两项主要来自 Compiler graph / source span，风险低，适合做第一批非诊断 authoring feature。
 
 fallback：

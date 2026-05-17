@@ -154,7 +154,12 @@ const dslScriptHoverProvider = new DslScriptHoverProvider({
 });
 
 const dslScriptDocumentSymbolProvider = new DslScriptDocumentSymbolProvider({
+    childProcess,
+    fs,
+    os,
+    path,
     vscode,
+    resolveLanguageServerProjectPath: (workspaceFolderPath) => resolveLanguageServerProjectPathFromBase(workspaceFolderPath, __dirname),
     dslScriptNodeProvider
 });
 
