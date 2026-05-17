@@ -46,14 +46,14 @@
 
 ### L2：Document symbols 与节点 completion
 
-进度：document symbols / Outline 与 node completion 已完成第一步接入。VSCode 现在会先调用 `Inscape.LanguageServer --document-symbols-file` / `--completion-file`；Outline 失败时回退 JS `DslScriptNodeProvider` 扫描，node completion 会用 JS workspace node index 补齐跨文件节点。
+进度：已完成。VSCode 现在调用 `Inscape.LanguageServer --document-symbols-file` 提供 Outline，并调用 `Inscape.LanguageServer --completion-project <root> [--override source temp]` 提供项目级 node completion，覆盖跨文件节点和未保存当前文档内容；对应 JS node semantic fallback 已删除。
 
 迁移当前文档 outline 和节点跳转补全。这两项主要来自 Compiler graph / source span，风险低，适合做第一批非诊断 authoring feature。
 
-fallback：
+失败边界：
 
-- LanguageServer document symbols 失败时回退 JS `DslScriptDocumentSymbolProvider`。
-- LanguageServer node completion 失败时回退 JS `DslScriptNodeProvider` 当前工作区索引。
+- LanguageServer document symbols 失败时返回空 Outline，不再回退 JS node scanner。
+- LanguageServer node completion 失败时返回空 node completion，不再回退 JS workspace node index。
 
 ### L3：Node definition / references
 
@@ -99,8 +99,8 @@ probe parity 稳定后再引入完整 LSP transport。Transport 本身是通信�
 | Feature | 首选来源 | 第一 fallback | 最后一层 fallback |
 | --- | --- | --- | --- |
 | Diagnostics | LanguageServer project diagnostics | CLI `diagnose-project` | VSCode extension diagnostic |
-| Node completion | LanguageServer node completion | JS `DslScriptNodeProvider` | 无补全但不报错 |
-| Document symbols | LanguageServer document symbols | JS `DslScriptDocumentSymbolProvider` | 空 outline |
+| Node completion | LanguageServer project node completion | 无 JS node completion fallback | 无补全但不报错 |
+| Document symbols | LanguageServer document symbols | 无 JS document symbol fallback | 空 outline |
 | Node definition / references | LanguageServer graph provider | JS node provider | VSCode 默认无结果 |
 | Node / jump hover | LanguageServer project hover | 无 JS node hover fallback | 无 hover |
 | Text-to-preview reveal | VSCode `DefinitionProvider` + `PreviewRevealBridge` | 显式 `Inscape: Open Preview` / reveal 命令 | 无预览定位但源码可编辑 |

@@ -9,7 +9,6 @@ class DslScriptDocumentSymbolProvider {
         this.path = dependencies.path;
         this.vscode = dependencies.vscode;
         this.resolveLanguageServerProjectPath = dependencies.resolveLanguageServerProjectPath;
-        this.dslScriptNodeProvider = dependencies.dslScriptNodeProvider;
         this.languageServerSymbolsByDocumentVersion = new Map();
     }
 
@@ -25,25 +24,8 @@ class DslScriptDocumentSymbolProvider {
             return languageServerSymbols;
         }
 
-        return this.provideFallbackDocumentSymbols(document);
-    }
-
-    provideFallbackDocumentSymbols(document) {
-        const symbols = [];
-        const nodes = this.dslScriptNodeProvider.collectDocumentNodes(document);
-
-        for (const node of nodes) {
-            const range = document.lineAt(node.line).range;
-            symbols.push(new this.vscode.DocumentSymbol(
-                node.name,
-                "Inscape dialogue block",
-                this.vscode.SymbolKind.Namespace,
-                range,
-                range
-            ));
-        }
-
-        return symbols;
+        this.languageServerSymbolsByDocumentVersion.set(cacheKey, []);
+        return [];
     }
 
     async tryProvideLanguageServerSymbols(document) {

@@ -132,7 +132,6 @@ const dslScriptCompletionProvider = new DslScriptCompletionProvider({
     isJumpTargetContext,
     resolveLanguageServerProjectPath: (workspaceFolderPath) => resolveLanguageServerProjectPathFromBase(workspaceFolderPath, __dirname),
     isSpeakerCompletionContext,
-    dslScriptNodeProvider,
     dslScriptSpeakerProvider,
     hostBindingProvider,
     dslScriptQueryInterpolationProvider,
@@ -175,8 +174,7 @@ const dslScriptDocumentSymbolProvider = new DslScriptDocumentSymbolProvider({
     os,
     path,
     vscode,
-    resolveLanguageServerProjectPath: (workspaceFolderPath) => resolveLanguageServerProjectPathFromBase(workspaceFolderPath, __dirname),
-    dslScriptNodeProvider
+    resolveLanguageServerProjectPath: (workspaceFolderPath) => resolveLanguageServerProjectPathFromBase(workspaceFolderPath, __dirname)
 });
 
 const dslScriptCodeLensProvider = new DslScriptCodeLensProvider({

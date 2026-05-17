@@ -9,7 +9,8 @@ Current baseline:
 - `Entries/LanguageServerEntry.cs` also exposes `--diagnose-file <path>` as a temporary diagnostics probe that calls `DslScriptDiagnosticProvider` directly.
 - `Entries/LanguageServerEntry.cs` exposes `--diagnose-project <root> [--entry title] [--override source.inscape temp.inscape]` as a temporary project diagnostics probe that uses Tooling source loading and Compiler project diagnostics without calling CLI.
 - `Entries/LanguageServerEntry.cs` exposes `--definition-file <path> <nodeName>` as a temporary definition probe that calls `DslScriptDefinitionProvider` directly.
-- `Entries/LanguageServerEntry.cs` exposes `--references-file <path> <nodeName>` and `--completion-file <path>` as temporary probes for graph-backed references and node completions.
+- `Entries/LanguageServerEntry.cs` exposes `--references-file <path> <nodeName>` and `--completion-file <path>` as temporary single-file probes for graph-backed references and node completions.
+- `Entries/LanguageServerEntry.cs` exposes `--completion-project <root> [--override source.inscape temp.inscape]` for project-level node completions with unsaved editor content.
 - `Entries/LanguageServerEntry.cs` exposes `--definition-project <root> <nodeName> [--override source.inscape temp.inscape]`, `--references-project <root> <nodeName> [--override source.inscape temp.inscape]`, and `--hover-project <root> <node|jump> <nodeName> [--override source.inscape temp.inscape]` for project-level node navigation and hover. These probes reuse `DslScriptSourcesLoaderDomain` and `StoryGraphCompilerDomain` instead of VSCode workspace scanning.
 - `Entries/LanguageServerEntry.cs` exposes `--document-symbols-file <path>` and `--hover-file <path> <node|jump> <name>` as temporary single-file probes for outline and hover data.
 - `Models/EditorLocationModel.cs` follows `docs/source-location-contracts.md`: editor positions use 0-based `line` / `character` / `length`.

@@ -12,7 +12,6 @@ class DslScriptCompletionProvider {
         this.isJumpTargetContext = dependencies.isJumpTargetContext;
         this.resolveLanguageServerProjectPath = dependencies.resolveLanguageServerProjectPath;
         this.isSpeakerCompletionContext = dependencies.isSpeakerCompletionContext;
-        this.dslScriptNodeProvider = dependencies.dslScriptNodeProvider;
         this.dslScriptSpeakerProvider = dependencies.dslScriptSpeakerProvider;
         this.hostBindingProvider = dependencies.hostBindingProvider;
         this.dslScriptQueryInterpolationProvider = dependencies.dslScriptQueryInterpolationProvider;
@@ -74,25 +73,12 @@ class DslScriptCompletionProvider {
 
     async provideNodeCompletions(document) {
         const items = [];
-        const seen = new Set();
         const languageServerCompletions = await this.collectLanguageServerNodeCompletions(document);
 
         for (const completion of languageServerCompletions) {
             const item = this.createNodeCompletionItem(completion.label, completion.location, "LanguageServer node");
             item.sortText = "0_" + completion.label;
             items.push(item);
-            seen.add(completion.label);
-        }
-
-        const nodes = await this.dslScriptNodeProvider.collectWorkspaceNodes(document);
-        for (const node of nodes) {
-            if (seen.has(node.name)) {
-                continue;
-            }
-            const item = this.createNodeCompletionItem(node.name, node, node.sourcePath === document.uri.fsPath ? "Inscape node in this file" : "Inscape project node");
-            item.sortText = "1_" + node.name;
-            items.push(item);
-            seen.add(node.name);
         }
 
         return items;
@@ -123,13 +109,16 @@ class DslScriptCompletionProvider {
                 "--project",
                 this.resolveLanguageServerProjectPath(workspaceFolderPath),
                 "--",
-                "--completion-file",
+                "--completion-project",
+                workspaceFolderPath,
+                "--override",
+                document.uri.fsPath,
                 tempPath
             ], workspaceFolderPath);
 
             const payload = JSON.parse(result.stdout);
             if (!payload
-                || payload.format !== "inscape.language-server-completions"
+                || payload.format !== "inscape.language-server-project-completions"
                 || payload.formatVersion !== 1
                 || !Array.isArray(payload.completions)) {
                 return [];

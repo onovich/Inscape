@@ -123,6 +123,21 @@ namespace Inscape.LanguageServer {
                 return 0;
             }
 
+            if (args.Length > 1 && args[0] == "--completion-project") {
+                string rootPath = Path.GetFullPath(args[1]);
+                DslScriptCompletionProvider provider = new DslScriptCompletionProvider();
+                Console.WriteLine(JsonSerializer.Serialize(new {
+                    format = "inscape.language-server-project-completions",
+                    formatVersion = 1,
+                    rootPath,
+                    completions = provider.GetProjectNodeCompletions(rootPath, ReadSourceOverride(args))
+                }, new JsonSerializerOptions {
+                    WriteIndented = true,
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                }));
+                return 0;
+            }
+
             if (args.Length > 1 && args[0] == "--document-symbols-file") {
                 string sourcePath = Path.GetFullPath(args[1]);
                 string source = File.ReadAllText(sourcePath);
@@ -174,7 +189,7 @@ namespace Inscape.LanguageServer {
                 return 0;
             }
 
-            Console.WriteLine("Inscape.LanguageServer baseline. Use --capabilities, --diagnose-file <path>, --diagnose-project <root> [--entry title] [--override source.inscape temp.inscape], --definition-file <path> <title>, --definition-project <root> <title> [--override source.inscape temp.inscape], --references-file <path> <title>, --references-project <root> <title> [--override source.inscape temp.inscape], --completion-file <path>, --document-symbols-file <path>, --hover-file <path> <node|jump> <title>, or --hover-project <root> <node|jump> <title> [--override source.inscape temp.inscape].");
+            Console.WriteLine("Inscape.LanguageServer baseline. Use --capabilities, --diagnose-file <path>, --diagnose-project <root> [--entry title] [--override source.inscape temp.inscape], --definition-file <path> <title>, --definition-project <root> <title> [--override source.inscape temp.inscape], --references-file <path> <title>, --references-project <root> <title> [--override source.inscape temp.inscape], --completion-file <path>, --completion-project <root> [--override source.inscape temp.inscape], --document-symbols-file <path>, --hover-file <path> <node|jump> <title>, or --hover-project <root> <node|jump> <title> [--override source.inscape temp.inscape].");
             return 0;
         }
 

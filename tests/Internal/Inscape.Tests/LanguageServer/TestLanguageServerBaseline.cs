@@ -252,6 +252,44 @@ namespace Inscape.Tests {
             }
         }
 
+        static void LanguageServerProjectCompletionsUseProjectGraphAndOverride() {
+            string directory = Path.Combine(Path.GetTempPath(), "inscape-language-server-completion-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory);
+            string startPath = Path.Combine(directory, "start.inscape");
+            string targetPath = Path.Combine(directory, "target.inscape");
+            string overridePath = Path.Combine(directory, "target.override.tmp");
+
+            File.WriteAllText(startPath, """
+# start
+Narrator: start
+""");
+
+            File.WriteAllText(targetPath, """
+# old.node
+Narrator: old node
+""");
+
+            File.WriteAllText(overridePath, """
+# target.node
+Narrator: unsaved node
+""");
+
+            try {
+                JsonElement initial = RunLanguageServerForJson(new[] { "--completion-project", directory });
+                AssertEqual("inscape.language-server-project-completions", initial.GetProperty("format").GetString(), "Project completion probe format");
+                AssertTrue(CountJsonItemsWithString(initial.GetProperty("completions"), "label", "start") == 1, "Project completion should include first file node");
+                AssertTrue(CountJsonItemsWithString(initial.GetProperty("completions"), "label", "old.node") == 1, "Project completion should include second file node");
+
+                JsonElement overridden = RunLanguageServerForJson(new[] { "--completion-project", directory, "--override", targetPath, overridePath });
+                AssertTrue(CountJsonItemsWithString(overridden.GetProperty("completions"), "label", "target.node") == 1, "Project completion should apply override node");
+                AssertTrue(CountJsonItemsWithString(overridden.GetProperty("completions"), "label", "old.node") == 0, "Project completion should replace overridden source content");
+            } finally {
+                if (Directory.Exists(directory)) {
+                    Directory.Delete(directory, true);
+                }
+            }
+        }
+
         static void LanguageServerProjectHoverUsesProjectGraphAndOverride() {
             string directory = Path.Combine(Path.GetTempPath(), "inscape-language-server-hover-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(directory);

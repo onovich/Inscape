@@ -9,7 +9,7 @@ This is the first lightweight authoring layer for `.inscape` scripts. It keeps s
 - Provides basic snippets for nodes, dialogue, choices, jumps, metadata, timeline hooks, and query interpolations.
 - Keeps metadata and query interpolations on comment-like scopes so themes can visually soften them while prose remains readable.
 - Refreshes diagnostics through `Inscape.LanguageServer --diagnose-project <workspace> --override <source> <temp-file>` first, then falls back to the configured CLI `diagnose-project` invocation if the LanguageServer probe is unavailable.
-- Provides node completions in jump target positions through `Inscape.LanguageServer --completion-file`, with JS workspace node fallback for cross-file nodes and probe failures.
+- Provides node completions in jump target positions through `Inscape.LanguageServer --completion-project`, including cross-file nodes and unsaved editor content.
 - Provides `Inscape: Insert Node Title`; if the requested title already exists, the command inserts the next `_01`-style title.
 - Provides dialogue speaker completions from `inscape.config.json` `hostBridge`, with workspace speaker fallback.
 - Provides host event / timing hook completions from `inscape.config.json` `hostBridge`, with workspace `@timeline...` fallback.
@@ -21,7 +21,7 @@ This is the first lightweight authoring layer for `.inscape` scripts. It keeps s
 - Supports Find All References from node declarations and jump targets through `Inscape.LanguageServer --references-project`; dialogue speaker references remain a VSCode authoring scan.
 - Shows node CodeLens entries as `N 个引用` on the referenced block header; clicking opens VSCode References Peek for incoming jumps.
 - Shows node declaration and jump target hover through `Inscape.LanguageServer --hover-project`; dialogue speaker and host binding hover remain VSCode authoring hints.
-- Provides an outline view that prefers `Inscape.LanguageServer --document-symbols-file` and falls back to visible node-header scanning when the probe is unavailable.
+- Provides an outline view through `Inscape.LanguageServer --document-symbols-file`.
 - Provides JSON validation for `inscape.host.schema.json` / `*.host.schema.json`.
 - Exposes command palette actions for localization:
   - `Inscape: Open Preview`
@@ -91,8 +91,8 @@ After installation, reload the VSCode window before judging behavior. Manual smo
 - Ctrl+Click on dialogue / option text opens or reuses preview and reveals the matching page.
 - `-> target` Go to Definition and Find All References are served by LanguageServer project navigation and still work across files.
 - `# 标题` appears in highlighting, Outline, jump completion, Go to Definition, Find All References, Hover, and node CodeLens; node / jump Hover is served by LanguageServer project hover.
-- Outline is served by LanguageServer first; if that probe fails, the extension falls back to the JS node scanner instead of breaking the view.
-- Jump target node completion is served by LanguageServer first, then augmented by the JS workspace scanner so cross-file authoring remains available.
+- Outline is served by LanguageServer; if that probe fails, the view is empty rather than using a duplicate JS semantic scanner.
+- Jump target node completion is served by LanguageServer project completion, including cross-file authoring and unsaved current document content.
 - Speaker completion, Hover, Go to Definition, and Find All References prefer `hostBridge` and fall back to workspace dialogue references.
 - `@timeline ...` host event / timing hook completion, Hover, and Ctrl+Click prefer `hostBridge` and fall back to workspace `@timeline...` occurrences.
 - `[query.path]` query interpolation completion and Hover read Host Schema queries.
