@@ -12,7 +12,7 @@ inscape.config.json
 
 也可以通过 `--config path` 显式指定配置文件。命令行参数优先级高于配置文件。
 
-## Host Bridge 与 Legacy UnitySample 配置
+## Host Bridge 与 ExternalSupport UnitySample 配置
 
 当前配置已经支持通用 `hostBridge` 路径，并保留 `unitySample` 作为 ExternalSupport 实验样例命令的配置入口。新项目应把 Inscape 可读 ID、资源坐标、事件处理器和查询实现放进 Host Bridge；Internal VSCode authoring 不再读取 `unitySample` 作为 fallback。
 

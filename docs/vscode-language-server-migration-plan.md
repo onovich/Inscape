@@ -104,8 +104,8 @@ probe parity 稳定后再引入完整 LSP transport。Transport 本身是通信�
 | Node definition / references | LanguageServer graph provider | JS node provider | VSCode 默认无结果 |
 | Node / jump hover | LanguageServer hover | JS node provider hover | 无 hover |
 | Text-to-preview reveal | VSCode `DefinitionProvider` + `PreviewRevealBridge` | 显式 `Inscape: Open Preview` / reveal 命令 | 无预览定位但源码可编辑 |
-| Speaker authoring | VSCode / future LanguageServer Host Bridge provider | legacy role map | workspace dialogue scan |
-| Host binding authoring | VSCode / future LanguageServer Host Bridge provider | legacy binding map | workspace occurrence |
+| Speaker authoring | VSCode / future LanguageServer Host Bridge provider | Host Bridge speaker ids | workspace dialogue scan |
+| Host binding authoring | VSCode / future LanguageServer Host Bridge provider | Host Bridge bindings | workspace occurrence |
 | Host Schema query / event | future LanguageServer HostSchema endpoint | CLI `inspect-host-schema-project` | direct JSON reader |
 | Preview rendering | VSCode preview + CLI `preview-project` | CLI executable / DLL / `dotnet run` fallback | error HTML with diagnostics |
 

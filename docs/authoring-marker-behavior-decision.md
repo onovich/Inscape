@@ -4,7 +4,7 @@
 
 最后更新：2026-05-16
 
-本文承接 [Authoring Marker Contract](authoring-marker-contract.md) 与 [Authoring Marker Compatibility Audit](authoring-marker-compatibility-audit.md)，评估旧 `[kind: alias]` / `[timeline: alias]` 行为是否需要立刻调整。
+本文承接 [Authoring Marker Contract](authoring-marker-contract.md) 与 [Authoring Marker Compatibility Audit](authoring-marker-compatibility-audit.md)，评估旧 `[kind: alias]` / `[timeline: alias]` 行为是否需要立刻调整。本文是 F 阶段历史决策记录；Goal 0 后，当前主路径已删除旧 inline host binding 行为，不再按本文的“继续保留 fallback”执行。
 
 ## 结论
 

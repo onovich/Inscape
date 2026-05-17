@@ -62,7 +62,7 @@ Inscape: Show Host Schema Capabilities
 
 对于 `[]` 查询插值，Host Schema 第一版只作为作者提示来源：可以驱动补全、Hover、未知查询提示和返回类型说明，但不应让 Compiler 依赖 Host Schema。具体数据边界见 [Query Interpolation Data Contract](query-interpolation-data-contract.md)。
 
-对于 `@emit eventName`，VSCode 会读取 Host Schema `events[]` 提供 event 名补全与 Hover，展示 delivery、sideEffects、parameters、description 和 schema 来源。未知 event 只作为作者提示，不进入默认 Problems，也不改变 Compiler 行为。`@timeline...` 仍走 Host Bridge / legacy binding，因为它表达带时机的宿主资源 hook，而不是通用 schema event。
+对于 `@emit eventName`，VSCode 会读取 Host Schema `events[]` 提供 event 名补全与 Hover，展示 delivery、sideEffects、parameters、description 和 schema 来源。未知 event 只作为作者提示，不进入默认 Problems，也不改变 Compiler 行为。`@timeline...` 仍走 Host Bridge，因为它表达带时机的宿主资源 hook，而不是通用 schema event。
 
 Tooling 侧已经提供 `HostSchemaQueryReaderDomain` 与 `HostSchemaEventReaderDomain`，分别把 `queries[]`、`events[]` 归一化成带 source location 的能力模型。VSCode 当前仍保留轻量 JS reader，原因是扩展直接启动 .NET Tooling 会增加编辑延迟和发布复杂度；后续应优先通过 C# LanguageServer 或显式 CLI capability endpoint 复用 Tooling 契约。
 
@@ -139,7 +139,7 @@ Timeline 不应作为 Inscape 内建特权机制长期绑定在 DSL 里。更通
 kind,alias,birdId,unityGuid,addressableKey,assetPath
 ```
 
-这张表描述资源 / Timeline 等宿主对象坐标，主要服务 `@timeline alias`、`@timeline.<phase> alias` 这类事件 / 时机 hook；legacy `[kind: alias]` 只能作为旧 inline host binding fallback 继续维护，不作为新查询语法扩展。宿主 Schema 则描述查询与事件能力。两者都属于宿主连接层，但不要混为同一张表：
+这张表描述资源 / Timeline 等宿主对象坐标，主要服务 `@timeline alias`、`@timeline.<phase> alias` 这类事件 / 时机 hook。历史 `[kind: alias]` 不再属于当前 Host Bridge 或查询语法扩展。宿主 Schema 则描述查询与事件能力。两者都属于宿主连接层，但不要混为同一张表：
 
 - `bindingMap` 回答“这个别名指向哪个资源或宿主对象”。
 - `hostSchema` 回答“剧本可以表达哪些查询和事件，以及它们需要哪些参数”。

@@ -50,7 +50,7 @@ dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- export-b
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- export-bird-project samples --bird-binding-map config\bird-bindings.csv -o artifacts\bird-export
 ```
 
-如果项目里已经写了 `@timeline alias`、`@timeline.<phase> alias`、`[timeline: alias]` 或 `[timeline.<phase>: alias]`，可以先生成绑定模板：
+如果项目里已经写了 `@timeline alias` 或 `@timeline.<phase> alias`，可以先生成绑定模板。历史 `[timeline: alias]` / `[timeline.<phase>: alias]` 写法不再是当前脚本主路径；旧项目需要先通过离线迁移改为 `@timeline.<phase>`：
 
 ```powershell
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- export-bird-binding-template samples -o config\bird-bindings.csv
@@ -73,7 +73,7 @@ timeline,court.opening,,,,
 
 扫描 Timeline 资源时会读取 `.asset` 内的 `timelineId:` 和同名 `.meta` 的 `guid:`。匹配规则会从文件名推导候选 alias，例如 `SO_Timeline_Ch1_01.asset` 可匹配 `ch1.01`、`ch1_01` 和 `SO_Timeline_Ch1_01`。只有唯一匹配时才会自动填表；无法唯一匹配的 alias 会保持空白。
 
-项目级入口仍可用 `--entry node.name` 临时覆盖。
+项目级入口可用 `--entry 标题` 临时覆盖。
 
 Bird 常用路径也可以写入项目根目录的 `inscape.config.json`，减少重复命令参数：
 
@@ -223,8 +223,8 @@ dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- merge-bi
 - `--bird-role-map` 会把对白 speaker 映射为 Bird `roleId`，并写入 `roles` 和对应 `talkings`。
 - `--bird-binding-map` 会把资源别名、Timeline 名称和 Unity 资源坐标写入 manifest 的 `hostBindings`，供后续 Unity Editor Importer 和 Timeline hook 使用。
 - `export-bird-binding-template` 会从项目 metadata 中收集 Timeline Hook，并生成待补全的 `--bird-binding-map` 模板；配合 `--bird-existing-timeline-root` 时会尽量从现有 `TimelineSO` 资源自动填表。
-- `@timeline alias` 和 `[timeline: alias]` 会写入 manifest 的 `hostHooks`，默认导出为 `kind=timeline`、`phase=talking.exit`，并尽量通过 `hostBindings` 解析 `birdId` / Unity 坐标。长期方向是把“触发 Timeline”泛化为宿主事件示例，而不是把 Timeline 做成唯一内建演出机制。
-- Timeline Hook 可显式写 phase：`@timeline.talking.enter alias`、`@timeline.talking.exit alias`、`@timeline.node.enter alias`、`@timeline.node.exit alias`，或对应的 `[timeline.node.exit: alias]`。导出时 `talking.exit` 挂最近前一条 talking，`talking.enter` 挂后续下一条 talking，`node.enter` / `node.exit` 分别挂节点首尾 talking。
+- `@timeline alias` 会写入 manifest 的 `hostHooks`，默认导出为 `kind=timeline`、`phase=talking.exit`，并尽量通过 `hostBindings` 解析 `birdId` / Unity 坐标。长期方向是把“触发 Timeline”泛化为宿主事件示例，而不是把 Timeline 做成唯一内建演出机制。
+- Timeline Hook 可显式写 phase：`@timeline.talking.enter alias`、`@timeline.talking.exit alias`、`@timeline.node.enter alias`、`@timeline.node.exit alias`。导出时 `talking.exit` 挂最近前一条 talking，`talking.enter` 挂后续下一条 talking，`node.enter` / `node.exit` 分别挂节点首尾 talking。
 - `--bird-existing-talking-root` 会递归扫描 `.asset` 文件中的 `talkingId:`，顺序分配新 ID 时自动跳过已占用值。
 - 重复 `kind + alias` 的 host binding 会产生 `BIRD001` warning。
 - 找不到绑定表行的 Timeline Hook 会产生 `BIRD002` warning。

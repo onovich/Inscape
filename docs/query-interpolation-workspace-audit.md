@@ -51,13 +51,13 @@ Inscape: Audit Query Interpolations
 不识别为 query interpolation 的写法：
 
 ```inscape
-[timeline: court_intro]
-[bg: courtroom]
+@timeline.talking.exit court_intro
+@scene courtroom
 [has_item("watch")]
 [player.gold + bonus]
 ```
 
-带冒号的 `[kind: alias]` 属于 legacy inline host binding，仍由 Host Bridge / legacy binding 流程维护。
+带冒号的 `[kind: alias]` 属于历史 inline host binding，Goal 0 后不再由当前 Host Bridge 或 query interpolation 主路径维护。
 
 ## 诊断类型
 
@@ -177,7 +177,7 @@ info IQI003 inscape.config.json
 - 不修改 `compile-project` 输出。
 - 不修改本地化 CSV。
 - 不解析函数调用、算术表达式或条件表达式。
-- 不把 legacy `[timeline: alias]` / `[bg: alias]` 当成 query。
+- 不把历史 `[timeline: alias]` / `[bg: alias]` 当成 query。
 
 ## 自检结论
 

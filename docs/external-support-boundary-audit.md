@@ -23,7 +23,7 @@
 - 默认 solution 只构建 Internal 项目和 Internal 测试。
 - UnitySample / importer 位于 `src/ExternalSupport/UnityPlugin`，回归测试位于 `tests/ExternalSupport/UnityPlugin`。
 - ExternalSupport 可以引用 Internal 的 Compiler / Tooling，但 Internal 不引用 ExternalSupport。
-- Unity、Bird、Addressables、ScriptableObject 等宿主词不得进入 Compiler；在 Tooling / VSCode 中若因兼容现有样例配置而出现，应视为 Host Bridge 收敛前的过渡点，而不是新的 Internal 业务边界。
+- Unity、Bird、Addressables、ScriptableObject 等宿主词不得进入 Compiler；在 Tooling / VSCode 中若因样例配置而出现，应视为 ExternalSupport / Host Bridge 边界说明，而不是新的 Internal 业务边界。
 
 检查命令：
 
@@ -40,7 +40,7 @@ rg -n "ProjectReference|PackageReference" src\Internal tests\Internal
 - Internal 项目引用方向保持单向：Cli / Tooling / LanguageServer / Runtime 只引用 Internal 项目，未引用 `Inscape.Adapters.UnitySample` 或 `Inscape.UnitySample.Cli`。
 - ExternalSupport 项目引用 Internal Compiler / Tooling，并在自己的 CLI / tests 中引用 UnitySample adapter；这是允许方向。
 - Unity / Bird / Addressables / UnityEditor / UnityEngine 命中都位于 `src/ExternalSupport/UnityPlugin/unity-bird-importer` 或 ExternalSupport README。
-- Internal 中仍有兼容残留：
+- 本审计创建时 Internal 中曾有以下过渡点：
   - `ToolConfigModel.UnitySample` 与对应路径归一化仍用于现有样例配置。
   - VSCode speaker / host binding hover 文案仍显示 `UnitySample roleId` / `UnitySample binding map`。
   - Internal CLI 测试显式确认不列出 UnitySample 命令。
@@ -49,5 +49,4 @@ rg -n "ProjectReference|PackageReference" src\Internal tests\Internal
 自检结论：
 
 - D2.1 通过。ExternalSupport 没有进入默认 solution，也没有被 Internal 项目反向引用。
-- `ToolConfigModel.UnitySample` 与 VSCode 文案是 D2.2 Host Bridge 契约前的兼容残留，后续应被通用 host bridge / binding config 命名逐步替换。
-
+- Goal 0 后，VSCode / Internal authoring 不再读取 UnitySample fallback；`ToolConfigModel.UnitySample` 只服务 ExternalSupport 样例命令配置。

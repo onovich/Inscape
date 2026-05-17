@@ -4,7 +4,7 @@
 
 最后更新：2026-05-16
 
-本文对照 [Authoring Marker Contract](authoring-marker-contract.md)，审计当前仓库里旧 `[timeline: ...]` / `[kind: alias]` / inline host binding 口径的残留。它只分类和排后续动作，不改变 Compiler、VSCode 或 UnitySample 行为。
+本文对照 [Authoring Marker Contract](authoring-marker-contract.md)，审计当时仓库里旧 `[timeline: ...]` / `[kind: alias]` / inline host binding 口径的残留。它是历史审计文档，不代表 Goal 0 后的当前行为。Goal 0 已移除这些旧写法的主路径；若本文表格仍写“保留”或 “fallback”，只表示当时 F 阶段的审计状态。
 
 ## 审计结论
 

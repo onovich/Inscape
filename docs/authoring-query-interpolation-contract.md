@@ -1,12 +1,12 @@
 # Authoring Query Interpolation Contract
 
-状态：草案，F1.8 查询插值边界
+状态：Accepted
 
-最后更新：2026-05-16
+最后更新：2026-05-17
 
 本文冻结 `[]` 在第一版查询插值中的职责边界。它承接 [Authoring Marker Contract](authoring-marker-contract.md)：`@` 表达事件、动作、时机和状态变化；`[]` 只表达查询、读取和玩家可见文本内插值。
 
-本文不改变当前 Compiler 行为。当前 Compiler 仍把正文作为文本处理；本文用于约束后续 VSCode、LanguageServer、Runtime、Host Schema 和本地化设计。
+本文不改变 Compiler 行为。当前 Compiler 仍把正文作为文本处理；本文用于约束后续 VSCode、LanguageServer、Runtime、Host Schema 和本地化设计。
 
 ## 结论
 
@@ -17,7 +17,7 @@
 [] does not trigger behavior.
 ```
 
-也就是说，`[]` 可以把当前上下文、运行时状态或上一个动作产生的显示值拼进玩家可见文本，但不得触发事件、调度资源、修改状态、调用业务 API 或绑定具体宿主实体。
+也就是说，`[]` 可以把当前上下文、运行时状态或上一动作产生的显示值拼进玩家可见文本，但不得触发事件、调度资源、修改状态、调用业务 API 或绑定具体宿主实体。
 
 ## 第一版推荐形态
 
@@ -35,8 +35,8 @@
 
 - 允许 `[name]`、`[namespace.name]`、`[namespace.subName.value]` 这类点分路径。
 - 允许路径表达“当前上下文的临时值”，例如 `[itemName]`、`[delta.affection]`。
-- 暂不把函数调用作为文本插值第一版主线，例如 `[relationship("mayoi")]` 先保留为候选。
-- 条件表达式未来可以单独考虑谓词函数，例如 `when has_item("watch")`，但不因此扩展文本插值的第一版复杂度。
+- 暂不把函数调用作为第一版主线，例如 `[relationship("mayoi")]` 先保留为候选。
+- 条件表达式未来可以单独考虑谓词函数，例如 `when has_item("watch")`，但不扩展文本插值第一版复杂度。
 - 不在路径里表达宿主语言、服务端 endpoint、Unity 类型名、C# 方法名或数据库 key。
 
 ## 不允许的职责
@@ -46,7 +46,7 @@
 - 触发事件：不要用 `[emit:door_opened]`。
 - 修改状态：不要用 `[set:player.gold -= 10]`。
 - 授予物品：不要用 `[item:silver_dagger]` 表达“获得物品”。
-- 调度资源：不要把 `[timeline: court_intro]`、`[bg: courtroom]` 作为新推荐写法。
+- 调度资源：不要把 `[timeline: court_intro]`、`[bg: courtroom]` 作为当前写法。
 - 绑定静态实体：不要把普通正文里的固定人名写成 `[character:艾琳]`。
 - 直接调用宿主：不要写 `[Unity.Inventory.HasItem(10023)]`、`[GET /player/gold]` 或类似业务 API。
 
@@ -83,7 +83,7 @@
 
 建议默认规则：
 
-- 编译器不直接执行查询，也不因为查询值不存在而绑定具体宿主错误。
+- Compiler 不直接执行查询，也不因为查询值不存在而绑定具体宿主错误。
 - Tooling / VSCode / LanguageServer 可以基于 Host Schema 给出“未知查询”提示，但不应把宿主实现缺失当作 Compiler 语义真相。
 - Runtime Host 或 adapter 负责决定查询失败时显示 fallback、保留占位符、跳过文本、报错中断或记录运行时诊断。
 - 文本插值第一版尽量按同步可读值设计；异步查询若存在，应由宿主在进入文本前准备好值，避免打字机、预览和本地化流程被远端延迟打断。
@@ -134,9 +134,9 @@ Host Bridge 再把这个可读查询映射到项目内部实现：
 
 关键边界是：脚本侧只写 `[player.gold]`，不写项目内部字段、服务端接口或宿主语言调用。
 
-## 兼容旧写法
+## 不再作为当前能力的旧写法
 
-历史 `[kind: alias]` inline host binding 仍作为兼容事实存在，例如 `[timeline: court_intro]`、`[bg: courtroom]`。F 阶段不要求立即删除旧行为，但新增文档、样例和工具提示不应继续把它们当作 `[]` 的推荐语义。
+历史 `[kind: alias]` inline host binding 曾用于 `[timeline: court_intro]`、`[bg: courtroom]` 一类资源别名。Goal 0 后，它不属于当前 `[]` 查询插值，也不属于当前 Host Bridge 主路径。
 
 旧资源绑定应迁到 `@` 事件 / 时机：
 
@@ -151,10 +151,10 @@ Host Bridge 再把这个可读查询映射到项目内部实现：
 旁白：[player.name]站在法庭中央。
 ```
 
-## F1.8 自检结论
+## 自检结论
 
 - 本文没有引入 Compiler、Unity、VSCode 或服务端绑定。
 - `[]` 被限制为只读查询 / 文本插值，不承载事件、资源调度或状态修改。
-- 简单路径优先，函数调用和条件谓词保留为后续设计，不混进第一版文本插值。
-- 静态正文不强行结构化，避免把普通人名、物品名、地点名都变成查询。
+- 简单路径优先，函数调用和条件谓词保留为后续设计。
+- 静态正文不强行结构化。
 - Host Schema / Host Bridge 只承担能力声明与宿主映射，不把宿主内部 API 暴露给 DSL。

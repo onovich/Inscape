@@ -16,7 +16,7 @@ This is the first lightweight authoring layer for `.inscape` scripts. It keeps s
 - Provides `[]` query interpolation completions and Hover from configured Host Schema zero-parameter simple queries such as `[player.gold]`; unknown queries are authoring hints only, not compiler errors. The provider prefers the CLI `inspect-host-schema-project` capability endpoint and falls back to direct JSON reading if the endpoint is unavailable.
 - Provides `@emit` host event completions and Hover from configured Host Schema `events[]`; unknown events are authoring hints only, not compiler errors. This uses the same capability endpoint with direct JSON fallback.
 - Highlights host hook lines such as `@timeline court_intro` without the always-on link look, while Hover / Ctrl+Click still jumps to the matching mapping row or workspace occurrence.
-- Supports Go to Definition / Ctrl+Click from jump targets to node declarations, and from dialogue speakers to configured role-map rows with dialogue-reference fallback; the clickable text stays visually plain until Ctrl is held.
+- Supports Go to Definition / Ctrl+Click from jump targets to node declarations, and from dialogue speakers to configured Host Bridge speaker rows or dialogue references; the clickable text stays visually plain until Ctrl is held.
 - Treats full-width colons and common Chinese punctuation as word boundaries so Ctrl+Click link styling on Chinese dialogue only covers the speaker name.
 - Supports Find All References from node declarations, jump targets, and dialogue speakers.
 - Shows node CodeLens entries as `N 个引用` on the referenced block header; clicking opens VSCode References Peek for incoming jumps.

@@ -10,12 +10,11 @@
 
 下一位接手者建议按以下顺序推进：
 
-1. 按 [/goal 后续目标计划](goal-plan.md) 推进 Goal 0：研发期 legacy 清除。当前没有真实用户和发布契约，不应继续维护旧语法 / 旧配置 / 旧实现 fallback。
-2. 完成 Goal 0 后，再推进 Goal 5.3：让 VSCode node definition / references 直接走 LanguageServer，并删除对应 JS 语义 fallback。
-3. 按 [/goal 后续目标计划](goal-plan.md) 推进 Goal 6：Host Schema endpoint 收口到 LanguageServer / Tooling 契约，移除 JS direct JSON fallback。
-4. 继续打磨 VSCode 可玩预览：补未保存内容的更细粒度热刷新、刷新中状态提示，以及可选的预览 / 源码同步策略。
+1. 按 [/goal 后续目标计划](goal-plan.md) 推进 Goal 5.3：让 VSCode node definition / references 直接走 LanguageServer，并删除对应 JS 语义 fallback。
+2. 按 [/goal 后续目标计划](goal-plan.md) 推进 Goal 6：Host Schema endpoint 收口到 LanguageServer / Tooling 契约，移除 JS direct JSON fallback。
+3. 继续打磨 VSCode 可玩预览：补未保存内容的更细粒度热刷新、刷新中状态提示，以及可选的预览 / 源码同步策略。
 	- 正文 / 选项文本不再用 `DocumentLinkProvider`，因为它会导致整段文本常驻下划线；当前用 `DefinitionProvider` 恢复“默认无下划线、Ctrl+指向才显示链接态”的编辑体验，并通过 selection bridge 在 Ctrl+Click 后执行预览定位，显式命令仅作为兜底。
-5. Unity / Bird 相关继续只做准备和计划，等设计方案落实后再研发：包括 Attribute 扫描、Host Bridge 到 adapter 生成、Bird importer 提交策略和带真实 Timeline 的 Dry Run。
+4. Unity / Bird 相关继续只做准备和计划，等设计方案落实后再研发：包括 Attribute 扫描、Host Bridge 到 adapter 生成、Bird importer 提交策略和带真实 Timeline 的 Dry Run。
 
 ## 文档与接手效率
 
@@ -32,13 +31,13 @@
 - [x] 建立渐进式重构计划，按大目标/中目标/小目标安排入口、测试、CLI、VSCode、source map、Host Bridge 和 Runtime 前置设计。
 - [x] 建立 [研发计划](development-plan.md)，把 Compiler / Tooling / Cli / VSCode / LanguageServer / ExternalSupport 的推进顺序显式写出。
 - [ ] 每次完成阶段性提交后，同步更新 [Agent 接手指南](agent-handoff.md) 的当前快照。（持续规则，不作为一次性完成项）
-- [ ] 清除研发期 legacy / fallback。
+- [x] 清除研发期 legacy / fallback。
 	- [x] 将主样例和内部测试从 `:: node.name` 迁到 `# 标题`。
 	- [x] 移除 Compiler / LanguageServer 对 `:: node.name` 的解析和诊断兼容文案。
 	- [x] 移除 VSCode 对 `:: node.name` 的扫描、高亮和 snippet。
 	- [x] 移除 legacy `[kind: alias]` / `[timeline: alias]` inline host binding 行为、样例和工具提示。
 	- [x] 移除 `unitySample.roleMap` / `unitySample.bindingMap` fallback，统一使用 `hostBridge`。
-	- [ ] 清理当前行为文档中的 legacy / compatibility 口径，只在 ADR 或历史审计文档保留背景。
+	- [x] 清理当前行为文档中的 legacy / compatibility 口径，只在 ADR 或历史审计文档保留背景。
 
 ## 代码质量与渐进式重构
 
@@ -214,7 +213,7 @@
 - [x] 添加节点声明和 `-> target` 的 VSCode Hover 摘要。
 - [x] 添加 VSCode 命令：导出项目本地化 CSV。
 - [x] 添加 VSCode 命令：基于旧 CSV 更新项目本地化表。
-- [x] 接入 Host Bridge / legacy binding map 的宿主绑定别名补全和 Hover，覆盖 `@timeline ...` 位置；legacy `[kind: ...]` inline host binding 入口已在 Goal 0 移除。
+- [x] 接入 Host Bridge 的宿主绑定别名补全和 Hover，覆盖 `@timeline ...` 位置；legacy `[kind: ...]` inline host binding 入口已在 Goal 0 移除。
 - [x] 添加对白 speaker 的 Go to Definition 与 Find All References，优先连接 Host Bridge speaker，回退脚本对白引用。
 - [x] 修正 VSCode `wordPattern`，把全角冒号和常见中文标点视为词边界，避免 Ctrl+Click 角色名时把整行对白标为可跳转范围。
 - [x] 添加 block 级 CodeLens 双向导航：`入边` 追溯调用方，`出边` 跳转被调用方。
@@ -269,7 +268,7 @@
 - [x] 设计并实现资源别名、Timeline 名称到 Bird 整数 ID / Unity 资源引用的第一版 CSV 绑定：`--bird-binding-map kind,alias,birdId,unityGuid,addressableKey,assetPath`。
 - [x] 增加 `export-bird-binding-template`，从项目内 Timeline Hook 生成待补全的 Bird 绑定表模板。
 - [x] 为 `export-bird-binding-template` 增加 `--bird-existing-timeline-root`，扫描现有 Bird Timeline `.asset` / `.meta` 辅助填表。
-- [x] 结合 `docs/dsl-ecosystem-positioning.md` 设计并实现 Timeline hook 原型：`@timeline alias` / `[timeline: alias]` 及显式 phase 写法只表达宿主引用，不引入通用命令宏系统。
+- [x] 结合 `docs/dsl-ecosystem-positioning.md` 设计并实现 Timeline hook 原型；当前主路径使用 `@timeline alias` / `@timeline.<phase> alias` 表达宿主引用，不引入通用命令宏系统。
 - [x] 为 Bird 导出增加 `bird-export-report.txt` 与 manifest `warnings`，暴露重复 host binding、缺失 Timeline 绑定和无法挂载 hook 等问题。
 - [x] 设计 Bird 兼容 `L10N_Talking.csv` 导出，并保留 Inscape `anchor` 审校表。
 - [x] 原型实现 `export-bird-project`：从项目 IR 生成 manifest 与 Bird L10N CSV。
@@ -300,16 +299,16 @@
 
 - [x] 对比 Yarn、Ink、Ren'Py、Twine 的变量、函数和宿主 API 边界，明确 Inscape 第一阶段采用 Host Schema / Host Bridge / Runtime Host 分层，不把宿主 API 直接暴露给 DSL；详见 [Host Query and Event Registration Strategy](host-query-event-registration-strategy.md)。
 - [x] F1.1 冻结 `@` / `[]` 作者心智模型：`@` 负责事件 / 动作 / 状态变化，`[]` 负责查询 / 读取 / 文本插值；详见 [Authoring Marker Contract](authoring-marker-contract.md)。
-- [x] F1.2 审计当前文档、样例、VSCode 提示和 UnitySample 回归中 `[timeline: ...]` / `[kind: alias]` 的兼容残留，区分“保留兼容”和“推荐写法”；详见 [Authoring Marker Compatibility Audit](authoring-marker-compatibility-audit.md)。
-- [x] F1.3 将 VSCode hover / completion 文案迁到 `@` 事件、`[]` 查询口径，同时保留 legacy host binding fallback。
-- [x] F1.4 将作者语法指南、快速指南和 open questions 迁到 `@` 事件、`[]` 查询口径，把 `[bg]` / `[timeline]` 移入兼容旧写法。
-- [x] F1.5 评估是否调整 Compiler / VSCode / UnitySample 对 generic `[kind: alias]` 的长期行为，先不破坏 legacy 回归；详见 [Authoring Marker Behavior Decision](authoring-marker-behavior-decision.md)。
-- [x] F1.6 新增或迁移新规范样例：用 `@timeline.<phase>` 表达事件 / 时机，用 `[player.name]` / `[itemName]` 表达查询插值；旧 `[bg]` / `[timeline]` 样例只作为 legacy sample 或兼容说明存在。
-- [x] F1.7 清理剩余文档里的旧阶段叙述：把过时的 `bird.*` / `UnitySample` 主口径迁到 Host Bridge / ExternalSupport 兼容说明，保留命令参考中的 legacy 用法。
+- [x] F1.2 审计历史文档、样例、VSCode 提示和 UnitySample 回归中 `[timeline: ...]` / `[kind: alias]` 的残留；详见 [Authoring Marker Compatibility Audit](authoring-marker-compatibility-audit.md)。
+- [x] F1.3 将 VSCode hover / completion 文案迁到 `@` 事件、`[]` 查询口径。
+- [x] F1.4 将作者语法指南、快速指南和 open questions 迁到 `@` 事件、`[]` 查询口径。
+- [x] F1.5 评估并确认 Goal 0 删除 generic `[kind: alias]` 主路径；历史决策见 [Authoring Marker Behavior Decision](authoring-marker-behavior-decision.md)。
+- [x] F1.6 新增或迁移新规范样例：用 `@timeline.<phase>` 表达事件 / 时机，用 `[player.name]` / `[itemName]` 表达查询插值。
+- [x] F1.7 清理剩余文档里的旧阶段叙述：把过时的 `bird.*` / `UnitySample` 主口径迁到 Host Bridge / ExternalSupport 说明。
 - [x] F1.8 设计表达式 / 查询插值的第一版语法边界：只读取数据，不触发事件，不绑定具体业务实体或服务端；详见 [Authoring Query Interpolation Contract](authoring-query-interpolation-contract.md)。
 - [x] F1.9 设计查询插值与本地化占位符、预览 fallback、Host Schema 提示之间的最小数据契约，不急于改 Compiler 语义；详见 [Query Interpolation Data Contract](query-interpolation-data-contract.md)。
 - [x] F1.10 评估是否先在 VSCode / LanguageServer 做 `[]` 简单路径的提示原型：结论是先做 VSCode authoring hint 原型，LanguageServer 后续复用数据契约；详见 [Query Interpolation Tooling Decision](query-interpolation-tooling-decision.md)。
-- [x] F1.11 新增 VSCode query interpolation provider 骨架：读取 Host Schema queries，识别简单 `[query.path]` 范围，排除 legacy `[kind: alias]`，暂不接入 completion / hover。
+- [x] F1.11 新增 VSCode query interpolation provider 骨架：读取 Host Schema queries，识别简单 `[query.path]` 范围，排除历史 `[kind: alias]`，暂不接入 completion / hover。
 - [x] F1.12 接入 VSCode `[]` 查询插值 completion / hover：已知 query 显示 returnType / isAsync / description，未知 query 只给提示，不改 Compiler。
 - [x] F1.13 评估 `[]` 查询插值原型是否迁入 LanguageServer 或增加 workspace audit：结论是暂不迁 LanguageServer、不新增 Compiler 诊断，下一步优先设计显式 workspace audit；详见 [Query Interpolation Follow-up Decision](query-interpolation-follow-up-decision.md)。
 - [x] F1.14 设计 query interpolation workspace audit 输出格式和命令入口，先文档化，不实现默认 Problems；详见 [Query Interpolation Workspace Audit](query-interpolation-workspace-audit.md)。

@@ -310,7 +310,7 @@ B 后修复：在进入 C 阶段前，Compiler 旧阶段产物已按角色后缀
 - 用 UnitySample 当前输出作为未来 generator 的回归样例。
 - 不把 Bird、ScriptableObject、Addressables 写进 Core。
 
-当前进展：已完成 D 阶段第一轮收口。Compiler 依赖与命名边界已由 [Core Boundary Audit](core-boundary-audit.md) 留痕；ExternalSupport solution / 引用方向已由 [ExternalSupport Boundary Audit](external-support-boundary-audit.md) 留痕；Host Bridge 第一版配置草案已建立为 [Host Bridge Contract](host-bridge-contract.md)。下一阶段不是继续把 UnitySample 字段写进 Internal，而是把 `ToolConfigModel.UnitySample` 和 VSCode `UnitySample` 文案迁到通用 `hostBridge` 读取与展示，并保留旧字段 fallback。
+当前进展：已完成 D 阶段与 Goal 0 收口。Compiler 依赖与命名边界已由 [Core Boundary Audit](core-boundary-audit.md) 留痕；ExternalSupport solution / 引用方向已由 [ExternalSupport Boundary Audit](external-support-boundary-audit.md) 留痕；Host Bridge 第一版配置草案已建立为 [Host Bridge Contract](host-bridge-contract.md)。Internal / VSCode authoring 已迁到通用 `hostBridge` 读取与展示；`unitySample` 字段只作为 ExternalSupport 样例命令输入，不再作为 Internal fallback。
 
 验收标准：
 

@@ -28,7 +28,7 @@ Next candidate is a separate workspace audit, not default Problems.
 - 它读取 Host Schema，而 Host Schema 是宿主能力清单，不是 Compiler 语义真相。
 - 它现在只做作者提示，不产生默认 Problems 诊断。
 - 它还没有 Runtime Host fallback、异步查询策略、Host Bridge 查询实现、workspace audit 输出格式等稳定下游。
-- 旧 `[kind: alias]` inline host binding 仍作为兼容事实存在，过早迁移到 LanguageServer 容易把 authoring hint 误读成正式语言语义。
+- 旧 `[kind: alias]` inline host binding 已在 Goal 0 退出当前 authoring 主路径；迁移到 LanguageServer 时不要把它恢复成正式语言语义。
 
 因此 LanguageServer 暂时只应记录未来接手边界，而不是立即实现 query interpolation provider。
 
@@ -49,7 +49,7 @@ Next candidate is a separate workspace audit, not default Problems.
 如果继续推进，应优先考虑一个显式 workspace audit，而不是默认实时诊断。第一版 audit 可以只做：
 
 - 扫描 `.inscape` 正文里的简单 `[query.path]`。
-- 排除 legacy `[kind: alias]`。
+- 排除历史 `[kind: alias]`。
 - 读取当前项目 `inscape.config.json` 的 `hostSchema`。
 - 报告 Host Schema 未声明的 query。
 - 报告 Host Schema 中不适合文本插值的 query，例如有参数的 query。
@@ -61,7 +61,7 @@ Next candidate is a separate workspace audit, not default Problems.
 - 不解析函数、算术或条件表达式。
 - 不检查 Runtime Host 是否真的实现 query。
 - 不把 unknown query 升级为 Compiler diagnostic。
-- 不为 legacy `[timeline: alias]` 生成 query 报告。
+- 不为历史 `[timeline: alias]` 生成 query 报告。
 
 ## 推荐后续拆分
 
@@ -78,4 +78,4 @@ Next candidate is a separate workspace audit, not default Problems.
 - 本文没有要求 VSCode 默认新增 Problems 诊断。
 - LanguageServer 仍以 Compiler-backed 能力为主，不提前复制 VSCode authoring hint。
 - Workspace audit 被明确为显式、可选、非阻断的后续节点。
-- legacy `[kind: alias]` 继续与新 `[]` query interpolation 分开处理。
+- 历史 `[kind: alias]` 继续与新 `[]` query interpolation 分开处理；当前工具主路径不再维护它。

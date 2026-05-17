@@ -66,7 +66,7 @@ anchor,node,kind,speaker,text,translation,status,sourcePath,line,column
 以下内容暂不提取：
 
 - `@entry` 等 metadata。
-- `[bg: classroom]` 等演出标签。
+- `@scene classroom`、`@timeline.talking.exit court_intro` 等演出 / 宿主事件标记。
 - 节点名。
 - 跳转目标。
 

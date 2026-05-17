@@ -4,11 +4,13 @@
 
 最后更新：2026-05-17
 
-本文完成 `/goal` Goal 1：把 [ADR 0013](adr/0013-author-title-and-stable-node-id.md) 落成可实现的数据契约。它只定义身份、落盘和迁移规则，不改 parser 行为。
+本文完成 `/goal` Goal 1：把 [ADR 0013](adr/0013-author-title-and-stable-node-id.md) 落成可实现的数据契约。它只定义身份、落盘和迁移规则，不改变 parser 行为。
+
+Goal 0 后，`:: node.name` 不再是当前 parser / editor 主路径。本文保留 `::` 到 `#` 的离线迁移策略，但不要求任何运行时兼容期。
 
 ## 目标
 
-Inscape 后续块语法会从 `:: node.name` 转向 `# 标题`。标题是作者界面的主身份，适合写作、跳转、补全、大纲和预览；stable node id 是系统身份，适合本地化锚点迁移、外部引用、Runtime 存档和 Host Bridge 输出。
+Inscape 块语法使用 `# 标题`。标题是作者界面的主身份，适合写作、跳转、补全、大纲和预览；stable node id 是系统身份，适合本地化锚点迁移、外部引用、Runtime 存档和 Host Bridge 输出。
 
 核心规则：
 
@@ -73,7 +75,7 @@ inscape.node-map.json
 
 字段语义：
 
-- `id`：系统稳定身份。建议使用不可排序依赖少、冲突概率极低的随机 ID，例如 ULID / UUIDv7 风格，并加 `node_` 前缀。
+- `id`：系统稳定身份。建议使用不依赖排序、冲突概率极低的随机 ID，例如 ULID / UUIDv7 风格，并加 `node_` 前缀。
 - `title`：当前作者可见标题，项目内唯一。
 - `previousTitles`：已确认的历史标题，用于重命名迁移和人工审查，不作为当前跳转目标。
 - `sourcePath`：相对项目根目录路径，只作识别线索，不参与 stable id 本身。
@@ -106,23 +108,12 @@ node_<ULID-or-UUIDv7-without-punctuation>
 
 工具更新 node map 时按以下顺序匹配新扫描到的 `# 标题` 节点：
 
-1. **显式 ID 命中**
-   如果节点内存在未来兼容的 `@id node_xxx`，且 map 中存在同 id，直接匹配。
-
-2. **标题命中**
-   当前标题在 map 中唯一命中 active 节点，直接匹配。
-
-3. **source range 命中**
-   标题已变化，但 source path 与原位置附近命中，且内容摘要相似，可以自动视为重命名。
-
-4. **内容 / 邻居命中**
-   标题和位置都变化，但 `firstContentFingerprint`、`lineAnchorSamples`、前后节点上下文有高置信匹配，可以标记为 rename candidate。
-
-5. **人工确认**
-   多个候选或置信度不足时，标记 `conflict`，由 VSCode 或 CLI report 要求用户确认“这是重命名旧节点，还是新节点”。
-
-6. **新节点**
-   无匹配候选时生成新 stable id。
+1. **显式 ID 命中**：如果节点内存在未来兼容的 `@id node_xxx`，且 map 中存在同 id，直接匹配。
+2. **标题命中**：当前标题在 map 中唯一命中 active 节点，直接匹配。
+3. **source range 命中**：标题已变化，但 source path 与原位置附近命中，且内容摘要相似，可以自动视为重命名。
+4. **内容 / 邻居命中**：标题和位置都变化，但 `firstContentFingerprint`、`lineAnchorSamples`、前后节点上下文有高置信匹配，可以标记为 rename candidate。
+5. **人工确认**：多个候选或置信度不足时，标记 `conflict`，由 VSCode 或 CLI report 要求用户确认“这是重命名旧节点，还是新节点”。
+6. **新节点**：无匹配候选时生成新 stable id。
 
 ## 自动迁移与人工确认
 
@@ -131,7 +122,7 @@ node_<ULID-or-UUIDv7-without-punctuation>
 - 标题改名，但 source path 与位置附近稳定，内容高度相似。
 - 文件移动，但标题唯一且内容摘要高度相似。
 - 节点前插入新节点，导致 source line 改变，但标题唯一。
-- `:: node.name` 迁到 `# 标题`，且旧 node name 与新标题通过迁移工具明确对应。
+- 通过离线迁移工具把 `:: node.name` 迁到 `# 标题`，且旧 node name 与新标题通过迁移工具明确对应。
 
 必须人工确认：
 
@@ -167,9 +158,9 @@ node map 是可版本控制文件。合并策略：
 - 合并后如果出现重复 `title`，Compiler / LanguageServer 报 duplicate title diagnostic。
 - 两个分支各自新增同标题节点时，不自动改标题；由用户保留一个标题，另一个改为 `_01` 或更合适标题。
 
-## `:: node.name` 兼容迁移
+## `:: node.name` 离线迁移
 
-旧语法中的 `node.name` 视为 legacy title seed，而不是未来 stable id。
+旧语法中的 `node.name` 视为 legacy title seed，而不是未来 stable id。Goal 0 后，不保留 parser 兼容期；迁移只通过离线工具或人工编辑完成。
 
 迁移工具第一版规则：
 
@@ -177,17 +168,9 @@ node map 是可版本控制文件。合并策略：
 2. 如果用户提供标题映射，可以迁为 `# 法庭开场`，并把 `court_intro` 放入 `previousTitles`。
 3. 所有 `-> court_intro` 暂迁为 `-> court_intro` 或映射后的标题。
 4. 迁移完成后生成 / 更新 `inscape.node-map.json`，为每个节点登记 stable id。
-5. 旧 `::` 解析在一段兼容期内保留；后续可以降级为 warning，再进入废弃。
+5. 迁移报告列出所有旧 `::` 来源，不要求 Compiler 或 VSCode 在主路径继续识别旧语法。
 
-兼容期内输出 IR 应同时包含：
-
-```json
-{
-  "nodeId": "node_01HX7S8E4Q3M8A6V9K2P4N7B5C",
-  "title": "法庭开场",
-  "legacyName": "court_intro"
-}
-```
+迁移输出 IR 不需要携带 `legacyName` 字段。若某个离线报告需要记录旧名，应保存在迁移报告或 `previousTitles` 中。
 
 ## 分层边界
 
@@ -202,5 +185,5 @@ node map 是可版本控制文件。合并策略：
 
 - G1.1 已完成：本文定义了 stable node id / title map JSON 契约。
 - G1.2 已完成：本文定义了标题重命名识别流程和人工确认边界。
-- G1.3 已完成：本文定义了 `:: node.name` 到 `# 标题` 的兼容迁移策略。
+- G1.3 已完成：本文定义了 `:: node.name` 到 `# 标题` 的离线迁移策略；Goal 0 后不保留主路径兼容。
 - 本节点只改文档，不改 parser、Compiler、VSCode 或 Runtime 行为。
