@@ -15,8 +15,8 @@
 	- 正文 / 选项文本不再用 `DocumentLinkProvider`，因为它会导致整段文本常驻下划线；当前用 `DefinitionProvider` 恢复“默认无下划线、Ctrl+指向才显示链接态”的编辑体验，并通过 selection bridge 在 Ctrl+Click 后执行预览定位，显式命令仅作为兜底。
 3. 推进 VSCode 前端接入 LanguageServer：diagnostics 已优先调用 LanguageServer project probe 并保留 CLI fallback；`.vsix` rebuild / install 已完成，用户粗测 VSCode 体验基本 OK；下一步考虑 outline / node completion，或在删除 fallback 前补一次 CLI fallback 专项 smoke test。
 4. 设计本地化模糊匹配与人工确认报告，不要直接自动复用相似文本译文。
-5. 设计节点重命名迁移策略、显式稳定 ID 或迁移表，用于处理节点重命名和重复文本插入。
-6. 收敛第一版块语法：继续使用 `:: node.name`，还是转向 `# 标题` + 空行分块。
+5. 基于 [ADR 0013](adr/0013-author-title-and-stable-node-id.md) 设计 stable node id 落盘与迁移实现：标题是作者主身份且项目内唯一，stable id 是系统身份，重命名不应打断本地化 / 外部引用。
+6. 实现 `# 标题` 块语法迁移：标题前空行只做 style hint，不做编译错误；自动创建同名标题时生成 `_01`，手动重名时报 duplicate title diagnostic。
 7. Unity / Bird 相关继续只做准备和计划，等设计方案落实后再研发：包括 Attribute 扫描、Host Bridge 到 adapter 生成、Bird importer 提交策略和带真实 Timeline 的 Dry Run。
 
 ## 文档与接手效率
@@ -181,11 +181,16 @@
 - [x] 定义第一版节点名规范：字符集、层级分隔符和基础诊断。
 - [x] 定义第一版跨文件节点唯一性：项目内节点名全局唯一。
 - [ ] 定义节点重命名迁移策略。
+	- [x] 冻结作者标题与 stable node id 分离的长期决策；详见 [ADR 0013](adr/0013-author-title-and-stable-node-id.md)。
+	- [ ] 设计 stable node id 的落盘位置：sidecar 索引、迁移表，或必要时显式 `@id`。
+	- [ ] 设计标题重命名识别流程：source range、相邻文本锚点、旧标题、前后节点关系与人工确认。
 - [x] 定义并实现行级隐式 hash 的输入、规范化规则、版本号和碰撞处理。
 - [x] 实现第一版本地化 CSV 提取，覆盖旁白、对白、选择提示和选择项。
 - [x] 实现旧翻译表按锚点精确继承，并标记新增、保留、删除条目。
 - [ ] 设计旧翻译表的模糊匹配与人工确认流程。
 - [ ] 设计显式稳定 ID 或迁移表，用于处理节点重命名和重复文本插入。
+	- [x] 决定标题不作为长期机器 ID，stable node id 由系统维护；标题仍是作者可见主身份。
+	- [ ] 定义 stable node id / title map 的 JSON 契约和冲突解决策略。
 - [x] 设计 Narrative Graph IR 的 JSON 草案。
 - [x] 设计源映射格式，覆盖节点、行、选项、跳转和诊断。
 - [x] 实现项目级多文件编译与跨文件跳转诊断。
@@ -228,6 +233,7 @@
 - [x] 让 VSCode 消费 Host Schema capability endpoint / Tooling 契约：query / event provider 优先调用 `inspect-host-schema-project`，失败时回退直接 JSON 读取。
 - [ ] 按 [VSCode LanguageServer Migration Plan](vscode-language-server-migration-plan.md) 评估是否把 Host Schema capability endpoint 下沉到 LanguageServer，并在 VSCode 稳定后移除 JS provider 的重复 JSON fallback。
 - [x] 定义第一版诊断清单：重复节点、非法节点名、缺失目标、不可达节点、空节点、选项语法问题。
+- [ ] 迁移第一版块语法到 `# 标题`：保留 `:: node.name` 兼容计划，新增标题唯一诊断、标题前缺空行 style hint、创建新节点 `_01` 自动编号策略。
 
 ## HTML 调试预览
 

@@ -22,3 +22,4 @@ ADR 用于记录影响项目长期方向的决定。每条 ADR 应说明背景�
 - [0010：采用目录优先的主语/角色命名模型](0010-directory-first-subject-role-naming.md)
 - [0011：采用 Internal / ExternalSupport 分层，并引入 Tooling 中间层](0011-internal-tooling-and-external-support-boundary.md)
 - [0012：采用目录骨架优先的仓库重构顺序](0012-directory-first-repository-reframe-order.md)
+- [0013：作者标题与稳定节点 ID 分离](0013-author-title-and-stable-node-id.md)
