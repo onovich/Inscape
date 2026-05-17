@@ -106,7 +106,7 @@
 
 ## Goal 5：LanguageServer 接管 VSCode 更多语义能力
 
-状态：可继续推进。G5.1 document symbols / outline 与 G5.2 node completion 已接入 LanguageServer，但仍有 JS fallback 需要删除或收敛。
+状态：可继续推进。G5.1 document symbols / outline 与 G5.2 node completion 已接入 LanguageServer，但仍有 JS fallback 需要删除或收敛；G5.3 node navigation 与 G5.4 node / jump hover 已删除对应 JS node semantic fallback。
 
 目标：把已存在的 LanguageServer probes 接入 VSCode 热路径，逐步降低 JS workspace index 的语义权重。
 
@@ -115,7 +115,7 @@
 - [x] G5.1 接入 document symbols / outline。
 - [x] G5.2 接入 node completion。
 - [x] G5.3 接入 node definition / references，并删除对应 JS node definition / reference fallback。
-- [ ] G5.4 接入 node / jump hover，并删除对应 JS node hover fallback。
+- [x] G5.4 接入 node / jump hover，并删除对应 JS node hover fallback。
 - [ ] G5.5 清理 G5.1 / G5.2 已存在的 JS fallback，或改成明确的错误提示 / output 日志。
 
 验收：

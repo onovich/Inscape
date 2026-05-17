@@ -154,8 +154,13 @@ const dslScriptReferenceProvider = new DslScriptReferenceProvider({
 });
 
 const dslScriptHoverProvider = new DslScriptHoverProvider({
+    childProcess,
+    fs,
+    os,
+    path,
     vscode,
     isInscapeDocument,
+    resolveLanguageServerProjectPath: (workspaceFolderPath) => resolveLanguageServerProjectPathFromBase(workspaceFolderPath, __dirname),
     dslScriptNodeProvider,
     dslScriptSpeakerProvider,
     hostBindingProvider,

@@ -20,7 +20,7 @@ This is the first lightweight authoring layer for `.inscape` scripts. It keeps s
 - Treats full-width colons and common Chinese punctuation as word boundaries so Ctrl+Click link styling on Chinese dialogue only covers the speaker name.
 - Supports Find All References from node declarations and jump targets through `Inscape.LanguageServer --references-project`; dialogue speaker references remain a VSCode authoring scan.
 - Shows node CodeLens entries as `N 个引用` on the referenced block header; clicking opens VSCode References Peek for incoming jumps.
-- Shows concise hover summaries for node declarations, jump targets, dialogue speakers, and host binding aliases.
+- Shows node declaration and jump target hover through `Inscape.LanguageServer --hover-project`; dialogue speaker and host binding hover remain VSCode authoring hints.
 - Provides an outline view that prefers `Inscape.LanguageServer --document-symbols-file` and falls back to visible node-header scanning when the probe is unavailable.
 - Provides JSON validation for `inscape.host.schema.json` / `*.host.schema.json`.
 - Exposes command palette actions for localization:
@@ -90,7 +90,7 @@ After installation, reload the VSCode window before judging behavior. Manual smo
 - Holding Ctrl over dialogue / option text shows the transient link affordance.
 - Ctrl+Click on dialogue / option text opens or reuses preview and reveals the matching page.
 - `-> target` Go to Definition and Find All References are served by LanguageServer project navigation and still work across files.
-- `# 标题` appears in highlighting, Outline, jump completion, Go to Definition, Find All References, Hover, and node CodeLens.
+- `# 标题` appears in highlighting, Outline, jump completion, Go to Definition, Find All References, Hover, and node CodeLens; node / jump Hover is served by LanguageServer project hover.
 - Outline is served by LanguageServer first; if that probe fails, the extension falls back to the JS node scanner instead of breaking the view.
 - Jump target node completion is served by LanguageServer first, then augmented by the JS workspace scanner so cross-file authoring remains available.
 - Speaker completion, Hover, Go to Definition, and Find All References prefer `hostBridge` and fall back to workspace dialogue references.

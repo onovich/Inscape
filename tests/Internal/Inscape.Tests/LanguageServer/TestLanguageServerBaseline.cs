@@ -252,6 +252,54 @@ namespace Inscape.Tests {
             }
         }
 
+        static void LanguageServerProjectHoverUsesProjectGraphAndOverride() {
+            string directory = Path.Combine(Path.GetTempPath(), "inscape-language-server-hover-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory);
+            string startPath = Path.Combine(directory, "start.inscape");
+            string targetPath = Path.Combine(directory, "target.inscape");
+            string overridePath = Path.Combine(directory, "target.override.tmp");
+
+            File.WriteAllText(startPath, """
+# start
+Narrator: start
+-> target.node
+""");
+
+            File.WriteAllText(targetPath, """
+# old.node
+Narrator: old node
+""");
+
+            File.WriteAllText(overridePath, """
+# target.node
+Narrator: unsaved node
+""");
+
+            try {
+                JsonElement initial = RunLanguageServerForJson(new[] { "--hover-project", directory, "node", "target.node" });
+                AssertEqual("inscape.language-server-project-hover", initial.GetProperty("format").GetString(), "Project hover probe format");
+                AssertTrue(initial.GetProperty("hover").ValueKind == JsonValueKind.Null, "Project node hover should not find target before override");
+
+                JsonElement nodeHover = RunLanguageServerForJson(new[] { "--hover-project", directory, "node", "target.node", "--override", targetPath, overridePath });
+                AssertEqual("target.node", nodeHover.GetProperty("hover").GetProperty("label").GetString(), "Project node hover label");
+                AssertEqual("node", nodeHover.GetProperty("hover").GetProperty("kind").GetString(), "Project node hover kind");
+                JsonElement nodeLocation = nodeHover.GetProperty("hover").GetProperty("location");
+                AssertEqual(targetPath, nodeLocation.GetProperty("sourcePath").GetString(), "Project node hover source path");
+                AssertEqual(0, nodeLocation.GetProperty("line").GetInt32(), "Project node hover editor line");
+
+                JsonElement jumpHover = RunLanguageServerForJson(new[] { "--hover-project", directory, "jump", "target.node", "--override", targetPath, overridePath });
+                AssertEqual("target.node", jumpHover.GetProperty("hover").GetProperty("label").GetString(), "Project jump hover label");
+                AssertEqual("jump", jumpHover.GetProperty("hover").GetProperty("kind").GetString(), "Project jump hover kind");
+                JsonElement jumpLocation = jumpHover.GetProperty("hover").GetProperty("location");
+                AssertEqual(startPath, jumpLocation.GetProperty("sourcePath").GetString(), "Project jump hover source path");
+                AssertEqual(2, jumpLocation.GetProperty("line").GetInt32(), "Project jump hover editor line");
+            } finally {
+                if (Directory.Exists(directory)) {
+                    Directory.Delete(directory, true);
+                }
+            }
+        }
+
         static JsonElement RunLanguageServerForJson(string[] args) {
             TextWriter originalOut = Console.Out;
             StringWriter output = new StringWriter();

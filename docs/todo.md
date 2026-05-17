@@ -10,7 +10,7 @@
 
 下一位接手者建议按以下顺序推进：
 
-1. 按 [/goal 后续目标计划](goal-plan.md) 推进 Goal 5.4：让 VSCode node / jump hover 直接走 LanguageServer，并删除对应 JS node hover fallback。
+1. 按 [/goal 后续目标计划](goal-plan.md) 推进 Goal 5.5：清理 G5.1 / G5.2 已存在的 document symbols / node completion JS fallback，或改成明确的错误提示 / output 日志。
 2. 按 [/goal 后续目标计划](goal-plan.md) 推进 Goal 6：Host Schema endpoint 收口到 LanguageServer / Tooling 契约，移除 JS direct JSON fallback。
 3. 继续打磨 VSCode 可玩预览：补未保存内容的更细粒度热刷新、刷新中状态提示，以及可选的预览 / 源码同步策略。
 	- 正文 / 选项文本不再用 `DocumentLinkProvider`，因为它会导致整段文本常驻下划线；当前用 `DefinitionProvider` 恢复“默认无下划线、Ctrl+指向才显示链接态”的编辑体验，并通过 selection bridge 在 Ctrl+Click 后执行预览定位，显式命令仅作为兜底。

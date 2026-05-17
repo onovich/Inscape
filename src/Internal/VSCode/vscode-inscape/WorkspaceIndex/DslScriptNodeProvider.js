@@ -238,22 +238,6 @@ class DslScriptNodeProvider {
         map.get(key).push(value);
     }
 
-    createDeclarationHoverMarkdown(nodeName) {
-        const markdown = new this.vscode.MarkdownString(undefined, true);
-        markdown.isTrusted = false;
-        markdown.appendMarkdown("**Inscape Dialogue Block** `" + nodeName + "`\n\n");
-        markdown.appendMarkdown("A named dialogue block. Its CodeLens shows incoming references.");
-        return markdown;
-    }
-
-    createJumpTargetHoverMarkdown(nodeName) {
-        const markdown = new this.vscode.MarkdownString(undefined, true);
-        markdown.isTrusted = false;
-        markdown.appendMarkdown("**Inscape Dialogue Block Reference** `" + nodeName + "`\n\n");
-        markdown.appendMarkdown("Ctrl+Click to jump to this dialogue block.");
-        return markdown;
-    }
-
 }
 
 module.exports = {

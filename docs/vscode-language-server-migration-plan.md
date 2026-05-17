@@ -66,7 +66,7 @@ fallback：
 
 ### L4：Node / jump hover
 
-迁移节点声明与 jump target 的 Hover。该能力可直接使用 LanguageServer 当前 `--hover-file <path> <node|jump> <name>` 对应模型。
+进度：已完成。VSCode node declaration 与 jump target Hover 现在通过 `Inscape.LanguageServer --hover-project <root> <node|jump> <name> [--override source temp]` 获取项目级结果，支持跨文件与未保存内容；`DslScriptNodeProvider` 已删除对应 JS node hover markdown fallback。
 
 保留在 VSCode / Tooling 侧的 hover：
 
@@ -102,7 +102,7 @@ probe parity 稳定后再引入完整 LSP transport。Transport 本身是通信�
 | Node completion | LanguageServer node completion | JS `DslScriptNodeProvider` | 无补全但不报错 |
 | Document symbols | LanguageServer document symbols | JS `DslScriptDocumentSymbolProvider` | 空 outline |
 | Node definition / references | LanguageServer graph provider | JS node provider | VSCode 默认无结果 |
-| Node / jump hover | LanguageServer hover | JS node provider hover | 无 hover |
+| Node / jump hover | LanguageServer project hover | 无 JS node hover fallback | 无 hover |
 | Text-to-preview reveal | VSCode `DefinitionProvider` + `PreviewRevealBridge` | 显式 `Inscape: Open Preview` / reveal 命令 | 无预览定位但源码可编辑 |
 | Speaker authoring | VSCode / future LanguageServer Host Bridge provider | Host Bridge speaker ids | workspace dialogue scan |
 | Host binding authoring | VSCode / future LanguageServer Host Bridge provider | Host Bridge bindings | workspace occurrence |

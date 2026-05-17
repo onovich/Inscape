@@ -156,7 +156,25 @@ namespace Inscape.LanguageServer {
                 return 0;
             }
 
-            Console.WriteLine("Inscape.LanguageServer baseline. Use --capabilities, --diagnose-file <path>, --diagnose-project <root> [--entry title] [--override source.inscape temp.inscape], --definition-file <path> <title>, --definition-project <root> <title> [--override source.inscape temp.inscape], --references-file <path> <title>, --references-project <root> <title> [--override source.inscape temp.inscape], --completion-file <path>, --document-symbols-file <path>, or --hover-file <path> <node|jump> <title>.");
+            if (args.Length > 3 && args[0] == "--hover-project") {
+                string rootPath = Path.GetFullPath(args[1]);
+                DslScriptHoverProvider provider = new DslScriptHoverProvider();
+                LanguageServerHoverModel? hover = args[2] == "jump"
+                    ? provider.GetProjectJumpHover(rootPath, args[3], ReadSourceOverride(args))
+                    : provider.GetProjectNodeHover(rootPath, args[3], ReadSourceOverride(args));
+                Console.WriteLine(JsonSerializer.Serialize(new {
+                    format = "inscape.language-server-project-hover",
+                    formatVersion = 1,
+                    rootPath,
+                    hover
+                }, new JsonSerializerOptions {
+                    WriteIndented = true,
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                }));
+                return 0;
+            }
+
+            Console.WriteLine("Inscape.LanguageServer baseline. Use --capabilities, --diagnose-file <path>, --diagnose-project <root> [--entry title] [--override source.inscape temp.inscape], --definition-file <path> <title>, --definition-project <root> <title> [--override source.inscape temp.inscape], --references-file <path> <title>, --references-project <root> <title> [--override source.inscape temp.inscape], --completion-file <path>, --document-symbols-file <path>, --hover-file <path> <node|jump> <title>, or --hover-project <root> <node|jump> <title> [--override source.inscape temp.inscape].");
             return 0;
         }
 
