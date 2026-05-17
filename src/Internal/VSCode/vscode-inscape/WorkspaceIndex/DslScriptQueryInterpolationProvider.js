@@ -161,7 +161,7 @@ class DslScriptQueryInterpolationProvider {
         const markdown = new this.vscode.MarkdownString();
         markdown.appendMarkdown("**Unknown Inscape query interpolation** `" + interpolation.query + "`\n\n");
         markdown.appendMarkdown("No zero-parameter simple query with this name was found in the configured Host Schema. This is an authoring hint, not a Compiler error.\n\n");
-        markdown.appendMarkdown("Use `[]` for read-only text interpolation. Keep events, actions, timing hooks, and legacy resource binding out of new `[]` usage.");
+        markdown.appendMarkdown("Use `[]` for read-only text interpolation. Keep events, actions, timing hooks, and host binding out of `[]` usage.");
         return markdown;
     }
 

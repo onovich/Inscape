@@ -46,7 +46,7 @@ namespace Inscape.Tests {
 # start
 旁白：金币 [player.gold]，物品 [has_item]，未知 [player.godl]。
 @timeline.talking.exit court_intro
-旁白：旧写法 [timeline: court_intro] 不应算 query。
+旁白：带冒号的 metadata [note: court_intro] 不应算 query。
 """)
                 };
 
@@ -59,7 +59,7 @@ namespace Inscape.Tests {
                 AssertEqual(1, audit.Summary.ParameterizedQueryCount, "Audit parameterized query count");
                 AssertTrue(AuditContains(audit, "IQI001", "player.godl"), "Audit should report unknown query.");
                 AssertTrue(AuditContains(audit, "IQI002", "has_item"), "Audit should report parameterized query.");
-                AssertFalse(AuditContains(audit, "IQI001", "timeline"), "Legacy timeline tag should not be treated as query.");
+                AssertFalse(AuditContains(audit, "IQI001", "note"), "Colon metadata should not be treated as query.");
             } finally {
                 if (Directory.Exists(directory)) {
                     Directory.Delete(directory, true);

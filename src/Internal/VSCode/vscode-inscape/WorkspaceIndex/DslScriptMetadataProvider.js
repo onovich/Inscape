@@ -60,7 +60,7 @@ class DslScriptMetadataProvider {
             markdown.appendMarkdown("Value: `" + metadataInfo.value + "`\n\n");
         }
 
-        markdown.appendMarkdown("Tip: use `@...` for events, actions, timing, and state changes. `[` `kind: alias` `]` remains supported as a legacy inline host binding fallback, not the preferred model for new event syntax.");
+        markdown.appendMarkdown("Tip: use `@...` for events, actions, timing, and state changes. Use `[]` for read-only text interpolation, not host binding.");
         return markdown;
     }
 

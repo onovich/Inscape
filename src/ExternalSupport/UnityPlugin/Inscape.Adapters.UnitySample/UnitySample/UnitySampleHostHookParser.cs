@@ -15,27 +15,8 @@ namespace Inscape.Adapters.UnitySample {
             phase = DefaultTimelinePhase;
             string trimmed = metadataText.Trim();
 
-            if (trimmed.StartsWith("@", StringComparison.Ordinal)) {
-                return TryParseAtTimelineHook(trimmed, out alias, out phase);
-            }
-
-            if (!trimmed.StartsWith("[", StringComparison.Ordinal) || !trimmed.EndsWith("]", StringComparison.Ordinal)) {
-                return false;
-            }
-
-            string body = trimmed.Substring(1, trimmed.Length - 2);
-            int separator = body.IndexOf(':');
-            if (separator < 0) {
-                return false;
-            }
-
-            string key = body.Substring(0, separator).Trim();
-            if (!TryParseTimelineKey(key, out phase)) {
-                return false;
-            }
-
-            alias = body.Substring(separator + 1).Trim();
-            return alias.Length > 0;
+            return trimmed.StartsWith("@", StringComparison.Ordinal)
+                && TryParseAtTimelineHook(trimmed, out alias, out phase);
         }
 
         static bool TryParseAtTimelineHook(string trimmed, out string alias, out string phase) {

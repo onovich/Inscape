@@ -153,7 +153,7 @@ Narrator: Start.
                 File.WriteAllText(Path.Combine(directory, "story.inscape"), """
 # start
 旁白：金币 [player.gold]，物品 [has_item]，未知 [player.godl]。
-旁白：[timeline: court_intro] 是 legacy binding，不是 query。
+旁白：[note: court_intro] 是带冒号的 metadata，不是 query。
 """, Encoding.UTF8);
 
                 string output = RunCliForOutput(new[] { "audit-query-interpolation-project", directory, "--format", "json" });

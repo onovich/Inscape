@@ -15,8 +15,6 @@
 
 `court-loop.inscape` 是新规范样例：`@` 用于事件、动作、时机和状态变化，`[]` 用于查询、读取和文本插值。
 
-`legacy/` 目录保存旧 inline host binding 写法的参考文本，例如 `[bg: courtroom]`、`[emotion: tense]`。这些文件使用 `.txt` 后缀，避免 `check-project samples` 把 legacy 节点作为当前项目源码一起编译。
-
 `variants/` 目录保存同一剧情的 Yarn-like、Ink-like、Ren'Py-like 风格草案，用于比较语法哲学和映射成本。
 
 运行示例：

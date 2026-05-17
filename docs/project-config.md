@@ -36,7 +36,7 @@ inscape.config.json
 当前读取这些字段的工具：
 
 - `export-host-schema-template`：可生成 `hostSchema` 的起始模板，但不会自动写入配置。
-- VSCode 扩展：优先读取 `hostBridge`，为 speaker、宿主事件 / 时机 hook 和 legacy inline host binding fallback 提供补全、Hover 与 Ctrl+Click。
+- VSCode 扩展：优先读取 `hostBridge`，为 speaker 和宿主事件 / 时机 hook 提供补全、Hover 与 Ctrl+Click。
 - `export-unity-sample-role-template`：读取 `existingRoleNameCsv`。
 - `export-unity-sample-binding-template`：读取 `existingTimelineRoot`。
 - `export-unity-sample-project`：读取 `talkingIdStart`、`roleMap`、`bindingMap`、`existingTalkingRoot`。

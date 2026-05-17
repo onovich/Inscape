@@ -72,11 +72,11 @@ Inscape 的默认阅读优先级应当是：
 - 高亮对白：`角色：对白`
 - 高亮旁白、选择提示、选项、跳转、元信息和行内标签。
 - 标记明显非法的节点名或跳转目标。
-- 提供基础 snippets：节点、对白、选择组、跳转、元信息、Timeline Hook、行内标签。
+- 提供基础 snippets：节点、对白、选择组、跳转、元信息、Timeline Hook、查询插值。
 - 通过 `dotnet run --project src/Internal/Cli/Inscape.Cli/Inscape.Cli.csproj -- diagnose-project <workspace> --override <source> <temp-file>` 刷新实时诊断。
 - 在 `->` 跳转目标位置补全工作区内的标题节点和旧节点名。
 - 在对白行开头补全角色名，优先读取 `inscape.config.json` 中 `hostBridge` 的 `kind: "speaker"` ID；没有 Host Bridge 时回退到 legacy `unitySample.roleMap`；未配置时再回退扫描工作区已有对白 speaker。
-- 在 `@timeline ...`、`@timeline.<phase> ...` 这类宿主事件 / 时机 hook 位置补全 Host Bridge ID；同时对 legacy `[kind: ...]` inline host binding 位置保留兼容补全。补全优先读取 `inscape.config.json` 中 `hostBridge`，再回退到 legacy `unitySample.bindingMap` 指向的 `kind,alias,unitySampleId,unityGuid,addressableKey,assetPath` 表；未配置时回退扫描工作区已有 hook / legacy inline tag。
+- 在 `@timeline ...`、`@timeline.<phase> ...` 这类宿主事件 / 时机 hook 位置补全 Host Bridge ID。补全优先读取 `inscape.config.json` 中 `hostBridge`，再回退到 legacy `unitySample.bindingMap` 指向的 `kind,alias,unitySampleId,unityGuid,addressableKey,assetPath` 表；未配置时回退扫描工作区已有 `@timeline` hook。
 - 在 `->` 跳转目标上支持 Go to Definition / Ctrl+Click。
 - 在对白 speaker 上支持 Go to Definition / Ctrl+Click，优先跳到 `hostBridge` 中 `kind: "speaker"` 的配置项；没有 Host Bridge 时回退到 legacy `unitySample.roleMap` 中对应的 `speaker` 行；没有配置角色表时，再回退到工作区内该 speaker 的对白引用位置。语言配置会把 `：` 和常见中文标点视为词边界，使 Ctrl+Click 的可跳转下划线只覆盖 speaker 名称，而不是整句对白。
 - 在节点声明、`->` 跳转目标或对白 speaker 上支持 Find All References；节点索引只识别当前 `# 标题` 语法。
@@ -84,19 +84,19 @@ Inscape 的默认阅读优先级应当是：
 - 在节点声明和 `->` 跳转目标上显示简短 Hover 类型说明，不在跳转目标上显示统计信息。
 - 在对白 speaker 上显示 Hover 摘要：角色名、Host Bridge 或 legacy UnitySample 绑定状态和来源表。
 - 在 `@entry`、`@scene`、`@timeline` 这类 `@` 行上显示 Hover 解释，告诉作者 `@` 主要用于入口、场景标记、宿主事件、时机 hook 或其他会影响流程的作者意图。
-- 将 `@entry`、`@scene`、`@timeline` 等统一按 `@metadata` 语法层高亮；其中 `@timeline...` 的说明口径是宿主事件 / 时机 hook，不再把它解释成和 `[kind: alias]` 完全等价的资源标签。
+- 将 `@entry`、`@scene`、`@timeline` 等统一按 `@metadata` 语法层高亮；其中 `@timeline...` 的说明口径是宿主事件 / 时机 hook，不再解释成 `[]` 资源标签。
 - 在 Host Bridge / legacy binding 别名上显示 Hover 摘要：`kind:alias`、Host asset id、legacy UnitySample id、Addressable、Unity guid、Asset path 和来源表。
-- 在 `@timeline ...` 和 legacy `[kind: alias]` 上支持 Ctrl+Click，优先跳转到 Host Bridge 配置项；没有 Host Bridge 时回退到 legacy binding map 行，让作者直接看到它们是如何映射到宿主桥接表的。
+- 在 `@timeline ...` 上支持 Ctrl+Click，优先跳转到 Host Bridge 配置项；没有 Host Bridge 时回退到 legacy binding map 行，让作者直接看到它们是如何映射到宿主桥接表的。
 - 为 VSCode Outline 提供当前文件节点列表。
 - 提供 `Inscape: Insert Node Title` 命令；命令创建同名标题时会自动追加 `_01` 这类后缀，手动改成重名则继续交给 Compiler diagnostics 报错。
 - 为 `inscape.host.schema.json` / `*.host.schema.json` 提供 JSON Schema 校验。
 - 提供命令 `Inscape: Show Host Schema Capabilities`，读取 `inscape.config.json` 的 `hostSchema` 并列出 query / event。
-- 在正文 `[]` 查询插值位置提供 Host Schema query 补全和 Hover。当前只读取零参数简单 query，如 `[player.gold]` / `[itemName]`；Hover 显示 `returnType`、`isAsync`、description 和来源。未知 query 只作为作者提示，不升级为 Compiler 错误；legacy `[kind: alias]` 仍走 Host Bridge / legacy binding 路径。
+- 在正文 `[]` 查询插值位置提供 Host Schema query 补全和 Hover。当前只读取零参数简单 query，如 `[player.gold]` / `[itemName]`；Hover 显示 `returnType`、`isAsync`、description 和来源。未知 query 只作为作者提示，不升级为 Compiler 错误；带冒号的 bracket metadata 不再作为宿主绑定入口。
 - 提供命令 `Inscape: Open Preview`，以 VSCode custom editor 方式打开可玩预览；它默认会在源码旁边以侧边编辑器打开。如果当前活动 `.inscape` 文件未保存，会通过 `--override` 使用编辑器中的临时内容。
 - 编辑器右上角提供 `Inscape: Toggle Preview` 按钮，可以快速在源码和预览之间切换；当前实现会优先复用已有预览标签页，避免重复打开。扩展清单把 custom editor 设为 `option` 而不是 `default`，避免预览劫持源码标签页、Definition 跳转或普通文件打开行为。
 - 预览当前采用单栏沉浸式界面展示正文和选项；点击选项推进、无选项时点击正文继续、支持 Back / Restart 和 diagnostics；编辑时会防抖刷新，保存工作区内 `.inscape` 文件后立即刷新打开的预览编辑器，并尽量保留当前 `{ current, path }` 进度，而不是每次都回到第一页。
 - 预览启动时优先复用已编译的 `Inscape.Cli.exe`，其次回退到 `dotnet exec Inscape.Cli.dll`，最后才使用 `dotnet run --project ...`，以缩短打开与刷新等待时间。
-- 预览中的节点、行、选项、`@` 元信息和 legacy `[]` inline host binding 标签都支持一键跳回源码位置，便于把“玩流程”和“改脚本”连成一个闭环。
+- 预览中的节点、行、选项和 `@` 元信息都支持一键跳回源码位置，便于把“玩流程”和“改脚本”连成一个闭环。
 - 预览中的 `源码` 按钮与诊断跳转会优先复用已经打开的源码编辑器；如果源码页签还没打开，再新开源码页签并定位，避免用源码跳转直接替换掉当前预览标签页。
 - 编辑器里的正文、旁白、选项提示和选项文本通过 `DefinitionProvider` 提供 Ctrl+指向链接态：默认不高亮、不显示下划线，按住 Ctrl 并指向文本时才显示链接态；Ctrl+Click 后由 selection bridge 调用 `inscape.revealInPreview`，打开或复用对应脚本预览，并定位到包含该文本的页面。`Inscape: Reveal Current Selection In Preview` 和工具菜单里的“在预览中定位当前文本”作为显式兜底入口保留。
 
@@ -105,7 +105,7 @@ Inscape 的默认阅读优先级应当是：
 - 预览是作者体验层，不是脚本真相来源；语义仍由 `Inscape.Compiler` / CLI 决定。
 - 预览中的源码回跳只负责把作者带回对应源位置，不与源码编辑器内的 Ctrl+Click 做自动双向同步。
 - 预览刷新应尽量保持玩家当前上下文；只有源码结构变化导致当前位置失效时，才回退到新的可达起点。
-- `@` 与 `[]` 的目标是“让作者看得懂它们在做什么”：`@` 主要解释为事件、动作、时机和状态变化，`[]` 主要解释为查询、读取和文本插值。当前 VSCode 仍保留 legacy `[kind: alias]` inline host binding 的 Hover / 导航 fallback，但不把它作为新推荐语法扩展。
+- `@` 与 `[]` 的目标是“让作者看得懂它们在做什么”：`@` 主要解释为事件、动作、时机和状态变化，`[]` 主要解释为查询、读取和文本插值。VSCode 当前不再把 legacy `[kind: alias]` inline host binding 作为补全、Hover 或导航入口。
 - 文本到预览的定位属于作者体验增强，而不是新的语言语义；它只是根据源位置把预览切到最接近的节点页面，不改变编译结果。正文 / 选项文本不使用 `DocumentLinkProvider`，以避免常驻下划线。
 
 ## 正文链接态经验
@@ -195,7 +195,7 @@ Inscape 的 block 之间是图关系，不应只能顺着 `-> target` 单向跳�
 
 这对应编程体验中的“Go to Definition / Find References”，但在领域语言里把跳转关系显示为 block 标题上的引用计数。当前实现仍是轻量行扫描，后续 Language Server 应复用 Core 的项目 IR 来提供更稳定的图导航。
 
-## 宿主 Hook 与 Legacy 绑定提示
+## 宿主 Hook 与绑定提示
 
 宿主事件 / 时机 hook 的提示优先读取 Host Bridge。为了兼容 UnitySample 实验样例，扩展仍会回退读取 legacy 绑定表：
 
@@ -215,15 +215,14 @@ timeline,court_intro,12,,Timeline/CourtIntro,Assets/Resources_Runtime/Timeline/S
 bg,classroom,,,BG/Classroom,Assets/Art/BG/classroom.png
 ```
 
-当前 VSCode 扩展支持两类位置：
+当前 VSCode 扩展支持这些位置：
 
 - `@timeline court_intro`
 - `@timeline.node.enter court_intro`
-- legacy `[timeline: court_intro]`、`[timeline.node.exit: court_outro]`、`[bg: classroom]` 等 inline host binding tag 的值部分
 
-补全按 `kind` 过滤，Hover 显示 Host asset id、legacy UnitySample id、Addressable、Unity guid 和 asset path。未配置绑定表时，扩展会从工作区已有 `@timeline` 和 legacy inline tag 中扫描别名作为轻量回退。`@entry` / `@scene` 这类普通 `@` 元信息则用于入口、场景或其他宿主语义说明，本身不参与绑定解析。
+补全按 `kind` 过滤，Hover 显示 Host asset id、legacy UnitySample id、Addressable、Unity guid 和 asset path。未配置绑定表时，扩展会从工作区已有 `@timeline` hook 中扫描别名作为轻量回退。`@entry` / `@scene` 这类普通 `@` 元信息则用于入口、场景或其他宿主语义说明，本身不参与绑定解析。
 
-注意：这仍然只是作者体验层。当前 UnitySample 导出只对已支持的 hook 赋予样例 adapter 意义，例如 `timeline`；其他 `kind` 的 legacy inline tag 补全用于减少旧脚本维护成本，不代表 Core 已经承诺资源系统语义。后续新写法应优先把事件和时机表达放在 `@`，把玩家可见文本里的动态值读取放在 `[]`。
+注意：这仍然只是作者体验层。当前 UnitySample 导出只对已支持的 hook 赋予样例 adapter 意义，例如 `timeline`；不代表 Core 已经承诺资源系统语义。新写法应把事件和时机表达放在 `@`，把玩家可见文本里的动态值读取放在 `[]`。
 
 ## 宿主 Schema 提示
 

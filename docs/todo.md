@@ -36,7 +36,7 @@
 	- [x] 将主样例和内部测试从 `:: node.name` 迁到 `# 标题`。
 	- [x] 移除 Compiler / LanguageServer 对 `:: node.name` 的解析和诊断兼容文案。
 	- [x] 移除 VSCode 对 `:: node.name` 的扫描、高亮和 snippet。
-	- [ ] 移除 legacy `[kind: alias]` / `[timeline: alias]` inline host binding 行为、样例和工具提示。
+	- [x] 移除 legacy `[kind: alias]` / `[timeline: alias]` inline host binding 行为、样例和工具提示。
 	- [ ] 移除 `unitySample.roleMap` / `unitySample.bindingMap` fallback，统一使用 `hostBridge`。
 	- [ ] 清理当前行为文档中的 legacy / compatibility 口径，只在 ADR 或历史审计文档保留背景。
 
@@ -214,7 +214,7 @@
 - [x] 添加节点声明和 `-> target` 的 VSCode Hover 摘要。
 - [x] 添加 VSCode 命令：导出项目本地化 CSV。
 - [x] 添加 VSCode 命令：基于旧 CSV 更新项目本地化表。
-- [x] 接入 Host Bridge / legacy binding map 的宿主绑定别名补全和 Hover，覆盖 `@timeline ...` 与 legacy `[kind: ...]` 位置。
+- [x] 接入 Host Bridge / legacy binding map 的宿主绑定别名补全和 Hover，覆盖 `@timeline ...` 位置；legacy `[kind: ...]` inline host binding 入口已在 Goal 0 移除。
 - [x] 添加对白 speaker 的 Go to Definition 与 Find All References，优先连接 Host Bridge speaker，回退 legacy role map 和脚本对白引用。
 - [x] 修正 VSCode `wordPattern`，把全角冒号和常见中文标点视为词边界，避免 Ctrl+Click 角色名时把整行对白标为可跳转范围。
 - [x] 添加 block 级 CodeLens 双向导航：`入边` 追溯调用方，`出边` 跳转被调用方。

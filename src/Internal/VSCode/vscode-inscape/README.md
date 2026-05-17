@@ -5,17 +5,17 @@ This is the first lightweight authoring layer for `.inscape` scripts. It keeps s
 ## Capabilities
 
 - Registers the `inscape` language ID for `.inscape` files.
-- Highlights `# 标题` node headers, dialogue speakers, narration, choices, jumps, metadata lines, inline tags, and invalid jump target spellings.
-- Provides basic snippets for nodes, dialogue, choices, jumps, metadata, and inline tags.
-- Keeps metadata and inline tags on comment-like scopes so themes can visually soften them while prose remains readable.
+- Highlights `# 标题` node headers, dialogue speakers, narration, choices, jumps, metadata lines, query interpolations, and invalid jump target spellings.
+- Provides basic snippets for nodes, dialogue, choices, jumps, metadata, timeline hooks, and query interpolations.
+- Keeps metadata and query interpolations on comment-like scopes so themes can visually soften them while prose remains readable.
 - Refreshes diagnostics through `Inscape.LanguageServer --diagnose-project <workspace> --override <source> <temp-file>` first, then falls back to the configured CLI `diagnose-project` invocation if the LanguageServer probe is unavailable.
 - Provides node completions in jump target positions through `Inscape.LanguageServer --completion-file`, with JS workspace node fallback for cross-file nodes and probe failures.
 - Provides `Inscape: Insert Node Title`; if the requested title already exists, the command inserts the next `_01`-style title.
 - Provides dialogue speaker completions from `inscape.config.json` `hostBridge`, with legacy `unitySample.roleMap` and workspace speaker fallback.
-- Provides host event / timing hook completions from `inscape.config.json` `hostBridge`, with legacy `unitySample.bindingMap` fallback for `@timeline ...`, `@timeline.<phase> ...`, and legacy `[kind: ...]` inline host binding positions.
+- Provides host event / timing hook completions from `inscape.config.json` `hostBridge`, with legacy `unitySample.bindingMap` fallback for `@timeline ...` and `@timeline.<phase> ...`.
 - Provides `[]` query interpolation completions and Hover from configured Host Schema zero-parameter simple queries such as `[player.gold]`; unknown queries are authoring hints only, not compiler errors. The provider prefers the CLI `inspect-host-schema-project` capability endpoint and falls back to direct JSON reading if the endpoint is unavailable.
 - Provides `@emit` host event completions and Hover from configured Host Schema `events[]`; unknown events are authoring hints only, not compiler errors. This uses the same capability endpoint with direct JSON fallback.
-- Highlights host hook lines such as `@timeline court_intro` and legacy inline host binding tags such as `[bg: courtroom]` without the always-on link look, while Hover / Ctrl+Click still jumps to the matching mapping row or workspace occurrence.
+- Highlights host hook lines such as `@timeline court_intro` without the always-on link look, while Hover / Ctrl+Click still jumps to the matching mapping row or workspace occurrence.
 - Supports Go to Definition / Ctrl+Click from jump targets to node declarations, and from dialogue speakers to configured role-map rows with dialogue-reference fallback; the clickable text stays visually plain until Ctrl is held.
 - Treats full-width colons and common Chinese punctuation as word boundaries so Ctrl+Click link styling on Chinese dialogue only covers the speaker name.
 - Supports Find All References from node declarations, jump targets, and dialogue speakers.
@@ -94,8 +94,8 @@ After installation, reload the VSCode window before judging behavior. Manual smo
 - Outline is served by LanguageServer first; if that probe fails, the extension falls back to the JS node scanner instead of breaking the view.
 - Jump target node completion is served by LanguageServer first, then augmented by the JS workspace scanner so cross-file authoring remains available.
 - Speaker completion, Hover, Go to Definition, and Find All References prefer `hostBridge` and still fall back to legacy `unitySample.roleMap`.
-- `@timeline ...` host event / timing hook and legacy `[kind: alias]` inline host binding completion, Hover, and Ctrl+Click prefer `hostBridge` and still fall back to legacy `unitySample.bindingMap`.
-- `[query.path]` query interpolation completion and Hover read Host Schema queries, while legacy `[kind: alias]` remains in the Host Bridge / legacy binding path.
+- `@timeline ...` host event / timing hook completion, Hover, and Ctrl+Click prefer `hostBridge` and still fall back to legacy `unitySample.bindingMap`.
+- `[query.path]` query interpolation completion and Hover read Host Schema queries.
 - `@emit eventName` completion and Hover read Host Schema events and remain separate from `@timeline` Host Bridge bindings.
 - Preview source buttons, diagnostics clicks, and metadata clicks still jump to the expected source location.
 
@@ -121,18 +121,18 @@ When no configured role map exists, the extension still scans open and workspace
 
 Ctrl+Click on a dialogue speaker jumps to the matching `speaker` row in the configured role map. If no configured row exists, it falls back to matching dialogue lines in the workspace. Find All References on a speaker lists all matching dialogue lines in the workspace and includes the role-map row when VSCode requests declarations.
 
-Host hook and legacy inline host binding completion prefer `hostBridge` ids whose `kind` matches the authoring context, then fall back to legacy `unitySample.bindingMap` from the same project config. The legacy binding map format is:
+Host hook completion prefers `hostBridge` ids whose `kind` matches the authoring context, then falls back to legacy `unitySample.bindingMap` from the same project config. The legacy binding map format is:
 
 ```csv
 kind,alias,unitySampleId,unityGuid,addressableKey,assetPath
 timeline,court_intro,12,,Timeline/CourtIntro,Assets/Resources_Runtime/Timeline/SO_Timeline_CourtIntro.asset
 ```
 
-The first supported contexts are host event / timing hooks such as `@timeline court_intro` and `@timeline.node.enter court_intro`, plus legacy inline host binding tags such as `[timeline: court_intro]`, `[timeline.node.exit: court_outro]`, or `[bg: classroom]`. Hover explains `@entry` / `@scene` metadata lines, while Ctrl+Click on `@timeline ...` and legacy `[kind: alias]` opens the corresponding bridge entry, legacy binding row, or first workspace occurrence when one exists. For legacy inline tags, completion is still generic by `kind`; compiler semantics come from `Inscape.Compiler`, while UnitySample export remains an experimental adapter.
+The supported contexts are host event / timing hooks such as `@timeline court_intro` and `@timeline.node.enter court_intro`. Hover explains `@entry` / `@scene` metadata lines, while Ctrl+Click on `@timeline ...` opens the corresponding bridge entry, legacy binding row, or first workspace occurrence when one exists. Compiler semantics come from `Inscape.Compiler`, while UnitySample export remains an experimental adapter.
 
 Host schema files named `inscape.host.schema.json` or `*.host.schema.json` are validated by the bundled JSON Schema. The command `Inscape: Show Host Schema Capabilities` reads `inscape.config.json` `hostSchema`, lists configured queries/events, and opens the selected capability in the schema file.
 
-Script authoring also reads the same configured Host Schema for `[]` query interpolation hints. In text such as `[player.gold]`, completion offers zero-parameter simple query names and Hover shows `returnType`, `isAsync`, description, and schema source. Unknown query Hover is deliberately informational: it means the current Host Schema did not declare that query, not that `Inscape.Compiler` rejects the script. Legacy `[kind: alias]` inline host binding remains separate and continues to use Host Bridge / legacy binding fallback.
+Script authoring also reads the same configured Host Schema for `[]` query interpolation hints. In text such as `[player.gold]`, completion offers zero-parameter simple query names and Hover shows `returnType`, `isAsync`, description, and schema source. Unknown query Hover is deliberately informational: it means the current Host Schema did not declare that query, not that `Inscape.Compiler` rejects the script.
 
 For host events, `@emit eventName` completion offers Host Schema `events[]` names and Hover shows delivery, side effect, parameter, description, and schema source information. This is still an authoring hint: `Inscape.Compiler` keeps treating the line as metadata, and `@timeline...` keeps using Host Bridge / legacy binding data because it references a timed host resource hook rather than a generic schema event.
 

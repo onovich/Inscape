@@ -53,11 +53,11 @@
     ],
     "description": "Reference a host timeline alias with an explicit phase."
   },
-  "Inline Tag": {
-    "prefix": "tag",
+  "Query Interpolation": {
+    "prefix": "query",
     "body": [
-      "[${1:key}: ${2:value}]"
+      "[${1:query.path}]"
     ],
-    "description": "Insert an inline metadata tag."
+    "description": "Insert a read-only query interpolation."
   }
 }

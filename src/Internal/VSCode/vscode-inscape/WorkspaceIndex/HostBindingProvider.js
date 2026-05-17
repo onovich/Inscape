@@ -18,15 +18,7 @@ class HostBindingProvider {
             return { kind: "timeline" };
         }
 
-        const openBracket = linePrefix.lastIndexOf("[");
-        const closeBracket = linePrefix.lastIndexOf("]");
-        if (openBracket <= closeBracket) {
-            return undefined;
-        }
-
-        const body = linePrefix.slice(openBracket + 1);
-        const match = /^([A-Za-z_][A-Za-z0-9_.-]*)\s*:\s*[^\]]*$/.exec(body);
-        return match ? { kind: this.normalizeHostBindingKind(match[1]) } : undefined;
+        return undefined;
     }
 
     getBindingAtPosition(document, position) {
@@ -43,23 +35,6 @@ class HostBindingProvider {
                     range: new this.vscode.Range(position.line, bindingStart, position.line, bindingEnd)
                 };
             }
-        }
-
-        const inlinePattern = /\[([A-Za-z_][A-Za-z0-9_.-]*)\s*:\s*([^\]\s]+)\]/g;
-        let inlineMatch = inlinePattern.exec(line);
-        while (inlineMatch) {
-            const kind = this.normalizeHostBindingKind(inlineMatch[1].trim());
-            const alias = inlineMatch[2].trim();
-            const bindingStart = inlineMatch.index;
-            const bindingEnd = inlineMatch.index + inlineMatch[0].length;
-            if (position.character >= bindingStart && position.character <= bindingEnd) {
-                return {
-                    kind,
-                    alias,
-                    range: new this.vscode.Range(position.line, bindingStart, position.line, bindingEnd)
-                };
-            }
-            inlineMatch = inlinePattern.exec(line);
         }
 
         return undefined;
@@ -106,7 +81,7 @@ class HostBindingProvider {
         const markdown = new this.vscode.MarkdownString(undefined, true);
         markdown.isTrusted = false;
         markdown.appendMarkdown("**Inscape Host Binding** `" + binding.kind + ":" + binding.alias + "`\n\n");
-        markdown.appendMarkdown("This looks like a host bridge reference, but no mapping row or scanned workspace occurrence was found yet. For `@timeline...`, this is a host event / timing hook; for `[` `kind: alias` `]`, this is legacy inline host binding fallback.\n\n");
+        markdown.appendMarkdown("This looks like a host bridge reference, but no mapping row or scanned workspace occurrence was found yet. `@timeline...` uses this as a host event / timing hook.\n\n");
         markdown.appendMarkdown("Add it to `inscape.config.json` or the binding CSV to make Ctrl+Click resolve it.\n\n");
         markdown.appendMarkdown("Source: `" + this.formatDisplayPath(binding.sourcePath) + "`");
         return markdown;
@@ -271,34 +246,6 @@ class HostBindingProvider {
                     length: Math.max(alias.length, 1)
                 });
             }
-
-            const inlinePattern = /\[([A-Za-z_][A-Za-z0-9_.-]*)\s*:\s*([^\]\s]+)\]/g;
-            let inlineMatch = inlinePattern.exec(line);
-            while (inlineMatch) {
-                const kind = this.normalizeHostBindingKind(inlineMatch[1].trim());
-                const alias = inlineMatch[2].trim();
-                if (kind === requestedKind && alias.length > 0) {
-                    const aliasStart = inlineMatch.index + inlineMatch[0].lastIndexOf(inlineMatch[2]);
-                    this.addBinding(bindings, seen, {
-                        kind,
-                        name: alias,
-                        alias,
-                        assetId: "",
-                        unitySampleId: "",
-                        unityGuid: "",
-                        addressableKey: "",
-                        assetPath: "",
-                        sourcePath,
-                        sourceLabel: "Workspace legacy inline tag",
-                        sourceKind: "script",
-                        sourceRank: 1,
-                        line: lineIndex,
-                        character: Math.max(0, aliasStart),
-                        length: Math.max(alias.length, 1)
-                    });
-                }
-                inlineMatch = inlinePattern.exec(line);
-            }
         }
     }
 
@@ -333,7 +280,7 @@ class HostBindingProvider {
         const markdown = new this.vscode.MarkdownString(undefined, true);
         markdown.isTrusted = false;
         markdown.appendMarkdown("**Inscape Host Binding** `" + binding.kind + ":" + binding.alias + "`\n\n");
-        markdown.appendMarkdown("This resolves through Host Bridge or legacy binding data. `@timeline...` uses this as a host event / timing hook; `[` `kind: alias` `]` is kept as legacy inline host binding fallback. Ctrl+Click opens the configured mapping row or the first workspace occurrence.\n\n");
+        markdown.appendMarkdown("This resolves through Host Bridge or legacy binding data. `@timeline...` uses this as a host event / timing hook. Ctrl+Click opens the configured mapping row or the first workspace occurrence.\n\n");
         this.appendField(markdown, "Host asset id", binding.assetId);
         this.appendField(markdown, "Legacy UnitySample id", binding.unitySampleId);
         this.appendField(markdown, "Addressable", binding.addressableKey);

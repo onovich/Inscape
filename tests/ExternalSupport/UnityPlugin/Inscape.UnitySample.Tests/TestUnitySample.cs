@@ -18,11 +18,10 @@ namespace Inscape.Tests {
             Directory.CreateDirectory(timelineDirectory);
 
             File.WriteAllText(Path.Combine(directory, "story.inscape"), """
-:: start
+# start
 @entry
 Narrator: Hello.
 @timeline court.opening
-[timeline: court.close]
 @timeline court.opening
 """, Encoding.UTF8);
             File.WriteAllText(Path.Combine(timelineDirectory, "SO_Timeline_Court_Opening.asset"), """
@@ -56,9 +55,8 @@ guid: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
             AssertEqual(0, exitCode, "export-unity-sample-binding-template command exit code");
             AssertEqual("", error.ToString().Trim(), "export-unity-sample-binding-template stderr");
             AssertTrue(csv.Contains("kind,alias,unitySampleId,unityGuid,addressableKey,assetPath"), "Binding template should include header.");
-            AssertTrue(csv.Contains("timeline,court.close,,,,"), "Binding template should include inline timeline alias.");
             AssertTrue(csv.Contains("timeline,court.opening,101,aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa,,Assets/Resources_Runtime/Timeline/SO_Timeline_Court_Opening.asset"), "Binding template should fill matching timeline asset metadata.");
-            AssertEqual(3, CountCsvLines(csv), "Binding template CSV line count");
+            AssertEqual(2, CountCsvLines(csv), "Binding template CSV line count");
         }
 
         static void CliExportUnitySampleRoleTemplateEmitsCsv() {
@@ -66,7 +64,7 @@ guid: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
             Directory.CreateDirectory(directory);
 
             File.WriteAllText(Path.Combine(directory, "story.inscape"), """
-:: start
+# start
 @entry
 Narrator: Hello.
 Phoenix: Objection.
@@ -110,7 +108,7 @@ A quiet narration line.
             string roleNameCsvPath = Path.Combine(directory, "L10N_RoleName.csv");
             string reportPath = Path.Combine(directory, "UnitySample-roles.report.csv");
             File.WriteAllText(Path.Combine(directory, "story.inscape"), """
-:: start
+# start
 @entry
 Narrator: Hello.
 Liam: Hello.
@@ -168,7 +166,7 @@ ID,Desc,ZH_CN,EN_US,ES_ES
             Directory.CreateDirectory(existingTalkingDirectory);
 
             File.WriteAllText(Path.Combine(directory, "story.inscape"), """
-:: start
+# start
 @entry
 Narrator: Hello.
 @timeline court.opening
@@ -239,7 +237,7 @@ MonoBehaviour:
             Directory.CreateDirectory(existingTalkingDirectory);
 
             File.WriteAllText(Path.Combine(directory, "00-start.inscape"), """
-:: start
+# start
 @entry
 Narrator: Hello, "UnitySample".
 @timeline court.opening
@@ -247,7 +245,7 @@ Narrator: Hello, "UnitySample".
   - Continue -> second.node
 """, Encoding.UTF8);
             File.WriteAllText(Path.Combine(directory, "01-second.inscape"), """
-:: second.node
+# second.node
 A quiet line.
 """, Encoding.UTF8);
             File.WriteAllText(roleMapPath, "speaker,roleId\nNarrator,7\n", Encoding.UTF8);
@@ -356,7 +354,7 @@ MonoBehaviour:
             Directory.CreateDirectory(directory);
 
             File.WriteAllText(Path.Combine(directory, "story.inscape"), """
-:: start
+# start
 @entry
 Narrator: Hello.
 @timeline missing.timeline
@@ -409,14 +407,14 @@ Narrator: Hello.
             StoryGraphCompilerDomain compiler = new StoryGraphCompilerDomain();
             StoryGraphCompilationResultModel project = compiler.Compile(new List<DslScriptSourceModel> {
                 new DslScriptSourceModel("memory://story.inscape", """
-:: start
+# start
 @entry
 @timeline.node.enter court.node_enter
 Narrator: First line.
 @timeline.talking.exit court.first_exit
 @timeline.talking.enter court.second_enter
 Narrator: Second line.
-[timeline.node.exit: court.node_exit]
+@timeline.node.exit court.node_exit
 """),
             }, "memory://project");
 

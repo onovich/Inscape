@@ -14,7 +14,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 
 项目级研发认知：当前没有已发布版本和真实用户项目，因此不应为了旧版语法、旧配置或旧工具行为承担兼容成本。任何 legacy / fallback 都默认视为待迁移、待删除的研发债；只有为了短期切换验证才允许临时保留，并且必须同时记录删除节点。
 
-2026-05-17 已启动 Goal 0 研发期 legacy 清除：G0.1 已将主样例 `samples/court-loop.inscape` 从 `:: node.name` 迁到中文 `# 标题`，同步更新所有主样例跳转目标，并将内部测试 fixture 全部迁到 `#` 标题。G0.2 已移除 Compiler / LanguageServer 对 `:: node.name` 的解析和诊断兼容文案；`:: old.node` 当前会作为节点外内容报错，不再创建节点。G0.3 已移除 VSCode 对 `:: node.name` 的 TextMate 高亮、workspace index 扫描、snippet、编辑器样式和当前文档入口；下一步应推进 G0.4：移除 legacy inline host binding 行为、样例和工具提示。
+2026-05-17 已启动 Goal 0 研发期 legacy 清除：G0.1 已将主样例 `samples/court-loop.inscape` 从 `:: node.name` 迁到中文 `# 标题`，同步更新所有主样例跳转目标，并将内部测试 fixture 全部迁到 `#` 标题。G0.2 已移除 Compiler / LanguageServer 对 `:: node.name` 的解析和诊断兼容文案；`:: old.node` 当前会作为节点外内容报错，不再创建节点。G0.3 已移除 VSCode 对 `:: node.name` 的 TextMate 高亮、workspace index 扫描、snippet、编辑器样式和当前文档入口。G0.4 已移除 legacy `[kind: alias]` / `[timeline: alias]` inline host binding 的 VSCode 补全、Hover、Ctrl+Click、workspace 扫描、UnitySample bracket timeline 导出和样例文件；下一步应推进 G0.5：移除 `unitySample.roleMap` / `unitySample.bindingMap` fallback，统一使用 `hostBridge`。
 
 ### 2026-05-11 当前交接结论（最新）
 
@@ -230,7 +230,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - CLI：单文件和项目级 `check`、`diagnose`、`compile`、`preview`。
 - HTML 预览：支持单文件/项目级 IR、节点跳转、选择、回环、Restart、Back、路径和锚点显示。
 - 本地化：CSV 提取、按旧 CSV 精确继承译文、`current/new/removed` 状态标记。
-- VSCode 原型：TextMate 高亮、snippets、诊断桥接、节点补全、角色补全、宿主绑定别名补全、Outline、跳转定义、引用查找、Hover、block CodeLens、本地化导出/更新命令，以及可玩预览 custom editor。角色补全会读取 `inscape.config.json` 中的 `unitySample.roleMap`，并回退扫描工作区已有 speaker；角色 Ctrl+Click 会跳到 role map 对应行，Find All References 会列出工作区对白；block 标题 CodeLens 显示 `N 个引用`，用于追溯调用方；宿主绑定提示会读取 `unitySample.bindingMap`，覆盖 `@timeline ...` 和 `[kind: ...]` 位置；预览默认侧边打开，支持源码回跳、Back / Restart、点击正文继续和刷新后保留当前页进度。
+- VSCode 原型：TextMate 高亮、snippets、诊断桥接、节点补全、角色补全、宿主绑定别名补全、Outline、跳转定义、引用查找、Hover、block CodeLens、本地化导出/更新命令，以及可玩预览 custom editor。角色补全会优先读取 `hostBridge`，当前仍回退 `unitySample.roleMap` 并扫描工作区已有 speaker；角色 Ctrl+Click 会跳到 role map 对应行，Find All References 会列出工作区对白；block 标题 CodeLens 显示 `N 个引用`，用于追溯调用方；宿主绑定提示会优先读取 `hostBridge`，当前仍回退 `unitySample.bindingMap`，只覆盖 `@timeline ...` / `@timeline.<phase> ...` 位置；预览默认侧边打开，支持源码回跳、Back / Restart、点击正文继续和刷新后保留当前页进度。
 - Bird/Unity 初步调研：已梳理 `StorySystem`、`TalkingTM`、`L10N_Talking`、`DirectorSystem` 和 `TimelineEffectTM` 的边界，详见 [Bird / Unity 调研记录](bird-unity-research.md)。
 - UnitySample Adapter 实验样例：`export-unity-sample-role-template`、`export-unity-sample-binding-template`、`export-unity-sample-project` 和 `merge-unity-sample-l10n` 保留早期固定数据结构导出验证。适配器位于 `src/ExternalSupport/UnityPlugin/Inscape.Adapters.UnitySample`，命令入口位于 `src/ExternalSupport/UnityPlugin/Inscape.UnitySample.Cli`；它们不得反向污染 Compiler 或 Internal CLI。详见 [UnitySample Adapter 实验样例](unity-sample-adapter.md)。
 - 项目配置：CLI 会自动读取项目根目录 `inscape.config.json`，也支持 `--config path`。当前配置为 UnitySample 样例命令提供默认值：`talkingIdStart`、`roleMap`、`bindingMap`、`existingRoleNameCsv`、`existingTimelineRoot`、`existingTalkingRoot`；命令行参数优先级更高。这仍不是最终 Host Bridge。详见 [项目配置草案](project-config.md)。
@@ -335,7 +335,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
    - 上层拿到 Inscape 事件 / 数据后的消费方式仍待定：可以直接绑定事件，也可以轮询叙事状态，或允许项目选择混合模型。
    - 适配层长期应由 Host Schema / Host Bridge / 代码生成驱动，UnitySample 可保留为 generator 回归样例。
    - 当前样例命令包括 `export-unity-sample-project`、`export-unity-sample-role-template`、`export-unity-sample-binding-template` 和 `merge-unity-sample-l10n`。
-   - Timeline Hook 已支持 metadata：`@timeline alias` / `[timeline: alias]` 默认 `talking.exit`，也支持 `@timeline.talking.enter alias`、`@timeline.talking.exit alias`、`@timeline.node.enter alias`、`@timeline.node.exit alias` 和对应 bracket 写法，导出为 manifest `hostHooks`。
+   - Timeline Hook 当前只支持 metadata：`@timeline alias` 默认 `talking.exit`，也支持 `@timeline.talking.enter alias`、`@timeline.talking.exit alias`、`@timeline.node.enter alias`、`@timeline.node.exit alias`，导出为 manifest `hostHooks`。
    - 后续适配重点：把当前固定 CSV / manifest / L10N 输出抽象为可配置、可生成的桥接流程。
 
 4. VSCode 预览增量体验：
