@@ -10,9 +10,9 @@
 
 下一位接手者建议按以下顺序推进：
 
-1. 按 [/goal 后续目标计划](goal-plan.md) 推进 Goal 2：本地化 diff / alignment 迁移，保护已有好翻译并揭示新增、删除、改写和歧义文本。
-2. 按 [/goal 后续目标计划](goal-plan.md) 推进 Goal 3：`# 标题` 语法第一刀，保留旧 `:: node.name` 兼容路径。
-3. 按 [/goal 后续目标计划](goal-plan.md) 推进 Goal 4：VSCode 标题语法体验，让高亮、Outline、补全、跳转和自动 `_01` 编号跟上新块语法。
+1. 按 [/goal 后续目标计划](goal-plan.md) 推进 Goal 3：`# 标题` 语法第一刀，保留旧 `:: node.name` 兼容路径。
+2. 按 [/goal 后续目标计划](goal-plan.md) 推进 Goal 4：VSCode 标题语法体验，让高亮、Outline、补全、跳转和自动 `_01` 编号跟上新块语法。
+3. 按 [/goal 后续目标计划](goal-plan.md) 推进 Goal 5：LanguageServer 接管 VSCode 更多语义能力，优先 outline / node completion。
 4. 收敛 Host Schema 脚本作者体验后续：Tooling 已有 query / event reader，CLI 已提供 `inspect-host-schema-project` capability endpoint，VSCode 已优先消费该 endpoint 并保留直接 JSON fallback；下一步按 [VSCode LanguageServer Migration Plan](vscode-language-server-migration-plan.md) 评估是否把 capability endpoint 下沉到 LanguageServer，或继续清理 JS fallback 重复解析。
 5. 继续打磨 VSCode 可玩预览：补未保存内容的更细粒度热刷新、刷新中状态提示，以及可选的预览 / 源码同步策略。
 	- 正文 / 选项文本不再用 `DocumentLinkProvider`，因为它会导致整段文本常驻下划线；当前用 `DefinitionProvider` 恢复“默认无下划线、Ctrl+指向才显示链接态”的编辑体验，并通过 selection bridge 在 Ctrl+Click 后执行预览定位，显式命令仅作为兜底。
@@ -187,7 +187,7 @@
 - [x] 定义并实现行级隐式 hash 的输入、规范化规则、版本号和碰撞处理。
 - [x] 实现第一版本地化 CSV 提取，覆盖旁白、对白、选择提示和选择项。
 - [x] 实现旧翻译表按锚点精确继承，并标记新增、保留、删除条目。
-- [ ] 设计旧翻译表的模糊匹配与人工确认流程。
+- [x] 设计旧翻译表的模糊匹配与人工确认流程；详见 [Localization Diff Alignment Contract](localization-diff-alignment-contract.md)。
 - [ ] 设计显式稳定 ID 或迁移表，用于处理节点重命名和重复文本插入。
 	- [x] 决定标题不作为长期机器 ID，stable node id 由系统维护；标题仍是作者可见主身份。
 	- [x] 定义 stable node id / title map 的 JSON 契约和冲突解决策略；详见 [Stable Node ID Contract](stable-node-id-contract.md)。

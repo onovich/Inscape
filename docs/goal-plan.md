@@ -47,6 +47,8 @@
 
 ## Goal 2：本地化 diff / alignment 迁移
 
+状态：已完成设计，见 [Localization Diff Alignment Contract](localization-diff-alignment-contract.md)。
+
 目标：保护已有好翻译，同时正确揭示新增、删除、改写和歧义文本。
 
 产出：
@@ -58,9 +60,9 @@
 
 小节点：
 
-- G2.1 设计 localization update 的状态机和 CSV / report 字段。
-- G2.2 设计 stable node id + line anchor + occurrence + diff 的对齐流程。
-- G2.3 设计 CLI `update-l10n` 的兼容迁移计划，不改变当前行为。
+- [x] G2.1 设计 localization update 的状态机和 CSV / report 字段。
+- [x] G2.2 设计 stable node id + line anchor + occurrence + diff 的对齐流程。
+- [x] G2.3 设计 CLI `update-l10n` 的兼容迁移计划，不改变当前行为。
 
 验收：
 

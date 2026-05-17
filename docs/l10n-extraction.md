@@ -75,7 +75,7 @@ anchor,node,kind,speaker,text,translation,status,sourcePath,line,column
 ## 后续问题
 
 - 是否需要直接输出 PO/XLIFF。
-- 是否需要做模糊匹配，用来识别“文本轻微改写但仍可复用译文”的条目。
+- 模糊匹配与人工确认流程已形成设计：增强版更新应先做 anchor 精确继承，再在同一 stable node id 内做 diff / alignment，只输出候选和 review report，不自动静默复用相似文本译文。详见 [Localization Diff Alignment Contract](localization-diff-alignment-contract.md)。
 - 选择组提示是否最终保留为用户可见文本，还是变成编辑器辅助信息。
 - 是否需要给角色显示名、资源别名和 UI 文案建立独立提取源。
 - 当前 CSV 字段和列顺序只是第一版工具格式，后续需要结合 Bird 项目的 `L10N` 真实格式再评估。
