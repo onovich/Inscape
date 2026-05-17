@@ -123,9 +123,14 @@ const dslScriptHostEventProvider = new DslScriptHostEventProvider({
 });
 
 const dslScriptCompletionProvider = new DslScriptCompletionProvider({
+    childProcess,
+    fs,
+    os,
+    path,
     vscode,
     isInscapeDocument,
     isJumpTargetContext,
+    resolveLanguageServerProjectPath: (workspaceFolderPath) => resolveLanguageServerProjectPathFromBase(workspaceFolderPath, __dirname),
     isSpeakerCompletionContext,
     dslScriptNodeProvider,
     dslScriptSpeakerProvider,

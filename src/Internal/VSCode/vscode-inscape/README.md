@@ -9,7 +9,7 @@ This is the first lightweight authoring layer for `.inscape` scripts. It keeps s
 - Provides basic snippets for nodes, dialogue, choices, jumps, metadata, and inline tags.
 - Keeps metadata and inline tags on comment-like scopes so themes can visually soften them while prose remains readable.
 - Refreshes diagnostics through `Inscape.LanguageServer --diagnose-project <workspace> --override <source> <temp-file>` first, then falls back to the configured CLI `diagnose-project` invocation if the LanguageServer probe is unavailable.
-- Provides workspace node completions in jump target positions.
+- Provides node completions in jump target positions through `Inscape.LanguageServer --completion-file`, with JS workspace node fallback for cross-file nodes and probe failures.
 - Provides `Inscape: Insert Node Title`; if the requested title already exists, the command inserts the next `_01`-style title.
 - Provides dialogue speaker completions from `inscape.config.json` `hostBridge`, with legacy `unitySample.roleMap` and workspace speaker fallback.
 - Provides host event / timing hook completions from `inscape.config.json` `hostBridge`, with legacy `unitySample.bindingMap` fallback for `@timeline ...`, `@timeline.<phase> ...`, and legacy `[kind: ...]` inline host binding positions.
@@ -92,6 +92,7 @@ After installation, reload the VSCode window before judging behavior. Manual smo
 - `-> target` Go to Definition and Find All References still work.
 - `# 标题` appears in highlighting, Outline, jump completion, Go to Definition, Find All References, Hover, and node CodeLens.
 - Outline is served by LanguageServer first; if that probe fails, the extension falls back to the JS node scanner instead of breaking the view.
+- Jump target node completion is served by LanguageServer first, then augmented by the JS workspace scanner so cross-file authoring remains available.
 - Speaker completion, Hover, Go to Definition, and Find All References prefer `hostBridge` and still fall back to legacy `unitySample.roleMap`.
 - `@timeline ...` host event / timing hook and legacy `[kind: alias]` inline host binding completion, Hover, and Ctrl+Click prefer `hostBridge` and still fall back to legacy `unitySample.bindingMap`.
 - `[query.path]` query interpolation completion and Hover read Host Schema queries, while legacy `[kind: alias]` remains in the Host Bridge / legacy binding path.

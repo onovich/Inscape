@@ -3,15 +3,21 @@
 class DslScriptCompletionProvider {
 
     constructor(dependencies) {
+        this.childProcess = dependencies.childProcess;
+        this.fs = dependencies.fs;
+        this.os = dependencies.os;
+        this.path = dependencies.path;
         this.vscode = dependencies.vscode;
         this.isInscapeDocument = dependencies.isInscapeDocument;
         this.isJumpTargetContext = dependencies.isJumpTargetContext;
+        this.resolveLanguageServerProjectPath = dependencies.resolveLanguageServerProjectPath;
         this.isSpeakerCompletionContext = dependencies.isSpeakerCompletionContext;
         this.dslScriptNodeProvider = dependencies.dslScriptNodeProvider;
         this.dslScriptSpeakerProvider = dependencies.dslScriptSpeakerProvider;
         this.hostBindingProvider = dependencies.hostBindingProvider;
         this.dslScriptQueryInterpolationProvider = dependencies.dslScriptQueryInterpolationProvider;
         this.dslScriptHostEventProvider = dependencies.dslScriptHostEventProvider;
+        this.languageServerCompletionsByDocumentVersion = new Map();
     }
 
     async provideCompletionItems(document, position) {
@@ -21,16 +27,7 @@ class DslScriptCompletionProvider {
 
         const linePrefix = document.lineAt(position).text.slice(0, position.character);
         if (this.isJumpTargetContext(linePrefix)) {
-            const nodes = await this.dslScriptNodeProvider.collectWorkspaceNodes(document);
-            return nodes.map((node) => {
-                const name = node.name;
-                const item = new this.vscode.CompletionItem(name, this.vscode.CompletionItemKind.Reference);
-                item.insertText = name;
-                item.detail = node.sourcePath === document.uri.fsPath ? "Inscape node in this file" : "Inscape project node";
-                item.documentation = node.sourcePath;
-                item.sortText = "0_" + name;
-                return item;
-            });
+            return this.provideNodeCompletions(document);
         }
 
         const hostBindingContext = this.hostBindingProvider.getBindingCompletionContext(linePrefix);
@@ -73,6 +70,137 @@ class DslScriptCompletionProvider {
         }
 
         return undefined;
+    }
+
+    async provideNodeCompletions(document) {
+        const items = [];
+        const seen = new Set();
+        const languageServerCompletions = await this.collectLanguageServerNodeCompletions(document);
+
+        for (const completion of languageServerCompletions) {
+            const item = this.createNodeCompletionItem(completion.label, completion.location, "LanguageServer node");
+            item.sortText = "0_" + completion.label;
+            items.push(item);
+            seen.add(completion.label);
+        }
+
+        const nodes = await this.dslScriptNodeProvider.collectWorkspaceNodes(document);
+        for (const node of nodes) {
+            if (seen.has(node.name)) {
+                continue;
+            }
+            const item = this.createNodeCompletionItem(node.name, node, node.sourcePath === document.uri.fsPath ? "Inscape node in this file" : "Inscape project node");
+            item.sortText = "1_" + node.name;
+            items.push(item);
+            seen.add(node.name);
+        }
+
+        return items;
+    }
+
+    createNodeCompletionItem(name, location, detail) {
+        const item = new this.vscode.CompletionItem(name, this.vscode.CompletionItemKind.Reference);
+        item.insertText = name;
+        item.detail = detail;
+        if (location && location.sourcePath) {
+            item.documentation = location.sourcePath;
+        }
+        return item;
+    }
+
+    async collectLanguageServerNodeCompletions(document) {
+        const cacheKey = this.createCacheKey(document);
+        if (this.languageServerCompletionsByDocumentVersion.has(cacheKey)) {
+            return this.languageServerCompletionsByDocumentVersion.get(cacheKey);
+        }
+
+        const tempPath = this.writeTempDocument(document);
+        try {
+            const workspaceFolderPath = this.getWorkspaceFolderPath(document);
+            const command = this.getDotnetCommand(document);
+            const result = await this.execFilePromise(command, [
+                "run",
+                "--project",
+                this.resolveLanguageServerProjectPath(workspaceFolderPath),
+                "--",
+                "--completion-file",
+                tempPath
+            ], workspaceFolderPath);
+
+            const payload = JSON.parse(result.stdout);
+            if (!payload
+                || payload.format !== "inscape.language-server-completions"
+                || payload.formatVersion !== 1
+                || !Array.isArray(payload.completions)) {
+                return [];
+            }
+
+            const completions = payload.completions.filter((completion) => completion && typeof completion.label === "string");
+            this.languageServerCompletionsByDocumentVersion.set(cacheKey, completions);
+            return completions;
+        } catch {
+            return [];
+        } finally {
+            this.deleteTempFile(tempPath);
+        }
+    }
+
+    writeTempDocument(document) {
+        const directory = this.path.join(this.os.tmpdir(), "inscape-vscode");
+        this.fs.mkdirSync(directory, { recursive: true });
+
+        const baseName = this.path.basename(document.uri.fsPath || "document.inscape");
+        const fileName = process.pid + "-" + Date.now() + "-" + Math.random().toString(16).slice(2) + "-completion-" + baseName;
+        const tempPath = this.path.join(directory, fileName);
+        this.fs.writeFileSync(tempPath, document.getText(), "utf8");
+        return tempPath;
+    }
+
+    deleteTempFile(tempPath) {
+        try {
+            this.fs.unlinkSync(tempPath);
+        } catch {
+        }
+    }
+
+    getWorkspaceFolderPath(document) {
+        const folder = this.vscode.workspace.getWorkspaceFolder(document.uri);
+        if (folder) {
+            return folder.uri.fsPath;
+        }
+
+        if (this.vscode.workspace.workspaceFolders && this.vscode.workspace.workspaceFolders.length > 0) {
+            return this.vscode.workspace.workspaceFolders[0].uri.fsPath;
+        }
+
+        return this.path.resolve(__dirname, "..", "..", "..", "..", "..");
+    }
+
+    getDotnetCommand(document) {
+        const configuration = this.vscode.workspace.getConfiguration("inscape", document.uri);
+        return configuration.get("compiler.command", "dotnet");
+    }
+
+    execFilePromise(command, args, cwd) {
+        return new Promise((resolve, reject) => {
+            this.childProcess.execFile(command, args, {
+                cwd,
+                windowsHide: true,
+                timeout: 10000,
+                maxBuffer: 1024 * 1024
+            }, (error, stdout, stderr) => {
+                if (error) {
+                    reject(error);
+                    return;
+                }
+                resolve({ stdout, stderr });
+            });
+        });
+    }
+
+    createCacheKey(document) {
+        const version = typeof document.version === "number" ? document.version : document.getText();
+        return document.uri.toString() + ":" + version;
     }
 
 }
