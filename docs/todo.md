@@ -13,7 +13,7 @@
 1. 收敛 Host Schema 脚本作者体验后续：Tooling 已有 query / event reader，CLI 已提供 `inspect-host-schema-project` capability endpoint，VSCode 已优先消费该 endpoint 并保留直接 JSON fallback；下一步按 [VSCode LanguageServer Migration Plan](vscode-language-server-migration-plan.md) 评估是否把 capability endpoint 下沉到 LanguageServer，或继续清理 JS fallback 重复解析。
 2. 继续打磨 VSCode 可玩预览：补未保存内容的更细粒度热刷新、刷新中状态提示，以及可选的预览 / 源码同步策略。
 	- 正文 / 选项文本不再用 `DocumentLinkProvider`，因为它会导致整段文本常驻下划线；当前用 `DefinitionProvider` 恢复“默认无下划线、Ctrl+指向才显示链接态”的编辑体验，并通过 selection bridge 在 Ctrl+Click 后执行预览定位，显式命令仅作为兜底。
-3. 推进 VSCode 前端接入 LanguageServer：diagnostics 已优先调用 LanguageServer project probe 并保留 CLI fallback；下一步做真实 VSCode `.vsix` smoke test，再考虑 outline / node completion。
+3. 推进 VSCode 前端接入 LanguageServer：diagnostics 已优先调用 LanguageServer project probe 并保留 CLI fallback；`.vsix` rebuild / install 已完成，用户粗测 VSCode 体验基本 OK；下一步考虑 outline / node completion，或在删除 fallback 前补一次 CLI fallback 专项 smoke test。
 4. 设计本地化模糊匹配与人工确认报告，不要直接自动复用相似文本译文。
 5. 设计节点重命名迁移策略、显式稳定 ID 或迁移表，用于处理节点重命名和重复文本插入。
 6. 收敛第一版块语法：继续使用 `:: node.name`，还是转向 `# 标题` + 空行分块。
@@ -219,7 +219,8 @@
 - [x] 为 LanguageServer diagnostics / definition / references / completion / outline / hover 建立 probe parity 测试，作为 VSCode client 切换前置条件。
 - [x] 设计并实现 LanguageServer 项目级 diagnostics endpoint：`--diagnose-project <root> [--entry node.name] [--override source.inscape temp.inscape]`，覆盖 unsaved override；VSCode 仍保留 CLI diagnostics fallback。
 - [x] 让 VSCode diagnostics 优先调用 LanguageServer project diagnostics probe，并保留现有 CLI `diagnose-project` fallback。
-- [ ] 对 VSCode LanguageServer diagnostics 接入执行 `.vsix` rebuild / install / Reload Window 手动 smoke test，确认 Problems、未保存内容 override 与 CLI fallback 行为。
+- [x] 对 VSCode LanguageServer diagnostics 接入执行 `.vsix` rebuild / install，并由用户粗测 VSCode 体验基本 OK。
+- [ ] 若后续准备删除 CLI fallback，先补一次 LanguageServer 不可用场景下的 CLI diagnostics fallback 专项 smoke test。
 - [x] 设计补全数据来源：当前文件节点、项目节点、角色表、宿主绑定表、宿主 Schema 查询 / 事件清单。
 - [x] 将 `hostSchema` 中的事件清单接入 `.inscape` 脚本补全与 Hover，不改变当前 DSL 编译语义。
 - [x] 评估 VSCode JS query / event provider 是否应复用 `Inscape.Tooling` Host Schema reader / audit 契约：结论是 Tooling 先补齐 event reader，VSCode 暂保留轻量 JS reader；后续通过 LanguageServer 或显式 CLI capability endpoint 复用 Tooling，避免直接从扩展热路径启动 .NET。
