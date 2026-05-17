@@ -54,7 +54,7 @@
   ],
   "indentationRules": {
     "increaseIndentPattern": "^\\s*\\?\\s+.*$",
-    "decreaseIndentPattern": "^\\s*::\\s+[a-z][a-z0-9_-]*(?:\\.[a-z][a-z0-9_-]*)*\\s*$"
+    "decreaseIndentPattern": "^\\s*#\\s+\\S.*$"
   },
   "wordPattern": "(-?\\d*\\.\\d\\w*)|([^`~!@#$%^&*()+=[\\]{}\\\\|;:'\\\",<>/?\\s：，。！？；、]+)"
 }

@@ -5,7 +5,7 @@ This is the first lightweight authoring layer for `.inscape` scripts. It keeps s
 ## Capabilities
 
 - Registers the `inscape` language ID for `.inscape` files.
-- Highlights `# 标题` node headers, legacy `:: node.name` headers, dialogue speakers, narration, choices, jumps, metadata lines, inline tags, and invalid node or jump target spellings.
+- Highlights `# 标题` node headers, dialogue speakers, narration, choices, jumps, metadata lines, inline tags, and invalid jump target spellings.
 - Provides basic snippets for nodes, dialogue, choices, jumps, metadata, and inline tags.
 - Keeps metadata and inline tags on comment-like scopes so themes can visually soften them while prose remains readable.
 - Refreshes diagnostics through `Inscape.LanguageServer --diagnose-project <workspace> --override <source> <temp-file>` first, then falls back to the configured CLI `diagnose-project` invocation if the LanguageServer probe is unavailable.
@@ -34,7 +34,7 @@ This is the first lightweight authoring layer for `.inscape` scripts. It keeps s
 
 ## Quick Authoring Guide
 
-- `# 标题` starts a dialogue block. Legacy `:: node.name` still works during migration.
+- `# 标题` starts a dialogue block.
 - `角色：文本` writes dialogue; `旁白：文本` works the same way.
 - `? 提示` starts a choice prompt.
 - `- 选项 -> 目标标题` adds a choice.

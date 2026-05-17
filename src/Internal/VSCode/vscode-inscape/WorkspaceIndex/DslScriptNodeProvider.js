@@ -181,15 +181,6 @@ class DslScriptNodeProvider {
     }
 
     parseDeclaredNodeLine(line) {
-        const legacyMatch = /^\s*::\s+([a-z][a-z0-9_-]*(?:\.[a-z][a-z0-9_-]*)*)\s*$/.exec(line);
-        if (legacyMatch) {
-            return {
-                name: legacyMatch[1],
-                syntaxKind: "legacyNodeName",
-                character: Math.max(0, line.indexOf(legacyMatch[1]))
-            };
-        }
-
         const hashIndex = line.indexOf("#");
         if (hashIndex < 0 || line.slice(0, hashIndex).trim().length > 0) {
             return undefined;
@@ -229,8 +220,7 @@ class DslScriptNodeProvider {
     }
 
     isValidJumpTarget(target) {
-        return /^[a-z][a-z0-9_-]*(?:\.[a-z][a-z0-9_-]*)*$/.test(target)
-            || this.isValidTitle(target);
+        return this.isValidTitle(target);
     }
 
     isValidTitle(title) {

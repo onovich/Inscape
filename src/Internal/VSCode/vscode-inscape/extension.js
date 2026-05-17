@@ -529,8 +529,7 @@ function isSpeakerCompletionContext(linePrefix) {
         return true;
     }
 
-    if (trimmed.startsWith("::")
-        || trimmed.startsWith("@")
+    if (trimmed.startsWith("@")
         || trimmed.startsWith("//")
         || trimmed.startsWith("->")
         || trimmed.startsWith("?")
@@ -554,7 +553,6 @@ function normalizeHostBindingKind(kind) {
 
 function isLikelyDialogueSpeaker(name) {
     return name.length > 0
-        && !name.startsWith("::")
         && !name.startsWith("@")
         && !name.startsWith("//")
         && !name.startsWith("->")

@@ -52,7 +52,7 @@ class PreviewRevealBridge {
         }
 
         const trimmed = line.trim();
-        if (trimmed.startsWith("//") || trimmed.startsWith("::") || trimmed.startsWith("@") || trimmed.startsWith("->")) {
+        if (trimmed.startsWith("//") || trimmed.startsWith("@") || trimmed.startsWith("->")) {
             return undefined;
         }
 

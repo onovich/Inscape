@@ -46,30 +46,6 @@
               "name": "entity.name.section.node-title.inscape"
             }
           }
-        },
-        {
-          "name": "meta.node.header.inscape",
-          "match": "^(\\s*)(::)(\\s*)([a-z][a-z0-9_-]*(?:\\.[a-z][a-z0-9_-]*)*)\\s*$",
-          "captures": {
-            "2": {
-              "name": "keyword.control.node.inscape"
-            },
-            "4": {
-              "name": "variable.other.node-name.inscape"
-            }
-          }
-        },
-        {
-          "name": "meta.node.header.invalid.inscape",
-          "match": "^(\\s*)(::)(\\s*)(.*)$",
-          "captures": {
-            "2": {
-              "name": "keyword.control.node.inscape"
-            },
-            "4": {
-              "name": "invalid.illegal.node-name.inscape"
-            }
-          }
         }
       ]
     },

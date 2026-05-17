@@ -150,7 +150,7 @@ class EditorStyleController {
                 continue;
             }
 
-            let match = /^(\s*)(::)(\s*)([a-z][a-z0-9_-]*(?:\.[a-z][a-z0-9_-]*)*)\s*$/.exec(text);
+            let match = /^(\s*)(#)(\s*)(\S(?:.*\S)?)\s*$/.exec(text);
             if (match) {
                 this.pushStyleRange(ranges.nodeName, lineNumber, match.index + match[1].length + match[2].length + match[3].length, match[4].length);
                 continue;
@@ -167,7 +167,7 @@ class EditorStyleController {
                 continue;
             }
 
-            match = /^(\s*)(->)(\s*)([a-z][a-z0-9_-]*(?:\.[a-z][a-z0-9_-]*)*)\s*$/.exec(text);
+            match = /^(\s*)(->)(\s*)([^/\\\r\n]*\S[^/\\\r\n]*)\s*$/.exec(text);
             if (match) {
                 this.pushStyleRange(ranges.jumpTarget, lineNumber, match.index + match[1].length + match[2].length + match[3].length, match[4].length);
                 continue;

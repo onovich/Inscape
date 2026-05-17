@@ -35,7 +35,7 @@
 - [ ] 清除研发期 legacy / fallback。
 	- [x] 将主样例和内部测试从 `:: node.name` 迁到 `# 标题`。
 	- [x] 移除 Compiler / LanguageServer 对 `:: node.name` 的解析和诊断兼容文案。
-	- [ ] 移除 VSCode 对 `:: node.name` 的扫描、高亮和 snippet。
+	- [x] 移除 VSCode 对 `:: node.name` 的扫描、高亮和 snippet。
 	- [ ] 移除 legacy `[kind: alias]` / `[timeline: alias]` inline host binding 行为、样例和工具提示。
 	- [ ] 移除 `unitySample.roleMap` / `unitySample.bindingMap` fallback，统一使用 `hostBridge`。
 	- [ ] 清理当前行为文档中的 legacy / compatibility 口径，只在 ADR 或历史审计文档保留背景。
@@ -200,7 +200,7 @@
 - [x] 设计源映射格式，覆盖节点、行、选项、跳转和诊断。
 - [x] 实现项目级多文件编译与跨文件跳转诊断。
 - [x] 设计并实现第一版项目入口声明：节点内 `@entry`。
-- [x] 设计并实现项目入口 CLI 覆盖策略：项目级命令支持 `--entry node.name`。
+- [x] 设计并实现项目入口 CLI 覆盖策略：项目级命令支持 `--entry 标题`。
 
 ## VSCode 支持
 
@@ -227,7 +227,7 @@
 - [x] 补齐 C# Language Server 第一版能力范围：diagnostics、definition、references、completion、outline、hover 都已有基线 probe。
 - [x] 设计 VSCode 前端何时从 JS provider 切到 LanguageServer，并保留哪些 fallback 边界；详见 [VSCode LanguageServer Migration Plan](vscode-language-server-migration-plan.md)。
 - [x] 为 LanguageServer diagnostics / definition / references / completion / outline / hover 建立 probe parity 测试，作为 VSCode client 切换前置条件。
-- [x] 设计并实现 LanguageServer 项目级 diagnostics endpoint：`--diagnose-project <root> [--entry node.name] [--override source.inscape temp.inscape]`，覆盖 unsaved override；VSCode 仍保留 CLI diagnostics fallback。
+- [x] 设计并实现 LanguageServer 项目级 diagnostics endpoint：`--diagnose-project <root> [--entry 标题] [--override source.inscape temp.inscape]`，覆盖 unsaved override；VSCode 仍保留 CLI diagnostics fallback。
 - [x] 让 VSCode diagnostics 优先调用 LanguageServer project diagnostics probe，并保留现有 CLI `diagnose-project` fallback。
 - [x] 对 VSCode LanguageServer diagnostics 接入执行 `.vsix` rebuild / install，并由用户粗测 VSCode 体验基本 OK。
 - [x] 让 VSCode document symbols / Outline 优先调用 LanguageServer `--document-symbols-file` probe，并保留 JS `DslScriptNodeProvider` fallback。
@@ -240,7 +240,7 @@
 - [x] 让 VSCode 消费 Host Schema capability endpoint / Tooling 契约：query / event provider 优先调用 `inspect-host-schema-project`，失败时回退直接 JSON 读取。
 - [ ] 按 [VSCode LanguageServer Migration Plan](vscode-language-server-migration-plan.md) 评估是否把 Host Schema capability endpoint 下沉到 LanguageServer，并在 VSCode 稳定后移除 JS provider 的重复 JSON fallback。
 - [x] 定义第一版诊断清单：重复节点、非法节点名、缺失目标、不可达节点、空节点、选项语法问题。
-- [x] Compiler 第一刀支持 `# 标题`：保留 `:: node.name` 兼容路径，新增标题唯一诊断、标题前缺空行 info 级 style hint，并覆盖中文标题跳转测试。
+- [x] Compiler 支持 `# 标题`：当前已移除 `:: node.name` 兼容路径，新增标题唯一诊断、标题前缺空行 info 级 style hint，并覆盖中文标题跳转测试。
 - [x] VSCode 标题语法体验：TextMate 高亮、snippets、Outline / completion / definition / references 识别标题，以及 `Inscape: Insert Node Title` 命令在创建同名标题时自动生成 `_01` 编号。
 
 ## HTML 调试预览

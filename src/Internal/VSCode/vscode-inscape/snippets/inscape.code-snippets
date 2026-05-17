@@ -8,15 +8,6 @@
     ],
     "description": "Create an Inscape node."
   },
-  "Legacy Node": {
-    "prefix": "node-legacy",
-    "body": [
-      ":: ${1:chapter.scene}",
-      "",
-      "$0"
-    ],
-    "description": "Create a legacy Inscape node name."
-  },
   "Dialogue": {
     "prefix": "say",
     "body": [

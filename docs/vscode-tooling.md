@@ -68,7 +68,7 @@ Inscape 的默认阅读优先级应当是：
 ## 已提供能力
 
 - 注册 `.inscape` 文件扩展名和 `inscape` language ID。
-- 高亮节点头：推荐 `# 标题`，并继续兼容旧 `:: node.name`
+- 高亮节点头：`# 标题`
 - 高亮对白：`角色：对白`
 - 高亮旁白、选择提示、选项、跳转、元信息和行内标签。
 - 标记明显非法的节点名或跳转目标。
@@ -79,7 +79,7 @@ Inscape 的默认阅读优先级应当是：
 - 在 `@timeline ...`、`@timeline.<phase> ...` 这类宿主事件 / 时机 hook 位置补全 Host Bridge ID；同时对 legacy `[kind: ...]` inline host binding 位置保留兼容补全。补全优先读取 `inscape.config.json` 中 `hostBridge`，再回退到 legacy `unitySample.bindingMap` 指向的 `kind,alias,unitySampleId,unityGuid,addressableKey,assetPath` 表；未配置时回退扫描工作区已有 hook / legacy inline tag。
 - 在 `->` 跳转目标上支持 Go to Definition / Ctrl+Click。
 - 在对白 speaker 上支持 Go to Definition / Ctrl+Click，优先跳到 `hostBridge` 中 `kind: "speaker"` 的配置项；没有 Host Bridge 时回退到 legacy `unitySample.roleMap` 中对应的 `speaker` 行；没有配置角色表时，再回退到工作区内该 speaker 的对白引用位置。语言配置会把 `：` 和常见中文标点视为词边界，使 Ctrl+Click 的可跳转下划线只覆盖 speaker 名称，而不是整句对白。
-- 在节点声明、`->` 跳转目标或对白 speaker 上支持 Find All References；`# 标题` 与旧 `:: node.name` 共用同一条节点索引路径。
+- 在节点声明、`->` 跳转目标或对白 speaker 上支持 Find All References；节点索引只识别当前 `# 标题` 语法。
 - 在节点标题上显示 CodeLens：`N 个引用`，点击后使用 VSCode References Peek 追溯跳到当前 block 的调用方。
 - 在节点声明和 `->` 跳转目标上显示简短 Hover 类型说明，不在跳转目标上显示统计信息。
 - 在对白 speaker 上显示 Hover 摘要：角色名、Host Bridge 或 legacy UnitySample 绑定状态和来源表。
@@ -254,7 +254,7 @@ dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- diagnose
 
 `diagnose-project` 输出项目级 JSON payload，合并工作区内所有 `.inscape` 文件，并用临时文件内容覆盖当前正在编辑的源文件。它不向 stderr 打印人类可读诊断，并且只要 CLI 正常执行就返回 `0`。这样编辑器可以区分“脚本里有语法错误”和“编译器进程不可用”。
 
-项目扫描会忽略 `.git`、`bin`、`obj`、`node_modules` 和 `artifacts` 目录。第一版项目规则是节点名在项目内全局唯一，跨文件跳转不需要 `include`。项目入口使用节点内 `@entry` 声明；未声明时编译器会兼容回退到按文件路径排序后的第一个节点。项目级 CLI 支持 `--entry node.name` 临时覆盖入口，供预览和调试使用。
+项目扫描会忽略 `.git`、`bin`、`obj`、`node_modules` 和 `artifacts` 目录。第一版项目规则是节点标题在项目内全局唯一，跨文件跳转不需要 `include`。项目入口使用节点内 `@entry` 声明；未声明时编译器会回退到按文件路径排序后的第一个节点。项目级 CLI 支持 `--entry 标题` 临时覆盖入口，供预览和调试使用。
 
 同一套桥接方式已经复用于本地化命令。VSCode 命令面板提供：
 

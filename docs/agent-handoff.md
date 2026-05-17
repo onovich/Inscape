@@ -14,7 +14,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 
 项目级研发认知：当前没有已发布版本和真实用户项目，因此不应为了旧版语法、旧配置或旧工具行为承担兼容成本。任何 legacy / fallback 都默认视为待迁移、待删除的研发债；只有为了短期切换验证才允许临时保留，并且必须同时记录删除节点。
 
-2026-05-17 已启动 Goal 0 研发期 legacy 清除：G0.1 已将主样例 `samples/court-loop.inscape` 从 `:: node.name` 迁到中文 `# 标题`，同步更新所有主样例跳转目标，并将内部测试 fixture 全部迁到 `#` 标题。G0.2 已移除 Compiler / LanguageServer 对 `:: node.name` 的解析和诊断兼容文案；`:: old.node` 当前会作为节点外内容报错，不再创建节点。下一步应推进 G0.3：移除 VSCode 对 `:: node.name` 的扫描、高亮和 snippet。
+2026-05-17 已启动 Goal 0 研发期 legacy 清除：G0.1 已将主样例 `samples/court-loop.inscape` 从 `:: node.name` 迁到中文 `# 标题`，同步更新所有主样例跳转目标，并将内部测试 fixture 全部迁到 `#` 标题。G0.2 已移除 Compiler / LanguageServer 对 `:: node.name` 的解析和诊断兼容文案；`:: old.node` 当前会作为节点外内容报错，不再创建节点。G0.3 已移除 VSCode 对 `:: node.name` 的 TextMate 高亮、workspace index 扫描、snippet、编辑器样式和当前文档入口；下一步应推进 G0.4：移除 legacy inline host binding 行为、样例和工具提示。
 
 ### 2026-05-11 当前交接结论（最新）
 
@@ -106,14 +106,14 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - 2026-05-16 已补齐 LanguageServer outline / hover 基线：新增 `DslScriptDocumentSymbolProvider` 与 `DslScriptHoverProvider`，临时 probe 为 `--document-symbols-file <path>` 和 `--hover-file <path> <node|jump> <name>`；数据仍直接来自 Compiler graph / source span，输出 editor 0-based location。下一步建议设计 VSCode 前端切换到 LanguageServer 的接入顺序和 fallback 边界。
 - 2026-05-16 已新增 [VSCode LanguageServer Migration Plan](vscode-language-server-migration-plan.md)：明确 VSCode 前端迁移顺序为 diagnostics -> document symbols / node completion -> node definition / references -> node / jump hover -> Host Schema capability endpoint -> full LSP transport；首次接入不得同提交移除 JS fallback，正文 / 选项文本仍保留 `DefinitionProvider` + `PreviewRevealBridge` 交互边界。下一步建议先做 LanguageServer probe parity 测试或项目级 diagnostics endpoint 设计。
 - 2026-05-17 已为 LanguageServer 临时 probes 建立入口级 parity 测试：`--diagnose-file`、`--definition-file`、`--references-file`、`--completion-file`、`--document-symbols-file` 与 `--hover-file` 都会校验稳定 JSON format、formatVersion 和关键 editor location 字段。下一步建议设计项目级 diagnostics endpoint，覆盖项目源加载与 unsaved override，并让 VSCode 保留 CLI fallback。
-- 2026-05-17 已新增 LanguageServer 项目级 diagnostics endpoint：`LanguageServerEntry --diagnose-project <root> [--entry node.name] [--override source.inscape temp.inscape]` 输出 `inscape.language-server-project-diagnostics`，内部复用 `Inscape.Tooling` 的 `.inscape` source loader 与 `StoryGraphCompilerDomain`，不借道 CLI；测试覆盖跨文件缺失目标和 unsaved override 修复链路。VSCode 还未切换，后续接入时仍需保留 CLI diagnostics fallback。
+- 2026-05-17 已新增 LanguageServer 项目级 diagnostics endpoint：`LanguageServerEntry --diagnose-project <root> [--entry 标题] [--override source.inscape temp.inscape]` 输出 `inscape.language-server-project-diagnostics`，内部复用 `Inscape.Tooling` 的 `.inscape` source loader 与 `StoryGraphCompilerDomain`，不借道 CLI；测试覆盖跨文件缺失目标和 unsaved override 修复链路。VSCode 还未切换，后续接入时仍需保留 CLI diagnostics fallback。
 - 2026-05-17 已让 VSCode diagnostics 先尝试 `Inscape.LanguageServer --diagnose-project`，并保留现有 `inscape.compiler.command` / `inscape.compiler.args` CLI fallback；新增 `inscape.diagnostics.backend` 可切回 `compiler` only。本节点已执行 `npm run rebuild:vsix` 并成功安装 `.vsix`，用户随后反馈 VSCode 里大致过了一眼体验基本 OK；CLI fallback 不可用场景仍未做专项 smoke test，删除 fallback 前必须补。
 - 2026-05-17 已冻结节点标题 / stable id 共识并新增 [ADR 0013](adr/0013-author-title-and-stable-node-id.md)：长期块语法转向 `# 标题`，标题是作者主身份且项目内唯一，stable node id 是系统身份；标题前空行只做 style hint，不做编译错误；自动创建同名标题时生成 `_01`，用户手动重名时报 duplicate title diagnostic。后续实现前先设计 stable id 落盘与 `:: node.name` 兼容迁移。
 - 2026-05-17 已把后续计划整理为 [/goal 后续目标计划](goal-plan.md)：Goal 1 stable node id 契约、Goal 2 本地化 diff / alignment、Goal 3 `# 标题` 语法第一刀、Goal 4 VSCode 标题体验、Goal 5 LanguageServer 接管 VSCode 语义能力、Goal 6 Host Schema endpoint 收口、Goal 7 体验和 ExternalSupport 尾项。Goal 1 到 Goal 4 已完成；下一步建议从 Goal 5 开始，每个最小节点独立自检、验证、提交和推送。
 - 2026-05-17 已完成 Goal 1 设计：新增 [Stable Node ID Contract](stable-node-id-contract.md)，确定第一版使用 `inscape.node-map.json` sidecar 维护 stable node id / title map，默认作者不手写机器 ID；定义了 ID 生成、标题重命名识别、missing / tombstone、Git 合并冲突、显式 `@id` 修复边界，以及 `:: node.name` 到 `# 标题` 的兼容迁移策略。本节点只改文档，不改 parser。
 - 2026-05-17 已完成 Goal 2 设计：新增 [Localization Diff Alignment Contract](localization-diff-alignment-contract.md)，定义 `kept` / `new` / `changed` / `removed` / `conflict` / `stale` 状态，要求 anchor 精确继承优先，同一 stable node id 内再做 diff / alignment；相似旧译文只能作为候选和 review report，不得静默当作完成译文。CLI 兼容计划优先新增独立 audit / alignment report，不改变当前 `update-l10n` 默认行为。
-- 2026-05-17 已完成 Goal 3 Compiler 第一刀：`DslScriptParserDomain` 支持 `# 标题` 节点声明，`DslScriptNodeTitleValidatorDomain` 定义标题合法性；中文标题可作为 `-> 目标标题` 跳转目标，旧 `:: node.name` 继续兼容。重复标题仍走文档内 `INS003` / 项目级 `INS030` 诊断，标题前缺空行新增 info 级 `INS012` style hint。
-- 2026-05-17 已完成 Goal 4 VSCode 标题语法体验：TextMate grammar、snippets、README / tooling 文档已转向 `# 标题`；`DslScriptNodeProvider` 同时扫描 `# 标题` 与旧 `:: node.name`，中文标题可用于 Outline、jump completion、Go to Definition、Find All References、Hover 与 CodeLens；新增 `Inscape: Insert Node Title` 命令，在创建同名标题时自动追加 `_01`。下一步进入 Goal 5：评估并接入 LanguageServer outline / node completion。
+- 2026-05-17 已完成 Goal 3 Compiler 第一刀：`DslScriptParserDomain` 支持 `# 标题` 节点声明，`DslScriptNodeTitleValidatorDomain` 定义标题合法性；中文标题可作为 `-> 目标标题` 跳转目标。重复标题仍走文档内 `INS003` / 项目级 `INS030` 诊断，标题前缺空行新增 info 级 `INS012` style hint。
+- 2026-05-17 已完成 Goal 4 VSCode 标题语法体验：TextMate grammar、snippets、README / tooling 文档已转向 `# 标题`；中文标题可用于 Outline、jump completion、Go to Definition、Find All References、Hover 与 CodeLens；新增 `Inscape: Insert Node Title` 命令，在创建同名标题时自动追加 `_01`。
 - 2026-05-17 已推进 Goal 5.1：VSCode `DslScriptDocumentSymbolProvider` 现在优先把当前 document buffer 写入临时文件并调用 `Inscape.LanguageServer --document-symbols-file` 获取 Outline；LanguageServer 失败时回退 JS `DslScriptNodeProvider` 扫描。下一步建议 Goal 5.2：node completion 优先走 LanguageServer，同时保留 JS workspace index fallback。
 - 2026-05-17 已推进 Goal 5.2：VSCode `DslScriptCompletionProvider` 在 `->` 跳转目标位置优先调用 `Inscape.LanguageServer --completion-file`，再用 JS workspace node index 补齐跨文件节点；LanguageServer 失败时仍能只靠 JS fallback 提供补全。下一步建议 Goal 5.3：node definition / references 优先走 LanguageServer，同时保留当前 DefinitionProvider / ReferenceProvider 的 JS fallback。
 - 2026-05-17 已更新研发期兼容原则：项目当前没有真实用户和已发布契约，不再默认维护旧版兼容。`:: node.name`、legacy `[kind: alias]` inline binding、`unitySample.*` fallback、JS semantic fallback 等都应重新梳理为待删除或待收敛任务。下一步优先重排计划并先清 legacy，再继续新增能力。
@@ -225,7 +225,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 
 - 文档体系、ADR、路线图和 TODO。
 - C# Compiler Core：解析 `.inscape`、生成 Narrative Graph IR、诊断图结构。
-- 图叙事基线：显式节点名、跨文件项目编译、项目内节点名全局唯一、节点内 `@entry` 项目入口，以及项目级 CLI `--entry node.name` 临时入口覆盖。
+- 图叙事基线：显式节点标题、跨文件项目编译、项目内节点标题全局唯一、节点内 `@entry` 项目入口，以及项目级 CLI `--entry 标题` 临时入口覆盖。
 - 行级锚点：`l1_<fnv1a64-hex>`，不依赖文件路径或绝对行号，检测 `INS040` 锚点碰撞。
 - CLI：单文件和项目级 `check`、`diagnose`、`compile`、`preview`。
 - HTML 预览：支持单文件/项目级 IR、节点跳转、选择、回环、Restart、Back、路径和锚点显示。
@@ -457,7 +457,7 @@ dotnet run --project src\ExternalSupport\UnityPlugin\Inscape.UnitySample.Cli\Ins
 
 ## 接手时不要误判
 
-- `@entry` 和 CLI `--entry node.name` 临时入口覆盖都已实现；项目配置文件式入口仍未设计。
+- `@entry` 和 CLI `--entry 标题` 临时入口覆盖都已实现；项目配置文件式入口仍未设计。
 - 行级 hash 已实现，但节点重命名迁移、显式稳定 ID 和模糊匹配还没做。
 - VSCode 原型已经具备很多能力，包括本地化命令，但不是正式 Language Server。
 - HTML 预览已经能调试图结构，但不是游戏运行时。
