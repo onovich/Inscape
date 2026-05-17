@@ -12,21 +12,18 @@ namespace Inscape.Tests {
 
         static void ParseGraphWithLoop() {
             string source = """
-:: court.intro
-
+# court.intro
 Narrator: The courtroom is quiet.
 Judge: Begin.
 ? Choose action
     - Question witness -> court.cross_exam.loop
     - Check evidence -> evidence.menu
 
-:: court.cross_exam.loop
-
+# court.cross_exam.loop
 Witness: I know nothing.
 -> court.intro
 
-:: evidence.menu
-
+# evidence.menu
 Narrator: The evidence bag holds an old watch.
 -> court.intro
 """;
@@ -45,7 +42,7 @@ Narrator: The evidence bag holds an old watch.
 
         static void DiagnoseMissingTarget() {
             string source = """
-:: start
+# start
 Narrator: Start.
 -> missing.node
 """;
@@ -57,14 +54,14 @@ Narrator: Start.
 
         static void DiagnoseInvalidNodeNames() {
             string source = """
-:: Court Intro
+# Court/Intro
 Narrator: Start.
 -> missing/target
 """;
 
             DslScriptCompilationResultModel result = Compile(source);
-            AssertTrue(result.HasErrors, "Invalid node names should be errors.");
-            AssertTrue(ContainsCode(result, "INS009"), "Expected INS009 invalid node diagnostic.");
+            AssertTrue(result.HasErrors, "Invalid node titles should be errors.");
+            AssertTrue(ContainsCode(result, "INS011"), "Expected INS011 invalid title diagnostic.");
             AssertTrue(ContainsCode(result, "INS010"), "Expected INS010 invalid target diagnostic.");
         }
 
@@ -118,7 +115,7 @@ Narrator: Start.
 
         static void HashesAreStable() {
             string source = """
-:: start
+# start
 Narrator: Same text.
 """;
 
@@ -134,7 +131,7 @@ Narrator: Same text.
 
         static void HashIgnoresFilePath() {
             string source = """
-:: start
+# start
 Narrator: Same text.
 """;
 
@@ -149,12 +146,11 @@ Narrator: Same text.
 
         static void HashIgnoresLineMovement() {
             string first = """
-:: start
+# start
 Narrator: Same text.
 """;
             string second = """
-:: start
-
+# start
 @entry
 // comment
 Narrator: Same text.
@@ -170,7 +166,7 @@ Narrator: Same text.
 
         static void HashDistinguishesDuplicateText() {
             string source = """
-:: start
+# start
 Narrator: Repeated text.
 Narrator: Repeated text.
 """;
@@ -221,7 +217,7 @@ Narrator: Repeated text.
         static void SourceSpansCoverAuthoringElements() {
             DslScriptCompilerDomain compiler = new DslScriptCompilerDomain();
             DslScriptCompilationResultModel result = compiler.Compile("""
-:: start
+# start
 @entry
   旁白：第一句中文对白。
 ? 选择路径
@@ -229,7 +225,7 @@ Narrator: Repeated text.
   - 查看证物 -> second.node
 -> second.node
 
-:: second.node
+# second.node
 旁白：第二句。
 """, "memory://source-map.inscape");
 
@@ -258,12 +254,12 @@ Narrator: Repeated text.
             StoryGraphCompilerDomain compiler = new StoryGraphCompilerDomain();
             StoryGraphCompilationResultModel result = compiler.Compile(new List<DslScriptSourceModel> {
                 new DslScriptSourceModel("memory://a.inscape", """
-:: start
+# start
 旁白：开始。
 -> second.node
 """),
                 new DslScriptSourceModel("memory://b.inscape", """
-:: second.node
+# second.node
 旁白：第二页。
   - 错误选项 -> missing.node
 """),

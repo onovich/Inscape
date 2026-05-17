@@ -2,7 +2,7 @@
 
 本目录保存 Inscape DSL 样例。当前主样例 `court-loop.inscape` 已经扩展成一个可完整体验的小型庭审单元，用于同时验证第一版图叙事语法和预览交互：
 
-- 显式节点：`:: court.intro`
+- 显式节点：`# 法庭开场`
 - 对白与旁白：`角色：文本`
 - 选项：`?` 与 `- 选项 -> 目标节点`
 - 回环：节点可以跳回已经访问过的节点
@@ -28,7 +28,7 @@ dotnet run --project src\Internal\Cli\Inscape.Cli -- check-project samples
 dotnet run --project src\Internal\Cli\Inscape.Cli -- diagnose-project samples
 dotnet run --project src\Internal\Cli\Inscape.Cli -- compile-project samples -o artifacts\samples-project.json
 dotnet run --project src\Internal\Cli\Inscape.Cli -- preview-project samples -o artifacts\samples-project.html
-dotnet run --project src\Internal\Cli\Inscape.Cli -- preview-project samples --entry court.cross_exam.loop -o artifacts\samples-project.entry.html
+dotnet run --project src\Internal\Cli\Inscape.Cli -- preview-project samples --entry 证言质询 -o artifacts\samples-project.entry.html
 dotnet run --project src\Internal\Cli\Inscape.Cli -- extract-l10n-project samples -o artifacts\l10n.csv
 Copy-Item artifacts\l10n.csv artifacts\old-l10n.csv
 dotnet run --project src\Internal\Cli\Inscape.Cli -- update-l10n-project samples --from artifacts\old-l10n.csv -o artifacts\l10n.updated.csv

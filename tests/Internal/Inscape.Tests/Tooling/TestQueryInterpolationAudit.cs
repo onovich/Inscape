@@ -43,7 +43,7 @@ namespace Inscape.Tests {
 
                 List<DslScriptSourceModel> sources = new List<DslScriptSourceModel> {
                     new DslScriptSourceModel(Path.Combine(directory, "story.inscape"), """
-:: start
+# start
 旁白：金币 [player.gold]，物品 [has_item]，未知 [player.godl]。
 @timeline.talking.exit court_intro
 旁白：旧写法 [timeline: court_intro] 不应算 query。

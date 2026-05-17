@@ -33,7 +33,7 @@
 - [x] 建立 [研发计划](development-plan.md)，把 Compiler / Tooling / Cli / VSCode / LanguageServer / ExternalSupport 的推进顺序显式写出。
 - [ ] 每次完成阶段性提交后，同步更新 [Agent 接手指南](agent-handoff.md) 的当前快照。（持续规则，不作为一次性完成项）
 - [ ] 清除研发期 legacy / fallback。
-	- [ ] 将主样例和内部测试从 `:: node.name` 迁到 `# 标题`。
+	- [x] 将主样例和内部测试从 `:: node.name` 迁到 `# 标题`。
 	- [ ] 移除 Compiler / LanguageServer / VSCode 对 `:: node.name` 的解析、扫描、高亮和 snippet。
 	- [ ] 移除 legacy `[kind: alias]` / `[timeline: alias]` inline host binding 行为、样例和工具提示。
 	- [ ] 移除 `unitySample.roleMap` / `unitySample.bindingMap` fallback，统一使用 `hostBridge`。

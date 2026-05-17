@@ -16,7 +16,7 @@ namespace Inscape.Tests {
 
             string path = Path.Combine(directory, "diagnose-" + Guid.NewGuid().ToString("N") + ".inscape");
             File.WriteAllText(path, """
-:: start
+# start
 Narrator: Start.
 -> missing.node
 """, Encoding.UTF8);
@@ -151,7 +151,7 @@ Narrator: Start.
 """, Encoding.UTF8);
 
                 File.WriteAllText(Path.Combine(directory, "story.inscape"), """
-:: start
+# start
 旁白：金币 [player.gold]，物品 [has_item]，未知 [player.godl]。
 旁白：[timeline: court_intro] 是 legacy binding，不是 query。
 """, Encoding.UTF8);
@@ -216,12 +216,12 @@ Narrator: Start.
             StoryGraphCompilerDomain compiler = new StoryGraphCompilerDomain();
             StoryGraphCompilationResultModel result = compiler.Compile(new List<DslScriptSourceModel> {
                 new DslScriptSourceModel("memory://a.inscape", """
-:: start
+# start
 Narrator: Start.
 -> second.node
 """),
                 new DslScriptSourceModel("memory://b.inscape", """
-:: second.node
+# second.node
 Narrator: Second page.
 """),
             }, "memory://project");
@@ -235,11 +235,11 @@ Narrator: Second page.
             StoryGraphCompilerDomain compiler = new StoryGraphCompilerDomain();
             StoryGraphCompilationResultModel result = compiler.Compile(new List<DslScriptSourceModel> {
                 new DslScriptSourceModel("memory://a.inscape", """
-:: same.node
+# same.node
 Narrator: First copy.
 """),
                 new DslScriptSourceModel("memory://b.inscape", """
-:: same.node
+# same.node
 Narrator: Second copy.
 """),
             }, "memory://project");
@@ -274,16 +274,16 @@ Narrator: Second copy.
             string overridePath = Path.Combine(directory, "target.override.inscape");
 
             File.WriteAllText(startPath, """
-:: start
+# start
 Narrator: Start.
 -> target.node
 """, Encoding.UTF8);
             File.WriteAllText(targetPath, """
-:: old.node
+# old.node
 Narrator: Old node.
 """, Encoding.UTF8);
             File.WriteAllText(overridePath, """
-:: target.node
+# target.node
 Narrator: New node.
 """, Encoding.UTF8);
 
@@ -317,13 +317,13 @@ Narrator: New node.
             Directory.CreateDirectory(directory);
 
             File.WriteAllText(Path.Combine(directory, "00-start.inscape"), """
-:: start
+# start
 @entry
 Narrator: Start.
 -> second.node
 """, Encoding.UTF8);
             File.WriteAllText(Path.Combine(directory, "01-second.inscape"), """
-:: second.node
+# second.node
 Narrator: Second page.
 """, Encoding.UTF8);
 
@@ -357,11 +357,11 @@ Narrator: Second page.
             StoryGraphCompilerDomain compiler = new StoryGraphCompilerDomain();
             StoryGraphCompilationResultModel result = compiler.Compile(new List<DslScriptSourceModel> {
                 new DslScriptSourceModel("memory://00-orphan.inscape", """
-:: orphan.node
+# orphan.node
 Narrator: This file sorts first.
 """),
                 new DslScriptSourceModel("memory://01-start.inscape", """
-:: start
+# start
 @entry
 Narrator: Real entry.
 -> orphan.node
@@ -378,11 +378,11 @@ Narrator: Real entry.
             StoryGraphCompilerDomain compiler = new StoryGraphCompilerDomain();
             StoryGraphCompilationResultModel result = compiler.Compile(new List<DslScriptSourceModel> {
                 new DslScriptSourceModel("memory://00-orphan.inscape", """
-:: orphan.node
+# orphan.node
 Narrator: First by file order.
 """),
                 new DslScriptSourceModel("memory://01-start.inscape", """
-:: start
+# start
 Narrator: Temporary debug entry.
 -> orphan.node
 """),
@@ -398,7 +398,7 @@ Narrator: Temporary debug entry.
             StoryGraphCompilerDomain compiler = new StoryGraphCompilerDomain();
             StoryGraphCompilationResultModel result = compiler.Compile(new List<DslScriptSourceModel> {
                 new DslScriptSourceModel("memory://a.inscape", """
-:: start
+# start
 Narrator: Start.
 """),
             }, "memory://project", "missing.node");
@@ -412,12 +412,12 @@ Narrator: Start.
             StoryGraphCompilerDomain compiler = new StoryGraphCompilerDomain();
             StoryGraphCompilationResultModel result = compiler.Compile(new List<DslScriptSourceModel> {
                 new DslScriptSourceModel("memory://a.inscape", """
-:: first.entry
+# first.entry
 @entry
 Narrator: Entry one.
 """),
                 new DslScriptSourceModel("memory://b.inscape", """
-:: second.entry
+# second.entry
 @entry
 Narrator: Entry two.
 """),
@@ -431,7 +431,7 @@ Narrator: Entry two.
             StoryGraphCompilerDomain compiler = new StoryGraphCompilerDomain();
             StoryGraphCompilationResultModel result = compiler.Compile(new List<DslScriptSourceModel> {
                 new DslScriptSourceModel("memory://a.inscape", """
-:: start
+# start
 Narrator: No explicit entry.
 """),
             }, "memory://project");

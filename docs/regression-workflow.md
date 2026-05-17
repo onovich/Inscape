@@ -158,6 +158,8 @@ git -c safe.directory=D:/LabProjects/Inscape status --short --branch
 - TODO / handoff 已随阶段性节点更新。
 - 新增长期规则已进入文档；长期架构决策必要时进入 ADR。
 
+批量改中文样例、中文标题或中文文档时，避免把中文替换表直接塞进 PowerShell one-liner。优先用 `apply_patch` 或 UTF-8 文件脚本承载中文文本，再执行机械替换；替换后用 `rg "\?\?\?\?"` 和抽样 `Get-Content -Encoding UTF8` 检查是否发生终端转码损坏。
+
 ## 推送后检查
 
 提交后立即推送：

@@ -15,13 +15,13 @@ namespace Inscape.Tests {
             Directory.CreateDirectory(directory);
 
             File.WriteAllText(Path.Combine(directory, "00-start.inscape"), """
-:: start
+# start
 @entry
 Narrator: Start.
 -> second.node
 """, Encoding.UTF8);
             File.WriteAllText(Path.Combine(directory, "01-second.inscape"), """
-:: second.node
+# second.node
 Narrator: Second page.
 """, Encoding.UTF8);
 
@@ -55,12 +55,12 @@ Narrator: Second page.
             Directory.CreateDirectory(directory);
 
             File.WriteAllText(Path.Combine(directory, "00-start.inscape"), """
-:: start
+# start
 @entry
 Narrator: Default entry.
 """, Encoding.UTF8);
             File.WriteAllText(Path.Combine(directory, "01-second.inscape"), """
-:: second.node
+# second.node
 Narrator: Temporary entry.
 -> start
 """, Encoding.UTF8);
@@ -92,7 +92,7 @@ Narrator: Temporary entry.
             Directory.CreateDirectory(directory);
 
             File.WriteAllText(Path.Combine(directory, "story.inscape"), """
-:: start
+# start
 @entry
 Narrator: Source mapped line.
 """, Encoding.UTF8);
@@ -124,12 +124,12 @@ Narrator: Source mapped line.
             Directory.CreateDirectory(directory);
             string path = Path.Combine(directory, "story.inscape");
             File.WriteAllText(path, """
-:: start
+# start
 Narrator: Hello, "world".
 ? Choose path
   - Ask again -> second.node
 
-:: second.node
+# second.node
 A quiet line.
 """, Encoding.UTF8);
 
@@ -165,14 +165,14 @@ A quiet line.
             Directory.CreateDirectory(directory);
 
             File.WriteAllText(Path.Combine(directory, "00-start.inscape"), """
-:: start
+# start
 @entry
 Narrator: Project start.
 ? Next
   - Continue -> second.node
 """, Encoding.UTF8);
             File.WriteAllText(Path.Combine(directory, "01-second.inscape"), """
-:: second.node
+# second.node
 Project second line.
 """, Encoding.UTF8);
 
@@ -208,7 +208,7 @@ Project second line.
             string oldCsvPath = Path.Combine(directory, "old.csv");
 
             File.WriteAllText(path, """
-:: start
+# start
 Narrator: Hello.
 """, Encoding.UTF8);
             string initialCsv = RunCliForOutput(new[] { "extract-l10n", path });
@@ -220,7 +220,7 @@ Narrator: Hello.
                               + "l1_removed,old.node,Narration,,Removed.,鏃ц瘧鏂?old.inscape,8,1\n",
                               Encoding.UTF8);
             File.WriteAllText(path, """
-:: start
+# start
 Narrator: Hello.
 A new line.
 """, Encoding.UTF8);
@@ -248,7 +248,7 @@ A new line.
             string oldCsvPath = Path.Combine(directory, "old.csv");
 
             File.WriteAllText(storyPath, """
-:: start
+# start
 @entry
 Narrator: Project start.
 """, Encoding.UTF8);

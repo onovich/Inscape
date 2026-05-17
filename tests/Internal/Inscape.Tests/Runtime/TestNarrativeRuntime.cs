@@ -7,16 +7,16 @@ namespace Inscape.Tests {
 
         static void NarrativeRuntimeConsumesCompilerGraph() {
             DslScriptCompilationResultModel compilation = Compile("""
-:: start
+# start
 旁白：开始。
 ? 下一步
   - 去第二页 -> second.node
 
-:: second.node
+# second.node
 旁白：第二页。
 -> end.node
 
-:: end.node
+# end.node
 旁白：结束。
 """);
 

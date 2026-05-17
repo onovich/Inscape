@@ -25,7 +25,7 @@
 
 ## Goal 0：研发期 legacy 清除
 
-状态：待执行，当前最高优先级。
+状态：执行中，G0.1 已完成。
 
 目标：把已经确认不符合新规范的旧写法和兼容层从主路径移除，让样例、Compiler、VSCode、LanguageServer、Tooling 和文档都只表达当前规范。
 
@@ -40,7 +40,7 @@
 
 小节点：
 
-- G0.1 迁移 `samples/court-loop.inscape` 和内部测试到 `# 标题`，同步所有跳转目标。
+- [x] G0.1 迁移 `samples/court-loop.inscape` 和内部测试到 `# 标题`，同步所有跳转目标。
 - G0.2 移除 Compiler / LanguageServer 对 `:: node.name` 的支持，并更新诊断文案。
 - G0.3 移除 VSCode 对 `:: node.name` 的 TextMate、workspace index、snippet 和文档入口。
 - G0.4 移除 legacy inline host binding：`[kind: alias]`、`[timeline: alias]`、`[bg: alias]` 等行为和样例。

@@ -8,7 +8,7 @@ namespace Inscape.Tests {
         static void LanguageServerDiagnosticsUseEditorCoordinates() {
             DslScriptDiagnosticProvider provider = new DslScriptDiagnosticProvider();
             List<LanguageServerDiagnosticModel> diagnostics = provider.GetDiagnostics("""
-:: start
+# start
 旁白：开始。
 -> missing.node
 """, "memory://language-server.inscape");
@@ -33,10 +33,10 @@ namespace Inscape.Tests {
         static void LanguageServerDefinitionsUseCompilerSourceMap() {
             DslScriptDefinitionProvider provider = new DslScriptDefinitionProvider();
             LanguageServerDefinitionModel? definition = provider.GetNodeDefinition("""
-  :: start
+  # start
 旁白：开始。
 
-    :: second.node
+    # second.node
 旁白：第二页。
 """, "memory://definition.inscape", "second.node");
 
@@ -50,11 +50,11 @@ namespace Inscape.Tests {
 
         static void LanguageServerReferencesAndCompletionsUseCompilerGraph() {
             string source = """
-:: start
+# start
 旁白：开始。
 -> second.node
 
-  :: second.node
+  # second.node
 旁白：第二页。
 """;
 
@@ -77,11 +77,11 @@ namespace Inscape.Tests {
 
         static void LanguageServerSymbolsAndHoverUseCompilerGraph() {
             string source = """
-:: start
+# start
 鏃佺櫧锛氬紑濮嬰€?
 -> second.node
 
-  :: second.node
+  # second.node
 鏃佺櫧锛氱浜岄〉銆?
 """;
 
@@ -116,12 +116,12 @@ namespace Inscape.Tests {
 
         static void LanguageServerEntryProbesEmitStableJson() {
             string source = """
-:: start
+# start
 旁白：开始。
 -> second.node
 -> missing.node
 
-  :: second.node
+  # second.node
 旁白：第二页。
 """;
 
@@ -174,18 +174,18 @@ namespace Inscape.Tests {
             string overridePath = Path.Combine(directory, "target.override.tmp");
 
             File.WriteAllText(startPath, """
-:: start
+# start
 旁白：开始。
 -> target.node
 """);
 
             File.WriteAllText(targetPath, """
-:: old.node
+# old.node
 旁白：旧节点。
 """);
 
             File.WriteAllText(overridePath, """
-:: target.node
+# target.node
 旁白：编辑器未保存的新节点。
 """);
 
