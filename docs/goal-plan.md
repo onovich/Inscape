@@ -6,6 +6,8 @@
 
 本文把当前剩余工作改写成 `/goal` 目标模式。每个 goal 都应独立完成、自检、验证、提交和推送；不要把多个无关 goal 合进同一提交。
 
+研发期原则：Inscape 当前没有真实用户和已发布契约，不为旧版语法、旧配置或旧实现路径承担兼容成本。legacy / fallback 默认是待删除债务；只有为了短期切换验证才允许临时存在，并且必须在同一计划中写出删除节点。
+
 ## 执行规则
 
 每个 goal 开始前：
@@ -21,9 +23,39 @@
 3. 运行仓库验证命令。
 4. 提交并推送。
 
+## Goal 0：研发期 legacy 清除
+
+状态：待执行，当前最高优先级。
+
+目标：把已经确认不符合新规范的旧写法和兼容层从主路径移除，让样例、Compiler、VSCode、LanguageServer、Tooling 和文档都只表达当前规范。
+
+产出：
+
+- 主样例和测试改用 `# 标题`。
+- Compiler 不再解析 `:: node.name`。
+- VSCode 不再高亮、扫描、补全或提供 `:: node.name` snippet。
+- legacy `[kind: alias]` / `[timeline: alias]` inline host binding 不再作为当前工具能力。
+- `unitySample.roleMap` / `unitySample.bindingMap` 不再作为 Host Bridge fallback。
+- 行为文档不再把 legacy 作为仍需维护的产品能力。
+
+小节点：
+
+- G0.1 迁移 `samples/court-loop.inscape` 和内部测试到 `# 标题`，同步所有跳转目标。
+- G0.2 移除 Compiler / LanguageServer 对 `:: node.name` 的支持，并更新诊断文案。
+- G0.3 移除 VSCode 对 `:: node.name` 的 TextMate、workspace index、snippet 和文档入口。
+- G0.4 移除 legacy inline host binding：`[kind: alias]`、`[timeline: alias]`、`[bg: alias]` 等行为和样例。
+- G0.5 移除 `unitySample.*` fallback，ExternalSupport 后续只通过明确的 Host Bridge / UnityPlugin 计划推进。
+- G0.6 全仓文档清理：当前行为文档只保留新规范；历史背景留在 ADR / 审计文档中。
+
+验收：
+
+- `rg "^::|legacy|Legacy|\\[timeline:" docs src tests samples` 只允许命中历史 ADR / 审计文件或明确的删除计划。
+- `check-project samples` 和 VSCode authoring 主路径只展示 `# 标题`、`@` 事件 / 时机、`[]` 查询插值和 `hostBridge`。
+- 删除旧行为后完整验证通过。
+
 ## Goal 1：stable node id 契约
 
-状态：已完成设计，见 [Stable Node ID Contract](stable-node-id-contract.md)。
+状态：已完成设计，见 [Stable Node ID Contract](stable-node-id-contract.md)；其中 `:: node.name` 兼容迁移内容在 Goal 0 后只保留为历史背景。
 
 目标：把 [ADR 0013](adr/0013-author-title-and-stable-node-id.md) 落成可实现的数据契约，先不改 parser。
 
@@ -38,7 +70,7 @@
 
 - [x] G1.1 设计 stable node id / title map JSON 契约。
 - [x] G1.2 设计标题重命名识别流程：source range、相邻文本锚点、旧标题、前后节点关系与人工确认。
-- [x] G1.3 设计 `:: node.name` 到 `# 标题` 的兼容迁移策略。
+- [x] G1.3 设计 `:: node.name` 到 `# 标题` 的迁移策略；Goal 0 后不再保留兼容运行路径。
 
 验收：
 
@@ -71,33 +103,32 @@
 
 ## Goal 3：`# 标题` 语法第一刀
 
-状态：已完成 Compiler 第一刀；VSCode authoring 体验见 Goal 4。
+状态：已完成 Compiler 第一刀；Goal 0 将移除旧 `:: node.name` 兼容路径。
 
-目标：Compiler 支持新块标题，同时保留旧 `:: node.name` 兼容路径。
+目标：Compiler 支持新块标题，并把旧 `:: node.name` 迁出当前规范。
 
 产出：
 
 - Parser 支持 `# 标题`。
 - 项目级标题唯一诊断。
 - 标题前缺空行 style hint 的诊断分层设计或实现。
-- 测试覆盖中文标题、跨文件重复标题、旧语法兼容。
+- 测试覆盖中文标题、跨文件重复标题，并删除旧语法兼容测试。
 
 小节点：
 
 - [x] G3.1 增加 parser 测试和语法设计说明，先锁行为。
 - [x] G3.2 实现 `# 标题` 解析与 source span。
 - [x] G3.3 实现项目级 duplicate title diagnostic。
-- [x] G3.4 明确旧 `:: node.name` 的兼容 warning / 迁移提示节奏。
+- [x] G3.4 明确旧 `:: node.name` 的迁移提示；Goal 0 后删除兼容提示和运行支持。
 
 验收：
 
-- 旧样例继续编译。
 - 新 `# 中文标题` 样例可编译。
 - 手动重名标题会报错。
 
 ## Goal 4：VSCode 标题语法体验
 
-状态：已完成。VSCode 轻量 authoring 层已跟上 `# 标题`，旧 `:: node.name` 继续兼容。
+状态：已完成新标题体验；Goal 0 将移除旧 `:: node.name` 的 VSCode 兼容入口。
 
 目标：让编辑器体验跟上 `# 标题`，避免 parser 支持但作者体验断层。
 
@@ -122,7 +153,7 @@
 
 ## Goal 5：LanguageServer 接管 VSCode 更多语义能力
 
-状态：进行中。G5.1 document symbols / outline 与 G5.2 node completion 已接入 LanguageServer，JS provider 仍作为 fallback。
+状态：暂停继续新增能力，待 Goal 0 清理 legacy / fallback 后再推进。G5.1 document symbols / outline 与 G5.2 node completion 已接入 LanguageServer，但 JS fallback 需重新评估并删除。
 
 目标：把已存在的 LanguageServer probes 接入 VSCode 热路径，逐步降低 JS workspace index 的语义权重。
 
@@ -131,20 +162,21 @@
 - VSCode outline 优先走 LanguageServer。
 - VSCode node completion 优先走 LanguageServer。
 - 后续 definition / references / hover / CodeLens 逐步迁移。
-- 每一步保留 JS fallback。
+- 迁移完成的语义能力不再长期保留 JS fallback；如短暂保留，必须有删除节点。
 
 小节点：
 
 - [x] G5.1 接入 document symbols / outline。
 - [x] G5.2 接入 node completion。
-- G5.3 接入 node definition / references。
-- G5.4 接入 node / jump hover。
-- G5.5 删除 fallback 前补专项 smoke test，不和首次接入混提交。
+- G5.3 接入 node definition / references，并删除对应 JS node definition / reference fallback。
+- G5.4 接入 node / jump hover，并删除对应 JS node hover fallback。
+- G5.5 清理 G5.1 / G5.2 已存在的 JS fallback 或改成明确的错误提示 / output 日志。
 
 验收：
 
 - 每项迁移都有 tests / probe parity 或手动 smoke 记录。
 - CLI 不再作为编辑器实时语义能力的主入口。
+- VSCode 不再为了旧实现路径长期保留重复语义扫描。
 
 ## Goal 6：Host Schema endpoint 收口
 
@@ -154,18 +186,18 @@
 
 - 评估是否把 `inspect-host-schema-project` 下沉到 LanguageServer。
 - VSCode query / event provider 的 endpoint 优先级说明。
-- JS direct JSON fallback 删除或保留条件。
+- JS direct JSON fallback 删除计划。
 
 小节点：
 
 - G6.1 设计 LanguageServer Host Schema capability endpoint。
 - G6.2 VSCode query / event provider 优先调用 LanguageServer。
-- G6.3 在 smoke 通过后清理重复 JSON fallback。
+- G6.3 清理重复 JSON fallback。
 
 验收：
 
 - Host Schema authoring hint 不改变 Compiler 语义。
-- endpoint 失败时作者体验有明确降级路径。
+- endpoint 失败时作者体验有明确错误提示或 output 日志，不回退到旧 JSON 解析实现。
 
 ## Goal 7：体验和 ExternalSupport 尾项
 

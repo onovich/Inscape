@@ -10,9 +10,9 @@
 
 下一位接手者建议按以下顺序推进：
 
-1. 按 [/goal 后续目标计划](goal-plan.md) 推进 Goal 5.3：让 VSCode node definition / references 优先走 LanguageServer，并继续保留 JS workspace index fallback。
-2. 按 [/goal 后续目标计划](goal-plan.md) 推进 Goal 6：Host Schema endpoint 收口，评估是否下沉到 LanguageServer。
-3. 若后续准备删除 CLI diagnostics fallback，先补一次 LanguageServer 不可用场景下的 CLI fallback 专项 smoke test。
+1. 按 [/goal 后续目标计划](goal-plan.md) 推进 Goal 0：研发期 legacy 清除。当前没有真实用户和发布契约，不应继续维护旧语法 / 旧配置 / 旧实现 fallback。
+2. 完成 Goal 0 后，再推进 Goal 5.3：让 VSCode node definition / references 直接走 LanguageServer，并删除对应 JS 语义 fallback。
+3. 按 [/goal 后续目标计划](goal-plan.md) 推进 Goal 6：Host Schema endpoint 收口到 LanguageServer / Tooling 契约，移除 JS direct JSON fallback。
 4. 继续打磨 VSCode 可玩预览：补未保存内容的更细粒度热刷新、刷新中状态提示，以及可选的预览 / 源码同步策略。
 	- 正文 / 选项文本不再用 `DocumentLinkProvider`，因为它会导致整段文本常驻下划线；当前用 `DefinitionProvider` 恢复“默认无下划线、Ctrl+指向才显示链接态”的编辑体验，并通过 selection bridge 在 Ctrl+Click 后执行预览定位，显式命令仅作为兜底。
 5. Unity / Bird 相关继续只做准备和计划，等设计方案落实后再研发：包括 Attribute 扫描、Host Bridge 到 adapter 生成、Bird importer 提交策略和带真实 Timeline 的 Dry Run。
@@ -32,6 +32,12 @@
 - [x] 建立渐进式重构计划，按大目标/中目标/小目标安排入口、测试、CLI、VSCode、source map、Host Bridge 和 Runtime 前置设计。
 - [x] 建立 [研发计划](development-plan.md)，把 Compiler / Tooling / Cli / VSCode / LanguageServer / ExternalSupport 的推进顺序显式写出。
 - [ ] 每次完成阶段性提交后，同步更新 [Agent 接手指南](agent-handoff.md) 的当前快照。（持续规则，不作为一次性完成项）
+- [ ] 清除研发期 legacy / fallback。
+	- [ ] 将主样例和内部测试从 `:: node.name` 迁到 `# 标题`。
+	- [ ] 移除 Compiler / LanguageServer / VSCode 对 `:: node.name` 的解析、扫描、高亮和 snippet。
+	- [ ] 移除 legacy `[kind: alias]` / `[timeline: alias]` inline host binding 行为、样例和工具提示。
+	- [ ] 移除 `unitySample.roleMap` / `unitySample.bindingMap` fallback，统一使用 `hostBridge`。
+	- [ ] 清理当前行为文档中的 legacy / compatibility 口径，只在 ADR 或历史审计文档保留背景。
 
 ## 代码质量与渐进式重构
 

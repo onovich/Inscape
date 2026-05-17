@@ -12,6 +12,8 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 
 当前主动重构范围只覆盖 Internal 侧的 `Inscape.Compiler`、`Inscape.Cli`、`src/Internal/VSCode/vscode-inscape` 与测试组织；`src/ExternalSupport/UnityPlugin/Inscape.Adapters.UnitySample` 与 `src/ExternalSupport/UnityPlugin/unity-bird-importer` 视为 ExternalSupport 原型，暂不纳入这一轮内部重构，只保留隔离和回归样例职责。
 
+项目级研发认知：当前没有已发布版本和真实用户项目，因此不应为了旧版语法、旧配置或旧工具行为承担兼容成本。任何 legacy / fallback 都默认视为待迁移、待删除的研发债；只有为了短期切换验证才允许临时保留，并且必须同时记录删除节点。
+
 ### 2026-05-11 当前交接结论（最新）
 
 - 2026-05-12 已开始按目录优先蓝图执行实际迁移：目录骨架与规则 README 已提交，Internal 侧 `.NET` 项目已迁入新路径，当前 Compiler 项目文件为 `src/Internal/Compiler/Inscape.Compiler.csproj`，Tooling 位于 `src/Internal/Tooling`，Cli 位于 `src/Internal/Cli/Inscape.Cli`。
@@ -112,6 +114,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - 2026-05-17 已完成 Goal 4 VSCode 标题语法体验：TextMate grammar、snippets、README / tooling 文档已转向 `# 标题`；`DslScriptNodeProvider` 同时扫描 `# 标题` 与旧 `:: node.name`，中文标题可用于 Outline、jump completion、Go to Definition、Find All References、Hover 与 CodeLens；新增 `Inscape: Insert Node Title` 命令，在创建同名标题时自动追加 `_01`。下一步进入 Goal 5：评估并接入 LanguageServer outline / node completion。
 - 2026-05-17 已推进 Goal 5.1：VSCode `DslScriptDocumentSymbolProvider` 现在优先把当前 document buffer 写入临时文件并调用 `Inscape.LanguageServer --document-symbols-file` 获取 Outline；LanguageServer 失败时回退 JS `DslScriptNodeProvider` 扫描。下一步建议 Goal 5.2：node completion 优先走 LanguageServer，同时保留 JS workspace index fallback。
 - 2026-05-17 已推进 Goal 5.2：VSCode `DslScriptCompletionProvider` 在 `->` 跳转目标位置优先调用 `Inscape.LanguageServer --completion-file`，再用 JS workspace node index 补齐跨文件节点；LanguageServer 失败时仍能只靠 JS fallback 提供补全。下一步建议 Goal 5.3：node definition / references 优先走 LanguageServer，同时保留当前 DefinitionProvider / ReferenceProvider 的 JS fallback。
+- 2026-05-17 已更新研发期兼容原则：项目当前没有真实用户和已发布契约，不再默认维护旧版兼容。`:: node.name`、legacy `[kind: alias]` inline binding、`unitySample.*` fallback、JS semantic fallback 等都应重新梳理为待删除或待收敛任务。下一步优先重排计划并先清 legacy，再继续新增能力。
 - 2026-05-12 已迁移当前聚合测试项目：`tests/Inscape.Tests` -> `tests/Internal/Inscape.Tests`。这只是测试项目路径进入 Internal 测试树，测试内容尚未按 Compiler / Tooling / Cli / ExternalSupport 拆分。
 - 当前分支为 `main...origin/main`。本轮已把目录优先方案正式冻结为文档与 ADR；最新提交请以 `git log --oneline -1` 为准。
 - 本轮会话已确认新的重构铁律：先搭目录骨架与 `README.md` 规则文件，再迁大目录路径，再迁 solution / 项目路径，再迁项目名、命名空间和类型名；在此之前，不再把主要重构精力继续放在旧目录里的微观 helper 收口上。

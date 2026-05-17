@@ -2,7 +2,7 @@
 
 状态：执行中
 
-最后更新：2026-05-16
+最后更新：2026-05-17
 
 本文把大目标 E 的防回归工作流固化成可执行清单。它用于每个重构 / 功能节点开始前、提交前和推送后自检，避免正确行为只停留在个人记忆里。
 
@@ -37,8 +37,20 @@ tests/<Root>/<Area>/README.md
 本轮做什么：
 本轮不碰什么：
 涉及层级：
-需要保留的旧行为：
+需要删除的旧行为 / fallback：
 ```
+
+## 研发期兼容原则
+
+Inscape 当前仍处于研发期，没有已发布版本和真实用户项目需要承诺兼容。因此工作流默认不为旧语法、旧配置、旧样例或旧实现路径保留兼容层。
+
+执行规则：
+
+- 发现旧写法、legacy fallback、兼容字段或迁移期样例时，优先把它们登记为删除 / 迁移任务，而不是继续扩展兼容逻辑。
+- 新节点不得新增“为了旧版本可用”的 fallback。确实为了调试或渐进切换临时保留时，必须写明删除节点和验收条件。
+- 主样例、README、快速指南和 snippets 必须展示当前推荐写法；旧写法不得留在主路径中作为可见示范。
+- 测试应覆盖当前规范。旧语法测试只允许在“删除旧语法前的定位节点”短暂存在，删除节点完成后必须移除。
+- ADR 可以保留历史决策脉络，但当前行为文档、TODO 和工具提示不得把 legacy 当作仍需维护的产品能力。
 
 ## 行为契约
 
@@ -50,11 +62,11 @@ tests/<Root>/<Area>/README.md
 涉及层级：VSCode WorkspaceIndex
 新增行为：
 - 优先读取 hostBridge ids 作为 speaker / host binding authoring hint。
-- hostBridge 缺失时继续读取 legacy unitySample roleMap / bindingMap。
 - completion / hover 文案不再把 UnitySample 当通用模型。
 不可破坏：
-- 旧 unitySample 配置仍能提供补全和跳转。
 - Compiler 不读取 hostBridge。
+需要删除：
+- legacy unitySample roleMap / bindingMap fallback 不再作为长期能力。
 ```
 
 ## 命名与分层自检
@@ -104,7 +116,7 @@ npm run rebuild:vsix
 - Ctrl+Click 正文 / 选项复用预览并定位。
 - `-> target` 定义跳转和引用查找正常。
 - speaker 补全、Hover、定义和引用查找正常。
-- `@timeline ...` / `[kind: alias]` host binding 补全、Hover、Ctrl+Click 正常。
+- `@timeline ...` host binding 补全、Hover、Ctrl+Click 正常；legacy `[kind: alias]` 不再作为目标体验。
 - 预览源码按钮、diagnostics 点击、metadata 点击仍能回跳源码。
 
 如果当前环境无法完成手动验证，在最终报告里明确说明“已重建安装，未手动 reload / 点击验证”。
