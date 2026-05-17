@@ -112,6 +112,32 @@ Narrator: Source mapped line.
             AssertTrue(html.Contains("pill.onclick = () => openSource(sourcePayload(line.source));"), "Preview metadata source jump should use converted source payload.");
         }
 
+        static void PreviewHtmlStylesQueryInterpolationTokens() {
+            string directory = Path.Combine(Path.GetTempPath(), "inscape-tests", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory);
+
+            File.WriteAllText(Path.Combine(directory, "story.inscape"), """
+# start
+@entry
+Narrator: Gold [player.gold].
+? Spend [player.gold]?
+  - Buy with [player.gold] -> start
+""", Encoding.UTF8);
+
+            string html;
+            try {
+                html = RunCliForOutput(new[] { "preview-project", directory });
+            } finally {
+                Directory.Delete(directory, true);
+            }
+
+            AssertTrue(html.Contains(".query-interpolation"), "Preview should style query interpolation tokens.");
+            AssertTrue(html.Contains("function appendPreviewText(parent, value)"), "Preview should render text through interpolation-aware fragments.");
+            AssertTrue(html.Contains("appendPreviewText(paragraph, line.text);"), "Preview dialogue should use interpolation-aware rendering.");
+            AssertTrue(html.Contains("appendPreviewText(prompt, group.prompt);"), "Preview choice prompts should use interpolation-aware rendering.");
+            AssertTrue(html.Contains("appendPreviewText(button, option.text);"), "Preview choice options should use interpolation-aware rendering.");
+        }
+
         static void PreviewSourceControllerKeepsColumnFallback() {
             string controller = File.ReadAllText(RepositoryFile("src/Internal/VSCode/vscode-inscape/PreviewWebview/PreviewSourceController.js"));
 

@@ -32,6 +32,10 @@
 
         public string ChoicePromptColor { get; set; } = "#807663";
 
+        public string QueryInterpolationBackground { get; set; } = "#e7f0ed";
+
+        public string QueryInterpolationTextColor { get; set; } = "#2f675a";
+
         public string DiagnosticModelBackground { get; set; } = "#f2e6de";
 
         public string DiagnosticModelTextColor { get; set; } = "#7f2f18";

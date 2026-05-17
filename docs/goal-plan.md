@@ -139,7 +139,7 @@
 
 ## Goal 7：预览与作者体验打磨
 
-状态：待推进。
+状态：已启动。`[]` 查询插值在预览窗口中已作为特殊 token 样式显示，但不改变 Compiler / Runtime 语义。
 
 目标：在不新增旧兼容层的前提下，打磨 VSCode 可玩预览、热刷新和源码定位体验。
 
@@ -149,6 +149,19 @@
 - 刷新中状态提示。
 - 可选的预览 / 源码同步策略。
 - 正文 / 选项文本继续保持 `DefinitionProvider` + selection bridge，不回到 `DocumentLinkProvider`。
+- 预览中的 `[]` 查询插值保持原文显示，但使用独立 token 样式，避免和普通字符串混淆。
+
+## Goal 9：项目资源 / 代码分层收口
+
+状态：待推进。
+
+目标：按 ADR 0014 让未来可能独立拆仓的项目在自身根目录内区分源码、资源和开发脚本，并清理规划占位目录。
+
+候选节点：
+
+- VSCode package 内部资源目录收口：图标、schema、snippet、TextMate grammar、打包脚本和 README 说明统一到明确资源 / 脚本边界。
+- Preview HTML/CSS/JS 模板从 `PreviewHtmlRendererDomain` 的 C# 字符串中拆出为可维护资源，同时保持 CLI / VSCode preview 可用。
+- UnityPlugin 真实包结构确定后，再按具体包根建立 `Scripts` / `Resources`；不保留空规划目录。
 
 ## Goal 8：Unity / Bird 准备与计划
 

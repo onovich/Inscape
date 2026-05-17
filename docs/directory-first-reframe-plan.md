@@ -30,6 +30,9 @@
 10. `Cli` 默认不允许出现 `Domains` 目录；若出现，优先视为应上提到 `Tooling` 的信号。
 11. Unity 相关长期代码只允许进入 `ExternalSupport/UnityPlugin`，不再进入默认 .NET solution 编译链。
 12. 进入任一 Layer / Business 重构前，先阅读该目录的 `README.md`，再决定如何迁文件和改名。
+13. 不再保留纯规划空目录；未来能力先写入 docs / TODO，等有真实文件或目录规则 README 时再建目录。
+14. 对未来可能独立拆仓的项目，资源 / 代码分层发生在项目根内部，例如 `Scripts`、`Resources` 与开发脚本边界；不要在 `Internal` 或 `ExternalSupport` 顶层粗暴切资源桶。
+15. VSCode 当前是 Inscape DSL 第一方作者工具，属于 `Internal/VSCode`；ExternalSupport 只放 Unity、Bird 等宿主生态特定支持。
 
 ## 当前最明显的不符合点
 
