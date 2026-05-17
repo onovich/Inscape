@@ -10,16 +10,16 @@ class DslScriptNodeProvider {
 
     getDeclaredNodeAtPosition(document, position) {
         const line = document.lineAt(position).text;
-        const match = /^\s*::\s+([a-z][a-z0-9_-]*(?:\.[a-z][a-z0-9_-]*)*)\s*$/.exec(line);
-        if (!match) {
+        const declaration = this.parseDeclaredNodeLine(line);
+        if (!declaration) {
             return undefined;
         }
 
-        const start = line.indexOf(match[1]);
-        const end = start + match[1].length;
+        const start = declaration.character;
+        const end = start + declaration.name.length;
         if (position.character >= start && position.character <= end) {
             return {
-                name: match[1],
+                name: declaration.name,
                 range: new this.vscode.Range(position.line, start, position.line, end)
             };
         }
@@ -43,12 +43,9 @@ class DslScriptNodeProvider {
             return undefined;
         }
 
-        const jumpPattern = /->\s*([A-Za-z0-9_.-]*)/g;
-        let match = jumpPattern.exec(line);
-
-        while (match) {
-            const target = match[1];
-            const targetStart = match.index + match[0].length - target.length;
+        for (const targetInfo of this.collectJumpTargetsFromLine(line)) {
+            const target = targetInfo.name;
+            const targetStart = targetInfo.character;
             const targetEnd = targetStart + target.length;
             if (position.character >= targetStart && position.character <= targetEnd) {
                 return target.length > 0
@@ -58,7 +55,6 @@ class DslScriptNodeProvider {
                     }
                     : undefined;
             }
-            match = jumpPattern.exec(line);
         }
 
         return undefined;
@@ -120,26 +116,25 @@ class DslScriptNodeProvider {
     }
 
     collectNodesFromText(text, sourcePath, seen, nodes) {
-        const pattern = /^\s*::\s+([a-z][a-z0-9_-]*(?:\.[a-z][a-z0-9_-]*)*)\s*$/;
         const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
 
         for (let line = 0; line < lines.length; line += 1) {
-            const match = pattern.exec(lines[line]);
-            if (match && !seen.has(match[1])) {
-                seen.add(match[1]);
+            const declaration = this.parseDeclaredNodeLine(lines[line]);
+            if (declaration && !seen.has(declaration.name)) {
+                seen.add(declaration.name);
                 nodes.push({
-                    name: match[1],
+                    name: declaration.name,
+                    syntaxKind: declaration.syntaxKind,
                     sourcePath,
                     line,
-                    character: Math.max(0, lines[line].indexOf(match[1])),
-                    length: match[1].length
+                    character: declaration.character,
+                    length: declaration.name.length
                 });
             }
         }
     }
 
     collectNavigationFromText(text, sourcePath, referencesByTarget) {
-        const jumpPattern = /->\s*([A-Za-z0-9_.-]+)/g;
         const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
 
         for (let line = 0; line < lines.length; line += 1) {
@@ -147,27 +142,21 @@ class DslScriptNodeProvider {
                 continue;
             }
 
-            jumpPattern.lastIndex = 0;
-            let jumpMatch = jumpPattern.exec(lines[line]);
-            while (jumpMatch) {
-                const target = jumpMatch[1];
-                const character = jumpMatch.index + jumpMatch[0].length - target.length;
+            for (const jumpTarget of this.collectJumpTargetsFromLine(lines[line])) {
+                const target = jumpTarget.name;
                 this.addToMapList(referencesByTarget, target, {
                     name: target,
                     target,
                     sourcePath,
                     line,
-                    character,
+                    character: jumpTarget.character,
                     length: target.length
                 });
-
-                jumpMatch = jumpPattern.exec(lines[line]);
             }
         }
     }
 
     collectJumpReferencesFromText(text, sourcePath, targetName, references) {
-        const pattern = /->\s*([A-Za-z0-9_.-]+)/g;
         const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
 
         for (let line = 0; line < lines.length; line += 1) {
@@ -175,24 +164,81 @@ class DslScriptNodeProvider {
                 continue;
             }
 
-            pattern.lastIndex = 0;
-            let match = pattern.exec(lines[line]);
-            while (match) {
-                const target = match[1];
+            for (const jumpTarget of this.collectJumpTargetsFromLine(lines[line])) {
+                const target = jumpTarget.name;
                 if (target === targetName) {
-                    const character = match.index + match[0].length - target.length;
                     references.push({
                         name: target,
                         target,
                         sourcePath,
                         line,
-                        character,
+                        character: jumpTarget.character,
                         length: target.length
                     });
                 }
-                match = pattern.exec(lines[line]);
             }
         }
+    }
+
+    parseDeclaredNodeLine(line) {
+        const legacyMatch = /^\s*::\s+([a-z][a-z0-9_-]*(?:\.[a-z][a-z0-9_-]*)*)\s*$/.exec(line);
+        if (legacyMatch) {
+            return {
+                name: legacyMatch[1],
+                syntaxKind: "legacyNodeName",
+                character: Math.max(0, line.indexOf(legacyMatch[1]))
+            };
+        }
+
+        const hashIndex = line.indexOf("#");
+        if (hashIndex < 0 || line.slice(0, hashIndex).trim().length > 0) {
+            return undefined;
+        }
+
+        const rawTitle = line.slice(hashIndex + 1);
+        const title = rawTitle.trim();
+        if (!this.isValidTitle(title)) {
+            return undefined;
+        }
+
+        return {
+            name: title,
+            syntaxKind: "title",
+            character: hashIndex + 1 + rawTitle.indexOf(title)
+        };
+    }
+
+    collectJumpTargetsFromLine(line) {
+        const targets = [];
+        const pattern = /->\s*/g;
+        let match = pattern.exec(line);
+
+        while (match) {
+            const rawTarget = line.slice(match.index + match[0].length);
+            const target = rawTarget.trim();
+            if (this.isValidJumpTarget(target)) {
+                targets.push({
+                    name: target,
+                    character: match.index + match[0].length + rawTarget.indexOf(target)
+                });
+            }
+            match = pattern.exec(line);
+        }
+
+        return targets;
+    }
+
+    isValidJumpTarget(target) {
+        return /^[a-z][a-z0-9_-]*(?:\.[a-z][a-z0-9_-]*)*$/.test(target)
+            || this.isValidTitle(target);
+    }
+
+    isValidTitle(title) {
+        return title.length > 0
+            && !title.includes("->")
+            && !title.includes("/")
+            && !title.includes("\\")
+            && !/[\u0000-\u001f\u007f]/.test(title);
     }
 
     addToMapList(map, key, value) {

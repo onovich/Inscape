@@ -97,6 +97,11 @@
         }
       },
       {
+        "command": "inscape.insertNodeTitle",
+        "title": "Inscape: Insert Node Title",
+        "category": "Inscape"
+      },
+      {
         "command": "inscape.extractLocalization",
         "title": "Inscape: Export Localization CSV",
         "category": "Inscape"

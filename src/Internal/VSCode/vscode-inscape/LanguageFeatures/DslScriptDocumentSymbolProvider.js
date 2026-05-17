@@ -4,22 +4,17 @@ class DslScriptDocumentSymbolProvider {
 
     constructor(dependencies) {
         this.vscode = dependencies.vscode;
+        this.dslScriptNodeProvider = dependencies.dslScriptNodeProvider;
     }
 
     provideDocumentSymbols(document) {
         const symbols = [];
-        const nodePattern = /^\s*::\s+([a-z][a-z0-9_-]*(?:\.[a-z][a-z0-9_-]*)*)\s*$/;
+        const nodes = this.dslScriptNodeProvider.collectDocumentNodes(document);
 
-        for (let line = 0; line < document.lineCount; line += 1) {
-            const textLine = document.lineAt(line);
-            const match = nodePattern.exec(textLine.text);
-            if (!match) {
-                continue;
-            }
-
-            const range = textLine.range;
+        for (const node of nodes) {
+            const range = document.lineAt(node.line).range;
             symbols.push(new this.vscode.DocumentSymbol(
-                match[1],
+                node.name,
                 "Inscape dialogue block",
                 this.vscode.SymbolKind.Namespace,
                 range,

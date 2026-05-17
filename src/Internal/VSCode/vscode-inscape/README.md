@@ -5,11 +5,12 @@ This is the first lightweight authoring layer for `.inscape` scripts. It keeps s
 ## Capabilities
 
 - Registers the `inscape` language ID for `.inscape` files.
-- Highlights node headers, dialogue speakers, narration, choices, jumps, metadata lines, inline tags, and invalid node or jump target spellings.
+- Highlights `# 标题` node headers, legacy `:: node.name` headers, dialogue speakers, narration, choices, jumps, metadata lines, inline tags, and invalid node or jump target spellings.
 - Provides basic snippets for nodes, dialogue, choices, jumps, metadata, and inline tags.
 - Keeps metadata and inline tags on comment-like scopes so themes can visually soften them while prose remains readable.
 - Refreshes diagnostics through `Inscape.LanguageServer --diagnose-project <workspace> --override <source> <temp-file>` first, then falls back to the configured CLI `diagnose-project` invocation if the LanguageServer probe is unavailable.
 - Provides workspace node completions in jump target positions.
+- Provides `Inscape: Insert Node Title`; if the requested title already exists, the command inserts the next `_01`-style title.
 - Provides dialogue speaker completions from `inscape.config.json` `hostBridge`, with legacy `unitySample.roleMap` and workspace speaker fallback.
 - Provides host event / timing hook completions from `inscape.config.json` `hostBridge`, with legacy `unitySample.bindingMap` fallback for `@timeline ...`, `@timeline.<phase> ...`, and legacy `[kind: ...]` inline host binding positions.
 - Provides `[]` query interpolation completions and Hover from configured Host Schema zero-parameter simple queries such as `[player.gold]`; unknown queries are authoring hints only, not compiler errors. The provider prefers the CLI `inspect-host-schema-project` capability endpoint and falls back to direct JSON reading if the endpoint is unavailable.
@@ -24,6 +25,7 @@ This is the first lightweight authoring layer for `.inscape` scripts. It keeps s
 - Provides JSON validation for `inscape.host.schema.json` / `*.host.schema.json`.
 - Exposes command palette actions for localization:
   - `Inscape: Open Preview`
+  - `Inscape: Insert Node Title`
   - `Inscape: Export Localization CSV`
   - `Inscape: Update Localization CSV From Previous Table`
 - Exposes command palette action for host schema inspection:
@@ -32,11 +34,11 @@ This is the first lightweight authoring layer for `.inscape` scripts. It keeps s
 
 ## Quick Authoring Guide
 
-- `:: node.name` starts a dialogue block.
+- `# 标题` starts a dialogue block. Legacy `:: node.name` still works during migration.
 - `角色：文本` writes dialogue; `旁白：文本` works the same way.
 - `? 提示` starts a choice prompt.
-- `- 选项 -> target.node` adds a choice.
-- `-> target.node` jumps directly.
+- `- 选项 -> 目标标题` adds a choice.
+- `-> 目标标题` jumps directly.
 
 Style tweaking is file-based: point `inscape.config.json` at an editor style JSON and a preview style JSON, then adjust plain values such as colors, font sizes, and radii.
 
@@ -88,6 +90,7 @@ After installation, reload the VSCode window before judging behavior. Manual smo
 - Holding Ctrl over dialogue / option text shows the transient link affordance.
 - Ctrl+Click on dialogue / option text opens or reuses preview and reveals the matching page.
 - `-> target` Go to Definition and Find All References still work.
+- `# 标题` appears in highlighting, Outline, jump completion, Go to Definition, Find All References, Hover, and node CodeLens.
 - Speaker completion, Hover, Go to Definition, and Find All References prefer `hostBridge` and still fall back to legacy `unitySample.roleMap`.
 - `@timeline ...` host event / timing hook and legacy `[kind: alias]` inline host binding completion, Hover, and Ctrl+Click prefer `hostBridge` and still fall back to legacy `unitySample.bindingMap`.
 - `[query.path]` query interpolation completion and Hover read Host Schema queries, while legacy `[kind: alias]` remains in the Host Bridge / legacy binding path.

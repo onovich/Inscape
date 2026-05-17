@@ -10,14 +10,12 @@
 
 下一位接手者建议按以下顺序推进：
 
-1. 按 [/goal 后续目标计划](goal-plan.md) 推进 Goal 4：VSCode 标题语法体验，让高亮、Outline、补全、跳转和自动 `_01` 编号跟上新块语法。
-2. 按 [/goal 后续目标计划](goal-plan.md) 推进 Goal 5：LanguageServer 接管 VSCode 更多语义能力，优先 outline / node completion。
-3. 按 [/goal 后续目标计划](goal-plan.md) 推进 Goal 6：Host Schema endpoint 收口，评估是否下沉到 LanguageServer。
-4. 收敛 Host Schema 脚本作者体验后续：Tooling 已有 query / event reader，CLI 已提供 `inspect-host-schema-project` capability endpoint，VSCode 已优先消费该 endpoint 并保留直接 JSON fallback；下一步按 [VSCode LanguageServer Migration Plan](vscode-language-server-migration-plan.md) 评估是否把 capability endpoint 下沉到 LanguageServer，或继续清理 JS fallback 重复解析。
-5. 继续打磨 VSCode 可玩预览：补未保存内容的更细粒度热刷新、刷新中状态提示，以及可选的预览 / 源码同步策略。
+1. 按 [/goal 后续目标计划](goal-plan.md) 推进 Goal 5：LanguageServer 接管 VSCode 更多语义能力，优先 outline / node completion。
+2. 按 [/goal 后续目标计划](goal-plan.md) 推进 Goal 6：Host Schema endpoint 收口，评估是否下沉到 LanguageServer。
+3. 若后续准备删除 CLI diagnostics fallback，先补一次 LanguageServer 不可用场景下的 CLI fallback 专项 smoke test。
+4. 继续打磨 VSCode 可玩预览：补未保存内容的更细粒度热刷新、刷新中状态提示，以及可选的预览 / 源码同步策略。
 	- 正文 / 选项文本不再用 `DocumentLinkProvider`，因为它会导致整段文本常驻下划线；当前用 `DefinitionProvider` 恢复“默认无下划线、Ctrl+指向才显示链接态”的编辑体验，并通过 selection bridge 在 Ctrl+Click 后执行预览定位，显式命令仅作为兜底。
-6. 推进 VSCode 前端接入 LanguageServer：diagnostics 已优先调用 LanguageServer project probe 并保留 CLI fallback；`.vsix` rebuild / install 已完成，用户粗测 VSCode 体验基本 OK；下一步考虑 outline / node completion，或在删除 fallback 前补一次 CLI fallback 专项 smoke test。
-7. Unity / Bird 相关继续只做准备和计划，等设计方案落实后再研发：包括 Attribute 扫描、Host Bridge 到 adapter 生成、Bird importer 提交策略和带真实 Timeline 的 Dry Run。
+5. Unity / Bird 相关继续只做准备和计划，等设计方案落实后再研发：包括 Attribute 扫描、Host Bridge 到 adapter 生成、Bird importer 提交策略和带真实 Timeline 的 Dry Run。
 
 ## 文档与接手效率
 
@@ -234,7 +232,7 @@
 - [ ] 按 [VSCode LanguageServer Migration Plan](vscode-language-server-migration-plan.md) 评估是否把 Host Schema capability endpoint 下沉到 LanguageServer，并在 VSCode 稳定后移除 JS provider 的重复 JSON fallback。
 - [x] 定义第一版诊断清单：重复节点、非法节点名、缺失目标、不可达节点、空节点、选项语法问题。
 - [x] Compiler 第一刀支持 `# 标题`：保留 `:: node.name` 兼容路径，新增标题唯一诊断、标题前缺空行 info 级 style hint，并覆盖中文标题跳转测试。
-- [ ] VSCode 标题语法体验：TextMate 高亮、snippets、Outline / completion / definition / references 识别标题，以及创建新节点 `_01` 自动编号策略。
+- [x] VSCode 标题语法体验：TextMate 高亮、snippets、Outline / completion / definition / references 识别标题，以及 `Inscape: Insert Node Title` 命令在创建同名标题时自动生成 `_01` 编号。
 
 ## HTML 调试预览
 

@@ -154,7 +154,8 @@ const dslScriptHoverProvider = new DslScriptHoverProvider({
 });
 
 const dslScriptDocumentSymbolProvider = new DslScriptDocumentSymbolProvider({
-    vscode
+    vscode,
+    dslScriptNodeProvider
 });
 
 const dslScriptCodeLensProvider = new DslScriptCodeLensProvider({
@@ -335,8 +336,10 @@ editorAuthoringCommand = new EditorAuthoringCommand({
     vscode,
     fs,
     path,
+    isInscapeDocument,
     previewCommand,
     selectWorkspaceFolder,
+    dslScriptNodeProvider,
     defaultEditorStyle,
     defaultPreviewStyle
 });
@@ -507,7 +510,7 @@ function showNodeIncomingReferences(uri, position, locations) {
 }
 
 function isJumpTargetContext(linePrefix) {
-    return /(?:^|\s)->\s*[A-Za-z0-9_.-]*$/.test(linePrefix);
+    return /(?:^|\s)->\s*[^/\\\r\n]*$/.test(linePrefix);
 }
 
 function isSpeakerCompletionContext(linePrefix) {

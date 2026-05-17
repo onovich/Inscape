@@ -97,6 +97,8 @@
 
 ## Goal 4：VSCode 标题语法体验
 
+状态：已完成。VSCode 轻量 authoring 层已跟上 `# 标题`，旧 `:: node.name` 继续兼容。
+
 目标：让编辑器体验跟上 `# 标题`，避免 parser 支持但作者体验断层。
 
 产出：
@@ -108,10 +110,10 @@
 
 小节点：
 
-- G4.1 更新 TextMate grammar、snippets 和 README。
-- G4.2 更新 VSCode workspace index 对标题节点的扫描。
-- G4.3 增加创建标题的自动编号命令或补全策略。
-- G4.4 做 `.vsix` rebuild / install / Reload Window smoke test。
+- [x] G4.1 更新 TextMate grammar、snippets 和 README。
+- [x] G4.2 更新 VSCode workspace index 对标题节点的扫描。
+- [x] G4.3 增加创建标题的自动编号命令或补全策略。
+- [x] G4.4 做 `.vsix` rebuild / install / Reload Window smoke test。
 
 验收：
 

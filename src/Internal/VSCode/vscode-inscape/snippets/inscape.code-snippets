@@ -2,11 +2,20 @@
   "Node": {
     "prefix": "node",
     "body": [
-      ":: ${1:chapter.scene}",
+      "# ${1:剧情标题}",
       "",
       "$0"
     ],
     "description": "Create an Inscape node."
+  },
+  "Legacy Node": {
+    "prefix": "node-legacy",
+    "body": [
+      ":: ${1:chapter.scene}",
+      "",
+      "$0"
+    ],
+    "description": "Create a legacy Inscape node name."
   },
   "Dialogue": {
     "prefix": "say",
@@ -20,7 +29,7 @@
     "prefix": "choice",
     "body": [
       "? ${1:选择行动}",
-      "  - ${2:选项文本} -> ${3:target.node}",
+      "  - ${2:选项文本} -> ${3:目标标题}",
       "$0"
     ],
     "description": "Create a choice group."
@@ -28,7 +37,7 @@
   "Jump": {
     "prefix": "jump",
     "body": [
-      "-> ${1:target.node}"
+      "-> ${1:目标标题}"
     ],
     "description": "Jump to another node."
   },

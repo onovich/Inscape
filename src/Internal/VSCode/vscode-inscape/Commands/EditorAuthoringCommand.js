@@ -6,8 +6,10 @@ class EditorAuthoringCommand {
         this.vscode = dependencies.vscode;
         this.fs = dependencies.fs;
         this.path = dependencies.path;
+        this.isInscapeDocument = dependencies.isInscapeDocument;
         this.previewCommand = dependencies.previewCommand;
         this.selectWorkspaceFolder = dependencies.selectWorkspaceFolder;
+        this.dslScriptNodeProvider = dependencies.dslScriptNodeProvider;
         this.defaultEditorStyle = dependencies.defaultEditorStyle;
         this.defaultPreviewStyle = dependencies.defaultPreviewStyle;
     }
@@ -18,6 +20,11 @@ class EditorAuthoringCommand {
                 label: "$(play) 在预览中定位当前文本",
                 description: "按当前光标或选区定位预览",
                 action: () => this.previewCommand.revealSelection(context)
+            },
+            {
+                label: "$(add) 插入剧情块标题",
+                description: "同名标题会自动追加 _01",
+                action: () => this.insertNodeTitle()
             },
             {
                 label: "$(symbol-color) 编辑器样式",
@@ -43,6 +50,40 @@ class EditorAuthoringCommand {
         if (selected && typeof selected.action === "function") {
             await selected.action();
         }
+    }
+
+    async insertNodeTitle() {
+        const editor = this.vscode.window.activeTextEditor;
+        if (!editor || !this.isInscapeDocument(editor.document)) {
+            this.vscode.window.showWarningMessage("Open an .inscape document before inserting a node title.");
+            return;
+        }
+
+        const input = await this.vscode.window.showInputBox({
+            prompt: "输入剧情块标题。同名标题会自动追加 _01。",
+            placeHolder: "法庭开场",
+            validateInput: (value) => {
+                const title = this.normalizeTitle(value);
+                if (!title) {
+                    return "标题不能为空。";
+                }
+                if (!this.dslScriptNodeProvider.isValidTitle(title)) {
+                    return "标题不能包含 /、\\、控制字符或 ->。";
+                }
+                return undefined;
+            }
+        });
+
+        if (input === undefined) {
+            return;
+        }
+
+        const title = this.normalizeTitle(input);
+        const uniqueTitle = await this.createUniqueNodeTitle(editor.document, title);
+        const insertText = this.createNodeTitleInsertion(editor.document, editor.selection.active, uniqueTitle);
+        await editor.edit((editBuilder) => {
+            editBuilder.insert(editor.selection.active, insertText);
+        });
     }
 
     async openEditorStyle() {
@@ -80,6 +121,35 @@ class EditorAuthoringCommand {
         }
 
         await this.openFile(this.path.join(workspaceFolder.uri.fsPath, "docs", "quick-syntax-guide.md"));
+    }
+
+    async createUniqueNodeTitle(document, title) {
+        const nodes = await this.dslScriptNodeProvider.collectWorkspaceNodes(document);
+        const used = new Set(nodes.map((node) => node.name));
+        if (!used.has(title)) {
+            return title;
+        }
+
+        for (let index = 1; index < 1000; index += 1) {
+            const candidate = title + "_" + String(index).padStart(2, "0");
+            if (!used.has(candidate)) {
+                return candidate;
+            }
+        }
+
+        return title + "_" + Date.now();
+    }
+
+    createNodeTitleInsertion(document, position, title) {
+        const currentLine = document.lineAt(position.line).text;
+        const prefix = position.character === 0 && currentLine.trim().length === 0
+            ? ""
+            : "\n\n";
+        return prefix + "# " + title + "\n\n";
+    }
+
+    normalizeTitle(value) {
+        return String(value || "").trim().replace(/\s+/g, " ");
     }
 
     async resolvePreferredWorkspaceFolder() {
