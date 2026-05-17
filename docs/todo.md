@@ -4,19 +4,19 @@
 
 本文件记录已经能执行或需要调研的工作。仍未形成共识的问题放在 [待确认问题](open-questions.md)，已经形成长期决策的问题放在 [ADR](adr/README.md)。
 
-当前目录迁移与不符合项总蓝图见 [目录优先重构蓝图](directory-first-reframe-plan.md)。
+当前目录迁移与不符合项总蓝图见 [目录优先重构蓝图](directory-first-reframe-plan.md)。当前后续执行面板见 [/goal 后续目标计划](goal-plan.md)。
 
 ## 接力优先队列
 
 下一位接手者建议按以下顺序推进：
 
-1. 收敛 Host Schema 脚本作者体验后续：Tooling 已有 query / event reader，CLI 已提供 `inspect-host-schema-project` capability endpoint，VSCode 已优先消费该 endpoint 并保留直接 JSON fallback；下一步按 [VSCode LanguageServer Migration Plan](vscode-language-server-migration-plan.md) 评估是否把 capability endpoint 下沉到 LanguageServer，或继续清理 JS fallback 重复解析。
-2. 继续打磨 VSCode 可玩预览：补未保存内容的更细粒度热刷新、刷新中状态提示，以及可选的预览 / 源码同步策略。
+1. 按 [/goal 后续目标计划](goal-plan.md) 推进 Goal 1：stable node id 契约，先设计落盘、重命名识别和 `:: node.name` 到 `# 标题` 的兼容迁移，不急着改 parser。
+2. 按 [/goal 后续目标计划](goal-plan.md) 推进 Goal 2：本地化 diff / alignment 迁移，保护已有好翻译并揭示新增、删除、改写和歧义文本。
+3. 按 [/goal 后续目标计划](goal-plan.md) 推进 Goal 3：`# 标题` 语法第一刀，保留旧 `:: node.name` 兼容路径。
+4. 收敛 Host Schema 脚本作者体验后续：Tooling 已有 query / event reader，CLI 已提供 `inspect-host-schema-project` capability endpoint，VSCode 已优先消费该 endpoint 并保留直接 JSON fallback；下一步按 [VSCode LanguageServer Migration Plan](vscode-language-server-migration-plan.md) 评估是否把 capability endpoint 下沉到 LanguageServer，或继续清理 JS fallback 重复解析。
+5. 继续打磨 VSCode 可玩预览：补未保存内容的更细粒度热刷新、刷新中状态提示，以及可选的预览 / 源码同步策略。
 	- 正文 / 选项文本不再用 `DocumentLinkProvider`，因为它会导致整段文本常驻下划线；当前用 `DefinitionProvider` 恢复“默认无下划线、Ctrl+指向才显示链接态”的编辑体验，并通过 selection bridge 在 Ctrl+Click 后执行预览定位，显式命令仅作为兜底。
-3. 推进 VSCode 前端接入 LanguageServer：diagnostics 已优先调用 LanguageServer project probe 并保留 CLI fallback；`.vsix` rebuild / install 已完成，用户粗测 VSCode 体验基本 OK；下一步考虑 outline / node completion，或在删除 fallback 前补一次 CLI fallback 专项 smoke test。
-4. 设计本地化模糊匹配与人工确认报告，不要直接自动复用相似文本译文。
-5. 基于 [ADR 0013](adr/0013-author-title-and-stable-node-id.md) 设计 stable node id 落盘与迁移实现：标题是作者主身份且项目内唯一，stable id 是系统身份，重命名不应打断本地化 / 外部引用。
-6. 实现 `# 标题` 块语法迁移：标题前空行只做 style hint，不做编译错误；自动创建同名标题时生成 `_01`，手动重名时报 duplicate title diagnostic。
+6. 推进 VSCode 前端接入 LanguageServer：diagnostics 已优先调用 LanguageServer project probe 并保留 CLI fallback；`.vsix` rebuild / install 已完成，用户粗测 VSCode 体验基本 OK；下一步考虑 outline / node completion，或在删除 fallback 前补一次 CLI fallback 专项 smoke test。
 7. Unity / Bird 相关继续只做准备和计划，等设计方案落实后再研发：包括 Attribute 扫描、Host Bridge 到 adapter 生成、Bird importer 提交策略和带真实 Timeline 的 Dry Run。
 
 ## 文档与接手效率
