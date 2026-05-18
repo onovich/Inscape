@@ -152,6 +152,7 @@
 - [x] 预览中的 `[]` 查询插值保持原文显示，但使用独立 token 样式，避免和普通字符串混淆。
 - [x] 可选的预览 / 源码同步策略第一版：`inscape.preview.sourceSyncMode = off|click|selection`，默认 `click` 保持现有行为，`selection` 只驱动已打开预览。
 - [x] 可选的预览 / 源码同步策略自动化自检：新增脚本覆盖 `off` / `click` / `selection` 的关键边界。
+- [x] 可选的预览 / 源码同步策略手动 smoke 入口收口：新增脚本统一生成临时工作区与模式设置，避免交互回归只靠记忆执行。
 - [ ] 可选的预览 / 源码同步策略收口：补 VSCode 手动 smoke，确认三种模式的交互边界与默认值。
 
 ## Goal 10：Stable ID 与本地化迁移落地

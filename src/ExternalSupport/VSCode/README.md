@@ -100,6 +100,14 @@ npm run rebuild:vsix
 
 After installation, reload the VSCode window before judging behavior. Manual smoke checks:
 
+For `inscape.preview.sourceSyncMode`, prefer the repeatable launcher in [docs/vscode-preview-source-sync-smoke.md](../../../docs/vscode-preview-source-sync-smoke.md):
+
+```powershell
+npm --prefix src\ExternalSupport\VSCode run smoke:preview-source-sync -- -Mode off
+npm --prefix src\ExternalSupport\VSCode run smoke:preview-source-sync -- -Mode click
+npm --prefix src\ExternalSupport\VSCode run smoke:preview-source-sync -- -Mode selection
+```
+
 - Dialogue, narration, prompt, and choice text show no always-on underline.
 - Holding Ctrl over dialogue / option text shows the transient link affordance.
 - Ctrl+Click on dialogue / option text opens or reuses preview and reveals the matching page.

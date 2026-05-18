@@ -13,6 +13,7 @@
   "scripts": {
     "check:preview-navigation": "node Scripts/assert-preview-navigation-contract.js",
     "check:preview-source-sync": "node Scripts/check-preview-source-sync-modes.js",
+    "smoke:preview-source-sync": "powershell -NoProfile -ExecutionPolicy Bypass -File Scripts/start-preview-source-sync-smoke.ps1",
     "package:vsix": "vsce package --out inscape-vscode.vsix",
     "install:vsix": "powershell -NoProfile -ExecutionPolicy Bypass -File Scripts/rebuild-and-install.ps1",
     "rebuild:vsix": "powershell -NoProfile -ExecutionPolicy Bypass -File Scripts/rebuild-and-install.ps1"

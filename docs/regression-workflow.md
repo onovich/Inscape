@@ -111,6 +111,8 @@ npm run rebuild:vsix
 
 该脚本会打包并安装 `.vsix`。安装后需要 reload VSCode 窗口，再做手动交互回归：
 
+- 涉及 `inscape.preview.sourceSyncMode` 时，优先使用 [VSCode Preview Source Sync Smoke](vscode-preview-source-sync-smoke.md) 里的脚本化入口，而不是靠记忆切换模式。
+
 - 正文 / 选项文本默认无常驻下划线。
 - Ctrl+指向正文 / 选项才出现链接态。
 - Ctrl+Click 正文 / 选项复用预览并定位。

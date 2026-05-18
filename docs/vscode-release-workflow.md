@@ -10,6 +10,7 @@
 2. 运行 `npm run rebuild:vsix`，生成并安装新的 `.vsix`。
 3. 在 VS Code 里执行窗口 reload，或在扩展安装完成后重新打开目标工作区。
 4. 如果扩展打包警告指出范围过大，优先补 `.vscodeignore`，再检查产物内容。
+5. 如果这次改动涉及 `inscape.preview.sourceSyncMode`、正文 / 选项文本 Ctrl+Click reveal 或 selection bridge，按 [VSCode Preview Source Sync Smoke](vscode-preview-source-sync-smoke.md) 启动对应模式做手动 smoke。
 
 ## 经验教训
 
