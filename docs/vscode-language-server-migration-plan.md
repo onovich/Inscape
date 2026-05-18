@@ -85,10 +85,10 @@
 迁移顺序：
 
 1. 已完成：LanguageServer 增加 Host Schema capability endpoint。
-2. 下一步：VSCode query / event provider 优先调用 LanguageServer。
-3. 失败时回退 CLI `inspect-host-schema-project`。
-4. 再失败时暂时回退 JS direct JSON reader。
-5. 只有在 packaged server、扩展开发 host、本仓库打开和普通项目打开四种场景都通过 smoke test 后，才单独移除 direct JSON fallback。
+2. 已完成：VSCode query / event provider 优先调用 LanguageServer。
+3. 当前保留：失败时回退 CLI `inspect-host-schema-project`。
+4. 当前保留：再失败时暂时回退 JS direct JSON reader。
+5. 下一步：补 output 日志并单独移除 direct JSON fallback。
 
 ### L6：完整 LSP transport
 

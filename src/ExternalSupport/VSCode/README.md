@@ -21,8 +21,8 @@ The package is also a future split-repo candidate, so non-source extension asset
 - Provides `Inscape: Insert Node Title`; if the requested title already exists, the command inserts the next `_01`-style title.
 - Provides dialogue speaker completions from `inscape.config.json` `hostBridge`, with workspace speaker fallback.
 - Provides host event / timing hook completions from `inscape.config.json` `hostBridge`, with workspace `@timeline...` fallback.
-- Provides `[]` query interpolation completions and Hover from configured Host Schema zero-parameter simple queries such as `[player.gold]`; unknown queries are authoring hints only, not compiler errors. The provider prefers the CLI `inspect-host-schema-project` capability endpoint and falls back to direct JSON reading if the endpoint is unavailable.
-- Provides `@emit` host event completions and Hover from configured Host Schema `events[]`; unknown events are authoring hints only, not compiler errors. This uses the same capability endpoint with direct JSON fallback.
+- Provides `[]` query interpolation completions and Hover from configured Host Schema zero-parameter simple queries such as `[player.gold]`; unknown queries are authoring hints only, not compiler errors. The provider prefers `Inscape.LanguageServer --host-schema-capabilities-project`, falls back to CLI `inspect-host-schema-project`, and keeps direct JSON reading only as a temporary fallback until G6.4 removes it.
+- Provides `@emit` host event completions and Hover from configured Host Schema `events[]`; unknown events are authoring hints only, not compiler errors. This uses the same LanguageServer-first capability endpoint with CLI fallback, and keeps direct JSON reading only as a temporary fallback until G6.4 removes it.
 - Highlights host hook lines such as `@timeline court_intro` without the always-on link look, while Hover / Ctrl+Click still jumps to the matching mapping row or workspace occurrence.
 - Supports Go to Definition / Ctrl+Click from jump targets to node declarations through `Inscape.LanguageServer --definition-project`, and from dialogue speakers to configured Host Bridge speaker rows or dialogue references; the clickable text stays visually plain until Ctrl is held.
 - Treats full-width colons and common Chinese punctuation as word boundaries so Ctrl+Click link styling on Chinese dialogue only covers the speaker name.
@@ -104,7 +104,7 @@ After installation, reload the VSCode window before judging behavior. Manual smo
 - Speaker completion, Hover, Go to Definition, and Find All References prefer `hostBridge` and fall back to workspace dialogue references.
 - `@timeline ...` host event / timing hook completion, Hover, and Ctrl+Click prefer `hostBridge` and fall back to workspace `@timeline...` occurrences.
 - `[query.path]` query interpolation completion and Hover read Host Schema queries.
-- `@emit eventName` completion and Hover read Host Schema events and remain separate from `@timeline` Host Bridge bindings.
+- `@emit eventName` completion and Hover read Host Schema events through the same LanguageServer-first capability endpoint as query interpolation and remain separate from `@timeline` Host Bridge bindings.
 - Preview source buttons, diagnostics clicks, and metadata clicks still jump to the expected source location.
 
 If the environment cannot perform the manual click checks, say so in the handoff or final report instead of implying they were completed.

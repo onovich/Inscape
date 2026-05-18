@@ -133,8 +133,8 @@
 小节点：
 
 - [x] G6.1 明确 Host Schema capability endpoint 的 LanguageServer / Tooling 数据契约：`LanguageServerEntry --host-schema-capabilities-project <root> [--config path]` 直接复用 `ToolConfigReaderDomain` 与 `HostSchemaCapabilityCatalogDomain`，输出与 CLI endpoint 相同的 `inscape.host-schema.capabilities` payload。
-- [ ] G6.2 VSCode query interpolation provider 改为消费统一 endpoint。
-- [ ] G6.3 VSCode host event provider 改为消费统一 endpoint。
+- [x] G6.2 VSCode query interpolation provider 改为消费统一 endpoint：`HostSchemaCapabilityProvider` 已优先调用 LanguageServer `--host-schema-capabilities-project`，再回退 CLI `inspect-host-schema-project`。
+- [x] G6.3 VSCode host event provider 改为消费统一 endpoint：`@emit` event completion / hover 与 `[]` query interpolation 共用同一个 LanguageServer-first capability catalog。
 - [ ] G6.4 删除 JS direct JSON fallback，失败时给出清晰 output 日志。
 
 ## Goal 7：预览与作者体验打磨

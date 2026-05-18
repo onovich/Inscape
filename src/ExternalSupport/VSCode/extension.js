@@ -97,6 +97,7 @@ const hostSchemaCapabilityProvider = new HostSchemaCapabilityProvider({
     fs,
     path,
     vscode,
+    resolveLanguageServerProjectPath: (workspaceFolderPath) => resolveLanguageServerProjectPathFromBase(workspaceFolderPath, __dirname),
     resolveCliProjectPath: (workspaceFolderPath) => resolveCliProjectPathFromBase(workspaceFolderPath, __dirname)
 });
 

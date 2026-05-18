@@ -7,6 +7,7 @@ class HostSchemaCapabilityProvider {
         this.fs = dependencies.fs;
         this.path = dependencies.path;
         this.vscode = dependencies.vscode;
+        this.resolveLanguageServerProjectPath = dependencies.resolveLanguageServerProjectPath;
         this.resolveCliProjectPath = dependencies.resolveCliProjectPath;
         this.cache = new Map();
     }
@@ -34,28 +35,62 @@ class HostSchemaCapabilityProvider {
 
     async invokeCapabilityEndpoint(document, workspacePath) {
         const configuration = this.vscode.workspace.getConfiguration("inscape", document.uri);
+        const languageServerProject = this.resolveLanguageServerProjectPath(workspacePath);
         const cliProject = this.resolveCliProjectPath(workspacePath);
-        const invocation = this.resolveCliInvocation(configuration.get("compiler.command", "dotnet"), cliProject, workspacePath);
+        const command = configuration.get("compiler.command", "dotnet");
+        const invocations = [
+            this.resolveLanguageServerInvocation(command, languageServerProject, workspacePath),
+            this.resolveCliInvocation(command, cliProject, workspacePath)
+        ];
 
-        try {
-            const result = await this.execFile(invocation);
-            if (result.exitCode !== 0 || !result.stdout.trim()) {
-                return undefined;
+        for (const invocation of invocations) {
+            try {
+                const result = await this.execFile(invocation);
+                if (result.exitCode !== 0 || !result.stdout.trim()) {
+                    continue;
+                }
+
+                const parsed = JSON.parse(result.stdout);
+                if (!parsed || parsed.format !== "inscape.host-schema.capabilities") {
+                    continue;
+                }
+
+                return parsed;
+            } catch {
             }
-
-            const parsed = JSON.parse(result.stdout);
-            if (!parsed || parsed.format !== "inscape.host-schema.capabilities") {
-                return undefined;
-            }
-
-            return parsed;
-        } catch {
-            return undefined;
         }
+
+        return undefined;
+    }
+
+    resolveLanguageServerInvocation(defaultCommand, languageServerProject, workspaceFolderPath) {
+        const languageServerExecutable = this.resolveProjectExecutablePath(languageServerProject, "Inscape.LanguageServer");
+        if (languageServerExecutable) {
+            return {
+                command: languageServerExecutable,
+                args: ["--host-schema-capabilities-project", workspaceFolderPath],
+                cwd: workspaceFolderPath
+            };
+        }
+
+        const languageServerAssembly = this.resolveProjectAssemblyPath(languageServerProject, "Inscape.LanguageServer.dll");
+        if (languageServerAssembly && this.fs.existsSync(languageServerAssembly)) {
+            return {
+                command: defaultCommand,
+                args: ["exec", languageServerAssembly, "--host-schema-capabilities-project", workspaceFolderPath],
+                cwd: workspaceFolderPath
+            };
+        }
+
+        return {
+            command: defaultCommand,
+            args: ["run", "--project", languageServerProject, "--", "--host-schema-capabilities-project", workspaceFolderPath],
+            cwd: workspaceFolderPath
+        };
     }
 
     resolveCliInvocation(defaultCommand, cliProject, workspaceFolderPath) {
-        const cliExecutable = this.resolveCliExecutablePath(cliProject);
+        const cliExecutable = this.resolveProjectExecutablePath(cliProject, "Inscape.Cli");
         if (cliExecutable) {
             return {
                 command: cliExecutable,
@@ -64,7 +99,7 @@ class HostSchemaCapabilityProvider {
             };
         }
 
-        const cliAssembly = this.resolveCliAssemblyPath(cliProject);
+        const cliAssembly = this.resolveProjectAssemblyPath(cliProject, "Inscape.Cli.dll");
         if (cliAssembly && this.fs.existsSync(cliAssembly)) {
             return {
                 command: defaultCommand,
@@ -101,11 +136,11 @@ class HostSchemaCapabilityProvider {
         });
     }
 
-    resolveCliExecutablePath(cliProject) {
-        const projectDirectory = this.path.dirname(cliProject);
+    resolveProjectExecutablePath(projectPath, executableBaseName) {
+        const projectDirectory = this.path.dirname(projectPath);
         const candidateFrameworks = ["net10.0", "net9.0", "net8.0"];
         const candidateConfigurations = ["Debug", "Release"];
-        const executableName = process.platform === "win32" ? "Inscape.Cli.exe" : "Inscape.Cli";
+        const executableName = process.platform === "win32" ? executableBaseName + ".exe" : executableBaseName;
 
         for (const configuration of candidateConfigurations) {
             for (const framework of candidateFrameworks) {
@@ -119,14 +154,14 @@ class HostSchemaCapabilityProvider {
         return undefined;
     }
 
-    resolveCliAssemblyPath(cliProject) {
-        const projectDirectory = this.path.dirname(cliProject);
+    resolveProjectAssemblyPath(projectPath, assemblyName) {
+        const projectDirectory = this.path.dirname(projectPath);
         const candidateFrameworks = ["net10.0", "net9.0", "net8.0"];
         const candidateConfigurations = ["Debug", "Release"];
 
         for (const configuration of candidateConfigurations) {
             for (const framework of candidateFrameworks) {
-                const candidate = this.path.join(projectDirectory, "bin", configuration, framework, "Inscape.Cli.dll");
+                const candidate = this.path.join(projectDirectory, "bin", configuration, framework, assemblyName);
                 if (this.fs.existsSync(candidate)) {
                     return candidate;
                 }
