@@ -2,7 +2,7 @@
 
 状态：基线
 
-最后更新：2026-05-17
+最后更新：2026-05-19
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
@@ -328,27 +328,23 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 
 建议优先做小而闭环的任务，不要直接跳到大规模重构。
 
-1. Goal 7 收口：可选预览 / 源码同步策略。
-   - 已完成 `[]` 预览 token 样式、等待 / 刷新中状态、刷新版本保护、局部更新边界，以及 `DefinitionProvider` + selection bridge 静态契约检查。
-   - 下一步只剩设计并实现可选同步模式，例如 `off` / `click` / `selection`，明确默认值、配置项、回退行为和 VSCode 手动 smoke。
+1. 先收口现有 VSCode 体验。
+   - Goal 7 只剩 `inscape.preview.sourceSyncMode = off|click|selection` 的真实手动 smoke。
+   - Goal 11.1 只剩真实 VSCode 场景下的 diagnostics fallback 手动 smoke。
 
-2. Stable Node ID 与节点重命名落地。
-   - ADR 0013、stable node id / title map 契约和标题重命名识别流程已经完成设计；`update-node-map-project` 首版 sidecar 闭环与第一版保守自动重命名识别都已落地。
-   - 下一步是继续 G10.2：把标题创建后的自动同步、标题重命名入口、人工确认和后续本地化对齐真正接入 stable node id 维护。
+2. 再推进 Stable Node ID 主线。
+   - ADR 0013、sidecar 闭环、保守自动重命名识别、VSCode 显式 `Update Stable Node Map` 入口都已落地。
+   - 下一步建议顺序是：标题创建后自动同步 stable node map -> 标题重命名人工确认 / 冲突报告 -> 本地化 alignment / audit report。
 
 3. 本地化 Diff / Alignment 落地。
    - 状态机、CSV / report 字段、anchor + occurrence + diff 对齐流程已经完成设计。
-   - 下一步实现显式 alignment / audit report，保护旧译文，标记 `kept` / `new` / `changed` / `removed` / `conflict` / `stale`；相似匹配只作为人工候选。
+   - 注意它和 Goal 10 是一条主线，优先级排在 stable node id 维护之后，不建议脱离 stable node id 单独推进。
 
 4. Tooling 共享流程继续收敛。
    - 继续落到 `DslScriptSources`、`ToolConfig`、`Preview`、`Localization`、`HostSchema`、`HostBinding` 等窄模块。
    - 不要新建泛化 `ProjectService`；如果要做，先挑一个仍重复的跨 Cli / VSCode / LanguageServer 流程做小闭环。
 
-5. VSCode / LanguageServer fallback 收口前置验证。
-   - CLI diagnostics fallback 目前仍保留。
-   - 删除 fallback 前必须补一次“LanguageServer 不可用但 CLI fallback 可用”的专项 smoke test。
-
-6. Unity / Bird 只做准备和决策，暂不扩研发。
+5. Unity / Bird 只做准备和决策，暂不扩研发。
    - 待定：Bird 项目新增 importer 与 `InscapeGenerated` 资源提交策略。
    - 待验证：带真实 Timeline 绑定的 Bird Import Dry Run，确认 `talking.exit` 的 `TalkingEffectTM.PlayTimeline` 落地和其他 phase warning。
    - 低优先级：结合 Bird `L10N` 真实格式决定是否调整 Inscape CSV 字段和列顺序。

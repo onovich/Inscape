@@ -8,34 +8,48 @@
 
 ## 接力优先队列
 
-下一位接手者建议按以下顺序推进。已完成的 Goal 0 / 3 / 4 / 5 / 6 / 9 不再放进优先队列，只保留在下方历史账本中。
+下一位接手者建议按以下顺序推进。已完成的 Goal 0 / 3 / 4 / 5 / 6 / 9 不再放进优先队列，只保留在下方历史账本中。当前剩余事项可以收敛成四组：先补手动 smoke 收口现有体验，再推进 stable id / 本地化主线，然后再挑 Tooling 单点收敛，最后才是 Unity / Bird 的准备项。
 
-1. **Goal 7 收口：可选预览 / 源码同步策略。**
-	- 已完成：`[]` 预览 token 样式、等待 / 刷新中状态、刷新版本保护、局部更新边界、`DefinitionProvider` + selection bridge 静态契约检查。
-	- 待做：补完 `inscape.preview.sourceSyncMode` 的 VSCode 手动 smoke，并视体验决定是否继续细化自动跟随边界。
-2. **Stable Node ID 与节点重命名落地。**
-	- 已完成：ADR 0013、stable node id / title map 契约、标题重命名识别流程设计，以及 `update-node-map-project` 首版 sidecar 创建 / 读取 / 更新 / missing / conflict 闭环；同路径下已补第一版保守自动重命名识别与 `previousTitles` 维护。
-	- 待做：把标题创建后的自动同步、标题重命名入口与本地化对齐真正接入 stable node id 维护，并补人工确认 / 冲突报告。VSCode 显式 `Update Stable Node Map` 入口已落地。
-3. **本地化 Diff / Alignment 落地。**
+1. **先收口现有 VSCode 体验。**
+	- **Goal 7 手动 smoke**：补完 `inscape.preview.sourceSyncMode = off|click|selection` 的真实 VSCode 手动 smoke，确认默认值与三种模式交互边界。
+	- **Goal 11.1 手动 smoke**：在真实 VSCode 场景里验证“LanguageServer 不可用 -> CLI diagnostics fallback 可用”，补齐 output channel / 体验观察。
+	- 这两项都不是新设计，而是把已经落地的功能做真实场景收口；做完后可以更安心地删 fallback 或继续调体验。
+2. **再推进 Stable Node ID 主线。**
+	- 已完成：ADR 0013、stable node id / title map 契约、`update-node-map-project` sidecar 闭环、保守自动重命名识别、VSCode 显式 `Update Stable Node Map` 入口。
+	- 下一步建议顺序：
+		- G10.2.2 标题创建后自动同步 stable node map，减少手工维护。
+		- G10.2.3 标题重命名的人机确认 / 冲突报告入口。
+		- G10.3 本地化 alignment / audit report。
+		- G10.4 相似文本只作人工候选，不静默继承旧译文。
+3. **把本地化迁移闭环做实。**
 	- 已完成：状态机、CSV / report 字段、anchor + occurrence + diff 对齐流程设计。
-	- 待做：实现显式 alignment / audit report，保护旧译文，标记 `kept` / `new` / `changed` / `removed` / `conflict` / `stale`，相似匹配只作为人工候选。
-4. **Tooling 共享流程继续收敛。**
+	- 待做：实现显式 alignment / audit report，保护旧译文，标记 `kept` / `new` / `changed` / `removed` / `conflict` / `stale`。
+	- 注意：这条实际上依赖 Goal 10 的 stable node id 维护进一步落地，所以优先级排在 Goal 10 后半段，而不是独立抢跑。
+4. **最后再挑 Tooling 单点收敛。**
 	- 保持原则：继续落到 `DslScriptSources`、`ToolConfig`、`Preview`、`Localization`、`HostSchema`、`HostBinding` 等窄模块；不要新建泛化 `ProjectService`。
-	- 下一步应只挑一个仍重复的跨 Cli / VSCode / LanguageServer 流程做小闭环。
-5. **VSCode / LanguageServer fallback 收口前置验证。**
-	- CLI diagnostics fallback 目前仍保留。
-	- 已完成静态契约：`npm --prefix src/ExternalSupport/VSCode run check:diagnostics-fallback` 覆盖“LanguageServer 不可用 -> CLI diagnose-project fallback 成功”以及 `diagnostics.backend=compiler` 跳过 LanguageServer。
-	- 删除 fallback 前仍需补一次真实 VSCode 场景下的手动 smoke test。
-6. **Unity / Bird 只做准备和决策，暂不扩研发。**
+	- 只挑一个仍重复的跨 Cli / VSCode / LanguageServer 流程做小闭环，不把“顺手统一”混进主线节点。
+5. **Unity / Bird 只做准备和决策。**
 	- 待定：Bird 项目新增 importer 与 `InscapeGenerated` 资源提交策略。
 	- 待验证：带真实 Timeline 绑定的 Bird Import Dry Run，确认 `talking.exit` 的 `TalkingEffectTM.PlayTimeline` 落地和其他 phase warning。
 	- 低优先级：结合 Bird `L10N` 真实格式决定是否调整 Inscape CSV 字段和列顺序。
 
 ## 剩余工作总览
 
-- **当前可直接推进**：Goal 7 可选同步策略、CLI fallback smoke、Tooling 单点收敛。
-- **需要实现设计**：stable node id sidecar、节点重命名迁移、本地化 alignment report。
-- **需要用户或宿主侧决策**：Bird importer / 生成资源提交策略、真实 Timeline 样例验证范围、未来 Unity package 结构。
+- **当前可直接推进**：
+	- Goal 7 手动 smoke。
+	- Goal 11.1 手动 smoke。
+	- Goal 10.2.2 标题创建后自动同步 stable node map。
+- **当前主线研发**：
+	- Goal 10.2.3 标题重命名人工确认 / 冲突报告。
+	- Goal 10.3 本地化 alignment / audit report。
+	- Goal 10.4 相似文本人工候选。
+- **低一层优先级但可随时切入**：
+	- Tooling 单点收敛。
+	- 体验细化后续项。
+- **需要用户或宿主侧决策**：
+	- Bird importer / `InscapeGenerated` 资源提交策略。
+	- 真实 Timeline 样例验证范围。
+	- 未来 Unity package 结构。
 - **持续规则**：每次阶段性提交后同步更新 [Agent 接手指南](agent-handoff.md)，并按 [回归工作流](regression-workflow.md) 验证、提交、推送。
 
 ## 文档与接手效率
