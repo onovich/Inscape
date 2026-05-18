@@ -338,6 +338,56 @@ Narrator: unsaved node
             }
         }
 
+        static void LanguageServerHostSchemaCapabilitiesUseToolingContract() {
+            string directory = Path.Combine(Path.GetTempPath(), "inscape-language-server-host-schema-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory);
+            string configPath = Path.Combine(directory, "inscape.config.json");
+            string schemaPath = Path.Combine(directory, "inscape.host.schema.json");
+
+            File.WriteAllText(configPath, """
+{
+  "hostSchema": "inscape.host.schema.json"
+}
+""");
+
+            File.WriteAllText(schemaPath, """
+{
+  "queries": [
+    {
+      "name": "player.gold",
+      "returnType": "number",
+      "description": "Current gold amount"
+    }
+  ],
+  "events": [
+    {
+      "name": "quest.accepted",
+      "description": "Quest accepted event",
+      "delivery": "fire-and-forget"
+    }
+  ]
+}
+""");
+
+            try {
+                JsonElement catalog = RunLanguageServerForJson(new[] { "--host-schema-capabilities-project", directory });
+                AssertEqual("inscape.host-schema.capabilities", catalog.GetProperty("format").GetString(), "Host schema capability format");
+                AssertEqual(1, catalog.GetProperty("formatVersion").GetInt32(), "Host schema capability format version");
+                AssertEqual(directory, catalog.GetProperty("workspace").GetString(), "Host schema capability workspace");
+                AssertTrue(catalog.GetProperty("hostSchema").GetProperty("loaded").GetBoolean(), "Host schema should be loaded");
+                AssertEqual(schemaPath, catalog.GetProperty("hostSchema").GetProperty("resolvedPath").GetString(), "Host schema resolved path");
+                AssertEqual("player.gold", catalog.GetProperty("queries")[0].GetProperty("name").GetString(), "Host schema query name");
+                AssertEqual("number", catalog.GetProperty("queries")[0].GetProperty("returnType").GetString(), "Host schema query return type");
+                AssertTrue(catalog.GetProperty("queries")[0].GetProperty("isSimpleTextInterpolationQuery").GetBoolean(), "Host schema query should expose Tooling computed property");
+                AssertEqual("quest.accepted", catalog.GetProperty("events")[0].GetProperty("name").GetString(), "Host schema event name");
+                AssertTrue(catalog.GetProperty("events")[0].GetProperty("isNamedHostEvent").GetBoolean(), "Host schema event should expose Tooling computed property");
+            } finally {
+                if (Directory.Exists(directory)) {
+                    Directory.Delete(directory, true);
+                }
+            }
+        }
+
         static JsonElement RunLanguageServerForJson(string[] args) {
             TextWriter originalOut = Console.Out;
             StringWriter output = new StringWriter();

@@ -30,6 +30,7 @@ namespace Inscape.Tests {
                 ("language server project navigation uses project graph and override", LanguageServerProjectNavigationUsesProjectGraphAndOverride),
                 ("language server project completions use project graph and override", LanguageServerProjectCompletionsUseProjectGraphAndOverride),
                 ("language server project hover uses project graph and override", LanguageServerProjectHoverUsesProjectGraphAndOverride),
+                ("language server host schema capabilities use tooling contract", LanguageServerHostSchemaCapabilitiesUseToolingContract),
                 ("narrative runtime consumes compiler graph", NarrativeRuntimeConsumesCompilerGraph),
                 ("tool config resolves host bridge path", ToolConfigResolvesHostBridgePath),
                 ("host schema event reader reports schema events", HostSchemaEventReaderReportsSchemaEvents),

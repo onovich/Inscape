@@ -126,13 +126,13 @@
 
 ## Goal 6：Host Schema Endpoint 收口
 
-状态：待推进。
+状态：已启动。G6.1 已建立 LanguageServer Host Schema capability probe，并复用 Tooling 契约输出。
 
 目标：让 VSCode query / event 作者提示优先走 LanguageServer / Tooling 契约，移除 JS direct JSON fallback。
 
 小节点：
 
-- [ ] G6.1 明确 Host Schema capability endpoint 的 LanguageServer / Tooling 数据契约。
+- [x] G6.1 明确 Host Schema capability endpoint 的 LanguageServer / Tooling 数据契约：`LanguageServerEntry --host-schema-capabilities-project <root> [--config path]` 直接复用 `ToolConfigReaderDomain` 与 `HostSchemaCapabilityCatalogDomain`，输出与 CLI endpoint 相同的 `inscape.host-schema.capabilities` payload。
 - [ ] G6.2 VSCode query interpolation provider 改为消费统一 endpoint。
 - [ ] G6.3 VSCode host event provider 改为消费统一 endpoint。
 - [ ] G6.4 删除 JS direct JSON fallback，失败时给出清晰 output 日志。

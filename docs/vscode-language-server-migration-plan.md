@@ -80,12 +80,12 @@
 
 ### L5：Host Schema capability endpoint 收口
 
-当前 VSCode query / event provider 优先调用 CLI `inspect-host-schema-project`，失败时直接读 JSON。长期目标是让 LanguageServer 复用 `Inscape.Tooling` 的 Host Schema reader，并向 VSCode 暴露同一 capability view。
+当前 VSCode query / event provider 优先调用 CLI `inspect-host-schema-project`，失败时直接读 JSON。LanguageServer 已新增 `--host-schema-capabilities-project <root> [--config path]` probe，直接复用 `Inscape.Tooling` 的 `ToolConfigReaderDomain` 与 `HostSchemaCapabilityCatalogDomain`，并输出与 CLI endpoint 相同的 `inscape.host-schema.capabilities` capability view。
 
 迁移顺序：
 
-1. LanguageServer 增加 Host Schema capability endpoint 或 LSP request。
-2. VSCode query / event provider 优先调用 LanguageServer。
+1. 已完成：LanguageServer 增加 Host Schema capability endpoint。
+2. 下一步：VSCode query / event provider 优先调用 LanguageServer。
 3. 失败时回退 CLI `inspect-host-schema-project`。
 4. 再失败时暂时回退 JS direct JSON reader。
 5. 只有在 packaged server、扩展开发 host、本仓库打开和普通项目打开四种场景都通过 smoke test 后，才单独移除 direct JSON fallback。
@@ -106,7 +106,7 @@ probe parity 稳定后再引入完整 LSP transport。Transport 本身是通信�
 | Text-to-preview reveal | VSCode `DefinitionProvider` + `PreviewRevealBridge` | 显式 `Inscape: Open Preview` / reveal 命令 | 无预览定位但源码可编辑 |
 | Speaker authoring | VSCode / future LanguageServer Host Bridge provider | Host Bridge speaker ids | workspace dialogue scan |
 | Host binding authoring | VSCode / future LanguageServer Host Bridge provider | Host Bridge bindings | workspace occurrence |
-| Host Schema query / event | future LanguageServer HostSchema endpoint | CLI `inspect-host-schema-project` | direct JSON reader |
+| Host Schema query / event | LanguageServer `--host-schema-capabilities-project` | CLI `inspect-host-schema-project` | direct JSON reader |
 | Preview rendering | VSCode preview + CLI `preview-project` | CLI executable / DLL / `dotnet run` fallback | error HTML with diagnostics |
 
 ## 删除 fallback 的条件
