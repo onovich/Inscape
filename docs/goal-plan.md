@@ -139,7 +139,7 @@
 
 ## Goal 7：预览与作者体验打磨
 
-状态：已启动。`[]` 查询插值在预览窗口中已作为特殊 token 样式显示，VSCode webview 在防抖等待和实际刷新时会显示轻量状态提示；预览刷新已增加版本保护，避免旧刷新覆盖新状态。这些都不改变 Compiler / Runtime 语义。
+状态：已启动。`[]` 查询插值在预览窗口中已作为特殊 token 样式显示，VSCode webview 在防抖等待和实际刷新时会显示轻量状态提示；预览刷新已增加版本保护，避免旧刷新覆盖新状态；局部更新 / 全量重渲染边界已记录到 [VSCode Preview Refresh Strategy](vscode-preview-refresh-strategy.md)。这些都不改变 Compiler / Runtime 语义。
 
 目标：在不新增旧兼容层的前提下，打磨 VSCode 可玩预览、热刷新和源码定位体验。
 
@@ -147,6 +147,7 @@
 
 - [x] 未保存内容热刷新版本保护：取消被保存 / 显式刷新取代的 pending timer，并避免旧刷新完成时清掉新一轮状态。
 - [x] 防抖等待 / 刷新中状态提示。
+- [x] 局部更新策略：VSCode 只局部处理状态、源码定位和纯 UI 状态；涉及 graph、diagnostics、source map、节点内容或 Host Schema / Host Bridge 能力变化时继续全量重渲染。
 - 可选的预览 / 源码同步策略。
 - 正文 / 选项文本继续保持 `DefinitionProvider` + selection bridge，不回到 `DocumentLinkProvider`。
 - 预览中的 `[]` 查询插值保持原文显示，但使用独立 token 样式，避免和普通字符串混淆。
