@@ -1,7 +1,7 @@
 **/*.map
 **/*.log
 **/node_modules/**
-**/scripts/**
+**/Scripts/**
 **/test/**
 **/tests/**
 **/*.vsix

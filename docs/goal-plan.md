@@ -162,7 +162,7 @@
 - [x] G9.0 修正 VSCode 归属边界：作为第一方维护的外部编辑器平台支持迁入 `src/ExternalSupport/VSCode`，清除 `src/Internal/VSCode` 空规划目录，并移除 `EditorExtensions` / `vscode-inscape` 过渡层级。
 - [x] G9.1 建立 VSCode 内部目录命名审计，明确哪些目录符合规范、哪些需要继续拆分。
 - [x] G9.2 建立 Internal / ExternalSupport 通用模块资源脚本边界计划，明确只有可独立模块根内才允许 `Resources` / `Scripts`。
-- [ ] G9.3 VSCode package 内部资源目录收口：图标、schema、snippet、TextMate grammar、打包脚本和 README 说明统一到明确资源 / 脚本边界。
+- [x] G9.3 VSCode package 内部资源目录收口：图标、schema、snippet、TextMate grammar、语言配置、打包脚本和 README 说明统一到明确资源 / 脚本边界。
 - [ ] G9.4 VSCode package 源码目录收口：`ExtensionEntry`、`PreviewWebview`、`LanguageFeatures`、`WorkspaceIndex` 按业务主语 / Role 规则拆分。
 - [ ] G9.5 Preview HTML/CSS/JS 模板从 `PreviewHtmlRendererDomain` 的 C# 字符串中拆出为可维护资源，同时保持 CLI / VSCode preview 可用。
 - [ ] G9.6 UnityPlugin 真实包结构确定后，再按具体包根建立 `Scripts` / `Resources`；不保留空规划目录。

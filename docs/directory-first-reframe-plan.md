@@ -185,10 +185,13 @@ src/ExternalSupport/VSCode/
   Commands/
   Bridges/
   Styles/
-  media/
-  schemas/
-  snippets/
-  syntaxes/
+  Resources/
+    Language/
+    Media/
+    Schemas/
+    Snippets/
+    Syntaxes/
+  Scripts/
 ```
 
 ### LanguageServer

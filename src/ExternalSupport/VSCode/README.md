@@ -6,6 +6,8 @@ This is the first lightweight authoring layer for `.inscape` scripts. It keeps s
 
 This package is first-party maintained, but it is bound to the VSCode platform. It belongs directly under `src/ExternalSupport/VSCode`: do not add an `EditorExtensions` category layer, and do not add a nested `vscode-inscape` package-name directory. Shared editor-neutral semantics should move to Internal `LanguageServer` / `Tooling` contracts.
 
+The package is also a future split-repo candidate, so non-source extension assets live under `Resources` and package-only development scripts live under `Scripts`. Do not recreate root-level `media`, `schemas`, `snippets`, `syntaxes`, or `scripts` buckets.
+
 ## Capabilities
 
 - Registers the `inscape` language ID for `.inscape` files.
@@ -76,7 +78,7 @@ Run the static checks:
 
 ```powershell
 node --check src\ExternalSupport\VSCode\extension.js
-node -e "JSON.parse(require('fs').readFileSync('src/ExternalSupport/VSCode/package.json','utf8')); JSON.parse(require('fs').readFileSync('src/ExternalSupport/VSCode/language-configuration.json','utf8')); JSON.parse(require('fs').readFileSync('src/ExternalSupport/VSCode/syntaxes/inscape.tmLanguage.json','utf8')); console.log('json ok')"
+node -e "JSON.parse(require('fs').readFileSync('src/ExternalSupport/VSCode/package.json','utf8')); JSON.parse(require('fs').readFileSync('src/ExternalSupport/VSCode/Resources/Language/language-configuration.json','utf8')); JSON.parse(require('fs').readFileSync('src/ExternalSupport/VSCode/Resources/Syntaxes/inscape.tmLanguage.json','utf8')); JSON.parse(require('fs').readFileSync('src/ExternalSupport/VSCode/Resources/Snippets/inscape.code-snippets','utf8')); JSON.parse(require('fs').readFileSync('src/ExternalSupport/VSCode/Resources/Schemas/host-schema.schema.json','utf8')); console.log('json ok')"
 ```
 
 If a split module changed, run `node --check` on that module too.

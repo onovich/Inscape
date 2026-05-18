@@ -10,6 +10,8 @@
 
 VSCode package 内部目录仍有不符合命名规范的部分。下一轮不应直接推进新功能，而应先按本审计收敛目录主语、角色后缀和资源 / 脚本边界。
 
+2026-05-18 更新：资源 / 脚本目录收口已完成，旧 `media`、`schemas`、`snippets`、`syntaxes`、`scripts` 已迁入 `Resources/*` 与 `Scripts`；`language-configuration.json` 已迁入 `Resources/Language`。
+
 ## 当前目录判断
 
 | 当前目录 | 判断 | 原因 | 建议 |
@@ -21,15 +23,12 @@ VSCode package 内部目录仍有不符合命名规范的部分。下一轮不�
 | `WorkspaceIndex` | 需改 | `Workspace` 不应作为类型名前缀，`Index` 只是二级限定；该目录混合 DslScript 扫描、HostBinding、HostSchema capability 和 EditorAuthoring data | 拆为 `DslScript/Providers`、`HostBinding/Providers`、`HostSchema/Providers`、`EditorAuthoring/Providers` |
 | `PreviewWebview` | 需改 | 业务主语和平台角色压在一个目录名里，且 `Webview` 是 VSCode UI 技术，不应遮住 `Preview` 主语 | 改为 `Preview/Providers`、`Preview/Controllers` 或 `Preview/Bridges` |
 | `ExtensionEntry` | 需改 | 单数目录，不符合 Role 复数规则；`Extension` 是平台壳，不是业务主语 | 改为 `Entries`，文件主语保留 `Extension...Entry` 或 `VSCode...Entry` |
-| `media` | 需改 | 小写资源桶，不符合长期目录命名；资源与代码混在包根 | 迁入 `Resources/Media` |
-| `schemas` | 需改 | 小写资源桶，且 schema 是资源而非代码 | 迁入 `Resources/Schemas` |
-| `snippets` | 需改 | 小写资源桶，且 snippet 是 VSCode 资源 | 迁入 `Resources/Snippets` |
-| `syntaxes` | 需改 | 小写资源桶，TextMate grammar 是 VSCode 资源 | 迁入 `Resources/Syntaxes` |
-| `scripts` | 需改 | 小写开发脚本桶，不应与源码目录混杂 | 迁入 `Scripts` 或 `Tools`；当前优先 `Scripts` |
+| `Resources` | 保留 | VSCode 是未来可独立发布 extension package，非源码资源已按模块根内资源边界收口 | 继续保持 `Language`、`Media`、`Schemas`、`Snippets`、`Syntaxes` 子目录 |
+| `Scripts` | 保留 | VSCode package-only 开发脚本已与源码目录分离 | 继续只放该 package 的打包 / 安装脚本 |
 
 ## 执行顺序
 
-1. 先收敛资源 / 脚本目录：`media`、`schemas`、`snippets`、`syntaxes`、`scripts`。
+1. 已完成：先收敛资源 / 脚本目录：`media`、`schemas`、`snippets`、`syntaxes`、`scripts`。
 2. 再收敛 `ExtensionEntry` 到 `Entries`。
 3. 再拆 `PreviewWebview` 到 `Preview/*`。
 4. 再拆 `LanguageFeatures` 与 `WorkspaceIndex`，优先按 `DslScript`、`HostBinding`、`HostSchema`、`EditorAuthoring` 分业务。

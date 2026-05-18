@@ -12,8 +12,8 @@
   "main": "./extension.js",
   "scripts": {
     "package:vsix": "vsce package --out inscape-vscode.vsix",
-    "install:vsix": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/rebuild-and-install.ps1",
-    "rebuild:vsix": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/rebuild-and-install.ps1"
+    "install:vsix": "powershell -NoProfile -ExecutionPolicy Bypass -File Scripts/rebuild-and-install.ps1",
+    "rebuild:vsix": "powershell -NoProfile -ExecutionPolicy Bypass -File Scripts/rebuild-and-install.ps1"
   },
   "devDependencies": {
     "@vscode/vsce": "^3.9.1"
@@ -36,20 +36,20 @@
         "extensions": [
           ".inscape"
         ],
-        "configuration": "./language-configuration.json"
+        "configuration": "./Resources/Language/language-configuration.json"
       }
     ],
     "grammars": [
       {
         "language": "inscape",
         "scopeName": "source.inscape",
-        "path": "./syntaxes/inscape.tmLanguage.json"
+        "path": "./Resources/Syntaxes/inscape.tmLanguage.json"
       }
     ],
     "snippets": [
       {
         "language": "inscape",
-        "path": "./snippets/inscape.code-snippets"
+        "path": "./Resources/Snippets/inscape.code-snippets"
       }
     ],
     "commands": [
@@ -63,8 +63,8 @@
         "title": "Inscape: Toggle Preview",
         "category": "Inscape",
         "icon": {
-          "light": "media/toggle-preview-light.svg",
-          "dark": "media/toggle-preview-dark.svg"
+          "light": "Resources/Media/toggle-preview-light.svg",
+          "dark": "Resources/Media/toggle-preview-dark.svg"
         }
       },
       {
@@ -92,8 +92,8 @@
         "title": "Inscape: Open Tools Menu",
         "category": "Inscape",
         "icon": {
-          "light": "media/menu-light.svg",
-          "dark": "media/menu-dark.svg"
+          "light": "Resources/Media/menu-light.svg",
+          "dark": "Resources/Media/menu-dark.svg"
         }
       },
       {
@@ -151,7 +151,7 @@
           "**/inscape.host.schema.json",
           "**/*.host.schema.json"
         ],
-        "url": "./schemas/host-schema.schema.json"
+        "url": "./Resources/Schemas/host-schema.schema.json"
       }
     ],
     "configuration": {
