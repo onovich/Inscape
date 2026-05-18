@@ -84,6 +84,7 @@ Run the static checks:
 
 ```powershell
 node --check src\ExternalSupport\VSCode\extension.js
+npm --prefix src\ExternalSupport\VSCode run check:diagnostics-fallback
 npm --prefix src\ExternalSupport\VSCode run check:preview-navigation
 npm --prefix src\ExternalSupport\VSCode run check:preview-source-sync
 node -e "JSON.parse(require('fs').readFileSync('src/ExternalSupport/VSCode/package.json','utf8')); JSON.parse(require('fs').readFileSync('src/ExternalSupport/VSCode/Resources/Language/language-configuration.json','utf8')); JSON.parse(require('fs').readFileSync('src/ExternalSupport/VSCode/Resources/Syntaxes/inscape.tmLanguage.json','utf8')); JSON.parse(require('fs').readFileSync('src/ExternalSupport/VSCode/Resources/Snippets/inscape.code-snippets','utf8')); JSON.parse(require('fs').readFileSync('src/ExternalSupport/VSCode/Resources/Schemas/host-schema.schema.json','utf8')); console.log('json ok')"

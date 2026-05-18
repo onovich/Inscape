@@ -175,6 +175,8 @@
 小节点：
 
 - [ ] G11.1 删除 VSCode diagnostics CLI fallback 前，先补 LanguageServer 不可用场景下的 CLI fallback smoke test。
+  - [x] 先补静态契约：`npm --prefix src/ExternalSupport/VSCode run check:diagnostics-fallback`，锁住 LanguageServer 失败时转 CLI，以及 `diagnostics.backend=compiler` 直走 CLI。
+  - [ ] 仍需真实 VSCode 手动 smoke，确认编辑器内 fallback 体验和 output channel 行为。
 - [ ] G11.2 决定 Bird 项目新增 importer 与 `InscapeGenerated` 资源提交策略。
 - [ ] G11.3 用带真实 Timeline 绑定的样例执行 Bird Import Dry Run，确认 `talking.exit` 的 `TalkingEffectTM.PlayTimeline` 落地与其他 phase warning。
 - [ ] G11.4 低优先级：结合 Bird `L10N` 真实格式决定是否调整 Inscape CSV 字段和列顺序。

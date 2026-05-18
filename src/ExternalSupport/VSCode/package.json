@@ -11,6 +11,7 @@
   "license": "UNLICENSED",
   "main": "./extension.js",
   "scripts": {
+    "check:diagnostics-fallback": "node Scripts/assert-diagnostics-fallback-contract.js",
     "check:preview-navigation": "node Scripts/assert-preview-navigation-contract.js",
     "check:preview-source-sync": "node Scripts/check-preview-source-sync-modes.js",
     "smoke:preview-source-sync": "powershell -NoProfile -ExecutionPolicy Bypass -File Scripts/start-preview-source-sync-smoke.ps1",

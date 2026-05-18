@@ -115,6 +115,7 @@ probe parity 稳定后再引入完整 LSP transport。Transport 本身是通信�
 
 - 对应 LanguageServer 能力有内部测试覆盖。
 - VSCode client 切换有可重复静态检查和手动 smoke checklist。
+- diagnostics fallback 当前已新增 `npm --prefix src/ExternalSupport/VSCode run check:diagnostics-fallback`，锁住“LanguageServer 失败 -> CLI diagnose-project 成功”与 `diagnostics.backend=compiler` 跳过 LanguageServer 的契约；真正删除 fallback 前仍需补真实 VSCode 手动 smoke。
 - `docs/todo.md` 明确记录删除节点，不能和首次接入混在同一提交。
 - 失败场景仍有用户可理解的 output channel 日志或非阻断提示。
 - 不改变 Compiler diagnostic 语义，不把 authoring hint 升级为默认 error。

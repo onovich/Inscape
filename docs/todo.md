@@ -24,7 +24,8 @@
 	- 下一步应只挑一个仍重复的跨 Cli / VSCode / LanguageServer 流程做小闭环。
 5. **VSCode / LanguageServer fallback 收口前置验证。**
 	- CLI diagnostics fallback 目前仍保留。
-	- 删除 fallback 前必须补一次“LanguageServer 不可用但 CLI fallback 可用”的专项 smoke test。
+	- 已完成静态契约：`npm --prefix src/ExternalSupport/VSCode run check:diagnostics-fallback` 覆盖“LanguageServer 不可用 -> CLI diagnose-project fallback 成功”以及 `diagnostics.backend=compiler` 跳过 LanguageServer。
+	- 删除 fallback 前仍需补一次真实 VSCode 场景下的手动 smoke test。
 6. **Unity / Bird 只做准备和决策，暂不扩研发。**
 	- 待定：Bird 项目新增 importer 与 `InscapeGenerated` 资源提交策略。
 	- 待验证：带真实 Timeline 绑定的 Bird Import Dry Run，确认 `talking.exit` 的 `TalkingEffectTM.PlayTimeline` 落地和其他 phase warning。
@@ -264,6 +265,7 @@
 - [x] 让 VSCode node completion 优先调用 LanguageServer `--completion-file` probe，并保留 JS workspace node fallback 补齐跨文件节点。
 - [x] 让 VSCode node definition / references 调用 LanguageServer project navigation：新增 `--definition-project` / `--references-project`，支持跨文件和 unsaved override，并删除对应 JS node definition / reference semantic fallback。
 - [ ] 若后续准备删除 CLI fallback，先补一次 LanguageServer 不可用场景下的 CLI diagnostics fallback 专项 smoke test。
+- [x] 新增 diagnostics fallback 静态契约：`npm --prefix src/ExternalSupport/VSCode run check:diagnostics-fallback`，覆盖“LanguageServer 失败 -> CLI diagnose-project 成功”与 `diagnostics.backend=compiler` 跳过 LanguageServer。
 - [x] 设计补全数据来源：当前文件节点、项目节点、角色表、宿主绑定表、宿主 Schema 查询 / 事件清单。
 - [x] 将 `hostSchema` 中的事件清单接入 `.inscape` 脚本补全与 Hover，不改变当前 DSL 编译语义。
 - [x] 评估 VSCode JS query / event provider 是否应复用 `Inscape.Tooling` Host Schema reader / audit 契约：结论是 Tooling 先补齐 event reader，VSCode 暂保留轻量 JS reader；后续通过 LanguageServer 或显式 CLI capability endpoint 复用 Tooling，避免直接从扩展热路径启动 .NET。
