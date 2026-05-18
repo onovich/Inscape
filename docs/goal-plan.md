@@ -149,7 +149,7 @@
 - [x] 防抖等待 / 刷新中状态提示。
 - [x] 局部更新策略：VSCode 只局部处理状态、源码定位和纯 UI 状态；涉及 graph、diagnostics、source map、节点内容或 Host Schema / Host Bridge 能力变化时继续全量重渲染。
 - 可选的预览 / 源码同步策略。
-- 正文 / 选项文本继续保持 `DefinitionProvider` + selection bridge，不回到 `DocumentLinkProvider`。
+- [x] 正文 / 选项文本继续保持 `DefinitionProvider` + selection bridge，不回到 `DocumentLinkProvider`；VSCode package 已增加静态契约检查。
 - 预览中的 `[]` 查询插值保持原文显示，但使用独立 token 样式，避免和普通字符串混淆。
 
 ## Goal 9：项目资源 / 代码分层收口
