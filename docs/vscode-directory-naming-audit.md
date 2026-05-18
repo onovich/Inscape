@@ -17,7 +17,6 @@ VSCode package 内部目录仍有不符合命名规范的部分。下一轮不�
 | 当前目录 | 判断 | 原因 | 建议 |
 | --- | --- | --- | --- |
 | `Commands` | 保留 | Role 复数目录，承载 VSCode command 入口，符合规范 | 后续只检查文件主语是否清楚 |
-| `Styles` | 暂保留 | Role / feature 之间略混，但承载样式控制器与默认样式，当前可读 | 后续资源拆分时再决定是否并入 `EditorAuthoring` 或 `Preview` |
 | `DslScript` | 保留 | 业务主语明确，承载 DslScript authoring providers 与 diagnostics controllers | 保持只做作者体验适配，不重写 Compiler 语义 |
 | `EditorAuthoring` | 保留 | 业务主语明确，承载 VSCode 作者工具通用数据和位置 provider | 保持只做 VSCode authoring 适配，共享项目加载继续下沉 Tooling |
 | `HostBinding` | 保留 | 业务主语明确，承载 Host Bridge / host binding 作者提示 | 继续只做 VSCode authoring 适配 |
@@ -36,8 +35,9 @@ VSCode package 内部目录仍有不符合命名规范的部分。下一轮不�
 5. 已完成：拆 EditorAuthoring providers 到 `EditorAuthoring/Providers` 并删除 `LanguageFeatures`。
 6. 已完成：拆剩余 `WorkspaceIndex` 到 `HostBinding/Providers` 与 `HostSchema/Providers` 并删除 `WorkspaceIndex`。
 7. 已完成：迁 `Bridges/PreviewRevealBridge` 到 `Preview/Bridges`，删除根级 `Bridges`。
-8. 命名规范尾部自检继续审视 `Styles`、根级 `Commands`、无规范后缀文件和 `extension.js` 入口例外。
-9. 每一步都要同步 VSCode `require()`、`package.json` 资源路径、README、回归命令和测试路径。
+8. 已完成：拆根级 `Styles` 到 `EditorAuthoring` / `Preview`，并将 `StyleDefaults.js` 拆为带 `Model` 后缀的默认值文件。
+9. 命名规范尾部自检继续审视根级 `Commands` 和 `extension.js` 入口例外。
+10. 每一步都要同步 VSCode `require()`、`package.json` 资源路径、README、回归命令和测试路径。
 
 ## 自检规则
 

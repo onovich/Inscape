@@ -159,7 +159,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - 本轮会话已继续收紧 `HostBindingProvider` 的拥有边界：host binding completion / hover / missing-hover markdown 构造已吸回 provider 自身，相关 markdown helper 不再散在顶层函数区。
 - 本轮会话已补齐 VSCode DslScript 拆分：`DslScriptCompletionProvider`、`DslScriptDefinitionProvider`、`DslScriptReferenceProvider`、`DslScriptHoverProvider`、`DslScriptDocumentSymbolProvider`、`DslScriptCodeLensProvider` 与 DslScript authoring hint providers 当前已进入 `DslScript/Providers`，诊断调度与映射进入 `DslScript/Controllers`，补全、定义跳转、引用查找、悬浮说明、outline、CodeLens 与诊断调度逻辑继续复用 CLI / LanguageServer 调用和 preview reveal bridge，不在编辑器层重建编译语义。
 - 本轮会话已推进 Preview 拆分：`PreviewEditorProvider`、`PreviewHtmlProvider`、`PreviewInvocationProvider` 已进入 `Preview/Providers`，`PreviewRefreshController` 与 `PreviewSourceController` 已进入 `Preview/Controllers`，入口文件仅保留 custom editor 注册、preview refresh 薄 wrapper 和依赖注入。
-- 本轮会话已开始 Styles 拆分：`EditorStyleController` 与 `StyleDefaults` 已进入 `Styles`，入口文件只负责把 VSCode 事件转发给样式 controller，并把默认样式注入作者命令；样式读取、范围扫描、默认样式与 decoration 生命周期由 Styles 层拥有。
+- 本轮会话已完成 Styles 收口：`EditorAuthoringStyleController` 位于 `EditorAuthoring/Controllers`，editor 默认样式位于 `EditorAuthoring/Models/EditorAuthoringStyleDefaultsModel.js`，preview 默认样式位于 `Preview/Models/PreviewStyleDefaultsModel.js`；根级 `Styles` 目录已删除。
 - 本轮会话已开始 ExtensionEntry 收口：`ExtensionRegistrationController` 负责 VSCode 注册顺序，`ExtensionLifecycleController` 负责 output/logging/diagnostics lifecycle；`activate()` 当前只委托 lifecycle controller。
 - 本轮会话已继续收口 diagnostics 边界：`DslScriptDiagnosticController` 负责 VSCode Diagnostic 映射与 compiler invocation 适配，`DslScriptDiagnosticScheduler` 仍只负责防抖与异步调度。
 - 本轮会话已继续收口 authoring 数据来源：`EditorAuthoringDataProvider` 当前位于 `EditorAuthoring/Providers`，负责配置、CSV 与 `.inscape` 文本源读取，其他 provider 继续只消费注入的数据来源。

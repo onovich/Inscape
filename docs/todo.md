@@ -16,7 +16,7 @@
 3. 推进项目级资源 / 代码分层收口：按 ADR 0014 / ADR 0015 检查 VSCode package 与 Preview HTML 模板，逐步把图标、schema、snippet、TextMate grammar、HTML/CSS/JS 模板和打包脚本从代码逻辑中分离到项目内 Resources / Scripts 边界。
 	- Resources / Scripts 的拆分依据见 [Module Resource / Script Boundary Plan](module-resource-script-boundary-plan.md)：Internal 与 ExternalSupport 都适用，但只在未来可能独立拆仓、拆项目、单独发布或单独交付的具体模块根内创建。
 	- VSCode 内部目录审计见 [VSCode Directory Naming Audit](vscode-directory-naming-audit.md)：小写资源 / 脚本目录已收敛到 `Resources` / `Scripts`，`ExtensionEntry` 已收敛到 `Entries`，`PreviewWebview` 已收敛到 `Preview`，DslScript providers / diagnostics 已收敛到 `DslScript`，EditorAuthoring providers 已收敛到 `EditorAuthoring`，HostBinding / HostSchema providers 已收敛到各自业务目录；`LanguageFeatures` / `WorkspaceIndex` 过渡目录已删除。
-	- 当前正在做 G9.4 命名规范尾部自检：`PreviewRevealBridge` 已迁入 `Preview/Bridges`；`Styles`、根级 `Commands`、无规范后缀文件名和 `extension.js` 入口例外需要逐项确认 / 修复 / 勾选。
+	- 当前正在做 G9.4 命名规范尾部自检：`PreviewRevealBridge` 已迁入 `Preview/Bridges`；`Styles` 已拆入 `EditorAuthoring` / `Preview`；`StyleDefaults.js` 已拆为带 `Model` 后缀的默认值文件；根级 `Commands` 和 `extension.js` 入口例外仍需确认 / 修复 / 勾选。
 4. Unity / Bird 相关继续只做准备和计划，等设计方案落实后再研发：包括 Attribute 扫描、Host Bridge 到 adapter 生成、Bird importer 提交策略和带真实 Timeline 的 Dry Run。
 
 ## 文档与接手效率
@@ -138,8 +138,8 @@
 	- [x] 已迁出 preview refresh controller：`PreviewRefreshController` 进入 `Preview/Controllers/PreviewRefreshController.js`，刷新定时器、渲染缓存与版本保护不再由入口文件承载。
 	- [x] 已迁出 preview source controller：`PreviewSourceController` 进入 `Preview/Controllers/PreviewSourceController.js`，webview 源码回跳与 viewColumn 选择不再由入口文件承载。
 	- [x] 已迁出 preview invocation provider：`PreviewInvocationProvider` 进入 `Preview/Providers/PreviewInvocationProvider.js`，preview-project 的 CLI fallback 解析不再由入口文件承载。
-	- [x] 已开始 Styles 拆分：`EditorStyleController` 进入 `Styles/EditorStyleController.js`，编辑器样式读取、decoration ranges 与状态清理不再由入口文件承载。
-	- [x] 已迁出 VSCode 样式默认值：`StyleDefaults` 进入 `Styles/StyleDefaults.js`，editor / preview 默认样式不再由入口文件承载。
+	- [x] 已完成 editor authoring style 拆分：`EditorAuthoringStyleController` 当前位于 `EditorAuthoring/Controllers/EditorAuthoringStyleController.js`，编辑器样式读取、decoration ranges 与状态清理不再由入口文件承载。
+	- [x] 已迁出 VSCode 样式默认值：editor 默认样式位于 `EditorAuthoring/Models/EditorAuthoringStyleDefaultsModel.js`，preview 默认样式位于 `Preview/Models/PreviewStyleDefaultsModel.js`，editor / preview 默认样式不再由入口文件承载。
 	- [x] 已开始 ExtensionEntry 收口：`ExtensionRegistrationController` 进入 `ExtensionEntry/ExtensionRegistrationController.js`，VSCode subscription / provider / command / custom editor 注册顺序不再由 `activate()` 内联承载。
 	- [x] B3.4.2 继续压薄 ExtensionEntry：把 output channel / logging / diagnostics scheduler 创建收进 `ExtensionEntry`，让 `extension.js` 更接近纯入口；自检命名需符合 `Entry` / `Controller` 角色边界，不把功能行为塞回入口层。
 	- [x] B3.4.3 收口 diagnostics 调用辅助：将 diagnostics scheduler 依赖的 CLI invocation、临时文件、diagnostic mapping 辅助从 `extension.js` 迁入 `LanguageFeatures` 或更合适的窄模块；自检不得让 VSCode 重写 parser 语义。

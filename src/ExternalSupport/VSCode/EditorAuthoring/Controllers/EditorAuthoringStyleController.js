@@ -1,6 +1,6 @@
-const { defaultEditorStyle } = require("./StyleDefaults");
+const { defaultEditorStyle } = require("../Models/EditorAuthoringStyleDefaultsModel");
 
-class EditorStyleController {
+class EditorAuthoringStyleController {
     constructor(dependencies) {
         this.vscode = dependencies.vscode;
         this.fs = dependencies.fs;
@@ -237,5 +237,5 @@ class EditorStyleController {
 }
 
 module.exports = {
-    EditorStyleController
+    EditorAuthoringStyleController
 };

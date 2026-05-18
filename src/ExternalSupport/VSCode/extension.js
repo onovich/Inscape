@@ -10,6 +10,8 @@ const { HostSchemaCommand } = require("./Commands/HostSchemaCommand");
 const { LocalizationCommand } = require("./Commands/LocalizationCommand");
 const { PreviewCommand } = require("./Commands/PreviewCommand");
 const { EditorAuthoringCommand } = require("./Commands/EditorAuthoringCommand");
+const { EditorAuthoringStyleController } = require("./EditorAuthoring/Controllers/EditorAuthoringStyleController");
+const { defaultEditorStyle } = require("./EditorAuthoring/Models/EditorAuthoringStyleDefaultsModel");
 const { EditorAuthoringDataProvider } = require("./EditorAuthoring/Providers/EditorAuthoringDataProvider");
 const { EditorAuthoringLocationProvider } = require("./EditorAuthoring/Providers/EditorAuthoringLocationProvider");
 const { HostBindingProvider } = require("./HostBinding/Providers/HostBindingProvider");
@@ -33,8 +35,7 @@ const { PreviewSourceController } = require("./Preview/Controllers/PreviewSource
 const { PreviewRevealBridge } = require("./Preview/Bridges/PreviewRevealBridge");
 const { PreviewHtmlProvider } = require("./Preview/Providers/PreviewHtmlProvider");
 const { PreviewInvocationProvider } = require("./Preview/Providers/PreviewInvocationProvider");
-const { EditorStyleController } = require("./Styles/EditorStyleController");
-const { defaultEditorStyle, defaultPreviewStyle } = require("./Styles/StyleDefaults");
+const { defaultPreviewStyle } = require("./Preview/Models/PreviewStyleDefaultsModel");
 
 const languageSelector = { language: "inscape" };
 const previewPanels = new Map();
@@ -235,7 +236,7 @@ const previewSourceController = new PreviewSourceController({
     openLocation: (location, options) => editorAuthoringLocationProvider.openLocation(location, options)
 });
 
-const editorStyleController = new EditorStyleController({
+const editorStyleController = new EditorAuthoringStyleController({
     vscode,
     fs,
     readProjectConfig: (document) => editorAuthoringDataProvider.readProjectConfig(document),
