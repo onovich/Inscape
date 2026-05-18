@@ -325,60 +325,30 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 
 建议优先做小而闭环的任务，不要直接跳到大规模重构。
 
-1. 当前重构收口（最高优先级）：
-   - 先抽出 `Tooling`，把当前 Cli 中的共享流程从命令行入口层移走。
-   - C 阶段再建立 `LanguageServer` 基线，让 VSCode 长期走“薄前端 + C# server”方向。
-   - VSCode B 阶段拆分已收口；下一步应统一 source map / reveal payload 数据契约，减少 VSCode、CLI、Preview 各自推断。
-   - Unity 支持继续留在仓库内，但明确收束到 `ExternalSupport/UnityPlugin`，不进入默认 .NET solution 编译链。
-   - 每轮小步重构后同步更新 handoff / todo / refactoring-plan / code-structure / development-plan，避免文档口径再次滞后。
+1. Goal 7 收口：可选预览 / 源码同步策略。
+   - 已完成 `[]` 预览 token 样式、等待 / 刷新中状态、刷新版本保护、局部更新边界，以及 `DefinitionProvider` + selection bridge 静态契约检查。
+   - 下一步只剩设计并实现可选同步模式，例如 `off` / `click` / `selection`，明确默认值、配置项、回退行为和 VSCode 手动 smoke。
 
-2. `@` / `[]` 语法收敛：
-   - 当前作者反馈已经非常明确：这两套语法的职责重叠过高，使用者难以形成稳定心智模型。
-   - 当前方向已明确：`@` 主要表达事件 / 动作 / 状态变化，`[]` 主要表达查询 / 读取 / 文本插值；详见 [Authoring Marker Contract](authoring-marker-contract.md)。
-   - 下一步需要审计旧 `[timeline: ...]` / `[kind: alias]` 写法，将它们标记为兼容遗留或迁移到 `@timeline.<phase> alias` 等事件写法；不要继续扩大 `[]` 作为资源别名的推荐面。
-   - 这项工作优先级高于继续扩展更多宿主标签或事件语法，否则只会扩大歧义面。
+2. Stable Node ID 与节点重命名落地。
+   - ADR 0013、stable node id / title map 契约和标题重命名识别流程已经完成设计。
+   - 下一步是实现 `inscape.node-map.json` 或等价 sidecar 的创建 / 更新 / 删除 / 冲突处理，并接入标题创建、标题重命名和本地化对齐。
 
-3. Host Bridge 草案与 UnitySample 生成化：
-   - `Inscape.Adapters.UnitySample` 只是实验样例，当前硬编码宿主数据结构不能作为最终方案。
-   - 下一步应设计 Host Bridge 配置，把 Inscape 可读 ID 映射到项目内部 ID、资源、事件处理器和查询实现。
-   - Unity 支持层候选方向是用 `[Inscape]` Attribute 扫描项目 C# 类型和成员，由 Unity 内代码生成脚本生成待配置桥接表，再人工确认 C# 成员与 Inscape 可读名的映射。
-   - 上层拿到 Inscape 事件 / 数据后的消费方式仍待定：可以直接绑定事件，也可以轮询叙事状态，或允许项目选择混合模型。
-   - 适配层长期应由 Host Schema / Host Bridge / 代码生成驱动，UnitySample 可保留为 generator 回归样例。
-   - 当前样例命令包括 `export-unity-sample-project`、`export-unity-sample-role-template`、`export-unity-sample-binding-template` 和 `merge-unity-sample-l10n`。
-   - Timeline Hook 当前只支持 metadata：`@timeline alias` 默认 `talking.exit`，也支持 `@timeline.talking.enter alias`、`@timeline.talking.exit alias`、`@timeline.node.enter alias`、`@timeline.node.exit alias`，导出为 manifest `hostHooks`。
-   - 后续适配重点：把当前固定 CSV / manifest / L10N 输出抽象为可配置、可生成的桥接流程。
+3. 本地化 Diff / Alignment 落地。
+   - 状态机、CSV / report 字段、anchor + occurrence + diff 对齐流程已经完成设计。
+   - 下一步实现显式 alignment / audit report，保护旧译文，标记 `kept` / `new` / `changed` / `removed` / `conflict` / `stale`；相似匹配只作为人工候选。
 
-4. VSCode 预览增量体验：
-   - 预览主流程已经可用，但还可以继续逼近 Markdown / Inky 的“边改边玩”感受。
-   - 增量方向包括：更细粒度的未保存内容热刷新、更明确的刷新中 / 诊断中状态提示，以及是否提供可选的预览 / 源码同步模式。
-   - 继续保持原则：预览复用 Core / CLI 结果，不在扩展里重写 parser 或运行时语义。
+4. Tooling 共享流程继续收敛。
+   - 继续落到 `DslScriptSources`、`ToolConfig`、`Preview`、`Localization`、`HostSchema`、`HostBinding` 等窄模块。
+   - 不要新建泛化 `ProjectService`；如果要做，先挑一个仍重复的跨 Cli / VSCode / LanguageServer 流程做小闭环。
 
-5. 第一版块语法收敛：
-   - 当前原型使用 `:: node.name`。
-   - 用户偏好更接近 `# 标题` 的写作式块语法，并且不喜欢缩进语义。
-   - 需要明确“给人看的标题”和“给机器跳转的标识”是否解耦。
+5. VSCode / LanguageServer fallback 收口前置验证。
+   - CLI diagnostics fallback 目前仍保留。
+   - 删除 fallback 前必须补一次“LanguageServer 不可用但 CLI fallback 可用”的专项 smoke test。
 
-6. Timeline Hook 真实导入验证：
-   - Core / manifest 已能表达 `talking.enter`、`talking.exit`、`node.enter`、`node.exit`。
-   - 当前 Bird 运行时只安全支持 `talking.exit -> TalkingEffectTM.PlayTimeline`；Unity Importer 对其他 phase 输出 unsupported warning 并跳过。
-   - 下一步应使用带真实 Timeline 绑定的样例在 Bird 项目中跑 Dry Run / Import，确认 `talking.exit` 的 effects 字段和 warning 文本。
-
-7. 本地化模糊匹配设计：
-   - 在 `update-l10n` 的精确锚点继承之后，增加“疑似改写”候选。
-   - 第一版不要自动套用模糊译文，只输出候选给人工确认。
-
-8. 宿主 Schema 接入脚本体验：
-   - `export-host-schema-template` 已能生成查询 / 事件清单模板。
-   - VSCode 已能校验 host schema JSON，并通过命令面板浏览当前 query / event。
-   - 下一步可以等条件 / 事件语法更明确后，把 query / event 接入 `.inscape` 脚本内补全 / Hover。
-
-9. Language Server 设计：
-   - 先写能力范围和协议草案，再决定是否创建 `src/Inscape.LanguageServer/`。
-
-10. 共享契约继续收口：
-   - 按 [编码与命名规范](coding-conventions.md) 和 [渐进式重构计划](refactoring-plan.md) 小步重构，而不是一次性大清洗。
-   - 短期优先统一 source map / reveal payload 等跨 CLI、VSCode、Preview 的共享数据契约。
-   - 如未来确需跨工具链统一门面，也只能在上述窄模块稳定后，作为薄组合层引入，而不是反过来吞掉模块边界。
+6. Unity / Bird 只做准备和决策，暂不扩研发。
+   - 待定：Bird 项目新增 importer 与 `InscapeGenerated` 资源提交策略。
+   - 待验证：带真实 Timeline 绑定的 Bird Import Dry Run，确认 `talking.exit` 的 `TalkingEffectTM.PlayTimeline` 落地和其他 phase warning。
+   - 低优先级：结合 Bird `L10N` 真实格式决定是否调整 Inscape CSV 字段和列顺序。
 
 ## 文档检索地图
 

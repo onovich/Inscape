@@ -8,19 +8,34 @@
 
 ## 接力优先队列
 
-下一位接手者建议按以下顺序推进：
+下一位接手者建议按以下顺序推进。已完成的 Goal 0 / 3 / 4 / 5 / 6 / 9 不再放进优先队列，只保留在下方历史账本中。
 
-1. Goal 6 已完成：Host Schema endpoint 已收口到 LanguageServer / Tooling 契约，VSCode query / event provider 已迁到 LanguageServer 优先路径，JS direct JSON fallback 已移除。
-2. 继续打磨 VSCode 可玩预览：补未保存内容的更细粒度热刷新、刷新中状态提示，以及可选的预览 / 源码同步策略。
-	- 正文 / 选项文本不再用 `DocumentLinkProvider`，因为它会导致整段文本常驻下划线；当前用 `DefinitionProvider` 恢复“默认无下划线、Ctrl+指向才显示链接态”的编辑体验，并通过 selection bridge 在 Ctrl+Click 后执行预览定位，显式命令仅作为兜底。
-3. 推进项目级资源 / 代码分层收口：按 ADR 0014 / ADR 0015 检查 VSCode package、Tooling Preview 模板与 UnityPlugin 候选包结构，逐步把资源和脚本从代码逻辑中分离到项目内 Resources / Scripts 边界。
-	- Resources / Scripts 的拆分依据见 [Module Resource / Script Boundary Plan](module-resource-script-boundary-plan.md)：Internal 与 ExternalSupport 都适用，但只在未来可能独立拆仓、拆项目、单独发布或单独交付的具体模块根内创建。
-	- VSCode 内部目录审计见 [VSCode Directory Naming Audit](vscode-directory-naming-audit.md)：小写资源 / 脚本目录已收敛到 `Resources` / `Scripts`，`ExtensionEntry` 已收敛到 `Entries`，`PreviewWebview` 已收敛到 `Preview`，DslScript providers / diagnostics 已收敛到 `DslScript`，EditorAuthoring providers / commands 已收敛到 `EditorAuthoring`，Preview / HostSchema / Localization commands 已收敛到各自业务目录，HostBinding / HostSchema providers 已收敛到各自业务目录；`Commands` / `LanguageFeatures` / `WorkspaceIndex` 过渡目录已删除。
-	- G9.4 命名规范尾部自检已完成：`PreviewRevealBridge` 已迁入 `Preview/Bridges`；`Styles` 已拆入 `EditorAuthoring` / `Preview`；`StyleDefaults.js` 已拆为带 `Model` 后缀的默认值文件；根级 `Commands` 已按业务归位；`extension.js` 已明确为 VSCode manifest main 入口例外。
-	- G9.5 已完成：Preview HTML/CSS/JS 模板已从 `PreviewHtmlRendererDomain` 的 C# 字符串中拆到 `src/Internal/Tooling/Resources/Preview`，CLI / VSCode preview 继续复用 Tooling renderer。
-	- G9.6 已完成计划收口：UnityPlugin 当前不创建顶层 `Scripts` / `Resources`；`Inscape.Adapters.UnitySample` 是 .NET sample adapter，`Inscape.UnitySample.Cli` 是样例命令入口，`unity-bird-importer` 是 Bird Editor importer 原型。真实 Unity package 确定后再在具体包根内建立 `Scripts` / `Resources`。
-4. Unity / Bird 相关继续只做准备和计划，等设计方案落实后再研发：包括 Attribute 扫描、Host Bridge 到 adapter 生成、Bird importer 提交策略和带真实 Timeline 的 Dry Run。
-5. 下一步可继续 Goal 7：打磨 VSCode 可玩预览的可选源码同步策略；防抖等待 / 刷新中状态提示、热刷新版本保护与局部更新边界已完成。
+1. **Goal 7 收口：可选预览 / 源码同步策略。**
+	- 已完成：`[]` 预览 token 样式、等待 / 刷新中状态、刷新版本保护、局部更新边界、`DefinitionProvider` + selection bridge 静态契约检查。
+	- 待做：设计并实现可选同步模式，例如 `off` / `click` / `selection`，并明确默认值、配置项、回退行为和 VSCode 手动 smoke。
+2. **Stable Node ID 与节点重命名落地。**
+	- 已完成：ADR 0013、stable node id / title map 契约、标题重命名识别流程设计。
+	- 待做：实现 `inscape.node-map.json` 或等价 sidecar 的创建 / 更新 / 删除 / 冲突处理，并接入标题创建、标题重命名与本地化对齐。
+3. **本地化 Diff / Alignment 落地。**
+	- 已完成：状态机、CSV / report 字段、anchor + occurrence + diff 对齐流程设计。
+	- 待做：实现显式 alignment / audit report，保护旧译文，标记 `kept` / `new` / `changed` / `removed` / `conflict` / `stale`，相似匹配只作为人工候选。
+4. **Tooling 共享流程继续收敛。**
+	- 保持原则：继续落到 `DslScriptSources`、`ToolConfig`、`Preview`、`Localization`、`HostSchema`、`HostBinding` 等窄模块；不要新建泛化 `ProjectService`。
+	- 下一步应只挑一个仍重复的跨 Cli / VSCode / LanguageServer 流程做小闭环。
+5. **VSCode / LanguageServer fallback 收口前置验证。**
+	- CLI diagnostics fallback 目前仍保留。
+	- 删除 fallback 前必须补一次“LanguageServer 不可用但 CLI fallback 可用”的专项 smoke test。
+6. **Unity / Bird 只做准备和决策，暂不扩研发。**
+	- 待定：Bird 项目新增 importer 与 `InscapeGenerated` 资源提交策略。
+	- 待验证：带真实 Timeline 绑定的 Bird Import Dry Run，确认 `talking.exit` 的 `TalkingEffectTM.PlayTimeline` 落地和其他 phase warning。
+	- 低优先级：结合 Bird `L10N` 真实格式决定是否调整 Inscape CSV 字段和列顺序。
+
+## 剩余工作总览
+
+- **当前可直接推进**：Goal 7 可选同步策略、CLI fallback smoke、Tooling 单点收敛。
+- **需要实现设计**：stable node id sidecar、节点重命名迁移、本地化 alignment report。
+- **需要用户或宿主侧决策**：Bird importer / 生成资源提交策略、真实 Timeline 样例验证范围、未来 Unity package 结构。
+- **持续规则**：每次阶段性提交后同步更新 [Agent 接手指南](agent-handoff.md)，并按 [回归工作流](regression-workflow.md) 验证、提交、推送。
 
 ## 文档与接手效率
 
@@ -191,17 +206,19 @@
 - [x] 定义第一版最小语法：显式节点、对白、旁白、选项、跳转、注释、元信息。
 - [x] 定义第一版节点名规范：字符集、层级分隔符和基础诊断。
 - [x] 定义第一版跨文件节点唯一性：项目内节点名全局唯一。
-- [ ] 定义节点重命名迁移策略。
+- [x] 定义节点重命名迁移策略。
 	- [x] 冻结作者标题与 stable node id 分离的长期决策；详见 [ADR 0013](adr/0013-author-title-and-stable-node-id.md)。
 	- [x] 设计 stable node id 的落盘位置：sidecar 索引、迁移表，或必要时显式 `@id`；详见 [Stable Node ID Contract](stable-node-id-contract.md)。
 	- [x] 设计标题重命名识别流程：source range、相邻文本锚点、旧标题、前后节点关系与人工确认；详见 [Stable Node ID Contract](stable-node-id-contract.md)。
+- [ ] 实现 stable node id sidecar 与标题重命名迁移流程。
 - [x] 定义并实现行级隐式 hash 的输入、规范化规则、版本号和碰撞处理。
 - [x] 实现第一版本地化 CSV 提取，覆盖旁白、对白、选择提示和选择项。
 - [x] 实现旧翻译表按锚点精确继承，并标记新增、保留、删除条目。
 - [x] 设计旧翻译表的模糊匹配与人工确认流程；详见 [Localization Diff Alignment Contract](localization-diff-alignment-contract.md)。
-- [ ] 设计显式稳定 ID 或迁移表，用于处理节点重命名和重复文本插入。
+- [x] 设计显式稳定 ID 或迁移表，用于处理节点重命名和重复文本插入。
 	- [x] 决定标题不作为长期机器 ID，stable node id 由系统维护；标题仍是作者可见主身份。
 	- [x] 定义 stable node id / title map 的 JSON 契约和冲突解决策略；详见 [Stable Node ID Contract](stable-node-id-contract.md)。
+- [ ] 实现本地化 alignment / audit report，用 stable node id、line anchor、occurrence 与 diff 保护已有译文。
 - [x] 设计 Narrative Graph IR 的 JSON 草案。
 - [x] 设计源映射格式，覆盖节点、行、选项、跳转和诊断。
 - [x] 实现项目级多文件编译与跨文件跳转诊断。
@@ -228,10 +245,11 @@
 - [x] 实现 VSCode 编辑器内可玩预览视图第一版，复用 CLI / Core 的项目级编译结果，并支持源码侧边打开、选项点击、正文点击继续、Back、Restart、源码回跳、编辑防抖刷新和保存后自动刷新。
 - [x] 修正 VSCode 预览体验关键问题：custom editor 改为 `option` 避免劫持源码标签页；webview 显式启用 scripts；刷新尽量保留当前页进度；CLI 调用优先已构建可执行文件 / 程序集，减少等待时间。
 - [x] 为编辑器语法配色与预览 UI 提供独立样式配置文件，允许开发者通过 `inscape.config.json` 指向简洁 JSON 样式表并在本机快速调参。
-- [ ] 为 VSCode 预览补充更细粒度的未保存内容热刷新、局部更新与状态提示。
+- [ ] 为 VSCode 预览补充更细粒度的未保存内容热刷新、局部更新、状态提示与可选源码同步策略。
 	- [x] 预览 webview 在防抖等待和刷新时显示轻量“等待刷新...” / “刷新中...”状态，不改变故事状态、路径或 Compiler 输出。
 	- [x] 未保存内容热刷新增加版本保护：保存或显式刷新会取消已挂起的 debounce timer，旧刷新完成不会清掉新一轮状态。
 	- [x] 继续细化局部更新策略：详见 [VSCode Preview Refresh Strategy](vscode-preview-refresh-strategy.md)，VSCode 暂只局部处理状态、源码定位和纯 UI 状态，语义相关变化继续全量重渲染。
+	- [ ] 设计并实现可选预览 / 源码同步模式，避免 selection 跟随、点击定位和显式命令互相打架。
 - [x] 继续验证正文 / 选项文本的 `DefinitionProvider` 链接态与 selection bridge 是否稳定满足“默认无下划线、Ctrl+指向才显示链接态、Ctrl+Click 复用预览定位”；已新增 VSCode package 静态契约检查 `npm --prefix src/ExternalSupport/VSCode run check:preview-navigation`，防止回退到 `DocumentLinkProvider` 或断开 selection bridge。手动 UI smoke 仍按 VSCode README 执行。
 - [x] 补齐 C# Language Server 第一版能力范围：diagnostics、definition、references、completion、outline、hover 都已有基线 probe。
 - [x] 设计 VSCode 前端何时从 JS provider 切到 LanguageServer，并保留哪些 fallback 边界；详见 [VSCode LanguageServer Migration Plan](vscode-language-server-migration-plan.md)。

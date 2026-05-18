@@ -2,7 +2,7 @@
 
 状态：执行中
 
-最后更新：2026-05-17
+最后更新：2026-05-18
 
 本文把当前剩余工作写成 `/goal` 目标模式。每个 goal 都应独立完成、自检、验证、提交和推送；不要把多个无关 goal 合进同一提交。
 
@@ -139,7 +139,7 @@
 
 ## Goal 7：预览与作者体验打磨
 
-状态：已启动。`[]` 查询插值在预览窗口中已作为特殊 token 样式显示，VSCode webview 在防抖等待和实际刷新时会显示轻量状态提示；预览刷新已增加版本保护，避免旧刷新覆盖新状态；局部更新 / 全量重渲染边界已记录到 [VSCode Preview Refresh Strategy](vscode-preview-refresh-strategy.md)。这些都不改变 Compiler / Runtime 语义。
+状态：已启动。`[]` 查询插值在预览窗口中已作为特殊 token 样式显示，VSCode webview 在防抖等待和实际刷新时会显示轻量状态提示；预览刷新已增加版本保护，避免旧刷新覆盖新状态；局部更新 / 全量重渲染边界已记录到 [VSCode Preview Refresh Strategy](vscode-preview-refresh-strategy.md)；正文 / 选项文本的预览定位已增加静态契约检查，防止回退到 `DocumentLinkProvider`。这些都不改变 Compiler / Runtime 语义。
 
 目标：在不新增旧兼容层的前提下，打磨 VSCode 可玩预览、热刷新和源码定位体验。
 
@@ -148,9 +148,33 @@
 - [x] 未保存内容热刷新版本保护：取消被保存 / 显式刷新取代的 pending timer，并避免旧刷新完成时清掉新一轮状态。
 - [x] 防抖等待 / 刷新中状态提示。
 - [x] 局部更新策略：VSCode 只局部处理状态、源码定位和纯 UI 状态；涉及 graph、diagnostics、source map、节点内容或 Host Schema / Host Bridge 能力变化时继续全量重渲染。
-- 可选的预览 / 源码同步策略。
 - [x] 正文 / 选项文本继续保持 `DefinitionProvider` + selection bridge，不回到 `DocumentLinkProvider`；VSCode package 已增加静态契约检查。
-- 预览中的 `[]` 查询插值保持原文显示，但使用独立 token 样式，避免和普通字符串混淆。
+- [x] 预览中的 `[]` 查询插值保持原文显示，但使用独立 token 样式，避免和普通字符串混淆。
+- [ ] 可选的预览 / 源码同步策略：设计并实现 `off` / `click` / `selection` 等模式，明确默认值、配置项、回退行为和 VSCode 手动 smoke。
+
+## Goal 10：Stable ID 与本地化迁移落地
+
+状态：待启动。Goal 1 / Goal 2 已完成设计，但还没有实现 sidecar 写入、标题重命名迁移和本地化 alignment report。
+
+目标：把作者可读标题、系统 stable node id、行级 anchor、occurrence 与 diff 对齐串成可执行工具链，保护节点重命名和本地化旧译文。
+
+小节点：
+
+- [ ] G10.1 实现 stable node id sidecar 的创建、读取、更新、删除和冲突处理。
+- [ ] G10.2 把标题创建 / 重命名流程接入 stable node id 维护；作者仍只写中文标题，机器 ID 由工具维护。
+- [ ] G10.3 实现本地化 alignment / audit report，输出 `kept` / `new` / `changed` / `removed` / `conflict` / `stale`。
+- [ ] G10.4 将相似文本匹配作为人工候选输出，不静默继承旧译文。
+
+## Goal 11：Fallback 与外部宿主收口
+
+状态：待启动。该目标包含删除 fallback 前的验证，以及 Unity / Bird 外部宿主侧仍需决策的事项。
+
+小节点：
+
+- [ ] G11.1 删除 VSCode diagnostics CLI fallback 前，先补 LanguageServer 不可用场景下的 CLI fallback smoke test。
+- [ ] G11.2 决定 Bird 项目新增 importer 与 `InscapeGenerated` 资源提交策略。
+- [ ] G11.3 用带真实 Timeline 绑定的样例执行 Bird Import Dry Run，确认 `talking.exit` 的 `TalkingEffectTM.PlayTimeline` 落地与其他 phase warning。
+- [ ] G11.4 低优先级：结合 Bird `L10N` 真实格式决定是否调整 Inscape CSV 字段和列顺序。
 
 ## Goal 9：项目资源 / 代码分层收口
 
