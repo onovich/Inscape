@@ -2,6 +2,10 @@
 
 This is the first lightweight authoring layer for `.inscape` scripts. It keeps syntax highlighting declarative and uses the repository CLI for compiler-backed diagnostics.
 
+## Boundary
+
+This package is first-party maintained, but it is bound to the VSCode platform. It belongs directly under `src/ExternalSupport/VSCode`: do not add an `EditorExtensions` category layer, and do not add a nested `vscode-inscape` package-name directory. Shared editor-neutral semantics should move to Internal `LanguageServer` / `Tooling` contracts.
+
 ## Capabilities
 
 - Registers the `inscape` language ID for `.inscape` files.
@@ -47,7 +51,7 @@ Style tweaking is file-based: point `inscape.config.json` at an editor style JSO
 Open this folder as an extension development host, or launch VSCode with:
 
 ```powershell
-code --extensionDevelopmentPath=src\ExternalSupport\EditorExtensions\VSCode\vscode-inscape .
+code --extensionDevelopmentPath=src\ExternalSupport\VSCode .
 ```
 
 This package is not published yet. Later stages should add a language server that reuses `Inscape.Compiler` for diagnostics, completion, symbols, and definition/reference navigation. The migration order and fallback boundaries are tracked in `docs/vscode-language-server-migration-plan.md`.
@@ -66,13 +70,13 @@ Dialogue, narration, prompt, and choice text inside the editor deliberately do n
 
 ## Regression Checklist
 
-Any change under `src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape/` must be checked with the repository workflow in `docs/regression-workflow.md`.
+Any change under `src/ExternalSupport/VSCode/` must be checked with the repository workflow in `docs/regression-workflow.md`.
 
 Run the static checks:
 
 ```powershell
-node --check src\ExternalSupport\EditorExtensions\VSCode\vscode-inscape\extension.js
-node -e "JSON.parse(require('fs').readFileSync('src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape/package.json','utf8')); JSON.parse(require('fs').readFileSync('src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape/language-configuration.json','utf8')); JSON.parse(require('fs').readFileSync('src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape/syntaxes/inscape.tmLanguage.json','utf8')); console.log('json ok')"
+node --check src\ExternalSupport\VSCode\extension.js
+node -e "JSON.parse(require('fs').readFileSync('src/ExternalSupport/VSCode/package.json','utf8')); JSON.parse(require('fs').readFileSync('src/ExternalSupport/VSCode/language-configuration.json','utf8')); JSON.parse(require('fs').readFileSync('src/ExternalSupport/VSCode/syntaxes/inscape.tmLanguage.json','utf8')); console.log('json ok')"
 ```
 
 If a split module changed, run `node --check` on that module too.
@@ -80,7 +84,7 @@ If a split module changed, run `node --check` on that module too.
 Then rebuild and install the extension:
 
 ```powershell
-cd src\ExternalSupport\EditorExtensions\VSCode\vscode-inscape
+cd src\ExternalSupport\VSCode
 npm run rebuild:vsix
 ```
 

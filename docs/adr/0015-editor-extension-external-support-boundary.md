@@ -14,9 +14,11 @@ VSCode 扩展确实由 Inscape 第一方维护，也直接服务 `.inscape` 作�
 
 ## 决策
 
-VSCode 扩展归属 `src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape`。
+VSCode 扩展归属 `src/ExternalSupport/VSCode`。
 
 `ExternalSupport` 不只表示游戏宿主如 Unity / Bird，也表示外部平台集成。编辑器扩展属于外部平台支持模块，尽管它可以由 Inscape 第一方维护。
+
+不再引入 `EditorExtensions` 类别目录，也不再保留 `vscode-inscape` 包名目录。`VSCode` 已经是足够清晰的外部平台业务主语；`vscode-inscape` 是 npm package name，留在 `package.json`，不参与仓库层级表达。
 
 Internal 仍保留这些核心层：
 
@@ -30,14 +32,14 @@ Internal 仍保留这些核心层：
 
 ## 判断标准
 
-- 绑定外部编辑器 SDK、插件 manifest、打包格式或 UI 生命周期的代码，进入 `ExternalSupport/EditorExtensions/<EditorName>`。
+- 绑定外部编辑器 SDK、插件 manifest、打包格式或 UI 生命周期的代码，进入 `ExternalSupport/<EditorName>`，例如 `ExternalSupport/VSCode`。
 - 不绑定具体外部编辑器，只提供 Inscape 协议、语义、运行时、数据契约或可复用工具链的代码，留在 `Internal`。
 - “第一方维护”不是进入 `Internal` 的充分条件。
 - “服务作者体验”也不是进入 `Internal` 的充分条件；关键是是否绑定外部平台。
 
 ## 影响
 
-- 旧 `tools/vscode-inscape` 或 `src/Internal/VSCode/vscode-inscape` 残留迁移到 `src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape`。
+- 旧 `tools/vscode-inscape`、`src/Internal/VSCode/vscode-inscape` 或过渡性的 `src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape` 残留迁移到 `src/ExternalSupport/VSCode`。
 - 文档、测试和验证命令中的 VSCode 路径同步改到新位置。
 - `src/Internal/VSCode` 下的空规划目录不再保留。
 - 后续如果做自研编辑器，应建立独立项目，不复用 VSCode package 内部结构；共享能力应下沉到 Internal 的 LanguageServer / Tooling / Runtime contracts。

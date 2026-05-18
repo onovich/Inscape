@@ -1,4 +1,4 @@
-﻿# 0012：采用目录骨架优先的仓库重构顺序
+# 0012：采用目录骨架优先的仓库重构顺序
 
 状态：Accepted；VSCode 归属部分已由 ADR 0015 修正
 
@@ -10,7 +10,7 @@ Inscape 已经在文档层确认了多项长期结构结论：
 
 - Internal / ExternalSupport 两大分层
 - Internal 下的 `Compiler`、`Tooling`、`Cli`、`LanguageServer`、`Runtime`
-- ExternalSupport 下的 `EditorExtensions/VSCode` 与 `UnityPlugin`
+- ExternalSupport 下的 `VSCode` 与 `UnityPlugin`
 - `UnityPlugin` 属于 `ExternalSupport`
 - 类型命名采用目录优先的主语 / 角色模型
 
@@ -18,7 +18,7 @@ Inscape 已经在文档层确认了多项长期结构结论：
 
 - `src/` 仍以旧项目平铺为主
 - `Inscape.Compiler`、`Inscape.Adapters.UnitySample` 等旧路径仍是主入口
-- `tools/vscode-inscape` 或旧 `src/Internal/VSCode` 不应承载长期 VSCode 产品代码；VSCode 编辑器扩展属于 `ExternalSupport/EditorExtensions/VSCode`
+- `tools/vscode-inscape` 或旧 `src/Internal/VSCode` 不应承载长期 VSCode 产品代码；VSCode 编辑器扩展属于 `ExternalSupport/VSCode`
 - `LanguageServer` 与 `Runtime` 仍没有任何目录落点
 
 这导致近期虽然完成了多轮局部收口，但仓库外形仍难以体现真正的重构成果。
@@ -84,7 +84,7 @@ Inscape 已经在文档层确认了多项长期结构结论：
 ## 验证清单
 
 1. 仓库外形必须能一眼看出 `src/Internal` 与 `src/ExternalSupport`。
-2. `Compiler`、`Tooling`、`Cli`、`LanguageServer`、`Runtime`、`EditorExtensions/VSCode`、`UnityPlugin` 都必须有真实目录落点。
+2. `Compiler`、`Tooling`、`Cli`、`LanguageServer`、`Runtime`、`VSCode`、`UnityPlugin` 都必须有真实目录落点。
 3. 默认 .NET solution 编译链不再包含 `UnityPlugin` 相关项目。
 4. 每个稳定 Layer / Business 目录都必须有 `README.md` 规则文件。
 5. 进入任一 Layer / Business 的具体重构前，必须先阅读该目录 `README.md`。

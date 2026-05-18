@@ -9,11 +9,11 @@
 ## 当前前提
 
 - Internal 架构收敛为：`Compiler`、`Tooling`、`Cli`、`LanguageServer`、`Runtime`
-- ExternalSupport 架构包含外部平台支持：`EditorExtensions/VSCode` 与 `UnityPlugin`
+- ExternalSupport 架构包含外部平台支持：`VSCode` 与 `UnityPlugin`
 - ExternalSupport 当前只确认：`UnityPlugin`
 - 当前 `Inscape.Compiler` 已完成项目名、命名空间与主要角色后缀收敛
 - 当前 `Inscape.Cli` 已退回命令入口、参数和输出适配层，主要共享流程已上提到 `Tooling`
-- 当前 `src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape` 已完成 B 阶段拆分，`extension.js` 主要保留注册入口、实例装配和少量 glue
+- 当前 `src/ExternalSupport/VSCode` 已完成 B 阶段拆分，`extension.js` 主要保留注册入口、实例装配和少量 glue
 - Unity 支持长期不进入默认 .NET solution 编译链
 - LanguageServer 与 Runtime 已建立 Internal 基线项目，但 VSCode 前端尚未切到 C# LanguageServer 主路径
 
@@ -169,13 +169,13 @@
 ```powershell
 dotnet build Inscape.slnx --no-restore
 dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build
-node --check src\ExternalSupport\EditorExtensions\VSCode\vscode-inscape\extension.js
+node --check src\ExternalSupport\VSCode\extension.js
 ```
 
-若阶段涉及 `src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape/`，额外执行：
+若阶段涉及 `src/ExternalSupport/VSCode/`，额外执行：
 
 ```powershell
-cd src\ExternalSupport\EditorExtensions\VSCode\vscode-inscape
+cd src\ExternalSupport\VSCode
 npm run rebuild:vsix
 ```
 

@@ -44,7 +44,8 @@
 接手/恢复上下文      agent-handoff.md, todo.md, roadmap.md
 代码质量/重构        code-structure.md, coding-conventions.md, refactoring-plan.md, architecture.md, roadmap.md
 DSL 定位/语法        dsl-ecosystem-positioning.md, dsl-syntax-guide.md, dsl-language.md, syntax-comparison.md, open-questions.md
-VSCode 工具          vscode-tooling.md, src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape/README.md
+VSCode 工具          vscode-tooling.md, src/ExternalSupport/VSCode/README.md
+VSCode 目录命名审计  vscode-directory-naming-audit.md
 CLI 命令速查         cli-command-reference.md, README.md
 本地化               hash-localization.md, l10n-extraction.md, ADR 0006
 宿主 Schema/查询事件 host-schema.md, dsl-language.md, open-questions.md, todo.md

@@ -436,7 +436,7 @@ function resolveCliProjectPath(context, workspaceFolderPath) {
 function resolveLanguageServerProjectPathFromBase(workspaceFolderPath, extensionBasePath) {
     const candidates = [
         path.join(workspaceFolderPath, "src", "Internal", "LanguageServer", "Inscape.LanguageServer.csproj"),
-        path.resolve(extensionBasePath, "..", "..", "..", "..", "Internal", "LanguageServer", "Inscape.LanguageServer.csproj")
+        path.resolve(extensionBasePath, "..", "..", "Internal", "LanguageServer", "Inscape.LanguageServer.csproj")
     ];
 
     for (const candidate of candidates) {
@@ -451,7 +451,7 @@ function resolveLanguageServerProjectPathFromBase(workspaceFolderPath, extension
 function resolveCliProjectPathFromBase(workspaceFolderPath, extensionBasePath) {
     const candidates = [
         path.join(workspaceFolderPath, "src", "Internal", "Cli", "Inscape.Cli", "Inscape.Cli.csproj"),
-        path.resolve(extensionBasePath, "..", "..", "..", "..", "Internal", "Cli", "Inscape.Cli", "Inscape.Cli.csproj")
+        path.resolve(extensionBasePath, "..", "..", "Internal", "Cli", "Inscape.Cli", "Inscape.Cli.csproj")
     ];
 
     for (const candidate of candidates) {

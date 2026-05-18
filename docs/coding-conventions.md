@@ -1,4 +1,4 @@
-﻿# 编码与命名规范
+# 编码与命名规范
 
 状态：草案
 
@@ -7,8 +7,7 @@
 本文用于把 Inscape 的代码组织成可推理、可迁移、可演进的结构。当前长期目标已经收敛为：
 
 - Internal：`Compiler`、`Tooling`、`Cli`、`LanguageServer`、`Runtime`
-- ExternalSupport：`EditorExtensions`、`UnityPlugin`
-- ExternalSupport：`UnityPlugin`
+- ExternalSupport：`VSCode`、`UnityPlugin`
 
 命名的首要目标不是“整齐”，而是让陌生维护者只看目录和类型名，就能推断代码在哪一层、属于哪个大业务、扮演什么角色。
 
@@ -36,7 +35,7 @@
 ### 目录公式
 
 - 固定公式为：`Layer / Business / Role / File`
-- `Layer` 表达大层级，例如 `Compiler`、`Tooling`、`Cli`
+- `Layer` 表达大层级，例如 `Compiler`、`Tooling`、`Cli`、`VSCode`
 - `Business` 表达当前层内的大业务，例如 `StoryGraph`、`Preview`、`HostBinding`
 - `Role` 表达文件家族，例如 `Domains`、`Models`、`Commands`
 
@@ -65,12 +64,12 @@
 - `Compiler`：编译期真相层。只承载 DSLScript、StoryGraph、Localization 与诊断契约，不碰文件系统、命令行、VSCode 或 Unity API。
 - `Tooling`：共享用例层。承载脚本源加载、工具配置读取、预览构建、本地化流程、HostSchema / HostBinding 流程等，可被 Cli、VSCode 和未来外部支持复用。
 - `Cli`：命令行入口层。只负责 argv、stdout/stderr、退出码、命令目录和对 Tooling 的调用。
-- `VSCode`：编辑器入口层。负责 VSCode API、前端交互、Webview、样式和轻量客户端逻辑。
 - `LanguageServer`：C# 语义服务层。长期承担诊断、跳转、引用、补全、source map 等重语义能力。
 - `Runtime`：未来运行期层。只在进入真正运行时后承载 `System`、`Context`、`Events` 等长期状态与执行模型。
 
 ### ExternalSupport
 
+- `VSCode`：外部编辑器平台支持层。负责 VSCode API、extension manifest、前端交互、Webview、样式和轻量客户端逻辑；共享语义应下沉到 Internal 的 LanguageServer / Tooling。
 - `UnityPlugin`：Unity 环境下的外部支持层。负责 Unity 内的特性扫描、桥接应用、资产填写与导入流程。它可以与本仓库同存，但不应进入默认 .NET solution 编译链。
 
 ## 大业务主语
@@ -205,6 +204,7 @@
 - 允许主语：`EditorAuthoring`、`Preview`、`DslScript`、`HostSchema`、`HostBinding`
 - 允许后缀：`Provider`、`Bridge`、`Controller`、`ViewModel`、`Command`
 - 重语义能力长期迁移到 `LanguageServer`
+- 路径为 `src/ExternalSupport/VSCode`，不再增加 `EditorExtensions` 类别层，也不再保留 `vscode-inscape` 包名目录；npm 包名留在 `package.json`。
 
 ### LanguageServer
 
@@ -237,7 +237,7 @@ src/<Root>/<Layer>/<Business>/<Role>/<Subject><Qualifier><Role>
 - `src/Internal/Compiler/StoryGraph/Domains/StoryGraphEntryResolverDomain`
 - `src/Internal/Tooling/Preview/Controllers/PreviewFlowController`
 - `src/Internal/Cli/Localization/Commands/LocalizationExportCommand`
-- `src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape/Bridges/PreviewRevealBridge`
+- `src/ExternalSupport/VSCode/Bridges/PreviewRevealBridge`
 - `src/Internal/LanguageServer/DslScript/Providers/DslScriptCompletionProvider`
 - `src/ExternalSupport/UnityPlugin/AssetConfigure/Controllers/UnityPluginAssetConfigureController`
 
@@ -253,5 +253,5 @@ src/<Root>/<Layer>/<Business>/<Role>/<Subject><Qualifier><Role>
 - `Inscape.Compiler` 长期可改名为 `Inscape.Compiler`
 - 当前最高优先级不是继续在旧目录里做微观 helper 收口，而是先完成目录骨架迁移，详见 [目录优先重构蓝图](directory-first-reframe-plan.md)
 - 当前 `Inscape.Cli` 中大量共享流程会逐步上提为 `Inscape.Tooling`；`Inscape.Tooling` 这个命名空间粒度可以保留，不需要继续细分到每个业务目录
-- `tools/vscode-inscape` 长期会迁入 `src/ExternalSupport/EditorExtensions/VSCode/`，再继续拆为薄扩展前端与 `Inscape.LanguageServer`
+- `tools/vscode-inscape` 长期代码已迁入 `src/ExternalSupport/VSCode/`，后续继续拆为薄扩展前端与 `Inscape.LanguageServer`
 - 当前 `UnitySample` / `unity-bird-importer` 属于 `ExternalSupport/UnityPlugin` 的过渡素材，而不是内部五层的一部分

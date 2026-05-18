@@ -8,27 +8,27 @@
 
 ## 当前项目快照
 
-Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原型。当前长期架构已经收敛为 Internal 与 ExternalSupport 两层：Internal 包含 `Compiler`、`Tooling`、`Cli`、`LanguageServer` 与未来 `Runtime`；ExternalSupport 包含外部平台支持，例如 `EditorExtensions/VSCode` 与 `UnityPlugin`。UnitySample 实验 adapter 继续保留，但只作为 ExternalSupport 过渡样例，不代表最终 Host Bridge 方案。
+Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原型。当前长期架构已经收敛为 Internal 与 ExternalSupport 两层：Internal 包含 `Compiler`、`Tooling`、`Cli`、`LanguageServer` 与未来 `Runtime`；ExternalSupport 包含外部平台支持，例如 `VSCode` 与 `UnityPlugin`。UnitySample 实验 adapter 继续保留，但只作为 ExternalSupport 过渡样例，不代表最终 Host Bridge 方案。
 
-当前主动重构范围覆盖 Internal 侧的 `Inscape.Compiler`、`Inscape.Cli`、`LanguageServer` / `Tooling` 契约，以及 ExternalSupport 侧的 `src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape` 编辑器扩展。`src/ExternalSupport/UnityPlugin/Inscape.Adapters.UnitySample` 与 `src/ExternalSupport/UnityPlugin/unity-bird-importer` 视为 ExternalSupport 原型，暂不纳入这一轮内部重构，只保留隔离和回归样例职责。
+当前主动重构范围覆盖 Internal 侧的 `Inscape.Compiler`、`Inscape.Cli`、`LanguageServer` / `Tooling` 契约，以及 ExternalSupport 侧的 `src/ExternalSupport/VSCode` 编辑器扩展。`src/ExternalSupport/UnityPlugin/Inscape.Adapters.UnitySample` 与 `src/ExternalSupport/UnityPlugin/unity-bird-importer` 视为 ExternalSupport 原型，暂不纳入这一轮内部重构，只保留隔离和回归样例职责。
 
 项目级研发认知：当前没有已发布版本和真实用户项目，因此不应为了旧版语法、旧配置或旧工具行为承担兼容成本。任何 legacy / fallback 都默认视为待迁移、待删除的研发债；只有为了短期切换验证才允许临时保留，并且必须同时记录删除节点。
 
-2026-05-17 已完成 Goal 0 研发期 legacy 清除：G0.1 已将主样例 `samples/court-loop.inscape` 从 `:: node.name` 迁到中文 `# 标题`，同步更新所有主样例跳转目标，并将内部测试 fixture 全部迁到 `#` 标题。G0.2 已移除 Compiler / LanguageServer 对 `:: node.name` 的解析和诊断兼容文案；`:: old.node` 当前会作为节点外内容报错，不再创建节点。G0.3 已移除 VSCode 对 `:: node.name` 的 TextMate 高亮、workspace index 扫描、snippet、编辑器样式和当前文档入口。G0.4 已移除 legacy `[kind: alias]` / `[timeline: alias]` inline host binding 的 VSCode 补全、Hover、Ctrl+Click、workspace 扫描、UnitySample bracket timeline 导出和样例文件。G0.5 已移除 VSCode 编辑器扩展作者体验对 `unitySample.roleMap` / `unitySample.bindingMap` 的 fallback；ExternalSupport 的 `unitySample` 字段只保留为样例命令配置入口。G0.6 已清理当前行为文档中的 legacy / compatibility 口径；历史背景只保留在 ADR、审计或迁移说明中。Goal 5 已完成第一轮：VSCode node outline、completion、definition、references、hover 都已切到 LanguageServer 热路径；completion 使用 project probe 支持跨文件与未保存内容，相关 JS node semantic fallback 已删除。2026-05-17 已修正编辑器扩展归属：VSCode 是第一方维护的外部编辑器平台支持，已迁到 `src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape`；`src/Internal/VSCode` 空规划目录已清除。下一步建议推进 Goal 6：Host Schema endpoint 收口到 LanguageServer / Tooling 契约，移除 JS direct JSON fallback。
+2026-05-17 已完成 Goal 0 研发期 legacy 清除：G0.1 已将主样例 `samples/court-loop.inscape` 从 `:: node.name` 迁到中文 `# 标题`，同步更新所有主样例跳转目标，并将内部测试 fixture 全部迁到 `#` 标题。G0.2 已移除 Compiler / LanguageServer 对 `:: node.name` 的解析和诊断兼容文案；`:: old.node` 当前会作为节点外内容报错，不再创建节点。G0.3 已移除 VSCode 对 `:: node.name` 的 TextMate 高亮、workspace index 扫描、snippet、编辑器样式和当前文档入口。G0.4 已移除 legacy `[kind: alias]` / `[timeline: alias]` inline host binding 的 VSCode 补全、Hover、Ctrl+Click、workspace 扫描、UnitySample bracket timeline 导出和样例文件。G0.5 已移除 VSCode 编辑器扩展作者体验对 `unitySample.roleMap` / `unitySample.bindingMap` 的 fallback；ExternalSupport 的 `unitySample` 字段只保留为样例命令配置入口。G0.6 已清理当前行为文档中的 legacy / compatibility 口径；历史背景只保留在 ADR、审计或迁移说明中。Goal 5 已完成第一轮：VSCode node outline、completion、definition、references、hover 都已切到 LanguageServer 热路径；completion 使用 project probe 支持跨文件与未保存内容，相关 JS node semantic fallback 已删除。2026-05-18 已修正编辑器扩展路径：VSCode 是第一方维护的外部编辑器平台支持，已收敛到 `src/ExternalSupport/VSCode`；`EditorExtensions` 类别层和 `vscode-inscape` 包名目录已删除；VSCode 内部目录命名审计见 [VSCode Directory Naming Audit](vscode-directory-naming-audit.md)。下一步建议推进 G9.2：先收口 VSCode package 内部资源 / 脚本目录，再回到 Goal 6。
 
 ### 2026-05-11 当前交接结论（最新）
 
 - 2026-05-12 已开始按目录优先蓝图执行实际迁移：目录骨架与规则 README 已提交，Internal 侧 `.NET` 项目已迁入新路径，当前 Compiler 项目文件为 `src/Internal/Compiler/Inscape.Compiler.csproj`，Tooling 位于 `src/Internal/Tooling`，Cli 位于 `src/Internal/Cli/Inscape.Cli`。
 - 2026-05-12 已完成 Compiler 项目名、命名空间与入口门面收敛：`src/Internal/Compiler/Inscape.Core/Inscape.Core.csproj` 已迁为 `src/Internal/Compiler/Inscape.Compiler.csproj`，`Inscape.Core.*` 已改为 `Inscape.Compiler.*`，原 `InscapeCore` 门面已改为 `CompilerEntry`。2026-05-15 已继续把执行单文件编译的实现收敛为 `DslScript/Domains/DslScriptCompilerDomain`。
 - 2026-05-12 已同步更新 `Inscape.slnx`、`ProjectReference`、VSCode fallback CLI 项目路径、CLI 命令速查示例和相关文档命令路径。验证通过：`dotnet build Inscape.slnx --no-restore` 与 `dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build`。由于项目路径变化，执行过一次 `dotnet restore Inscape.slnx --configfile NuGet.Config` 来刷新项目图缓存。
-- 2026-05-12 已迁移 VSCode 前端源码：`tools/vscode-inscape` -> `src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape`。到 2026-05-15，扩展内部已按 `Commands`、`WorkspaceIndex`、`LanguageFeatures`、`PreviewWebview`、`Styles`、`Bridges` 与 `ExtensionEntry` 完成 B 阶段拆分；验证入口为 `node --check src\ExternalSupport\EditorExtensions\VSCode\vscode-inscape\extension.js`。
+- 2026-05-12 已迁移 VSCode 前端源码：`tools/vscode-inscape` -> `src/ExternalSupport/VSCode`。到 2026-05-15，扩展内部已按 `Commands`、`WorkspaceIndex`、`LanguageFeatures`、`PreviewWebview`、`Styles`、`Bridges` 与 `ExtensionEntry` 完成 B 阶段拆分；验证入口为 `node --check src\ExternalSupport\VSCode\extension.js`。
 - 2026-05-12 已迁移 Unity 外部支持源码：`src/Inscape.Adapters.UnitySample` -> `src/ExternalSupport/UnityPlugin/Inscape.Adapters.UnitySample`，`tools/unity-bird-importer` -> `src/ExternalSupport/UnityPlugin/unity-bird-importer`。当日 `Inscape.slnx` 已移除 UnitySample 的直接项目条目，但 CLI 与 tests 仍会传递构建该项目；这个遗留点已在 2026-05-13 通过外部支持命令边界拆分解决。
 - 2026-05-13 已完成外部支持命令边界拆分：UnitySample 命令迁入 `src/ExternalSupport/UnityPlugin/Inscape.UnitySample.Cli`，UnitySample 回归测试迁入 `tests/ExternalSupport/UnityPlugin/Inscape.UnitySample.Tests`。`src/Internal/Cli/Inscape.Cli` 与 `tests/Internal/Inscape.Tests` 不再引用 UnitySample，默认 `Inscape.slnx` 构建不再传递构建 UnityPlugin。
 - 2026-05-13 已开始整理 Tooling 内部目录：`Inscape.Tooling.csproj` 已提到 `src/Internal/Tooling` 根目录，源码按 `DslScriptSources`、`ToolConfig`、`Preview`、`Localization`、`HostSchema`、`HostBinding` 的 `Domains` / `Models` 目录落位。命名空间暂保留 `Inscape.Tooling`，后续再按业务目录决定是否拆命名空间。
 - 2026-05-13 已开始整理 CLI 内部目录：`src/Internal/Cli/Inscape.Cli` 下新增 `Entries`、`Commands`、`Providers`、`ViewModels`，分别承载 `CliCore`、具体命令、命令元数据 provider 和输出 DTO。命名空间暂保留 `Inscape.Cli`。
 - 2026-05-13 已开始整理 Internal 测试目录：`tests/Internal/Inscape.Tests` 下新增 `Entries`、`Shared`、`Compiler`、`Cli`、`PreviewLocalization`，先按现有测试文件边界落位，测试 runner 仍保持轻量手写模式。
 - 2026-05-13 已开始整理 UnitySample CLI 内部目录：`src/ExternalSupport/UnityPlugin/Inscape.UnitySample.Cli` 下新增 `Entries` 与 `Commands`，命令仍保持 ExternalSupport 独立验证入口，不进入默认 solution。
-- 2026-05-13 已启动 VSCode 拆分主线 A1：`src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape` 下已建立 `ExtensionEntry`、`Commands`、`LanguageFeatures`、`WorkspaceIndex`、`Bridges`、`PreviewWebview`、`Styles`、`Schemas` 目录骨架和规则 README；`extension.js` 尚未拆分。
+- 2026-05-13 已启动 VSCode 拆分主线 A1：`src/ExternalSupport/VSCode` 下已建立 `ExtensionEntry`、`Commands`、`LanguageFeatures`、`WorkspaceIndex`、`Bridges`、`PreviewWebview`、`Styles`、`Schemas` 目录骨架和规则 README；`extension.js` 尚未拆分。
 - 2026-05-13 已推进 VSCode 拆分 A2.1：`HostSchemaCommand` 已从 `extension.js` 迁入 `Commands/HostSchemaCommand.js`，`extension.js` 通过依赖注入保留原行为。
 - 2026-05-13 已推进 VSCode 拆分 A2.2：`EditorAuthoringCommand` 已从 `extension.js` 迁入 `Commands/EditorAuthoringCommand.js`，工具菜单、样式文件和语法速查入口仍由 `extension.js` 注册。
 - 2026-05-13 已推进 VSCode 拆分 A2.3：`LocalizationCommand` 已从 `extension.js` 迁入 `Commands/LocalizationCommand.js`，导出 / 更新本地化命令仍由 `extension.js` 注册。
@@ -79,7 +79,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - 2026-05-16 已推进 D3.1：`ToolConfigModel` 新增通用 `HostBridge` 路径字段，`ToolConfigReaderDomain` 会按配置文件目录归一化 `hostBridge`；`unitySample` 旧字段继续保留作为 ExternalSupport fallback。下一步建议 D3.2：VSCode HostBinding / speaker 展示文案迁到 Host Bridge 口径。
 - 2026-05-16 已推进 D3.2：VSCode speaker / host binding provider 迁到 `inscape.config.json` 的 `hostBridge` ids；Goal 0 后已删除旧 `unitySample.roleMap` / `unitySample.bindingMap` fallback。
 - 2026-05-16 已推进 E1 / E3：新增 [Regression Workflow](regression-workflow.md)，把节点开始前、行为契约、命名 / 分层自检、验证命令、提交拆分、提交前检查和推送后检查固化为可执行清单。下一步建议 E2：把 VSCode 交互回归清单补进扩展文档。
-- 2026-05-16 已推进 E2：`src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape/README.md` 新增 `Regression Checklist`，明确改 VSCode 后要 `node --check`、JSON parse、`npm run rebuild:vsix`、安装后 Reload Window，并手动检查正文 / 选项 Ctrl+Click、speaker、host binding、预览源码回跳等交互。
+- 2026-05-16 已推进 E2：`src/ExternalSupport/VSCode/README.md` 新增 `Regression Checklist`，明确改 VSCode 后要 `node --check`、JSON parse、`npm run rebuild:vsix`、安装后 Reload Window，并手动检查正文 / 选项 Ctrl+Click、speaker、host binding、预览源码回跳等交互。
 - 2026-05-16 已启动 F 阶段语法收敛：新增 [Authoring Marker Contract](authoring-marker-contract.md)，将 `@` / `[]` 的作者心智模型收敛为 `@` 主要表达事件、动作、时机和状态变化，`[]` 主要表达查询、读取和文本插值。历史 `[timeline: ...]` / `[kind: alias]` inline host binding 写法暂保留为兼容事实，但不再作为新示例和新工具提示的推荐方向。
 - 2026-05-16 已推进 F1.2：新增 [Authoring Marker Compatibility Audit](authoring-marker-compatibility-audit.md)，把旧 `[timeline: ...]`、`[kind: alias]`、`[bg]` / `[emotion]` 等残留分为 `compatible`、`migrate-docs`、`migrate-tooling-copy` 与 `defer-behavior`。下一步建议 F1.3：先迁 VSCode hover / completion / README / tooling 文案，保留 legacy 行为 fallback。
 - 2026-05-16 已推进 F1.3：VSCode hover / completion 文案和扩展 README / VSCode 工具链文档已迁到 `@timeline...` = host event / timing hook、`[kind: alias]` = legacy inline host binding fallback 的口径；代码扫描、补全、Ctrl+Click 和 UnitySample 兼容行为未改变。下一步建议 F1.4：迁作者语法指南、快速指南和 open questions，把 `[bg]` / `[timeline]` 移入兼容旧写法。
@@ -90,7 +90,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - 2026-05-16 已推进 F1.8：新增 [Authoring Query Interpolation Contract](authoring-query-interpolation-contract.md)，冻结 `[]` 第一版为只读查询 / 文本插值：优先简单路径，不触发事件，不修改状态，不调度资源，不绑定 Unity / 服务端 / 业务 API；函数调用、异步查询、失败策略、本地化占位和预览 fallback 留到后续数据契约。下一步建议 F1.9：设计查询插值与本地化占位符、预览 fallback、Host Schema 提示之间的最小数据契约。
 - 2026-05-16 已推进 F1.9：新增 [Query Interpolation Data Contract](query-interpolation-data-contract.md)，定义 `[]` 简单路径插值在本地化、预览 fallback、Host Schema 提示和 Host Bridge 映射之间的最小对象形态与分层诊断：本地化保留占位符，预览无宿主时保留 `[query]` 或使用显式调试假值，Host Schema 只做提示不成为 Compiler 真相，legacy `[kind: alias]` 与新 `query-interpolation` 分开。下一步建议 F1.10：评估 VSCode / LanguageServer 是否先做简单路径提示原型。
 - 2026-05-16 已推进 F1.10：新增 [Query Interpolation Tooling Decision](query-interpolation-tooling-decision.md)，结论是先做 VSCode authoring hint 原型：只消费 Host Schema，未知 query 只给提示，不改 Compiler，不改本地化 / 预览输出；LanguageServer 等 VSCode 原型稳定后复用同一 `query-interpolation` 数据契约。下一步建议 F1.11：新增 VSCode query interpolation provider 骨架，先做 Host Schema queries 读取和 `[query.path]` 范围识别，不接 completion / hover。
-- 2026-05-16 已推进 F1.11：新增 `src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape/WorkspaceIndex/DslScriptQueryInterpolationProvider.js`，可读取当前工作区 Host Schema 的零参数简单 `queries[]`，识别 `[itemName]` / `[player.gold]` 这类简单路径范围，并天然排除带冒号的 legacy `[kind: alias]`；入口已装配 provider，但暂未接入 completion / hover，不改变用户可见行为、Compiler、预览或本地化输出。下一步建议 F1.12：接入 VSCode completion / hover，未知 query 只提示，不改 Compiler。
+- 2026-05-16 已推进 F1.11：新增 `src/ExternalSupport/VSCode/WorkspaceIndex/DslScriptQueryInterpolationProvider.js`，可读取当前工作区 Host Schema 的零参数简单 `queries[]`，识别 `[itemName]` / `[player.gold]` 这类简单路径范围，并天然排除带冒号的 legacy `[kind: alias]`；入口已装配 provider，但暂未接入 completion / hover，不改变用户可见行为、Compiler、预览或本地化输出。下一步建议 F1.12：接入 VSCode completion / hover，未知 query 只提示，不改 Compiler。
 - 2026-05-16 已推进 F1.12：VSCode completion / Hover 已接入 `[]` 查询插值。`[` / `[partial` 位置会基于 Host Schema 零参数简单 query 补全；`[query.path]` Hover 会展示 `returnType`、`isAsync`、description 和 schema 来源。未知 query 只显示作者提示，不新增 Problems 诊断，不改 Compiler / 本地化 / 预览语义；Goal 0 后，带冒号的旧 `[kind: alias]` 不再作为 Host Bridge 或 query interpolation 主路径。下一步建议 F1.13：评估该原型是否迁入 LanguageServer 或增加 workspace audit。
 - 2026-05-16 已推进 F1.13：新增 [Query Interpolation Follow-up Decision](query-interpolation-follow-up-decision.md)，结论是暂不把 `[]` 查询插值立即迁入 LanguageServer，也不新增 Compiler diagnostics；VSCode 原型继续作为反馈面。下一步建议 F1.14：先设计显式 workspace audit 的输出格式和命令入口，保持非阻断、可选、不接默认 Problems。
 - 2026-05-16 已推进 F1.14：新增 [Query Interpolation Workspace Audit](query-interpolation-workspace-audit.md)，设计未来 `audit-query-interpolation-project <workspace> [--format json|text]` 与 VSCode 显式命令的输出契约。Audit 使用独立 `inscape.query-interpolation.audit` JSON 格式和 `IQI` code，不接 `diagnose-project`，warning / info 不返回非零退出码。下一步建议 F1.15：评估 Host Schema query 读取逻辑落到 Tooling 还是 LanguageServer。
@@ -120,7 +120,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - 2026-05-17 已推进 Goal 5.4：LanguageServer 新增 `--hover-project <root> <node|jump> <title> [--override source temp]`，复用 Tooling source loading 与 Compiler project graph；VSCode node / jump hover 已切到该 project hover，`DslScriptNodeProvider` 不再保存 node hover markdown fallback。speaker、metadata、Host Bridge binding、Host Schema query / event hover 仍保留在 VSCode authoring provider。下一步建议 Goal 5.5：收敛 document symbols / node completion 的既有 JS fallback 边界。
 - 2026-05-17 已完成 Goal 5.5：LanguageServer 新增 `--completion-project <root> [--override source temp]`，VSCode node completion 改用项目级 completion，不再用 JS workspace node index 补齐跨文件节点；DocumentSymbolProvider 删除 JS node scanner fallback，LanguageServer 失败时返回空 Outline。下一步建议 Goal 6：Host Schema endpoint 收口到 LanguageServer / Tooling 契约。
 - 2026-05-17 已推进预览体验小节点：Preview HTML 会把正文、选项提示和选项文本中的 `[query.path]` 渲染为 `.query-interpolation` token 样式，仍显示原文，不改变 Compiler / Runtime / Host Schema 语义。
-- 2026-05-17 已新增 ADR 0015 并修正 ADR 0014：VSCode 是第一方维护的外部编辑器平台支持，不属于 Internal 核心层；当前 package 已迁到 `src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape`。未来可能拆仓的项目应在项目根内区分 `Scripts` / `Resources` / 开发脚本边界；空规划目录不再作为完成依据。
+- 2026-05-17 已新增 ADR 0015 并修正 ADR 0014：VSCode 是第一方维护的外部编辑器平台支持，不属于 Internal 核心层；当前 package 已迁到 `src/ExternalSupport/VSCode`。未来可能拆仓的项目应在项目根内区分 `Scripts` / `Resources` / 开发脚本边界；空规划目录不再作为完成依据。
 - 2026-05-17 已更新研发期兼容原则：项目当前没有真实用户和已发布契约，不再默认维护旧版兼容。`:: node.name`、legacy `[kind: alias]` inline binding、`unitySample.*` fallback、JS semantic fallback 等都应重新梳理为待删除或待收敛任务。下一步优先重排计划并先清 legacy，再继续新增能力。
 - 2026-05-12 已迁移当前聚合测试项目：`tests/Inscape.Tests` -> `tests/Internal/Inscape.Tests`。这只是测试项目路径进入 Internal 测试树，测试内容尚未按 Compiler / Tooling / Cli / ExternalSupport 拆分。
 - 当前分支为 `main...origin/main`。本轮已把目录优先方案正式冻结为文档与 ADR；最新提交请以 `git log --oneline -1` 为准。
@@ -128,7 +128,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - 本轮会话已将该铁律落入 [目录优先重构蓝图](directory-first-reframe-plan.md) 与 [ADR 0012](adr/0012-directory-first-repository-reframe-order.md)。
 - 本轮会话已明确当前最显眼的不符合点已从“大目录不成形 / UnitySample 仍在默认编译链”转为“VSCode 编辑器扩展归属曾误放 Internal、编辑器扩展还未完全接入 LanguageServer、Tooling 共享流程仍可继续下沉为更窄模块、测试项目仍可继续按更细领域拆分”。
 - 本轮会话已确认新的优先级：下一阶段应先做目录骨架与规则文件，再迁大目录路径与 solution 边界；Tooling 上提、VSCode 深拆、LanguageServer 细化与项目名迁移都排在目录外形稳定之后。
-- 本轮会话当时曾确认 `VSCode` 位于 Internal；该判断已在 2026-05-17 被 ADR 0015 修正。当前长期结构为：Internal 包含 `Compiler`、`Tooling`、`Cli`、`LanguageServer`、`Runtime`；ExternalSupport 包含 `EditorExtensions/VSCode` 与 `UnityPlugin`。
+- 本轮会话当时曾确认 `VSCode` 位于 Internal；该判断已在 2026-05-17 被 ADR 0015 修正。当前长期结构为：Internal 包含 `Compiler`、`Tooling`、`Cli`、`LanguageServer`、`Runtime`；ExternalSupport 包含 `VSCode` 与 `UnityPlugin`。
 - 本轮会话确认：`Inscape.Compiler` 长期可向 `Compiler` 收敛；`Inscape.Cli` 当前同时承载了 `Cli` 与部分 `Tooling`，下一轮重构重点应是先抽出 `Tooling`。
 - 本轮会话已完成 Stage 1 的第一刀：新建 `src/Inscape.Tooling/`，迁出 ToolConfig 配置模型与读取/路径归一化逻辑；`Cli` 现在只保留 `--config` 参数解析和错误输出适配。
 - 本轮会话已完成 Stage 1 的第二刀：迁出 `.inscape` 项目源发现、排除目录、内容读取与 override 应用逻辑；`Cli` 现在只保留 `--override <source> <content>` 参数解析。
@@ -143,7 +143,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - 本轮会话已继续按 CLI 入口边界收紧 UnitySample 命令实现：binding-template、role-template、project-export 三个命令的单用途读取/适配/写盘/报表辅助已全部内联回各自 `CliUnitySample*Command`，当前 CLI 不再保留独立 `CliUnitySample*Reader/Writer` 辅助类型。
 - 本轮会话已继续按显式宿主动作入口规则收紧 UnitySample L10N 合并命令：`merge-unity-sample-l10n` 已从 `CliCore` 私有分支抽为独立 `CliUnitySampleL10nMergeCommand`，`CliCore` 仅保留分发。
 - 本轮会话已继续按薄门面规则收紧 `CliCore`：`IsHelp`、`ToCompileViewModel`、`ToProjectCompileViewModel` 与项目命令分发私有包装已收回拥有者文件，`CliCore` 进一步缩到入口分发与跨命令共享输出辅助。
-- 本轮会话已先收口 VSCode 预览定位 selection bridge：原先散在 `src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape/extension.js` 顶层的 pending reveal 状态与相关函数已收为 `PreviewRevealBridge`，使 Ctrl+Click 到预览定位的链路拥有明确 `Bridge` 角色。
+- 本轮会话已先收口 VSCode 预览定位 selection bridge：原先散在 `src/ExternalSupport/VSCode/extension.js` 顶层的 pending reveal 状态与相关函数已收为 `PreviewRevealBridge`，使 Ctrl+Click 到预览定位的链路拥有明确 `Bridge` 角色。
 - 本轮会话已继续收口 VSCode 预览命令入口：`openPreview`、`togglePreview`、`revealSelectionInPreview` 及其局部 helper 已收为 `PreviewCommand`，预览命令不再散在 `extension.js` 顶层函数。
 - 本轮会话已继续收紧 VSCode preview reveal bridge 边界：光标处 reveal 信息解析、definition link 构造与 reveal range 解析已吸回 `PreviewRevealBridge`，preview reveal 顶层 helper 进一步退出函数区。
 - 本轮会话已继续收口 VSCode localization 命令入口：`extractLocalization`、`updateLocalization` 及其局部执行链已收为 `LocalizationCommand`，顶层不再保留独立 localization command helper 串。
@@ -204,7 +204,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - `Cli` 的 binding-template 项目级命令当前也已形成更清楚的局部边界：`CliUnitySampleProjectCommand` 只做分派，具体 binding template 读取、主 CSV 输出和诊断输出由 `CliUnitySampleBindingTemplateCommand` 承载。
 - `Cli` 的 role-template 项目级命令当前也已形成更清楚的局部边界：`CliUnitySampleProjectCommand` 只做分派，具体 role template 读取、主 CSV 输出和 report 输出由 `CliUnitySampleRoleTemplateCommand` 承载。
 - `Cli` 的 project-export 项目级命令当前也已形成更清楚的局部边界：`CliUnitySampleProjectCommand` 只做分派，具体导出参数校验、导出执行和写盘输出由 `CliUnitySampleProjectExportCommand` 承载。
-- `VSCode`：编辑器入口层；当前主要落在 `src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape/extension.js`。
+- `VSCode`：编辑器入口层；当前主要落在 `src/ExternalSupport/VSCode/extension.js`。
 - `LanguageServer`：C# 语义服务层；当前已有 `Inscape.LanguageServer` 基线项目，diagnostics / definition / references / completion 第一层已直接复用 Compiler。
 - `Runtime`：未来运行期层；当前尚未实现。
 - `ExternalSupport/UnityPlugin`：Unity 环境下的外部支持层；当前由 `src/ExternalSupport/UnityPlugin/Inscape.Adapters.UnitySample` 与 `src/ExternalSupport/UnityPlugin/unity-bird-importer` 作为过渡样例与原型承载。
@@ -213,14 +213,14 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 
 - 已按本指南完成接手阅读：`docs/agent-handoff.md`、`docs/todo.md`、`docs/roadmap.md`、`docs/open-questions.md` 和 `docs/code-structure.md`。
 - 仓库位于 `main...origin/main`，HEAD 为 `8087d5b feat: 明确 Timeline Hook phase 语义`。
-- 当前存在接手前未提交变更：`samples/court-loop.inscape` 修改了一句证人对白并追加文件末尾空行；`src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape/extension.js` 的 VSCode 交互按用户反馈改为接近 C# 的引用模型：block 标题显示 `N 个引用`，点击打开 References Peek，`-> target` Hover 只做类型说明，speaker 定义缺失时回退到对白引用位置。
-- 接手验证通过：`dotnet build Inscape.slnx --no-restore`、`dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build`、`node --check src\ExternalSupport\EditorExtensions\VSCode\vscode-inscape\extension.js`。
+- 当前存在接手前未提交变更：`samples/court-loop.inscape` 修改了一句证人对白并追加文件末尾空行；`src/ExternalSupport/VSCode/extension.js` 的 VSCode 交互按用户反馈改为接近 C# 的引用模型：block 标题显示 `N 个引用`，点击打开 References Peek，`-> target` Hover 只做类型说明，speaker 定义缺失时回退到对白引用位置。
+- 接手验证通过：`dotnet build Inscape.slnx --no-restore`、`dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build`、`node --check src\ExternalSupport\VSCode\extension.js`。
 - VSCode 角色名、block 引用计数和 `-> target` 简短 Hover 已按用户最新反馈对齐；Timeline / 资源别名定义跳转、Host Schema 脚本内跳转和变量名追溯仍未实现。
 - 2026-05-01 继续修正 VSCode 角色名 Ctrl+Click 范围：不再尝试注册 `DocumentHighlightProvider`，改为在 `language-configuration.json` 的 `wordPattern` 中把全角冒号和常见中文标点作为词边界，使 `旁白：证物袋里只有一枚旧怀表。` 只把 `旁白` 识别为可跳转词。
 - 2026-05-01 用户补充新的架构约束：Host Schema 查询可参考 `?hasItem("badge")->node`，但 Inscape 可读 ID 与项目内部 ID 必须通过 Host Bridge 映射；`item` 是抽象叙事概念，不等同业务 Item；下层状态只被上层查询或内部使用，不反向查询上层；Bird 只是 Unity 支持参考需求方，不应绑定 Core、通用 Unity 插件、Addressables 或 ScriptableObject；Timeline Hook 长期应泛化为宿主自定义事件示例；Unity 上层支持层应作为独立插件 / 适配包研究。
 - 2026-05-01 已将原 Core 内的固定 Unity 项目适配 spike 迁出为 `src/ExternalSupport/UnityPlugin/Inscape.Adapters.UnitySample`，CLI 命令改为 `export-unity-sample-*` / `merge-unity-sample-l10n`。该项目明确标注为实验样例：它硬编码 `talkingId`、`roleId`、`L10N_Talking`、Timeline asset 和 manifest 字段，只用于验证导出 / L10N / hook / 绑定流程，不代表最终 Host Bridge 或通用 Unity Runtime Host。
 - 2026-05-01 用户补充 Unity 支持层候选方向：在 Unity 项目的类、字段、方法上加 `[Inscape]` 一类 Attribute，由 Unity 内代码生成脚本扫描并生成待配置桥接表；人工再完成 C# 类名 / 字段名与 Inscape 可读名的映射。拿到数据后上层是直接绑定事件、轮询触发，还是混合模型仍待定，不应提前写死。
-- 2026-05-01 已整理 VSCode 扩展发布工作流：扩展改动后不能只重启窗口，必须重新打包并覆盖安装；当前推荐入口是 `src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape/` 下的 `npm run rebuild:vsix`，细则见 [VSCode 扩展发布工作流](vscode-release-workflow.md)。
+- 2026-05-01 已整理 VSCode 扩展发布工作流：扩展改动后不能只重启窗口，必须重新打包并覆盖安装；当前推荐入口是 `src/ExternalSupport/VSCode/` 下的 `npm run rebuild:vsix`，细则见 [VSCode 扩展发布工作流](vscode-release-workflow.md)。
 - 2026-05-01 VSCode 可玩预览已经落地到 custom editor：默认通过 `Inscape: Open Preview` / `Inscape: Toggle Preview` 在源码右侧打开，预览不再劫持 `.inscape` 源码标签页或 Ctrl+Click 跳转。当前交互是单栏沉浸式阅读体验，支持点击选项推进、无选项时点击正文继续、Back、Restart、diagnostics、源码回跳，以及编辑防抖刷新和保存后立即刷新。
 - 2026-05-01 预览链路的关键经验已确认：webview 必须显式启用 scripts；刷新时要保留当前 `{ current, path }` 状态，避免每次回到第一页；CLI 调用应优先复用已构建的 `Inscape.Cli.exe`，其次 `dotnet exec Inscape.Cli.dll`，最后再回退到 `dotnet run --project ...`，否则交互延迟会明显偏高。
 - 2026-05-01 VSCode 脚本交互约定已进一步收敛：`@entry`、`@scene`、`@timeline` 等统一视作 `@metadata` 语法层，`[]` 视作宿主绑定 / 行内标签层；二者都应提供 Hover 与可理解的导航，但不要在 VSCode 侧重写 Core 语义。预览中的源码回跳与源码编辑器内的 Ctrl+Click 应保持隔离，不做自动双向同步。
@@ -300,16 +300,16 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - 2026-05-11 已继续执行 UnitySample role-template 项目级命令收口：`CliUnitySampleProjectCommand` 当前不再直接承载 role template 读取、主 CSV 输出与 report 输出，相关逻辑已迁入 `CliUnitySampleRoleTemplateCommand`。这一刀同样通过了 `dotnet build Inscape.slnx --no-restore` 和 `dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build`。
 - 2026-05-11 已继续执行 UnitySample project-export 项目级命令收口：`CliUnitySampleProjectCommand` 当前不再直接承载导出参数校验、导出执行与写盘输出，相关逻辑已迁入 `CliUnitySampleProjectExportCommand`。这一刀同样通过了 `dotnet build Inscape.slnx --no-restore` 和 `dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj`。
 
-- 2026-05-01 已完成 CLI 项目命令收口：当时项目级命令分发落在 `CliStoryGraphCommand`，共享的“配置读取 + `.inscape` 项目源扫描/读取/override + 项目编译”前置流程收口到 `CliCompilerProject`；其中 DSL 源加载位于 `CliDslSourceLoader`，UnitySample role/binding/export 辅助逻辑位于 `CliUnitySampleSupport`。单文件命令的“输入读取 + 邻近项目配置读取 + 单文件编译”前置流程也收口到 `CliCompilerSingleFile`。`CliCore` 只保留参数分流、共享输出和退出码整合。验证通过：`dotnet build Inscape.slnx --no-restore`、`dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build`、`node --check src\ExternalSupport\EditorExtensions\VSCode\vscode-inscape\extension.js`。这些类型名后来继续按目录优先、主语/角色的方式逐步替换。
+- 2026-05-01 已完成 CLI 项目命令收口：当时项目级命令分发落在 `CliStoryGraphCommand`，共享的“配置读取 + `.inscape` 项目源扫描/读取/override + 项目编译”前置流程收口到 `CliCompilerProject`；其中 DSL 源加载位于 `CliDslSourceLoader`，UnitySample role/binding/export 辅助逻辑位于 `CliUnitySampleSupport`。单文件命令的“输入读取 + 邻近项目配置读取 + 单文件编译”前置流程也收口到 `CliCompilerSingleFile`。`CliCore` 只保留参数分流、共享输出和退出码整合。验证通过：`dotnet build Inscape.slnx --no-restore`、`dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build`、`node --check src\ExternalSupport\VSCode\extension.js`。这些类型名后来继续按目录优先、主语/角色的方式逐步替换。
 
-- 2026-05-11 认知又补了一层：除了命名模型收敛，长期架构本身也已定稿为 Internal / ExternalSupport 两层。当时曾把 `VSCode` 归入 Internal；2026-05-17 已由 ADR 0015 修正为 ExternalSupport editor extension。当前 Internal 以 `Compiler` / `Tooling` / `Cli` / `LanguageServer` / `Runtime` 组织；ExternalSupport 以 `EditorExtensions/VSCode` 与 `UnityPlugin` 为核心。详见 ADR 0011、ADR 0015、[代码结构规划](code-structure.md) 和 [编码与命名规范](coding-conventions.md)。
+- 2026-05-11 认知又补了一层：除了命名模型收敛，长期架构本身也已定稿为 Internal / ExternalSupport 两层。当时曾把 `VSCode` 归入 Internal；2026-05-17 已由 ADR 0015 修正为 ExternalSupport editor extension。当前 Internal 以 `Compiler` / `Tooling` / `Cli` / `LanguageServer` / `Runtime` 组织；ExternalSupport 以 `VSCode` 与 `UnityPlugin` 为核心。详见 ADR 0011、ADR 0015、[代码结构规划](code-structure.md) 和 [编码与命名规范](coding-conventions.md)。
 
 ## 本轮踩坑总结
 
 - 这次回归的根因不是颜色配置，而是误把 `DocumentLinkProvider` 当成“可样式化的 Ctrl+Hover 链接态”来用。
 - TextMate scope、decorations、`inscape.editor-style.json` 里的 `...TextDecoration` 只适合处理视觉层，不适合修复 provider 语义层误用。
 - 以后碰到“常驻下划线 / 链接态消失”这类问题，先查 provider 类型是否选错，再查样式；不要反过来。
-- 只要改了 `src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape/`，就必须 `npm run rebuild:vsix` 并安装；否则很容易把“旧扩展效果”误判成“新代码回归”。
+- 只要改了 `src/ExternalSupport/VSCode/`，就必须 `npm run rebuild:vsix` 并安装；否则很容易把“旧扩展效果”误判成“新代码回归”。
 - 最终稳定方案已经明确分层：`DefinitionProvider` 只负责 Ctrl+指向的瞬时链接态，selection bridge 只负责把 Ctrl+Click 转成 `inscape.revealInPreview`，显式命令只做兜底。
 - 如果未来再改正文 / 选项的导航体验，优先在 provider / selection 流程里排查，不要先去改主题、TextMate scope 或样式 JSON。
 - 重构时不要把“顺手清理”混进当前节点；`extension.js` 这类大文件只能按 provider / controller / command 等小边界逐次迁移。
@@ -385,10 +385,10 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 设计决策溯源                       docs/adr/README.md, 对应 ADR
 DSL 语法                           docs/dsl-syntax-guide.md, docs/dsl-language.md, docs/syntax-comparison.md, docs/open-questions.md
 `@` / `[]` 语法分工                 docs/authoring-marker-contract.md, docs/authoring-query-interpolation-contract.md, docs/query-interpolation-data-contract.md, docs/query-interpolation-tooling-decision.md, docs/dsl-syntax-guide.md, docs/dsl-language.md, docs/host-bridge-contract.md
-`@` / `[]` 兼容残留审计             docs/authoring-marker-compatibility-audit.md, docs/vscode-tooling.md, src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape/README.md
+`@` / `[]` 兼容残留审计             docs/authoring-marker-compatibility-audit.md, docs/vscode-tooling.md, src/ExternalSupport/VSCode/README.md
 DSL 生态定位 / 竞品对比             docs/dsl-ecosystem-positioning.md, docs/adr/0007-dsl-benchmark-positioning.md
 代码结构 / 新模块                  docs/code-structure.md, docs/coding-conventions.md, docs/refactoring-plan.md, src/Inscape.Compiler, src/Inscape.Cli
-VSCode 工具                        docs/vscode-tooling.md, src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape/README.md, docs/vscode-language-server-migration-plan.md
+VSCode 工具                        docs/vscode-tooling.md, src/ExternalSupport/VSCode/README.md, docs/vscode-language-server-migration-plan.md
 防回归工作流                       docs/regression-workflow.md, docs/refactoring-plan.md
 HTML 预览                          src/Inscape.Tooling/PreviewHtmlRendererDomain.cs, docs/vscode-tooling.md
 本地化 / hash                      docs/hash-localization.md, docs/l10n-extraction.md
@@ -411,7 +411,7 @@ Unity / Host Bridge                docs/unity-sample-adapter.md, docs/project-co
 - 修改后先跑局部静态检查，再运行规定构建和测试；涉及 VSCode 时跑 Node 语法/JSON 检查。
 - 提交前看 `git diff --stat` 和关键 diff，确认没有越界改动。
 - 每个阶段完成后提交并推送，保持远端可接续；提交粒度优先是一小节点一提交。
-- 若改动发生在 `src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape/`，默认把“打包 + 安装 + reload”纳入验证流程，而不要把源码修改误认为发布完成。
+- 若改动发生在 `src/ExternalSupport/VSCode/`，默认把“打包 + 安装 + reload”纳入验证流程，而不要把源码修改误认为发布完成。
 
 ## 常用命令
 
@@ -428,8 +428,8 @@ git -c safe.directory=D:/LabProjects/Inscape log --oneline --decorate -12
 dotnet build Inscape.slnx --no-restore
 dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build
 dotnet run --project tests\ExternalSupport\UnityPlugin\Inscape.UnitySample.Tests\Inscape.UnitySample.Tests.csproj --no-build
-node --check src\ExternalSupport\EditorExtensions\VSCode\vscode-inscape\extension.js
-node -e "JSON.parse(require('fs').readFileSync('src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape/package.json','utf8')); JSON.parse(require('fs').readFileSync('src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape/language-configuration.json','utf8')); JSON.parse(require('fs').readFileSync('src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape/syntaxes/inscape.tmLanguage.json','utf8')); console.log('json ok')"
+node --check src\ExternalSupport\VSCode\extension.js
+node -e "JSON.parse(require('fs').readFileSync('src/ExternalSupport/VSCode/package.json','utf8')); JSON.parse(require('fs').readFileSync('src/ExternalSupport/VSCode/language-configuration.json','utf8')); JSON.parse(require('fs').readFileSync('src/ExternalSupport/VSCode/syntaxes/inscape.tmLanguage.json','utf8')); console.log('json ok')"
 ```
 
 CLI 样例：

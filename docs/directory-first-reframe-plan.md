@@ -32,7 +32,7 @@
 12. 进入任一 Layer / Business 重构前，先阅读该目录的 `README.md`，再决定如何迁文件和改名。
 13. 不再保留纯规划空目录；未来能力先写入 docs / TODO，等有真实文件或目录规则 README 时再建目录。
 14. 对未来可能独立拆仓的项目，资源 / 代码分层发生在项目根内部，例如 `Scripts`、`Resources` 与开发脚本边界；不要在 `Internal` 或 `ExternalSupport` 顶层粗暴切资源桶。
-15. VSCode 是第一方维护的外部编辑器平台支持，属于 `ExternalSupport/EditorExtensions/VSCode`；Internal 只保留不绑定具体外部编辑器的核心契约与服务。
+15. VSCode 是第一方维护的外部编辑器平台支持，属于 `ExternalSupport/VSCode`；Internal 只保留不绑定具体外部编辑器的核心契约与服务。
 
 ## 当前最明显的不符合点
 
@@ -44,7 +44,7 @@
 | 2 | `src/Inscape.Compiler/` 仍是当前 Compiler 雏形 | `src/Internal/Compiler/`，后续再迁 `Inscape.Compiler` | 文档已把 Compiler 定义为真相层，但仓库外形还看不出来 |
 | 3 | `src/Inscape.Tooling/` 还未进入 Internal 树 | `src/Internal/Tooling/` | Tooling 虽已落项目，但路径上还不是正式 Layer |
 | 4 | `src/Inscape.Cli/` 还未进入 Internal 树 | `src/Internal/Cli/` | Cli 与 Tooling 的边界无法在路径上直接识别 |
-| 5 | VSCode 扩展曾在 `src/Internal/VSCode/vscode-inscape/` 与规划空目录之间摇摆 | `src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape/` | VSCode 绑定外部编辑器平台，不能作为 Internal 核心层拖累未来自研编辑器或分仓 |
+| 5 | VSCode 扩展曾在 `src/Internal/VSCode/vscode-inscape/` 与规划空目录之间摇摆 | `src/ExternalSupport/VSCode/` | VSCode 绑定外部编辑器平台，不能作为 Internal 核心层拖累未来自研编辑器或分仓 |
 | 6 | `src/ExternalSupport/UnityPlugin/Inscape.Adapters.UnitySample/` 仍在默认 solution 中 | `src/ExternalSupport/UnityPlugin/`，并退出默认 .NET solution | 这直接违背 ExternalSupport 的既定边界 |
 | 7 | `src/ExternalSupport/UnityPlugin/unity-bird-importer/` 仍在顶层 tools | `src/ExternalSupport/UnityPlugin/...` 或其他 ExternalSupport 子树 | Unity 外部原型仍未被收束到外部支持层 |
 | 8 | `LanguageServer` 仍只存在于文档里 | `src/Internal/LanguageServer/` 空骨架先落地 | 长期方向缺乏任何可见落点 |
@@ -66,8 +66,7 @@ src/
     Runtime/
 
   ExternalSupport/
-    EditorExtensions/
-      VSCode/
+    VSCode/
     UnityPlugin/
 ```
 
@@ -172,25 +171,24 @@ src/Internal/Cli/
   ViewModels/
 ```
 
-### ExternalSupport / EditorExtensions / VSCode
+### ExternalSupport / VSCode
 
 ```text
-src/ExternalSupport/EditorExtensions/VSCode/
+src/ExternalSupport/VSCode/
   README.md
-  vscode-inscape/
-    extension.js
-    package.json
-    ExtensionEntry/
-    LanguageFeatures/
-    WorkspaceIndex/
-    PreviewWebview/
-    Commands/
-    Bridges/
-    Styles/
-    media/
-    schemas/
-    snippets/
-    syntaxes/
+  extension.js
+  package.json
+  ExtensionEntry/
+  LanguageFeatures/
+  WorkspaceIndex/
+  PreviewWebview/
+  Commands/
+  Bridges/
+  Styles/
+  media/
+  schemas/
+  snippets/
+  syntaxes/
 ```
 
 ### LanguageServer
@@ -331,7 +329,7 @@ Role 目录通常不单独写规则文件，除非该 Role 在当前业务中有
 - `src/Inscape.Compiler` 迁入 `src/Internal/Compiler`。
 - `src/Inscape.Tooling` 迁入 `src/Internal/Tooling`。
 - `src/Inscape.Cli` 迁入 `src/Internal/Cli`。
-- `tools/vscode-inscape` 或旧 `src/Internal/VSCode` 残留迁入 `src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape`。
+- `tools/vscode-inscape` 或旧 `src/Internal/VSCode` 残留迁入 `src/ExternalSupport/VSCode`。
 - `src/ExternalSupport/UnityPlugin/Inscape.Adapters.UnitySample` 与 `src/ExternalSupport/UnityPlugin/unity-bird-importer` 收束到 `src/ExternalSupport/UnityPlugin`。
 
 规则：
@@ -396,7 +394,7 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 3. 若涉及 VSCode 前端路径或脚本迁移，额外执行：
 
 ```powershell
-node --check src\ExternalSupport\EditorExtensions\VSCode\vscode-inscape\extension.js
+node --check src\ExternalSupport\VSCode\extension.js
 ```
 
 或在 VSCode 入口路径再次调整后，对新入口脚本执行等价检查。

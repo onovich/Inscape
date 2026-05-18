@@ -6,7 +6,7 @@
 
 ## 标准步骤
 
-1. 在 `src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape/` 下修改扩展源码、`package.json`、README 或 schema。
+1. 在 `src/ExternalSupport/VSCode/` 下修改扩展源码、`package.json`、README 或 schema。
 2. 运行 `npm run rebuild:vsix`，生成并安装新的 `.vsix`。
 3. 在 VS Code 里执行窗口 reload，或在扩展安装完成后重新打开目标工作区。
 4. 如果扩展打包警告指出范围过大，优先补 `.vscodeignore`，再检查产物内容。
@@ -21,6 +21,6 @@
 ## 当前命令
 
 ```powershell
-cd src\ExternalSupport\EditorExtensions\VSCode\vscode-inscape
+cd src\ExternalSupport\VSCode
 npm run rebuild:vsix
 ```

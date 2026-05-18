@@ -8,7 +8,7 @@
 
 ## 背景
 
-`src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape` 当前已经按 `Commands`、`WorkspaceIndex`、`LanguageFeatures`、`PreviewWebview`、`Styles`、`Bridges` 与 `ExtensionEntry` 拆分。它仍然是一个轻量 JS 前端：诊断借道 CLI，节点、speaker、host binding、metadata、Host Schema query / event 等作者提示由扩展侧轻量扫描或 CLI capability endpoint 支撑。
+`src/ExternalSupport/VSCode` 当前已经按 `Commands`、`WorkspaceIndex`、`LanguageFeatures`、`PreviewWebview`、`Styles`、`Bridges` 与 `ExtensionEntry` 拆分。它仍然是一个轻量 JS 前端：诊断借道 CLI，节点、speaker、host binding、metadata、Host Schema query / event 等作者提示由扩展侧轻量扫描或 CLI capability endpoint 支撑。
 
 `src/Internal/LanguageServer` 已有第一版 C# 语义基线：diagnostics、definition、references、completion、document symbols、hover 的 probe 都直接复用 `Inscape.Compiler` 输出。它还不是完整 LSP transport，也没有接入 VSCode client。
 
@@ -22,7 +22,7 @@
 - 第一次接入 LanguageServer 时不得同提交移除 JS fallback；删除 fallback 必须有独立节点和回归依据。
 - 正文 / 选项文本仍不得回退到 `DocumentLinkProvider`。Ctrl+Hover 链接态继续由 `DefinitionProvider` 路径承担，selection bridge 继续承担预览定位。
 - Host Schema query / event 与 Host Bridge binding 是作者提示能力，不是 Compiler diagnostic；未知 query / event 不能因为迁移 LanguageServer 而突然变成默认 Problems。
-- 任何涉及真实 VSCode 交互的切换，都要按 `src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape/README.md` 的 Regression Checklist 重建 `.vsix` 并手动 smoke test。
+- 任何涉及真实 VSCode 交互的切换，都要按 `src/ExternalSupport/VSCode/README.md` 的 Regression Checklist 重建 `.vsix` 并手动 smoke test。
 
 ## 接入顺序
 

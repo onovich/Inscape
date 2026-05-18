@@ -9,7 +9,7 @@
 目录骨架、当前不符合点与迁移顺序的施工真相以 [目录优先重构蓝图](directory-first-reframe-plan.md) 为准。本文更适合作为结构总览与目录索引。
 
 - Internal：`Compiler`、`Tooling`、`Cli`、`LanguageServer`、`Runtime`
-- ExternalSupport：`EditorExtensions`、`UnityPlugin`
+- ExternalSupport：`VSCode`、`UnityPlugin`
 
 ## 当前实际目录
 
@@ -31,9 +31,7 @@ src/
     LanguageServer/             当前 LanguageServer 基线项目，已接入 diagnostics / definition / references / completion 第一层
     Runtime/                    当前 Runtime 基线项目，已建立 NarrativeRuntime 最小 IR 消费生命周期
   ExternalSupport/
-    EditorExtensions/
-      VSCode/
-        vscode-inscape/         当前 VSCode 前端扩展，已按 ExtensionEntry / Commands / LanguageFeatures 等目录完成 B 阶段拆分
+    VSCode/                     当前 VSCode 前端扩展，已按 ExtensionEntry / Commands / LanguageFeatures 等目录完成 B 阶段拆分
     UnityPlugin/
       Inscape.Adapters.UnitySample/ 当前 UnitySample 外部支持样例，已迁入 ExternalSupport 路径
       Inscape.UnitySample.Cli/      UnitySample 样例命令入口，已按 Entries / Commands 初步分目录，不进入默认 solution
@@ -53,7 +51,7 @@ docs/
 1. `src/Internal` 与 `src/ExternalSupport` 骨架已建立，Internal 核心项目、VSCode 编辑器扩展和 Unity 原型均已迁入当前目标路径。
 2. `Inscape.Compiler` 项目名、命名空间与入口门面已完成迁移，源码已按业务角色分组；后续继续整理 Tooling / Cli / editor extension 的内部目录。
 3. `Inscape.Adapters.UnitySample`、`Inscape.UnitySample.Cli` 与 `Inscape.UnitySample.Tests` 均已位于 ExternalSupport，并已退出默认 `Inscape.slnx` 编译链；需要回归时单独构建 / 运行外部支持测试项目。
-4. `src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape/` 已成为 VSCode 前端源码位置，且已完成 `ExtensionEntry`、`Commands`、`LanguageFeatures`、`WorkspaceIndex`、`Bridges`、`PreviewWebview`、`Styles`、`Schemas` 拆分；当前 `extension.js` 主要保留注册入口、实例装配和入口级 glue。
+4. `src/ExternalSupport/VSCode/` 已成为 VSCode 前端源码位置，且已完成 `ExtensionEntry`、`Commands`、`LanguageFeatures`、`WorkspaceIndex`、`Bridges`、`PreviewWebview`、`Styles`、`Schemas` 拆分；当前 `extension.js` 主要保留注册入口、实例装配和入口级 glue。
 5. `LanguageServer` 与 `Runtime` 已从纯目录骨架推进为可构建基线项目；后续重点是让编辑器扩展逐步接入 LanguageServer，并继续扩展 Runtime Host / HostBridge 设计。
 6. `tests/Internal/Inscape.Tests` 仍是聚合测试项目，但已按现有文件边界初步拆入 `Entries`、`Shared`、`Compiler`、`Cli`、`PreviewLocalization`；后续可继续把 Tooling、Preview、Localization 分成更细项目或目录。
 7. Layer / Business 目录已有统一 `README.md` 规则文件，后续迁移仍需补齐具体代码落位。
@@ -100,9 +98,7 @@ Internal/
     HostBridge/
 
 ExternalSupport/
-  EditorExtensions/
-    VSCode/
-      vscode-inscape/
+  VSCode/
   UnityPlugin/
     PluginEntry/
     ScriptImport/
@@ -212,7 +208,7 @@ UnityPlugin 不属于 Internal 五层之一。它是 Unity 环境下的外部支
 - `src/Internal/Compiler/Inscape.Compiler.csproj` + `src/Internal/Compiler/{DslScript,StoryGraph,Localization,Diagnostics,TextContracts}/` → 当前 `Compiler` 项目，项目名、命名空间与旧类型名已完成收敛
 - `src/Internal/Tooling/Inscape.Tooling.csproj` + `src/Internal/Tooling/{DslScriptSources,ToolConfig,Preview,Localization,HostSchema,HostBinding}/` → 当前 `Tooling` 项目，已开始按 Business / Role 目录落位
 - `src/Internal/Cli/Inscape.Cli/{Entries,Commands,Providers,ViewModels}/` → 当前 `Cli` 项目，已按入口、命令、命令元数据和输出 DTO 初步分目录
-- `src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape/` → 当前 `VSCode` 前端，后续继续按 VSCode Layer 规则拆分
+- `src/ExternalSupport/VSCode/` → 当前 `VSCode` 前端，后续继续按 VSCode Layer 规则拆分
 - `src/ExternalSupport/UnityPlugin/Inscape.Adapters.UnitySample/` → 当前 `ExternalSupport/UnityPlugin` 过渡样例，下一阶段应迁到 `src/ExternalSupport/UnityPlugin/`
 - `src/ExternalSupport/UnityPlugin/unity-bird-importer/` → 当前 `ExternalSupport/UnityPlugin` 导入原型，也应跟随迁入 ExternalSupport 目录树
 

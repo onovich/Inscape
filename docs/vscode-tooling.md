@@ -8,7 +8,7 @@
 
 - 文件扩展名：`.inscape`
 - VSCode language ID：`inscape`
-- 原型位置：`src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape/`
+- 原型位置：`src/ExternalSupport/VSCode/`
 - 当前形态：TextMate grammar + snippets + VSCode extension runtime。
 
 高亮、括号配置、注释和 snippets 保持声明式。实时诊断通过 CLI 的 `diagnose-project` 命令调用 `Inscape.Compiler`，避免在 VSCode 插件里重写解析器。工作区节点补全、跳转定义、引用查找、悬浮说明和大纲先使用轻量行扫描，它们只做写作提示，不作为语法真相来源。
@@ -122,7 +122,7 @@ Inscape 的默认阅读优先级应当是：
 - 根因优先级是 provider 语义 > decorations / theme / 样式文件；常驻下划线通常不是颜色问题，而是 provider 选型错误。
 - `inscape.editor-style.json` 只负责视觉调参，不应该承担“修正导航语义”的职责；如果要靠 `...TextDecoration` 去掩盖行为，通常说明方案已经偏了。
 - `DefinitionProvider` 负责“何时出现 Ctrl+指向链接态”，selection bridge 负责“Ctrl+Click 后做什么”；两者分工清楚后，样式和交互才不会反复互相打架。
-- 只改 `src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape/` 源码但不重建 / 重装 `.vsix`，非常容易把旧扩展行为误判成新回归；这个链路必须当成验证的一部分，而不是发布后的附加动作。
+- 只改 `src/ExternalSupport/VSCode/` 源码但不重建 / 重装 `.vsix`，非常容易把旧扩展行为误判成新回归；这个链路必须当成验证的一部分，而不是发布后的附加动作。
 
 可操作的回归检查：
 
@@ -247,17 +247,17 @@ dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- update-l
 可在仓库根目录用 VSCode 扩展开发模式加载：
 
 ```powershell
-code --extensionDevelopmentPath=src\ExternalSupport\EditorExtensions\VSCode\vscode-inscape .
+code --extensionDevelopmentPath=src\ExternalSupport\VSCode .
 ```
 
-也可以直接打开 `src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape/` 作为扩展项目，启动 Extension Development Host 后再打开 `.inscape` 文件验证高亮。
+也可以直接打开 `src/ExternalSupport/VSCode/` 作为扩展项目，启动 Extension Development Host 后再打开 `.inscape` 文件验证高亮。
 
 ## 发布工作流
 
 当扩展改动需要让本机 VS Code 立刻看到效果时，先重新打包再覆盖安装，而不是只重启窗口。当前建议使用：
 
 ```powershell
-cd src\ExternalSupport\EditorExtensions\VSCode\vscode-inscape
+cd src\ExternalSupport\VSCode
 npm run rebuild:vsix
 ```
 

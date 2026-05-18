@@ -4,9 +4,9 @@
 
 最后更新：2026-05-15
 
-本文把 Inscape 的重构拆成大目标、中目标、小目标，目标是让代码逐步接近游戏项目中常见的清晰入口、生命周期式流程、数据/逻辑/表现/适配分层，同时不破坏当前 DSL、CLI、VSCode 和预览体验。当前长期结构已经收敛为：Internal 下的 `Compiler`、`Tooling`、`Cli`、`LanguageServer`、`Runtime`，以及 ExternalSupport 下的 `EditorExtensions/VSCode` 和 `UnityPlugin`。
+本文把 Inscape 的重构拆成大目标、中目标、小目标，目标是让代码逐步接近游戏项目中常见的清晰入口、生命周期式流程、数据/逻辑/表现/适配分层，同时不破坏当前 DSL、CLI、VSCode 和预览体验。当前长期结构已经收敛为：Internal 下的 `Compiler`、`Tooling`、`Cli`、`LanguageServer`、`Runtime`，以及 ExternalSupport 下的 `VSCode` 和 `UnityPlugin`。
 
-当前主动重构范围覆盖 Internal 侧的 `Inscape.Compiler`、`Inscape.Cli`、Tooling / LanguageServer 契约，以及 ExternalSupport 侧的 `src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape` 编辑器扩展。`src/ExternalSupport/UnityPlugin/Inscape.Adapters.UnitySample` 和 `src/ExternalSupport/UnityPlugin/unity-bird-importer` 继续作为 ExternalSupport 过渡样例保留隔离，不纳入这一轮内部重构，只要求不反向污染 Compiler，并能继续承担 Host Bridge / UnityPlugin 回归素材。
+当前主动重构范围覆盖 Internal 侧的 `Inscape.Compiler`、`Inscape.Cli`、Tooling / LanguageServer 契约，以及 ExternalSupport 侧的 `src/ExternalSupport/VSCode` 编辑器扩展。`src/ExternalSupport/UnityPlugin/Inscape.Adapters.UnitySample` 和 `src/ExternalSupport/UnityPlugin/unity-bird-importer` 继续作为 ExternalSupport 过渡样例保留隔离，不纳入这一轮内部重构，只要求不反向污染 Compiler，并能继续承担 Host Bridge / UnityPlugin 回归素材。
 
 重构原则见 [编码与命名规范](coding-conventions.md)。本文只安排执行顺序和验收方式。
 
@@ -20,7 +20,7 @@
 - 大目标 D：保持 Core 干净，隔离表现层和宿主业务，尤其是 UnitySample 与未来 Host Bridge。
 - 大目标 E：建立防回归工作流，把踩坑经验固化为验证清单、提交拆分规则和发布流程。
 
-当前 B3 已完成阶段性收口：`src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape/extension.js` 已从大逻辑文件收敛为 VSCode 注册入口、实例装配和少量入口级 glue。进入 C 阶段前，先清掉纯规划占位目录并完成旧命名收敛；随后再推进 source map / reveal payload、LanguageServer 与 Runtime 基线。
+当前 B3 已完成阶段性收口：`src/ExternalSupport/VSCode/extension.js` 已从大逻辑文件收敛为 VSCode 注册入口、实例装配和少量入口级 glue。进入 C 阶段前，先清掉纯规划占位目录并完成旧命名收敛；随后再推进 source map / reveal payload、LanguageServer 与 Runtime 基线。
 
 ## 评分目标
 
@@ -193,7 +193,7 @@ VSCode：4 / 10
 
 验收标准：
 
-- `src/ExternalSupport/EditorExtensions/VSCode/vscode-inscape/extension.js` 变成注册入口，而不是全部逻辑实现。
+- `src/ExternalSupport/VSCode/extension.js` 变成注册入口，而不是全部逻辑实现。
 - 正文 / 选项文本链接态回归清单全部通过。
 - 修改单个 provider 不应影响 preview bridge 或 style loader。
 
@@ -463,7 +463,7 @@ B 后修复：在进入 C 阶段前，Compiler 旧阶段产物已按角色后缀
 ```powershell
 dotnet build Inscape.slnx --no-restore
 dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build
-node --check src\ExternalSupport\EditorExtensions\VSCode\vscode-inscape\extension.js
+node --check src\ExternalSupport\VSCode\extension.js
 ```
 
 如果涉及 VSCode 扩展行为，还必须执行扩展重建安装流程，并手动验证关键交互。
