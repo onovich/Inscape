@@ -116,7 +116,7 @@
 1. `Entries`
 2. `LanguageFeatures`
 3. `EditorAuthoring`
-4. `PreviewWebview`
+4. `Preview`
 5. `LanguageServer` client
 
 具体任务：

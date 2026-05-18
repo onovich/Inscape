@@ -181,7 +181,9 @@ src/ExternalSupport/VSCode/
   Entries/
   LanguageFeatures/
   WorkspaceIndex/
-  PreviewWebview/
+  Preview/
+    Providers/
+    Controllers/
   Commands/
   Bridges/
   Styles/

@@ -1,4 +1,4 @@
-const { PreviewEditorProvider } = require("../PreviewWebview/PreviewEditorProvider");
+const { PreviewEditorProvider } = require("../Preview/Providers/PreviewEditorProvider");
 
 class ExtensionRegistrationController {
     constructor(dependencies) {
