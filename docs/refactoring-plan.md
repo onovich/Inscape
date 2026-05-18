@@ -197,7 +197,7 @@ VSCode：4 / 10
 - 正文 / 选项文本链接态回归清单全部通过。
 - 修改单个 provider 不应影响 preview bridge 或 style loader。
 
-当前进展：已完成。`extension.js` 不再承载 command、workspace index、language feature、preview、style、diagnostics、location/range 等主体逻辑；当前已拆入 `Commands`、`DslScript`、`EditorAuthoring`、过渡 `WorkspaceIndex`、`Preview`、`Styles`、`Bridges` 与 `Entries`。B3.5 巡检同时清理了 VSCode JS 中已知 `Helper` / `Support` / `Manager` / `Utils` 弱语义命名残留，并确认没有回退到 `DocumentLinkProvider`。
+当前进展：已完成。`extension.js` 不再承载 command、workspace index、language feature、preview、style、diagnostics、location/range 等主体逻辑；当前已拆入 `Commands`、`DslScript`、`EditorAuthoring`、`HostBinding`、`HostSchema`、`Preview`、`Styles`、`Bridges` 与 `Entries`。B3.5 巡检同时清理了 VSCode JS 中已知 `Helper` / `Support` / `Manager` / `Utils` 弱语义命名残留，并确认没有回退到 `DocumentLinkProvider`。
 
 B 后修复：在进入 C 阶段前，Compiler 旧阶段产物已按角色后缀收敛为 `DslScript*Domain`、`StoryGraph*Domain`、`Localization*Domain`、`*Model` 命名；命名空间保持 `Inscape.Compiler.*` 粗粒度，不继续按每个目录细分。
 

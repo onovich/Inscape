@@ -13,6 +13,8 @@ const { PreviewCommand } = require("./Commands/PreviewCommand");
 const { EditorAuthoringCommand } = require("./Commands/EditorAuthoringCommand");
 const { EditorAuthoringDataProvider } = require("./EditorAuthoring/Providers/EditorAuthoringDataProvider");
 const { EditorAuthoringLocationProvider } = require("./EditorAuthoring/Providers/EditorAuthoringLocationProvider");
+const { HostBindingProvider } = require("./HostBinding/Providers/HostBindingProvider");
+const { HostSchemaCapabilityProvider } = require("./HostSchema/Providers/HostSchemaCapabilityProvider");
 const { ExtensionLifecycleController } = require("./Entries/ExtensionLifecycleController");
 const { ExtensionRegistrationController } = require("./Entries/ExtensionRegistrationController");
 const { DslScriptDiagnosticController } = require("./DslScript/Controllers/DslScriptDiagnosticController");
@@ -33,8 +35,6 @@ const { PreviewHtmlProvider } = require("./Preview/Providers/PreviewHtmlProvider
 const { PreviewInvocationProvider } = require("./Preview/Providers/PreviewInvocationProvider");
 const { EditorStyleController } = require("./Styles/EditorStyleController");
 const { defaultEditorStyle, defaultPreviewStyle } = require("./Styles/StyleDefaults");
-const { HostBindingProvider } = require("./WorkspaceIndex/HostBindingProvider");
-const { HostSchemaCapabilityProvider } = require("./WorkspaceIndex/HostSchemaCapabilityProvider");
 
 const languageSelector = { language: "inscape" };
 const previewPanels = new Map();
