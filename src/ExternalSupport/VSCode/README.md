@@ -8,6 +8,8 @@ This package is first-party maintained, but it is bound to the VSCode platform. 
 
 The package is also a future split-repo candidate, so non-source extension assets live under `Resources` and package-only development scripts live under `Scripts`. Do not recreate root-level `media`, `schemas`, `snippets`, `syntaxes`, or `scripts` buckets.
 
+`extension.js` is the narrow VSCode manifest main entry declared by `package.json`. It is the only root-level source filename exception in this package and should stay limited to activation, dependency assembly, and registration glue; feature behavior belongs under business directories such as `DslScript`, `EditorAuthoring`, `HostSchema`, `Localization`, and `Preview`.
+
 ## Capabilities
 
 - Registers the `inscape` language ID for `.inscape` files.

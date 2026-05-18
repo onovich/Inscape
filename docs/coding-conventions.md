@@ -214,6 +214,7 @@
 - 允许后缀：`Provider`、`Bridge`、`Controller`、`ViewModel`、`Command`
 - 重语义能力长期迁移到 `LanguageServer`
 - 路径为 `src/ExternalSupport/VSCode`，不再增加 `EditorExtensions` 类别层，也不再保留 `vscode-inscape` 包名目录；npm 包名留在 `package.json`。
+- `extension.js` 是 `package.json` 的 VSCode manifest main 入口例外，只允许承载 activation、依赖装配和注册 glue；功能行为必须落到业务目录。
 
 ### LanguageServer
 

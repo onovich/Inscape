@@ -37,7 +37,7 @@ VSCode package 内部目录仍有不符合命名规范的部分。下一轮不�
 7. 已完成：迁 `Bridges/PreviewRevealBridge` 到 `Preview/Bridges`，删除根级 `Bridges`。
 8. 已完成：拆根级 `Styles` 到 `EditorAuthoring` / `Preview`，并将 `StyleDefaults.js` 拆为带 `Model` 后缀的默认值文件。
 9. 已完成：拆根级 `Commands` 到 `EditorAuthoring` / `Preview` / `HostSchema` / `Localization` 的 `Commands` 目录。
-10. 命名规范尾部自检继续审视 `extension.js` 入口例外。
+10. 已完成：`extension.js` 明确为 `package.json` 的 VSCode manifest main 入口例外，只允许承载 activation、依赖装配和注册 glue。
 10. 每一步都要同步 VSCode `require()`、`package.json` 资源路径、README、回归命令和测试路径。
 
 ## 自检规则

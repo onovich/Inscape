@@ -163,12 +163,12 @@
 - [x] G9.1 建立 VSCode 内部目录命名审计，明确哪些目录符合规范、哪些需要继续拆分。
 - [x] G9.2 建立 Internal / ExternalSupport 通用模块资源脚本边界计划，明确只有可独立模块根内才允许 `Resources` / `Scripts`。
 - [x] G9.3 VSCode package 内部资源目录收口：图标、schema、snippet、TextMate grammar、语言配置、打包脚本和 README 说明统一到明确资源 / 脚本边界。
-- [ ] G9.4 VSCode package 源码目录收口：`ExtensionEntry` 已收敛到 `Entries`，`PreviewWebview` 已收敛到 `Preview`，DslScript providers / diagnostics 已收敛到 `DslScript`，EditorAuthoring providers / commands 已收敛到 `EditorAuthoring`，Preview / HostSchema / Localization commands 已收敛到各自业务目录，HostBinding / HostSchema providers 已收敛到各自业务目录，`Commands` / `LanguageFeatures` / `WorkspaceIndex` 过渡目录已删除；仍需完成命名规范尾部自检。
+- [x] G9.4 VSCode package 源码目录收口：`ExtensionEntry` 已收敛到 `Entries`，`PreviewWebview` 已收敛到 `Preview`，DslScript providers / diagnostics 已收敛到 `DslScript`，EditorAuthoring providers / commands 已收敛到 `EditorAuthoring`，Preview / HostSchema / Localization commands 已收敛到各自业务目录，HostBinding / HostSchema providers 已收敛到各自业务目录，`Commands` / `LanguageFeatures` / `WorkspaceIndex` 过渡目录已删除；命名规范尾部自检已完成。
   - [x] G9.4.1 `PreviewRevealBridge` 迁入 `Preview/Bridges`，删除根级 `Bridges` 目录。
   - [x] G9.4.2 审视 `Styles`：已迁入 `EditorAuthoring` / `Preview`，删除根级 `Styles` 目录。
   - [x] G9.4.3 审视根级 `Commands`：已按业务迁入 `EditorAuthoring` / `Preview` / `HostSchema` / `Localization` 的 `Commands` 目录，删除根级 `Commands`。
   - [x] G9.4.4 审视 `StyleDefaults.js` 等无规范后缀文件名：已拆为 `EditorAuthoringStyleDefaultsModel` 与 `PreviewStyleDefaultsModel`。
-  - [ ] G9.4.5 明确 `extension.js` 是 VSCode manifest main 入口例外，并在 README / 审计中记录。
+  - [x] G9.4.5 明确 `extension.js` 是 VSCode manifest main 入口例外，并在 README / 审计中记录。
 - [ ] G9.5 Preview HTML/CSS/JS 模板从 `PreviewHtmlRendererDomain` 的 C# 字符串中拆出为可维护资源，同时保持 CLI / VSCode preview 可用。
 - [ ] G9.6 UnityPlugin 真实包结构确定后，再按具体包根建立 `Scripts` / `Resources`；不保留空规划目录。
 

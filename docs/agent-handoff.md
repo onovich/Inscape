@@ -161,6 +161,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - 本轮会话已推进 Preview 拆分：`PreviewEditorProvider`、`PreviewHtmlProvider`、`PreviewInvocationProvider` 已进入 `Preview/Providers`，`PreviewRefreshController` 与 `PreviewSourceController` 已进入 `Preview/Controllers`，入口文件仅保留 custom editor 注册、preview refresh 薄 wrapper 和依赖注入。
 - 本轮会话已完成 Styles 收口：`EditorAuthoringStyleController` 位于 `EditorAuthoring/Controllers`，editor 默认样式位于 `EditorAuthoring/Models/EditorAuthoringStyleDefaultsModel.js`，preview 默认样式位于 `Preview/Models/PreviewStyleDefaultsModel.js`；根级 `Styles` 目录已删除。
 - 本轮会话已完成根级 Commands 收口：`EditorAuthoringCommand`、`PreviewCommand`、`HostSchemaCommand`、`LocalizationCommand` 已分别归入各自业务目录的 `Commands` 角色目录；根级 `Commands` 目录已删除。
+- 本轮会话已记录 `extension.js` 的唯一根级源码例外：它是 VSCode `package.json` manifest main 入口，只允许承载 activation、依赖装配和注册 glue。
 - 本轮会话已开始 ExtensionEntry 收口：`ExtensionRegistrationController` 负责 VSCode 注册顺序，`ExtensionLifecycleController` 负责 output/logging/diagnostics lifecycle；`activate()` 当前只委托 lifecycle controller。
 - 本轮会话已继续收口 diagnostics 边界：`DslScriptDiagnosticController` 负责 VSCode Diagnostic 映射与 compiler invocation 适配，`DslScriptDiagnosticScheduler` 仍只负责防抖与异步调度。
 - 本轮会话已继续收口 authoring 数据来源：`EditorAuthoringDataProvider` 当前位于 `EditorAuthoring/Providers`，负责配置、CSV 与 `.inscape` 文本源读取，其他 provider 继续只消费注入的数据来源。
