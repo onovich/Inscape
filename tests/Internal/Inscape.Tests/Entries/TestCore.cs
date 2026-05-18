@@ -37,6 +37,8 @@ namespace Inscape.Tests {
                 ("host schema event reader reports schema events", HostSchemaEventReaderReportsSchemaEvents),
                 ("query interpolation audit reports host schema hints", QueryInterpolationAuditReportsHostSchemaHints),
                 ("story node map update preserves ids and marks missing nodes", StoryNodeMapUpdatePreservesIdsAndMarksMissingNodes),
+                ("story node map update detects unambiguous renames", StoryNodeMapUpdateDetectsUnambiguousRenames),
+                ("story node map update skips ambiguous rename matches", StoryNodeMapUpdateSkipsAmbiguousRenameMatches),
                 ("story node map update marks duplicate ids as conflict", StoryNodeMapUpdateMarksDuplicateIdsAsConflict),
                 ("cli diagnose emits json", CliDiagnoseEmitsJson),
                 ("cli commands lists command reference", CliCommandsListsCommandReference),

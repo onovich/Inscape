@@ -20,19 +20,23 @@ namespace Inscape.Tooling {
             List<StoryNodeMapEntryModel> existingNodes = CreateConflictAwareNodes(currentMap.Nodes);
             List<StoryNodeMapEntryModel> updatedNodes = new List<StoryNodeMapEntryModel>();
             HashSet<string> matchedIds = new HashSet<string>(System.StringComparer.Ordinal);
+            List<StoryNodeMapNodeSnapshot> nodeSnapshots = BuildNodeSnapshots(result.Graph.Nodes, rootPath);
 
-            for (int nodeIndex = 0; nodeIndex < result.Graph.Nodes.Count; nodeIndex += 1) {
-                StoryGraphNodeModel node = result.Graph.Nodes[nodeIndex];
-                StoryNodeMapEntryModel entry = FindByTitle(existingNodes, node.Name) ?? CreateNewEntry(timestamp);
+            for (int nodeIndex = 0; nodeIndex < nodeSnapshots.Count; nodeIndex += 1) {
+                StoryNodeMapNodeSnapshot snapshot = nodeSnapshots[nodeIndex];
+                StoryNodeMapEntryModel entry = FindByTitle(existingNodes, snapshot.Title, matchedIds)
+                    ?? FindRenameCandidate(existingNodes, snapshot, matchedIds)
+                    ?? CreateNewEntry(timestamp);
                 StoryNodeMapEntryModel updated = Clone(entry);
 
-                updated.Title = node.Name;
-                updated.SourcePath = NormalizeSourcePath(rootPath, node.Source.SourcePath);
-                updated.SourceLine = node.Source.Line;
-                updated.SourceCharacter = node.Source.Column <= 0 ? 0 : node.Source.Column - 1;
-                updated.FirstContentFingerprint = BuildFirstContentFingerprint(node);
-                updated.NeighborFingerprint = BuildNeighborFingerprint(result.Graph.Nodes, nodeIndex);
-                updated.LineAnchorSamples = CollectLineAnchorSamples(node);
+                AddPreviousTitleIfRenamed(updated, snapshot.Title);
+                updated.Title = snapshot.Title;
+                updated.SourcePath = snapshot.SourcePath;
+                updated.SourceLine = snapshot.SourceLine;
+                updated.SourceCharacter = snapshot.SourceCharacter;
+                updated.FirstContentFingerprint = snapshot.FirstContentFingerprint;
+                updated.NeighborFingerprint = snapshot.NeighborFingerprint;
+                updated.LineAnchorSamples = new List<string>(snapshot.LineAnchorSamples);
                 updated.Status = ActiveStatus;
                 updated.UpdatedAt = timestamp;
                 if (string.IsNullOrWhiteSpace(updated.CreatedAt)) {
@@ -63,6 +67,24 @@ namespace Inscape.Tooling {
             currentMap.Format = "inscape.node-map";
             currentMap.FormatVersion = 1;
             return currentMap;
+        }
+
+        static List<StoryNodeMapNodeSnapshot> BuildNodeSnapshots(List<StoryGraphNodeModel> nodes, string rootPath) {
+            List<StoryNodeMapNodeSnapshot> snapshots = new List<StoryNodeMapNodeSnapshot>(nodes.Count);
+            for (int nodeIndex = 0; nodeIndex < nodes.Count; nodeIndex += 1) {
+                StoryGraphNodeModel node = nodes[nodeIndex];
+                snapshots.Add(new StoryNodeMapNodeSnapshot {
+                    Title = node.Name,
+                    SourcePath = NormalizeSourcePath(rootPath, node.Source.SourcePath),
+                    SourceLine = node.Source.Line,
+                    SourceCharacter = node.Source.Column <= 0 ? 0 : node.Source.Column - 1,
+                    FirstContentFingerprint = BuildFirstContentFingerprint(node),
+                    NeighborFingerprint = BuildNeighborFingerprint(nodes, nodeIndex),
+                    LineAnchorSamples = CollectLineAnchorSamples(node),
+                });
+            }
+
+            return snapshots;
         }
 
         static List<StoryNodeMapEntryModel> CreateConflictAwareNodes(List<StoryNodeMapEntryModel> nodes) {
@@ -107,10 +129,10 @@ namespace Inscape.Tooling {
             return duplicates;
         }
 
-        static StoryNodeMapEntryModel? FindByTitle(List<StoryNodeMapEntryModel> nodes, string title) {
+        static StoryNodeMapEntryModel? FindByTitle(List<StoryNodeMapEntryModel> nodes, string title, HashSet<string> matchedIds) {
             for (int i = 0; i < nodes.Count; i += 1) {
                 StoryNodeMapEntryModel node = nodes[i];
-                if (node.Status == ConflictStatus) {
+                if (node.Status == ConflictStatus || matchedIds.Contains(node.Id)) {
                     continue;
                 }
 
@@ -120,6 +142,112 @@ namespace Inscape.Tooling {
             }
 
             return null;
+        }
+
+        static StoryNodeMapEntryModel? FindRenameCandidate(List<StoryNodeMapEntryModel> nodes,
+                                                           StoryNodeMapNodeSnapshot snapshot,
+                                                           HashSet<string> matchedIds) {
+            StoryNodeMapEntryModel? bestCandidate = null;
+            int bestScore = 0;
+            bool hasTie = false;
+
+            for (int i = 0; i < nodes.Count; i += 1) {
+                StoryNodeMapEntryModel candidate = nodes[i];
+                if (candidate.Status == ConflictStatus || matchedIds.Contains(candidate.Id)) {
+                    continue;
+                }
+
+                int score = EvaluateRenameCandidate(candidate, snapshot);
+                if (score <= 0) {
+                    continue;
+                }
+
+                if (score > bestScore) {
+                    bestCandidate = candidate;
+                    bestScore = score;
+                    hasTie = false;
+                    continue;
+                }
+
+                if (score == bestScore) {
+                    hasTie = true;
+                }
+            }
+
+            if (hasTie) {
+                return null;
+            }
+
+            return bestCandidate;
+        }
+
+        static int EvaluateRenameCandidate(StoryNodeMapEntryModel candidate, StoryNodeMapNodeSnapshot snapshot) {
+            if (string.IsNullOrWhiteSpace(candidate.SourcePath)
+                || !string.Equals(candidate.SourcePath, snapshot.SourcePath, System.StringComparison.Ordinal)) {
+                return 0;
+            }
+
+            bool fingerprintMatches = !string.IsNullOrWhiteSpace(candidate.FirstContentFingerprint)
+                && candidate.FirstContentFingerprint == snapshot.FirstContentFingerprint;
+            bool neighborMatches = !string.IsNullOrWhiteSpace(candidate.NeighborFingerprint)
+                && candidate.NeighborFingerprint == snapshot.NeighborFingerprint;
+            int anchorOverlap = CountAnchorOverlap(candidate.LineAnchorSamples, snapshot.LineAnchorSamples);
+            if (!fingerprintMatches && !neighborMatches && anchorOverlap == 0) {
+                return 0;
+            }
+
+            int score = 10;
+            if (fingerprintMatches) {
+                score += 8;
+            }
+
+            if (neighborMatches) {
+                score += 4;
+            }
+
+            score += Math.Min(anchorOverlap, 3) * 2;
+
+            int lineDistance = Math.Abs(candidate.SourceLine - snapshot.SourceLine);
+            if (lineDistance <= 3) {
+                score += 3;
+            } else if (lineDistance <= 10) {
+                score += 2;
+            } else if (lineDistance <= 30) {
+                score += 1;
+            }
+
+            return score;
+        }
+
+        static int CountAnchorOverlap(List<string> left, List<string> right) {
+            if (left.Count == 0 || right.Count == 0) {
+                return 0;
+            }
+
+            HashSet<string> set = new HashSet<string>(left, System.StringComparer.Ordinal);
+            int overlap = 0;
+            for (int i = 0; i < right.Count; i += 1) {
+                if (set.Contains(right[i])) {
+                    overlap += 1;
+                }
+            }
+
+            return overlap;
+        }
+
+        static void AddPreviousTitleIfRenamed(StoryNodeMapEntryModel entry, string newTitle) {
+            string oldTitle = entry.Title;
+            if (string.IsNullOrWhiteSpace(oldTitle) || oldTitle == newTitle) {
+                return;
+            }
+
+            for (int i = 0; i < entry.PreviousTitles.Count; i += 1) {
+                if (entry.PreviousTitles[i] == oldTitle) {
+                    return;
+                }
+            }
+
+            entry.PreviousTitles.Add(oldTitle);
         }
 
         static StoryNodeMapEntryModel CreateNewEntry(string timestamp) {
@@ -282,6 +410,24 @@ namespace Inscape.Tooling {
             }
 
             return string.Compare(left.Id, right.Id, System.StringComparison.Ordinal);
+        }
+
+        sealed class StoryNodeMapNodeSnapshot {
+
+            public string Title { get; set; } = string.Empty;
+
+            public string SourcePath { get; set; } = string.Empty;
+
+            public int SourceLine { get; set; }
+
+            public int SourceCharacter { get; set; }
+
+            public string FirstContentFingerprint { get; set; } = string.Empty;
+
+            public string NeighborFingerprint { get; set; } = string.Empty;
+
+            public List<string> LineAnchorSamples { get; set; } = new List<string>();
+
         }
 
     }
