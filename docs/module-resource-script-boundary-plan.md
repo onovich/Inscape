@@ -28,18 +28,18 @@
 
 ### `src/Internal/Tooling`
 
-当前 `Tooling` 是共享用例层，暂不直接创建 `Resources` / `Scripts`。
-
-后续如果 `PreviewHtmlRendererDomain` 的 HTML/CSS/JS 模板从 C# 字符串中拆出，应先评估 `Tooling` 是否仍是单一项目根。如果保持单一项目根，可以落为：
+当前 `Tooling` 是共享用例层，仍作为单一项目根维护。Preview HTML/CSS/JS 模板已经从 `PreviewHtmlRendererDomain` 的 C# 字符串中拆出，落在 Tooling 项目根内：
 
 ```text
 src/Internal/Tooling/
   Resources/
     Preview/
-      ...
+      preview-template.html
+      preview.css
+      preview.js
 ```
 
-如果未来 `Preview` 从 Tooling 中拆成独立项目，再在独立 `Preview` 项目根内建立 `Resources`。
+该目录存在的依据是：Preview 静态模板属于 CLI / VSCode / future LanguageServer 共享的 Tooling 交付资源，而不是 C# 语义代码。如果未来 `Preview` 从 Tooling 中拆成独立项目，再在独立 `Preview` 项目根内建立 `Resources` 并迁移这些文件。
 
 ### `src/Internal/LanguageServer`
 

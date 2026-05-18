@@ -10,4 +10,10 @@
     <ProjectReference Include="..\Compiler\Inscape.Compiler.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="Resources\Preview\*.css" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Resources\Preview\*.html" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Resources\Preview\*.js" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

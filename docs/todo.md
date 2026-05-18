@@ -13,11 +13,12 @@
 1. Goal 6 已完成：Host Schema endpoint 已收口到 LanguageServer / Tooling 契约，VSCode query / event provider 已迁到 LanguageServer 优先路径，JS direct JSON fallback 已移除。
 2. 继续打磨 VSCode 可玩预览：补未保存内容的更细粒度热刷新、刷新中状态提示，以及可选的预览 / 源码同步策略。
 	- 正文 / 选项文本不再用 `DocumentLinkProvider`，因为它会导致整段文本常驻下划线；当前用 `DefinitionProvider` 恢复“默认无下划线、Ctrl+指向才显示链接态”的编辑体验，并通过 selection bridge 在 Ctrl+Click 后执行预览定位，显式命令仅作为兜底。
-3. 推进项目级资源 / 代码分层收口：按 ADR 0014 / ADR 0015 检查 VSCode package 与 Preview HTML 模板，逐步把图标、schema、snippet、TextMate grammar、HTML/CSS/JS 模板和打包脚本从代码逻辑中分离到项目内 Resources / Scripts 边界。
+3. 推进项目级资源 / 代码分层收口：按 ADR 0014 / ADR 0015 检查 VSCode package、Tooling Preview 模板与 UnityPlugin 候选包结构，逐步把资源和脚本从代码逻辑中分离到项目内 Resources / Scripts 边界。
 	- Resources / Scripts 的拆分依据见 [Module Resource / Script Boundary Plan](module-resource-script-boundary-plan.md)：Internal 与 ExternalSupport 都适用，但只在未来可能独立拆仓、拆项目、单独发布或单独交付的具体模块根内创建。
 	- VSCode 内部目录审计见 [VSCode Directory Naming Audit](vscode-directory-naming-audit.md)：小写资源 / 脚本目录已收敛到 `Resources` / `Scripts`，`ExtensionEntry` 已收敛到 `Entries`，`PreviewWebview` 已收敛到 `Preview`，DslScript providers / diagnostics 已收敛到 `DslScript`，EditorAuthoring providers / commands 已收敛到 `EditorAuthoring`，Preview / HostSchema / Localization commands 已收敛到各自业务目录，HostBinding / HostSchema providers 已收敛到各自业务目录；`Commands` / `LanguageFeatures` / `WorkspaceIndex` 过渡目录已删除。
 	- G9.4 命名规范尾部自检已完成：`PreviewRevealBridge` 已迁入 `Preview/Bridges`；`Styles` 已拆入 `EditorAuthoring` / `Preview`；`StyleDefaults.js` 已拆为带 `Model` 后缀的默认值文件；根级 `Commands` 已按业务归位；`extension.js` 已明确为 VSCode manifest main 入口例外。
-	- 下一步建议推进 G9.5：把 Preview HTML/CSS/JS 模板从 `PreviewHtmlRendererDomain` 的 C# 字符串中拆到可维护资源边界，同时保持 CLI / VSCode preview 可用。
+	- G9.5 已完成：Preview HTML/CSS/JS 模板已从 `PreviewHtmlRendererDomain` 的 C# 字符串中拆到 `src/Internal/Tooling/Resources/Preview`，CLI / VSCode preview 继续复用 Tooling renderer。
+	- 下一步建议推进 G9.6：UnityPlugin 真实包结构确定前只做命名、资源 / 脚本边界和拆仓准备计划，不做 Unity 功能研发。
 4. Unity / Bird 相关继续只做准备和计划，等设计方案落实后再研发：包括 Attribute 扫描、Host Bridge 到 adapter 生成、Bird importer 提交策略和带真实 Timeline 的 Dry Run。
 
 ## 文档与接手效率

@@ -153,7 +153,7 @@
 
 ## Goal 9：项目资源 / 代码分层收口
 
-状态：已启动。VSCode 归属边界已由 ADR 0015 修正，编辑器扩展包已迁入 `src/ExternalSupport/VSCode`；资源 / 脚本边界仍待继续推进。
+状态：已启动。VSCode 归属边界已由 ADR 0015 修正，编辑器扩展包已迁入 `src/ExternalSupport/VSCode`；VSCode package 资源 / 脚本边界已收口，Preview HTML/CSS/JS 模板已拆入 Tooling `Resources/Preview`。
 
 目标：按 ADR 0014 让未来可能独立拆仓、拆项目、单独发布或单独交付的 Internal / ExternalSupport 模块在自身根目录内区分源码、资源和开发脚本，并清理规划占位目录。
 
@@ -169,7 +169,7 @@
   - [x] G9.4.3 审视根级 `Commands`：已按业务迁入 `EditorAuthoring` / `Preview` / `HostSchema` / `Localization` 的 `Commands` 目录，删除根级 `Commands`。
   - [x] G9.4.4 审视 `StyleDefaults.js` 等无规范后缀文件名：已拆为 `EditorAuthoringStyleDefaultsModel` 与 `PreviewStyleDefaultsModel`。
   - [x] G9.4.5 明确 `extension.js` 是 VSCode manifest main 入口例外，并在 README / 审计中记录。
-- [ ] G9.5 Preview HTML/CSS/JS 模板从 `PreviewHtmlRendererDomain` 的 C# 字符串中拆出为可维护资源，同时保持 CLI / VSCode preview 可用。
+- [x] G9.5 Preview HTML/CSS/JS 模板从 `PreviewHtmlRendererDomain` 的 C# 字符串中拆出为可维护资源，同时保持 CLI / VSCode preview 可用。
 - [ ] G9.6 UnityPlugin 真实包结构确定后，再按具体包根建立 `Scripts` / `Resources`；不保留空规划目录。
 
 ## Goal 8：Unity / Bird 准备与计划

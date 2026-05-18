@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Inscape Preview</title>
+  <style>
+    {{INSCP_STYLE_VARIABLES}}
+{{INSCP_PREVIEW_CSS}}
+  </style>
+</head>
+<body>
+  <main>
+    <div class="shell">
+      <div class="toolbar">
+        <button id="restart">Restart</button>
+        <button id="back">Back</button>
+        <div class="toolbar-spacer"></div>
+        <div id="status" class="status"></div>
+      </div>
+      <section class="story-card">
+        <div class="story-header">
+          <div id="node-title" class="node-title"></div>
+          <div class="toolbar-spacer"></div>
+          <div id="node-source"></div>
+        </div>
+        <div id="meta-strip" class="meta-strip"></div>
+        <div id="story-panel" class="story-panel"></div>
+        <div id="choices" class="choices"></div>
+        <div id="continue-hint" class="continue-hint"></div>
+        <div id="ending" class="ending"></div>
+      </section>
+      <div id="diagnostics" class="diagnostics"></div>
+    </div>
+  </main>
+  <script>
+    const data = {{INSCP_PREVIEW_DATA}};
+{{INSCP_PREVIEW_JS}}
+  </script>
+</body>
+</html>
