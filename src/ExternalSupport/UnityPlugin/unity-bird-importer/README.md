@@ -4,6 +4,8 @@
 
 本目录提供一个可复制到 Bird Unity 项目的 Editor Importer 原型。它读取 `export-bird-project` 生成的 `bird-manifest.json`，创建或更新 Bird `TalkingSO` 资源，并把 Timeline Hook 转换为 `TalkingEffectTM.PlayTimeline`。
 
+它当前不是可发布 Unity package，因此暂不创建 `Scripts` / `Resources`。如果后续产品化，应先迁到明确包根，例如 `BirdImporter/`，再在该包根内建立 `Scripts/Editor` 与必要资源目录。
+
 ## 安装方式
 
 把 `Editor/InscapeBirdManifestImporter.cs` 复制到 Bird 项目的任意 `Editor/` 目录，例如：

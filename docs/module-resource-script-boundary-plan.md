@@ -76,11 +76,11 @@ src/ExternalSupport/VSCode/
 
 UnityPlugin 下每个未来可独立交付的 Unity package 应在自己的包根内拆分 `Scripts` / `Resources`。不要在 `src/ExternalSupport/UnityPlugin` 顶层建立通用资源桶。
 
-UnitySample 当前仍是实验样例，下一轮应先明确它是继续作为 `UnitySample` 独立样例模块，还是被替换为真实 Unity package。确定前只做命名和结构计划，不做 Unity 功能研发。
+UnitySample 当前仍是实验样例，不是最终 Unity package。G9.6 已将当前边界固化到 [UnityPlugin Package Boundary Plan](unity-plugin-package-boundary-plan.md)：`Inscape.Adapters.UnitySample` 作为 .NET sample adapter 保留，`Inscape.UnitySample.Cli` 作为独立样例命令入口保留，`unity-bird-importer` 作为 Bird Editor importer 原型保留。确定真实包根前，不创建 UnityPlugin 顶层 `Scripts` / `Resources`，也不创建空 Unity package。
 
 ### `src/ExternalSupport/UnityPlugin/unity-bird-importer`
 
-当前是旧实验目录。后续先做命名和位置计划，若保留为独立工具或 Unity package，再在其模块根内决定 `Scripts` / `Resources`。
+当前是 Bird 项目专用 Editor importer 原型。若后续保留并产品化，应先改成具体包根，例如 `BirdImporter/`，再在该包根内建立 `Scripts/Editor` 与必要的 `Resources`。
 
 ## 禁止事项
 

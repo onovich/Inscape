@@ -18,8 +18,9 @@
 	- VSCode 内部目录审计见 [VSCode Directory Naming Audit](vscode-directory-naming-audit.md)：小写资源 / 脚本目录已收敛到 `Resources` / `Scripts`，`ExtensionEntry` 已收敛到 `Entries`，`PreviewWebview` 已收敛到 `Preview`，DslScript providers / diagnostics 已收敛到 `DslScript`，EditorAuthoring providers / commands 已收敛到 `EditorAuthoring`，Preview / HostSchema / Localization commands 已收敛到各自业务目录，HostBinding / HostSchema providers 已收敛到各自业务目录；`Commands` / `LanguageFeatures` / `WorkspaceIndex` 过渡目录已删除。
 	- G9.4 命名规范尾部自检已完成：`PreviewRevealBridge` 已迁入 `Preview/Bridges`；`Styles` 已拆入 `EditorAuthoring` / `Preview`；`StyleDefaults.js` 已拆为带 `Model` 后缀的默认值文件；根级 `Commands` 已按业务归位；`extension.js` 已明确为 VSCode manifest main 入口例外。
 	- G9.5 已完成：Preview HTML/CSS/JS 模板已从 `PreviewHtmlRendererDomain` 的 C# 字符串中拆到 `src/Internal/Tooling/Resources/Preview`，CLI / VSCode preview 继续复用 Tooling renderer。
-	- 下一步建议推进 G9.6：UnityPlugin 真实包结构确定前只做命名、资源 / 脚本边界和拆仓准备计划，不做 Unity 功能研发。
+	- G9.6 已完成计划收口：UnityPlugin 当前不创建顶层 `Scripts` / `Resources`；`Inscape.Adapters.UnitySample` 是 .NET sample adapter，`Inscape.UnitySample.Cli` 是样例命令入口，`unity-bird-importer` 是 Bird Editor importer 原型。真实 Unity package 确定后再在具体包根内建立 `Scripts` / `Resources`。
 4. Unity / Bird 相关继续只做准备和计划，等设计方案落实后再研发：包括 Attribute 扫描、Host Bridge 到 adapter 生成、Bird importer 提交策略和带真实 Timeline 的 Dry Run。
+5. 下一步可回到 Goal 7：打磨 VSCode 可玩预览的未保存内容热刷新、刷新中状态提示和可选源码同步策略。
 
 ## 文档与接手效率
 

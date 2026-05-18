@@ -11,3 +11,5 @@ Do not treat these data structures as universal runtime contracts:
 - Long-term Unity support should be driven by Host Schema + Host Bridge + code generation rather than by hard-coded sample model classes.
 
 Keep this adapter isolated from `Inscape.Compiler` so compiler semantics remain engine- and project-independent.
+
+This project is not a Unity package. Do not add Unity-style `Scripts` or `Resources` directories here unless the sample is deliberately repackaged as a concrete Unity deliverable. For now, keep it as a .NET sample adapter and use the repository-level UnityPlugin package boundary plan for future package decisions.
