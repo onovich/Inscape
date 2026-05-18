@@ -121,13 +121,27 @@ async function waitFor(predicate, timeoutMs) {
     }
 }
 
+function createFakeLanguageServerSessionClient(invocations, errorMessage) {
+    return {
+        request(document, method, params) {
+            invocations.push({
+                document,
+                method,
+                params
+            });
+            return Promise.reject(new Error(errorMessage));
+        }
+    };
+}
+
 async function runLanguageServerFallbackScenario() {
     const document = createDocument(
         "D:\\LabProjects\\Inscape\\samples\\court-loop.inscape",
         "# 法庭开场\n旁白：测试\n"
     );
     const recordedDiagnostics = [];
-    const invocations = [];
+    const compilerInvocations = [];
+    const languageServerInvocations = [];
     const configurationValues = {
         "compiler.command": "dotnet",
         "compiler.args": [
@@ -164,13 +178,7 @@ async function runLanguageServerFallbackScenario() {
     const scheduler = new DslScriptDiagnosticScheduler({
         childProcess: {
             execFile(command, args, options, callback) {
-                invocations.push({ command, args, cwd: options.cwd });
-                const joinedArgs = args.join(" ");
-                if (joinedArgs.includes("--diagnose-project")) {
-                    callback(new Error("language server unavailable"), "", "language server unavailable");
-                    return;
-                }
-
+                compilerInvocations.push({ command, args, cwd: options.cwd });
                 callback(null, JSON.stringify({
                     diagnostics: [
                         {
@@ -198,15 +206,17 @@ async function runLanguageServerFallbackScenario() {
         writeTempDocument: (value) => diagnosticController.writeTempDocument(value),
         createCompilerInvocation: (context, value, tempPath) => diagnosticController.createCompilerInvocation(context, value, tempPath),
         createExtensionDiagnostic: (value, message) => diagnosticController.createExtensionDiagnostic(value, message),
-        applyDiagnostics: (collection, currentDocument, diagnostics) => diagnosticController.applyDiagnostics(collection, currentDocument, diagnostics)
+        applyDiagnostics: (collection, currentDocument, diagnostics) => diagnosticController.applyDiagnostics(collection, currentDocument, diagnostics),
+        languageServerSessionClient: createFakeLanguageServerSessionClient(languageServerInvocations, "language server unavailable")
     });
 
     scheduler.run(document);
     await waitFor(() => recordedDiagnostics.length > 0, 1000);
 
-    assert(invocations.length === 2, "LanguageServer fallback scenario must invoke LanguageServer first, then compiler.");
-    assert(invocations[0].args.includes("--diagnose-project"), "First diagnostics invocation must target LanguageServer project diagnostics.");
-    assert(invocations[1].args.includes("diagnose-project"), "Second diagnostics invocation must target CLI diagnose-project fallback.");
+    assert(languageServerInvocations.length === 1, "LanguageServer fallback scenario must invoke the LanguageServer session first.");
+    assert(languageServerInvocations[0].method === "inscape/diagnoseProject", "LanguageServer fallback scenario must target the session diagnostics method.");
+    assert(compilerInvocations.length === 1, "LanguageServer fallback scenario must invoke compiler fallback after session failure.");
+    assert(compilerInvocations[0].args.includes("diagnose-project"), "Compiler fallback invocation must target CLI diagnose-project.");
     assert(recordedDiagnostics[0].diagnostics.length === 1, "Compiler fallback scenario must produce one mapped diagnostic.");
     assert(recordedDiagnostics[0].diagnostics[0].message === "compiler fallback ok", "Compiler fallback diagnostic message must survive mapping.");
     assert(recordedDiagnostics[0].diagnostics[0].source === "Inscape", "Compiler fallback diagnostics must come from compiler output, not VSCode warning fallback.");
@@ -217,8 +227,9 @@ async function runCompilerOnlyScenario() {
         "D:\\LabProjects\\Inscape\\samples\\court-loop.inscape",
         "# 法庭开场\n旁白：测试\n"
     );
-    const invocations = [];
+    const compilerInvocations = [];
     const recordedDiagnostics = [];
+    const languageServerInvocations = [];
     const configurationValues = {
         "compiler.command": "dotnet",
         "compiler.args": [
@@ -255,7 +266,7 @@ async function runCompilerOnlyScenario() {
     const scheduler = new DslScriptDiagnosticScheduler({
         childProcess: {
             execFile(command, args, options, callback) {
-                invocations.push({ command, args, cwd: options.cwd });
+                compilerInvocations.push({ command, args, cwd: options.cwd });
                 callback(null, JSON.stringify({
                     diagnostics: []
                 }), "");
@@ -271,14 +282,16 @@ async function runCompilerOnlyScenario() {
         writeTempDocument: (value) => diagnosticController.writeTempDocument(value),
         createCompilerInvocation: (context, value, tempPath) => diagnosticController.createCompilerInvocation(context, value, tempPath),
         createExtensionDiagnostic: (value, message) => diagnosticController.createExtensionDiagnostic(value, message),
-        applyDiagnostics: (collection, currentDocument, diagnostics) => diagnosticController.applyDiagnostics(collection, currentDocument, diagnostics)
+        applyDiagnostics: (collection, currentDocument, diagnostics) => diagnosticController.applyDiagnostics(collection, currentDocument, diagnostics),
+        languageServerSessionClient: createFakeLanguageServerSessionClient(languageServerInvocations, "language server should be skipped")
     });
 
     scheduler.run(document);
     await waitFor(() => recordedDiagnostics.length > 0, 1000);
 
-    assert(invocations.length === 1, "`diagnostics.backend=compiler` must skip LanguageServer invocation.");
-    assert(invocations[0].args.includes("diagnose-project"), "Compiler-only backend must still call CLI diagnose-project.");
+    assert(languageServerInvocations.length === 0, "`diagnostics.backend=compiler` must skip LanguageServer session invocation.");
+    assert(compilerInvocations.length === 1, "Compiler-only backend must still invoke CLI diagnostics.");
+    assert(compilerInvocations[0].args.includes("diagnose-project"), "Compiler-only backend must still call CLI diagnose-project.");
 }
 
 async function main() {

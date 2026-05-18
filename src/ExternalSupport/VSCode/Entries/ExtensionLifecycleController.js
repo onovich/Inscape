@@ -7,6 +7,7 @@ class ExtensionLifecycleController {
         this.vscode = dependencies.vscode;
         this.isInscapeDocument = dependencies.isInscapeDocument;
         this.diagnosticController = dependencies.diagnosticController;
+        this.languageServerSessionClient = dependencies.languageServerSessionClient;
         this.outputChannel = undefined;
     }
 
@@ -23,7 +24,8 @@ class ExtensionLifecycleController {
             writeTempDocument: (document) => this.diagnosticController.writeTempDocument(document),
             createCompilerInvocation: (diagnosticContext, document, tempPath) => this.diagnosticController.createCompilerInvocation(diagnosticContext, document, tempPath),
             createExtensionDiagnostic: (document, message) => this.diagnosticController.createExtensionDiagnostic(document, message),
-            applyDiagnostics: (collection, currentDocument, diagnosticsPayload) => this.diagnosticController.applyDiagnostics(collection, currentDocument, diagnosticsPayload)
+            applyDiagnostics: (collection, currentDocument, diagnosticsPayload) => this.diagnosticController.applyDiagnostics(collection, currentDocument, diagnosticsPayload),
+            languageServerSessionClient: this.languageServerSessionClient
         });
 
         this.logOutput("Activated Inscape extension from " + context.extensionPath);
@@ -31,7 +33,8 @@ class ExtensionLifecycleController {
         registrationController.register(context, {
             outputChannel: this.outputChannel,
             diagnostics,
-            scheduler
+            scheduler,
+            languageServerSessionClient: this.languageServerSessionClient
         });
     }
 

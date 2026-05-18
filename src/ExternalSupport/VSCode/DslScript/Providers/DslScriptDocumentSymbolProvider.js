@@ -8,7 +8,7 @@ class DslScriptDocumentSymbolProvider {
         this.os = dependencies.os;
         this.path = dependencies.path;
         this.vscode = dependencies.vscode;
-        this.resolveLanguageServerProjectPath = dependencies.resolveLanguageServerProjectPath;
+        this.languageServerSessionClient = dependencies.languageServerSessionClient;
         this.languageServerSymbolsByDocumentVersion = new Map();
     }
 
@@ -31,18 +31,9 @@ class DslScriptDocumentSymbolProvider {
     async tryProvideLanguageServerSymbols(document) {
         const tempPath = this.writeTempDocument(document);
         try {
-            const workspaceFolderPath = this.getWorkspaceFolderPath(document);
-            const command = this.getDotnetCommand(document);
-            const result = await this.execFilePromise(command, [
-                "run",
-                "--project",
-                this.resolveLanguageServerProjectPath(workspaceFolderPath),
-                "--",
-                "--document-symbols-file",
-                tempPath
-            ], workspaceFolderPath);
-
-            const payload = JSON.parse(result.stdout);
+            const payload = await this.languageServerSessionClient.request(document, "inscape/documentSymbolsFile", {
+                sourcePath: tempPath
+            });
             if (!payload
                 || payload.format !== "inscape.language-server-document-symbols"
                 || payload.formatVersion !== 1
@@ -116,23 +107,6 @@ class DslScriptDocumentSymbolProvider {
     getDotnetCommand(document) {
         const configuration = this.vscode.workspace.getConfiguration("inscape", document.uri);
         return configuration.get("compiler.command", "dotnet");
-    }
-
-    execFilePromise(command, args, cwd) {
-        return new Promise((resolve, reject) => {
-            this.childProcess.execFile(command, args, {
-                cwd,
-                windowsHide: true,
-                timeout: 10000,
-                maxBuffer: 1024 * 1024
-            }, (error, stdout, stderr) => {
-                if (error) {
-                    reject(error);
-                    return;
-                }
-                resolve({ stdout, stderr });
-            });
-        });
     }
 
     clamp(value, minimum, maximum) {

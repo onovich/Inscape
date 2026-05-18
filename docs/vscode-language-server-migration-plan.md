@@ -1,16 +1,16 @@
 # VSCode LanguageServer Migration Plan
 
-状态：草案
+状态：持续维护
 
-最后更新：2026-05-16
+最后更新：2026-05-19
 
-本文定义 VSCode 前端从现有 JS provider 逐步迁到 `Inscape.LanguageServer` 的接入顺序和 fallback 边界。当前节点只做设计，不改变 VSCode 运行行为。
+本文定义 VSCode 前端从现有 JS provider 逐步迁到 `Inscape.LanguageServer` 的接入顺序和 fallback 边界。2026-05-19 起，VSCode 已不再对 diagnostics、node completion、definition、references、hover、document symbols 与 Host Schema capability 逐次发起 probe，而是复用一个常驻 `LanguageServer` stdio 会话；CLI fallback 继续保留，但不再是常态热路径。
 
 ## 背景
 
 `src/ExternalSupport/VSCode` 当前已经按 `DslScript`、`EditorAuthoring`、`HostBinding`、`HostSchema`、`Localization`、`Preview` 与 `Entries` 拆分，命令入口已归入各自业务目录。它仍然是一个轻量 JS 前端：诊断借道 CLI，节点、speaker、host binding、metadata、Host Schema query / event 等作者提示由扩展侧轻量扫描或 CLI capability endpoint 支撑。
 
-`src/Internal/LanguageServer` 已有第一版 C# 语义基线：diagnostics、definition、references、completion、document symbols、hover 的 probe 都直接复用 `Inscape.Compiler` 输出。它还不是完整 LSP transport，也没有接入 VSCode client。
+`src/Internal/LanguageServer` 已有第一版 C# 语义基线：diagnostics、definition、references、completion、document symbols、hover 的 probe 都直接复用 `Inscape.Compiler` 输出。2026-05-19 起，VSCode 已通过仓库内的 `LanguageServerSessionClient` 复用常驻 stdio 会话，不再为这些高频能力逐次启动新进程；它仍然不是完整 `vscode-languageclient` 栈下的标准 LSP transport。
 
 迁移目标不是一次性删除 JS 逻辑，而是让重语义逐步回到 C# 侧，同时保留可用的作者体验和调试 fallback。
 
@@ -90,23 +90,25 @@
 4. 已完成：移除 JS direct JSON reader。
 5. 已完成：LanguageServer / CLI 均失败时写入 output channel 日志，作者提示为空但不升级为 Compiler error。
 
-### L6：完整 LSP transport
+### L6：常驻会话与后续标准化 transport
 
-probe parity 稳定后再引入完整 LSP transport。Transport 本身是通信层，不应成为新业务层；业务仍落在 `DslScript`、`StoryGraph`、`HostSchema` 等窄 provider / model 中。
+进度：已完成第一阶段。VSCode 现已通过 `LanguageServerSessionClient` 复用同一个常驻 stdio 会话，请求 diagnostics、node completion、definition、references、hover、document symbols 与 Host Schema capability；CLI fallback 只在会话失败时承担兜底。
+
+后续如果要继续演进成标准 LSP transport，也应把 transport 视作通信层，而不是新业务层；业务仍落在 `DslScript`、`StoryGraph`、`HostSchema` 等窄 provider / model 中。
 
 ## Fallback Matrix
 
 | Feature | 首选来源 | 第一 fallback | 最后一层 fallback |
 | --- | --- | --- | --- |
-| Diagnostics | LanguageServer project diagnostics | CLI `diagnose-project` | VSCode extension diagnostic |
-| Node completion | LanguageServer project node completion | 无 JS node completion fallback | 无补全但不报错 |
-| Document symbols | LanguageServer document symbols | 无 JS document symbol fallback | 空 outline |
-| Node definition / references | LanguageServer graph provider | JS node provider | VSCode 默认无结果 |
-| Node / jump hover | LanguageServer project hover | 无 JS node hover fallback | 无 hover |
+| Diagnostics | LanguageServer session project diagnostics | CLI `diagnose-project` | VSCode extension diagnostic |
+| Node completion | LanguageServer session project node completion | 无 JS node completion fallback | 无补全但不报错 |
+| Document symbols | LanguageServer session document symbols | 无 JS document symbol fallback | 空 outline |
+| Node definition / references | LanguageServer session graph provider | JS node provider | VSCode 默认无结果 |
+| Node / jump hover | LanguageServer session project hover | 无 JS node hover fallback | 无 hover |
 | Text-to-preview reveal | VSCode `DefinitionProvider` + `PreviewRevealBridge` | 显式 `Inscape: Open Preview` / reveal 命令 | 无预览定位但源码可编辑 |
 | Speaker authoring | VSCode / future LanguageServer Host Bridge provider | Host Bridge speaker ids | workspace dialogue scan |
 | Host binding authoring | VSCode / future LanguageServer Host Bridge provider | Host Bridge bindings | workspace occurrence |
-| Host Schema query / event | LanguageServer `--host-schema-capabilities-project` | CLI `inspect-host-schema-project` | 空提示 + output 日志 |
+| Host Schema query / event | LanguageServer session host schema capabilities | CLI `inspect-host-schema-project` | 空提示 + output 日志 |
 | Preview rendering | VSCode preview + CLI `preview-project` | CLI executable / DLL / `dotnet run` fallback | error HTML with diagnostics |
 
 ## 删除 fallback 的条件

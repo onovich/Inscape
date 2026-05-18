@@ -37,6 +37,7 @@ class ExtensionRegistrationController {
             registrations.outputChannel,
             diagnostics,
             scheduler,
+            registrations.languageServerSessionClient,
             this.vscode.workspace.onDidOpenTextDocument((document) => scheduler.schedule(document)),
             this.vscode.workspace.onDidChangeTextDocument((event) => {
                 scheduler.schedule(event.document);

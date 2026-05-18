@@ -4,6 +4,13 @@
 
 最后更新：2026-05-19
 
+## 2026-05-19 更新
+
+- Goal 5 已完成当前阶段收口：VSCode 的 diagnostics、node completion、definition、references、hover、document symbols 与 Host Schema capability 已切到常驻 `LanguageServer` stdio 会话。
+- Goal 7 的 `off|click|selection` 真实 VSCode smoke 已通过。
+- Goal 11.1 的“LanguageServer 不可用 -> CLI diagnostics fallback”真实 VSCode smoke 已通过。
+- 当前下一步优先级回到 Goal 10：`G10.2.3` -> `G10.3` -> `G10.4`。
+
 本文把当前剩余工作写成 `/goal` 目标模式。每个 goal 都应独立完成、自检、验证、提交和推送；不要把多个无关 goal 合进同一提交。
 
 研发期原则：Inscape 当前没有真实用户和已发布契约，不为旧版语法、旧配置或旧实现路径承担兼容成本。legacy / fallback 默认是待删除债务；只有为了短期切换验证才允许临时存在，并且必须在同一计划中写出删除节点。
@@ -106,7 +113,7 @@
 
 ## Goal 5：LanguageServer 接管 VSCode 更多语义能力
 
-状态：已完成第一轮。G5.1 到 G5.5 已把 node outline、completion、definition、references、hover 迁到 LanguageServer 热路径，并删除对应 JS node semantic fallback。
+状态：已完成当前阶段。G5.1 到 G5.5 已把 node outline、completion、definition、references、hover 迁到 LanguageServer 热路径，并删除对应 JS node semantic fallback；2026-05-19 又完成常驻会话收口。
 
 目标：把已存在的 LanguageServer probes 接入 VSCode 热路径，逐步降低 JS workspace index 的语义权重。
 
@@ -117,6 +124,7 @@
 - [x] G5.3 接入 node definition / references，并删除对应 JS node definition / reference fallback。
 - [x] G5.4 接入 node / jump hover，并删除对应 JS node hover fallback。
 - [x] G5.5 清理 G5.1 / G5.2 已存在的 JS fallback，或改成明确的错误提示 / output 日志。
+- [x] G5.6 把 diagnostics、node completion、definition、references、hover、document symbols 与 Host Schema capability 从逐次 probe 切到常驻 `LanguageServer` stdio 会话；CLI fallback 仅保留为失败兜底。
 
 验收：
 
@@ -153,7 +161,7 @@
 - [x] 可选的预览 / 源码同步策略第一版：`inscape.preview.sourceSyncMode = off|click|selection`，默认 `click` 保持现有行为，`selection` 只驱动已打开预览。
 - [x] 可选的预览 / 源码同步策略自动化自检：新增脚本覆盖 `off` / `click` / `selection` 的关键边界。
 - [x] 可选的预览 / 源码同步策略手动 smoke 入口收口：新增脚本统一生成临时工作区与模式设置，避免交互回归只靠记忆执行。
-- [ ] 可选的预览 / 源码同步策略收口：补 VSCode 手动 smoke，确认三种模式的交互边界与默认值。
+- [x] 可选的预览 / 源码同步策略收口：真实 VSCode 手动 smoke 已通过，确认三种模式的交互边界与默认值。
 
 ## Goal 10：Stable ID 与本地化迁移落地
 
@@ -177,9 +185,9 @@
 
 小节点：
 
-- [ ] G11.1 删除 VSCode diagnostics CLI fallback 前，先补 LanguageServer 不可用场景下的 CLI fallback smoke test。
+- [x] G11.1 删除 VSCode diagnostics CLI fallback 前，先补 LanguageServer 不可用场景下的 CLI fallback smoke test。
   - [x] 先补静态契约：`npm --prefix src/ExternalSupport/VSCode run check:diagnostics-fallback`，锁住 LanguageServer 失败时转 CLI，以及 `diagnostics.backend=compiler` 直走 CLI。
-  - [ ] 仍需真实 VSCode 手动 smoke，确认编辑器内 fallback 体验和 output channel 行为。
+  - [x] 真实 VSCode 手动 smoke 已通过，确认编辑器内 fallback 体验和 output channel 行为。
 - [ ] G11.2 决定 Bird 项目新增 importer 与 `InscapeGenerated` 资源提交策略。
 - [ ] G11.3 用带真实 Timeline 绑定的样例执行 Bird Import Dry Run，确认 `talking.exit` 的 `TalkingEffectTM.PlayTimeline` 落地与其他 phase warning。
 - [ ] G11.4 低优先级：结合 Bird `L10N` 真实格式决定是否调整 Inscape CSV 字段和列顺序。

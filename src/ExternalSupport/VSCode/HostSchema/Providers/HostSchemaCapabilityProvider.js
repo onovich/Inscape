@@ -7,6 +7,7 @@ class HostSchemaCapabilityProvider {
         this.fs = dependencies.fs;
         this.path = dependencies.path;
         this.vscode = dependencies.vscode;
+        this.languageServerSessionClient = dependencies.languageServerSessionClient;
         this.resolveLanguageServerProjectPath = dependencies.resolveLanguageServerProjectPath;
         this.resolveCliProjectPath = dependencies.resolveCliProjectPath;
         this.logOutput = dependencies.logOutput;
@@ -36,24 +37,19 @@ class HostSchemaCapabilityProvider {
 
     async invokeCapabilityEndpoint(document, workspacePath) {
         const configuration = this.vscode.workspace.getConfiguration("inscape", document.uri);
-        const languageServerProject = this.resolveLanguageServerProjectPath(workspacePath);
         const cliProject = this.resolveCliProjectPath(workspacePath);
         const command = configuration.get("compiler.command", "dotnet");
         const invocations = [
-            this.resolveLanguageServerInvocation(command, languageServerProject, workspacePath),
+            this.createLanguageServerSessionInvocation(workspacePath),
             this.resolveCliInvocation(command, cliProject, workspacePath)
         ];
         const failures = [];
 
         for (const invocation of invocations) {
             try {
-                const result = await this.execFile(invocation);
-                if (result.exitCode !== 0 || !result.stdout.trim()) {
-                    failures.push(this.createFailureDetail(invocation, result));
-                    continue;
-                }
-
-                const parsed = JSON.parse(result.stdout);
+                const parsed = invocation.type === "languageServerSession"
+                    ? await this.languageServerSessionClient.request(document, invocation.method, invocation.params)
+                    : await this.execInvocation(invocation);
                 if (!parsed || parsed.format !== "inscape.host-schema.capabilities") {
                     failures.push(invocation.label + " returned an unexpected Host Schema capability payload.");
                     continue;
@@ -74,32 +70,14 @@ class HostSchemaCapabilityProvider {
         return undefined;
     }
 
-    resolveLanguageServerInvocation(defaultCommand, languageServerProject, workspaceFolderPath) {
-        const languageServerExecutable = this.resolveProjectExecutablePath(languageServerProject, "Inscape.LanguageServer");
-        if (languageServerExecutable) {
-            return {
-                label: "LanguageServer executable",
-                command: languageServerExecutable,
-                args: ["--host-schema-capabilities-project", workspaceFolderPath],
-                cwd: workspaceFolderPath
-            };
-        }
-
-        const languageServerAssembly = this.resolveProjectAssemblyPath(languageServerProject, "Inscape.LanguageServer.dll");
-        if (languageServerAssembly && this.fs.existsSync(languageServerAssembly)) {
-            return {
-                label: "LanguageServer assembly",
-                command: defaultCommand,
-                args: ["exec", languageServerAssembly, "--host-schema-capabilities-project", workspaceFolderPath],
-                cwd: workspaceFolderPath
-            };
-        }
-
+    createLanguageServerSessionInvocation(workspaceFolderPath) {
         return {
-            label: "LanguageServer project",
-            command: defaultCommand,
-            args: ["run", "--project", languageServerProject, "--", "--host-schema-capabilities-project", workspaceFolderPath],
-            cwd: workspaceFolderPath
+            type: "languageServerSession",
+            label: "LanguageServer session",
+            method: "inscape/hostSchemaCapabilitiesProject",
+            params: {
+                rootPath: workspaceFolderPath
+            }
         };
     }
 
@@ -130,6 +108,15 @@ class HostSchemaCapabilityProvider {
             args: ["run", "--project", cliProject, "--", "inspect-host-schema-project", workspaceFolderPath],
             cwd: workspaceFolderPath
         };
+    }
+
+    async execInvocation(invocation) {
+        const result = await this.execFile(invocation);
+        if (result.exitCode !== 0 || !result.stdout.trim()) {
+            throw new Error(this.createFailureDetail(invocation, result));
+        }
+
+        return JSON.parse(result.stdout);
     }
 
     execFile(invocation) {

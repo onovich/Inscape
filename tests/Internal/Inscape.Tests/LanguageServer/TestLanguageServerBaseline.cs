@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text;
 using Inscape.LanguageServer;
 
 namespace Inscape.Tests {
@@ -388,6 +389,71 @@ Narrator: unsaved node
             }
         }
 
+        static void LanguageServerStdioSessionServesProjectRequests() {
+            string directory = Path.Combine(Path.GetTempPath(), "inscape-language-server-session-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory);
+            string startPath = Path.Combine(directory, "start.inscape");
+            string targetPath = Path.Combine(directory, "target.inscape");
+            string overridePath = Path.Combine(directory, "target.override.tmp");
+
+            File.WriteAllText(startPath, """
+# start
+旁白：开始。
+-> target.node
+""");
+
+            File.WriteAllText(targetPath, """
+# old.node
+旁白：旧节点。
+""");
+
+            File.WriteAllText(overridePath, """
+# target.node
+旁白：编辑器未保存的新节点。
+""");
+
+            try {
+                string inputPayload
+                    = CreateLanguageServerSessionRequest(1, "initialize", new { processId = 1234 })
+                    + CreateLanguageServerSessionRequest(2, "inscape/completionProject", new {
+                        rootPath = directory,
+                        overrideSourcePath = targetPath,
+                        overrideContentPath = overridePath
+                    })
+                    + CreateLanguageServerSessionRequest(3, "inscape/definitionProject", new {
+                        rootPath = directory,
+                        target = "target.node",
+                        overrideSourcePath = targetPath,
+                        overrideContentPath = overridePath
+                    })
+                    + CreateLanguageServerSessionRequest(4, "shutdown", new { });
+
+                LanguageServerSessionController controller = new LanguageServerSessionController();
+                using MemoryStream input = new MemoryStream(Encoding.UTF8.GetBytes(inputPayload));
+                using MemoryStream output = new MemoryStream();
+                controller.Run(input, output);
+
+                List<JsonElement> responses = ReadLanguageServerSessionResponses(output.ToArray());
+                AssertEqual(4, responses.Count, "LanguageServer session response count");
+                AssertEqual("Inscape.LanguageServer", responses[0].GetProperty("result").GetProperty("serverInfo").GetProperty("name").GetString(), "LanguageServer session initialize result");
+
+                JsonElement completionResult = responses[1].GetProperty("result");
+                AssertEqual("inscape.language-server-project-completions", completionResult.GetProperty("format").GetString(), "LanguageServer session completion format");
+                AssertTrue(CountJsonItemsWithString(completionResult.GetProperty("completions"), "label", "target.node") == 1, "LanguageServer session completion should apply override");
+
+                JsonElement definitionResult = responses[2].GetProperty("result");
+                AssertEqual("inscape.language-server-project-definition", definitionResult.GetProperty("format").GetString(), "LanguageServer session definition format");
+                AssertEqual("target.node", definitionResult.GetProperty("definition").GetProperty("name").GetString(), "LanguageServer session definition label");
+                AssertEqual(targetPath, definitionResult.GetProperty("definition").GetProperty("location").GetProperty("sourcePath").GetString(), "LanguageServer session definition source path");
+
+                AssertTrue(responses[3].GetProperty("result").ValueKind == JsonValueKind.Null, "LanguageServer session shutdown should return null result");
+            } finally {
+                if (Directory.Exists(directory)) {
+                    Directory.Delete(directory, true);
+                }
+            }
+        }
+
         static JsonElement RunLanguageServerForJson(string[] args) {
             TextWriter originalOut = Console.Out;
             StringWriter output = new StringWriter();
@@ -414,6 +480,57 @@ Narrator: unsaved node
             }
 
             return count;
+        }
+
+        static string CreateLanguageServerSessionRequest(int id, string method, object parameters) {
+            byte[] payload = JsonSerializer.SerializeToUtf8Bytes(new {
+                jsonrpc = "2.0",
+                id,
+                method,
+                @params = parameters
+            });
+
+            return "Content-Length: "
+                + payload.Length
+                + "\r\n\r\n"
+                + Encoding.UTF8.GetString(payload);
+        }
+
+        static List<JsonElement> ReadLanguageServerSessionResponses(byte[] payload) {
+            List<JsonElement> responses = new List<JsonElement>();
+            int offset = 0;
+            while (offset < payload.Length) {
+                int headerEnd = FindHeaderEnd(payload, offset);
+                string header = Encoding.ASCII.GetString(payload, offset, headerEnd - offset);
+                int contentLength = 0;
+                foreach (string line in header.Split(new[] { "\r\n" }, StringSplitOptions.RemoveEmptyEntries)) {
+                    if (line.StartsWith("Content-Length:", StringComparison.OrdinalIgnoreCase)) {
+                        contentLength = int.Parse(line.Substring("Content-Length:".Length).Trim());
+                    }
+                }
+
+                AssertTrue(contentLength > 0, "LanguageServer session response must include Content-Length.");
+                int bodyOffset = headerEnd + 4;
+                string body = Encoding.UTF8.GetString(payload, bodyOffset, contentLength);
+                using JsonDocument document = JsonDocument.Parse(body);
+                responses.Add(document.RootElement.Clone());
+                offset = bodyOffset + contentLength;
+            }
+
+            return responses;
+        }
+
+        static int FindHeaderEnd(byte[] payload, int offset) {
+            for (int index = offset; index <= payload.Length - 4; index += 1) {
+                if (payload[index] == '\r'
+                    && payload[index + 1] == '\n'
+                    && payload[index + 2] == '\r'
+                    && payload[index + 3] == '\n') {
+                    return index;
+                }
+            }
+
+            throw new Exception("LanguageServer session response header terminator was not found.");
         }
 
     }

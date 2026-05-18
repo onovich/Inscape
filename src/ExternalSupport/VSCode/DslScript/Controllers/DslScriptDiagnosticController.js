@@ -57,19 +57,13 @@ class DslScriptDiagnosticController {
     createLanguageServerDiagnosticInvocation(command, workspaceFolder, document, tempPath) {
         return {
             name: "languageServer",
-            command,
-            args: [
-                "run",
-                "--project",
-                this.resolveLanguageServerProjectPath(workspaceFolder),
-                "--",
-                "--diagnose-project",
-                workspaceFolder,
-                "--override",
-                document.uri.fsPath,
-                tempPath
-            ],
-            cwd: workspaceFolder
+            type: "languageServerSession",
+            method: "inscape/diagnoseProject",
+            params: {
+                rootPath: workspaceFolder,
+                overrideSourcePath: document.uri.fsPath,
+                overrideContentPath: tempPath
+            }
         };
     }
 

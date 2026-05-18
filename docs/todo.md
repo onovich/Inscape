@@ -6,30 +6,34 @@
 
 当前目录迁移与不符合项总蓝图见 [目录优先重构蓝图](directory-first-reframe-plan.md)。当前后续执行面板见 [/goal 后续目标计划](goal-plan.md)。
 
+## 2026-05-19 最新收口
+
+- Goal 7 的 `inscape.preview.sourceSyncMode = off|click|selection` 真实 VSCode smoke 已通过。
+- Goal 11.1 的“LanguageServer 不可用 -> CLI diagnostics fallback”真实 VSCode smoke 已通过。
+- VSCode 的 diagnostics、node completion、definition、references、hover、document symbols 与 Host Schema capability 已切到常驻 `LanguageServer` stdio 会话；CLI fallback 继续保留，但不再是常态热路径。
+- 当前最值得继续推进的主线已经回到 Goal 10：`G10.2.3 标题重命名的人机确认 / 冲突报告入口` -> `G10.3 本地化 alignment / audit report` -> `G10.4 相似文本人工候选`。
+- 低优先级体验尾项：编辑区选项文字 `Ctrl+Hover` 的可点击下划线显示仍不稳定，但 `Ctrl+Click` 行为符合预期；`selection` 模式只驱动“已打开预览”的轻量跟随，不主动弹出新预览面板。
+
 ## 接力优先队列
 
 下一位接手者建议按以下顺序推进。已完成的 Goal 0 / 3 / 4 / 5 / 6 / 9 不再放进优先队列，只保留在下方历史账本中。当前剩余事项可以收敛成四组：先补手动 smoke 收口现有体验，再推进 stable id / 本地化主线，然后再挑 Tooling 单点收敛，最后才是 Unity / Bird 的准备项。
 
-1. **人工手动 smoke 待办。**
-	- 待你回头统一执行一轮真实 VSCode 手动 smoke，覆盖两件事：
-		- Goal 7：`inscape.preview.sourceSyncMode = off|click|selection` 的三种模式交互边界与默认值。
-		- Goal 11.1：`LanguageServer` 不可用时的 CLI diagnostics fallback、output channel 与实际编辑器体验。
-	- Goal 7 重测时注意两点：每次只跑一种 `smoke:preview-source-sync` 模式并关闭前一个 smoke 窗口；`selection` 指的是源码编辑器里的文本选区，不是预览面板里的点击。
-	- 这是一条独立人工待办；其余节点继续按自动可闭环的研发任务推进。
-2. **再推进 Stable Node ID 主线。**
+注：上面这句里的“先补手动 smoke”已经在 2026-05-19 收口完成；保留旧账本只是为了不丢历史上下文，新的实际优先级以本页“2026-05-19 最新收口”为准。
+
+1. **再推进 Stable Node ID 主线。**
 	- 已完成：ADR 0013、stable node id / title map 契约、`update-node-map-project` sidecar 闭环、保守自动重命名识别、VSCode 显式 `Update Stable Node Map` 入口、插入标题后的自动同步。
 	- 下一步建议顺序：
 		- G10.2.3 标题重命名的人机确认 / 冲突报告入口。
 		- G10.3 本地化 alignment / audit report。
 		- G10.4 相似文本只作人工候选，不静默继承旧译文。
-3. **把本地化迁移闭环做实。**
+2. **把本地化迁移闭环做实。**
 	- 已完成：状态机、CSV / report 字段、anchor + occurrence + diff 对齐流程设计。
 	- 待做：实现显式 alignment / audit report，保护旧译文，标记 `kept` / `new` / `changed` / `removed` / `conflict` / `stale`。
 	- 注意：这条实际上依赖 Goal 10 的 stable node id 维护进一步落地，所以优先级排在 Goal 10 后半段，而不是独立抢跑。
-4. **最后再挑 Tooling 单点收敛。**
+3. **最后再挑 Tooling 单点收敛。**
 	- 保持原则：继续落到 `DslScriptSources`、`ToolConfig`、`Preview`、`Localization`、`HostSchema`、`HostBinding` 等窄模块；不要新建泛化 `ProjectService`。
 	- 只挑一个仍重复的跨 Cli / VSCode / LanguageServer 流程做小闭环，不把“顺手统一”混进主线节点。
-5. **Unity / Bird 只做准备和决策。**
+4. **Unity / Bird 只做准备和决策。**
 	- 待定：Bird 项目新增 importer 与 `InscapeGenerated` 资源提交策略。
 	- 待验证：带真实 Timeline 绑定的 Bird Import Dry Run，确认 `talking.exit` 的 `TalkingEffectTM.PlayTimeline` 落地和其他 phase warning。
 	- 低优先级：结合 Bird `L10N` 真实格式决定是否调整 Inscape CSV 字段和列顺序。
@@ -39,7 +43,7 @@
 - **当前可直接推进**：
 	- Goal 10.2.3 标题重命名人工确认 / 冲突报告入口。
 - **当前人工待办**：
-	- Goal 7 + Goal 11.1 合并后的真实 VSCode 手动 smoke。
+	- 无。Goal 7 与 Goal 11.1 的真实 VSCode smoke 已在 2026-05-19 收口完成。
 - **当前主线研发**：
 	- Goal 10.3 本地化 alignment / audit report。
 	- Goal 10.4 相似文本人工候选。

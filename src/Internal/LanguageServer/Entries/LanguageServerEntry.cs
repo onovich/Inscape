@@ -8,6 +8,12 @@ namespace Inscape.LanguageServer {
     public static class LanguageServerEntry {
 
         public static int Main(string[] args) {
+            if (args.Length > 0 && args[0] == "--stdio") {
+                LanguageServerSessionController sessionController = new LanguageServerSessionController();
+                sessionController.Run(Console.OpenStandardInput(), Console.OpenStandardOutput());
+                return 0;
+            }
+
             if (args.Length > 0 && args[0] == "--capabilities") {
                 Console.WriteLine(JsonSerializer.Serialize(CreateCapabilities(), new JsonSerializerOptions {
                     WriteIndented = true,
@@ -199,7 +205,7 @@ namespace Inscape.LanguageServer {
                 return 0;
             }
 
-            Console.WriteLine("Inscape.LanguageServer baseline. Use --capabilities, --diagnose-file <path>, --diagnose-project <root> [--entry title] [--override source.inscape temp.inscape], --definition-file <path> <title>, --definition-project <root> <title> [--override source.inscape temp.inscape], --references-file <path> <title>, --references-project <root> <title> [--override source.inscape temp.inscape], --completion-file <path>, --completion-project <root> [--override source.inscape temp.inscape], --document-symbols-file <path>, --hover-file <path> <node|jump> <title>, --hover-project <root> <node|jump> <title> [--override source.inscape temp.inscape], or --host-schema-capabilities-project <root> [--config path].");
+            Console.WriteLine("Inscape.LanguageServer baseline. Use --stdio, --capabilities, --diagnose-file <path>, --diagnose-project <root> [--entry title] [--override source.inscape temp.inscape], --definition-file <path> <title>, --definition-project <root> <title> [--override source.inscape temp.inscape], --references-file <path> <title>, --references-project <root> <title> [--override source.inscape temp.inscape], --completion-file <path>, --completion-project <root> [--override source.inscape temp.inscape], --document-symbols-file <path>, --hover-file <path> <node|jump> <title>, --hover-project <root> <node|jump> <title> [--override source.inscape temp.inscape], or --host-schema-capabilities-project <root> [--config path].");
             return 0;
         }
 

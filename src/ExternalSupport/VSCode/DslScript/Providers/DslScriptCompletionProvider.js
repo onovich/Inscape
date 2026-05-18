@@ -10,7 +10,7 @@ class DslScriptCompletionProvider {
         this.vscode = dependencies.vscode;
         this.isInscapeDocument = dependencies.isInscapeDocument;
         this.isJumpTargetContext = dependencies.isJumpTargetContext;
-        this.resolveLanguageServerProjectPath = dependencies.resolveLanguageServerProjectPath;
+        this.languageServerSessionClient = dependencies.languageServerSessionClient;
         this.isSpeakerCompletionContext = dependencies.isSpeakerCompletionContext;
         this.dslScriptSpeakerProvider = dependencies.dslScriptSpeakerProvider;
         this.hostBindingProvider = dependencies.hostBindingProvider;
@@ -102,21 +102,11 @@ class DslScriptCompletionProvider {
 
         const tempPath = this.writeTempDocument(document);
         try {
-            const workspaceFolderPath = this.getWorkspaceFolderPath(document);
-            const command = this.getDotnetCommand(document);
-            const result = await this.execFilePromise(command, [
-                "run",
-                "--project",
-                this.resolveLanguageServerProjectPath(workspaceFolderPath),
-                "--",
-                "--completion-project",
-                workspaceFolderPath,
-                "--override",
-                document.uri.fsPath,
-                tempPath
-            ], workspaceFolderPath);
-
-            const payload = JSON.parse(result.stdout);
+            const payload = await this.languageServerSessionClient.request(document, "inscape/completionProject", {
+                rootPath: this.getWorkspaceFolderPath(document),
+                overrideSourcePath: document.uri.fsPath,
+                overrideContentPath: tempPath
+            });
             if (!payload
                 || payload.format !== "inscape.language-server-project-completions"
                 || payload.formatVersion !== 1
@@ -168,23 +158,6 @@ class DslScriptCompletionProvider {
     getDotnetCommand(document) {
         const configuration = this.vscode.workspace.getConfiguration("inscape", document.uri);
         return configuration.get("compiler.command", "dotnet");
-    }
-
-    execFilePromise(command, args, cwd) {
-        return new Promise((resolve, reject) => {
-            this.childProcess.execFile(command, args, {
-                cwd,
-                windowsHide: true,
-                timeout: 10000,
-                maxBuffer: 1024 * 1024
-            }, (error, stdout, stderr) => {
-                if (error) {
-                    reject(error);
-                    return;
-                }
-                resolve({ stdout, stderr });
-            });
-        });
     }
 
     createCacheKey(document) {

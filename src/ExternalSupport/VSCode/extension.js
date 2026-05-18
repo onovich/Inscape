@@ -14,6 +14,7 @@ const { EditorAuthoringLocationProvider } = require("./EditorAuthoring/Providers
 const { HostBindingProvider } = require("./HostBinding/Providers/HostBindingProvider");
 const { HostSchemaCommand } = require("./HostSchema/Commands/HostSchemaCommand");
 const { HostSchemaCapabilityProvider } = require("./HostSchema/Providers/HostSchemaCapabilityProvider");
+const { LanguageServerSessionClient } = require("./LanguageServer/Clients/LanguageServerSessionClient");
 const { LocalizationCommand } = require("./Localization/Commands/LocalizationCommand");
 const { ExtensionLifecycleController } = require("./Entries/ExtensionLifecycleController");
 const { ExtensionRegistrationController } = require("./Entries/ExtensionRegistrationController");
@@ -47,6 +48,7 @@ let hostSchemaCommand;
 let editorAuthoringDataProvider;
 let editorAuthoringLocationProvider;
 let dslScriptDiagnosticController;
+let languageServerSessionClient;
 let extensionLifecycleController;
 let extensionRegistrationController;
 
@@ -92,11 +94,21 @@ const hostBindingProvider = new HostBindingProvider({
     formatDisplayPath: (sourcePath) => editorAuthoringLocationProvider.formatDisplayPath(sourcePath)
 });
 
+languageServerSessionClient = new LanguageServerSessionClient({
+    childProcess,
+    fs,
+    path,
+    vscode,
+    resolveLanguageServerProjectPath: (workspaceFolderPath) => resolveLanguageServerProjectPathFromBase(workspaceFolderPath, __dirname),
+    logOutput: (message) => extensionLifecycleController.logOutput(message)
+});
+
 const hostSchemaCapabilityProvider = new HostSchemaCapabilityProvider({
     childProcess,
     fs,
     path,
     vscode,
+    languageServerSessionClient,
     resolveLanguageServerProjectPath: (workspaceFolderPath) => resolveLanguageServerProjectPathFromBase(workspaceFolderPath, __dirname),
     resolveCliProjectPath: (workspaceFolderPath) => resolveCliProjectPathFromBase(workspaceFolderPath, __dirname),
     logOutput: (message) => extensionLifecycleController.logOutput(message)
@@ -127,7 +139,7 @@ const dslScriptCompletionProvider = new DslScriptCompletionProvider({
     vscode,
     isInscapeDocument,
     isJumpTargetContext,
-    resolveLanguageServerProjectPath: (workspaceFolderPath) => resolveLanguageServerProjectPathFromBase(workspaceFolderPath, __dirname),
+    languageServerSessionClient,
     isSpeakerCompletionContext,
     dslScriptSpeakerProvider,
     hostBindingProvider,
@@ -144,7 +156,7 @@ const dslScriptReferenceProvider = new DslScriptReferenceProvider({
     isInscapeDocument,
     createLocation: (item) => editorAuthoringLocationProvider.createLocation(item),
     uniqueLocations: (locations) => editorAuthoringLocationProvider.uniqueLocations(locations),
-    resolveLanguageServerProjectPath: (workspaceFolderPath) => resolveLanguageServerProjectPathFromBase(workspaceFolderPath, __dirname),
+    languageServerSessionClient,
     dslScriptNodeProvider,
     dslScriptSpeakerProvider
 });
@@ -156,7 +168,7 @@ const dslScriptHoverProvider = new DslScriptHoverProvider({
     path,
     vscode,
     isInscapeDocument,
-    resolveLanguageServerProjectPath: (workspaceFolderPath) => resolveLanguageServerProjectPathFromBase(workspaceFolderPath, __dirname),
+    languageServerSessionClient,
     dslScriptNodeProvider,
     dslScriptSpeakerProvider,
     hostBindingProvider,
@@ -171,7 +183,7 @@ const dslScriptDocumentSymbolProvider = new DslScriptDocumentSymbolProvider({
     os,
     path,
     vscode,
-    resolveLanguageServerProjectPath: (workspaceFolderPath) => resolveLanguageServerProjectPathFromBase(workspaceFolderPath, __dirname)
+    languageServerSessionClient
 });
 
 const dslScriptCodeLensProvider = new DslScriptCodeLensProvider({
@@ -207,7 +219,8 @@ extensionLifecycleController = new ExtensionLifecycleController({
     fs,
     vscode,
     isInscapeDocument,
-    diagnosticController: dslScriptDiagnosticController
+    diagnosticController: dslScriptDiagnosticController,
+    languageServerSessionClient
 });
 
 const previewRefreshController = new PreviewRefreshController({
@@ -326,7 +339,7 @@ const dslScriptDefinitionProvider = new DslScriptDefinitionProvider({
     isInscapeDocument,
     createLocation: (item) => editorAuthoringLocationProvider.createLocation(item),
     uniqueLocations: (locations) => editorAuthoringLocationProvider.uniqueLocations(locations),
-    resolveLanguageServerProjectPath: (workspaceFolderPath) => resolveLanguageServerProjectPathFromBase(workspaceFolderPath, __dirname),
+    languageServerSessionClient,
     dslScriptNodeProvider,
     dslScriptSpeakerProvider,
     hostBindingProvider,

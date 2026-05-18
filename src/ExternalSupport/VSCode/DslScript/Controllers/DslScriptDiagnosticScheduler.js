@@ -13,6 +13,7 @@ class DslScriptDiagnosticScheduler {
         this.createCompilerInvocation = dependencies.createCompilerInvocation;
         this.createExtensionDiagnostic = dependencies.createExtensionDiagnostic;
         this.applyDiagnostics = dependencies.applyDiagnostics;
+        this.languageServerSessionClient = dependencies.languageServerSessionClient;
         this.timers = new Map();
         this.runIds = new Map();
     }
@@ -69,6 +70,11 @@ class DslScriptDiagnosticScheduler {
 
     runInvocation(document, tempPath, key, runId, invocations, index) {
         const invocation = invocations[index];
+        if (invocation.type === "languageServerSession") {
+            this.runLanguageServerSessionInvocation(document, tempPath, key, runId, invocations, index, invocation);
+            return;
+        }
+
         this.childProcess.execFile(invocation.command, invocation.args, {
             cwd: invocation.cwd,
             windowsHide: true,
@@ -92,6 +98,50 @@ class DslScriptDiagnosticScheduler {
                 this.tryFallbackOrReport(document, tempPath, key, runId, invocations, index, stderr, parseError, "Unable to parse Inscape diagnostics: " + parseError.message);
             }
         });
+    }
+
+    runLanguageServerSessionInvocation(document, tempPath, key, runId, invocations, index, invocation) {
+        this.languageServerSessionClient.request(document, invocation.method, invocation.params)
+            .then((payload) => {
+                if (this.runIds.get(key) !== runId) {
+                    this.fs.unlink(tempPath, () => { });
+                    return;
+                }
+
+                if (!payload
+                    || payload.format !== "inscape.language-server-project-diagnostics"
+                    || !Array.isArray(payload.diagnostics)) {
+                    this.tryFallbackOrReport(document,
+                        tempPath,
+                        key,
+                        runId,
+                        invocations,
+                        index,
+                        "",
+                        new Error("LanguageServer session returned an unexpected diagnostics payload."),
+                        "LanguageServer session returned an unexpected diagnostics payload.");
+                    return;
+                }
+
+                this.applyDiagnostics(this.diagnostics, document, payload.diagnostics);
+                this.fs.unlink(tempPath, () => { });
+            })
+            .catch((error) => {
+                if (this.runIds.get(key) !== runId) {
+                    this.fs.unlink(tempPath, () => { });
+                    return;
+                }
+
+                this.tryFallbackOrReport(document,
+                    tempPath,
+                    key,
+                    runId,
+                    invocations,
+                    index,
+                    "",
+                    error,
+                    "Unable to request Inscape diagnostics from the LanguageServer session.");
+            });
     }
 
     tryFallbackOrReport(document, tempPath, key, runId, invocations, index, stderr, error, fallbackMessage) {
