@@ -114,6 +114,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - 2026-05-19 已推进 Goal 10.1：`Inscape.Tooling` 新增 `StoryNodeMap` 读写 / 路径解析 / 更新 domain，`ToolConfigModel` 新增 `nodeMap` 配置，Internal CLI 新增 `update-node-map-project <root> [--config path] [-o path]`。第一版按当前标题精确命中复用 stable node id，把消失节点标为 `missing`，把 sidecar 内重复 `id` / `title` 标为 `conflict`，并落盘 source/content/neighbor 指纹与 line anchor samples。下一步建议进入 G10.2：把标题创建 / 重命名流程真正接到 stable node id 维护。
 - 2026-05-19 已继续推进 Goal 10.2 的第一小步：`StoryNodeMapUpdateDomain` 现在会在标题未命中时，用 `sourcePath` + content fingerprint + neighbor fingerprint + line anchor overlap + 行号距离做“保守自动重命名识别”。当候选唯一时复用旧 stable node id，并把旧标题写入 `previousTitles`；候选不唯一时宁可放弃自动识别，保留“旧节点 missing + 新节点新 id”。下一步建议继续 G10.2：把 VSCode 标题创建 / 重命名入口与人工确认流接进来。
 - 2026-05-19 已继续推进 Goal 10.2 的第二小步：VSCode 新增显式 `Inscape: Update Stable Node Map` 命令，位于 `EditorAuthoringCommand`，会调用 Internal CLI `update-node-map-project <workspace>`，并把活动未保存 `.inscape` 文档通过 `--override` 传给 CLI。当前这一步只打通显式 sidecar 维护入口，不会在插入标题后自动同步，也还没有重命名人工确认 UI。下一步建议继续 G10.2：补标题创建后的自动同步，或单独切人工确认 / 冲突报告入口。
+- 2026-05-19 已继续推进 Goal 10.2 的第三小步：VSCode `Inscape: Insert Node Title` 现在会在插入成功后，对当前工作区静默执行一次 `update-node-map-project`。如果当前文档尚未保存，会继续通过 `--override` 把编辑器内容传给 CLI；如果自动同步失败，只提示 warning，不回滚标题插入。这样标题创建和 stable node map 维护已经形成第一版自动闭环。下一步建议继续 G10.2：单独实现标题重命名的人机确认 / 冲突报告入口。
 - 2026-05-17 已完成 Goal 2 设计：新增 [Localization Diff Alignment Contract](localization-diff-alignment-contract.md)，定义 `kept` / `new` / `changed` / `removed` / `conflict` / `stale` 状态，要求 anchor 精确继承优先，同一 stable node id 内再做 diff / alignment；相似旧译文只能作为候选和 review report，不得静默当作完成译文。CLI 兼容计划优先新增独立 audit / alignment report，不改变当前 `update-l10n` 默认行为。
 - 2026-05-17 已完成 Goal 3 Compiler 第一刀：`DslScriptParserDomain` 支持 `# 标题` 节点声明，`DslScriptNodeTitleValidatorDomain` 定义标题合法性；中文标题可作为 `-> 目标标题` 跳转目标。重复标题仍走文档内 `INS003` / 项目级 `INS030` 诊断，标题前缺空行新增 info 级 `INS012` style hint。
 - 2026-05-17 已完成 Goal 4 VSCode 标题语法体验：TextMate grammar、snippets、README / tooling 文档已转向 `# 标题`；中文标题可用于 Outline、jump completion、Go to Definition、Find All References、Hover 与 CodeLens；新增 `Inscape: Insert Node Title` 命令，在创建同名标题时自动追加 `_01`。
@@ -333,8 +334,8 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
    - Goal 11.1 只剩真实 VSCode 场景下的 diagnostics fallback 手动 smoke。
 
 2. 再推进 Stable Node ID 主线。
-   - ADR 0013、sidecar 闭环、保守自动重命名识别、VSCode 显式 `Update Stable Node Map` 入口都已落地。
-   - 下一步建议顺序是：标题创建后自动同步 stable node map -> 标题重命名人工确认 / 冲突报告 -> 本地化 alignment / audit report。
+   - ADR 0013、sidecar 闭环、保守自动重命名识别、VSCode 显式 `Update Stable Node Map` 入口、插入标题后的自动同步都已落地。
+   - 下一步建议顺序是：标题重命名人工确认 / 冲突报告 -> 本地化 alignment / audit report。
 
 3. 本地化 Diff / Alignment 落地。
    - 状态机、CSV / report 字段、anchor + occurrence + diff 对齐流程已经完成设计。

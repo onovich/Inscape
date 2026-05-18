@@ -18,7 +18,7 @@ The package is also a future split-repo candidate, so non-source extension asset
 - Keeps metadata and query interpolations on comment-like scopes so themes can visually soften them while prose remains readable.
 - Refreshes diagnostics through `Inscape.LanguageServer --diagnose-project <workspace> --override <source> <temp-file>` first, then falls back to the configured CLI `diagnose-project` invocation if the LanguageServer probe is unavailable.
 - Provides node completions in jump target positions through `Inscape.LanguageServer --completion-project`, including cross-file nodes and unsaved editor content.
-- Provides `Inscape: Insert Node Title`; if the requested title already exists, the command inserts the next `_01`-style title.
+- Provides `Inscape: Insert Node Title`; if the requested title already exists, the command inserts the next `_01`-style title and, when the file belongs to a workspace, silently refreshes the stable node map through `update-node-map-project`.
 - Provides `Inscape: Update Stable Node Map`; it runs `update-node-map-project` for the selected workspace and forwards the active unsaved `.inscape` file through `--override`.
 - Provides dialogue speaker completions from `inscape.config.json` `hostBridge`, with workspace speaker fallback.
 - Provides host event / timing hook completions from `inscape.config.json` `hostBridge`, with workspace `@timeline...` fallback.

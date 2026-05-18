@@ -166,7 +166,7 @@
 - [x] G10.1 实现 stable node id sidecar 的创建、读取、更新、删除和冲突处理。
 - [ ] G10.2 把标题创建 / 重命名流程接入 stable node id 维护；作者仍只写中文标题，机器 ID 由工具维护。
   - [x] G10.2.1 VSCode 新增显式 `Inscape: Update Stable Node Map` 入口，调用 `update-node-map-project`，并把活动未保存 `.inscape` 文档通过 `--override` 传给 CLI。
-  - [ ] G10.2.2 标题创建后自动同步 stable node map，避免作者每次手动执行。
+  - [x] G10.2.2 标题创建后自动同步 stable node map，插入标题成功后会对当前工作区静默执行一次 `update-node-map-project`，失败时只提示自动同步失败，不回滚插入动作。
   - [ ] G10.2.3 标题重命名的人工确认 / 冲突报告入口。
 - [ ] G10.3 实现本地化 alignment / audit report，输出 `kept` / `new` / `changed` / `removed` / `conflict` / `stale`。
 - [ ] G10.4 将相似文本匹配作为人工候选输出，不静默继承旧译文。

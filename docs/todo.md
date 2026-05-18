@@ -10,14 +10,14 @@
 
 下一位接手者建议按以下顺序推进。已完成的 Goal 0 / 3 / 4 / 5 / 6 / 9 不再放进优先队列，只保留在下方历史账本中。当前剩余事项可以收敛成四组：先补手动 smoke 收口现有体验，再推进 stable id / 本地化主线，然后再挑 Tooling 单点收敛，最后才是 Unity / Bird 的准备项。
 
-1. **先收口现有 VSCode 体验。**
-	- **Goal 7 手动 smoke**：补完 `inscape.preview.sourceSyncMode = off|click|selection` 的真实 VSCode 手动 smoke，确认默认值与三种模式交互边界。
-	- **Goal 11.1 手动 smoke**：在真实 VSCode 场景里验证“LanguageServer 不可用 -> CLI diagnostics fallback 可用”，补齐 output channel / 体验观察。
-	- 这两项都不是新设计，而是把已经落地的功能做真实场景收口；做完后可以更安心地删 fallback 或继续调体验。
+1. **人工手动 smoke 待办。**
+	- 待你回头统一执行一轮真实 VSCode 手动 smoke，覆盖两件事：
+		- Goal 7：`inscape.preview.sourceSyncMode = off|click|selection` 的三种模式交互边界与默认值。
+		- Goal 11.1：`LanguageServer` 不可用时的 CLI diagnostics fallback、output channel 与实际编辑器体验。
+	- 这是一条独立人工待办；其余节点继续按自动可闭环的研发任务推进。
 2. **再推进 Stable Node ID 主线。**
-	- 已完成：ADR 0013、stable node id / title map 契约、`update-node-map-project` sidecar 闭环、保守自动重命名识别、VSCode 显式 `Update Stable Node Map` 入口。
+	- 已完成：ADR 0013、stable node id / title map 契约、`update-node-map-project` sidecar 闭环、保守自动重命名识别、VSCode 显式 `Update Stable Node Map` 入口、插入标题后的自动同步。
 	- 下一步建议顺序：
-		- G10.2.2 标题创建后自动同步 stable node map，减少手工维护。
 		- G10.2.3 标题重命名的人机确认 / 冲突报告入口。
 		- G10.3 本地化 alignment / audit report。
 		- G10.4 相似文本只作人工候选，不静默继承旧译文。
@@ -36,11 +36,10 @@
 ## 剩余工作总览
 
 - **当前可直接推进**：
-	- Goal 7 手动 smoke。
-	- Goal 11.1 手动 smoke。
-	- Goal 10.2.2 标题创建后自动同步 stable node map。
+	- Goal 10.2.3 标题重命名人工确认 / 冲突报告入口。
+- **当前人工待办**：
+	- Goal 7 + Goal 11.1 合并后的真实 VSCode 手动 smoke。
 - **当前主线研发**：
-	- Goal 10.2.3 标题重命名人工确认 / 冲突报告。
 	- Goal 10.3 本地化 alignment / audit report。
 	- Goal 10.4 相似文本人工候选。
 - **低一层优先级但可随时切入**：
@@ -227,6 +226,7 @@
 	- [x] 设计标题重命名识别流程：source range、相邻文本锚点、旧标题、前后节点关系与人工确认；详见 [Stable Node ID Contract](stable-node-id-contract.md)。
 - [ ] 实现 stable node id sidecar 与标题重命名迁移流程。
 	- [x] VSCode 新增显式 `Inscape: Update Stable Node Map` 命令，调用 `update-node-map-project` 并把活动未保存文档通过 `--override` 传给 CLI。
+	- [x] VSCode `Inscape: Insert Node Title` 在插入成功后会静默同步 stable node map；同步失败只提示 warning，不回滚标题插入。
 - [x] 定义并实现行级隐式 hash 的输入、规范化规则、版本号和碰撞处理。
 - [x] 实现第一版本地化 CSV 提取，覆盖旁白、对白、选择提示和选择项。
 - [x] 实现旧翻译表按锚点精确继承，并标记新增、保留、删除条目。

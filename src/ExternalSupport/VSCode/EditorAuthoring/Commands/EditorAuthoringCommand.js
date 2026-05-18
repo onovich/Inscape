@@ -28,7 +28,7 @@ class EditorAuthoringCommand {
             {
                 label: "$(add) 插入剧情块标题",
                 description: "同名标题会自动追加 _01",
-                action: () => this.insertNodeTitle()
+                action: () => this.insertNodeTitle(context)
             },
             {
                 label: "$(sync) 更新 Stable Node Map",
@@ -61,7 +61,7 @@ class EditorAuthoringCommand {
         }
     }
 
-    async insertNodeTitle() {
+    async insertNodeTitle(context) {
         const editor = this.vscode.window.activeTextEditor;
         if (!editor || !this.isInscapeDocument(editor.document)) {
             this.vscode.window.showWarningMessage("Open an .inscape document before inserting a node title.");
@@ -90,50 +90,43 @@ class EditorAuthoringCommand {
         const title = this.normalizeTitle(input);
         const uniqueTitle = await this.createUniqueNodeTitle(editor.document, title);
         const insertText = this.createNodeTitleInsertion(editor.document, editor.selection.active, uniqueTitle);
-        await editor.edit((editBuilder) => {
+        const didEdit = await editor.edit((editBuilder) => {
             editBuilder.insert(editor.selection.active, insertText);
         });
+
+        if (didEdit) {
+            await this.syncNodeMapAfterTitleInsert(context, editor.document);
+        }
     }
 
-    async updateNodeMap(context) {
-        const workspaceFolder = await this.resolvePreferredWorkspaceFolder();
+    async updateNodeMap(context, options) {
+        const invocationOptions = options || {};
+        const workspaceFolder = invocationOptions.workspaceFolder || await this.resolvePreferredWorkspaceFolder();
         if (!workspaceFolder) {
             return;
         }
 
-        const editorDocument = this.vscode.window.activeTextEditor ? this.vscode.window.activeTextEditor.document : undefined;
-        const activeDocument = editorDocument
-            && this.isInscapeDocument(editorDocument)
-            && this.isDocumentInWorkspaceFolder(editorDocument, workspaceFolder)
-            ? editorDocument
-            : undefined;
-        let tempPath;
-
         try {
-            if (activeDocument) {
-                tempPath = this.writeTempDocument(activeDocument);
+            const nodeMapPath = await this.runNodeMapUpdate(context, workspaceFolder, {
+                activeDocument: invocationOptions.activeDocument,
+                showProgress: invocationOptions.showProgress !== false
+            });
+            if (!nodeMapPath || invocationOptions.notifySuccess === false) {
+                return;
             }
 
-            const invocation = this.createNodeMapInvocation(context, workspaceFolder, activeDocument, tempPath);
-            const output = await this.vscode.window.withProgress({
-                location: this.vscode.ProgressLocation.Notification,
-                title: "Updating Inscape stable node map",
-                cancellable: false
-            }, () => this.execFile(invocation));
-
-            const nodeMapPath = this.normalizeNodeMapPath(output) || this.path.join(workspaceFolder.uri.fsPath, "inscape.node-map.json");
-            const openAction = "Open";
+            const openAction = invocationOptions.openOnSuccess === false
+                ? undefined
+                : "Open";
             const message = "Inscape stable node map written to " + nodeMapPath;
-            const selection = await this.vscode.window.showInformationMessage(message, openAction);
+            const selection = openAction
+                ? await this.vscode.window.showInformationMessage(message, openAction)
+                : await this.vscode.window.showInformationMessage(message);
             if (selection === openAction && this.fs.existsSync(nodeMapPath)) {
                 await this.openFile(nodeMapPath);
             }
         } catch (error) {
             this.vscode.window.showErrorMessage(error.message || String(error));
-        } finally {
-            if (tempPath) {
-                this.fs.unlink(tempPath, () => { });
-            }
         }
     }
 
@@ -213,6 +206,73 @@ class EditorAuthoringCommand {
         }
 
         return this.selectWorkspaceFolder();
+    }
+
+    async syncNodeMapAfterTitleInsert(context, document) {
+        if (!context || !document) {
+            return;
+        }
+
+        const workspaceFolder = this.vscode.workspace.getWorkspaceFolder(document.uri);
+        if (!workspaceFolder) {
+            return;
+        }
+
+        try {
+            await this.runNodeMapUpdate(context, workspaceFolder, {
+                activeDocument: document,
+                showProgress: false
+            });
+        } catch (error) {
+            const detail = error && error.message
+                ? error.message
+                : String(error);
+            this.vscode.window.showWarningMessage("标题已插入，但 stable node map 自动同步失败：" + detail);
+        }
+    }
+
+    async runNodeMapUpdate(context, workspaceFolder, options) {
+        const invocationOptions = options || {};
+        const activeDocument = this.resolveNodeMapActiveDocument(workspaceFolder, invocationOptions.activeDocument);
+        let tempPath;
+
+        try {
+            if (activeDocument) {
+                tempPath = this.writeTempDocument(activeDocument);
+            }
+
+            const invocation = this.createNodeMapInvocation(context, workspaceFolder, activeDocument, tempPath);
+            const output = invocationOptions.showProgress === false
+                ? await this.execFile(invocation)
+                : await this.vscode.window.withProgress({
+                    location: this.vscode.ProgressLocation.Notification,
+                    title: "Updating Inscape stable node map",
+                    cancellable: false
+                }, () => this.execFile(invocation));
+
+            return this.normalizeNodeMapPath(output) || this.path.join(workspaceFolder.uri.fsPath, "inscape.node-map.json");
+        } finally {
+            if (tempPath) {
+                this.fs.unlink(tempPath, () => { });
+            }
+        }
+    }
+
+    resolveNodeMapActiveDocument(workspaceFolder, preferredDocument) {
+        if (preferredDocument
+            && this.isInscapeDocument(preferredDocument)
+            && this.isDocumentInWorkspaceFolder(preferredDocument, workspaceFolder)) {
+            return preferredDocument;
+        }
+
+        const editorDocument = this.vscode.window.activeTextEditor ? this.vscode.window.activeTextEditor.document : undefined;
+        if (editorDocument
+            && this.isInscapeDocument(editorDocument)
+            && this.isDocumentInWorkspaceFolder(editorDocument, workspaceFolder)) {
+            return editorDocument;
+        }
+
+        return undefined;
     }
 
     createNodeMapInvocation(context, workspaceFolder, activeDocument, tempPath) {
