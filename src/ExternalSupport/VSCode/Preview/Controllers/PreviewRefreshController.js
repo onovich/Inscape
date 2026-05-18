@@ -52,6 +52,10 @@ class PreviewRefreshController {
             clearTimeout(existing);
         }
 
+        for (const panel of panels) {
+            this.setPanelRefreshState(panel, "pending");
+        }
+
         const delay = typeof delayOverride === "number" ? delayOverride : 250;
         this.refreshTimers.set(sourceKey, setTimeout(() => {
             this.refreshTimers.delete(sourceKey);
@@ -62,12 +66,12 @@ class PreviewRefreshController {
     async refreshPanel(context, panel, document, showProgress) {
         const runRefresh = async () => {
             const cacheKey = this.normalizePath(document.uri.fsPath);
-            this.setPanelRefreshState(panel, true);
+            this.setPanelRefreshState(panel, "refreshing");
             const documentHash = this.hashDocumentText(document);
             const cached = this.renderCache.get(cacheKey);
             if (cached && cached.documentHash === documentHash && cached.html) {
                 panel.webview.html = cached.html;
-                this.setPanelRefreshState(panel, false);
+                this.setPanelRefreshState(panel, "idle");
                 return;
             }
 
@@ -101,7 +105,7 @@ class PreviewRefreshController {
                     html
                 });
                 panel.webview.html = html;
-                this.setPanelRefreshState(panel, false);
+                this.setPanelRefreshState(panel, "idle");
 
                 if (result.exitCode !== 0) {
                     const detail = this.getInvocationFailureDetail(result.stderr, result.stdout, "Preview rendered with compiler diagnostics.");
@@ -111,7 +115,7 @@ class PreviewRefreshController {
                     }
                 }
             } finally {
-                this.setPanelRefreshState(panel, false);
+                this.setPanelRefreshState(panel, "idle");
 
                 if (tempPath) {
                     this.fs.unlink(tempPath, () => { });
@@ -138,14 +142,14 @@ class PreviewRefreshController {
         }
     }
 
-    setPanelRefreshState(panel, isRefreshing) {
+    setPanelRefreshState(panel, state) {
         if (!panel || !panel.webview || typeof panel.webview.postMessage !== "function") {
             return;
         }
 
         panel.webview.postMessage({
             type: "previewStatus",
-            isRefreshing
+            state
         });
     }
 

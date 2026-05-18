@@ -139,14 +139,14 @@
 
 ## Goal 7：预览与作者体验打磨
 
-状态：已启动。`[]` 查询插值在预览窗口中已作为特殊 token 样式显示，VSCode webview 刷新时会显示轻量状态提示；这些都不改变 Compiler / Runtime 语义。
+状态：已启动。`[]` 查询插值在预览窗口中已作为特殊 token 样式显示，VSCode webview 在防抖等待和实际刷新时会显示轻量状态提示；这些都不改变 Compiler / Runtime 语义。
 
 目标：在不新增旧兼容层的前提下，打磨 VSCode 可玩预览、热刷新和源码定位体验。
 
 小节点：
 
 - 更细粒度的未保存内容热刷新。
-- [x] 刷新中状态提示。
+- [x] 防抖等待 / 刷新中状态提示。
 - 可选的预览 / 源码同步策略。
 - 正文 / 选项文本继续保持 `DefinitionProvider` + selection bridge，不回到 `DocumentLinkProvider`。
 - 预览中的 `[]` 查询插值保持原文显示，但使用独立 token 样式，避免和普通字符串混淆。

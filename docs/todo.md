@@ -20,7 +20,7 @@
 	- G9.5 已完成：Preview HTML/CSS/JS 模板已从 `PreviewHtmlRendererDomain` 的 C# 字符串中拆到 `src/Internal/Tooling/Resources/Preview`，CLI / VSCode preview 继续复用 Tooling renderer。
 	- G9.6 已完成计划收口：UnityPlugin 当前不创建顶层 `Scripts` / `Resources`；`Inscape.Adapters.UnitySample` 是 .NET sample adapter，`Inscape.UnitySample.Cli` 是样例命令入口，`unity-bird-importer` 是 Bird Editor importer 原型。真实 Unity package 确定后再在具体包根内建立 `Scripts` / `Resources`。
 4. Unity / Bird 相关继续只做准备和计划，等设计方案落实后再研发：包括 Attribute 扫描、Host Bridge 到 adapter 生成、Bird importer 提交策略和带真实 Timeline 的 Dry Run。
-5. 下一步可继续 Goal 7：打磨 VSCode 可玩预览的未保存内容热刷新、局部更新和可选源码同步策略；刷新中状态提示已完成。
+5. 下一步可继续 Goal 7：打磨 VSCode 可玩预览的未保存内容热刷新、局部更新和可选源码同步策略；防抖等待 / 刷新中状态提示已完成。
 
 ## 文档与接手效率
 
@@ -229,7 +229,7 @@
 - [x] 修正 VSCode 预览体验关键问题：custom editor 改为 `option` 避免劫持源码标签页；webview 显式启用 scripts；刷新尽量保留当前页进度；CLI 调用优先已构建可执行文件 / 程序集，减少等待时间。
 - [x] 为编辑器语法配色与预览 UI 提供独立样式配置文件，允许开发者通过 `inscape.config.json` 指向简洁 JSON 样式表并在本机快速调参。
 - [ ] 为 VSCode 预览补充更细粒度的未保存内容热刷新、局部更新与状态提示。
-	- [x] 预览 webview 刷新时显示轻量“刷新中...”状态，不改变故事状态、路径或 Compiler 输出。
+	- [x] 预览 webview 在防抖等待和刷新时显示轻量“等待刷新...” / “刷新中...”状态，不改变故事状态、路径或 Compiler 输出。
 	- [ ] 继续细化未保存内容热刷新和局部更新策略。
 - [ ] 继续验证正文 / 选项文本的 `DefinitionProvider` 链接态与 selection bridge 是否稳定满足“默认无下划线、Ctrl+指向才显示链接态、Ctrl+Click 复用预览定位”；若后续调整实现，仍需保持这一交互不回退到 `DocumentLinkProvider`。
 - [x] 补齐 C# Language Server 第一版能力范围：diagnostics、definition、references、completion、outline、hover 都已有基线 probe。
