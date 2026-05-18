@@ -46,6 +46,7 @@
 DSL 定位/语法        dsl-ecosystem-positioning.md, dsl-syntax-guide.md, dsl-language.md, syntax-comparison.md, open-questions.md
 VSCode 工具          vscode-tooling.md, src/ExternalSupport/VSCode/README.md
 VSCode 目录命名审计  vscode-directory-naming-audit.md
+模块资源脚本边界     module-resource-script-boundary-plan.md
 CLI 命令速查         cli-command-reference.md, README.md
 本地化               hash-localization.md, l10n-extraction.md, ADR 0006
 宿主 Schema/查询事件 host-schema.md, dsl-language.md, open-questions.md, todo.md

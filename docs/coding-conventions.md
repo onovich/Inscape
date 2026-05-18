@@ -31,6 +31,7 @@
 - 测试主树对应为：`tests/Internal` 与 `tests/ExternalSupport`
 - `Internal` / `ExternalSupport` 的边界优先由目录表达；Internal 不需要进入命名空间，ExternalSupport 可以在命名空间中体现宿主或支持方向。
 - `tools/` 只保留脚本、打包和开发辅助，不再承载长期产品源码
+- `Resources` / `Scripts` 只允许出现在未来可能独立拆仓、拆项目、单独发布或单独交付的具体模块根内；不要在 `Internal` 或 `ExternalSupport` 顶层建立通用资源桶。
 
 ### 目录公式
 
@@ -56,6 +57,14 @@
 - 固定顺序为：目录路径 -> 项目路径 / solution -> 项目名 -> 命名空间 -> 类型名
 - 不再接受只改类型名、不改目录的长期过渡做法
 - 进入任一有 `README.md` 的目录继续重构前，先阅读该目录规则
+
+### Resources / Scripts
+
+- `Resources` 放 schema、snippet、TextMate grammar、图标、模板、示例配置、HTML/CSS/JS 模板等非源码资源。
+- `Scripts` 放只服务该模块的打包、安装、生成、迁移等开发脚本。
+- Internal 与 ExternalSupport 都可以使用这两个目录，但必须位于具体可独立模块根内。
+- 不为了规划创建空的 `Resources` / `Scripts`。
+- 具体计划见 [Module Resource / Script Boundary Plan](module-resource-script-boundary-plan.md)。
 
 ## 架构层级
 
