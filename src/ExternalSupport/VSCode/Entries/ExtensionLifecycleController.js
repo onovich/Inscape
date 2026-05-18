@@ -1,4 +1,4 @@
-const { DslScriptDiagnosticScheduler } = require("../LanguageFeatures/DslScriptDiagnosticScheduler");
+const { DslScriptDiagnosticScheduler } = require("../DslScript/Controllers/DslScriptDiagnosticScheduler");
 
 class ExtensionLifecycleController {
     constructor(dependencies) {

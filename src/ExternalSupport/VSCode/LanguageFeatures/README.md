@@ -1,5 +1,7 @@
 # LanguageFeatures
 
-Owns VSCode language providers such as definition, reference, completion, hover, diagnostics, outline, and CodeLens adapters.
+Transitional directory.
 
-Do not duplicate parser truth here. Use compiler output, workspace indexes, and later LanguageServer contracts.
+`DslScript` providers and diagnostics have moved to `../DslScript`. This directory currently only holds editor-authoring location behavior until the next pass moves it under an `EditorAuthoring` business directory.
+
+Do not add new files here.

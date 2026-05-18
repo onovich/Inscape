@@ -10,7 +10,7 @@
 
 VSCode package 内部目录仍有不符合命名规范的部分。下一轮不应直接推进新功能，而应先按本审计收敛目录主语、角色后缀和资源 / 脚本边界。
 
-2026-05-18 更新：资源 / 脚本目录收口已完成，旧 `media`、`schemas`、`snippets`、`syntaxes`、`scripts` 已迁入 `Resources/*` 与 `Scripts`；`language-configuration.json` 已迁入 `Resources/Language`。`ExtensionEntry` 已收敛为复数 Role 目录 `Entries`。`PreviewWebview` 已收敛为业务主语目录 `Preview`，内部按 `Providers` / `Controllers` 分角色。
+2026-05-18 更新：资源 / 脚本目录收口已完成，旧 `media`、`schemas`、`snippets`、`syntaxes`、`scripts` 已迁入 `Resources/*` 与 `Scripts`；`language-configuration.json` 已迁入 `Resources/Language`。`ExtensionEntry` 已收敛为复数 Role 目录 `Entries`。`PreviewWebview` 已收敛为业务主语目录 `Preview`，内部按 `Providers` / `Controllers` 分角色。`DslScript` providers / diagnostics 已从 `LanguageFeatures` 与 `WorkspaceIndex` 收敛到 `DslScript/Providers` 与 `DslScript/Controllers`。
 
 ## 当前目录判断
 
@@ -19,8 +19,9 @@ VSCode package 内部目录仍有不符合命名规范的部分。下一轮不�
 | `Commands` | 保留 | Role 复数目录，承载 VSCode command 入口，符合规范 | 后续只检查文件主语是否清楚 |
 | `Bridges` | 保留 | Role 复数目录，承载 VSCode 与 preview / editor 之间的桥接 | 后续只检查是否存在可下沉到 Tooling 的逻辑 |
 | `Styles` | 暂保留 | Role / feature 之间略混，但承载样式控制器与默认样式，当前可读 | 后续资源拆分时再决定是否并入 `EditorAuthoring` 或 `Preview` |
-| `LanguageFeatures` | 需改 | 这是 VSCode API 分类，不是 Inscape 业务主语；内部混有 DslScript provider 与 EditorAuthoring location provider | 拆为更业务化目录，例如 `DslScript/Providers` 与 `EditorAuthoring/Providers` |
-| `WorkspaceIndex` | 需改 | `Workspace` 不应作为类型名前缀，`Index` 只是二级限定；该目录混合 DslScript 扫描、HostBinding、HostSchema capability 和 EditorAuthoring data | 拆为 `DslScript/Providers`、`HostBinding/Providers`、`HostSchema/Providers`、`EditorAuthoring/Providers` |
+| `DslScript` | 保留 | 业务主语明确，承载 DslScript authoring providers 与 diagnostics controllers | 保持只做作者体验适配，不重写 Compiler 语义 |
+| `LanguageFeatures` | 需改 | 这是 VSCode API 分类，不是 Inscape 业务主语；当前只剩 EditorAuthoring location provider | 下一步迁入 `EditorAuthoring/Providers` 后删除该过渡目录 |
+| `WorkspaceIndex` | 需改 | `Workspace` 不应作为类型名前缀，`Index` 只是二级限定；当前只剩 HostBinding、HostSchema capability 和 EditorAuthoring data | 拆为 `HostBinding/Providers`、`HostSchema/Providers`、`EditorAuthoring/Providers` |
 | `Preview` | 保留 | 业务主语明确，VSCode webview 技术细节不再占据顶层目录名 | 继续保持 `Providers` / `Controllers` 角色目录 |
 | `Entries` | 保留 | 复数 Role 目录，承载 VSCode extension activate / deactivate 与注册装配边界 | 保持薄入口，不承载 feature 行为 |
 | `Resources` | 保留 | VSCode 是未来可独立发布 extension package，非源码资源已按模块根内资源边界收口 | 继续保持 `Language`、`Media`、`Schemas`、`Snippets`、`Syntaxes` 子目录 |
@@ -31,8 +32,9 @@ VSCode package 内部目录仍有不符合命名规范的部分。下一轮不�
 1. 已完成：先收敛资源 / 脚本目录：`media`、`schemas`、`snippets`、`syntaxes`、`scripts`。
 2. 已完成：收敛 `ExtensionEntry` 到 `Entries`。
 3. 已完成：拆 `PreviewWebview` 到 `Preview/*`。
-4. 再拆 `LanguageFeatures` 与 `WorkspaceIndex`，优先按 `DslScript`、`HostBinding`、`HostSchema`、`EditorAuthoring` 分业务。
-5. 每一步都要同步 VSCode `require()`、`package.json` 资源路径、README、回归命令和测试路径。
+4. 已完成：先把 DslScript providers / diagnostics 从 `LanguageFeatures` 与 `WorkspaceIndex` 收敛到 `DslScript/*`。
+5. 再拆剩余 `LanguageFeatures` 与 `WorkspaceIndex`，优先按 `EditorAuthoring`、`HostBinding`、`HostSchema` 分业务。
+6. 每一步都要同步 VSCode `require()`、`package.json` 资源路径、README、回归命令和测试路径。
 
 ## 自检规则
 

@@ -15,7 +15,7 @@
 	- 正文 / 选项文本不再用 `DocumentLinkProvider`，因为它会导致整段文本常驻下划线；当前用 `DefinitionProvider` 恢复“默认无下划线、Ctrl+指向才显示链接态”的编辑体验，并通过 selection bridge 在 Ctrl+Click 后执行预览定位，显式命令仅作为兜底。
 3. 推进项目级资源 / 代码分层收口：按 ADR 0014 / ADR 0015 检查 VSCode package 与 Preview HTML 模板，逐步把图标、schema、snippet、TextMate grammar、HTML/CSS/JS 模板和打包脚本从代码逻辑中分离到项目内 Resources / Scripts 边界。
 	- Resources / Scripts 的拆分依据见 [Module Resource / Script Boundary Plan](module-resource-script-boundary-plan.md)：Internal 与 ExternalSupport 都适用，但只在未来可能独立拆仓、拆项目、单独发布或单独交付的具体模块根内创建。
-	- VSCode 内部目录审计见 [VSCode Directory Naming Audit](vscode-directory-naming-audit.md)：小写资源 / 脚本目录已收敛到 `Resources` / `Scripts`，`ExtensionEntry` 已收敛到 `Entries`，`PreviewWebview` 已收敛到 `Preview`；`LanguageFeatures`、`WorkspaceIndex` 仍需继续收敛。
+	- VSCode 内部目录审计见 [VSCode Directory Naming Audit](vscode-directory-naming-audit.md)：小写资源 / 脚本目录已收敛到 `Resources` / `Scripts`，`ExtensionEntry` 已收敛到 `Entries`，`PreviewWebview` 已收敛到 `Preview`，DslScript providers / diagnostics 已收敛到 `DslScript`；剩余 `LanguageFeatures`、`WorkspaceIndex` 仍需按 `EditorAuthoring`、`HostBinding`、`HostSchema` 继续收敛。
 4. Unity / Bird 相关继续只做准备和计划，等设计方案落实后再研发：包括 Attribute 扫描、Host Bridge 到 adapter 生成、Bird importer 提交策略和带真实 Timeline 的 Dry Run。
 
 ## 文档与接手效率
@@ -113,25 +113,25 @@
 	- [x] 已继续收口工作区工具命令入口：`openToolsMenu`、`openEditorStyle`、`openPreviewStyle`、`openQuickSyntaxGuide` 及其局部样式文件 helper 已收为 `EditorAuthoringCommand`，样式/文档打开流程不再散在顶层函数。
 	- [x] 已继续收口 host schema 命令入口：`showHostSchemaCapabilities` 及其局部 schema 读取、QuickPick 组装与定位逻辑已收为 `HostSchemaCommand`，host schema 浏览流程不再散在顶层函数。
 	- [x] 已开始收口 workspace index：节点声明、jump 引用与节点导航这一小片已收为 `DslScriptNodeProvider`，Definition / Reference / CodeLens / jump completion 不再直接依赖散落的 node/jump 顶层 helper。
-	- [x] 已迁出第一条 workspace index provider：`DslScriptNodeProvider` 进入 `WorkspaceIndex/DslScriptNodeProvider.js`，入口文件只保留实例化和 VSCode provider 注册。
+	- [x] 已迁出第一条 workspace index provider：`DslScriptNodeProvider` 当前位于 `DslScript/Providers/DslScriptNodeProvider.js`，入口文件只保留实例化和 VSCode provider 注册。
 	- [x] 已继续收口 workspace index 的 speaker 子块：角色表读取、工作区 speaker 扫描、speaker completion / definition / reference 已收为 `DslScriptSpeakerProvider`，顶层不再保留独立 speaker helper 串。
-	- [x] 已迁出第二条 workspace index provider：`DslScriptSpeakerProvider` 进入 `WorkspaceIndex/DslScriptSpeakerProvider.js`，入口文件只保留实例化和 VSCode provider 注册。
+	- [x] 已迁出第二条 workspace index provider：`DslScriptSpeakerProvider` 当前位于 `DslScript/Providers/DslScriptSpeakerProvider.js`，入口文件只保留实例化和 VSCode provider 注册。
 	- [x] 已继续收口 workspace index 的 host binding 子块：binding map 读取、工作区 hook / inline tag 扫描以及 host binding completion / definition / hover 所需绑定列表已收为 `HostBindingProvider`，顶层不再保留独立 host binding helper 串。
 	- [x] 已迁出第三条 workspace index provider：`HostBindingProvider` 进入 `WorkspaceIndex/HostBindingProvider.js`，入口文件只保留实例化和 VSCode provider 注册。
 	- [x] 已继续收口 workspace index 的 metadata 子块：metadata 位置解析、工作区 metadata 引用扫描与 metadata hover 已收为 `DslScriptMetadataProvider`，顶层不再保留独立 metadata helper 串。
-	- [x] 已迁出第四条 workspace index provider：`DslScriptMetadataProvider` 进入 `WorkspaceIndex/DslScriptMetadataProvider.js`，入口文件只保留实例化和 VSCode provider 注册。
+	- [x] 已迁出第四条 workspace index provider：`DslScriptMetadataProvider` 当前位于 `DslScript/Providers/DslScriptMetadataProvider.js`，入口文件只保留实例化和 VSCode provider 注册。
 	- [x] 已继续收紧 workspace index 的 speaker provider 边界：speaker 位置解析与 hover markdown 已吸回 `DslScriptSpeakerProvider`，Definition / Reference / Hover 不再直接依赖顶层 speaker helper。
 	- [x] 已继续收紧 workspace index 的 node provider 边界：节点声明 / jump target 位置解析与 node/jump hover markdown 已吸回 `DslScriptNodeProvider`，相关顶层 node/jump helper 已退出函数区。
 	- [x] 已继续收紧 workspace index 的 host binding provider 边界：host binding 补全上下文与光标位置解析已吸回 `HostBindingProvider`，Completion / Definition / Hover 不再直接依赖顶层 host binding helper。
 	- [x] 已继续收紧 host binding provider 拥有边界：host binding completion / hover / missing-hover markdown 构造已吸回 `HostBindingProvider`，相关 markdown helper 不再散在顶层函数区。
 	- [x] 已按命名规范收敛已拆出的 VSCode 文件与类型名：移除内部默认 `Inscape` 前缀和类型名里的 `Workspace` 前缀，让目录承担范围，类型名表达主语与角色。
-	- [x] 已迁出第一条 language feature provider：`DslScriptCompletionProvider` 进入 `LanguageFeatures/DslScriptCompletionProvider.js`，入口文件只保留依赖注入和 VSCode provider 注册。
-	- [x] 已迁出第二条 language feature provider：`DslScriptDefinitionProvider` 进入 `LanguageFeatures/DslScriptDefinitionProvider.js`，定义跳转仍复用 workspace index 与 preview reveal bridge。
-	- [x] 已迁出第三条 language feature provider：`DslScriptReferenceProvider` 进入 `LanguageFeatures/DslScriptReferenceProvider.js`，引用查找仍复用 workspace index。
-	- [x] 已迁出第四条 language feature provider：`DslScriptHoverProvider` 进入 `LanguageFeatures/DslScriptHoverProvider.js`，悬浮说明仍复用 workspace index。
-	- [x] 已迁出第五条 language feature provider：`DslScriptDocumentSymbolProvider` 进入 `LanguageFeatures/DslScriptDocumentSymbolProvider.js`，outline 仍只做当前文档节点扫描。
-	- [x] 已迁出第六条 language feature provider：`DslScriptCodeLensProvider` 进入 `LanguageFeatures/DslScriptCodeLensProvider.js`，节点入边计数仍复用 workspace index。
-	- [x] 已迁出 diagnostics 调度：`DslScriptDiagnosticModelScheduler` 进入 `LanguageFeatures/DslScriptDiagnosticModelScheduler.js`，入口文件只保留诊断集合创建和调度注册。
+	- [x] 已迁出第一条 language feature provider：`DslScriptCompletionProvider` 当前位于 `DslScript/Providers/DslScriptCompletionProvider.js`，入口文件只保留依赖注入和 VSCode provider 注册。
+	- [x] 已迁出第二条 language feature provider：`DslScriptDefinitionProvider` 当前位于 `DslScript/Providers/DslScriptDefinitionProvider.js`，定义跳转仍复用 DslScript provider 与 preview reveal bridge。
+	- [x] 已迁出第三条 language feature provider：`DslScriptReferenceProvider` 当前位于 `DslScript/Providers/DslScriptReferenceProvider.js`，引用查找仍复用 DslScript provider。
+	- [x] 已迁出第四条 language feature provider：`DslScriptHoverProvider` 当前位于 `DslScript/Providers/DslScriptHoverProvider.js`，悬浮说明仍复用 DslScript provider。
+	- [x] 已迁出第五条 language feature provider：`DslScriptDocumentSymbolProvider` 当前位于 `DslScript/Providers/DslScriptDocumentSymbolProvider.js`，outline 仍只做当前文档节点扫描。
+	- [x] 已迁出第六条 language feature provider：`DslScriptCodeLensProvider` 当前位于 `DslScript/Providers/DslScriptCodeLensProvider.js`，节点入边计数仍复用 DslScript provider。
+	- [x] 已迁出 diagnostics 调度：`DslScriptDiagnosticScheduler` 当前位于 `DslScript/Controllers/DslScriptDiagnosticScheduler.js`，入口文件只保留诊断集合创建和调度注册。
 	- [x] 已完成 Preview 拆分：`PreviewEditorProvider` 进入 `Preview/Providers/PreviewEditorProvider.js`，入口文件只保留 custom editor 注册和依赖注入。
 	- [x] 已迁出 preview HTML provider：`PreviewHtmlProvider` 进入 `Preview/Providers/PreviewHtmlProvider.js`，loading / error HTML 不再由入口文件承载。
 	- [x] 已迁出 preview refresh controller：`PreviewRefreshController` 进入 `Preview/Controllers/PreviewRefreshController.js`，刷新定时器、渲染缓存与版本保护不再由入口文件承载。
