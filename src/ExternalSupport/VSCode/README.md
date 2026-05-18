@@ -76,7 +76,7 @@ Preview nodes, dialogue lines, choices, metadata tags, and diagnostics include a
 
 Dialogue, narration, prompt, and choice text inside the editor deliberately do not use `DocumentLinkProvider`. That provider made long text ranges render like always-on links, which caused persistent underline regressions. The stable pattern is: `DefinitionProvider` supplies the transient Ctrl+hover link affordance, and a short-lived selection bridge turns the resulting Ctrl+Click into preview reveal navigation. If you touch this area, rebuild and reinstall the `.vsix` before judging the result; reloading the window alone is not enough.
 
-`inscape.preview.sourceSyncMode` controls how editor-side source navigation talks to an open preview. `click` is the default and keeps the current behavior: supported text ranges reveal preview on Ctrl+Click, and the explicit `Inscape: Reveal Current Selection In Preview` command still works. `selection` adds passive follow mode for an already-open preview, so moving the editor selection updates preview focus without opening a new panel or forcing a re-render. `off` disables the preview text Ctrl+Click reveal path and leaves only explicit preview commands.
+`inscape.preview.sourceSyncMode` controls how editor-side source navigation talks to an open preview. `click` is the default and keeps the current behavior: supported text ranges reveal preview on Ctrl+Click, and the explicit `Inscape: Reveal Current Selection In Preview` command still works. On choice lines such as `- 选项 -> 目标标题`, the option label before `->` is the preview-reveal area, while the target title after `->` remains Go to Definition. `selection` adds passive follow mode for an already-open preview, so changing the source-editor text selection updates preview focus without opening a new panel or forcing a re-render. `off` disables the preview text Ctrl+Click reveal path and leaves only explicit preview commands.
 
 ## Regression Checklist
 
@@ -110,6 +110,8 @@ npm --prefix src\ExternalSupport\VSCode run smoke:preview-source-sync -- -Mode o
 npm --prefix src\ExternalSupport\VSCode run smoke:preview-source-sync -- -Mode click
 npm --prefix src\ExternalSupport\VSCode run smoke:preview-source-sync -- -Mode selection
 ```
+
+Run one mode per VSCode window. Close the previous smoke window before starting the next mode so the workspace setting does not contaminate the result.
 
 - Dialogue, narration, prompt, and choice text show no always-on underline.
 - Holding Ctrl over dialogue / option text shows the transient link affordance.

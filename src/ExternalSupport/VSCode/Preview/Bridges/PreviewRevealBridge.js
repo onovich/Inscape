@@ -33,7 +33,7 @@ class PreviewRevealBridge {
         }
 
         const range = this.getRevealRangeForLine(document.lineAt(position.line).text);
-        if (!range || position.character < range.start || position.character > range.end) {
+        if (!range || position.character < range.start || position.character >= range.end) {
             return undefined;
         }
 
@@ -43,7 +43,7 @@ class PreviewRevealBridge {
             payload: {
                 sourcePath: document.uri.fsPath,
                 line: position.line,
-                character: range.start,
+                character: typeof range.payloadCharacter === "number" ? range.payloadCharacter : range.start,
                 length: range.end - range.start
             }
         };
@@ -67,7 +67,16 @@ class PreviewRevealBridge {
 
         const choicePromptMatch = /^(\s*\?\s*)(.*)$/.exec(line);
         if (choicePromptMatch) {
-            return this.trimRange(line, choicePromptMatch[1].length, line.length);
+            const promptRange = this.trimRange(line, 0, line.length);
+            if (!promptRange) {
+                return undefined;
+            }
+
+            return {
+                start: promptRange.start,
+                end: promptRange.end,
+                payloadCharacter: this.trimRange(line, choicePromptMatch[1].length, line.length)?.start ?? promptRange.start
+            };
         }
 
         const choiceOptionMatch = /^(\s*-\s*)(.*)$/.exec(line);
@@ -75,7 +84,16 @@ class PreviewRevealBridge {
             const optionStart = choiceOptionMatch[1].length;
             const targetIndex = line.indexOf("->", optionStart);
             const optionEnd = targetIndex >= 0 ? targetIndex : line.length;
-            return this.trimRange(line, optionStart, optionEnd);
+            const displayRange = this.trimRange(line, 0, optionEnd);
+            if (!displayRange) {
+                return undefined;
+            }
+
+            return {
+                start: displayRange.start,
+                end: displayRange.end,
+                payloadCharacter: this.trimRange(line, optionStart, optionEnd)?.start ?? displayRange.start
+            };
         }
 
         if (/^\s*\[[^\]]+\]\s*$/.test(line)) {

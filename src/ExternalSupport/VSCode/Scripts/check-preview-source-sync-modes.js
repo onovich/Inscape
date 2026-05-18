@@ -11,7 +11,13 @@ function assert(condition, message) {
 
 function createDocument(filePath) {
     return {
-        uri: { fsPath: filePath }
+        uri: { fsPath: filePath },
+        lineCount: 1,
+        lineAt() {
+            return {
+                text: "  - 询问证言 -> 证言质询"
+            };
+        }
     };
 }
 
@@ -29,6 +35,21 @@ function createEvent(document, selection, kind) {
         selections: [selection],
         kind
     };
+}
+
+class MockRange {
+    constructor(startLine, startCharacter, endLine, endCharacter) {
+        this.start = { line: startLine, character: startCharacter };
+        this.end = { line: endLine, character: endCharacter };
+    }
+
+    contains(position) {
+        const afterStart = position.line > this.start.line
+            || (position.line === this.start.line && position.character >= this.start.character);
+        const beforeEnd = position.line < this.end.line
+            || (position.line === this.end.line && position.character <= this.end.character);
+        return afterStart && beforeEnd;
+    }
 }
 
 function createBridge(mode, options = {}) {
@@ -54,6 +75,7 @@ function createBridge(mode, options = {}) {
             TextEditorSelectionChangeKind: {
                 Keyboard: 1
             },
+            Range: MockRange,
             workspace: {
                 async openTextDocument(uri) {
                     openDocumentCalls.push(uri.fsPath);
@@ -85,7 +107,17 @@ function createBridge(mode, options = {}) {
         normalizePath: (value) => String(value || "").replace(/\\/g, "/").toLowerCase(),
         isLikelyDialogueSpeaker: () => true,
         findDialogueSeparatorIndex: (line) => line.indexOf(":"),
-        trimRange: (line, start, end) => ({ start, end }),
+        trimRange: (line, start, end) => {
+            let rangeStart = Math.max(0, start);
+            let rangeEnd = Math.max(rangeStart, end);
+            while (rangeStart < rangeEnd && /\s/.test(line[rangeStart])) {
+                rangeStart += 1;
+            }
+            while (rangeEnd > rangeStart && /\s/.test(line[rangeEnd - 1])) {
+                rangeEnd -= 1;
+            }
+            return rangeEnd > rangeStart ? { start: rangeStart, end: rangeEnd } : undefined;
+        },
         getSourceSyncMode: () => mode
     });
 
@@ -113,6 +145,13 @@ async function main() {
         assert(!offBridge.shouldProvideClickReveal(document), "`off` mode must disable Ctrl+Click preview reveal.");
         assert(clickBridge.shouldProvideClickReveal(document), "`click` mode must keep Ctrl+Click preview reveal.");
         assert(selectionBridge.shouldProvideClickReveal(document), "`selection` mode must keep Ctrl+Click preview reveal.");
+    }
+
+    {
+        const { bridge } = createBridge("click");
+        const optionReveal = bridge.getRevealInfoAtPosition(document, { line: 0, character: 2 });
+        assert(!!optionReveal, "Choice-option prefix area must still participate in preview reveal hit testing.");
+        assert(optionReveal.payload.character === 4, "Choice-option reveal payload must preserve the trimmed text start.");
     }
 
     {

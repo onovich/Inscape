@@ -32,6 +32,8 @@ npm --prefix src\ExternalSupport\VSCode run smoke:preview-source-sync -- -Mode c
 npm --prefix src\ExternalSupport\VSCode run smoke:preview-source-sync -- -Mode selection
 ```
 
+每次只跑一种模式，并在进入下一种模式前关闭前一个 smoke VSCode 窗口。这个脚本是用来给单模式创建独立工作区的，不是让一个窗口连续切三次模式。
+
 脚本会：
 
 - 生成临时 `.code-workspace` 文件；
@@ -69,18 +71,20 @@ npm --prefix src\ExternalSupport\VSCode run smoke:preview-source-sync -- -Mode c
 
 - Ctrl+Hover 才出现瞬时链接态。
 - Ctrl+Click 会复用预览并定位到匹配内容。
+- 对于 `- 选项 -> 目标标题` 这种行，可点击的“预览定位区域”是 `->` 之前的选项文本；而 `->` 之后的目标标题区域仍然是 Go to Definition。
 - 单纯移动光标或改变选区，不应让预览自动跟随。
 - 不应因为普通选区变化而隐式打开新预览面板。
 
 ### `selection`
 
 1. 先手动打开预览。
-2. 在源码中切换不同对白、旁白或选项文本选区。
+2. 在源码编辑器里，用鼠标拖选、`Shift + 方向键`，或直接把光标点到不同的对白 / 旁白 / 选项文本上，让当前选区或光标落到另一段文本内。
 3. 观察预览是否只做轻量定位，而不是重建页面。
 
 预期：
 
-- 已打开预览会跟随当前选区定位。
+- 这里的 selection 指的是 `.inscape` 源码编辑器里的文本选区，不是预览面板中的点击交互。
+- 已打开预览会跟随当前源码选区轻量定位。
 - 选区变化不应隐式打开预览面板。
 - 选区变化不应触发整页重渲染，也不应重新走一轮“等待刷新...” / “刷新中...”。
 - `Ctrl+Click` 仍可继续显式 reveal。

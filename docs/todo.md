@@ -14,6 +14,7 @@
 	- 待你回头统一执行一轮真实 VSCode 手动 smoke，覆盖两件事：
 		- Goal 7：`inscape.preview.sourceSyncMode = off|click|selection` 的三种模式交互边界与默认值。
 		- Goal 11.1：`LanguageServer` 不可用时的 CLI diagnostics fallback、output channel 与实际编辑器体验。
+	- Goal 7 重测时注意两点：每次只跑一种 `smoke:preview-source-sync` 模式并关闭前一个 smoke 窗口；`selection` 指的是源码编辑器里的文本选区，不是预览面板里的点击。
 	- 这是一条独立人工待办；其余节点继续按自动可闭环的研发任务推进。
 2. **再推进 Stable Node ID 主线。**
 	- 已完成：ADR 0013、stable node id / title map 契约、`update-node-map-project` sidecar 闭环、保守自动重命名识别、VSCode 显式 `Update Stable Node Map` 入口、插入标题后的自动同步。

@@ -35,7 +35,7 @@ if (-not $codeCommand) {
 }
 
 $argumentList = @(
-    "--reuse-window"
+    "--new-window"
     $workspaceFile
     "--goto"
     $gotoTarget
@@ -43,6 +43,7 @@ $argumentList = @(
 
 Write-Output ("Preview source sync smoke workspace: {0}" -f $workspaceFile)
 Write-Output ("Mode: {0}" -f $Mode)
+Write-Output "Run one mode per VSCode window. Close the previous smoke window before starting the next mode."
 Write-Output "Expected checks:"
 
 switch ($Mode) {
@@ -52,10 +53,11 @@ switch ($Mode) {
     }
     "click" {
         Write-Output "- Ctrl+Click on dialogue and choice text should reveal preview."
+        Write-Output "- On choice lines, the option label area before '-> 目标标题' should reveal preview; the target title after '->' still belongs to Go to Definition."
         Write-Output "- Plain caret movement should not auto-follow in preview."
     }
     "selection" {
-        Write-Output "- Once preview is open, caret movement should send lightweight follow updates."
+        Write-Output "- Once preview is open, changing the source-editor text selection should send lightweight follow updates."
         Write-Output "- Selection changes must not open preview panels implicitly or trigger a re-render."
     }
 }
