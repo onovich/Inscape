@@ -210,7 +210,7 @@
 
 ### VSCode
 
-- 允许主语：`EditorAuthoring`、`Preview`、`DslScript`、`HostSchema`、`HostBinding`
+- 允许主语：`EditorAuthoring`、`Preview`、`DslScript`、`HostSchema`、`HostBinding`、`Localization`
 - 允许后缀：`Provider`、`Bridge`、`Controller`、`ViewModel`、`Command`
 - 重语义能力长期迁移到 `LanguageServer`
 - 路径为 `src/ExternalSupport/VSCode`，不再增加 `EditorExtensions` 类别层，也不再保留 `vscode-inscape` 包名目录；npm 包名留在 `package.json`。

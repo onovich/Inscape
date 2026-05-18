@@ -2,6 +2,7 @@
 
 Owns VSCode authoring support that is not specific to one DslScript semantic provider.
 
+- `Commands` contains VSCode command handlers for editor authoring actions, such as inserting node titles and opening authoring config files.
 - `Controllers` contains editor authoring behavior with lifecycle state, such as editor decoration style application.
 - `Models` contains editor authoring data defaults used by commands and controllers.
 - `Providers` contains workspace text source, project config, CSV, and location helpers used by commands and language providers.
