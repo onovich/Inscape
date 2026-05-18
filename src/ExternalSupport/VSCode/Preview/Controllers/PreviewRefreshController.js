@@ -21,18 +21,24 @@ class PreviewRefreshController {
         this.renderVersions = new Map();
     }
 
-    async refreshPanelsForDocument(context, document) {
+    async refreshPanelsForDocument(context, document, refreshVersion) {
         if (!this.isInscapeDocument(document)) {
             return;
         }
 
-        const panels = this.previewPanels.get(this.normalizePath(document.uri.fsPath));
+        const sourceKey = this.normalizePath(document.uri.fsPath);
+        const panels = this.previewPanels.get(sourceKey);
         if (!panels || panels.size === 0) {
             return;
         }
 
+        this.clearScheduledRefresh(sourceKey);
+        const version = typeof refreshVersion === "number"
+            ? refreshVersion
+            : this.advanceRenderVersion(sourceKey);
+
         for (const panel of panels) {
-            await this.refreshPanel(context, panel, document, false);
+            await this.refreshPanel(context, panel, document, false, version);
         }
     }
 
@@ -47,11 +53,9 @@ class PreviewRefreshController {
             return;
         }
 
-        const existing = this.refreshTimers.get(sourceKey);
-        if (existing) {
-            clearTimeout(existing);
-        }
+        this.clearScheduledRefresh(sourceKey);
 
+        const version = this.advanceRenderVersion(sourceKey);
         for (const panel of panels) {
             this.setPanelRefreshState(panel, "pending");
         }
@@ -59,24 +63,29 @@ class PreviewRefreshController {
         const delay = typeof delayOverride === "number" ? delayOverride : 250;
         this.refreshTimers.set(sourceKey, setTimeout(() => {
             this.refreshTimers.delete(sourceKey);
-            this.refreshPanelsForDocument(context, document);
+            this.refreshPanelsForDocument(context, document, version);
         }, delay));
     }
 
-    async refreshPanel(context, panel, document, showProgress) {
+    async refreshPanel(context, panel, document, showProgress, refreshVersion) {
         const runRefresh = async () => {
             const cacheKey = this.normalizePath(document.uri.fsPath);
+            const hasRefreshVersion = typeof refreshVersion === "number";
+            if (!hasRefreshVersion) {
+                this.clearScheduledRefresh(cacheKey);
+            }
+
+            const version = hasRefreshVersion
+                ? refreshVersion
+                : this.advanceRenderVersion(cacheKey);
             this.setPanelRefreshState(panel, "refreshing");
             const documentHash = this.hashDocumentText(document);
             const cached = this.renderCache.get(cacheKey);
             if (cached && cached.documentHash === documentHash && cached.html) {
                 panel.webview.html = cached.html;
-                this.setPanelRefreshState(panel, "idle");
+                this.setPanelRefreshStateIfCurrent(panel, cacheKey, version, "idle");
                 return;
             }
-
-            const version = (this.renderVersions.get(cacheKey) || 0) + 1;
-            this.renderVersions.set(cacheKey, version);
 
             let tempPath;
             const outputPath = this.createTempPath("preview", ".html");
@@ -105,7 +114,7 @@ class PreviewRefreshController {
                     html
                 });
                 panel.webview.html = html;
-                this.setPanelRefreshState(panel, "idle");
+                this.setPanelRefreshStateIfCurrent(panel, cacheKey, version, "idle");
 
                 if (result.exitCode !== 0) {
                     const detail = this.getInvocationFailureDetail(result.stderr, result.stdout, "Preview rendered with compiler diagnostics.");
@@ -115,7 +124,7 @@ class PreviewRefreshController {
                     }
                 }
             } finally {
-                this.setPanelRefreshState(panel, "idle");
+                this.setPanelRefreshStateIfCurrent(panel, cacheKey, version, "idle");
 
                 if (tempPath) {
                     this.fs.unlink(tempPath, () => { });
@@ -140,6 +149,30 @@ class PreviewRefreshController {
             panel.webview.html = this.previewHtmlProvider.createErrorHtml(error.message || String(error));
             this.vscode.window.showErrorMessage(error.message || String(error));
         }
+    }
+
+    clearScheduledRefresh(sourceKey) {
+        const existing = this.refreshTimers.get(sourceKey);
+        if (!existing) {
+            return;
+        }
+
+        clearTimeout(existing);
+        this.refreshTimers.delete(sourceKey);
+    }
+
+    advanceRenderVersion(sourceKey) {
+        const version = (this.renderVersions.get(sourceKey) || 0) + 1;
+        this.renderVersions.set(sourceKey, version);
+        return version;
+    }
+
+    setPanelRefreshStateIfCurrent(panel, sourceKey, version, state) {
+        if (this.renderVersions.get(sourceKey) !== version) {
+            return;
+        }
+
+        this.setPanelRefreshState(panel, state);
     }
 
     setPanelRefreshState(panel, state) {
