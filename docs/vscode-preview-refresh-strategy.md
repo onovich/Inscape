@@ -60,5 +60,5 @@
 
 1. 验证正文 / 选项文本的 `DefinitionProvider` + selection bridge 交互，确保不回退到 `DocumentLinkProvider`。
 2. 设计可选的预览 / 源码同步模式，例如 selection 跟随、点击才同步、关闭同步。
+当前已落第一版 `inscape.preview.sourceSyncMode = off|click|selection`：`click` 保持现有 Ctrl+Click / 显式命令定位，`selection` 只让已打开预览被编辑器选区轻量驱动，`off` 只保留显式命令。
 3. 如确实需要进一步降低刷新成本，先在 Tooling / LanguageServer 设计 refresh classification 契约，再让 VSCode 消费。
-

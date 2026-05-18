@@ -12,7 +12,7 @@
 
 1. **Goal 7 收口：可选预览 / 源码同步策略。**
 	- 已完成：`[]` 预览 token 样式、等待 / 刷新中状态、刷新版本保护、局部更新边界、`DefinitionProvider` + selection bridge 静态契约检查。
-	- 待做：设计并实现可选同步模式，例如 `off` / `click` / `selection`，并明确默认值、配置项、回退行为和 VSCode 手动 smoke。
+	- 待做：补完 `inscape.preview.sourceSyncMode` 的 VSCode 手动 smoke，并视体验决定是否继续细化自动跟随边界。
 2. **Stable Node ID 与节点重命名落地。**
 	- 已完成：ADR 0013、stable node id / title map 契约、标题重命名识别流程设计。
 	- 待做：实现 `inscape.node-map.json` 或等价 sidecar 的创建 / 更新 / 删除 / 冲突处理，并接入标题创建、标题重命名与本地化对齐。
@@ -249,7 +249,8 @@
 	- [x] 预览 webview 在防抖等待和刷新时显示轻量“等待刷新...” / “刷新中...”状态，不改变故事状态、路径或 Compiler 输出。
 	- [x] 未保存内容热刷新增加版本保护：保存或显式刷新会取消已挂起的 debounce timer，旧刷新完成不会清掉新一轮状态。
 	- [x] 继续细化局部更新策略：详见 [VSCode Preview Refresh Strategy](vscode-preview-refresh-strategy.md)，VSCode 暂只局部处理状态、源码定位和纯 UI 状态，语义相关变化继续全量重渲染。
-	- [ ] 设计并实现可选预览 / 源码同步模式，避免 selection 跟随、点击定位和显式命令互相打架。
+	- [x] 设计并实现第一版可选预览 / 源码同步模式：`inscape.preview.sourceSyncMode = off|click|selection`，默认 `click` 保持现有行为，`selection` 只驱动已打开预览。
+	- [ ] 补一次 VSCode 手动 smoke，确认 `off` / `click` / `selection` 三种模式的交互边界符合预期。
 - [x] 继续验证正文 / 选项文本的 `DefinitionProvider` 链接态与 selection bridge 是否稳定满足“默认无下划线、Ctrl+指向才显示链接态、Ctrl+Click 复用预览定位”；已新增 VSCode package 静态契约检查 `npm --prefix src/ExternalSupport/VSCode run check:preview-navigation`，防止回退到 `DocumentLinkProvider` 或断开 selection bridge。手动 UI smoke 仍按 VSCode README 执行。
 - [x] 补齐 C# Language Server 第一版能力范围：diagnostics、definition、references、completion、outline、hover 都已有基线 probe。
 - [x] 设计 VSCode 前端何时从 JS provider 切到 LanguageServer，并保留哪些 fallback 边界；详见 [VSCode LanguageServer Migration Plan](vscode-language-server-migration-plan.md)。

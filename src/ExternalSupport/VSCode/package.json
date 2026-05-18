@@ -181,6 +181,17 @@
           "scope": "resource",
           "description": "Diagnostics backend. languageServer uses Inscape.LanguageServer first and falls back to the configured compiler invocation; compiler uses only inscape.compiler.command and inscape.compiler.args."
         },
+        "inscape.preview.sourceSyncMode": {
+          "type": "string",
+          "default": "click",
+          "enum": [
+            "off",
+            "click",
+            "selection"
+          ],
+          "scope": "resource",
+          "description": "Preview/source sync mode. off keeps preview navigation explicit, click enables Ctrl+Click text reveal, and selection also makes an already-open preview follow the current editor selection."
+        },
         "inscape.compiler.command": {
           "type": "string",
           "default": "dotnet",

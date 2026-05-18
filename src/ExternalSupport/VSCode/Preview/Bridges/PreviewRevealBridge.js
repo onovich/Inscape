@@ -11,8 +11,11 @@ class PreviewRevealBridge {
         this.isLikelyDialogueSpeaker = dependencies.isLikelyDialogueSpeaker;
         this.findDialogueSeparatorIndex = dependencies.findDialogueSeparatorIndex;
         this.trimRange = dependencies.trimRange;
+        this.getSourceSyncMode = dependencies.getSourceSyncMode;
         this.pendingReveals = new Map();
         this.pendingDefinition = undefined;
+        this.selectionSyncTimers = new Map();
+        this.lastSelectionSyncBySource = new Map();
     }
 
     rememberDefinition(document, previewRevealInfo) {
@@ -91,6 +94,10 @@ class PreviewRevealBridge {
         };
     }
 
+    shouldProvideClickReveal(document) {
+        return this.getSyncMode(document) !== "off";
+    }
+
     async reveal(context, payload) {
         if (!payload || !payload.sourcePath) {
             return;
@@ -119,28 +126,49 @@ class PreviewRevealBridge {
             return;
         }
 
+        const document = event.textEditor.document;
+        if (!this.isInscapeDocument(document)) {
+            return;
+        }
+
+        const syncMode = this.getSyncMode(document);
         const pending = this.pendingDefinition;
         if (!pending || pending.expiresAt < Date.now()) {
             this.pendingDefinition = undefined;
+        } else {
+            if (this.normalizePath(document.uri.fsPath) !== pending.sourceKey) {
+                return;
+            }
+
+            const kind = event.kind;
+            if (kind === this.vscode.TextEditorSelectionChangeKind.Keyboard) {
+                return;
+            }
+
+            const active = event.selections[0].active;
+            if (!pending.range.contains(active)) {
+                return;
+            }
+
+            this.pendingDefinition = undefined;
+            if (syncMode === "off") {
+                return;
+            }
+
+            await this.reveal(context, pending.payload);
             return;
         }
 
-        if (this.normalizePath(event.textEditor.document.uri.fsPath) !== pending.sourceKey) {
+        if (syncMode !== "selection") {
             return;
         }
 
-        const kind = event.kind;
-        if (kind === this.vscode.TextEditorSelectionChangeKind.Keyboard) {
+        const selection = event.selections[0];
+        if (!selection) {
             return;
         }
 
-        const active = event.selections[0].active;
-        if (!pending.range.contains(active)) {
-            return;
-        }
-
-        this.pendingDefinition = undefined;
-        await this.reveal(context, pending.payload);
+        this.scheduleSelectionSync(document, selection);
     }
 
     queue(document, payload) {
@@ -164,6 +192,19 @@ class PreviewRevealBridge {
         }
 
         this.pendingReveals.delete(this.normalizePath(document.uri.fsPath));
+        return true;
+    }
+
+    revealExistingPanels(document, payload) {
+        const panels = this.previewPanels.get(this.normalizePath(document.uri.fsPath));
+        if (!panels || panels.size === 0) {
+            return false;
+        }
+
+        for (const panel of panels) {
+            this.postMessage(panel, payload);
+        }
+
         return true;
     }
 
@@ -191,6 +232,55 @@ class PreviewRevealBridge {
                 }
             });
         }, 30);
+    }
+
+    scheduleSelectionSync(document, selection) {
+        if (!this.hasOpenPanels(document)) {
+            return;
+        }
+
+        const sourceKey = this.normalizePath(document.uri.fsPath);
+        const payload = {
+            sourcePath: document.uri.fsPath,
+            line: selection.start.line,
+            character: selection.start.character,
+            length: selection.start.line === selection.end.line
+                ? Math.max(0, selection.end.character - selection.start.character)
+                : 0
+        };
+
+        const previousPayload = this.lastSelectionSyncBySource.get(sourceKey);
+        if (previousPayload
+            && previousPayload.line === payload.line
+            && previousPayload.character === payload.character
+            && previousPayload.length === payload.length) {
+            return;
+        }
+
+        const existing = this.selectionSyncTimers.get(sourceKey);
+        if (existing) {
+            clearTimeout(existing);
+        }
+
+        this.selectionSyncTimers.set(sourceKey, setTimeout(() => {
+            this.selectionSyncTimers.delete(sourceKey);
+            this.lastSelectionSyncBySource.set(sourceKey, payload);
+            this.revealExistingPanels(document, payload);
+        }, 120));
+    }
+
+    hasOpenPanels(document) {
+        const panels = this.previewPanels.get(this.normalizePath(document.uri.fsPath));
+        return !!panels && panels.size > 0;
+    }
+
+    getSyncMode(document) {
+        const raw = this.getSourceSyncMode ? this.getSourceSyncMode(document) : "click";
+        if (raw === "off" || raw === "selection") {
+            return raw;
+        }
+
+        return "click";
     }
 
 }

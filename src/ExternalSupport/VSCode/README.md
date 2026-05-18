@@ -74,6 +74,8 @@ Preview nodes, dialogue lines, choices, metadata tags, and diagnostics include a
 
 Dialogue, narration, prompt, and choice text inside the editor deliberately do not use `DocumentLinkProvider`. That provider made long text ranges render like always-on links, which caused persistent underline regressions. The stable pattern is: `DefinitionProvider` supplies the transient Ctrl+hover link affordance, and a short-lived selection bridge turns the resulting Ctrl+Click into preview reveal navigation. If you touch this area, rebuild and reinstall the `.vsix` before judging the result; reloading the window alone is not enough.
 
+`inscape.preview.sourceSyncMode` controls how editor-side source navigation talks to an open preview. `click` is the default and keeps the current behavior: supported text ranges reveal preview on Ctrl+Click, and the explicit `Inscape: Reveal Current Selection In Preview` command still works. `selection` adds passive follow mode for an already-open preview, so moving the editor selection updates preview focus without opening a new panel or forcing a re-render. `off` disables the preview text Ctrl+Click reveal path and leaves only explicit preview commands.
+
 ## Regression Checklist
 
 Any change under `src/ExternalSupport/VSCode/` must be checked with the repository workflow in `docs/regression-workflow.md`.
@@ -149,5 +151,6 @@ If both endpoints cannot run, VSCode leaves query / event hints empty and logs t
 - `inscape.diagnostics.enabled`: turns compiler-backed diagnostics on or off.
 - `inscape.diagnostics.debounceMs`: changes the refresh delay after edits.
 - `inscape.diagnostics.backend`: chooses `languageServer` first with compiler fallback, or `compiler` only.
+- `inscape.preview.sourceSyncMode`: chooses `off`, `click`, or `selection` for editor-to-preview sync.
 - `inscape.compiler.command`: command used to run the compiler. Defaults to `dotnet`.
 - `inscape.compiler.args`: arguments passed to the compiler command. The default path assumes VSCode is opened at the repository root.

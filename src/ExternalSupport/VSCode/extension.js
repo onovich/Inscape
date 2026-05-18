@@ -311,6 +311,7 @@ const previewRevealBridge = new PreviewRevealBridge({
     refreshPreviewPanel,
     isInscapeDocument,
     normalizePath,
+    getSourceSyncMode,
     isLikelyDialogueSpeaker,
     findDialogueSeparatorIndex: (line) => editorAuthoringLocationProvider.findDialogueSeparatorIndex(line),
     trimRange: (line, start, end) => editorAuthoringLocationProvider.trimRange(line, start, end)
@@ -428,6 +429,11 @@ async function selectWorkspaceFolder() {
 
 function resolveCliProjectPath(context, workspaceFolderPath) {
     return resolveCliProjectPathFromBase(workspaceFolderPath, context.extensionPath);
+}
+
+function getSourceSyncMode(document) {
+    const configuration = vscode.workspace.getConfiguration("inscape", document ? document.uri : undefined);
+    return configuration.get("preview.sourceSyncMode", "click");
 }
 
 function resolveLanguageServerProjectPathFromBase(workspaceFolderPath, extensionBasePath) {

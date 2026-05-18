@@ -59,6 +59,10 @@ class DslScriptDefinitionProvider {
 
         const previewRevealInfo = this.previewRevealBridge.getRevealInfoAtPosition(document, position);
         if (previewRevealInfo) {
+            if (!this.previewRevealBridge.shouldProvideClickReveal(document)) {
+                return undefined;
+            }
+
             this.previewRevealBridge.rememberDefinition(document, previewRevealInfo);
             return [this.previewRevealBridge.createDefinitionLink(document, previewRevealInfo)];
         }
