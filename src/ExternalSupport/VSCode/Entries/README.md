@@ -2,4 +2,4 @@
 
 Owns the VSCode `activate` / `deactivate` entry and extension-level registration order.
 
-Keep this layer thin. Feature behavior should live in `Commands`, `DslScript`, `LanguageFeatures`, `WorkspaceIndex`, `Bridges`, or `Preview`.
+Keep this layer thin. Feature behavior should live in `Commands`, `DslScript`, `EditorAuthoring`, `WorkspaceIndex`, `Bridges`, or `Preview`.

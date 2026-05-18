@@ -8,7 +8,7 @@
 
 ## 背景
 
-`src/ExternalSupport/VSCode` 当前已经按 `Commands`、`DslScript`、`Preview`、`Styles`、`Bridges` 与 `Entries` 拆分；`WorkspaceIndex` / `LanguageFeatures` 是待继续拆除的过渡目录。它仍然是一个轻量 JS 前端：诊断借道 CLI，节点、speaker、host binding、metadata、Host Schema query / event 等作者提示由扩展侧轻量扫描或 CLI capability endpoint 支撑。
+`src/ExternalSupport/VSCode` 当前已经按 `Commands`、`DslScript`、`EditorAuthoring`、`Preview`、`Styles`、`Bridges` 与 `Entries` 拆分；`WorkspaceIndex` 是待继续拆除的过渡目录。它仍然是一个轻量 JS 前端：诊断借道 CLI，节点、speaker、host binding、metadata、Host Schema query / event 等作者提示由扩展侧轻量扫描或 CLI capability endpoint 支撑。
 
 `src/Internal/LanguageServer` 已有第一版 C# 语义基线：diagnostics、definition、references、completion、document symbols、hover 的 probe 都直接复用 `Inscape.Compiler` 输出。它还不是完整 LSP transport，也没有接入 VSCode client。
 

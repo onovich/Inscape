@@ -15,7 +15,7 @@
 	- 正文 / 选项文本不再用 `DocumentLinkProvider`，因为它会导致整段文本常驻下划线；当前用 `DefinitionProvider` 恢复“默认无下划线、Ctrl+指向才显示链接态”的编辑体验，并通过 selection bridge 在 Ctrl+Click 后执行预览定位，显式命令仅作为兜底。
 3. 推进项目级资源 / 代码分层收口：按 ADR 0014 / ADR 0015 检查 VSCode package 与 Preview HTML 模板，逐步把图标、schema、snippet、TextMate grammar、HTML/CSS/JS 模板和打包脚本从代码逻辑中分离到项目内 Resources / Scripts 边界。
 	- Resources / Scripts 的拆分依据见 [Module Resource / Script Boundary Plan](module-resource-script-boundary-plan.md)：Internal 与 ExternalSupport 都适用，但只在未来可能独立拆仓、拆项目、单独发布或单独交付的具体模块根内创建。
-	- VSCode 内部目录审计见 [VSCode Directory Naming Audit](vscode-directory-naming-audit.md)：小写资源 / 脚本目录已收敛到 `Resources` / `Scripts`，`ExtensionEntry` 已收敛到 `Entries`，`PreviewWebview` 已收敛到 `Preview`，DslScript providers / diagnostics 已收敛到 `DslScript`；剩余 `LanguageFeatures`、`WorkspaceIndex` 仍需按 `EditorAuthoring`、`HostBinding`、`HostSchema` 继续收敛。
+	- VSCode 内部目录审计见 [VSCode Directory Naming Audit](vscode-directory-naming-audit.md)：小写资源 / 脚本目录已收敛到 `Resources` / `Scripts`，`ExtensionEntry` 已收敛到 `Entries`，`PreviewWebview` 已收敛到 `Preview`，DslScript providers / diagnostics 已收敛到 `DslScript`，EditorAuthoring providers 已收敛到 `EditorAuthoring`；剩余 `WorkspaceIndex` 仍需按 `HostBinding`、`HostSchema` 继续收敛。
 4. Unity / Bird 相关继续只做准备和计划，等设计方案落实后再研发：包括 Attribute 扫描、Host Bridge 到 adapter 生成、Bird importer 提交策略和带真实 Timeline 的 Dry Run。
 
 ## 文档与接手效率
