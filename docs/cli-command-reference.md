@@ -81,7 +81,7 @@ dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- update-l
 
 | 命令 | 用途 | 常用输出 |
 | --- | --- | --- |
-| `update-node-map-project` | 创建或更新项目 `inscape.node-map.json` sidecar | sidecar 文件路径 |
+| `update-node-map-project` | 创建或更新项目 `inscape.node-map.json` sidecar，可选写出 rename / conflict / missing 审查报告 | sidecar 文件路径 |
 | `check-project` | 检查整个项目 | stderr 诊断 |
 | `diagnose-project` | 编译项目并输出 Project IR + 诊断 JSON | JSON |
 | `compile-project` | 编译项目并输出 Project IR JSON | JSON |
@@ -97,6 +97,7 @@ dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- update-l
 
 ```powershell
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- update-node-map-project samples
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- update-node-map-project samples --report artifacts\node-map-review.json
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- check-project samples
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- diagnose-project samples -o artifacts\samples.diagnostics.json
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- compile-project samples -o artifacts\samples-project.json
@@ -105,7 +106,7 @@ dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- extract-
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- update-l10n-project samples --from artifacts\old-l10n.csv -o artifacts\l10n.updated.csv
 ```
 
-`update-node-map-project` 会先按项目编译结果扫描当前 `# 标题` 节点，再创建或更新 `inscape.node-map.json`。第一版先按“当前标题精确命中”复用已有 stable node id，把消失的节点标为 `missing`，并把 sidecar 内重复 `id` / `title` 标为 `conflict`。标题重命名自动迁移和本地化 alignment 仍在后续 Goal 10 节点推进。
+`update-node-map-project` 会先按项目编译结果扫描当前 `# 标题` 节点，再创建或更新 `inscape.node-map.json`。当前实现已经包含保守自动重命名识别：当 `sourcePath`、content fingerprint、neighbor fingerprint、line anchor overlap 与行号距离能形成唯一候选时，会复用旧 stable node id，并把旧标题写入 `previousTitles`。如需人工审查，可加 `--report report.json` 输出 `inscape.node-map-update-report`，列出 `renamed`、`new`、`missing`、`conflict` 与 `manual-review` 项。更进一步的本地化 alignment 仍在后续 Goal 10 节点推进。
 
 ## UnitySample 实验样例命令
 

@@ -379,6 +379,7 @@ editorAuthoringCommand = new EditorAuthoringCommand({
     defaultEditorStyle,
     defaultPreviewStyle,
     writeTempDocument,
+    createTempPath,
     resolveCliProjectPath,
     normalizePath
 });

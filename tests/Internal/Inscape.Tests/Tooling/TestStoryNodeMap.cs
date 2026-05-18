@@ -194,5 +194,86 @@ namespace Inscape.Tests {
             return false;
         }
 
+        static void StoryNodeMapUpdateReportIncludesManualReviewCandidates() {
+            StoryGraphCompilerDomain compiler = new StoryGraphCompilerDomain();
+            StoryGraphCompilationResultModel initial = compiler.Compile(new List<DslScriptSourceModel> {
+                new DslScriptSourceModel("D:/LabProjects/Inscape/story/court.inscape", """
+# node.a
+Narrator: Same line.
+# node.b
+Narrator: Same line.
+"""),
+            }, "D:/LabProjects/Inscape");
+
+            StoryNodeMapModel created = StoryNodeMapUpdateDomain.Update(new StoryNodeMapModel(),
+                                                                        initial,
+                                                                        "D:/LabProjects/Inscape",
+                                                                        DateTimeOffset.Parse("2026-05-19T07:00:00Z", System.Globalization.CultureInfo.InvariantCulture));
+
+            StoryGraphCompilationResultModel renamed = compiler.Compile(new List<DslScriptSourceModel> {
+                new DslScriptSourceModel("D:/LabProjects/Inscape/story/court.inscape", """
+# node.renamed
+Narrator: Same line.
+# node.b
+Narrator: Same line.
+"""),
+            }, "D:/LabProjects/Inscape");
+
+            StoryNodeMapUpdateResultModel update = StoryNodeMapUpdateDomain.UpdateWithReport(created,
+                                                                                              renamed,
+                                                                                              "D:/LabProjects/Inscape",
+                                                                                              DateTimeOffset.Parse("2026-05-19T08:00:00Z", System.Globalization.CultureInfo.InvariantCulture));
+
+            StoryNodeMapUpdateReportItemModel reviewItem = FindReportItem(update.Report, "manual-review", "node.renamed");
+            AssertEqual(1, update.Report.Summary.ManualReviewCount, "Report should count manual review items.");
+            AssertEqual(2, reviewItem.Candidates.Count, "Manual review item should list tied rename candidates.");
+            AssertEqual("node.a", reviewItem.Candidates[0].Title, "Manual review should keep the first candidate title.");
+            AssertEqual("node.b", reviewItem.Candidates[1].Title, "Manual review should keep the second candidate title.");
+        }
+
+        static void StoryNodeMapUpdateReportIncludesRenamedItems() {
+            StoryGraphCompilerDomain compiler = new StoryGraphCompilerDomain();
+            StoryGraphCompilationResultModel initial = compiler.Compile(new List<DslScriptSourceModel> {
+                new DslScriptSourceModel("D:/LabProjects/Inscape/story/court.inscape", """
+# intro
+Narrator: First line.
+Narrator: Second line.
+"""),
+            }, "D:/LabProjects/Inscape");
+
+            StoryNodeMapModel created = StoryNodeMapUpdateDomain.Update(new StoryNodeMapModel(),
+                                                                        initial,
+                                                                        "D:/LabProjects/Inscape",
+                                                                        DateTimeOffset.Parse("2026-05-19T09:00:00Z", System.Globalization.CultureInfo.InvariantCulture));
+
+            StoryGraphCompilationResultModel renamed = compiler.Compile(new List<DslScriptSourceModel> {
+                new DslScriptSourceModel("D:/LabProjects/Inscape/story/court.inscape", """
+# courtroom.intro
+Narrator: First line.
+Narrator: Second line.
+"""),
+            }, "D:/LabProjects/Inscape");
+
+            StoryNodeMapUpdateResultModel update = StoryNodeMapUpdateDomain.UpdateWithReport(created,
+                                                                                              renamed,
+                                                                                              "D:/LabProjects/Inscape",
+                                                                                              DateTimeOffset.Parse("2026-05-19T10:00:00Z", System.Globalization.CultureInfo.InvariantCulture));
+
+            StoryNodeMapUpdateReportItemModel renamedItem = FindReportItem(update.Report, "renamed", "courtroom.intro");
+            AssertEqual(1, update.Report.Summary.RenamedNodeCount, "Report should count renamed items.");
+            AssertEqual("intro", renamedItem.PreviousTitle, "Renamed report item should include previous title.");
+        }
+
+        static StoryNodeMapUpdateReportItemModel FindReportItem(StoryNodeMapUpdateReportModel report, string kind, string title) {
+            for (int i = 0; i < report.Items.Count; i += 1) {
+                StoryNodeMapUpdateReportItemModel item = report.Items[i];
+                if (item.Kind == kind && item.Title == title) {
+                    return item;
+                }
+            }
+
+            throw new InvalidOperationException("Could not find report item: " + kind + " / " + title);
+        }
+
     }
 }

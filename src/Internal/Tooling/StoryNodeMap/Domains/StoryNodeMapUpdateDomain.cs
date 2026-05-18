@@ -10,12 +10,27 @@ namespace Inscape.Tooling {
         const string ActiveStatus = "active";
         const string MissingStatus = "missing";
         const string ConflictStatus = "conflict";
+        const string RenamedKind = "renamed";
+        const string NewKind = "new";
+        const string MissingKind = "missing";
+        const string ConflictKind = "conflict";
+        const string ManualReviewKind = "manual-review";
 
         public static StoryNodeMapModel Update(StoryNodeMapModel existingMap,
                                                StoryGraphCompilationResultModel result,
                                                string rootPath,
                                                DateTimeOffset utcNow) {
+            return UpdateWithReport(existingMap, result, rootPath, utcNow).NodeMap;
+        }
+
+        public static StoryNodeMapUpdateResultModel UpdateWithReport(StoryNodeMapModel existingMap,
+                                                                     StoryGraphCompilationResultModel result,
+                                                                     string rootPath,
+                                                                     DateTimeOffset utcNow) {
             StoryNodeMapModel currentMap = Clone(existingMap);
+            StoryNodeMapUpdateReportModel report = new StoryNodeMapUpdateReportModel {
+                Workspace = Path.GetFullPath(rootPath),
+            };
             string timestamp = utcNow.ToUniversalTime().ToString("O", System.Globalization.CultureInfo.InvariantCulture);
             List<StoryNodeMapEntryModel> existingNodes = CreateConflictAwareNodes(currentMap.Nodes);
             List<StoryNodeMapEntryModel> updatedNodes = new List<StoryNodeMapEntryModel>();
@@ -24,9 +39,8 @@ namespace Inscape.Tooling {
 
             for (int nodeIndex = 0; nodeIndex < nodeSnapshots.Count; nodeIndex += 1) {
                 StoryNodeMapNodeSnapshot snapshot = nodeSnapshots[nodeIndex];
-                StoryNodeMapEntryModel entry = FindByTitle(existingNodes, snapshot.Title, matchedIds)
-                    ?? FindRenameCandidate(existingNodes, snapshot, matchedIds)
-                    ?? CreateNewEntry(timestamp);
+                StoryNodeMapMatchResolution resolution = ResolveEntry(existingNodes, snapshot, matchedIds, timestamp);
+                StoryNodeMapEntryModel entry = resolution.Entry;
                 StoryNodeMapEntryModel updated = Clone(entry);
 
                 AddPreviousTitleIfRenamed(updated, snapshot.Title);
@@ -45,6 +59,7 @@ namespace Inscape.Tooling {
 
                 updatedNodes.Add(updated);
                 matchedIds.Add(updated.Id);
+                AddResolutionReportItem(report, resolution, snapshot, updated);
             }
 
             for (int nodeIndex = 0; nodeIndex < existingNodes.Count; nodeIndex += 1) {
@@ -59,6 +74,7 @@ namespace Inscape.Tooling {
                     retained.UpdatedAt = timestamp;
                 }
                 updatedNodes.Add(retained);
+                AddRetainedNodeReportItem(report, retained);
             }
 
             updatedNodes.Sort(CompareNodes);
@@ -66,7 +82,11 @@ namespace Inscape.Tooling {
             currentMap.Tombstones.Sort(CompareTombstones);
             currentMap.Format = "inscape.node-map";
             currentMap.FormatVersion = 1;
-            return currentMap;
+            FinalizeReport(report, currentMap);
+            return new StoryNodeMapUpdateResultModel {
+                NodeMap = currentMap,
+                Report = report,
+            };
         }
 
         static List<StoryNodeMapNodeSnapshot> BuildNodeSnapshots(List<StoryGraphNodeModel> nodes, string rootPath) {
@@ -144,12 +164,45 @@ namespace Inscape.Tooling {
             return null;
         }
 
-        static StoryNodeMapEntryModel? FindRenameCandidate(List<StoryNodeMapEntryModel> nodes,
-                                                           StoryNodeMapNodeSnapshot snapshot,
-                                                           HashSet<string> matchedIds) {
-            StoryNodeMapEntryModel? bestCandidate = null;
+        static StoryNodeMapMatchResolution ResolveEntry(List<StoryNodeMapEntryModel> nodes,
+                                                        StoryNodeMapNodeSnapshot snapshot,
+                                                        HashSet<string> matchedIds,
+                                                        string timestamp) {
+            StoryNodeMapEntryModel? exactMatch = FindByTitle(nodes, snapshot.Title, matchedIds);
+            if (exactMatch != null) {
+                return new StoryNodeMapMatchResolution {
+                    Entry = exactMatch,
+                    MatchKind = "exact-title",
+                };
+            }
+
+            List<StoryNodeMapRenameCandidateScore> renameCandidates = FindRenameCandidates(nodes, snapshot, matchedIds);
+            if (renameCandidates.Count == 1) {
+                return new StoryNodeMapMatchResolution {
+                    Entry = renameCandidates[0].Entry,
+                    MatchKind = RenamedKind,
+                };
+            }
+
+            if (renameCandidates.Count > 1) {
+                return new StoryNodeMapMatchResolution {
+                    Entry = CreateNewEntry(timestamp),
+                    MatchKind = ManualReviewKind,
+                    Candidates = renameCandidates,
+                };
+            }
+
+            return new StoryNodeMapMatchResolution {
+                Entry = CreateNewEntry(timestamp),
+                MatchKind = NewKind,
+            };
+        }
+
+        static List<StoryNodeMapRenameCandidateScore> FindRenameCandidates(List<StoryNodeMapEntryModel> nodes,
+                                                                           StoryNodeMapNodeSnapshot snapshot,
+                                                                           HashSet<string> matchedIds) {
+            List<StoryNodeMapRenameCandidateScore> matches = new List<StoryNodeMapRenameCandidateScore>();
             int bestScore = 0;
-            bool hasTie = false;
 
             for (int i = 0; i < nodes.Count; i += 1) {
                 StoryNodeMapEntryModel candidate = nodes[i];
@@ -163,22 +216,19 @@ namespace Inscape.Tooling {
                 }
 
                 if (score > bestScore) {
-                    bestCandidate = candidate;
+                    matches.Clear();
                     bestScore = score;
-                    hasTie = false;
-                    continue;
                 }
 
                 if (score == bestScore) {
-                    hasTie = true;
+                    matches.Add(new StoryNodeMapRenameCandidateScore {
+                        Entry = candidate,
+                        Score = score,
+                    });
                 }
             }
 
-            if (hasTie) {
-                return null;
-            }
-
-            return bestCandidate;
+            return matches;
         }
 
         static int EvaluateRenameCandidate(StoryNodeMapEntryModel candidate, StoryNodeMapNodeSnapshot snapshot) {
@@ -248,6 +298,116 @@ namespace Inscape.Tooling {
             }
 
             entry.PreviousTitles.Add(oldTitle);
+        }
+
+        static void AddResolutionReportItem(StoryNodeMapUpdateReportModel report,
+                                            StoryNodeMapMatchResolution resolution,
+                                            StoryNodeMapNodeSnapshot snapshot,
+                                            StoryNodeMapEntryModel updated) {
+            if (resolution.MatchKind == RenamedKind) {
+                report.Items.Add(new StoryNodeMapUpdateReportItemModel {
+                    Kind = RenamedKind,
+                    StableId = updated.Id,
+                    Title = updated.Title,
+                    PreviousTitle = resolution.Entry.Title,
+                    SourcePath = snapshot.SourcePath,
+                    SourceLine = snapshot.SourceLine,
+                    Status = updated.Status,
+                    Message = "Stable node id was preserved after a conservative title rename match.",
+                });
+                return;
+            }
+
+            if (resolution.MatchKind == NewKind) {
+                report.Items.Add(new StoryNodeMapUpdateReportItemModel {
+                    Kind = NewKind,
+                    StableId = updated.Id,
+                    Title = updated.Title,
+                    SourcePath = snapshot.SourcePath,
+                    SourceLine = snapshot.SourceLine,
+                    Status = updated.Status,
+                    Message = "A new stable node id was created for this title.",
+                });
+                return;
+            }
+
+            if (resolution.MatchKind == ManualReviewKind) {
+                StoryNodeMapUpdateReportItemModel item = new StoryNodeMapUpdateReportItemModel {
+                    Kind = ManualReviewKind,
+                    StableId = updated.Id,
+                    Title = updated.Title,
+                    SourcePath = snapshot.SourcePath,
+                    SourceLine = snapshot.SourceLine,
+                    Status = updated.Status,
+                    Message = "Multiple rename candidates matched this title. Review before reusing an older stable node id.",
+                };
+
+                for (int i = 0; i < resolution.Candidates.Count; i += 1) {
+                    StoryNodeMapRenameCandidateScore candidate = resolution.Candidates[i];
+                    item.Candidates.Add(new StoryNodeMapReviewCandidateModel {
+                        StableId = candidate.Entry.Id,
+                        Title = candidate.Entry.Title,
+                        SourcePath = candidate.Entry.SourcePath,
+                        SourceLine = candidate.Entry.SourceLine,
+                        Score = candidate.Score,
+                    });
+                }
+
+                report.Items.Add(item);
+            }
+        }
+
+        static void AddRetainedNodeReportItem(StoryNodeMapUpdateReportModel report, StoryNodeMapEntryModel entry) {
+            if (entry.Status == MissingStatus) {
+                report.Items.Add(new StoryNodeMapUpdateReportItemModel {
+                    Kind = MissingKind,
+                    StableId = entry.Id,
+                    Title = entry.Title,
+                    PreviousTitle = entry.PreviousTitles.Count > 0 ? entry.PreviousTitles[^1] : string.Empty,
+                    SourcePath = entry.SourcePath,
+                    SourceLine = entry.SourceLine,
+                    Status = entry.Status,
+                    Message = "The previous node was not found in the current project scan and remains missing.",
+                });
+                return;
+            }
+
+            if (entry.Status == ConflictStatus) {
+                report.Items.Add(new StoryNodeMapUpdateReportItemModel {
+                    Kind = ConflictKind,
+                    StableId = entry.Id,
+                    Title = entry.Title,
+                    SourcePath = entry.SourcePath,
+                    SourceLine = entry.SourceLine,
+                    Status = entry.Status,
+                    Message = "The sidecar already contains a duplicate stable node id or title conflict.",
+                });
+            }
+        }
+
+        static void FinalizeReport(StoryNodeMapUpdateReportModel report, StoryNodeMapModel currentMap) {
+            report.Summary.TotalNodeCount = currentMap.Nodes.Count;
+
+            for (int i = 0; i < report.Items.Count; i += 1) {
+                StoryNodeMapUpdateReportItemModel item = report.Items[i];
+                switch (item.Kind) {
+                    case NewKind:
+                        report.Summary.NewNodeCount += 1;
+                        break;
+                    case RenamedKind:
+                        report.Summary.RenamedNodeCount += 1;
+                        break;
+                    case MissingKind:
+                        report.Summary.MissingNodeCount += 1;
+                        break;
+                    case ConflictKind:
+                        report.Summary.ConflictNodeCount += 1;
+                        break;
+                    case ManualReviewKind:
+                        report.Summary.ManualReviewCount += 1;
+                        break;
+                }
+            }
         }
 
         static StoryNodeMapEntryModel CreateNewEntry(string timestamp) {
@@ -427,6 +587,24 @@ namespace Inscape.Tooling {
             public string NeighborFingerprint { get; set; } = string.Empty;
 
             public List<string> LineAnchorSamples { get; set; } = new List<string>();
+
+        }
+
+        sealed class StoryNodeMapMatchResolution {
+
+            public StoryNodeMapEntryModel Entry { get; set; } = new StoryNodeMapEntryModel();
+
+            public string MatchKind { get; set; } = string.Empty;
+
+            public List<StoryNodeMapRenameCandidateScore> Candidates { get; set; } = new List<StoryNodeMapRenameCandidateScore>();
+
+        }
+
+        sealed class StoryNodeMapRenameCandidateScore {
+
+            public StoryNodeMapEntryModel Entry { get; set; } = new StoryNodeMapEntryModel();
+
+            public int Score { get; set; }
 
         }
 

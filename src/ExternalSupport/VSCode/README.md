@@ -19,7 +19,8 @@ The package is also a future split-repo candidate, so non-source extension asset
 - Refreshes diagnostics through a persistent `Inscape.LanguageServer` session first, then falls back to the configured CLI `diagnose-project` invocation if the session is unavailable.
 - Provides node completions in jump target positions through the same persistent `Inscape.LanguageServer` session, including cross-file nodes and unsaved editor content.
 - Provides `Inscape: Insert Node Title`; if the requested title already exists, the command inserts the next `_01`-style title and, when the file belongs to a workspace, silently refreshes the stable node map through `update-node-map-project`.
-- Provides `Inscape: Update Stable Node Map`; it runs `update-node-map-project` for the selected workspace and forwards the active unsaved `.inscape` file through `--override`.
+- Provides `Inscape: Update Stable Node Map`; it runs `update-node-map-project` for the selected workspace, forwards the active unsaved `.inscape` file through `--override`, and surfaces a review hint when the update report contains manual review or conflict items.
+- Provides `Inscape: Review Stable Node Map Changes`; it runs the same update flow with `--report`, then opens a JSON review report for rename/manual-review/conflict/missing inspection.
 - Provides dialogue speaker completions from `inscape.config.json` `hostBridge`, with workspace speaker fallback.
 - Provides host event / timing hook completions from `inscape.config.json` `hostBridge`, with workspace `@timeline...` fallback.
 - Provides `[]` query interpolation completions and Hover from configured Host Schema zero-parameter simple queries such as `[player.gold]`; unknown queries are authoring hints only, not compiler errors. The provider prefers the persistent LanguageServer Host Schema capability session path, falls back to CLI `inspect-host-schema-project`, and does not parse Host Schema JSON directly in JS.
@@ -36,6 +37,7 @@ The package is also a future split-repo candidate, so non-source extension asset
   - `Inscape: Open Preview`
   - `Inscape: Insert Node Title`
   - `Inscape: Update Stable Node Map`
+  - `Inscape: Review Stable Node Map Changes`
   - `Inscape: Export Localization CSV`
   - `Inscape: Update Localization CSV From Previous Table`
 - Exposes command palette action for host schema inspection:
@@ -144,6 +146,14 @@ dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- update-n
 ```
 
 If the active `.inscape` document is unsaved and belongs to the selected workspace, the extension passes it to the CLI with `--override` so `inscape.node-map.json` reflects editor contents before save.
+
+Stable node map review uses the same command with an explicit report file:
+
+```powershell
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- update-node-map-project <workspace> --report <report.json>
+```
+
+The current review report is a JSON audit artifact. It lists conservative auto-renames, brand-new ids, missing nodes, sidecar conflicts, and manual-review rename candidates. VSCode does not rename titles for the author yet; this step only gives the author a narrow inspection entry before Goal 10.3 localization alignment work.
 
 Speaker completion reads `inscape.config.json` from the workspace root. It prefers `hostBridge` ids with `kind: "speaker"`. When no Host Bridge row exists, the extension still scans open and workspace `.inscape` files for existing dialogue speakers.
 

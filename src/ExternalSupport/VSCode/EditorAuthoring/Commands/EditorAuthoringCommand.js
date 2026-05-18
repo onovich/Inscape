@@ -14,6 +14,7 @@ class EditorAuthoringCommand {
         this.defaultEditorStyle = dependencies.defaultEditorStyle;
         this.defaultPreviewStyle = dependencies.defaultPreviewStyle;
         this.writeTempDocument = dependencies.writeTempDocument;
+        this.createTempPath = dependencies.createTempPath;
         this.resolveCliProjectPath = dependencies.resolveCliProjectPath;
         this.normalizePath = dependencies.normalizePath;
     }
@@ -34,6 +35,11 @@ class EditorAuthoringCommand {
                 label: "$(sync) 更新 Stable Node Map",
                 description: "写入或更新 inscape.node-map.json",
                 action: () => this.updateNodeMap(context)
+            },
+            {
+                label: "$(warning) 审查 Stable Node Map 变更",
+                description: "打开 rename / conflict / missing 审查报告",
+                action: () => this.reviewNodeMap(context)
             },
             {
                 label: "$(symbol-color) 编辑器样式",
@@ -107,23 +113,72 @@ class EditorAuthoringCommand {
         }
 
         try {
-            const nodeMapPath = await this.runNodeMapUpdate(context, workspaceFolder, {
+            const result = await this.runNodeMapUpdate(context, workspaceFolder, {
                 activeDocument: invocationOptions.activeDocument,
-                showProgress: invocationOptions.showProgress !== false
+                showProgress: invocationOptions.showProgress !== false,
+                includeReviewReport: invocationOptions.includeReviewReport !== false
             });
-            if (!nodeMapPath || invocationOptions.notifySuccess === false) {
+            if (!result.nodeMapPath || invocationOptions.notifySuccess === false) {
                 return;
             }
 
-            const openAction = invocationOptions.openOnSuccess === false
-                ? undefined
-                : "Open";
-            const message = "Inscape stable node map written to " + nodeMapPath;
-            const selection = openAction
-                ? await this.vscode.window.showInformationMessage(message, openAction)
-                : await this.vscode.window.showInformationMessage(message);
-            if (selection === openAction && this.fs.existsSync(nodeMapPath)) {
-                await this.openFile(nodeMapPath);
+            const hasReviewWork = this.reportNeedsManualReview(result.report);
+            const openNodeMapAction = invocationOptions.openOnSuccess === false ? undefined : "Open Node Map";
+            const openReviewAction = hasReviewWork && result.reportPath ? "Open Review" : undefined;
+            const message = hasReviewWork
+                ? this.createNodeMapReviewMessage(result)
+                : "Inscape stable node map written to " + result.nodeMapPath;
+            const selection = hasReviewWork
+                ? await this.vscode.window.showWarningMessage(message, ...[openReviewAction, openNodeMapAction].filter(Boolean))
+                : openNodeMapAction
+                    ? await this.vscode.window.showInformationMessage(message, openNodeMapAction)
+                    : await this.vscode.window.showInformationMessage(message);
+
+            if (selection === openReviewAction && result.reportPath && this.fs.existsSync(result.reportPath)) {
+                await this.openFile(result.reportPath);
+                return;
+            }
+
+            if (selection === openNodeMapAction && this.fs.existsSync(result.nodeMapPath)) {
+                await this.openFile(result.nodeMapPath);
+            }
+        } catch (error) {
+            this.vscode.window.showErrorMessage(error.message || String(error));
+        }
+    }
+
+    async reviewNodeMap(context) {
+        const workspaceFolder = await this.resolvePreferredWorkspaceFolder();
+        if (!workspaceFolder) {
+            return;
+        }
+
+        try {
+            const result = await this.runNodeMapUpdate(context, workspaceFolder, {
+                showProgress: true,
+                includeReviewReport: true
+            });
+
+            if (!result.reportPath || !this.fs.existsSync(result.reportPath)) {
+                this.vscode.window.showWarningMessage("Stable node map review report was not generated.");
+                return;
+            }
+
+            const openReportAction = "Open Report";
+            const openNodeMapAction = "Open Node Map";
+            const selection = await this.vscode.window.showInformationMessage(
+                this.createNodeMapReviewMessage(result),
+                openReportAction,
+                openNodeMapAction
+            );
+
+            if (selection === openReportAction) {
+                await this.openFile(result.reportPath);
+                return;
+            }
+
+            if (selection === openNodeMapAction && this.fs.existsSync(result.nodeMapPath)) {
+                await this.openFile(result.nodeMapPath);
             }
         } catch (error) {
             this.vscode.window.showErrorMessage(error.message || String(error));
@@ -221,7 +276,8 @@ class EditorAuthoringCommand {
         try {
             await this.runNodeMapUpdate(context, workspaceFolder, {
                 activeDocument: document,
-                showProgress: false
+                showProgress: false,
+                includeReviewReport: false
             });
         } catch (error) {
             const detail = error && error.message
@@ -235,13 +291,18 @@ class EditorAuthoringCommand {
         const invocationOptions = options || {};
         const activeDocument = this.resolveNodeMapActiveDocument(workspaceFolder, invocationOptions.activeDocument);
         let tempPath;
+        let reportPath;
 
         try {
             if (activeDocument) {
                 tempPath = this.writeTempDocument(activeDocument);
             }
 
-            const invocation = this.createNodeMapInvocation(context, workspaceFolder, activeDocument, tempPath);
+            if (invocationOptions.includeReviewReport) {
+                reportPath = this.createTempPath("node-map-review", ".json");
+            }
+
+            const invocation = this.createNodeMapInvocation(context, workspaceFolder, activeDocument, tempPath, reportPath);
             const output = invocationOptions.showProgress === false
                 ? await this.execFile(invocation)
                 : await this.vscode.window.withProgress({
@@ -250,7 +311,12 @@ class EditorAuthoringCommand {
                     cancellable: false
                 }, () => this.execFile(invocation));
 
-            return this.normalizeNodeMapPath(output) || this.path.join(workspaceFolder.uri.fsPath, "inscape.node-map.json");
+            const nodeMapPath = this.normalizeNodeMapPath(output) || this.path.join(workspaceFolder.uri.fsPath, "inscape.node-map.json");
+            return {
+                nodeMapPath,
+                reportPath: reportPath && this.fs.existsSync(reportPath) ? reportPath : undefined,
+                report: reportPath && this.fs.existsSync(reportPath) ? await this.readNodeMapReport(reportPath) : undefined
+            };
         } finally {
             if (tempPath) {
                 this.fs.unlink(tempPath, () => { });
@@ -275,7 +341,7 @@ class EditorAuthoringCommand {
         return undefined;
     }
 
-    createNodeMapInvocation(context, workspaceFolder, activeDocument, tempPath) {
+    createNodeMapInvocation(context, workspaceFolder, activeDocument, tempPath, reportPath) {
         const configuration = this.vscode.workspace.getConfiguration("inscape", workspaceFolder.uri);
         const command = configuration.get("compiler.command", "dotnet");
         const cliProject = this.resolveCliProjectPath(context, workspaceFolder.uri.fsPath);
@@ -290,6 +356,10 @@ class EditorAuthoringCommand {
 
         if (activeDocument && tempPath) {
             args.push("--override", activeDocument.uri.fsPath, tempPath);
+        }
+
+        if (reportPath) {
+            args.push("--report", reportPath);
         }
 
         return {
@@ -313,6 +383,35 @@ class EditorAuthoringCommand {
             ? candidates[candidates.length - 1]
             : undefined;
         return candidate || undefined;
+    }
+
+    async readNodeMapReport(reportPath) {
+        const text = await this.fs.promises.readFile(reportPath, "utf8");
+        return JSON.parse(text);
+    }
+
+    reportNeedsManualReview(report) {
+        if (!report || !report.summary) {
+            return false;
+        }
+
+        return Number(report.summary.manualReviewCount || 0) > 0
+            || Number(report.summary.conflictNodeCount || 0) > 0;
+    }
+
+    createNodeMapReviewMessage(result) {
+        const summary = result && result.report && result.report.summary
+            ? result.report.summary
+            : {};
+        const renamed = Number(summary.renamedNodeCount || 0);
+        const manualReview = Number(summary.manualReviewCount || 0);
+        const conflicts = Number(summary.conflictNodeCount || 0);
+        const missing = Number(summary.missingNodeCount || 0);
+        return "Stable node map review: "
+            + renamed + " renamed, "
+            + manualReview + " manual review, "
+            + conflicts + " conflicts, "
+            + missing + " missing.";
     }
 
     execFile(invocation) {

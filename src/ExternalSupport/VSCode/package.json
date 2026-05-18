@@ -111,6 +111,11 @@
         "category": "Inscape"
       },
       {
+        "command": "inscape.reviewNodeMap",
+        "title": "Inscape: Review Stable Node Map Changes",
+        "category": "Inscape"
+      },
+      {
         "command": "inscape.extractLocalization",
         "title": "Inscape: Export Localization CSV",
         "category": "Inscape"

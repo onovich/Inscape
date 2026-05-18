@@ -11,7 +11,7 @@
 - Goal 7 的 `inscape.preview.sourceSyncMode = off|click|selection` 真实 VSCode smoke 已通过。
 - Goal 11.1 的“LanguageServer 不可用 -> CLI diagnostics fallback”真实 VSCode smoke 已通过。
 - VSCode 的 diagnostics、node completion、definition、references、hover、document symbols 与 Host Schema capability 已切到常驻 `LanguageServer` stdio 会话；CLI fallback 继续保留，但不再是常态热路径。
-- 当前最值得继续推进的主线已经回到 Goal 10：`G10.2.3 标题重命名的人机确认 / 冲突报告入口` -> `G10.3 本地化 alignment / audit report` -> `G10.4 相似文本人工候选`。
+- 当前最值得继续推进的主线已经回到 Goal 10：`G10.3 本地化 alignment / audit report` -> `G10.4 相似文本人工候选`。
 - 低优先级体验尾项：编辑区选项文字 `Ctrl+Hover` 的可点击下划线显示仍不稳定，但 `Ctrl+Click` 行为符合预期；`selection` 模式只驱动“已打开预览”的轻量跟随，不主动弹出新预览面板。
 
 ## 接力优先队列
@@ -21,9 +21,8 @@
 注：上面这句里的“先补手动 smoke”已经在 2026-05-19 收口完成；保留旧账本只是为了不丢历史上下文，新的实际优先级以本页“2026-05-19 最新收口”为准。
 
 1. **再推进 Stable Node ID 主线。**
-	- 已完成：ADR 0013、stable node id / title map 契约、`update-node-map-project` sidecar 闭环、保守自动重命名识别、VSCode 显式 `Update Stable Node Map` 入口、插入标题后的自动同步。
+	- 已完成：ADR 0013、stable node id / title map 契约、`update-node-map-project` sidecar 闭环、保守自动重命名识别、VSCode 显式 `Update Stable Node Map` 入口、插入标题后的自动同步、`inscape.node-map-update-report` 审查报告、CLI `--report`、VSCode `Review Stable Node Map Changes` 入口。
 	- 下一步建议顺序：
-		- G10.2.3 标题重命名的人机确认 / 冲突报告入口。
 		- G10.3 本地化 alignment / audit report。
 		- G10.4 相似文本只作人工候选，不静默继承旧译文。
 2. **把本地化迁移闭环做实。**
@@ -41,7 +40,7 @@
 ## 剩余工作总览
 
 - **当前可直接推进**：
-	- Goal 10.2.3 标题重命名人工确认 / 冲突报告入口。
+	- Goal 10.3 本地化 alignment / audit report。
 - **当前人工待办**：
 	- 无。Goal 7 与 Goal 11.1 的真实 VSCode smoke 已在 2026-05-19 收口完成。
 - **当前主线研发**：

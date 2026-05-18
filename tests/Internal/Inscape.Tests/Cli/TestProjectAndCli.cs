@@ -257,6 +257,63 @@ Narrator: Start.
             }
         }
 
+        static void CliUpdateNodeMapProjectWritesReviewReport() {
+            string directory = Path.Combine(Path.GetTempPath(), "inscape-cli-node-map-report-" + Guid.NewGuid().ToString("N"));
+            string configDirectory = Path.Combine(directory, "config");
+            Directory.CreateDirectory(configDirectory);
+            try {
+                File.WriteAllText(Path.Combine(directory, "inscape.config.json"), """
+{
+  "nodeMap": "config/inscape.node-map.json"
+}
+""", Encoding.UTF8);
+
+                File.WriteAllText(Path.Combine(directory, "story.inscape"), """
+# node.a
+@entry
+Narrator: Same line.
+
+-> node.b
+
+# node.b
+Narrator: Same line.
+""", Encoding.UTF8);
+
+                RunCliForOutput(new[] { "update-node-map-project", directory });
+
+                File.WriteAllText(Path.Combine(directory, "story.inscape"), """
+# node.renamed
+@entry
+Narrator: Same line.
+
+-> node.b
+
+# node.b
+Narrator: Same line.
+""", Encoding.UTF8);
+
+                string reportPath = Path.Combine(configDirectory, "inscape.node-map-review.json");
+                string output = RunCliForOutput(new[] { "update-node-map-project", directory, "--report", reportPath });
+                string nodeMapPath = Path.Combine(configDirectory, "inscape.node-map.json");
+
+                AssertEqual(Path.GetFullPath(nodeMapPath), output.Trim(), "Node map command should still print the node map path.");
+                AssertTrue(File.Exists(reportPath), "Review report file should be written.");
+
+                using JsonDocument document = JsonDocument.Parse(File.ReadAllText(reportPath, Encoding.UTF8));
+                JsonElement root = document.RootElement;
+                AssertEqual("inscape.node-map-update-report", root.GetProperty("format").GetString(), "Review report format");
+                AssertEqual(1, root.GetProperty("summary").GetProperty("renamedNodeCount").GetInt32(), "Review report renamed count");
+                JsonElement firstItem = root.GetProperty("items")[0];
+                AssertEqual("renamed", firstItem.GetProperty("kind").GetString(), "Review report item kind");
+                AssertEqual("node.renamed", firstItem.GetProperty("title").GetString(), "Review report title");
+                AssertEqual("node.a", firstItem.GetProperty("previousTitle").GetString(), "Review report should include previous title.");
+            } finally {
+                if (Directory.Exists(directory)) {
+                    Directory.Delete(directory, true);
+                }
+            }
+        }
+
         static void StoryGraphCompilerDomainResolvesCrossFileTargets() {
             StoryGraphCompilerDomain compiler = new StoryGraphCompilerDomain();
             StoryGraphCompilationResultModel result = compiler.Compile(new List<DslScriptSourceModel> {

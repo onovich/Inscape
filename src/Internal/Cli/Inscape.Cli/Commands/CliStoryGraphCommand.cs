@@ -135,6 +135,7 @@ namespace Inscape.Cli {
 
         static int RunStoryNodeMapUpdate(string rootPath, string[] args, string? outputPath, JsonSerializerOptions jsonOptions) {
             string? configuredPath = CliCore.ReadOption(args, "--config");
+            string? reportPath = CliCore.ReadOption(args, "--report");
             if (!TryCompile(rootPath, args, jsonOptions, out ToolConfigModel config, out StoryGraphCompilationResultModel result)) {
                 return 1;
             }
@@ -153,11 +154,14 @@ namespace Inscape.Cli {
                 return 3;
             }
 
-            StoryNodeMapModel updatedMap = StoryNodeMapUpdateDomain.Update(existingMap,
-                                                                           result,
-                                                                           rootPath,
-                                                                           DateTimeOffset.UtcNow);
-            StoryNodeMapWriterDomain.Write(nodeMapPath, updatedMap, jsonOptions);
+            StoryNodeMapUpdateResultModel update = StoryNodeMapUpdateDomain.UpdateWithReport(existingMap,
+                                                                                             result,
+                                                                                             rootPath,
+                                                                                             DateTimeOffset.UtcNow);
+            StoryNodeMapWriterDomain.Write(nodeMapPath, update.NodeMap, jsonOptions);
+            if (!string.IsNullOrWhiteSpace(reportPath)) {
+                CliCore.WriteOrPrint(reportPath, JsonSerializer.Serialize(update.Report, jsonOptions));
+            }
             Console.WriteLine(nodeMapPath);
             return 0;
         }
