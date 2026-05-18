@@ -15,7 +15,7 @@
 	- 正文 / 选项文本不再用 `DocumentLinkProvider`，因为它会导致整段文本常驻下划线；当前用 `DefinitionProvider` 恢复“默认无下划线、Ctrl+指向才显示链接态”的编辑体验，并通过 selection bridge 在 Ctrl+Click 后执行预览定位，显式命令仅作为兜底。
 3. 推进项目级资源 / 代码分层收口：按 ADR 0014 / ADR 0015 检查 VSCode package 与 Preview HTML 模板，逐步把图标、schema、snippet、TextMate grammar、HTML/CSS/JS 模板和打包脚本从代码逻辑中分离到项目内 Resources / Scripts 边界。
 	- Resources / Scripts 的拆分依据见 [Module Resource / Script Boundary Plan](module-resource-script-boundary-plan.md)：Internal 与 ExternalSupport 都适用，但只在未来可能独立拆仓、拆项目、单独发布或单独交付的具体模块根内创建。
-	- VSCode 内部目录审计见 [VSCode Directory Naming Audit](vscode-directory-naming-audit.md)：小写资源 / 脚本目录已收敛到 `Resources` / `Scripts`；`LanguageFeatures`、`WorkspaceIndex`、`PreviewWebview`、`ExtensionEntry` 仍需继续收敛。
+	- VSCode 内部目录审计见 [VSCode Directory Naming Audit](vscode-directory-naming-audit.md)：小写资源 / 脚本目录已收敛到 `Resources` / `Scripts`，`ExtensionEntry` 已收敛到 `Entries`；`LanguageFeatures`、`WorkspaceIndex`、`PreviewWebview` 仍需继续收敛。
 4. Unity / Bird 相关继续只做准备和计划，等设计方案落实后再研发：包括 Attribute 扫描、Host Bridge 到 adapter 生成、Bird importer 提交策略和带真实 Timeline 的 Dry Run。
 
 ## 文档与接手效率
@@ -100,7 +100,7 @@
 	- [x] 已继续按薄门面规则收紧 `CliCore`：`IsHelp`、`ToCompileViewModel`、`ToProjectCompileViewModel` 与项目命令分发私有包装已收回拥有者文件，`CliCore` 进一步缩到入口分发与跨命令共享输出辅助。
 - [x] 按 provider / command / preview bridge / style / workspace index 拆分 VSCode extension：在 VSCode 正式迁入 `src/ExternalSupport/VSCode` 后继续执行，保持现有作者体验不回归。
 	- [x] 已将 B 阶段剩余工作拆成 4 个实现节点与 1 个收口节点；后续每完成一项都要自检命名 / 边界、推送并勾选对应 TODO。
-	- [x] 已建立 VSCode 拆分骨架：`ExtensionEntry`、`Commands`、`LanguageFeatures`、`WorkspaceIndex`、`Bridges`、`PreviewWebview`、`Styles`、`Schemas`，并补齐目录规则 README；后续开始从 `extension.js` 逐类迁移。
+	- [x] 已建立 VSCode 拆分骨架：入口层、`Commands`、`LanguageFeatures`、`WorkspaceIndex`、`Bridges`、`PreviewWebview`、`Styles`、`Schemas`，并补齐目录规则 README；后续开始从 `extension.js` 逐类迁移。2026-05-18 入口层目录已从 `ExtensionEntry` 收敛到 `Entries`。
 	- [x] 已迁出第一条 VSCode command：`HostSchemaCommand` 进入 `Commands/HostSchemaCommand.js`，`extension.js` 只保留实例化与注册。
 	- [x] 已迁出第二条 VSCode command：`EditorAuthoringCommand` 进入 `Commands/EditorAuthoringCommand.js`，样式与工具菜单行为保持不变。
 	- [x] 已迁出第三条 VSCode command：`LocalizationCommand` 进入 `Commands/LocalizationCommand.js`，本地化导出 / 更新行为保持不变。

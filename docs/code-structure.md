@@ -31,7 +31,7 @@ src/
     LanguageServer/             当前 LanguageServer 基线项目，已接入 diagnostics / definition / references / completion 第一层
     Runtime/                    当前 Runtime 基线项目，已建立 NarrativeRuntime 最小 IR 消费生命周期
   ExternalSupport/
-    VSCode/                     当前 VSCode 前端扩展，已按 ExtensionEntry / Commands / LanguageFeatures 等目录完成 B 阶段拆分
+    VSCode/                     当前 VSCode 前端扩展，已按 Entries / Commands / LanguageFeatures 等目录完成 B 阶段拆分
     UnityPlugin/
       Inscape.Adapters.UnitySample/ 当前 UnitySample 外部支持样例，已迁入 ExternalSupport 路径
       Inscape.UnitySample.Cli/      UnitySample 样例命令入口，已按 Entries / Commands 初步分目录，不进入默认 solution
@@ -51,7 +51,7 @@ docs/
 1. `src/Internal` 与 `src/ExternalSupport` 骨架已建立，Internal 核心项目、VSCode 编辑器扩展和 Unity 原型均已迁入当前目标路径。
 2. `Inscape.Compiler` 项目名、命名空间与入口门面已完成迁移，源码已按业务角色分组；后续继续整理 Tooling / Cli / editor extension 的内部目录。
 3. `Inscape.Adapters.UnitySample`、`Inscape.UnitySample.Cli` 与 `Inscape.UnitySample.Tests` 均已位于 ExternalSupport，并已退出默认 `Inscape.slnx` 编译链；需要回归时单独构建 / 运行外部支持测试项目。
-4. `src/ExternalSupport/VSCode/` 已成为 VSCode 前端源码位置，且已完成 `ExtensionEntry`、`Commands`、`LanguageFeatures`、`WorkspaceIndex`、`Bridges`、`PreviewWebview`、`Styles`、`Schemas` 拆分；当前 `extension.js` 主要保留注册入口、实例装配和入口级 glue。
+4. `src/ExternalSupport/VSCode/` 已成为 VSCode 前端源码位置，且入口层已收敛到 `Entries`；`Commands`、`LanguageFeatures`、`WorkspaceIndex`、`Bridges`、`PreviewWebview`、`Styles` 仍是当前主要源码目录，资源已收敛到 `Resources`。
 5. `LanguageServer` 与 `Runtime` 已从纯目录骨架推进为可构建基线项目；后续重点是让编辑器扩展逐步接入 LanguageServer，并继续扩展 Runtime Host / HostBridge 设计。
 6. `tests/Internal/Inscape.Tests` 仍是聚合测试项目，但已按现有文件边界初步拆入 `Entries`、`Shared`、`Compiler`、`Cli`、`PreviewLocalization`；后续可继续把 Tooling、Preview、Localization 分成更细项目或目录。
 7. Layer / Business 目录已有统一 `README.md` 规则文件，后续迁移仍需补齐具体代码落位。
@@ -233,7 +233,7 @@ Cli
   Routing
 
 VSCode
-  ExtensionEntry
+  Entries
   LanguageFeatures
   EditorAuthoring
   PreviewWebview

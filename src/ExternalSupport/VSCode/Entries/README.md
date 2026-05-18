@@ -1,4 +1,4 @@
-# ExtensionEntry
+# Entries
 
 Owns the VSCode `activate` / `deactivate` entry and extension-level registration order.
 

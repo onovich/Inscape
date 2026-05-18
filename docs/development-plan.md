@@ -113,7 +113,7 @@
 
 目标模块：
 
-1. `ExtensionEntry`
+1. `Entries`
 2. `LanguageFeatures`
 3. `EditorAuthoring`
 4. `PreviewWebview`

@@ -178,7 +178,7 @@ src/ExternalSupport/VSCode/
   README.md
   extension.js
   package.json
-  ExtensionEntry/
+  Entries/
   LanguageFeatures/
   WorkspaceIndex/
   PreviewWebview/
