@@ -16,6 +16,7 @@
 3. 推进项目级资源 / 代码分层收口：按 ADR 0014 / ADR 0015 检查 VSCode package 与 Preview HTML 模板，逐步把图标、schema、snippet、TextMate grammar、HTML/CSS/JS 模板和打包脚本从代码逻辑中分离到项目内 Resources / Scripts 边界。
 	- Resources / Scripts 的拆分依据见 [Module Resource / Script Boundary Plan](module-resource-script-boundary-plan.md)：Internal 与 ExternalSupport 都适用，但只在未来可能独立拆仓、拆项目、单独发布或单独交付的具体模块根内创建。
 	- VSCode 内部目录审计见 [VSCode Directory Naming Audit](vscode-directory-naming-audit.md)：小写资源 / 脚本目录已收敛到 `Resources` / `Scripts`，`ExtensionEntry` 已收敛到 `Entries`，`PreviewWebview` 已收敛到 `Preview`，DslScript providers / diagnostics 已收敛到 `DslScript`，EditorAuthoring providers 已收敛到 `EditorAuthoring`，HostBinding / HostSchema providers 已收敛到各自业务目录；`LanguageFeatures` / `WorkspaceIndex` 过渡目录已删除。
+	- 当前正在做 G9.4 命名规范尾部自检：`PreviewRevealBridge` 已迁入 `Preview/Bridges`；`Styles`、根级 `Commands`、无规范后缀文件名和 `extension.js` 入口例外需要逐项确认 / 修复 / 勾选。
 4. Unity / Bird 相关继续只做准备和计划，等设计方案落实后再研发：包括 Attribute 扫描、Host Bridge 到 adapter 生成、Bird importer 提交策略和带真实 Timeline 的 Dry Run。
 
 ## 文档与接手效率
@@ -106,7 +107,7 @@
 	- [x] 已迁出第三条 VSCode command：`LocalizationCommand` 进入 `Commands/LocalizationCommand.js`，本地化导出 / 更新行为保持不变。
 	- [x] 已迁出第四条 VSCode command：`PreviewCommand` 进入 `Commands/PreviewCommand.js`，预览打开 / 切换 / selection reveal 行为保持不变。
 	- [x] 已先收口预览定位 selection bridge：原先散在 `extension.js` 顶层的 pending reveal 状态与相关函数已收为 `PreviewRevealBridge`，使预览定位的 Ctrl+Click 链路拥有明确 `Bridge` 角色。
-	- [x] 已迁出第一条 VSCode bridge：`PreviewRevealBridge` 进入 `Bridges/PreviewRevealBridge.js`，入口文件只保留实例化和事件/命令注册。
+	- [x] 已迁出第一条 VSCode bridge：`PreviewRevealBridge` 当前位于 `Preview/Bridges/PreviewRevealBridge.js`，入口文件只保留实例化和事件/命令注册。
 	- [x] 已继续收口预览命令入口：`openPreview`、`togglePreview`、`revealSelectionInPreview` 及其局部 helper 已收为 `PreviewCommand`，预览命令不再散在 `extension.js` 顶层函数。
 	- [x] 已继续收紧 preview reveal bridge 边界：光标处 reveal 信息解析、definition link 构造与 reveal range 解析已吸回 `PreviewRevealBridge`，preview reveal 顶层 helper 进一步退出函数区。
 	- [x] 已继续收口 localization 命令入口：`extractLocalization`、`updateLocalization` 及其局部执行链已收为 `LocalizationCommand`，顶层不再保留独立 localization command helper 串。

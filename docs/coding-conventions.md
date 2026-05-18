@@ -246,7 +246,7 @@ src/<Root>/<Layer>/<Business>/<Role>/<Subject><Qualifier><Role>
 - `src/Internal/Compiler/StoryGraph/Domains/StoryGraphEntryResolverDomain`
 - `src/Internal/Tooling/Preview/Controllers/PreviewFlowController`
 - `src/Internal/Cli/Localization/Commands/LocalizationExportCommand`
-- `src/ExternalSupport/VSCode/Bridges/PreviewRevealBridge`
+- `src/ExternalSupport/VSCode/Preview/Bridges/PreviewRevealBridge`
 - `src/Internal/LanguageServer/DslScript/Providers/DslScriptCompletionProvider`
 - `src/ExternalSupport/UnityPlugin/AssetConfigure/Controllers/UnityPluginAssetConfigureController`
 

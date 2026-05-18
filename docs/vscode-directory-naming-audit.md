@@ -17,13 +17,12 @@ VSCode package 内部目录仍有不符合命名规范的部分。下一轮不�
 | 当前目录 | 判断 | 原因 | 建议 |
 | --- | --- | --- | --- |
 | `Commands` | 保留 | Role 复数目录，承载 VSCode command 入口，符合规范 | 后续只检查文件主语是否清楚 |
-| `Bridges` | 保留 | Role 复数目录，承载 VSCode 与 preview / editor 之间的桥接 | 后续只检查是否存在可下沉到 Tooling 的逻辑 |
 | `Styles` | 暂保留 | Role / feature 之间略混，但承载样式控制器与默认样式，当前可读 | 后续资源拆分时再决定是否并入 `EditorAuthoring` 或 `Preview` |
 | `DslScript` | 保留 | 业务主语明确，承载 DslScript authoring providers 与 diagnostics controllers | 保持只做作者体验适配，不重写 Compiler 语义 |
 | `EditorAuthoring` | 保留 | 业务主语明确，承载 VSCode 作者工具通用数据和位置 provider | 保持只做 VSCode authoring 适配，共享项目加载继续下沉 Tooling |
 | `HostBinding` | 保留 | 业务主语明确，承载 Host Bridge / host binding 作者提示 | 继续只做 VSCode authoring 适配 |
 | `HostSchema` | 保留 | 业务主语明确，承载 Host Schema capability 作者提示 | 继续复用 Internal Tooling / CLI capability contract |
-| `Preview` | 保留 | 业务主语明确，VSCode webview 技术细节不再占据顶层目录名 | 继续保持 `Providers` / `Controllers` 角色目录 |
+| `Preview` | 保留 | 业务主语明确，VSCode webview 技术细节不再占据顶层目录名 | 继续保持 `Providers` / `Controllers` / `Bridges` 角色目录 |
 | `Entries` | 保留 | 复数 Role 目录，承载 VSCode extension activate / deactivate 与注册装配边界 | 保持薄入口，不承载 feature 行为 |
 | `Resources` | 保留 | VSCode 是未来可独立发布 extension package，非源码资源已按模块根内资源边界收口 | 继续保持 `Language`、`Media`、`Schemas`、`Snippets`、`Syntaxes` 子目录 |
 | `Scripts` | 保留 | VSCode package-only 开发脚本已与源码目录分离 | 继续只放该 package 的打包 / 安装脚本 |
@@ -36,7 +35,9 @@ VSCode package 内部目录仍有不符合命名规范的部分。下一轮不�
 4. 已完成：先把 DslScript providers / diagnostics 从 `LanguageFeatures` 与 `WorkspaceIndex` 收敛到 `DslScript/*`。
 5. 已完成：拆 EditorAuthoring providers 到 `EditorAuthoring/Providers` 并删除 `LanguageFeatures`。
 6. 已完成：拆剩余 `WorkspaceIndex` 到 `HostBinding/Providers` 与 `HostSchema/Providers` 并删除 `WorkspaceIndex`。
-7. 每一步都要同步 VSCode `require()`、`package.json` 资源路径、README、回归命令和测试路径。
+7. 已完成：迁 `Bridges/PreviewRevealBridge` 到 `Preview/Bridges`，删除根级 `Bridges`。
+8. 命名规范尾部自检继续审视 `Styles`、根级 `Commands`、无规范后缀文件和 `extension.js` 入口例外。
+9. 每一步都要同步 VSCode `require()`、`package.json` 资源路径、README、回归命令和测试路径。
 
 ## 自检规则
 
