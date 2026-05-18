@@ -151,6 +151,7 @@
 - [x] 正文 / 选项文本继续保持 `DefinitionProvider` + selection bridge，不回到 `DocumentLinkProvider`；VSCode package 已增加静态契约检查。
 - [x] 预览中的 `[]` 查询插值保持原文显示，但使用独立 token 样式，避免和普通字符串混淆。
 - [x] 可选的预览 / 源码同步策略第一版：`inscape.preview.sourceSyncMode = off|click|selection`，默认 `click` 保持现有行为，`selection` 只驱动已打开预览。
+- [x] 可选的预览 / 源码同步策略自动化自检：新增脚本覆盖 `off` / `click` / `selection` 的关键边界。
 - [ ] 可选的预览 / 源码同步策略收口：补 VSCode 手动 smoke，确认三种模式的交互边界与默认值。
 
 ## Goal 10：Stable ID 与本地化迁移落地
