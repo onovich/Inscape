@@ -4,6 +4,7 @@ class EditorAuthoringCommand {
 
     constructor(dependencies) {
         this.vscode = dependencies.vscode;
+        this.childProcess = dependencies.childProcess;
         this.fs = dependencies.fs;
         this.path = dependencies.path;
         this.isInscapeDocument = dependencies.isInscapeDocument;
@@ -12,6 +13,9 @@ class EditorAuthoringCommand {
         this.dslScriptNodeProvider = dependencies.dslScriptNodeProvider;
         this.defaultEditorStyle = dependencies.defaultEditorStyle;
         this.defaultPreviewStyle = dependencies.defaultPreviewStyle;
+        this.writeTempDocument = dependencies.writeTempDocument;
+        this.resolveCliProjectPath = dependencies.resolveCliProjectPath;
+        this.normalizePath = dependencies.normalizePath;
     }
 
     async openMenu(context) {
@@ -25,6 +29,11 @@ class EditorAuthoringCommand {
                 label: "$(add) 插入剧情块标题",
                 description: "同名标题会自动追加 _01",
                 action: () => this.insertNodeTitle()
+            },
+            {
+                label: "$(sync) 更新 Stable Node Map",
+                description: "写入或更新 inscape.node-map.json",
+                action: () => this.updateNodeMap(context)
             },
             {
                 label: "$(symbol-color) 编辑器样式",
@@ -84,6 +93,48 @@ class EditorAuthoringCommand {
         await editor.edit((editBuilder) => {
             editBuilder.insert(editor.selection.active, insertText);
         });
+    }
+
+    async updateNodeMap(context) {
+        const workspaceFolder = await this.resolvePreferredWorkspaceFolder();
+        if (!workspaceFolder) {
+            return;
+        }
+
+        const editorDocument = this.vscode.window.activeTextEditor ? this.vscode.window.activeTextEditor.document : undefined;
+        const activeDocument = editorDocument
+            && this.isInscapeDocument(editorDocument)
+            && this.isDocumentInWorkspaceFolder(editorDocument, workspaceFolder)
+            ? editorDocument
+            : undefined;
+        let tempPath;
+
+        try {
+            if (activeDocument) {
+                tempPath = this.writeTempDocument(activeDocument);
+            }
+
+            const invocation = this.createNodeMapInvocation(context, workspaceFolder, activeDocument, tempPath);
+            const output = await this.vscode.window.withProgress({
+                location: this.vscode.ProgressLocation.Notification,
+                title: "Updating Inscape stable node map",
+                cancellable: false
+            }, () => this.execFile(invocation));
+
+            const nodeMapPath = this.normalizeNodeMapPath(output) || this.path.join(workspaceFolder.uri.fsPath, "inscape.node-map.json");
+            const openAction = "Open";
+            const message = "Inscape stable node map written to " + nodeMapPath;
+            const selection = await this.vscode.window.showInformationMessage(message, openAction);
+            if (selection === openAction && this.fs.existsSync(nodeMapPath)) {
+                await this.openFile(nodeMapPath);
+            }
+        } catch (error) {
+            this.vscode.window.showErrorMessage(error.message || String(error));
+        } finally {
+            if (tempPath) {
+                this.fs.unlink(tempPath, () => { });
+            }
+        }
     }
 
     async openEditorStyle() {
@@ -162,6 +213,66 @@ class EditorAuthoringCommand {
         }
 
         return this.selectWorkspaceFolder();
+    }
+
+    createNodeMapInvocation(context, workspaceFolder, activeDocument, tempPath) {
+        const configuration = this.vscode.workspace.getConfiguration("inscape", workspaceFolder.uri);
+        const command = configuration.get("compiler.command", "dotnet");
+        const cliProject = this.resolveCliProjectPath(context, workspaceFolder.uri.fsPath);
+        const args = [
+            "run",
+            "--project",
+            cliProject,
+            "--",
+            "update-node-map-project",
+            workspaceFolder.uri.fsPath
+        ];
+
+        if (activeDocument && tempPath) {
+            args.push("--override", activeDocument.uri.fsPath, tempPath);
+        }
+
+        return {
+            command,
+            args,
+            cwd: workspaceFolder.uri.fsPath
+        };
+    }
+
+    isDocumentInWorkspaceFolder(document, workspaceFolder) {
+        const folder = this.vscode.workspace.getWorkspaceFolder(document.uri);
+        return !!folder && this.normalizePath(folder.uri.fsPath) === this.normalizePath(workspaceFolder.uri.fsPath);
+    }
+
+    normalizeNodeMapPath(output) {
+        const candidates = String(output || "")
+            .split(/\r?\n/)
+            .map((line) => line.trim())
+            .filter(Boolean);
+        const candidate = candidates.length > 0
+            ? candidates[candidates.length - 1]
+            : undefined;
+        return candidate || undefined;
+    }
+
+    execFile(invocation) {
+        return new Promise((resolve, reject) => {
+            this.childProcess.execFile(invocation.command, invocation.args, {
+                cwd: invocation.cwd,
+                windowsHide: true,
+                maxBuffer: 1024 * 1024 * 8
+            }, (error, stdout, stderr) => {
+                if (error) {
+                    const detail = stderr && stderr.trim()
+                        ? stderr.trim()
+                        : (stdout && stdout.trim() ? stdout.trim() : error.message);
+                    reject(new Error(detail));
+                    return;
+                }
+
+                resolve(stdout);
+            });
+        });
     }
 
     async ensureStyleFile(workspaceFolder, kind) {

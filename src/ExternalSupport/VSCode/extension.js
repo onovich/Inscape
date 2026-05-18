@@ -356,6 +356,7 @@ localizationCommand = new LocalizationCommand({
 
 editorAuthoringCommand = new EditorAuthoringCommand({
     vscode,
+    childProcess,
     fs,
     path,
     isInscapeDocument,
@@ -363,7 +364,10 @@ editorAuthoringCommand = new EditorAuthoringCommand({
     selectWorkspaceFolder,
     dslScriptNodeProvider,
     defaultEditorStyle,
-    defaultPreviewStyle
+    defaultPreviewStyle,
+    writeTempDocument,
+    resolveCliProjectPath,
+    normalizePath
 });
 
 hostSchemaCommand = new HostSchemaCommand({

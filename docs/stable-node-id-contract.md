@@ -8,7 +8,7 @@
 
 Goal 0 后，`:: node.name` 不再是当前 parser / editor 主路径。本文保留 `::` 到 `#` 的离线迁移策略，但不要求任何运行时兼容期。
 
-2026-05-19 补充：Goal 10 的第一刀已经落地 `update-node-map-project`。当前实现会创建/读取/更新 `inscape.node-map.json`，按当前标题精确命中复用 stable node id，把消失节点标成 `missing`，并把 sidecar 内重复 `id` / `title` 标成 `conflict`。source/content/neighbor 指纹已开始落盘；同日又补了第一版“保守自动重命名识别”：当 `sourcePath` 稳定，且 content / neighbor / line anchors 能形成唯一候选时，会复用旧 id 并把旧标题写入 `previousTitles`。VSCode 标题入口接线、人工确认流和更强的冲突报告仍属于后续 G10.2。
+2026-05-19 补充：Goal 10 的第一刀已经落地 `update-node-map-project`。当前实现会创建/读取/更新 `inscape.node-map.json`，按当前标题精确命中复用 stable node id，把消失节点标成 `missing`，并把 sidecar 内重复 `id` / `title` 标成 `conflict`。source/content/neighbor 指纹已开始落盘；同日又补了第一版“保守自动重命名识别”：当 `sourcePath` 稳定，且 content / neighbor / line anchors 能形成唯一候选时，会复用旧 id 并把旧标题写入 `previousTitles`。VSCode 当前也已新增显式 `Inscape: Update Stable Node Map` 入口，并会把活动未保存 `.inscape` 文档通过 `--override` 传给 CLI；但标题创建后的自动同步、重命名人工确认流和更强的冲突报告仍属于后续 G10.2。
 
 ## 目标
 
@@ -180,7 +180,7 @@ node map 是可版本控制文件。合并策略：
 - Tooling：读取 / 更新 `inscape.node-map.json`，执行项目扫描、迁移识别和冲突报告。
 - CLI：提供显式命令，例如未来的 `update-node-map-project` 或 `migrate-node-titles-project`，负责文件输出和报告。
 - LanguageServer：消费 Tooling 契约，提供编辑器 diagnostics、rename candidates 和 quick fix。
-- VSCode：提供创建标题 `_01` 自动编号、人工确认 UI、跳转和预览体验。
+- VSCode：提供创建标题 `_01` 自动编号、显式 stable node map 更新命令、后续人工确认 UI、跳转和预览体验。
 - Runtime：只消费编译结果中的 stable node id 和 display title，不读取源码或 sidecar。
 
 ## Goal 1 自检

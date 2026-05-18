@@ -70,6 +70,7 @@ class ExtensionRegistrationController {
             this.vscode.commands.registerCommand("inscape.revealSelectionInPreview", () => this.previewCommand.revealSelection(context)),
             this.vscode.commands.registerCommand("inscape.openToolsMenu", () => this.editorAuthoringCommand.openMenu(context)),
             this.vscode.commands.registerCommand("inscape.insertNodeTitle", () => this.editorAuthoringCommand.insertNodeTitle()),
+            this.vscode.commands.registerCommand("inscape.updateNodeMap", () => this.editorAuthoringCommand.updateNodeMap(context)),
             this.vscode.commands.registerCommand("inscape.openEditorStyle", () => this.editorAuthoringCommand.openEditorStyle()),
             this.vscode.commands.registerCommand("inscape.openPreviewStyle", () => this.editorAuthoringCommand.openPreviewStyle()),
             this.vscode.commands.registerCommand("inscape.openQuickSyntaxGuide", () => this.editorAuthoringCommand.openQuickSyntaxGuide()),

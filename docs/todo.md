@@ -15,7 +15,7 @@
 	- 待做：补完 `inscape.preview.sourceSyncMode` 的 VSCode 手动 smoke，并视体验决定是否继续细化自动跟随边界。
 2. **Stable Node ID 与节点重命名落地。**
 	- 已完成：ADR 0013、stable node id / title map 契约、标题重命名识别流程设计，以及 `update-node-map-project` 首版 sidecar 创建 / 读取 / 更新 / missing / conflict 闭环；同路径下已补第一版保守自动重命名识别与 `previousTitles` 维护。
-	- 待做：把标题创建、标题重命名入口与本地化对齐真正接入 stable node id 维护，并补人工确认 / 冲突报告。
+	- 待做：把标题创建后的自动同步、标题重命名入口与本地化对齐真正接入 stable node id 维护，并补人工确认 / 冲突报告。VSCode 显式 `Update Stable Node Map` 入口已落地。
 3. **本地化 Diff / Alignment 落地。**
 	- 已完成：状态机、CSV / report 字段、anchor + occurrence + diff 对齐流程设计。
 	- 待做：实现显式 alignment / audit report，保护旧译文，标记 `kept` / `new` / `changed` / `removed` / `conflict` / `stale`，相似匹配只作为人工候选。
@@ -212,6 +212,7 @@
 	- [x] 设计 stable node id 的落盘位置：sidecar 索引、迁移表，或必要时显式 `@id`；详见 [Stable Node ID Contract](stable-node-id-contract.md)。
 	- [x] 设计标题重命名识别流程：source range、相邻文本锚点、旧标题、前后节点关系与人工确认；详见 [Stable Node ID Contract](stable-node-id-contract.md)。
 - [ ] 实现 stable node id sidecar 与标题重命名迁移流程。
+	- [x] VSCode 新增显式 `Inscape: Update Stable Node Map` 命令，调用 `update-node-map-project` 并把活动未保存文档通过 `--override` 传给 CLI。
 - [x] 定义并实现行级隐式 hash 的输入、规范化规则、版本号和碰撞处理。
 - [x] 实现第一版本地化 CSV 提取，覆盖旁白、对白、选择提示和选择项。
 - [x] 实现旧翻译表按锚点精确继承，并标记新增、保留、删除条目。
