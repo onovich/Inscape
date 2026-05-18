@@ -10,7 +10,7 @@
 
 下一位接手者建议按以下顺序推进：
 
-1. 按 [/goal 后续目标计划](goal-plan.md) 推进 Goal 6：Host Schema endpoint 已建立 LanguageServer / Tooling 契约，VSCode query / event provider 已迁到 LanguageServer 优先路径；下一步移除 JS direct JSON fallback，并补清晰 output 日志。
+1. Goal 6 已完成：Host Schema endpoint 已收口到 LanguageServer / Tooling 契约，VSCode query / event provider 已迁到 LanguageServer 优先路径，JS direct JSON fallback 已移除。
 2. 继续打磨 VSCode 可玩预览：补未保存内容的更细粒度热刷新、刷新中状态提示，以及可选的预览 / 源码同步策略。
 	- 正文 / 选项文本不再用 `DocumentLinkProvider`，因为它会导致整段文本常驻下划线；当前用 `DefinitionProvider` 恢复“默认无下划线、Ctrl+指向才显示链接态”的编辑体验，并通过 selection bridge 在 Ctrl+Click 后执行预览定位，显式命令仅作为兜底。
 3. 推进项目级资源 / 代码分层收口：按 ADR 0014 / ADR 0015 检查 VSCode package 与 Preview HTML 模板，逐步把图标、schema、snippet、TextMate grammar、HTML/CSS/JS 模板和打包脚本从代码逻辑中分离到项目内 Resources / Scripts 边界。
@@ -243,7 +243,7 @@
 - [x] 评估 VSCode JS query / event provider 是否应复用 `Inscape.Tooling` Host Schema reader / audit 契约：结论是 Tooling 先补齐 event reader，VSCode 暂保留轻量 JS reader；后续通过 LanguageServer 或显式 CLI capability endpoint 复用 Tooling，避免直接从扩展热路径启动 .NET。
 - [x] 设计并实现 Host Schema capability endpoint：Internal CLI 新增 `inspect-host-schema-project <root> [-o capabilities.json]`，输出 `inscape.host-schema.capabilities`，供 VSCode / LanguageServer 后续复用 Tooling reader。
 - [x] 让 VSCode 消费 Host Schema capability endpoint / Tooling 契约：query / event provider 优先调用 `inspect-host-schema-project`，失败时回退直接 JSON 读取。
-- [ ] 按 [VSCode LanguageServer Migration Plan](vscode-language-server-migration-plan.md) 继续推进 Host Schema capability endpoint：LanguageServer `--host-schema-capabilities-project` 已复用 Tooling 契约，VSCode query / event provider 已优先调用 LanguageServer；下一步在稳定后移除 JS provider 的重复 JSON fallback。
+- [x] 按 [VSCode LanguageServer Migration Plan](vscode-language-server-migration-plan.md) 完成 Host Schema capability endpoint 收口：LanguageServer `--host-schema-capabilities-project` 已复用 Tooling 契约，VSCode query / event provider 已优先调用 LanguageServer，失败后回退 CLI，JS provider 的重复 JSON fallback 已移除并改为 output 日志。
 - [x] 定义第一版诊断清单：重复节点、非法节点名、缺失目标、不可达节点、空节点、选项语法问题。
 - [x] Compiler 支持 `# 标题`：当前已移除 `:: node.name` 兼容路径，新增标题唯一诊断、标题前缺空行 info 级 style hint，并覆盖中文标题跳转测试。
 - [x] VSCode 标题语法体验：TextMate 高亮、snippets、Outline / completion / definition / references 识别标题，以及 `Inscape: Insert Node Title` 命令在创建同名标题时自动生成 `_01` 编号。

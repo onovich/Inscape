@@ -4,9 +4,6 @@ class DslScriptQueryInterpolationProvider {
 
     constructor(dependencies) {
         this.vscode = dependencies.vscode;
-        this.fs = dependencies.fs;
-        this.readProjectConfig = dependencies.readProjectConfig;
-        this.resolveProjectConfigPath = dependencies.resolveProjectConfigPath;
         this.formatDisplayPath = dependencies.formatDisplayPath;
         this.hostSchemaCapabilityProvider = dependencies.hostSchemaCapabilityProvider;
     }
@@ -63,41 +60,7 @@ class DslScriptQueryInterpolationProvider {
             return catalogQueries;
         }
 
-        const schemaInfo = await this.readConfiguredSchema(document);
-        if (!schemaInfo || !schemaInfo.schema || !Array.isArray(schemaInfo.schema.queries)) {
-            return [];
-        }
-
-        const queries = [];
-        const seen = new Set();
-        for (const query of schemaInfo.schema.queries) {
-            if (!query || typeof query.name !== "string" || !this.isTextInterpolationQuery(query)) {
-                continue;
-            }
-
-            const name = query.name.trim();
-            if (!name || seen.has(name)) {
-                continue;
-            }
-
-            seen.add(name);
-            const location = this.findQueryLocation(schemaInfo, name);
-            queries.push({
-                name,
-                returnType: typeof query.returnType === "string" ? query.returnType : "",
-                isAsync: query.isAsync === true,
-                description: typeof query.description === "string" ? query.description : "",
-                parameters: Array.isArray(query.parameters) ? query.parameters : [],
-                sourcePath: schemaInfo.schemaPath,
-                sourceLabel: "Host Schema",
-                sourceKind: "hostSchema",
-                line: location.line,
-                character: location.character,
-                length: location.length
-            });
-        }
-
-        return queries.sort((left, right) => left.name.localeCompare(right.name));
+        return [];
     }
 
     async collectCatalogQueries(document) {
@@ -163,74 +126,6 @@ class DslScriptQueryInterpolationProvider {
         markdown.appendMarkdown("No zero-parameter simple query with this name was found in the configured Host Schema. This is an authoring hint, not a Compiler error.\n\n");
         markdown.appendMarkdown("Use `[]` for read-only text interpolation. Keep events, actions, timing hooks, and host binding out of `[]` usage.");
         return markdown;
-    }
-
-    async readConfiguredSchema(document) {
-        const projectConfig = await this.readProjectConfig(document);
-        if (!projectConfig || !projectConfig.configPath || !projectConfig.config) {
-            return undefined;
-        }
-
-        const configuredPath = projectConfig.config.hostSchema;
-        if (!configuredPath) {
-            return undefined;
-        }
-
-        const schemaPath = this.resolveProjectConfigPath(projectConfig.configPath, configuredPath);
-        if (!this.fs.existsSync(schemaPath)) {
-            return undefined;
-        }
-
-        try {
-            const text = await this.fs.promises.readFile(schemaPath, "utf8");
-            return {
-                schemaPath,
-                text,
-                schema: JSON.parse(text)
-            };
-        } catch {
-            return undefined;
-        }
-    }
-
-    findQueryLocation(schemaInfo, queryName) {
-        const lines = schemaInfo.text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
-        let inQueries = false;
-
-        for (let line = 0; line < lines.length; line += 1) {
-            if (!inQueries && /"queries"\s*:/.test(lines[line])) {
-                inQueries = true;
-                continue;
-            }
-
-            if (inQueries && /"events"\s*:/.test(lines[line])) {
-                break;
-            }
-
-            if (!inQueries) {
-                continue;
-            }
-
-            const nameIndex = lines[line].indexOf("\"name\"");
-            if (nameIndex < 0) {
-                continue;
-            }
-
-            const valueIndex = lines[line].indexOf("\"" + queryName + "\"", nameIndex);
-            if (valueIndex >= 0) {
-                return {
-                    line,
-                    character: valueIndex + 1,
-                    length: queryName.length
-                };
-            }
-        }
-
-        return {
-            line: 0,
-            character: 0,
-            length: Math.max(queryName.length, 1)
-        };
     }
 
     isSimpleQueryPath(value) {

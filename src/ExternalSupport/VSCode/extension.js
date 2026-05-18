@@ -98,7 +98,8 @@ const hostSchemaCapabilityProvider = new HostSchemaCapabilityProvider({
     path,
     vscode,
     resolveLanguageServerProjectPath: (workspaceFolderPath) => resolveLanguageServerProjectPathFromBase(workspaceFolderPath, __dirname),
-    resolveCliProjectPath: (workspaceFolderPath) => resolveCliProjectPathFromBase(workspaceFolderPath, __dirname)
+    resolveCliProjectPath: (workspaceFolderPath) => resolveCliProjectPathFromBase(workspaceFolderPath, __dirname),
+    logOutput: (message) => extensionLifecycleController.logOutput(message)
 });
 
 const dslScriptMetadataProvider = new DslScriptMetadataProvider({
@@ -108,18 +109,12 @@ const dslScriptMetadataProvider = new DslScriptMetadataProvider({
 
 const dslScriptQueryInterpolationProvider = new DslScriptQueryInterpolationProvider({
     vscode,
-    fs,
-    readProjectConfig: (document) => editorAuthoringDataProvider.readProjectConfig(document),
-    resolveProjectConfigPath: (configPath, value) => editorAuthoringDataProvider.resolveProjectConfigPath(configPath, value),
     formatDisplayPath: (sourcePath) => editorAuthoringLocationProvider.formatDisplayPath(sourcePath),
     hostSchemaCapabilityProvider
 });
 
 const dslScriptHostEventProvider = new DslScriptHostEventProvider({
     vscode,
-    fs,
-    readProjectConfig: (document) => editorAuthoringDataProvider.readProjectConfig(document),
-    resolveProjectConfigPath: (configPath, value) => editorAuthoringDataProvider.resolveProjectConfigPath(configPath, value),
     formatDisplayPath: (sourcePath) => editorAuthoringLocationProvider.formatDisplayPath(sourcePath),
     hostSchemaCapabilityProvider
 });

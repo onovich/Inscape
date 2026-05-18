@@ -4,9 +4,6 @@ class DslScriptHostEventProvider {
 
     constructor(dependencies) {
         this.vscode = dependencies.vscode;
-        this.fs = dependencies.fs;
-        this.readProjectConfig = dependencies.readProjectConfig;
-        this.resolveProjectConfigPath = dependencies.resolveProjectConfigPath;
         this.formatDisplayPath = dependencies.formatDisplayPath;
         this.hostSchemaCapabilityProvider = dependencies.hostSchemaCapabilityProvider;
     }
@@ -53,41 +50,7 @@ class DslScriptHostEventProvider {
             return catalogEvents;
         }
 
-        const schemaInfo = await this.readConfiguredSchema(document);
-        if (!schemaInfo || !schemaInfo.schema || !Array.isArray(schemaInfo.schema.events)) {
-            return [];
-        }
-
-        const events = [];
-        const seen = new Set();
-        for (const hostEvent of schemaInfo.schema.events) {
-            if (!hostEvent || typeof hostEvent.name !== "string") {
-                continue;
-            }
-
-            const name = hostEvent.name.trim();
-            if (!this.isEventName(name) || seen.has(name)) {
-                continue;
-            }
-
-            seen.add(name);
-            const location = this.findEventLocation(schemaInfo, name);
-            events.push({
-                name,
-                delivery: typeof hostEvent.delivery === "string" ? hostEvent.delivery : "fire-and-forget",
-                sideEffects: hostEvent.sideEffects !== false,
-                description: typeof hostEvent.description === "string" ? hostEvent.description : "",
-                parameters: Array.isArray(hostEvent.parameters) ? hostEvent.parameters : [],
-                sourcePath: schemaInfo.schemaPath,
-                sourceLabel: "Host Schema",
-                sourceKind: "hostSchema",
-                line: location.line,
-                character: location.character,
-                length: location.length
-            });
-        }
-
-        return events.sort((left, right) => left.name.localeCompare(right.name));
+        return [];
     }
 
     async collectCatalogEvents(document) {
@@ -163,74 +126,6 @@ class DslScriptHostEventProvider {
         markdown.appendMarkdown("No event with this name was found in the configured Host Schema. This is an authoring hint, not a Compiler error.\n\n");
         markdown.appendMarkdown("Use `@emit` for event / action intent. Use `[]` only for read-only query interpolation.");
         return markdown;
-    }
-
-    async readConfiguredSchema(document) {
-        const projectConfig = await this.readProjectConfig(document);
-        if (!projectConfig || !projectConfig.configPath || !projectConfig.config) {
-            return undefined;
-        }
-
-        const configuredPath = projectConfig.config.hostSchema;
-        if (!configuredPath) {
-            return undefined;
-        }
-
-        const schemaPath = this.resolveProjectConfigPath(projectConfig.configPath, configuredPath);
-        if (!this.fs.existsSync(schemaPath)) {
-            return undefined;
-        }
-
-        try {
-            const text = await this.fs.promises.readFile(schemaPath, "utf8");
-            return {
-                schemaPath,
-                text,
-                schema: JSON.parse(text)
-            };
-        } catch {
-            return undefined;
-        }
-    }
-
-    findEventLocation(schemaInfo, eventName) {
-        const lines = schemaInfo.text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
-        let inEvents = false;
-
-        for (let line = 0; line < lines.length; line += 1) {
-            if (!inEvents && /"events"\s*:/.test(lines[line])) {
-                inEvents = true;
-                continue;
-            }
-
-            if (inEvents && /"queries"\s*:/.test(lines[line])) {
-                break;
-            }
-
-            if (!inEvents) {
-                continue;
-            }
-
-            const nameIndex = lines[line].indexOf("\"name\"");
-            if (nameIndex < 0) {
-                continue;
-            }
-
-            const valueIndex = lines[line].indexOf("\"" + eventName + "\"", nameIndex);
-            if (valueIndex >= 0) {
-                return {
-                    line,
-                    character: valueIndex + 1,
-                    length: eventName.length
-                };
-            }
-        }
-
-        return {
-            line: 0,
-            character: 0,
-            length: Math.max(eventName.length, 1)
-        };
     }
 
     isEventName(value) {

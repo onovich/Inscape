@@ -9,6 +9,7 @@ class HostSchemaCapabilityProvider {
         this.vscode = dependencies.vscode;
         this.resolveLanguageServerProjectPath = dependencies.resolveLanguageServerProjectPath;
         this.resolveCliProjectPath = dependencies.resolveCliProjectPath;
+        this.logOutput = dependencies.logOutput;
         this.cache = new Map();
     }
 
@@ -42,24 +43,34 @@ class HostSchemaCapabilityProvider {
             this.resolveLanguageServerInvocation(command, languageServerProject, workspacePath),
             this.resolveCliInvocation(command, cliProject, workspacePath)
         ];
+        const failures = [];
 
         for (const invocation of invocations) {
             try {
                 const result = await this.execFile(invocation);
                 if (result.exitCode !== 0 || !result.stdout.trim()) {
+                    failures.push(this.createFailureDetail(invocation, result));
                     continue;
                 }
 
                 const parsed = JSON.parse(result.stdout);
                 if (!parsed || parsed.format !== "inscape.host-schema.capabilities") {
+                    failures.push(invocation.label + " returned an unexpected Host Schema capability payload.");
                     continue;
                 }
 
+                if (parsed.hostSchema && parsed.hostSchema.errorMessage) {
+                    this.writeLog("Host Schema capability endpoint reported: " + parsed.hostSchema.errorMessage);
+                }
                 return parsed;
-            } catch {
+            } catch (error) {
+                failures.push(invocation.label + " failed: " + (error && error.message ? error.message : String(error)));
             }
         }
 
+        if (failures.length > 0) {
+            this.writeLog("Host Schema capabilities unavailable. " + failures.join(" "));
+        }
         return undefined;
     }
 
@@ -67,6 +78,7 @@ class HostSchemaCapabilityProvider {
         const languageServerExecutable = this.resolveProjectExecutablePath(languageServerProject, "Inscape.LanguageServer");
         if (languageServerExecutable) {
             return {
+                label: "LanguageServer executable",
                 command: languageServerExecutable,
                 args: ["--host-schema-capabilities-project", workspaceFolderPath],
                 cwd: workspaceFolderPath
@@ -76,6 +88,7 @@ class HostSchemaCapabilityProvider {
         const languageServerAssembly = this.resolveProjectAssemblyPath(languageServerProject, "Inscape.LanguageServer.dll");
         if (languageServerAssembly && this.fs.existsSync(languageServerAssembly)) {
             return {
+                label: "LanguageServer assembly",
                 command: defaultCommand,
                 args: ["exec", languageServerAssembly, "--host-schema-capabilities-project", workspaceFolderPath],
                 cwd: workspaceFolderPath
@@ -83,6 +96,7 @@ class HostSchemaCapabilityProvider {
         }
 
         return {
+            label: "LanguageServer project",
             command: defaultCommand,
             args: ["run", "--project", languageServerProject, "--", "--host-schema-capabilities-project", workspaceFolderPath],
             cwd: workspaceFolderPath
@@ -93,6 +107,7 @@ class HostSchemaCapabilityProvider {
         const cliExecutable = this.resolveProjectExecutablePath(cliProject, "Inscape.Cli");
         if (cliExecutable) {
             return {
+                label: "CLI executable",
                 command: cliExecutable,
                 args: ["inspect-host-schema-project", workspaceFolderPath],
                 cwd: workspaceFolderPath
@@ -102,6 +117,7 @@ class HostSchemaCapabilityProvider {
         const cliAssembly = this.resolveProjectAssemblyPath(cliProject, "Inscape.Cli.dll");
         if (cliAssembly && this.fs.existsSync(cliAssembly)) {
             return {
+                label: "CLI assembly",
                 command: defaultCommand,
                 args: ["exec", cliAssembly, "inspect-host-schema-project", workspaceFolderPath],
                 cwd: workspaceFolderPath
@@ -109,6 +125,7 @@ class HostSchemaCapabilityProvider {
         }
 
         return {
+            label: "CLI project",
             command: defaultCommand,
             args: ["run", "--project", cliProject, "--", "inspect-host-schema-project", workspaceFolderPath],
             cwd: workspaceFolderPath
@@ -169,6 +186,19 @@ class HostSchemaCapabilityProvider {
         }
 
         return undefined;
+    }
+
+    createFailureDetail(invocation, result) {
+        const detail = result.stderr && result.stderr.trim()
+            ? result.stderr.trim()
+            : (result.stdout && result.stdout.trim() ? result.stdout.trim() : "exit code " + result.exitCode);
+        return invocation.label + " failed: " + detail;
+    }
+
+    writeLog(message) {
+        if (typeof this.logOutput === "function") {
+            this.logOutput(message);
+        }
     }
 
 }

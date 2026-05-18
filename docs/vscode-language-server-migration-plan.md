@@ -87,8 +87,8 @@
 1. 已完成：LanguageServer 增加 Host Schema capability endpoint。
 2. 已完成：VSCode query / event provider 优先调用 LanguageServer。
 3. 当前保留：失败时回退 CLI `inspect-host-schema-project`。
-4. 当前保留：再失败时暂时回退 JS direct JSON reader。
-5. 下一步：补 output 日志并单独移除 direct JSON fallback。
+4. 已完成：移除 JS direct JSON reader。
+5. 已完成：LanguageServer / CLI 均失败时写入 output channel 日志，作者提示为空但不升级为 Compiler error。
 
 ### L6：完整 LSP transport
 
@@ -106,7 +106,7 @@ probe parity 稳定后再引入完整 LSP transport。Transport 本身是通信�
 | Text-to-preview reveal | VSCode `DefinitionProvider` + `PreviewRevealBridge` | 显式 `Inscape: Open Preview` / reveal 命令 | 无预览定位但源码可编辑 |
 | Speaker authoring | VSCode / future LanguageServer Host Bridge provider | Host Bridge speaker ids | workspace dialogue scan |
 | Host binding authoring | VSCode / future LanguageServer Host Bridge provider | Host Bridge bindings | workspace occurrence |
-| Host Schema query / event | LanguageServer `--host-schema-capabilities-project` | CLI `inspect-host-schema-project` | direct JSON reader |
+| Host Schema query / event | LanguageServer `--host-schema-capabilities-project` | CLI `inspect-host-schema-project` | 空提示 + output 日志 |
 | Preview rendering | VSCode preview + CLI `preview-project` | CLI executable / DLL / `dotnet run` fallback | error HTML with diagnostics |
 
 ## 删除 fallback 的条件
