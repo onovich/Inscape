@@ -62,10 +62,12 @@ class PreviewRefreshController {
     async refreshPanel(context, panel, document, showProgress) {
         const runRefresh = async () => {
             const cacheKey = this.normalizePath(document.uri.fsPath);
+            this.setPanelRefreshState(panel, true);
             const documentHash = this.hashDocumentText(document);
             const cached = this.renderCache.get(cacheKey);
             if (cached && cached.documentHash === documentHash && cached.html) {
                 panel.webview.html = cached.html;
+                this.setPanelRefreshState(panel, false);
                 return;
             }
 
@@ -99,6 +101,7 @@ class PreviewRefreshController {
                     html
                 });
                 panel.webview.html = html;
+                this.setPanelRefreshState(panel, false);
 
                 if (result.exitCode !== 0) {
                     const detail = this.getInvocationFailureDetail(result.stderr, result.stdout, "Preview rendered with compiler diagnostics.");
@@ -108,6 +111,8 @@ class PreviewRefreshController {
                     }
                 }
             } finally {
+                this.setPanelRefreshState(panel, false);
+
                 if (tempPath) {
                     this.fs.unlink(tempPath, () => { });
                 }
@@ -131,6 +136,17 @@ class PreviewRefreshController {
             panel.webview.html = this.previewHtmlProvider.createErrorHtml(error.message || String(error));
             this.vscode.window.showErrorMessage(error.message || String(error));
         }
+    }
+
+    setPanelRefreshState(panel, isRefreshing) {
+        if (!panel || !panel.webview || typeof panel.webview.postMessage !== "function") {
+            return;
+        }
+
+        panel.webview.postMessage({
+            type: "previewStatus",
+            isRefreshing
+        });
     }
 
 }

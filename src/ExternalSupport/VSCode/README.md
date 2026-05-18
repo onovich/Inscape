@@ -68,6 +68,8 @@ dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- preview-
 
 If the active `.inscape` document is unsaved and belongs to the selected workspace, the extension passes it to the CLI with `--override` so the preview reflects editor contents. Once a preview editor is open, saving any `.inscape` file in that workspace refreshes it automatically, and typing uses a short debounce so it still feels lightweight. The extension prefers a compiled CLI DLL when one is already present, which keeps preview startup closer to an editor-like experience. The preview itself now uses a single immersive story pane: click choices to branch, click the text body to continue when there is only a default next node, and use Back / Restart to revisit the flow. Compiler diagnostics do not block preview rendering; the CLI still emits HTML and the editor keeps showing it.
 
+During refresh, the preview webview displays a small `刷新中...` status. This is a VSCode webview message only; it does not change story state, path history, or compiler output.
+
 Preview nodes, dialogue lines, choices, metadata tags, and diagnostics include a source jump affordance. Clicking the source badge opens the matching location in the editor so you can move between gameplay flow and script edits quickly.
 
 Dialogue, narration, prompt, and choice text inside the editor deliberately do not use `DocumentLinkProvider`. That provider made long text ranges render like always-on links, which caused persistent underline regressions. The stable pattern is: `DefinitionProvider` supplies the transient Ctrl+hover link affordance, and a short-lived selection bridge turns the resulting Ctrl+Click into preview reveal navigation. If you touch this area, rebuild and reinstall the `.vsix` before judging the result; reloading the window alone is not enough.
@@ -132,13 +134,14 @@ Script authoring also reads the same configured Host Schema for `[]` query inter
 
 For host events, `@emit eventName` completion offers Host Schema `events[]` names and Hover shows delivery, side effect, parameter, description, and schema source information. This is still an authoring hint: `Inscape.Compiler` keeps treating the line as metadata, and `@timeline...` keeps using Host Bridge data because it references a timed host resource hook rather than a generic schema event.
 
-The query and event providers prefer the Internal CLI endpoint:
+The query and event providers prefer the LanguageServer capability endpoint, then fall back to the Internal CLI endpoint:
 
 ```powershell
+dotnet run --project src\Internal\LanguageServer\Inscape.LanguageServer.csproj -- --host-schema-capabilities-project <workspace>
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- inspect-host-schema-project <workspace>
 ```
 
-If that endpoint cannot run, VSCode falls back to direct Host Schema JSON reading so basic authoring still works in extension-development and partially built environments.
+If both endpoints cannot run, VSCode leaves query / event hints empty and logs the failure to the Inscape output channel. It does not parse Host Schema JSON directly in query / event providers.
 
 ## Settings
 
