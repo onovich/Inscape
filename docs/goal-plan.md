@@ -157,13 +157,13 @@
 
 ## Goal 10：Stable ID 与本地化迁移落地
 
-状态：待启动。Goal 1 / Goal 2 已完成设计，但还没有实现 sidecar 写入、标题重命名迁移和本地化 alignment report。
+状态：进行中。Goal 1 / Goal 2 已完成设计；G10.1 已落首版 sidecar 创建 / 读取 / 更新 / missing / conflict 闭环，标题重命名迁移和本地化 alignment report 仍待实现。
 
 目标：把作者可读标题、系统 stable node id、行级 anchor、occurrence 与 diff 对齐串成可执行工具链，保护节点重命名和本地化旧译文。
 
 小节点：
 
-- [ ] G10.1 实现 stable node id sidecar 的创建、读取、更新、删除和冲突处理。
+- [x] G10.1 实现 stable node id sidecar 的创建、读取、更新、删除和冲突处理。
 - [ ] G10.2 把标题创建 / 重命名流程接入 stable node id 维护；作者仍只写中文标题，机器 ID 由工具维护。
 - [ ] G10.3 实现本地化 alignment / audit report，输出 `kept` / `new` / `changed` / `removed` / `conflict` / `stale`。
 - [ ] G10.4 将相似文本匹配作为人工候选输出，不静默继承旧译文。

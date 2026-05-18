@@ -2,7 +2,7 @@
 
 状态：基线
 
-最后更新：2026-05-16
+最后更新：2026-05-19
 
 本文集中记录 Inscape CLI 的常用命令。README 只保留开发入口示例；具体命令、产物和用途以后优先维护本文。
 
@@ -81,6 +81,7 @@ dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- update-l
 
 | 命令 | 用途 | 常用输出 |
 | --- | --- | --- |
+| `update-node-map-project` | 创建或更新项目 `inscape.node-map.json` sidecar | sidecar 文件路径 |
 | `check-project` | 检查整个项目 | stderr 诊断 |
 | `diagnose-project` | 编译项目并输出 Project IR + 诊断 JSON | JSON |
 | `compile-project` | 编译项目并输出 Project IR JSON | JSON |
@@ -95,6 +96,7 @@ dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- update-l
 - `-o path`：输出到指定文件。
 
 ```powershell
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- update-node-map-project samples
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- check-project samples
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- diagnose-project samples -o artifacts\samples.diagnostics.json
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- compile-project samples -o artifacts\samples-project.json
@@ -102,6 +104,8 @@ dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- preview-
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- extract-l10n-project samples -o artifacts\l10n.csv
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- update-l10n-project samples --from artifacts\old-l10n.csv -o artifacts\l10n.updated.csv
 ```
+
+`update-node-map-project` 会先按项目编译结果扫描当前 `# 标题` 节点，再创建或更新 `inscape.node-map.json`。第一版先按“当前标题精确命中”复用已有 stable node id，把消失的节点标为 `missing`，并把 sidecar 内重复 `id` / `title` 标为 `conflict`。标题重命名自动迁移和本地化 alignment 仍在后续 Goal 10 节点推进。
 
 ## UnitySample 实验样例命令
 

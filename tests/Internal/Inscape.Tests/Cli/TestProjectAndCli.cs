@@ -71,6 +71,7 @@ Narrator: Start.
             AssertTrue(text.Contains("export-host-schema-template"), "Commands should list host schema template command.");
             AssertTrue(text.Contains("audit-query-interpolation-project"), "Commands should list query interpolation audit command.");
             AssertTrue(text.Contains("inspect-host-schema-project"), "Commands should list host schema inspection command.");
+            AssertTrue(text.Contains("update-node-map-project"), "Commands should list node map update command.");
             AssertFalse(text.Contains("export-unity-sample-role-template"), "Internal CLI should not list UnitySample role template command.");
             AssertTrue(text.Contains("Run `inscape help <command>`"), "Commands should explain command help.");
         }
@@ -205,6 +206,50 @@ Narrator: Start.
                 AssertEqual("player.gold", root.GetProperty("queries")[0].GetProperty("name").GetString(), "Host schema capability query name");
                 AssertEqual("open_window", root.GetProperty("events")[0].GetProperty("name").GetString(), "Host schema capability event name");
                 AssertEqual("blocking", root.GetProperty("events")[0].GetProperty("delivery").GetString(), "Host schema capability event delivery");
+            } finally {
+                if (Directory.Exists(directory)) {
+                    Directory.Delete(directory, true);
+                }
+            }
+        }
+
+        static void CliUpdateNodeMapProjectWritesStableNodeMap() {
+            string directory = Path.Combine(Path.GetTempPath(), "inscape-cli-node-map-" + Guid.NewGuid().ToString("N"));
+            string configDirectory = Path.Combine(directory, "config");
+            Directory.CreateDirectory(configDirectory);
+            try {
+                File.WriteAllText(Path.Combine(directory, "inscape.config.json"), """
+{
+  "nodeMap": "config/inscape.node-map.json"
+}
+""", Encoding.UTF8);
+
+                File.WriteAllText(Path.Combine(directory, "story.inscape"), """
+# 法庭开场
+@entry
+旁白：开场。
+-> 结束
+
+# 结束
+旁白：结束。
+""", Encoding.UTF8);
+
+                string output = RunCliForOutput(new[] { "update-node-map-project", directory });
+                string nodeMapPath = Path.Combine(configDirectory, "inscape.node-map.json");
+
+                AssertEqual(Path.GetFullPath(nodeMapPath), output.Trim(), "Node map command should print written path.");
+                AssertTrue(File.Exists(nodeMapPath), "Node map file should be written.");
+
+                using JsonDocument document = JsonDocument.Parse(File.ReadAllText(nodeMapPath, Encoding.UTF8));
+                JsonElement root = document.RootElement;
+                AssertEqual("inscape.node-map", root.GetProperty("format").GetString(), "Node map format");
+                AssertEqual(1, root.GetProperty("formatVersion").GetInt32(), "Node map version");
+                AssertEqual(2, root.GetProperty("nodes").GetArrayLength(), "Node map node count");
+
+                JsonElement firstNode = root.GetProperty("nodes")[0];
+                AssertTrue(firstNode.GetProperty("id").GetString()!.StartsWith("node_", StringComparison.Ordinal), "Node map id prefix");
+                AssertEqual("active", firstNode.GetProperty("status").GetString(), "Node map active status");
+                AssertTrue(firstNode.GetProperty("lineAnchorSamples").GetArrayLength() > 0, "Node map should store line anchors.");
             } finally {
                 if (Directory.Exists(directory)) {
                     Directory.Delete(directory, true);

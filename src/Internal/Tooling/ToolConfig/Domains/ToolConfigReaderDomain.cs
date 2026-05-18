@@ -40,6 +40,7 @@ namespace Inscape.Tooling {
             string configDirectory = Path.GetDirectoryName(configPath) ?? Directory.GetCurrentDirectory();
             config.HostSchema = ResolveConfigPath(configDirectory, config.HostSchema);
             config.HostBridge = ResolveConfigPath(configDirectory, config.HostBridge);
+            config.NodeMap = ResolveConfigPath(configDirectory, config.NodeMap);
             config.Styles.Editor = ResolveConfigPath(configDirectory, config.Styles.Editor);
             config.Styles.Preview = ResolveConfigPath(configDirectory, config.Styles.Preview);
             config.UnitySample.RoleMap = ResolveConfigPath(configDirectory, config.UnitySample.RoleMap);

@@ -6,6 +6,8 @@ namespace Inscape.Tooling {
 
         public string? HostBridge { get; set; }
 
+        public string? NodeMap { get; set; }
+
         public ToolConfigStyleModel Styles { get; set; } = new ToolConfigStyleModel();
 
         public ToolConfigUnitySampleModel UnitySample { get; set; } = new ToolConfigUnitySampleModel();

@@ -2,7 +2,7 @@
 
 状态：原型草案
 
-最后更新：2026-05-01
+最后更新：2026-05-19
 
 Inscape CLI 会在项目根目录自动读取：
 
@@ -20,6 +20,7 @@ inscape.config.json
 {
   "hostSchema": "config/inscape.host.schema.json",
   "hostBridge": "config/inscape.host.bridge.json",
+  "nodeMap": "config/inscape.node-map.json",
   "unitySample": {
     "talkingIdStart": 100000,
     "roleMap": "config/unity-sample-roles.csv",
@@ -36,6 +37,7 @@ inscape.config.json
 当前读取这些字段的工具：
 
 - `export-host-schema-template`：可生成 `hostSchema` 的起始模板，但不会自动写入配置。
+- `update-node-map-project`：读取 `nodeMap`；未配置时默认写到 `inscape.config.json` 同目录，或 workspace root。
 - VSCode 扩展：优先读取 `hostBridge`，为 speaker 和宿主事件 / 时机 hook 提供补全、Hover 与 Ctrl+Click。
 - `export-unity-sample-role-template`：读取 `existingRoleNameCsv`。
 - `export-unity-sample-binding-template`：读取 `existingTimelineRoot`。

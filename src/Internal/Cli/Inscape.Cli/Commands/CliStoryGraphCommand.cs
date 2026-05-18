@@ -18,6 +18,10 @@ namespace Inscape.Cli {
                 return RunQueryInterpolationAudit(rootPath, args, outputPath, jsonOptions);
             }
 
+            if (command == "update-node-map-project") {
+                return RunStoryNodeMapUpdate(rootPath, args, outputPath, jsonOptions);
+            }
+
             if (!TryCompile(rootPath, args, jsonOptions, out ToolConfigModel config, out StoryGraphCompilationResultModel result)) {
                 return 1;
             }
@@ -126,6 +130,35 @@ namespace Inscape.Cli {
             }
 
             CliCore.WriteOrPrint(outputPath, CreateQueryInterpolationAuditText(audit));
+            return 0;
+        }
+
+        static int RunStoryNodeMapUpdate(string rootPath, string[] args, string? outputPath, JsonSerializerOptions jsonOptions) {
+            string? configuredPath = CliCore.ReadOption(args, "--config");
+            if (!TryCompile(rootPath, args, jsonOptions, out ToolConfigModel config, out StoryGraphCompilationResultModel result)) {
+                return 1;
+            }
+
+            CliCore.PrintDiagnostics(result.Diagnostics);
+            if (result.HasErrors) {
+                return 1;
+            }
+
+            string nodeMapPath = string.IsNullOrWhiteSpace(outputPath)
+                ? StoryNodeMapPathResolverDomain.Resolve(rootPath, configuredPath, config.NodeMap)
+                : Path.GetFullPath(outputPath);
+
+            if (!StoryNodeMapReaderDomain.TryRead(nodeMapPath, jsonOptions, out StoryNodeMapModel existingMap, out string? errorMessage)) {
+                Console.Error.WriteLine(errorMessage);
+                return 3;
+            }
+
+            StoryNodeMapModel updatedMap = StoryNodeMapUpdateDomain.Update(existingMap,
+                                                                           result,
+                                                                           rootPath,
+                                                                           DateTimeOffset.UtcNow);
+            StoryNodeMapWriterDomain.Write(nodeMapPath, updatedMap, jsonOptions);
+            Console.WriteLine(nodeMapPath);
             return 0;
         }
 

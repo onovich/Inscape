@@ -111,6 +111,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - 2026-05-17 已冻结节点标题 / stable id 共识并新增 [ADR 0013](adr/0013-author-title-and-stable-node-id.md)：长期块语法转向 `# 标题`，标题是作者主身份且项目内唯一，stable node id 是系统身份；标题前空行只做 style hint，不做编译错误；自动创建同名标题时生成 `_01`，用户手动重名时报 duplicate title diagnostic。后续实现前先设计 stable id 落盘与 `:: node.name` 兼容迁移。
 - 2026-05-17 已把后续计划整理为 [/goal 后续目标计划](goal-plan.md)：Goal 1 stable node id 契约、Goal 2 本地化 diff / alignment、Goal 3 `# 标题` 语法第一刀、Goal 4 VSCode 标题体验、Goal 5 LanguageServer 接管 VSCode 语义能力、Goal 6 Host Schema endpoint 收口、Goal 7 体验和 ExternalSupport 尾项。Goal 1 到 Goal 4 已完成；下一步建议从 Goal 5 开始，每个最小节点独立自检、验证、提交和推送。
 - 2026-05-17 已完成 Goal 1 设计：新增 [Stable Node ID Contract](stable-node-id-contract.md)，确定第一版使用 `inscape.node-map.json` sidecar 维护 stable node id / title map，默认作者不手写机器 ID；定义了 ID 生成、标题重命名识别、missing / tombstone、Git 合并冲突、显式 `@id` 修复边界，以及 `:: node.name` 到 `# 标题` 的兼容迁移策略。本节点只改文档，不改 parser。
+- 2026-05-19 已推进 Goal 10.1：`Inscape.Tooling` 新增 `StoryNodeMap` 读写 / 路径解析 / 更新 domain，`ToolConfigModel` 新增 `nodeMap` 配置，Internal CLI 新增 `update-node-map-project <root> [--config path] [-o path]`。第一版按当前标题精确命中复用 stable node id，把消失节点标为 `missing`，把 sidecar 内重复 `id` / `title` 标为 `conflict`，并落盘 source/content/neighbor 指纹与 line anchor samples。下一步建议进入 G10.2：把标题创建 / 重命名流程真正接到 stable node id 维护。
 - 2026-05-17 已完成 Goal 2 设计：新增 [Localization Diff Alignment Contract](localization-diff-alignment-contract.md)，定义 `kept` / `new` / `changed` / `removed` / `conflict` / `stale` 状态，要求 anchor 精确继承优先，同一 stable node id 内再做 diff / alignment；相似旧译文只能作为候选和 review report，不得静默当作完成译文。CLI 兼容计划优先新增独立 audit / alignment report，不改变当前 `update-l10n` 默认行为。
 - 2026-05-17 已完成 Goal 3 Compiler 第一刀：`DslScriptParserDomain` 支持 `# 标题` 节点声明，`DslScriptNodeTitleValidatorDomain` 定义标题合法性；中文标题可作为 `-> 目标标题` 跳转目标。重复标题仍走文档内 `INS003` / 项目级 `INS030` 诊断，标题前缺空行新增 info 级 `INS012` style hint。
 - 2026-05-17 已完成 Goal 4 VSCode 标题语法体验：TextMate grammar、snippets、README / tooling 文档已转向 `# 标题`；中文标题可用于 Outline、jump completion、Go to Definition、Find All References、Hover 与 CodeLens；新增 `Inscape: Insert Node Title` 命令，在创建同名标题时自动追加 `_01`。
@@ -330,8 +331,8 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
    - 下一步只剩设计并实现可选同步模式，例如 `off` / `click` / `selection`，明确默认值、配置项、回退行为和 VSCode 手动 smoke。
 
 2. Stable Node ID 与节点重命名落地。
-   - ADR 0013、stable node id / title map 契约和标题重命名识别流程已经完成设计。
-   - 下一步是实现 `inscape.node-map.json` 或等价 sidecar 的创建 / 更新 / 删除 / 冲突处理，并接入标题创建、标题重命名和本地化对齐。
+   - ADR 0013、stable node id / title map 契约和标题重命名识别流程已经完成设计；`update-node-map-project` 首版 sidecar 闭环也已落地。
+   - 下一步是进入 G10.2：把标题创建、标题重命名和后续本地化对齐真正接入 stable node id 维护。
 
 3. 本地化 Diff / Alignment 落地。
    - 状态机、CSV / report 字段、anchor + occurrence + diff 对齐流程已经完成设计。

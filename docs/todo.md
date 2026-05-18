@@ -14,8 +14,8 @@
 	- 已完成：`[]` 预览 token 样式、等待 / 刷新中状态、刷新版本保护、局部更新边界、`DefinitionProvider` + selection bridge 静态契约检查。
 	- 待做：补完 `inscape.preview.sourceSyncMode` 的 VSCode 手动 smoke，并视体验决定是否继续细化自动跟随边界。
 2. **Stable Node ID 与节点重命名落地。**
-	- 已完成：ADR 0013、stable node id / title map 契约、标题重命名识别流程设计。
-	- 待做：实现 `inscape.node-map.json` 或等价 sidecar 的创建 / 更新 / 删除 / 冲突处理，并接入标题创建、标题重命名与本地化对齐。
+	- 已完成：ADR 0013、stable node id / title map 契约、标题重命名识别流程设计，以及 `update-node-map-project` 首版 sidecar 创建 / 读取 / 更新 / missing / conflict 闭环。
+	- 待做：把标题创建、标题重命名与本地化对齐真正接入 stable node id 维护。
 3. **本地化 Diff / Alignment 落地。**
 	- 已完成：状态机、CSV / report 字段、anchor + occurrence + diff 对齐流程设计。
 	- 待做：实现显式 alignment / audit report，保护旧译文，标记 `kept` / `new` / `changed` / `removed` / `conflict` / `stale`，相似匹配只作为人工候选。
