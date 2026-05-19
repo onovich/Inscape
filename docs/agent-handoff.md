@@ -14,6 +14,8 @@
 - Goal 11.1 的“LanguageServer 不可用 -> CLI diagnostics fallback”真实 VSCode smoke 已通过。
 - VSCode 的 diagnostics、node completion、definition、references、hover、document symbols 与 Host Schema capability 已切到常驻 `LanguageServer` stdio 会话；CLI fallback 继续保留，但不再是常态热路径。
 - Goal 10.3 / G10.4 第一版都已落地：`LocalizationAlignmentAuditDomain` 现已支持 `inscape.localization-alignment` JSON report、高置信单候选 `changed`、低置信 / 并列候选 `conflict`，并为候选附带 `reason` 说明；CLI 继续通过显式 `audit-l10n-alignment-project <root> --from old.csv [-o l10n-review.json]` 输出，不改变 `update-l10n-project` 默认行为。
+- Localization review 展示已补最小闭环：`audit-l10n-alignment-project` 新增 `--format text`，VSCode 新增显式 `Inscape: Review Localization Alignment` 命令，Tools Menu 也增加“审查本地化对齐候选”，可直接生成 text / json 审查报告并打开输出文件；如果输出 json，完成后还能直接弹出 Quick Pick 审查项并跳回源位置。
+- 2026-05-19 用户重新体验了 VSCode LanguageServer 主路径，主观反馈“体验不错”；日志里未出现 `LanguageServer session exited ...`、`[LanguageServer stderr] ...` 或 Inscape request failure，说明当前常驻 stdio 会话基本稳定。当前日志暴露的 Inscape 侧剩余问题主要是 Preview webview 仍缺 CSP（`created a webview without a content security policy`），以及体验尾项里 `Ctrl+Hover` 下划线显示还不够稳定；其他大量 warning 基本来自 Copilot / Git / C# 等外部扩展，不应误判为 Inscape 语义热路径问题。
 - 当前主线优先级可继续细化 Goal 10：下一步更适合做候选评分 / review 展示细化，而不是回退到自动继承旧译文。
 - 低优先级体验尾项：编辑区选项文字 `Ctrl+Hover` 的可点击下划线显示仍不稳定，但 `Ctrl+Click` 行为符合预期；`selection` 模式只驱动“已打开预览”的轻量跟随，不主动弹出新预览面板。
 

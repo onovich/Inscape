@@ -49,9 +49,9 @@
                                       "By default the command writes to inscape.node-map.json next to inscape.config.json, or to the workspace root when no config file exists."),
             new CliCommandModel("audit-l10n-alignment-project", "Project", true,
                                       "Audit project localization alignment against a previous CSV without updating translations.",
-                                      "inscape audit-l10n-alignment-project <root> --from old.csv [--config inscape.config.json] [-o l10n-review.json]",
-                                      "dotnet run --project src\\Internal\\Cli\\Inscape.Cli\\Inscape.Cli.csproj -- audit-l10n-alignment-project samples --from artifacts\\old-l10n.csv -o artifacts\\l10n-review.json",
-                                      "The report marks kept, new, changed, removed, conflict and stale items. Similar text is only a review candidate."),
+                                      "inscape audit-l10n-alignment-project <root> --from old.csv [--format json|text] [--config inscape.config.json] [-o l10n-review.json]",
+                                      "dotnet run --project src\\Internal\\Cli\\Inscape.Cli\\Inscape.Cli.csproj -- audit-l10n-alignment-project samples --from artifacts\\old-l10n.csv --format text",
+                                      "The report marks kept, new, changed, removed, conflict and stale items. Similar text is only a review candidate, and `--format text` emits a review-friendly summary."),
             new CliCommandModel("check-project", "Project", true,
                                       "Validate all .inscape files under a project root.",
                                       "inscape check-project <root> [--entry node.name]",
@@ -99,7 +99,7 @@
             Console.WriteLine("  inscape audit-query-interpolation-project <root> [--format json|text] [-o audit.json]");
             Console.WriteLine("  inscape inspect-host-schema-project <root> [-o capabilities.json]");
             Console.WriteLine("  inscape update-node-map-project <root> [--config inscape.config.json] [-o inscape.node-map.json]");
-            Console.WriteLine("  inscape audit-l10n-alignment-project <root> --from old.csv [--config inscape.config.json] [-o l10n-review.json]");
+            Console.WriteLine("  inscape audit-l10n-alignment-project <root> --from old.csv [--format json|text] [--config inscape.config.json] [-o l10n-review.json]");
             Console.WriteLine("  inscape check <file.inscape>");
             Console.WriteLine("  inscape diagnose <file.inscape> [-o diagnostics.json]");
             Console.WriteLine("  inscape extract-l10n <file.inscape> [-o strings.csv]");

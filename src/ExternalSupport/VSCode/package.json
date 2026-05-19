@@ -126,6 +126,11 @@
         "category": "Inscape"
       },
       {
+        "command": "inscape.reviewLocalizationAlignment",
+        "title": "Inscape: Review Localization Alignment",
+        "category": "Inscape"
+      },
+      {
         "command": "inscape.showHostSchemaCapabilities",
         "title": "Inscape: Show Host Schema Capabilities",
         "category": "Inscape"

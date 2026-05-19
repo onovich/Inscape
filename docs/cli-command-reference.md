@@ -88,6 +88,7 @@ dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- update-l
 | `preview-project` | 生成项目级 HTML 调试预览 | HTML |
 | `extract-l10n-project` | 从项目提取本地化 CSV | CSV |
 | `update-l10n-project` | 基于旧 CSV 精确继承译文并更新项目本地化表 | CSV |
+| `audit-l10n-alignment-project` | 输出本地化 alignment 审查报告，支持 JSON 或 review-friendly 文本 | JSON / text |
 
 通用参数：
 
@@ -104,9 +105,12 @@ dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- compile-
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- preview-project samples --entry court.cross_exam.loop -o artifacts\samples-project.html
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- extract-l10n-project samples -o artifacts\l10n.csv
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- update-l10n-project samples --from artifacts\old-l10n.csv -o artifacts\l10n.updated.csv
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- audit-l10n-alignment-project samples --from artifacts\old-l10n.csv --format text
 ```
 
-`update-node-map-project` 会先按项目编译结果扫描当前 `# 标题` 节点，再创建或更新 `inscape.node-map.json`。当前实现已经包含保守自动重命名识别：当 `sourcePath`、content fingerprint、neighbor fingerprint、line anchor overlap 与行号距离能形成唯一候选时，会复用旧 stable node id，并把旧标题写入 `previousTitles`。如需人工审查，可加 `--report report.json` 输出 `inscape.node-map-update-report`，列出 `renamed`、`new`、`missing`、`conflict` 与 `manual-review` 项。更进一步的本地化 alignment 仍在后续 Goal 10 节点推进。
+`update-node-map-project` 会先按项目编译结果扫描当前 `# 标题` 节点，再创建或更新 `inscape.node-map.json`。当前实现已经包含保守自动重命名识别：当 `sourcePath`、content fingerprint、neighbor fingerprint、line anchor overlap 与行号距离能形成唯一候选时，会复用旧 stable node id，并把旧标题写入 `previousTitles`。如需人工审查，可加 `--report report.json` 输出 `inscape.node-map-update-report`，列出 `renamed`、`new`、`missing`、`conflict` 与 `manual-review` 项。
+
+`audit-l10n-alignment-project` 会读取当前项目、旧 CSV 和 stable node map，输出 `inscape.localization-alignment` 审查报告。`--format json` 适合机器消费；`--format text` 会输出人工审查友好的摘要，列出 `kept`、`new`、`changed`、`removed`、`conflict`、`stale` 项及候选译文原因。VSCode 当前已接上最小入口：`Inscape: Review Localization Alignment` 会提示选择旧 CSV、输出格式和目标文件，然后直接打开生成的报告；如果选择 json，还可以直接弹出审查项列表并跳回源位置。
 
 ## UnitySample 实验样例命令
 

@@ -9,6 +9,7 @@ class EditorAuthoringCommand {
         this.path = dependencies.path;
         this.isInscapeDocument = dependencies.isInscapeDocument;
         this.previewCommand = dependencies.previewCommand;
+        this.localizationCommand = dependencies.localizationCommand;
         this.selectWorkspaceFolder = dependencies.selectWorkspaceFolder;
         this.dslScriptNodeProvider = dependencies.dslScriptNodeProvider;
         this.defaultEditorStyle = dependencies.defaultEditorStyle;
@@ -40,6 +41,11 @@ class EditorAuthoringCommand {
                 label: "$(warning) 审查 Stable Node Map 变更",
                 description: "打开 rename / conflict / missing 审查报告",
                 action: () => this.reviewNodeMap(context)
+            },
+            {
+                label: "$(search) 审查本地化对齐候选",
+                description: "生成 changed / conflict / stale 审查报告",
+                action: () => this.localizationCommand.reviewAlignment(context)
             },
             {
                 label: "$(symbol-color) 编辑器样式",

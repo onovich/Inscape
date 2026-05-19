@@ -147,6 +147,7 @@ status,anchor,nodeId,nodeTitle,kind,speaker,text,translation,candidateAnchor,can
 - `translation`：只有 `kept` 可直接填入确认译文。
 - `candidateAnchor` / `candidateText` / `candidateTranslation`：旧行候选。
 - `similarity`：工具评分，用于审校排序，不作为自动继承依据。
+- `reason`：候选命中原因，例如 same stable node、near sequence、near source line、shared prefix。
 - `review`：`confirmed`、`needs-translation`、`needs-review`、`choose-candidate`、`removed-reference`。
 
 JSON report 可以表达多候选：
@@ -194,7 +195,8 @@ dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- audit-l1
 
 1. 先实现独立 `audit-l10n-alignment-project`，只读当前脚本和旧 CSV，输出 report。
 2. 再让 `update-l10n-project` 可选接 `--alignment-report`。
-3. 最后再讨论是否把 `changed` / `stale` 写入主 CSV。
+3. 补 review-friendly 文本输出或编辑器审查 UI。
+4. 最后再讨论是否把 `changed` / `stale` 写入主 CSV。
 
 默认 `update-l10n` 不应突然把相似旧译文填入 `translation` 并标为完成。
 

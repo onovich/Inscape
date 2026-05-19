@@ -73,6 +73,8 @@ namespace Inscape.Tests {
                 ("localization alignment audit reports review statuses", LocalizationAlignmentAuditReportsReviewStatuses),
                 ("localization alignment audit keeps low confidence similar text as conflict", LocalizationAlignmentAuditKeepsLowConfidenceSimilarTextAsConflict),
                 ("cli audit-l10n-alignment-project emits json", CliAuditL10nAlignmentProjectEmitsJson),
+                ("cli audit-l10n-alignment-project emits text", CliAuditL10nAlignmentProjectEmitsText),
+                ("vscode localization command exposes review alignment entry", VSCodeLocalizationCommandExposesReviewAlignmentEntry),
             };
 
             int failed = 0;

@@ -11,7 +11,8 @@
 - Goal 7 的 `inscape.preview.sourceSyncMode = off|click|selection` 真实 VSCode smoke 已通过。
 - Goal 11.1 的“LanguageServer 不可用 -> CLI diagnostics fallback”真实 VSCode smoke 已通过。
 - VSCode 的 diagnostics、node completion、definition、references、hover、document symbols 与 Host Schema capability 已切到常驻 `LanguageServer` stdio 会话；CLI fallback 继续保留，但不再是常态热路径。
-- 当前最值得继续推进的主线已经回到 Goal 10：G10.3 / G10.4 第一版都已落地；下一步可继续细化本地化候选评分和 review 展示。
+- 2026-05-19 用户重测 LanguageServer 体验反馈良好；日志未见 Inscape LanguageServer 崩溃或 stderr，但暴露出 Preview webview 仍缺 CSP，且 `Ctrl+Hover` 链接态显示稳定性仍是尾项。
+- 当前最值得继续推进的主线已经回到 Goal 10：G10.3 / G10.4、最小 review 输出闭环和 json report source jump 都已落地；下一步可继续细化本地化候选评分和编辑器 review 体验。
 - 低优先级体验尾项：编辑区选项文字 `Ctrl+Hover` 的可点击下划线显示仍不稳定，但 `Ctrl+Click` 行为符合预期；`selection` 模式只驱动“已打开预览”的轻量跟随，不主动弹出新预览面板。
 
 ## 接力优先队列
@@ -23,11 +24,16 @@
 1. **再推进 Stable Node ID 主线。**
 	- 已完成：ADR 0013、stable node id / title map 契约、`update-node-map-project` sidecar 闭环、保守自动重命名识别、VSCode 显式 `Update Stable Node Map` 入口、插入标题后的自动同步、`inscape.node-map-update-report` 审查报告、CLI `--report`、VSCode `Review Stable Node Map Changes` 入口。
 	- 下一步建议顺序：
+		- 补 G10.2 收尾：标题重命名交互从“报告可看”推进到“作者更容易确认 / 应用”的最小闭环。
 		- 已完成：G10.3 本地化 alignment / audit report。
 		- 已完成：G10.4 相似文本只作人工候选，不静默继承旧译文。
 2. **把本地化迁移闭环做实。**
 	- 已完成：状态机、CSV / report 字段、anchor + occurrence + diff 对齐流程设计。
 	- 已完成：显式 alignment / audit report，保护旧译文，标记 `kept` / `new` / `changed` / `removed` / `conflict` / `stale`。
+	- 下一步建议顺序：
+		- 细化候选评分：sequence / context / line anchor 权重继续校准，减少“该 changed 还是 conflict”的灰区。
+		- 细化 review 展示：Quick Pick 列表补更适合人工比对的信息，必要时增加 candidate diff / secondary action。
+		- 再评估是否给 `update-l10n-project` 增加可选 `--alignment-report`，但默认行为仍不应自动继承相似旧译文。
 	- 注意：这条实际上依赖 Goal 10 的 stable node id 维护进一步落地，所以优先级排在 Goal 10 后半段，而不是独立抢跑。
 3. **最后再挑 Tooling 单点收敛。**
 	- 保持原则：继续落到 `DslScriptSources`、`ToolConfig`、`Preview`、`Localization`、`HostSchema`、`HostBinding` 等窄模块；不要新建泛化 `ProjectService`。
@@ -40,14 +46,16 @@
 ## 剩余工作总览
 
 - **当前可直接推进**：
-	- 本地化候选评分 / review 展示细化。
+	- 本地化候选评分 / 编辑器 review 体验细化。
+	- 标题重命名人工确认流收尾。
 - **当前人工待办**：
 	- 无。Goal 7 与 Goal 11.1 的真实 VSCode smoke 已在 2026-05-19 收口完成。
 - **当前主线研发**：
-	- 本地化候选评分 / review 展示细化。
+	- 本地化候选评分 / 编辑器 review 体验细化。
+	- stable node map / localization review 交互细化。
 - **低一层优先级但可随时切入**：
 	- Tooling 单点收敛。
-	- 体验细化后续项。
+	- 体验细化后续项：Preview CSP、`Ctrl+Hover` 链接态稳定性、Preview review 列表可读性。
 - **需要用户或宿主侧决策**：
 	- Bird importer / `InscapeGenerated` 资源提交策略。
 	- 真实 Timeline 样例验证范围。

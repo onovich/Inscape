@@ -7,6 +7,8 @@ class LocalizationCommand {
         this.childProcess = dependencies.childProcess;
         this.fs = dependencies.fs;
         this.path = dependencies.path;
+        this.openLocation = dependencies.openLocation;
+        this.locationFromPayload = dependencies.locationFromPayload;
         this.selectWorkspaceFolder = dependencies.selectWorkspaceFolder;
         this.isInscapeDocument = dependencies.isInscapeDocument;
         this.writeTempDocument = dependencies.writeTempDocument;
@@ -80,6 +82,76 @@ class LocalizationCommand {
         });
     }
 
+    async reviewAlignment(context) {
+        const workspaceFolder = await this.selectWorkspaceFolder();
+        if (!workspaceFolder) {
+            return;
+        }
+
+        const previousUris = await this.vscode.window.showOpenDialog({
+            defaultUri: this.vscode.Uri.file(this.path.join(workspaceFolder.uri.fsPath, "artifacts")),
+            canSelectFiles: true,
+            canSelectFolders: false,
+            canSelectMany: false,
+            filters: {
+                "CSV": ["csv"]
+            },
+            openLabel: "Select Previous Localization CSV"
+        });
+
+        if (!previousUris || previousUris.length === 0) {
+            return;
+        }
+
+        const formatPick = await this.vscode.window.showQuickPick([
+            {
+                label: "Text Review (Recommended)",
+                format: "text",
+                extension: ".txt",
+                description: "Human-readable summary with candidates and reasons"
+            },
+            {
+                label: "JSON Report",
+                format: "json",
+                extension: ".json",
+                description: "Structured report for tooling and later UI"
+            }
+        ], {
+            placeHolder: "Choose localization review report format"
+        });
+
+        if (!formatPick) {
+            return;
+        }
+
+        const defaultFileName = formatPick.format === "text"
+            ? "l10n-review.txt"
+            : "l10n-review.json";
+        const outputUri = await this.vscode.window.showSaveDialog({
+            defaultUri: this.vscode.Uri.file(this.path.join(workspaceFolder.uri.fsPath, "artifacts", defaultFileName)),
+            filters: formatPick.format === "text"
+                ? { "Text": ["txt"] }
+                : { "JSON": ["json"] },
+            saveLabel: "Review Localization Alignment"
+        });
+
+        if (!outputUri) {
+            return;
+        }
+
+        await this.run(context, workspaceFolder, {
+            commandName: "audit-l10n-alignment-project",
+            previousPath: previousUris[0].fsPath,
+            outputPath: outputUri.fsPath,
+            format: formatPick.format,
+            progressTitle: "Reviewing Inscape localization alignment",
+            successMessage: "Inscape localization alignment report written to " + outputUri.fsPath,
+            successActions: formatPick.format === "json"
+                ? ["Review Items", "Open Report"]
+                : ["Open Report"]
+        });
+    }
+
     async run(context, workspaceFolder, options) {
         const editorDocument = this.vscode.window.activeTextEditor ? this.vscode.window.activeTextEditor.document : undefined;
         const activeDocument = editorDocument
@@ -101,7 +173,21 @@ class LocalizationCommand {
                 cancellable: false
             }, () => this.execFile(invocation));
 
-            this.vscode.window.showInformationMessage("Inscape localization CSV written to " + options.outputPath);
+            const actions = Array.isArray(options.successActions) ? options.successActions : [];
+            const selection = actions.length > 0
+                ? await this.vscode.window.showInformationMessage(options.successMessage || ("Inscape localization CSV written to " + options.outputPath), ...actions)
+                : await this.vscode.window.showInformationMessage(options.successMessage || ("Inscape localization CSV written to " + options.outputPath));
+            if (selection === "Review Items") {
+                await this.reviewAlignmentReport(options.outputPath);
+                return;
+            }
+            if (selection === "Open Report") {
+                const document = await this.vscode.workspace.openTextDocument(this.vscode.Uri.file(options.outputPath));
+                await this.vscode.window.showTextDocument(document, {
+                    preview: false,
+                    preserveFocus: false
+                });
+            }
         } catch (error) {
             this.vscode.window.showErrorMessage(error.message || String(error));
         } finally {
@@ -109,6 +195,48 @@ class LocalizationCommand {
                 this.fs.unlink(tempPath, () => { });
             }
         }
+    }
+
+    async reviewAlignmentReport(reportPath) {
+        const text = await this.fs.promises.readFile(reportPath, "utf8");
+        const report = JSON.parse(text);
+        const items = Array.isArray(report && report.items) ? report.items : [];
+        if (items.length === 0) {
+            this.vscode.window.showInformationMessage("Localization alignment report has no items to review.");
+            return;
+        }
+
+        const picks = items.map((item) => this.createReviewQuickPickItem(item));
+        const selected = await this.vscode.window.showQuickPick(picks, {
+            placeHolder: "Select a localization alignment item to jump to source"
+        });
+        if (!selected || !selected.location) {
+            return;
+        }
+
+        await this.openLocation(this.locationFromPayload(selected.location));
+    }
+
+    createReviewQuickPickItem(item) {
+        const candidateSummary = Array.isArray(item.candidates) && item.candidates.length > 0
+            ? item.candidates.slice(0, 2).map((candidate) => {
+                const reason = candidate.reason ? " {" + candidate.reason + "}" : "";
+                return candidate.text + reason;
+            }).join(" | ")
+            : "No candidates";
+        const sourceLine = Number(item.line || 0) > 0 ? item.line : 1;
+        const sourceColumn = Number(item.column || 0) > 0 ? item.column : 1;
+        return {
+            label: "[" + String(item.status || "unknown") + "] " + String(item.nodeTitle || "(unknown node)"),
+            description: String(item.review || "") + " -> " + String(item.text || ""),
+            detail: candidateSummary,
+            location: {
+                sourcePath: String(item.sourcePath || ""),
+                line: Math.max(0, sourceLine - 1),
+                character: Math.max(0, sourceColumn - 1),
+                length: String(item.text || "").length
+            }
+        };
     }
 
     createInvocation(context, workspaceFolder, options, activeDocument, tempPath) {
@@ -126,6 +254,10 @@ class LocalizationCommand {
 
         if (options.previousPath) {
             args.push("--from", options.previousPath);
+        }
+
+        if (options.format) {
+            args.push("--format", options.format);
         }
 
         if (activeDocument && tempPath) {

@@ -430,6 +430,55 @@ Narrator: Hello.
             AssertTrue(root.GetProperty("items")[0].GetProperty("candidates").GetArrayLength() > 0, "Alignment CLI kept item should keep previous candidate trace.");
         }
 
+        static void CliAuditL10nAlignmentProjectEmitsText() {
+            string directory = Path.Combine(Path.GetTempPath(), "inscape-tests", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory);
+            string storyPath = Path.Combine(directory, "story.inscape");
+            string oldCsvPath = Path.Combine(directory, "old.csv");
+
+            File.WriteAllText(storyPath, """
+# intro
+@entry
+Narrator: Hello there.
+""", Encoding.UTF8);
+            RunCliForOutput(new[] { "update-node-map-project", directory });
+            string initialCsv = RunCliForOutput(new[] { "extract-l10n-project", directory });
+            string anchor = FirstDataAnchor(initialCsv);
+            File.WriteAllText(oldCsvPath,
+                              "anchor,node,kind,speaker,text,translation,sourcePath,line,column\n"
+                              + anchor + ",intro,Dialogue,Narrator,Hello there.,Localized hello,story.inscape,3,1\n",
+                              Encoding.UTF8);
+
+            string text;
+            try {
+                text = RunCliForOutput(new[] { "audit-l10n-alignment-project", directory, "--from", oldCsvPath, "--format", "text" });
+            } finally {
+                Directory.Delete(directory, true);
+            }
+
+            AssertTrue(text.Contains("Localization alignment audit:"), "Alignment text report should include title.");
+            AssertTrue(text.Contains("kept intro Dialogue"), "Alignment text report should list kept item summary.");
+            AssertTrue(text.Contains("translation: Localized hello"), "Alignment text report should include confirmed translation.");
+            AssertTrue(text.Contains("Summary: kept 1, new 0, changed 0, removed 0, conflict 0, stale 0."), "Alignment text report should include summary line.");
+        }
+
+        static void VSCodeLocalizationCommandExposesReviewAlignmentEntry() {
+            string commandSource = File.ReadAllText(RepositoryFile("src/ExternalSupport/VSCode/Localization/Commands/LocalizationCommand.js"));
+            string toolsMenuSource = File.ReadAllText(RepositoryFile("src/ExternalSupport/VSCode/EditorAuthoring/Commands/EditorAuthoringCommand.js"));
+            string registrationSource = File.ReadAllText(RepositoryFile("src/ExternalSupport/VSCode/Entries/ExtensionRegistrationController.js"));
+            string packageJson = File.ReadAllText(RepositoryFile("src/ExternalSupport/VSCode/package.json"));
+
+            AssertTrue(commandSource.Contains("async reviewAlignment(context)"), "Localization command should expose reviewAlignment entrypoint.");
+            AssertTrue(commandSource.Contains("audit-l10n-alignment-project"), "Localization command review should invoke alignment audit CLI.");
+            AssertTrue(commandSource.Contains("--format"), "Localization command review should allow choosing output format.");
+            AssertTrue(commandSource.Contains("async reviewAlignmentReport(reportPath)"), "Localization command should expose interactive report review entrypoint.");
+            AssertTrue(commandSource.Contains("Review Items"), "Localization command should offer quick review action for json report.");
+            AssertTrue(commandSource.Contains("openLocation(this.locationFromPayload(selected.location))"), "Localization command review should jump to source location.");
+            AssertTrue(toolsMenuSource.Contains("审查本地化对齐候选"), "Tools menu should expose localization alignment review action.");
+            AssertTrue(registrationSource.Contains("inscape.reviewLocalizationAlignment"), "Extension registration should register localization alignment review command.");
+            AssertTrue(packageJson.Contains("\"command\": \"inscape.reviewLocalizationAlignment\""), "VSCode package should contribute localization alignment review command.");
+        }
+
         static LocalizationAlignmentItemModel FindAlignmentItem(LocalizationAlignmentReportModel report, string status) {
             for (int i = 0; i < report.Items.Count; i += 1) {
                 if (report.Items[i].Status == status) {

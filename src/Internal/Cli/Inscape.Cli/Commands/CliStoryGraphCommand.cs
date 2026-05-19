@@ -172,6 +172,7 @@ namespace Inscape.Cli {
 
         static int RunLocalizationAlignmentAudit(string rootPath, string[] args, string? outputPath, JsonSerializerOptions jsonOptions) {
             string? configuredPath = CliCore.ReadOption(args, "--config");
+            string format = CliCore.ReadOption(args, "--format") ?? "json";
             if (!LocalizationCsvFlowDomain.TryReadPreviousEntries(CliCore.ReadOption(args, "--from"), out List<LocalizationEntryModel> previousEntries, out string? localizationError)) {
                 Console.Error.WriteLine(localizationError);
                 return 1;
@@ -193,8 +194,97 @@ namespace Inscape.Cli {
             }
 
             LocalizationAlignmentReportModel report = LocalizationAlignmentAuditDomain.Audit(result, previousEntries, nodeMap, rootPath);
-            CliCore.WriteOrPrint(outputPath, JsonSerializer.Serialize(report, jsonOptions));
-            return 0;
+            if (format == "json") {
+                CliCore.WriteOrPrint(outputPath, JsonSerializer.Serialize(report, jsonOptions));
+                return 0;
+            }
+
+            if (format == "text") {
+                CliCore.WriteOrPrint(outputPath, CreateLocalizationAlignmentAuditText(report));
+                return 0;
+            }
+
+            Console.Error.WriteLine("Unsupported audit format: " + format);
+            return 2;
+        }
+
+        static string CreateLocalizationAlignmentAuditText(LocalizationAlignmentReportModel report) {
+            System.Text.StringBuilder builder = new System.Text.StringBuilder();
+            builder.AppendLine("Localization alignment audit: " + report.Workspace);
+            builder.AppendLine();
+
+            if (report.Items.Count == 0) {
+                builder.AppendLine("No localization alignment items found.");
+            } else {
+                for (int i = 0; i < report.Items.Count; i += 1) {
+                    LocalizationAlignmentItemModel item = report.Items[i];
+                    builder.Append(item.Status)
+                           .Append(' ')
+                           .Append(item.NodeTitle)
+                           .Append(' ')
+                           .Append(item.Kind)
+                           .Append(' ')
+                           .Append(item.SourcePath);
+                    if (item.Line > 0 && item.Column > 0) {
+                        builder.Append(':')
+                               .Append(item.Line)
+                               .Append(':')
+                               .Append(item.Column);
+                    }
+                    builder.AppendLine();
+                    builder.Append("  review: ")
+                           .Append(item.Review)
+                           .AppendLine();
+                    builder.Append("  text: ")
+                           .Append(item.Text)
+                           .AppendLine();
+                    if (!string.IsNullOrWhiteSpace(item.Translation)) {
+                        builder.Append("  translation: ")
+                               .Append(item.Translation)
+                               .AppendLine();
+                    }
+
+                    for (int candidateIndex = 0; candidateIndex < item.Candidates.Count; candidateIndex += 1) {
+                        LocalizationAlignmentCandidateModel candidate = item.Candidates[candidateIndex];
+                        builder.Append("  candidate ")
+                               .Append(candidateIndex + 1)
+                               .Append(": ")
+                               .Append(candidate.Text);
+                        if (!string.IsNullOrWhiteSpace(candidate.Translation)) {
+                            builder.Append(" => ")
+                                   .Append(candidate.Translation);
+                        }
+                        if (candidate.Similarity > 0) {
+                            builder.Append(" [similarity ")
+                                   .Append(candidate.Similarity.ToString("0.0000", System.Globalization.CultureInfo.InvariantCulture))
+                                   .Append(']');
+                        }
+                        if (!string.IsNullOrWhiteSpace(candidate.Reason)) {
+                            builder.Append(" {")
+                                   .Append(candidate.Reason)
+                                   .Append('}');
+                        }
+                        builder.AppendLine();
+                    }
+
+                    builder.AppendLine();
+                }
+            }
+
+            builder.Append("Summary: kept ")
+                   .Append(report.Summary.KeptCount)
+                   .Append(", new ")
+                   .Append(report.Summary.NewCount)
+                   .Append(", changed ")
+                   .Append(report.Summary.ChangedCount)
+                   .Append(", removed ")
+                   .Append(report.Summary.RemovedCount)
+                   .Append(", conflict ")
+                   .Append(report.Summary.ConflictCount)
+                   .Append(", stale ")
+                   .Append(report.Summary.StaleCount)
+                   .Append('.');
+            return builder.ToString();
         }
 
         static string CreateQueryInterpolationAuditText(QueryInterpolationAuditModel audit) {
