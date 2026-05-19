@@ -67,7 +67,7 @@ class PreviewRevealBridge {
 
         const choicePromptMatch = /^(\s*\?\s*)(.*)$/.exec(line);
         if (choicePromptMatch) {
-            const promptRange = this.trimRange(line, 0, line.length);
+            const promptRange = this.trimRange(line, choicePromptMatch[1].length, line.length);
             if (!promptRange) {
                 return undefined;
             }
@@ -84,7 +84,7 @@ class PreviewRevealBridge {
             const optionStart = choiceOptionMatch[1].length;
             const targetIndex = line.indexOf("->", optionStart);
             const optionEnd = targetIndex >= 0 ? targetIndex : line.length;
-            const displayRange = this.trimRange(line, 0, optionEnd);
+            const displayRange = this.trimRange(line, optionStart, optionEnd);
             if (!displayRange) {
                 return undefined;
             }

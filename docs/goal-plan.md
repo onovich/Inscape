@@ -9,7 +9,7 @@
 - Goal 5 已完成当前阶段收口：VSCode 的 diagnostics、node completion、definition、references、hover、document symbols 与 Host Schema capability 已切到常驻 `LanguageServer` stdio 会话。
 - Goal 7 的 `off|click|selection` 真实 VSCode smoke 已通过。
 - Goal 11.1 的“LanguageServer 不可用 -> CLI diagnostics fallback”真实 VSCode smoke 已通过。
-- 2026-05-19 用户重测 LanguageServer 编辑体验反馈良好；日志未见 Inscape LanguageServer 崩溃 / stderr，但暴露出 Preview webview 仍缺 CSP，说明当前剩余问题主要在编辑器体验尾项而不是 LanguageServer 主路径稳定性。
+- 2026-05-19 用户重测 LanguageServer 编辑体验反馈良好；日志未见 Inscape LanguageServer 崩溃 / stderr。Preview webview CSP 已补，说明当前剩余问题主要在编辑器体验尾项而不是 LanguageServer 主路径稳定性。
 - 当前下一步优先级回到 Goal 10：G10.4 与最小 review 输出闭环已完成，下一步可继续细化评分与编辑器 review 展示。
 
 本文把当前剩余工作写成 `/goal` 目标模式。每个 goal 都应独立完成、自检、验证、提交和推送；不要把多个无关 goal 合进同一提交。
@@ -177,7 +177,7 @@
   - [x] G10.2.1 VSCode 新增显式 `Inscape: Update Stable Node Map` 入口，调用 `update-node-map-project`，并把活动未保存 `.inscape` 文档通过 `--override` 传给 CLI。
   - [x] G10.2.2 标题创建后自动同步 stable node map，插入标题成功后会对当前工作区静默执行一次 `update-node-map-project`，失败时只提示自动同步失败，不回滚插入动作。
   - [x] G10.2.3 标题重命名的人工确认 / 冲突报告入口：`StoryNodeMapUpdateDomain` 现在会输出 `inscape.node-map-update-report`，CLI `update-node-map-project` 新增 `--report`，VSCode 新增显式 `Inscape: Review Stable Node Map Changes`，并在显式 `Update Stable Node Map` 发现 `manual-review` / `conflict` 时给出审查入口。
-  - [ ] G10.2.4 细化标题重命名人工确认流：让作者更容易从 report / Quick Pick 理解“复用旧 stable node id”还是“接受新节点”，避免只有原始报告文件可看。
+  - [~] G10.2.4 细化标题重命名人工确认流：已补 review item 列表、candidate 跳转和 node map / raw report 打开入口；下一步可视需要继续增加显式 accept / apply 动作。
 - [x] G10.3 实现本地化 alignment / audit report，输出 `kept` / `new` / `changed` / `removed` / `conflict` / `stale`。
   - [x] Internal Tooling 新增 `LocalizationAlignmentAuditDomain` 和 `inscape.localization-alignment` JSON report model。
   - [x] Internal CLI 新增显式 `audit-l10n-alignment-project <root> --from old.csv [-o l10n-review.json]`，不改变 `update-l10n-project` 默认行为。
@@ -188,7 +188,7 @@
   - [x] 低置信相似文本不再被压成单候选 `changed`，而是保留为人工 `conflict` 审查项。
   - [x] CLI `audit-l10n-alignment-project` 新增 `--format text`；VSCode 新增 `Review Localization Alignment` 命令，先用文件输出方式补最小审查闭环。
   - [x] VSCode 对 json report 补了最小 source jump：生成后可直接弹出 alignment item Quick Pick，并跳回对应源位置。
-  - [ ] G10.4.1 细化 alignment review Quick Pick：补 candidate / similarity / reason 的更强对比展示，必要时增加 secondary actions 或 diff 视图。
+  - [~] G10.4.1 细化 alignment review Quick Pick：已补 candidate / similarity / reason 的更强摘要展示与 candidate 二级跳转；下一步可视需要继续增加 secondary actions 或 diff 视图。
   - [ ] G10.4.2 继续调整 candidate scoring：sequence / context / line anchor 等信号更稳地影响 `changed` 与 `conflict` 分界。
 
 ## Goal 11：Fallback 与外部宿主收口
@@ -212,8 +212,8 @@
 
 小节点：
 
-- [ ] G12.1 为 Preview webview 补 CSP，消除 `created a webview without a content security policy` warning，并确保现有 preview 脚本仍可运行。
-- [ ] G12.2 继续收口正文 / 选项文本 `Ctrl+Hover` 链接态显示稳定性，保持“默认无下划线、Ctrl+指向才显示”。
+- [x] G12.1 为 Preview webview 补 CSP，消除 `created a webview without a content security policy` warning，并确保现有 preview 脚本仍可运行。
+- [~] G12.2 继续收口正文 / 选项文本 `Ctrl+Hover` 链接态显示稳定性，保持“默认无下划线、Ctrl+指向才显示”。当前已排除 `? ` 与 `- ` 前缀区域进入 transient link range；下一步可继续做人体工学微调和手动 smoke。
 - [ ] G12.3 视需要补一次用户视角的 LanguageServer 冷启动 / 热会话体验记录，确认当前 `dotnet exec` / 已构建产物路径下不再有明显慢启动体感。
 
 ## Goal 9：项目资源 / 代码分层收口

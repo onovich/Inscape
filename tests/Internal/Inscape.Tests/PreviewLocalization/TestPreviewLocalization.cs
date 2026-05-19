@@ -133,6 +133,7 @@ Narrator: Gold [player.gold].
             }
 
             AssertTrue(html.Contains(".query-interpolation"), "Preview should style query interpolation tokens.");
+            AssertTrue(html.Contains("Content-Security-Policy"), "Preview HTML should include a content security policy.");
             AssertTrue(html.Contains("function appendPreviewText(parent, value)"), "Preview should render text through interpolation-aware fragments.");
             AssertTrue(html.Contains("appendPreviewText(paragraph, line.text);"), "Preview dialogue should use interpolation-aware rendering.");
             AssertTrue(html.Contains("appendPreviewText(prompt, group.prompt);"), "Preview choice prompts should use interpolation-aware rendering.");
@@ -144,6 +145,16 @@ Narrator: Gold [player.gold].
 
             AssertTrue(controller.Contains("const character = Math.max(0, (source.character ?? source.column ?? 0));"), "Preview source controller should prefer character while accepting old column payloads.");
             AssertTrue(controller.Contains("new this.vscode.Range(\n                    line,\n                    character,\n                    line,\n                    character + 1"), "Preview source controller should use normalized editor coordinates.");
+        }
+
+        static void PreviewRevealBridgeTrimsChoicePrefixesFromLinkRange() {
+            string bridge = File.ReadAllText(RepositoryFile("src/ExternalSupport/VSCode/Preview/Bridges/PreviewRevealBridge.js"));
+            string syncScript = File.ReadAllText(RepositoryFile("src/ExternalSupport/VSCode/Scripts/check-preview-source-sync-modes.js"));
+
+            AssertTrue(bridge.Contains("const promptRange = this.trimRange(line, choicePromptMatch[1].length, line.length);"), "Choice prompt transient link range should start after the '? ' prefix.");
+            AssertTrue(bridge.Contains("const displayRange = this.trimRange(line, optionStart, optionEnd);"), "Choice option transient link range should start after the '- ' prefix.");
+            AssertTrue(syncScript.Contains("Choice-option prefix area must not participate in preview reveal hit testing."), "Preview source sync contract should guard option prefix hover behavior.");
+            AssertTrue(syncScript.Contains("Choice prompt prefix must not expose transient link range."), "Preview source sync contract should guard prompt prefix hover behavior.");
         }
 
         static void CliExtractL10nEmitsCsv() {
@@ -473,10 +484,23 @@ Narrator: Hello there.
             AssertTrue(commandSource.Contains("--format"), "Localization command review should allow choosing output format.");
             AssertTrue(commandSource.Contains("async reviewAlignmentReport(reportPath)"), "Localization command should expose interactive report review entrypoint.");
             AssertTrue(commandSource.Contains("Review Items"), "Localization command should offer quick review action for json report.");
+            AssertTrue(commandSource.Contains("createCandidateActionItems(item)"), "Localization command should expose candidate review actions.");
+            AssertTrue(commandSource.Contains("Jump to current line"), "Localization command should let review flow jump back to current text.");
+            AssertTrue(commandSource.Contains("Candidate "), "Localization command should expose candidate-specific jump actions.");
             AssertTrue(commandSource.Contains("openLocation(this.locationFromPayload(selected.location))"), "Localization command review should jump to source location.");
             AssertTrue(toolsMenuSource.Contains("审查本地化对齐候选"), "Tools menu should expose localization alignment review action.");
+            AssertTrue(toolsMenuSource.Contains("async reviewNodeMapReport(report, nodeMapPath, reportPath)"), "Editor authoring command should expose node map report review entrypoint.");
+            AssertTrue(toolsMenuSource.Contains("Review Items"), "Editor authoring command should expose review items action for node map report.");
+            AssertTrue(toolsMenuSource.Contains("createNodeMapReviewActions(item, nodeMapPath, reportPath)"), "Editor authoring command should expose candidate-specific node map actions.");
             AssertTrue(registrationSource.Contains("inscape.reviewLocalizationAlignment"), "Extension registration should register localization alignment review command.");
             AssertTrue(packageJson.Contains("\"command\": \"inscape.reviewLocalizationAlignment\""), "VSCode package should contribute localization alignment review command.");
+        }
+
+        static void PreviewHtmlProviderAddsCspToFallbackPages() {
+            string providerSource = File.ReadAllText(RepositoryFile("src/ExternalSupport/VSCode/Preview/Providers/PreviewHtmlProvider.js"));
+
+            AssertTrue(providerSource.Contains("Content-Security-Policy"), "Preview HTML provider should add CSP to loading and error pages.");
+            AssertTrue(providerSource.Contains("default-src 'none'; img-src data:; style-src 'unsafe-inline'; script-src 'unsafe-inline';"), "Preview HTML provider should use restrictive fallback CSP.");
         }
 
         static LocalizationAlignmentItemModel FindAlignmentItem(LocalizationAlignmentReportModel report, string status) {

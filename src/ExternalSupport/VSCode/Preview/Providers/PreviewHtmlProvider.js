@@ -3,11 +3,13 @@
 class PreviewHtmlProvider {
 
     createLoadingHtml(workspaceName) {
+        const csp = this.createCsp();
         return [
             "<!DOCTYPE html>",
             "<html lang=\"zh-CN\">",
             "<head>",
             "  <meta charset=\"utf-8\" />",
+            "  <meta http-equiv=\"Content-Security-Policy\" content=\"" + csp + "\" />",
             "  <title>Inscape Preview</title>",
             "  <style>",
             "    body { font-family: var(--vscode-font-family); color: var(--vscode-foreground); background: var(--vscode-editor-background); padding: 24px; }",
@@ -27,11 +29,13 @@ class PreviewHtmlProvider {
     }
 
     createErrorHtml(message) {
+        const csp = this.createCsp();
         return [
             "<!DOCTYPE html>",
             "<html lang=\"zh-CN\">",
             "<head>",
             "  <meta charset=\"utf-8\" />",
+            "  <meta http-equiv=\"Content-Security-Policy\" content=\"" + csp + "\" />",
             "  <title>Inscape Preview Error</title>",
             "  <style>",
             "    body { font-family: var(--vscode-font-family); color: var(--vscode-foreground); background: var(--vscode-editor-background); padding: 24px; }",
@@ -56,6 +60,10 @@ class PreviewHtmlProvider {
             .replace(/</g, "&lt;")
             .replace(/>/g, "&gt;")
             .replace(/\"/g, "&quot;");
+    }
+
+    createCsp() {
+        return "default-src 'none'; img-src data:; style-src 'unsafe-inline'; script-src 'unsafe-inline';";
     }
 
 }

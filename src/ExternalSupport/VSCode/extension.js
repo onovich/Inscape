@@ -377,6 +377,8 @@ editorAuthoringCommand = new EditorAuthoringCommand({
     isInscapeDocument,
     previewCommand,
     localizationCommand,
+    openLocation: (location, options) => editorAuthoringLocationProvider.openLocation(location, options),
+    locationFromPayload: (payload) => editorAuthoringLocationProvider.locationFromPayload(payload),
     selectWorkspaceFolder,
     dslScriptNodeProvider,
     defaultEditorStyle,

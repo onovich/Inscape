@@ -214,22 +214,38 @@ class LocalizationCommand {
             return;
         }
 
+        if (selected.item && Array.isArray(selected.item.candidates) && selected.item.candidates.length > 0) {
+            const reviewAction = await this.vscode.window.showQuickPick(this.createCandidateActionItems(selected.item), {
+                placeHolder: "Review the current text or jump to a candidate source"
+            });
+            if (!reviewAction) {
+                return;
+            }
+
+            if (reviewAction.location) {
+                await this.openLocation(this.locationFromPayload(reviewAction.location));
+                return;
+            }
+        }
+
         await this.openLocation(this.locationFromPayload(selected.location));
     }
 
     createReviewQuickPickItem(item) {
         const candidateSummary = Array.isArray(item.candidates) && item.candidates.length > 0
-            ? item.candidates.slice(0, 2).map((candidate) => {
-                const reason = candidate.reason ? " {" + candidate.reason + "}" : "";
-                return candidate.text + reason;
-            }).join(" | ")
+            ? item.candidates.slice(0, 2).map((candidate) => this.formatCandidateInline(candidate)).join(" | ")
             : "No candidates";
+        const translationSummary = item.translation
+            ? "translation: " + item.translation
+            : "translation: (empty)";
+        const sourceSummary = this.formatSourceSummary(item.sourcePath, item.line, item.column);
         const sourceLine = Number(item.line || 0) > 0 ? item.line : 1;
         const sourceColumn = Number(item.column || 0) > 0 ? item.column : 1;
         return {
-            label: "[" + String(item.status || "unknown") + "] " + String(item.nodeTitle || "(unknown node)"),
-            description: String(item.review || "") + " -> " + String(item.text || ""),
-            detail: candidateSummary,
+            label: this.createReviewItemLabel(item),
+            description: translationSummary,
+            detail: sourceSummary + " | " + String(item.text || "") + " | " + candidateSummary,
+            item,
             location: {
                 sourcePath: String(item.sourcePath || ""),
                 line: Math.max(0, sourceLine - 1),
@@ -237,6 +253,70 @@ class LocalizationCommand {
                 length: String(item.text || "").length
             }
         };
+    }
+
+    createCandidateActionItems(item) {
+        const actions = [
+            {
+                label: "Jump to current line",
+                description: this.formatSourceSummary(item.sourcePath, item.line, item.column),
+                detail: String(item.text || ""),
+                location: {
+                    sourcePath: String(item.sourcePath || ""),
+                    line: Math.max(0, Number(item.line || 1) - 1),
+                    character: Math.max(0, Number(item.column || 1) - 1),
+                    length: String(item.text || "").length
+                }
+            }
+        ];
+
+        for (let i = 0; i < item.candidates.length; i += 1) {
+            const candidate = item.candidates[i];
+            actions.push({
+                label: "Candidate " + String(i + 1) + ": " + this.formatCandidateStatus(candidate),
+                description: candidate.translation || "(no translation)",
+                detail: this.formatSourceSummary(candidate.sourcePath, candidate.line, candidate.column) + " | " + this.formatCandidateInline(candidate),
+                location: {
+                    sourcePath: String(candidate.sourcePath || ""),
+                    line: Math.max(0, Number(candidate.line || 1) - 1),
+                    character: Math.max(0, Number(candidate.column || 1) - 1),
+                    length: String(candidate.text || "").length
+                }
+            });
+        }
+
+        return actions;
+    }
+
+    createReviewItemLabel(item) {
+        const status = String(item.status || "unknown");
+        const review = String(item.review || "");
+        const node = String(item.nodeTitle || "(unknown node)");
+        const candidateCount = Array.isArray(item.candidates) ? item.candidates.length : 0;
+        return "[" + status + "] " + node + " - " + review + (candidateCount > 0 ? " (" + candidateCount + " candidates)" : "");
+    }
+
+    formatCandidateInline(candidate) {
+        const similarity = candidate.similarity > 0
+            ? " @" + Number(candidate.similarity).toFixed(3)
+            : "";
+        const reason = candidate.reason ? " {" + candidate.reason + "}" : "";
+        const translation = candidate.translation ? " => " + candidate.translation : "";
+        return String(candidate.text || "") + translation + similarity + reason;
+    }
+
+    formatCandidateStatus(candidate) {
+        const similarity = candidate.similarity > 0
+            ? "similarity " + Number(candidate.similarity).toFixed(3)
+            : "candidate";
+        return candidate.reason
+            ? similarity + " / " + candidate.reason
+            : similarity;
+    }
+
+    formatSourceSummary(sourcePath, line, column) {
+        const fileName = this.path.basename(String(sourcePath || ""));
+        return fileName + ":" + String(line || 1) + ":" + String(column || 1);
     }
 
     createInvocation(context, workspaceFolder, options, activeDocument, tempPath) {

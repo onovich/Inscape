@@ -150,8 +150,25 @@ async function main() {
     {
         const { bridge } = createBridge("click");
         const optionReveal = bridge.getRevealInfoAtPosition(document, { line: 0, character: 2 });
-        assert(!!optionReveal, "Choice-option prefix area must still participate in preview reveal hit testing.");
-        assert(optionReveal.payload.character === 4, "Choice-option reveal payload must preserve the trimmed text start.");
+        assert(!optionReveal, "Choice-option prefix area must not participate in preview reveal hit testing.");
+        const optionTextReveal = bridge.getRevealInfoAtPosition(document, { line: 0, character: 6 });
+        assert(!!optionTextReveal, "Choice-option text area must participate in preview reveal hit testing.");
+        assert(optionTextReveal.payload.character === 4, "Choice-option reveal payload must preserve the trimmed text start.");
+    }
+
+    {
+        const promptDocument = {
+            uri: { fsPath: "D:\\LabProjects\\Inscape\\samples\\court-loop.inscape" },
+            lineCount: 1,
+            lineAt() {
+                return {
+                    text: "? 追问证词真相"
+                };
+            }
+        };
+        const { bridge } = createBridge("click");
+        assert(!bridge.getRevealInfoAtPosition(promptDocument, { line: 0, character: 0 }), "Choice prompt prefix must not expose transient link range.");
+        assert(!!bridge.getRevealInfoAtPosition(promptDocument, { line: 0, character: 3 }), "Choice prompt text must still expose transient link range.");
     }
 
     {
