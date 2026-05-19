@@ -149,7 +149,7 @@ Narrator: Gold [player.gold].
 
         static void PreviewRevealBridgeTrimsChoicePrefixesFromLinkRange() {
             string bridge = File.ReadAllText(RepositoryFile("src/ExternalSupport/VSCode/Preview/Bridges/PreviewRevealBridge.js"));
-            string syncScript = File.ReadAllText(RepositoryFile("src/ExternalSupport/VSCode/Scripts/check-preview-source-sync-modes.js"));
+            string syncScript = File.ReadAllText(RepositoryFile("src/ExternalSupport/VSCode/DevScripts/PreviewSourceSyncContractCheck.js"));
 
             AssertTrue(bridge.Contains("const promptRange = this.trimRange(line, choicePromptMatch[1].length, line.length);"), "Choice prompt transient link range should start after the '? ' prefix.");
             AssertTrue(bridge.Contains("const displayRange = this.trimRange(line, optionStart, optionEnd);"), "Choice option transient link range should start after the '- ' prefix.");
@@ -407,6 +407,82 @@ Narrator: The lantern still watches tonight.
             AssertEqual("", conflict.Translation, "Conflict should not fill confirmed translation.");
         }
 
+        static void LocalizationAlignmentAuditPrefersNearSequenceWhenSimilarityTies() {
+            StoryGraphCompilerDomain compiler = new StoryGraphCompilerDomain();
+            StoryGraphCompilationResultModel initial = compiler.Compile(new List<DslScriptSourceModel> {
+                new DslScriptSourceModel("D:/LabProjects/Inscape/story/court.inscape", """
+# intro
+Narrator: Alpha route old.
+Narrator: Shared branch line.
+Narrator: Filler line.
+Narrator: Shared branch line.
+"""),
+            }, "D:/LabProjects/Inscape");
+            StoryNodeMapModel nodeMap = StoryNodeMapUpdateDomain.Update(new StoryNodeMapModel(),
+                                                                        initial,
+                                                                        "D:/LabProjects/Inscape",
+                                                                        DateTimeOffset.Parse("2026-05-19T13:00:00Z", System.Globalization.CultureInfo.InvariantCulture));
+            string oldCsv = LocalizationCsvFlowDomain.Extract(initial.Graph);
+            string firstSharedAnchor = AnchorForText(oldCsv, "Shared branch line.");
+            string secondSharedAnchor = LastAnchorForText(oldCsv, "Shared branch line.");
+            string oldCsvWithTranslations = "anchor,node,kind,speaker,text,translation,sourcePath,line,column\n"
+                + firstSharedAnchor + ",intro,Dialogue,Narrator,Shared branch line.,Near translation,story/court.inscape,3,1\n"
+                + secondSharedAnchor + ",intro,Dialogue,Narrator,Shared branch line.,Far translation,story/court.inscape,5,1\n";
+
+            StoryGraphCompilationResultModel updated = compiler.Compile(new List<DslScriptSourceModel> {
+                new DslScriptSourceModel("D:/LabProjects/Inscape/story/court.inscape", """
+# intro
+Narrator: Alpha route old.
+Narrator: Shared branch line extended.
+"""),
+            }, "D:/LabProjects/Inscape");
+
+            LocalizationAlignmentReportModel report = LocalizationAlignmentAuditDomain.Audit(updated,
+                                                                                             new Inscape.Compiler.Localization.LocalizationCsvReaderDomain().Read(oldCsvWithTranslations),
+                                                                                             nodeMap,
+                                                                                             "D:/LabProjects/Inscape");
+
+            LocalizationAlignmentItemModel conflict = FindAlignmentItem(report, "conflict");
+            AssertEqual("Near translation", conflict.Candidates[0].Translation, "Conflict candidates should prefer the nearer sequence match when similarity ties.");
+        }
+
+        static void LocalizationAlignmentAuditPrefersNearContextShapeWhenSequenceTies() {
+            StoryGraphCompilerDomain compiler = new StoryGraphCompilerDomain();
+            StoryGraphCompilationResultModel initial = compiler.Compile(new List<DslScriptSourceModel> {
+                new DslScriptSourceModel("D:/LabProjects/Inscape/story/court.inscape", """
+# intro
+Narrator: Ask witness about lantern tonight.
+Narrator: Ask witness about old ledger records.
+"""),
+            }, "D:/LabProjects/Inscape");
+            StoryNodeMapModel nodeMap = StoryNodeMapUpdateDomain.Update(new StoryNodeMapModel(),
+                                                                        initial,
+                                                                        "D:/LabProjects/Inscape",
+                                                                        DateTimeOffset.Parse("2026-05-19T14:00:00Z", System.Globalization.CultureInfo.InvariantCulture));
+            string oldCsv = LocalizationCsvFlowDomain.Extract(initial.Graph);
+            string lanternAnchor = AnchorForText(oldCsv, "Ask witness about lantern tonight.");
+            string ledgerAnchor = AnchorForText(oldCsv, "Ask witness about old ledger records.");
+            string oldCsvWithTranslations = "anchor,node,kind,speaker,text,translation,sourcePath,line,column\n"
+                + lanternAnchor + ",intro,Dialogue,Narrator,Ask witness about lantern tonight.,Lantern context,story/court.inscape,2,1\n"
+                + ledgerAnchor + ",intro,Dialogue,Narrator,Ask witness about old ledger records.,Ledger context,story/court.inscape,3,1\n";
+
+            StoryGraphCompilationResultModel updated = compiler.Compile(new List<DslScriptSourceModel> {
+                new DslScriptSourceModel("D:/LabProjects/Inscape/story/court.inscape", """
+# intro
+Narrator: Ask witness about window tonight.
+"""),
+            }, "D:/LabProjects/Inscape");
+
+            LocalizationAlignmentReportModel report = LocalizationAlignmentAuditDomain.Audit(updated,
+                                                                                             new Inscape.Compiler.Localization.LocalizationCsvReaderDomain().Read(oldCsvWithTranslations),
+                                                                                             nodeMap,
+                                                                                             "D:/LabProjects/Inscape");
+
+            LocalizationAlignmentItemModel chosen = FindFirstAlignmentItem(report, "changed", "conflict");
+            AssertEqual("Lantern context", chosen.Candidates[0].Translation, "Chosen candidate should prefer the nearer context shape when sequence is tied.");
+            AssertTrue(chosen.Candidates[0].Reason.Contains("same-context-shape", StringComparison.Ordinal), "Preferred candidate should record context-shape reason.");
+        }
+
         static void CliAuditL10nAlignmentProjectEmitsJson() {
             string directory = Path.Combine(Path.GetTempPath(), "inscape-tests", Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(directory);
@@ -475,23 +551,43 @@ Narrator: Hello there.
 
         static void VSCodeLocalizationCommandExposesReviewAlignmentEntry() {
             string commandSource = File.ReadAllText(RepositoryFile("src/ExternalSupport/VSCode/Localization/Commands/LocalizationCommand.js"));
+            string reviewControllerSource = File.ReadAllText(RepositoryFile("src/ExternalSupport/VSCode/Localization/Controllers/LocalizationReviewController.js"));
+            string reviewViewModelBuilderSource = File.ReadAllText(RepositoryFile("src/ExternalSupport/VSCode/Localization/ViewModels/LocalizationReviewPresenterModelBuilder.js"));
             string toolsMenuSource = File.ReadAllText(RepositoryFile("src/ExternalSupport/VSCode/EditorAuthoring/Commands/EditorAuthoringCommand.js"));
+            string nodeMapReviewControllerSource = File.ReadAllText(RepositoryFile("src/ExternalSupport/VSCode/EditorAuthoring/Controllers/StoryNodeMapReviewController.js"));
+            string extensionSource = File.ReadAllText(RepositoryFile("src/ExternalSupport/VSCode/ExtensionManifestEntry.js"));
             string registrationSource = File.ReadAllText(RepositoryFile("src/ExternalSupport/VSCode/Entries/ExtensionRegistrationController.js"));
             string packageJson = File.ReadAllText(RepositoryFile("src/ExternalSupport/VSCode/package.json"));
 
             AssertTrue(commandSource.Contains("async reviewAlignment(context)"), "Localization command should expose reviewAlignment entrypoint.");
             AssertTrue(commandSource.Contains("audit-l10n-alignment-project"), "Localization command review should invoke alignment audit CLI.");
             AssertTrue(commandSource.Contains("--format"), "Localization command review should allow choosing output format.");
-            AssertTrue(commandSource.Contains("async reviewAlignmentReport(reportPath)"), "Localization command should expose interactive report review entrypoint.");
+            AssertTrue(commandSource.Contains("this.localizationReviewController.reviewAlignmentReport(options.outputPath)"), "Localization command should delegate report review UI to a narrower controller.");
+            AssertTrue(commandSource.Contains("async handleSuccessSelection(selection, options)"), "Localization command should isolate post-success selection dispatch from CLI invocation flow.");
             AssertTrue(commandSource.Contains("Review Items"), "Localization command should offer quick review action for json report.");
-            AssertTrue(commandSource.Contains("createCandidateActionItems(item)"), "Localization command should expose candidate review actions.");
-            AssertTrue(commandSource.Contains("Jump to current line"), "Localization command should let review flow jump back to current text.");
-            AssertTrue(commandSource.Contains("Candidate "), "Localization command should expose candidate-specific jump actions.");
-            AssertTrue(commandSource.Contains("openLocation(this.locationFromPayload(selected.location))"), "Localization command review should jump to source location.");
+            AssertTrue(reviewControllerSource.Contains("async reviewAlignmentReport(reportPath)"), "Localization review controller should expose interactive report review entrypoint.");
+            AssertTrue(reviewControllerSource.Contains("this.localizationReviewPresenterModelBuilder.build({ items }).Items"), "Localization review controller should delegate review item presenter model building.");
+            AssertTrue(reviewControllerSource.Contains("this.localizationReviewPresenterModelBuilder.buildItem(selected.item)"), "Localization review controller should delegate candidate action presenter model building.");
+            AssertTrue(reviewControllerSource.Contains("this.localizationReviewQuickPickAdapter.createQuickPickItems(models)"), "Localization review controller should keep QuickPick adaptation local to VSCode UI.");
+            AssertTrue(reviewControllerSource.Contains("this.localizationReviewQuickPickAdapter.createQuickPickItems(itemModel.Actions)"), "Localization review controller should adapt presenter actions through the QuickPick adapter.");
+            AssertTrue(reviewViewModelBuilderSource.Contains("buildItem(item)"), "Localization review presenter model builder should expose candidate review actions.");
+            AssertTrue(reviewViewModelBuilderSource.Contains("this.formatDisplayPath(String(sourcePath || \"\"))"), "Localization review presenter model builder should depend on injected display-path formatting rather than Node path utilities.");
+            AssertTrue(reviewViewModelBuilderSource.Contains("actionKey: \"open-current\""), "Localization review presenter model builder should encode action identity without VSCode-facing labels.");
+            AssertTrue(reviewViewModelBuilderSource.Contains("actionKey: \"open-candidate\""), "Localization review presenter model builder should encode candidate action identity without VSCode-facing labels.");
+            AssertTrue(reviewControllerSource.Contains("openLocation(this.locationFromPayload(selected.location))"), "Localization review controller should jump to source location.");
+            AssertTrue(extensionSource.Contains("new LocalizationReviewPresenterModelBuilder({"), "Extension entry should assemble localization review presenter model builder separately from VSCode UI controller.");
+            AssertTrue(extensionSource.Contains("new LocalizationReviewQuickPickAdapter()"), "Extension entry should assemble a separate QuickPick adapter for VSCode label mapping.");
+            AssertTrue(extensionSource.Contains("formatDisplayPath: (value) => path.basename(String(value || \"\"))"), "Extension entry should provide VSCode-specific display-path formatting at composition time.");
+            AssertTrue(extensionSource.Contains("const locationServices = {"), "Extension entry should centralize repeated location service injection.");
+            AssertTrue(extensionSource.Contains("const openFileInEditor = async (filePath) => {"), "Extension entry should centralize repeated file-open glue.");
+            AssertTrue(extensionSource.Contains("...locationServices"), "Extension entry should reuse grouped location services across controllers and commands.");
             AssertTrue(toolsMenuSource.Contains("审查本地化对齐候选"), "Tools menu should expose localization alignment review action.");
-            AssertTrue(toolsMenuSource.Contains("async reviewNodeMapReport(report, nodeMapPath, reportPath)"), "Editor authoring command should expose node map report review entrypoint.");
+            AssertTrue(toolsMenuSource.Contains("await this.handleNodeMapSelection(selection, {"), "Editor authoring command should route node map success flow through a dedicated handler.");
+            AssertTrue(toolsMenuSource.Contains("this.storyNodeMapReviewController"), "Editor authoring command should depend on a narrower node map review controller.");
+            AssertTrue(toolsMenuSource.Contains("async handleNodeMapSelection(selection, options)"), "Editor authoring command should isolate node map success selection dispatch from invocation flow.");
             AssertTrue(toolsMenuSource.Contains("Review Items"), "Editor authoring command should expose review items action for node map report.");
-            AssertTrue(toolsMenuSource.Contains("createNodeMapReviewActions(item, nodeMapPath, reportPath)"), "Editor authoring command should expose candidate-specific node map actions.");
+            AssertTrue(nodeMapReviewControllerSource.Contains("async reviewNodeMapReport(report, nodeMapPath, reportPath)"), "Story node map review controller should expose review entrypoint.");
+            AssertTrue(nodeMapReviewControllerSource.Contains("createNodeMapReviewActions(item, nodeMapPath, reportPath)"), "Story node map review controller should expose candidate-specific node map actions.");
             AssertTrue(registrationSource.Contains("inscape.reviewLocalizationAlignment"), "Extension registration should register localization alignment review command.");
             AssertTrue(packageJson.Contains("\"command\": \"inscape.reviewLocalizationAlignment\""), "VSCode package should contribute localization alignment review command.");
         }
@@ -511,6 +607,19 @@ Narrator: Hello there.
             }
 
             throw new InvalidOperationException("Could not find alignment item: " + status);
+        }
+
+        static LocalizationAlignmentItemModel FindFirstAlignmentItem(LocalizationAlignmentReportModel report, params string[] statuses) {
+            for (int statusIndex = 0; statusIndex < statuses.Length; statusIndex += 1) {
+                string status = statuses[statusIndex];
+                for (int i = 0; i < report.Items.Count; i += 1) {
+                    if (report.Items[i].Status == status) {
+                        return report.Items[i];
+                    }
+                }
+            }
+
+            throw new InvalidOperationException("Could not find alignment item: " + string.Join(",", statuses));
         }
 
         static string AnchorForText(string csv, string text) {

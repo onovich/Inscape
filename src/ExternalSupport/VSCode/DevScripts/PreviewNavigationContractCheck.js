@@ -6,7 +6,7 @@ const path = require("path");
 const packageRoot = path.resolve(__dirname, "..");
 
 const sourceFiles = [
-    "extension.js",
+    "ExtensionManifestEntry.js",
     "Entries/ExtensionRegistrationController.js",
     "DslScript/Providers/DslScriptDefinitionProvider.js",
     "Preview/Bridges/PreviewRevealBridge.js"

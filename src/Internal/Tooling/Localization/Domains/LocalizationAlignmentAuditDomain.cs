@@ -14,6 +14,9 @@ namespace Inscape.Tooling {
         const double ChangedSimilarityThreshold = 0.72;
         const double ConflictSimilarityWindow = 0.05;
         const double CandidateSimilarityThreshold = 0.62;
+        const int SequencePenaltyWeight = 2;
+        const int LinePenaltyWeight = 1;
+        const int ContextPenaltyWeight = 3;
 
         public static LocalizationAlignmentReportModel Audit(StoryGraphCompilationResultModel result,
                                                              IReadOnlyList<LocalizationEntryModel> previousEntries,
@@ -152,6 +155,7 @@ namespace Inscape.Tooling {
                     Candidate = CreateCandidate(previous, score.Similarity, score.Reason),
                     Similarity = score.Similarity,
                     SequenceDistance = score.SequenceDistance,
+                    RankingPenalty = score.RankingPenalty,
                 });
             }
 
@@ -306,29 +310,45 @@ namespace Inscape.Tooling {
             int sequenceDistance = Math.Abs(current.Sequence - previous.Sequence);
             int lineDistance = Math.Abs(current.Entry.Source.Line - previous.Entry.Source.Line);
             int exactPrefixLength = SharedPrefixLength(NormalizeText(current.Entry.Text), NormalizeText(previous.Entry.Text));
+            int contextDistance = ContextDistance(current.Entry.Text, previous.Entry.Text);
             List<string> reasons = new List<string>();
+            int rankingPenalty = sequenceDistance * SequencePenaltyWeight + lineDistance * LinePenaltyWeight + contextDistance * ContextPenaltyWeight;
 
             if (current.NodeId.Length > 0 && current.NodeId == previous.NodeId) {
                 reasons.Add("same-stable-node");
+                rankingPenalty = Math.Max(0, rankingPenalty - 2);
             }
             if (sequenceDistance == 0) {
                 reasons.Add("same-sequence");
+                rankingPenalty = Math.Max(0, rankingPenalty - 2);
             } else if (sequenceDistance <= 1) {
                 reasons.Add("near-sequence");
                 similarity += 0.015;
+                rankingPenalty = Math.Max(0, rankingPenalty - 1);
             }
             if (lineDistance <= 1) {
                 reasons.Add("near-source-line");
                 similarity += 0.01;
+                rankingPenalty = Math.Max(0, rankingPenalty - 1);
             }
             if (exactPrefixLength >= 8) {
                 reasons.Add("shared-prefix");
                 similarity += 0.02;
             }
+            if (contextDistance == 0) {
+                reasons.Add("same-context-shape");
+                similarity += 0.015;
+                rankingPenalty = Math.Max(0, rankingPenalty - 2);
+            } else if (contextDistance == 1) {
+                reasons.Add("near-context-shape");
+                similarity += 0.008;
+                rankingPenalty = Math.Max(0, rankingPenalty - 1);
+            }
 
             return new CandidateScore {
                 Similarity = Math.Min(0.9999, similarity),
                 SequenceDistance = sequenceDistance,
+                RankingPenalty = rankingPenalty,
                 Reason = string.Join(",", reasons),
             };
         }
@@ -386,10 +406,39 @@ namespace Inscape.Tooling {
             return count;
         }
 
+        static int ContextDistance(string left, string right) {
+            string contextLeft = ContextShape(NormalizeText(left));
+            string contextRight = ContextShape(NormalizeText(right));
+            if (contextLeft == contextRight) {
+                return 0;
+            }
+
+            int distance = LevenshteinDistance(contextLeft, contextRight);
+            return distance <= 1 ? 1 : 2;
+        }
+
+        static string ContextShape(string value) {
+            string[] parts = value.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length == 0) {
+                return string.Empty;
+            }
+
+            if (parts.Length == 1) {
+                return parts[0];
+            }
+
+            return parts[0] + "|" + parts[parts.Length - 1] + "|" + parts.Length.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        }
+
         static int CompareCandidateMatch(LocalizationAlignmentCandidateMatch left, LocalizationAlignmentCandidateMatch right) {
             int similarity = right.Similarity.CompareTo(left.Similarity);
             if (similarity != 0) {
                 return similarity;
+            }
+
+            int penalty = left.RankingPenalty.CompareTo(right.RankingPenalty);
+            if (penalty != 0) {
+                return penalty;
             }
 
             return left.SequenceDistance.CompareTo(right.SequenceDistance);
@@ -415,6 +464,8 @@ namespace Inscape.Tooling {
 
             public int SequenceDistance { get; set; }
 
+            public int RankingPenalty { get; set; }
+
         }
 
         sealed class CandidateScore {
@@ -422,6 +473,8 @@ namespace Inscape.Tooling {
             public double Similarity { get; set; }
 
             public int SequenceDistance { get; set; }
+
+            public int RankingPenalty { get; set; }
 
             public string Reason { get; set; } = string.Empty;
 

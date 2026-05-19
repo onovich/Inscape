@@ -7,8 +7,7 @@ class LocalizationCommand {
         this.childProcess = dependencies.childProcess;
         this.fs = dependencies.fs;
         this.path = dependencies.path;
-        this.openLocation = dependencies.openLocation;
-        this.locationFromPayload = dependencies.locationFromPayload;
+        this.localizationReviewController = dependencies.localizationReviewController;
         this.selectWorkspaceFolder = dependencies.selectWorkspaceFolder;
         this.isInscapeDocument = dependencies.isInscapeDocument;
         this.writeTempDocument = dependencies.writeTempDocument;
@@ -177,17 +176,7 @@ class LocalizationCommand {
             const selection = actions.length > 0
                 ? await this.vscode.window.showInformationMessage(options.successMessage || ("Inscape localization CSV written to " + options.outputPath), ...actions)
                 : await this.vscode.window.showInformationMessage(options.successMessage || ("Inscape localization CSV written to " + options.outputPath));
-            if (selection === "Review Items") {
-                await this.reviewAlignmentReport(options.outputPath);
-                return;
-            }
-            if (selection === "Open Report") {
-                const document = await this.vscode.workspace.openTextDocument(this.vscode.Uri.file(options.outputPath));
-                await this.vscode.window.showTextDocument(document, {
-                    preview: false,
-                    preserveFocus: false
-                });
-            }
+            await this.handleSuccessSelection(selection, options);
         } catch (error) {
             this.vscode.window.showErrorMessage(error.message || String(error));
         } finally {
@@ -197,126 +186,15 @@ class LocalizationCommand {
         }
     }
 
-    async reviewAlignmentReport(reportPath) {
-        const text = await this.fs.promises.readFile(reportPath, "utf8");
-        const report = JSON.parse(text);
-        const items = Array.isArray(report && report.items) ? report.items : [];
-        if (items.length === 0) {
-            this.vscode.window.showInformationMessage("Localization alignment report has no items to review.");
+    async handleSuccessSelection(selection, options) {
+        if (selection === "Review Items") {
+            await this.localizationReviewController.reviewAlignmentReport(options.outputPath);
             return;
         }
 
-        const picks = items.map((item) => this.createReviewQuickPickItem(item));
-        const selected = await this.vscode.window.showQuickPick(picks, {
-            placeHolder: "Select a localization alignment item to jump to source"
-        });
-        if (!selected || !selected.location) {
-            return;
+        if (selection === "Open Report") {
+            await this.openFile(options.outputPath);
         }
-
-        if (selected.item && Array.isArray(selected.item.candidates) && selected.item.candidates.length > 0) {
-            const reviewAction = await this.vscode.window.showQuickPick(this.createCandidateActionItems(selected.item), {
-                placeHolder: "Review the current text or jump to a candidate source"
-            });
-            if (!reviewAction) {
-                return;
-            }
-
-            if (reviewAction.location) {
-                await this.openLocation(this.locationFromPayload(reviewAction.location));
-                return;
-            }
-        }
-
-        await this.openLocation(this.locationFromPayload(selected.location));
-    }
-
-    createReviewQuickPickItem(item) {
-        const candidateSummary = Array.isArray(item.candidates) && item.candidates.length > 0
-            ? item.candidates.slice(0, 2).map((candidate) => this.formatCandidateInline(candidate)).join(" | ")
-            : "No candidates";
-        const translationSummary = item.translation
-            ? "translation: " + item.translation
-            : "translation: (empty)";
-        const sourceSummary = this.formatSourceSummary(item.sourcePath, item.line, item.column);
-        const sourceLine = Number(item.line || 0) > 0 ? item.line : 1;
-        const sourceColumn = Number(item.column || 0) > 0 ? item.column : 1;
-        return {
-            label: this.createReviewItemLabel(item),
-            description: translationSummary,
-            detail: sourceSummary + " | " + String(item.text || "") + " | " + candidateSummary,
-            item,
-            location: {
-                sourcePath: String(item.sourcePath || ""),
-                line: Math.max(0, sourceLine - 1),
-                character: Math.max(0, sourceColumn - 1),
-                length: String(item.text || "").length
-            }
-        };
-    }
-
-    createCandidateActionItems(item) {
-        const actions = [
-            {
-                label: "Jump to current line",
-                description: this.formatSourceSummary(item.sourcePath, item.line, item.column),
-                detail: String(item.text || ""),
-                location: {
-                    sourcePath: String(item.sourcePath || ""),
-                    line: Math.max(0, Number(item.line || 1) - 1),
-                    character: Math.max(0, Number(item.column || 1) - 1),
-                    length: String(item.text || "").length
-                }
-            }
-        ];
-
-        for (let i = 0; i < item.candidates.length; i += 1) {
-            const candidate = item.candidates[i];
-            actions.push({
-                label: "Candidate " + String(i + 1) + ": " + this.formatCandidateStatus(candidate),
-                description: candidate.translation || "(no translation)",
-                detail: this.formatSourceSummary(candidate.sourcePath, candidate.line, candidate.column) + " | " + this.formatCandidateInline(candidate),
-                location: {
-                    sourcePath: String(candidate.sourcePath || ""),
-                    line: Math.max(0, Number(candidate.line || 1) - 1),
-                    character: Math.max(0, Number(candidate.column || 1) - 1),
-                    length: String(candidate.text || "").length
-                }
-            });
-        }
-
-        return actions;
-    }
-
-    createReviewItemLabel(item) {
-        const status = String(item.status || "unknown");
-        const review = String(item.review || "");
-        const node = String(item.nodeTitle || "(unknown node)");
-        const candidateCount = Array.isArray(item.candidates) ? item.candidates.length : 0;
-        return "[" + status + "] " + node + " - " + review + (candidateCount > 0 ? " (" + candidateCount + " candidates)" : "");
-    }
-
-    formatCandidateInline(candidate) {
-        const similarity = candidate.similarity > 0
-            ? " @" + Number(candidate.similarity).toFixed(3)
-            : "";
-        const reason = candidate.reason ? " {" + candidate.reason + "}" : "";
-        const translation = candidate.translation ? " => " + candidate.translation : "";
-        return String(candidate.text || "") + translation + similarity + reason;
-    }
-
-    formatCandidateStatus(candidate) {
-        const similarity = candidate.similarity > 0
-            ? "similarity " + Number(candidate.similarity).toFixed(3)
-            : "candidate";
-        return candidate.reason
-            ? similarity + " / " + candidate.reason
-            : similarity;
-    }
-
-    formatSourceSummary(sourcePath, line, column) {
-        const fileName = this.path.basename(String(sourcePath || ""));
-        return fileName + ":" + String(line || 1) + ":" + String(column || 1);
     }
 
     createInvocation(context, workspaceFolder, options, activeDocument, tempPath) {
@@ -375,6 +253,14 @@ class LocalizationCommand {
 
                 resolve(stdout);
             });
+        });
+    }
+
+    async openFile(filePath) {
+        const document = await this.vscode.workspace.openTextDocument(this.vscode.Uri.file(filePath));
+        await this.vscode.window.showTextDocument(document, {
+            preview: false,
+            preserveFocus: false
         });
     }
 

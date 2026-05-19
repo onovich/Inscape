@@ -60,10 +60,15 @@
 
 ### Resources / Scripts
 
-- `Resources` 放 schema、snippet、TextMate grammar、图标、模板、示例配置、HTML/CSS/JS 模板等非源码资源。
-- `Scripts` 放只服务该模块的打包、安装、生成、迁移等开发脚本。
-- Internal 与 ExternalSupport 都可以使用这两个目录，但必须位于具体可独立模块根内。
+- `Resources` / `Scripts` 的前提不是“想把文件分分类”，而是该目录对应的模块本身已经足够独立，未来有合理概率拆成独立仓库、独立项目、独立包或独立交付物。
+- 一旦某个模块决定采用 `Resources` / `Scripts` 二分，默认语义就是：
+  - `Resources` 放该模块的非源码资源，例如 schema、snippet、TextMate grammar、图标、模板、示例配置、HTML/CSS/JS 模板。
+  - `Scripts` 放该模块的源码与开发脚本根；业务源码目录如 `Preview`、`Localization`、`EditorAuthoring`、`DslScript` 不应再与 `Scripts` 平级，而应位于 `Scripts` 之下。
+- 如果当前仓库阶段尚未完成这类整体迁移，但又需要一个单独的开发脚本桶，应使用 `DevScripts` 之类明确过渡名，避免提前占用 `Scripts` 这个最终语义位。
+- 也就是说，`Preview` / `Localization` / `EditorAuthoring` / `DslScript` 这类业务目录与 `Resources` 的对应代码侧父层应是 `Scripts`，而不是继续直接挂在模块根。
+- Internal 与 ExternalSupport 都可以使用这组目录，但必须位于具体可独立模块根内。
 - 不为了规划创建空的 `Resources` / `Scripts`。
+- 如果现有历史结构已经把 `Scripts` 错当成“仅开发脚本目录”，或把源码目录继续与 `Scripts` 平级，应视为待迁移结构债，而不是规范本身。
 - 具体计划见 [Module Resource / Script Boundary Plan](module-resource-script-boundary-plan.md)。
 
 ## 架构层级
@@ -214,7 +219,9 @@
 - 允许后缀：`Provider`、`Bridge`、`Controller`、`ViewModel`、`Command`
 - 重语义能力长期迁移到 `LanguageServer`
 - 路径为 `src/ExternalSupport/VSCode`，不再增加 `EditorExtensions` 类别层，也不再保留 `vscode-inscape` 包名目录；npm 包名留在 `package.json`。
-- `extension.js` 是 `package.json` 的 VSCode manifest main 入口例外，只允许承载 activation、依赖装配和注册 glue；功能行为必须落到业务目录。
+- VSCode manifest 根入口文件应使用 `*Entry` 风格命名，例如 `ExtensionManifestEntry.js`，而不是长期保留裸 `extension.js` 这类宿主默认名。
+- 资源模板文件应使用 `主语 + 角色 + Template` 风格命名，例如 `PreviewHtmlDocumentTemplate.html`，而不是长期保留裸 `preview-template.html` 这类历史名。
+- 包内契约检查脚本应使用 `主语 + Contract + Check` 风格命名，例如 `PreviewNavigationContractCheck.js`、`PreviewSourceSyncContractCheck.js`，不再使用 `check-*` / `assert-*` 句式文件名。
 
 ### LanguageServer
 

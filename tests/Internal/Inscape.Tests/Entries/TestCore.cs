@@ -74,6 +74,8 @@ namespace Inscape.Tests {
                 ("cli update-l10n-project preserves translations", CliUpdateL10nProjectPreservesTranslations),
                 ("localization alignment audit reports review statuses", LocalizationAlignmentAuditReportsReviewStatuses),
                 ("localization alignment audit keeps low confidence similar text as conflict", LocalizationAlignmentAuditKeepsLowConfidenceSimilarTextAsConflict),
+                ("localization alignment audit prefers near sequence when similarity ties", LocalizationAlignmentAuditPrefersNearSequenceWhenSimilarityTies),
+                ("localization alignment audit prefers near context shape when sequence ties", LocalizationAlignmentAuditPrefersNearContextShapeWhenSequenceTies),
                 ("cli audit-l10n-alignment-project emits json", CliAuditL10nAlignmentProjectEmitsJson),
                 ("cli audit-l10n-alignment-project emits text", CliAuditL10nAlignmentProjectEmitsText),
                 ("vscode localization command exposes review alignment entry", VSCodeLocalizationCommandExposesReviewAlignmentEntry),

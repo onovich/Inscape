@@ -26,7 +26,7 @@
 这个分层发生在“具体模块根”内部，而不是直接在 `Internal` 或 `ExternalSupport` 顶层切 `Scripts` / `Resources`。例如：
 
 - `src/ExternalSupport/VSCode/Resources/...`
-- `src/ExternalSupport/VSCode/Scripts/...`
+- `src/ExternalSupport/VSCode/DevScripts/...`（过渡期开发脚本桶；最终 `Scripts` 语义见 `module-resource-script-boundary-plan.md`）
 - `src/ExternalSupport/UnityPlugin/<UnityPackage>/Scripts/...`
 - `src/ExternalSupport/UnityPlugin/<UnityPackage>/Resources/...`
 - `src/Internal/Tooling/Resources/Preview/...`，仅当 Tooling 仍作为一个可能独立交付模块且 Preview 模板需要从 C# 字符串拆出时使用。

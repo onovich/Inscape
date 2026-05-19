@@ -10,7 +10,7 @@
 
 VSCode package 内部目录仍有不符合命名规范的部分。下一轮不应直接推进新功能，而应先按本审计收敛目录主语、角色后缀和资源 / 脚本边界。
 
-2026-05-18 更新：资源 / 脚本目录收口已完成，旧 `media`、`schemas`、`snippets`、`syntaxes`、`scripts` 已迁入 `Resources/*` 与 `Scripts`；`language-configuration.json` 已迁入 `Resources/Language`。`ExtensionEntry` 已收敛为复数 Role 目录 `Entries`。`PreviewWebview` 已收敛为业务主语目录 `Preview`，内部按 `Providers` / `Controllers` 分角色。`DslScript` providers / diagnostics 已从 `LanguageFeatures` 与 `WorkspaceIndex` 收敛到 `DslScript/Providers` 与 `DslScript/Controllers`。`EditorAuthoring` providers 已从 `LanguageFeatures` / `WorkspaceIndex` 收敛到 `EditorAuthoring/Providers`，`LanguageFeatures` 过渡目录已删除。`HostBinding` 与 `HostSchema` providers 已从 `WorkspaceIndex` 收敛到各自业务目录，`WorkspaceIndex` 过渡目录已删除。根级 `Commands` 已按业务迁入 `EditorAuthoring` / `Preview` / `HostSchema` / `Localization` 的 `Commands` 目录。
+2026-05-18 更新：资源 / 脚本目录收口当时只完成了“把旧资源桶和脚本桶从散乱根目录迁走”的阶段目标。2026-05-19 重新澄清后，这个阶段性结论需要修正：`Scripts` 不能再被理解成“package-only 开发脚本目录”。为避免与最终口径冲突，当前开发脚本桶已临时改名为 `DevScripts`；而 `Preview`、`Localization`、`EditorAuthoring`、`DslScript` 等业务源码目录继续与它平级，这仍不符合最终口径。若 VSCode 模块决定采用 `Resources` / `Scripts` 二分，则这些业务源码目录应进入 `Scripts` 之下，当前结构应视为待迁移状态。
 
 ## 当前目录判断
 
@@ -23,8 +23,8 @@ VSCode package 内部目录仍有不符合命名规范的部分。下一轮不�
 | `Localization` | 保留 | 业务主语明确，承载 VSCode localization command 入口 | 只做 VSCode 命令适配，抽取 / 更新语义继续下沉 Internal Tooling |
 | `Preview` | 保留 | 业务主语明确，VSCode webview 技术细节不再占据顶层目录名 | 继续保持 `Providers` / `Controllers` / `Bridges` 角色目录 |
 | `Entries` | 保留 | 复数 Role 目录，承载 VSCode extension activate / deactivate 与注册装配边界 | 保持薄入口，不承载 feature 行为 |
-| `Resources` | 保留 | VSCode 是未来可独立发布 extension package，非源码资源已按模块根内资源边界收口 | 继续保持 `Language`、`Media`、`Schemas`、`Snippets`、`Syntaxes` 子目录 |
-| `Scripts` | 保留 | VSCode package-only 开发脚本已与源码目录分离 | 继续只放该 package 的打包 / 安装脚本 |
+| `Resources` | 保留 | VSCode 是未来可独立发布 extension package，需要明确资源侧根 | 继续保持 `Language`、`Media`、`Schemas`、`Snippets`、`Syntaxes` 子目录 |
+| `DevScripts` | 过渡保留 | 只是临时承载 package-local 开发脚本，避免与最终 `Scripts` 语义冲突 | 等 `Scripts` 变成代码侧父层后，再评估是否保留为独立开发脚本桶 |
 
 ## 执行顺序
 
@@ -37,8 +37,9 @@ VSCode package 内部目录仍有不符合命名规范的部分。下一轮不�
 7. 已完成：迁 `Bridges/PreviewRevealBridge` 到 `Preview/Bridges`，删除根级 `Bridges`。
 8. 已完成：拆根级 `Styles` 到 `EditorAuthoring` / `Preview`，并将 `StyleDefaults.js` 拆为带 `Model` 后缀的默认值文件。
 9. 已完成：拆根级 `Commands` 到 `EditorAuthoring` / `Preview` / `HostSchema` / `Localization` 的 `Commands` 目录。
-10. 已完成：`extension.js` 明确为 `package.json` 的 VSCode manifest main 入口例外，只允许承载 activation、依赖装配和注册 glue。
-10. 每一步都要同步 VSCode `require()`、`package.json` 资源路径、README、回归命令和测试路径。
+10. 已完成：`extension.js` 明确为 `package.json` 的 VSCode manifest main 入口例外，只允许承载 activation、依赖装配和注册 glue；但该命名是否仍应保留为长期例外，需在后续迁移中重新评估。
+11. 新增：决定 VSCode 是否正式采用 `Resources` / `Scripts` 二分终局；若采用，则把当前平级业务源码整体迁入 `Scripts` 下，并同步 `require()`、`package.json`、README、验证脚本与测试路径；当前 `DevScripts` 只是避免语义冲突的过渡名。
+12. 新增：清点并重命名不符合当前命名法的历史例外文件，例如 `check-preview-source-sync-modes.js`、`assert-preview-navigation-contract.js`、`preview-template.html`、`extension.js`。
 
 ## 自检规则
 

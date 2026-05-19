@@ -9,15 +9,15 @@
   "version": "0.1.0",
   "publisher": "onovich",
   "license": "UNLICENSED",
-  "main": "./extension.js",
+  "main": "./ExtensionManifestEntry.js",
   "scripts": {
-    "check:diagnostics-fallback": "node Scripts/assert-diagnostics-fallback-contract.js",
-    "check:preview-navigation": "node Scripts/assert-preview-navigation-contract.js",
-    "check:preview-source-sync": "node Scripts/check-preview-source-sync-modes.js",
-    "smoke:preview-source-sync": "powershell -NoProfile -ExecutionPolicy Bypass -File Scripts/start-preview-source-sync-smoke.ps1",
+    "check:diagnostics-fallback": "node DevScripts/DslScriptDiagnosticsFallbackContractCheck.js",
+    "check:preview-navigation": "node DevScripts/PreviewNavigationContractCheck.js",
+    "check:preview-source-sync": "node DevScripts/PreviewSourceSyncContractCheck.js",
+    "smoke:preview-source-sync": "powershell -NoProfile -ExecutionPolicy Bypass -File DevScripts/StartPreviewSourceSyncSmoke.ps1",
     "package:vsix": "vsce package --out inscape-vscode.vsix",
-    "install:vsix": "powershell -NoProfile -ExecutionPolicy Bypass -File Scripts/rebuild-and-install.ps1",
-    "rebuild:vsix": "powershell -NoProfile -ExecutionPolicy Bypass -File Scripts/rebuild-and-install.ps1"
+    "install:vsix": "powershell -NoProfile -ExecutionPolicy Bypass -File DevScripts/RebuildAndInstallVsix.ps1",
+    "rebuild:vsix": "powershell -NoProfile -ExecutionPolicy Bypass -File DevScripts/RebuildAndInstallVsix.ps1"
   },
   "devDependencies": {
     "@vscode/vsce": "^3.9.1"

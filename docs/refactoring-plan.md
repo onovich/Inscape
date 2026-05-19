@@ -20,7 +20,7 @@
 - 大目标 D：保持 Core 干净，隔离表现层和宿主业务，尤其是 UnitySample 与未来 Host Bridge。
 - 大目标 E：建立防回归工作流，把踩坑经验固化为验证清单、提交拆分规则和发布流程。
 
-当前 B3 已完成阶段性收口：`src/ExternalSupport/VSCode/extension.js` 已从大逻辑文件收敛为 VSCode 注册入口、实例装配和少量入口级 glue。进入 C 阶段前，先清掉纯规划占位目录并完成旧命名收敛；随后再推进 source map / reveal payload、LanguageServer 与 Runtime 基线。
+当前 B3 已完成阶段性收口：`src/ExternalSupport/VSCode/ExtensionManifestEntry.js` 已从大逻辑文件收敛为 VSCode 注册入口、实例装配和少量入口级 glue。进入 C 阶段前，先清掉纯规划占位目录并完成旧命名收敛；随后再推进 source map / reveal payload、LanguageServer 与 Runtime 基线。
 
 ## 评分目标
 
@@ -193,11 +193,11 @@ VSCode：4 / 10
 
 验收标准：
 
-- `src/ExternalSupport/VSCode/extension.js` 变成注册入口，而不是全部逻辑实现。
+- `src/ExternalSupport/VSCode/ExtensionManifestEntry.js` 变成注册入口，而不是全部逻辑实现。
 - 正文 / 选项文本链接态回归清单全部通过。
 - 修改单个 provider 不应影响 preview bridge 或 style loader。
 
-当前进展：已完成。`extension.js` 不再承载 command、workspace index、language feature、preview、style、diagnostics、location/range 等主体逻辑；当前已拆入 `DslScript`、`EditorAuthoring`、`HostBinding`、`HostSchema`、`Localization`、`Preview` 与 `Entries`，根级 `Commands` 已删除。B3.5 巡检同时清理了 VSCode JS 中已知 `Helper` / `Support` / `Manager` / `Utils` 弱语义命名残留，并确认没有回退到 `DocumentLinkProvider`。
+当前进展：已完成。`ExtensionManifestEntry.js` 不再承载 command、workspace index、language feature、preview、style、diagnostics、location/range 等主体逻辑；当前已拆入 `DslScript`、`EditorAuthoring`、`HostBinding`、`HostSchema`、`Localization`、`Preview` 与 `Entries`，根级 `Commands` 已删除。B3.5 巡检同时清理了 VSCode JS 中已知 `Helper` / `Support` / `Manager` / `Utils` 弱语义命名残留，并确认没有回退到 `DocumentLinkProvider`。
 
 B 后修复：在进入 C 阶段前，Compiler 旧阶段产物已按角色后缀收敛为 `DslScript*Domain`、`StoryGraph*Domain`、`Localization*Domain`、`*Model` 命名；命名空间保持 `Inscape.Compiler.*` 粗粒度，不继续按每个目录细分。
 
@@ -463,7 +463,7 @@ B 后修复：在进入 C 阶段前，Compiler 旧阶段产物已按角色后缀
 ```powershell
 dotnet build Inscape.slnx --no-restore
 dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build
-node --check src\ExternalSupport\VSCode\extension.js
+node --check src\ExternalSupport\VSCode\ExtensionManifestEntry.js
 ```
 
 如果涉及 VSCode 扩展行为，还必须执行扩展重建安装流程，并手动验证关键交互。

@@ -12,6 +12,9 @@
 - Goal 11.1 的“LanguageServer 不可用 -> CLI diagnostics fallback”真实 VSCode smoke 已通过。
 - VSCode 的 diagnostics、node completion、definition、references、hover、document symbols 与 Host Schema capability 已切到常驻 `LanguageServer` stdio 会话；CLI fallback 继续保留，但不再是常态热路径。
 - 2026-05-19 用户重测 LanguageServer 体验反馈良好；日志未见 Inscape LanguageServer 崩溃或 stderr。Preview webview CSP 已补到 fallback 页面和主预览模板；`Ctrl+Hover` 链接态范围也已继续收口一刀，当前剩余尾项更偏人体工学微调。
+- 2026-05-19 新增流程约束：用户指出 VSCode 近期实现再次出现不够符合重构 / 命名指南的写法。后续必须把 VSCode 重构收口重新列回计划，并把“每完成一个新功能节点就做一轮命名 / 分层 / 入口厚度自检”当作默认工作流，而不是可选项。
+- 2026-05-19 新增目录边界澄清：用户明确 `Resources` / `Scripts` 的前提是模块足够独立；一旦采用这对目录，`Scripts` 应是代码侧父层，与 `Resources` 对偶，而不是只放 package-only 开发脚本。当前 VSCode 已先把开发脚本桶改成过渡性 `DevScripts`，避免继续误占 `Scripts` 语义位；但业务源码目录仍与其平级，完整 `Resources / Scripts` 终局结构仍待迁移。首批命名例外也已开始收口：`ExtensionManifestEntry.js`、`PreviewHtmlDocumentTemplate.html`、`PreviewNavigationContractCheck.js`、`PreviewSourceSyncContractCheck.js` 已替换掉历史名。
+- 2026-05-19 新增 Localization 分层判断：`VSCode/Localization` 当前仍可保留，但只能把它视为宿主适配层；凡是未来别的宿主、自研编辑器也会需要的 review contract、candidate scoring、report model / view-model 组织，都不应默认留在 VSCode，而应优先评估下沉到 `Internal/Tooling` 或在需要编辑器查询能力时进入 `LanguageServer`。
 - 当前最值得继续推进的主线已经回到 Goal 10：G10.3 / G10.4、最小 review 输出闭环和 json report source jump 都已落地；下一步可继续细化本地化候选评分和编辑器 review 体验。
 - 低优先级体验尾项：编辑区选项文字 `Ctrl+Hover` 的可点击下划线显示仍不稳定，但 `Ctrl+Click` 行为符合预期；`selection` 模式只驱动“已打开预览”的轻量跟随，不主动弹出新预览面板。
 
@@ -38,6 +41,23 @@
 3. **最后再挑 Tooling 单点收敛。**
 	- 保持原则：继续落到 `DslScriptSources`、`ToolConfig`、`Preview`、`Localization`、`HostSchema`、`HostBinding` 等窄模块；不要新建泛化 `ProjectService`。
 	- 只挑一个仍重复的跨 Cli / VSCode / LanguageServer 流程做小闭环，不把“顺手统一”混进主线节点。
+4. **把 VSCode 重构守规重新列回近期计划。**
+	- 先做一次最近新增代码巡检：重点看 `EditorAuthoring`、`Localization`、`Preview` 近期节点是否又引入了不够稳的 glue、跨业务拼装、命名倒退或入口增厚。
+	- 后续每个 VSCode 功能节点完成后，立即补一轮命名 / 分层 / 目录 / 入口厚度自检；不能等到堆出下一轮大清理。
+	- 如果发现某段 VSCode 逻辑本质上是可复用语义，而不是平台适配，应优先评估下沉到 `Tooling` 或 `LanguageServer`。
+	- 对 `Localization` 尤其要做这一步：命令入口、QuickPick、文件对话框、打开报告、源跳转留在 VSCode；alignment review contract、candidate scoring、report model / view-model 组织优先评估下沉。
+	- 2026-05-19 首轮 Localization 盘点结果：
+		- `LocalizationCommand` 仍主要是 VSCode 宿主适配，可暂留 VSCode。
+		- `LocalizationReviewController` 里 `report -> item list -> candidate action list -> jump` 的交互骨架已经接近跨宿主契约；第一刀已把 view-model 组织拆到 `Localization/ViewModels/LocalizationReviewPresenterModelBuilder`，当前 controller 只保留 QuickPick 适配与 jump，builder 的显示路径格式也已改成组合根注入；最新一刀又把动作文案从 presenter builder 里剥离，改由独立的 `LocalizationReviewQuickPickAdapter` 做 VSCode 标签映射。下一步再评估是否继续下沉到 `Tooling` 或更明确的 editor-neutral contract。
+		- `LocalizationAlignmentAuditDomain`、`LocalizationAlignmentReportModel`、candidate scoring 与状态机已在 `Internal/Tooling`，这条边界目前是对的。
+	- 新增：把 VSCode 的 `Resources / Scripts` 终局结构重新澄清并列入迁移计划；当前先以 `DevScripts` 作为过渡脚本桶，避免继续误用 `Scripts`；若确认采用这对目录，就不能让业务源码目录继续与最终 `Scripts` 平级。
+	- 新增：清点并迁移当前命名例外文件，必要时发明符合既有风格的新名字，并把命名法补进规范，而不是长期保留历史名。
+	- 2026-05-19 巡检首批发现：
+		- `EditorAuthoringCommand` 原先又吸收了 stable node map review 的二级 Quick Pick、report 解析后的交互分发、source jump 与文件打开编排；其中 review UI 已拆到 `StoryNodeMapReviewController`，success action 分发也已收成 `handleNodeMapSelection`，当前剩余主要还是工具菜单入口、node map 命令入口与 CLI invocation 编排仍集中在同一入口类内。
+		- `LocalizationCommand` 原先同时承担 export / update / audit 命令入口、报告读取、Quick Pick 渲染、candidate action 二级交互、location jump 和 CLI invocation 编排；其中 review UI 已拆到 `LocalizationReviewController`，success action 分发也已收成 `handleSuccessSelection`，当前剩余主要还是命令入口自身的参数采集与 CLI 调度职责。
+		- `extension.js` 仍保持薄入口总体方向；`openLocation` / `locationFromPayload` 这类重复注入已开始收成共享 `locationServices`，文件打开 glue 也已收成 `openFileInEditor`。下一步要继续防止组合根参数表重新横向膨胀。
+		- `Review Items` / report review 相关 UI 现在分别散在 `EditorAuthoringCommand` 与 `LocalizationCommand`，存在重复的 report->pick->action->jump 模式，后续应评估提炼为更窄的 review presenter / controller，而不是继续在 command 中平铺复制。
+		- 已推进：第一轮命名例外已开始收口，`ExtensionManifestEntry.js`、`PreviewHtmlDocumentTemplate.html`、`PreviewNavigationContractCheck.js`、`PreviewSourceSyncContractCheck.js` 已替换掉首批历史名；下一步继续清点剩余历史名并配合目录重排统一收口。
 4. **Unity / Bird 只做准备和决策。**
 	- 待定：Bird 项目新增 importer 与 `InscapeGenerated` 资源提交策略。
 	- 待验证：带真实 Timeline 绑定的 Bird Import Dry Run，确认 `talking.exit` 的 `TalkingEffectTM.PlayTimeline` 落地和其他 phase warning。
@@ -48,11 +68,17 @@
 - **当前可直接推进**：
 	- 本地化候选评分 / 编辑器 review 体验细化。
 	- 标题重命名人工确认流收尾。
+	- VSCode 最近增量代码的命名 / 分层巡检与收口。
+	- VSCode `Resources / Scripts` 终局结构与命名例外收口。
+	- Localization 宿主适配壳与宿主无关契约的进一步拆层。
+	- Localization review view-model / query contract 下沉评估。
 - **当前人工待办**：
 	- 无。Goal 7 与 Goal 11.1 的真实 VSCode smoke 已在 2026-05-19 收口完成。
 - **当前主线研发**：
 	- 本地化候选评分 / 编辑器 review 体验细化。
 	- stable node map / localization review 交互细化。
+	- VSCode 重构守规与节点后自检机制。
+	- G10.4.2 candidate scoring 细化：相似度并列时优先使用 sequence / line ranking penalty 收口误匹配，第二轮已加 context shape 信号。
 - **低一层优先级但可随时切入**：
 	- Tooling 单点收敛。
 	- 体验细化后续项：`Ctrl+Hover` 链接态人体工学微调、Preview review 列表可读性。

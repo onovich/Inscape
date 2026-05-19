@@ -13,7 +13,7 @@
 - ExternalSupport 当前只确认：`UnityPlugin`
 - 当前 `Inscape.Compiler` 已完成项目名、命名空间与主要角色后缀收敛
 - 当前 `Inscape.Cli` 已退回命令入口、参数和输出适配层，主要共享流程已上提到 `Tooling`
-- 当前 `src/ExternalSupport/VSCode` 已完成 B 阶段拆分，`extension.js` 主要保留注册入口、实例装配和少量 glue
+- 当前 `src/ExternalSupport/VSCode` 已完成 B 阶段拆分，`ExtensionManifestEntry.js` 主要保留注册入口、实例装配和少量 glue
 - Unity 支持长期不进入默认 .NET solution 编译链
 - LanguageServer 与 Runtime 已建立 Internal 基线项目，但 VSCode 前端尚未切到 C# LanguageServer 主路径
 
@@ -107,7 +107,7 @@
 
 ## 阶段 3：拆分 VSCode 前端
 
-目标：把 `extension.js` 从单文件入口拆成可维护模块。
+目标：把 `ExtensionManifestEntry.js` 从单文件入口拆成可维护模块。
 
 状态：已完成 B 阶段拆分。后续重点转向 Host Schema query / event 作者体验、预览增量体验和 LanguageServer client 迁移。
 
@@ -129,7 +129,7 @@
 
 阶段门槛：
 
-- `extension.js` 变为注册入口。
+- `ExtensionManifestEntry.js` 变为注册入口。
 - VSCode 作者体验不回归。
 
 ## 阶段 4：固化 HostSchema / HostBinding，并规划 ExternalSupport
@@ -169,7 +169,7 @@
 ```powershell
 dotnet build Inscape.slnx --no-restore
 dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build
-node --check src\ExternalSupport\VSCode\extension.js
+node --check src\ExternalSupport\VSCode\ExtensionManifestEntry.js
 ```
 
 若阶段涉及 `src/ExternalSupport/VSCode/`，额外执行：

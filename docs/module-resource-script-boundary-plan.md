@@ -8,6 +8,8 @@
 
 `Resources` / `Scripts` 不是 `Internal` 或 `ExternalSupport` 顶层的通用分类桶。它们只在“未来可能独立拆仓库、拆项目、单独发布或单独交付”的模块根内出现。
 
+2026-05-19 补充口径：这里的 `Scripts` 不是“脚本工具箱”同义词，而是与 `Resources` 对偶的代码侧父层。如果一个模块已经决定采用 `Resources` / `Scripts` 二分，那么 `Preview`、`Localization`、`EditorAuthoring`、`DslScript` 这类业务源码目录应位于 `Scripts` 之下，而不是继续与 `Scripts` 平级。
+
 这个规则同时适用于 Internal 与 ExternalSupport：
 
 - Internal 模块如果未来可能单独发布或拆项目，可以在该模块根内拆 `Resources` / `Scripts`。
@@ -57,7 +59,7 @@ src/Internal/Tooling/
 
 ### `src/ExternalSupport/VSCode`
 
-VSCode 是可独立发布的 extension package，应在自身模块根内拆分：
+VSCode 是可独立发布的 extension package，应在自身模块根内拆分资源侧与代码侧。若采用 `Resources` / `Scripts` 二分，目标口径应是：
 
 ```text
 src/ExternalSupport/VSCode/
@@ -67,10 +69,22 @@ src/ExternalSupport/VSCode/
     Snippets/
     Syntaxes/
   Scripts/
-  ...
+    DslScript/
+    EditorAuthoring/
+    HostBinding/
+    HostSchema/
+    Localization/
+    Preview/
+    Entries/
+    extension.<entry-name>
 ```
 
-`package.json` 中的资源路径必须同步更新。
+这意味着当前 VSCode 不能再把开发脚本目录直接叫 `Scripts`。为避免与最终语义冲突，当前 package-local 开发脚本桶应临时使用 `DevScripts` 之类过渡名；业务源码目录继续与它平级的状态，仍不符合 2026-05-19 明确后的最终口径，应视为待迁移结构债。迁移前需先解决：
+
+- `package.json` `main`、命令脚本和资源路径的批量更新。
+- `extension.js` 是否继续保留为 manifest 历史例外，还是改成更符合命名法的入口名。
+- `preview-template.html`、`check-preview-source-sync-modes.js` 等历史名是否改成符合当前命名风格的新名字。
+- `DevScripts` 何时退场，以及是否在 `Scripts` 成为代码侧父层后保留单独开发脚本桶。
 
 ### `src/ExternalSupport/UnityPlugin`
 

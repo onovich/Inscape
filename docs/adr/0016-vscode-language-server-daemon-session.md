@@ -54,7 +54,7 @@ VSCode 的高频语言能力改为复用同一个常驻 `LanguageServer` stdio �
 
 - `dotnet build Inscape.slnx --no-restore`
 - `dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build`
-- `node --check src\ExternalSupport\VSCode\extension.js`
+- `node --check src\ExternalSupport\VSCode\ExtensionManifestEntry.js`
 - `npm --prefix src\ExternalSupport\VSCode run check:diagnostics-fallback`
 - `npm --prefix src\ExternalSupport\VSCode run check:preview-navigation`
 - `npm --prefix src\ExternalSupport\VSCode run check:preview-source-sync`

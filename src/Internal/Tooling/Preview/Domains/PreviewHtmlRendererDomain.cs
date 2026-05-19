@@ -17,7 +17,7 @@ namespace Inscape.Tooling {
             string json = JsonSerializer.Serialize(viewModel, jsonOptions).Replace("</", "<\\/");
             PreviewStyleSheetModel style = styleSheet ?? new PreviewStyleSheetModel();
 
-            string template = ReadPreviewResource("preview-template.html");
+            string template = ReadPreviewResource("PreviewHtmlDocumentTemplate.html");
             string css = ReadPreviewResource("preview.css");
             string script = ReadPreviewResource("preview.js");
 

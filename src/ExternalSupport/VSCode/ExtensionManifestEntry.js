@@ -7,6 +7,7 @@ const os = require("os");
 const path = require("path");
 const vscode = require("vscode");
 const { EditorAuthoringCommand } = require("./EditorAuthoring/Commands/EditorAuthoringCommand");
+const { StoryNodeMapReviewController } = require("./EditorAuthoring/Controllers/StoryNodeMapReviewController");
 const { EditorAuthoringStyleController } = require("./EditorAuthoring/Controllers/EditorAuthoringStyleController");
 const { defaultEditorStyle } = require("./EditorAuthoring/Models/EditorAuthoringStyleDefaultsModel");
 const { EditorAuthoringDataProvider } = require("./EditorAuthoring/Providers/EditorAuthoringDataProvider");
@@ -16,6 +17,9 @@ const { HostSchemaCommand } = require("./HostSchema/Commands/HostSchemaCommand")
 const { HostSchemaCapabilityProvider } = require("./HostSchema/Providers/HostSchemaCapabilityProvider");
 const { LanguageServerSessionClient } = require("./LanguageServer/Clients/LanguageServerSessionClient");
 const { LocalizationCommand } = require("./Localization/Commands/LocalizationCommand");
+const { LocalizationReviewController } = require("./Localization/Controllers/LocalizationReviewController");
+const { LocalizationReviewPresenterModelBuilder } = require("./Localization/ViewModels/LocalizationReviewPresenterModelBuilder");
+const { LocalizationReviewQuickPickAdapter } = require("./Localization/ViewModels/LocalizationReviewQuickPickAdapter");
 const { ExtensionLifecycleController } = require("./Entries/ExtensionLifecycleController");
 const { ExtensionRegistrationController } = require("./Entries/ExtensionRegistrationController");
 const { DslScriptDiagnosticController } = require("./DslScript/Controllers/DslScriptDiagnosticController");
@@ -43,6 +47,10 @@ const previewPanels = new Map();
 
 let previewCommand;
 let localizationCommand;
+let localizationReviewController;
+let localizationReviewPresenterModelBuilder;
+let localizationReviewQuickPickAdapter;
+let storyNodeMapReviewController;
 let editorAuthoringCommand;
 let hostSchemaCommand;
 let editorAuthoringDataProvider;
@@ -51,6 +59,19 @@ let dslScriptDiagnosticController;
 let languageServerSessionClient;
 let extensionLifecycleController;
 let extensionRegistrationController;
+
+const locationServices = {
+    openLocation: (location, options) => editorAuthoringLocationProvider.openLocation(location, options),
+    locationFromPayload: (payload) => editorAuthoringLocationProvider.locationFromPayload(payload)
+};
+
+const openFileInEditor = async (filePath) => {
+    const document = await vscode.workspace.openTextDocument(vscode.Uri.file(filePath));
+    await vscode.window.showTextDocument(document, {
+        preview: false,
+        preserveFocus: false
+    });
+};
 
 editorAuthoringDataProvider = new EditorAuthoringDataProvider({
     fs,
@@ -242,7 +263,7 @@ const previewRefreshController = new PreviewRefreshController({
 const previewSourceController = new PreviewSourceController({
     vscode,
     normalizePath,
-    openLocation: (location, options) => editorAuthoringLocationProvider.openLocation(location, options)
+    openLocation: locationServices.openLocation
 });
 
 const editorStyleController = new EditorAuthoringStyleController({
@@ -355,18 +376,39 @@ previewCommand = new PreviewCommand({
     normalizePath
 });
 
+localizationReviewPresenterModelBuilder = new LocalizationReviewPresenterModelBuilder({
+    formatDisplayPath: (value) => path.basename(String(value || ""))
+});
+
+localizationReviewQuickPickAdapter = new LocalizationReviewQuickPickAdapter();
+
+localizationReviewController = new LocalizationReviewController({
+    vscode,
+    fs,
+    localizationReviewPresenterModelBuilder,
+    localizationReviewQuickPickAdapter,
+    ...locationServices
+});
+
 localizationCommand = new LocalizationCommand({
     vscode,
     childProcess,
     fs,
     path,
-    openLocation: (location, options) => editorAuthoringLocationProvider.openLocation(location, options),
-    locationFromPayload: (payload) => editorAuthoringLocationProvider.locationFromPayload(payload),
+    localizationReviewController,
     selectWorkspaceFolder,
     isInscapeDocument,
     writeTempDocument,
     resolveCliProjectPath,
     normalizePath
+});
+
+storyNodeMapReviewController = new StoryNodeMapReviewController({
+    vscode,
+    fs,
+    path,
+    ...locationServices,
+    openFile: openFileInEditor
 });
 
 editorAuthoringCommand = new EditorAuthoringCommand({
@@ -377,8 +419,7 @@ editorAuthoringCommand = new EditorAuthoringCommand({
     isInscapeDocument,
     previewCommand,
     localizationCommand,
-    openLocation: (location, options) => editorAuthoringLocationProvider.openLocation(location, options),
-    locationFromPayload: (payload) => editorAuthoringLocationProvider.locationFromPayload(payload),
+    storyNodeMapReviewController,
     selectWorkspaceFolder,
     dslScriptNodeProvider,
     defaultEditorStyle,
@@ -395,8 +436,7 @@ hostSchemaCommand = new HostSchemaCommand({
     selectWorkspaceFolder,
     readProjectConfigFromWorkspaceFolder: (folder) => editorAuthoringDataProvider.readProjectConfigFromWorkspaceFolder(folder),
     resolveProjectConfigPath: (configPath, value) => editorAuthoringDataProvider.resolveProjectConfigPath(configPath, value),
-    openLocation: (location, options) => editorAuthoringLocationProvider.openLocation(location, options),
-    locationFromPayload: (payload) => editorAuthoringLocationProvider.locationFromPayload(payload),
+    ...locationServices,
     escapeRegExp
 });
 

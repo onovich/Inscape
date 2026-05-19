@@ -6,9 +6,9 @@ This is the first lightweight authoring layer for `.inscape` scripts. It keeps s
 
 This package is first-party maintained, but it is bound to the VSCode platform. It belongs directly under `src/ExternalSupport/VSCode`: do not add an `EditorExtensions` category layer, and do not add a nested `vscode-inscape` package-name directory. Shared editor-neutral semantics should move to Internal `LanguageServer` / `Tooling` contracts.
 
-The package is also a future split-repo candidate, so non-source extension assets live under `Resources` and package-only development scripts live under `Scripts`. Do not recreate root-level `media`, `schemas`, `snippets`, `syntaxes`, or `scripts` buckets.
+The package is also a future split-repo candidate, so non-source extension assets live under `Resources`. The current `DevScripts` directory is only a transitional bucket for package-local development scripts until the full `Resources / Scripts` code-side migration is complete; do not treat `DevScripts` as the long-term code-side parent that the naming convention reserves for independent module source.
 
-`extension.js` is the narrow VSCode manifest main entry declared by `package.json`. It is the only root-level source filename exception in this package and should stay limited to activation, dependency assembly, and registration glue; feature behavior belongs under business directories such as `DslScript`, `EditorAuthoring`, `HostSchema`, `Localization`, and `Preview`.
+`ExtensionManifestEntry.js` is the narrow VSCode manifest main entry declared by `package.json`. It should stay limited to activation, dependency assembly, and registration glue; feature behavior belongs under business directories such as `DslScript`, `EditorAuthoring`, `HostSchema`, `Localization`, and `Preview`.
 
 ## Capabilities
 
@@ -87,7 +87,7 @@ Any change under `src/ExternalSupport/VSCode/` must be checked with the reposito
 Run the static checks:
 
 ```powershell
-node --check src\ExternalSupport\VSCode\extension.js
+node --check src\ExternalSupport\VSCode\ExtensionManifestEntry.js
 npm --prefix src\ExternalSupport\VSCode run check:diagnostics-fallback
 npm --prefix src\ExternalSupport\VSCode run check:preview-navigation
 npm --prefix src\ExternalSupport\VSCode run check:preview-source-sync

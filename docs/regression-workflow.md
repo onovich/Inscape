@@ -2,7 +2,7 @@
 
 状态：执行中
 
-最后更新：2026-05-17
+最后更新：2026-05-19
 
 本文把大目标 E 的防回归工作流固化成可执行清单。它用于每个重构 / 功能节点开始前、提交前和推送后自检，避免正确行为只停留在个人记忆里。
 
@@ -80,6 +80,22 @@ Inscape 当前仍处于研发期，没有已发布版本和真实用户项目需
 - Compiler 是否仍不依赖 Unity、VSCode、HTML、Bird、Addressables、Tooling、Cli、LanguageServer、Runtime 或 ExternalSupport。
 - Internal / ExternalSupport 是否仍由目录表达边界；ExternalSupport 可以依赖 Internal，Internal 不反向依赖 ExternalSupport。
 
+## 节点完成后立即自检
+
+只要一个功能节点已经“能用”，在继续叠下一个功能前，先立即做一轮最小自检，尤其是 `src/ExternalSupport/VSCode/`：
+
+- 这次改动是否让入口文件、装配层或 command 继续变厚。
+- 是否把两个以上业务主语硬拼在同一个 provider / command / controller 里。
+- 是否出现新的 `Helper`、`Support`、`Manager`、`Utils`、泛 `Workspace*`、泛 `Project*`、泛 `Data*` 弱语义命名。
+- 是否把本应下沉到 `Tooling` / `LanguageServer` 的共享语义暂时堆在 VSCode JS。
+- 是否新增了“先放这里以后再拆”的 glue，却没有把后续拆分任务记进 `docs/todo.md` / `docs/agent-handoff.md` / `docs/goal-plan.md`。
+
+默认规则：
+
+- 新功能完成 != 节点完成。
+- 只有“功能可用 + 最小结构自检完成 + 文档记录后续收口点”才算该节点真正完成。
+- 如果本轮不准备顺手重构，至少要把发现的不守规点明确登记进计划，而不是留在口头记忆里。
+
 ## 验证命令
 
 每个节点提交前至少运行：
@@ -88,7 +104,7 @@ Inscape 当前仍处于研发期，没有已发布版本和真实用户项目需
 dotnet build Inscape.slnx --no-restore
 dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build
 dotnet run --project tests\ExternalSupport\UnityPlugin\Inscape.UnitySample.Tests\Inscape.UnitySample.Tests.csproj --no-build
-node --check src\ExternalSupport\VSCode\extension.js
+node --check src\ExternalSupport\VSCode\ExtensionManifestEntry.js
 npm --prefix src\ExternalSupport\VSCode run check:diagnostics-fallback
 node -e "JSON.parse(require('fs').readFileSync('src/ExternalSupport/VSCode/package.json','utf8')); JSON.parse(require('fs').readFileSync('src/ExternalSupport/VSCode/Resources/Language/language-configuration.json','utf8')); JSON.parse(require('fs').readFileSync('src/ExternalSupport/VSCode/Resources/Syntaxes/inscape.tmLanguage.json','utf8')); JSON.parse(require('fs').readFileSync('src/ExternalSupport/VSCode/Resources/Snippets/inscape.code-snippets','utf8')); JSON.parse(require('fs').readFileSync('src/ExternalSupport/VSCode/Resources/Schemas/host-schema.schema.json','utf8')); console.log('json ok')"
 ```
@@ -121,6 +137,13 @@ npm run rebuild:vsix
 - speaker 补全、Hover、定义和引用查找正常。
 - `@timeline ...` host binding 补全、Hover、Ctrl+Click 正常；legacy `[kind: alias]` 不再作为目标体验。
 - 预览源码按钮、diagnostics 点击、metadata 点击仍能回跳源码。
+
+如果本轮还改了 VSCode 目录、命名、装配或 command / provider 边界，再额外补一轮“结构回归”：
+
+- `ExtensionManifestEntry.js` 是否仍只承载 activation、装配和注册 glue。
+- `Entries` 是否仍保持薄入口，不重新回填 feature 逻辑。
+- `Commands` / `Providers` / `Controllers` / `Bridges` 是否仍由业务主语目录承载，而不是重新长出类别层。
+- 新增代码是否与 [VSCode Directory Naming Audit](vscode-directory-naming-audit.md) 和 [渐进式重构计划](refactoring-plan.md) 的当前口径一致。
 
 如果当前环境无法完成手动验证，在最终报告里明确说明“已重建安装，未手动 reload / 点击验证”。
 
