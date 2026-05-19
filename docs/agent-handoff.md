@@ -13,8 +13,8 @@
 - Goal 7 的 `off|click|selection` 真实 VSCode smoke 已通过。
 - Goal 11.1 的“LanguageServer 不可用 -> CLI diagnostics fallback”真实 VSCode smoke 已通过。
 - VSCode 的 diagnostics、node completion、definition、references、hover、document symbols 与 Host Schema capability 已切到常驻 `LanguageServer` stdio 会话；CLI fallback 继续保留，但不再是常态热路径。
-- Goal 10.3 已实现本地化 alignment / audit report：Internal Tooling 新增 `LocalizationAlignmentAuditDomain` 与 `inscape.localization-alignment` JSON report model，Internal CLI 新增显式 `audit-l10n-alignment-project <root> --from old.csv [-o l10n-review.json]`，不改变 `update-l10n-project` 默认行为。
-- 当前主线优先级继续推进 Goal 10：下一步做 `G10.4 相似文本人工候选`。
+- Goal 10.3 / G10.4 第一版都已落地：`LocalizationAlignmentAuditDomain` 现已支持 `inscape.localization-alignment` JSON report、高置信单候选 `changed`、低置信 / 并列候选 `conflict`，并为候选附带 `reason` 说明；CLI 继续通过显式 `audit-l10n-alignment-project <root> --from old.csv [-o l10n-review.json]` 输出，不改变 `update-l10n-project` 默认行为。
+- 当前主线优先级可继续细化 Goal 10：下一步更适合做候选评分 / review 展示细化，而不是回退到自动继承旧译文。
 - 低优先级体验尾项：编辑区选项文字 `Ctrl+Hover` 的可点击下划线显示仍不稳定，但 `Ctrl+Click` 行为符合预期；`selection` 模式只驱动“已打开预览”的轻量跟随，不主动弹出新预览面板。
 
 Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原型。当前长期架构已经收敛为 Internal 与 ExternalSupport 两层：Internal 包含 `Compiler`、`Tooling`、`Cli`、`LanguageServer` 与未来 `Runtime`；ExternalSupport 包含外部平台支持，例如 `VSCode` 与 `UnityPlugin`。UnitySample 实验 adapter 继续保留，但只作为 ExternalSupport 过渡样例，不代表最终 Host Bridge 方案。
@@ -340,12 +340,12 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 建议优先做小而闭环的任务，不要直接跳到大规模重构。
 
 1. 继续推进 Stable Node ID / 本地化主线。
-   - ADR 0013、sidecar 闭环、保守自动重命名识别、VSCode 显式 `Update Stable Node Map` 入口、插入标题后的自动同步、标题重命名人工确认 / 冲突报告与本地化 alignment / audit report 都已落地。
-   - 下一步建议做 G10.4：相似文本只作人工候选，不静默继承旧译文。
+   - ADR 0013、sidecar 闭环、保守自动重命名识别、VSCode 显式 `Update Stable Node Map` 入口、插入标题后的自动同步、标题重命名人工确认 / 冲突报告、本地化 alignment / audit report，以及相似文本人工候选第一版都已落地。
+   - 下一步建议细化候选评分和 review 展示，而不是扩展自动继承范围。
 
 2. 本地化 Diff / Alignment 后续。
    - 状态机、CSV / report 字段、anchor + occurrence + diff 对齐流程已经完成设计，显式 `audit-l10n-alignment-project` 已落地。
-   - 后续应把更宽松的相似文本匹配限制在人工候选 / review report，不进入默认 `update-l10n` 确认译文。
+   - 当前实现已把更宽松的相似文本匹配限制在人工候选 / review report，不进入默认 `update-l10n` 确认译文；后续可以补更稳定的 sequence / context 评分与编辑器 review UI。
 
 3. Tooling 共享流程继续收敛。
    - 继续落到 `DslScriptSources`、`ToolConfig`、`Preview`、`Localization`、`HostSchema`、`HostBinding` 等窄模块。

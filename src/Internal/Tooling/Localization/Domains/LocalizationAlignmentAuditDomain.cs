@@ -10,6 +10,10 @@ namespace Inscape.Tooling {
         const string ChangedStatus = "changed";
         const string RemovedStatus = "removed";
         const string ConflictStatus = "conflict";
+        const string StaleStatus = "stale";
+        const double ChangedSimilarityThreshold = 0.72;
+        const double ConflictSimilarityWindow = 0.05;
+        const double CandidateSimilarityThreshold = 0.62;
 
         public static LocalizationAlignmentReportModel Audit(StoryGraphCompilationResultModel result,
                                                              IReadOnlyList<LocalizationEntryModel> previousEntries,
@@ -34,16 +38,18 @@ namespace Inscape.Tooling {
                     continue;
                 }
 
-                List<LocalizationAlignmentCandidateModel> candidates = FindCandidates(current, previousAlignmentEntries, usedPreviousKeys);
+                List<LocalizationAlignmentCandidateMatch> candidates = FindCandidates(current, previousAlignmentEntries, usedPreviousKeys);
                 if (candidates.Count == 0) {
                     report.Items.Add(CreateItem(NewStatus, "needs-translation", current, null, 0));
-                } else if (candidates.Count == 1) {
+                } else if (candidates.Count == 1 && candidates[0].Similarity >= ChangedSimilarityThreshold) {
                     LocalizationAlignmentItemModel item = CreateItem(ChangedStatus, "needs-review", current, null, 0);
-                    item.Candidates.Add(candidates[0]);
+                    item.Candidates.Add(candidates[0].Candidate);
                     report.Items.Add(item);
                 } else {
                     LocalizationAlignmentItemModel item = CreateItem(ConflictStatus, "choose-candidate", current, null, 0);
-                    item.Candidates.AddRange(candidates);
+                    for (int candidateIndex = 0; candidateIndex < candidates.Count; candidateIndex += 1) {
+                        item.Candidates.Add(candidates[candidateIndex].Candidate);
+                    }
                     report.Items.Add(item);
                 }
             }
@@ -56,7 +62,7 @@ namespace Inscape.Tooling {
 
                 bool isCandidate = IsCandidateInReport(report, previous.Entry.Anchor);
                 if (isCandidate) {
-                    LocalizationAlignmentItemModel staleItem = CreateItem("stale", "needs-review", previous, null, 0);
+                    LocalizationAlignmentItemModel staleItem = CreateItem(StaleStatus, "needs-review", previous, null, 0);
                     report.Items.Add(staleItem);
                     usedPreviousKeys.Add(previous.Key);
                     continue;
@@ -127,42 +133,65 @@ namespace Inscape.Tooling {
             };
         }
 
-        static List<LocalizationAlignmentCandidateModel> FindCandidates(LocalizationAlignmentEntry current,
+        static List<LocalizationAlignmentCandidateMatch> FindCandidates(LocalizationAlignmentEntry current,
                                                                         List<LocalizationAlignmentEntry> previousEntries,
                                                                         HashSet<string> usedPreviousKeys) {
-            List<ScoredCandidate> scored = new List<ScoredCandidate>();
+            List<LocalizationAlignmentCandidateMatch> scored = new List<LocalizationAlignmentCandidateMatch>();
             for (int i = 0; i < previousEntries.Count; i += 1) {
                 LocalizationAlignmentEntry previous = previousEntries[i];
                 if (usedPreviousKeys.Contains(previous.Key) || !CanCompare(current, previous)) {
                     continue;
                 }
 
-                double similarity = TextSimilarity(current.Entry.Text, previous.Entry.Text);
-                if (similarity < 0.62) {
+                CandidateScore score = ScoreCandidate(current, previous);
+                if (score.Similarity < CandidateSimilarityThreshold) {
                     continue;
                 }
 
-                scored.Add(new ScoredCandidate {
-                    Candidate = CreateCandidate(previous, similarity),
-                    Score = similarity,
+                scored.Add(new LocalizationAlignmentCandidateMatch {
+                    Candidate = CreateCandidate(previous, score.Similarity, score.Reason),
+                    Similarity = score.Similarity,
+                    SequenceDistance = score.SequenceDistance,
                 });
             }
 
-            scored.Sort(static (left, right) => right.Score.CompareTo(left.Score));
+            scored.Sort(static (left, right) => CompareCandidateMatch(left, right));
             if (scored.Count == 0) {
-                return new List<LocalizationAlignmentCandidateModel>();
+                return new List<LocalizationAlignmentCandidateMatch>();
             }
 
-            double best = scored[0].Score;
-            List<LocalizationAlignmentCandidateModel> result = new List<LocalizationAlignmentCandidateModel>();
+            LocalizationAlignmentCandidateMatch best = scored[0];
+            List<LocalizationAlignmentCandidateMatch> result = new List<LocalizationAlignmentCandidateMatch>();
             for (int i = 0; i < scored.Count; i += 1) {
-                if (i >= 4 || best - scored[i].Score > 0.08) {
+                if (i >= 4) {
                     break;
                 }
-                result.Add(scored[i].Candidate);
+
+                LocalizationAlignmentCandidateMatch candidate = scored[i];
+                if (!ShouldKeepCandidate(best, candidate)) {
+                    break;
+                }
+
+                result.Add(candidate);
             }
 
             return result;
+        }
+
+        static bool ShouldKeepCandidate(LocalizationAlignmentCandidateMatch best, LocalizationAlignmentCandidateMatch candidate) {
+            if (ReferenceEquals(best, candidate)) {
+                return true;
+            }
+
+            if (best.Similarity >= ChangedSimilarityThreshold && best.Similarity - candidate.Similarity > ConflictSimilarityWindow) {
+                return false;
+            }
+
+            if (best.Similarity < ChangedSimilarityThreshold && best.Similarity - candidate.Similarity > 0.12) {
+                return false;
+            }
+
+            return true;
         }
 
         static bool CanCompare(LocalizationAlignmentEntry current, LocalizationAlignmentEntry previous) {
@@ -210,14 +239,15 @@ namespace Inscape.Tooling {
             };
 
             if (previous != null) {
-                item.Candidates.Add(CreateCandidate(previous, similarity));
+                item.Candidates.Add(CreateCandidate(previous, similarity, string.Empty));
             }
 
             return item;
         }
 
-        static LocalizationAlignmentCandidateModel CreateCandidate(LocalizationAlignmentEntry entry, double similarity) {
+        static LocalizationAlignmentCandidateModel CreateCandidate(LocalizationAlignmentEntry entry, double similarity, string reason) {
             return new LocalizationAlignmentCandidateModel {
+                Reason = reason,
                 Anchor = entry.Entry.Anchor,
                 NodeId = entry.NodeId,
                 NodeTitle = entry.Entry.NodeName,
@@ -263,12 +293,44 @@ namespace Inscape.Tooling {
                     case ConflictStatus:
                         summary.ConflictCount += 1;
                         break;
-                    case "stale":
+                    case StaleStatus:
                         summary.StaleCount += 1;
                         break;
                 }
             }
             report.Summary = summary;
+        }
+
+        static CandidateScore ScoreCandidate(LocalizationAlignmentEntry current, LocalizationAlignmentEntry previous) {
+            double similarity = TextSimilarity(current.Entry.Text, previous.Entry.Text);
+            int sequenceDistance = Math.Abs(current.Sequence - previous.Sequence);
+            int lineDistance = Math.Abs(current.Entry.Source.Line - previous.Entry.Source.Line);
+            int exactPrefixLength = SharedPrefixLength(NormalizeText(current.Entry.Text), NormalizeText(previous.Entry.Text));
+            List<string> reasons = new List<string>();
+
+            if (current.NodeId.Length > 0 && current.NodeId == previous.NodeId) {
+                reasons.Add("same-stable-node");
+            }
+            if (sequenceDistance == 0) {
+                reasons.Add("same-sequence");
+            } else if (sequenceDistance <= 1) {
+                reasons.Add("near-sequence");
+                similarity += 0.015;
+            }
+            if (lineDistance <= 1) {
+                reasons.Add("near-source-line");
+                similarity += 0.01;
+            }
+            if (exactPrefixLength >= 8) {
+                reasons.Add("shared-prefix");
+                similarity += 0.02;
+            }
+
+            return new CandidateScore {
+                Similarity = Math.Min(0.9999, similarity),
+                SequenceDistance = sequenceDistance,
+                Reason = string.Join(",", reasons),
+            };
         }
 
         static double TextSimilarity(string left, string right) {
@@ -314,6 +376,25 @@ namespace Inscape.Tooling {
             return distances[left.Length, right.Length];
         }
 
+        static int SharedPrefixLength(string left, string right) {
+            int limit = Math.Min(left.Length, right.Length);
+            int count = 0;
+            while (count < limit && left[count] == right[count]) {
+                count += 1;
+            }
+
+            return count;
+        }
+
+        static int CompareCandidateMatch(LocalizationAlignmentCandidateMatch left, LocalizationAlignmentCandidateMatch right) {
+            int similarity = right.Similarity.CompareTo(left.Similarity);
+            if (similarity != 0) {
+                return similarity;
+            }
+
+            return left.SequenceDistance.CompareTo(right.SequenceDistance);
+        }
+
         sealed class LocalizationAlignmentEntry {
 
             public LocalizationEntryModel Entry { get; set; } = new LocalizationEntryModel();
@@ -326,11 +407,23 @@ namespace Inscape.Tooling {
 
         }
 
-        sealed class ScoredCandidate {
+        sealed class LocalizationAlignmentCandidateMatch {
 
             public LocalizationAlignmentCandidateModel Candidate { get; set; } = new LocalizationAlignmentCandidateModel();
 
-            public double Score { get; set; }
+            public double Similarity { get; set; }
+
+            public int SequenceDistance { get; set; }
+
+        }
+
+        sealed class CandidateScore {
+
+            public double Similarity { get; set; }
+
+            public int SequenceDistance { get; set; }
+
+            public string Reason { get; set; } = string.Empty;
 
         }
 

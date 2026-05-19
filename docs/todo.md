@@ -11,7 +11,7 @@
 - Goal 7 的 `inscape.preview.sourceSyncMode = off|click|selection` 真实 VSCode smoke 已通过。
 - Goal 11.1 的“LanguageServer 不可用 -> CLI diagnostics fallback”真实 VSCode smoke 已通过。
 - VSCode 的 diagnostics、node completion、definition、references、hover、document symbols 与 Host Schema capability 已切到常驻 `LanguageServer` stdio 会话；CLI fallback 继续保留，但不再是常态热路径。
-- 当前最值得继续推进的主线已经回到 Goal 10：G10.3 已实现显式本地化 alignment / audit report；下一步是 `G10.4 相似文本人工候选`。
+- 当前最值得继续推进的主线已经回到 Goal 10：G10.3 / G10.4 第一版都已落地；下一步可继续细化本地化候选评分和 review 展示。
 - 低优先级体验尾项：编辑区选项文字 `Ctrl+Hover` 的可点击下划线显示仍不稳定，但 `Ctrl+Click` 行为符合预期；`selection` 模式只驱动“已打开预览”的轻量跟随，不主动弹出新预览面板。
 
 ## 接力优先队列
@@ -24,7 +24,7 @@
 	- 已完成：ADR 0013、stable node id / title map 契约、`update-node-map-project` sidecar 闭环、保守自动重命名识别、VSCode 显式 `Update Stable Node Map` 入口、插入标题后的自动同步、`inscape.node-map-update-report` 审查报告、CLI `--report`、VSCode `Review Stable Node Map Changes` 入口。
 	- 下一步建议顺序：
 		- 已完成：G10.3 本地化 alignment / audit report。
-		- 下一步：G10.4 相似文本只作人工候选，不静默继承旧译文。
+		- 已完成：G10.4 相似文本只作人工候选，不静默继承旧译文。
 2. **把本地化迁移闭环做实。**
 	- 已完成：状态机、CSV / report 字段、anchor + occurrence + diff 对齐流程设计。
 	- 已完成：显式 alignment / audit report，保护旧译文，标记 `kept` / `new` / `changed` / `removed` / `conflict` / `stale`。
@@ -40,11 +40,11 @@
 ## 剩余工作总览
 
 - **当前可直接推进**：
-	- Goal 10.4 相似文本人工候选。
+	- 本地化候选评分 / review 展示细化。
 - **当前人工待办**：
 	- 无。Goal 7 与 Goal 11.1 的真实 VSCode smoke 已在 2026-05-19 收口完成。
 - **当前主线研发**：
-	- Goal 10.4 相似文本人工候选。
+	- 本地化候选评分 / review 展示细化。
 - **低一层优先级但可随时切入**：
 	- Tooling 单点收敛。
 	- 体验细化后续项。
@@ -235,6 +235,7 @@
 - [x] 实现旧翻译表按锚点精确继承，并标记新增、保留、删除条目。
 - [x] 设计旧翻译表的模糊匹配与人工确认流程；详见 [Localization Diff Alignment Contract](localization-diff-alignment-contract.md)。
 - [x] 实现本地化 alignment / audit report：`audit-l10n-alignment-project` 输出 `inscape.localization-alignment` JSON，显式标记 `kept` / `new` / `changed` / `removed` / `conflict` / `stale`，相似旧译文只放入候选，不写入确认译文。
+- [x] 将相似文本匹配收束为人工候选：高置信单候选输出 `changed`，低置信或并列候选输出 `conflict`，并在候选里附带 `reason` 说明，不静默复用旧译文。
 - [x] 设计显式稳定 ID 或迁移表，用于处理节点重命名和重复文本插入。
 	- [x] 决定标题不作为长期机器 ID，stable node id 由系统维护；标题仍是作者可见主身份。
 	- [x] 定义 stable node id / title map 的 JSON 契约和冲突解决策略；详见 [Stable Node ID Contract](stable-node-id-contract.md)。

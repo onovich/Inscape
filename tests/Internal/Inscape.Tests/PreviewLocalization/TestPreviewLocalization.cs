@@ -305,7 +305,7 @@ Narrator: Project start.
 # intro
 @entry
 Narrator: Same line.
-Narrator: I waited here.
+Narrator: I waited here a while.
 Narrator: Removed line.
 Narrator: Shared line A.
 Narrator: Shared line B.
@@ -317,13 +317,13 @@ Narrator: Shared line B.
                                                                         DateTimeOffset.Parse("2026-05-19T11:00:00Z", System.Globalization.CultureInfo.InvariantCulture));
             string oldCsv = LocalizationCsvFlowDomain.Extract(initial.Graph);
             string sameAnchor = AnchorForText(oldCsv, "Same line.");
-            string changedAnchor = AnchorForText(oldCsv, "I waited here.");
+            string changedAnchor = AnchorForText(oldCsv, "I waited here a while.");
             string removedAnchor = AnchorForText(oldCsv, "Removed line.");
             string sharedFirstAnchor = AnchorForText(oldCsv, "Shared line A.");
             string sharedSecondAnchor = AnchorForText(oldCsv, "Shared line B.");
             string oldCsvWithTranslations = "anchor,node,kind,speaker,text,translation,sourcePath,line,column\n"
                 + sameAnchor + ",intro,Dialogue,Narrator,Same line.,Same translation,story/court.inscape,3,1\n"
-                + changedAnchor + ",intro,Dialogue,Narrator,I waited here.,Changed candidate translation,story/court.inscape,4,1\n"
+                + changedAnchor + ",intro,Dialogue,Narrator,I waited here a while.,Changed candidate translation,story/court.inscape,4,1\n"
                 + removedAnchor + ",intro,Dialogue,Narrator,Removed line.,Removed translation,story/court.inscape,5,1\n"
                 + sharedFirstAnchor + ",intro,Dialogue,Narrator,Shared line A.,Shared first translation,story/court.inscape,6,1\n"
                 + sharedSecondAnchor + ",intro,Dialogue,Narrator,Shared line B.,Shared second translation,story/court.inscape,7,1\n";
@@ -333,7 +333,7 @@ Narrator: Shared line B.
 # intro
 @entry
 Narrator: Same line.
-Narrator: I waited here longer.
+Narrator: I waited here a while longer.
 Narrator: Brand new line.
 Narrator: Shared line C.
 """),
@@ -353,7 +353,47 @@ Narrator: Shared line C.
             AssertEqual("Same translation", FindAlignmentItem(report, "kept").Translation, "Kept item should carry confirmed translation.");
             AssertEqual("", FindAlignmentItem(report, "changed").Translation, "Changed item should not silently inherit candidate translation.");
             AssertEqual("Changed candidate translation", FindAlignmentItem(report, "changed").Candidates[0].Translation, "Changed item should expose candidate translation.");
+            AssertTrue(FindAlignmentItem(report, "changed").Candidates[0].Reason.Contains("same-stable-node", StringComparison.Ordinal), "Changed candidate should explain why it was suggested.");
             AssertEqual(2, FindAlignmentItem(report, "conflict").Candidates.Count, "Conflict item should expose multiple candidates.");
+        }
+
+        static void LocalizationAlignmentAuditKeepsLowConfidenceSimilarTextAsConflict() {
+            StoryGraphCompilerDomain compiler = new StoryGraphCompilerDomain();
+            StoryGraphCompilationResultModel initial = compiler.Compile(new List<DslScriptSourceModel> {
+                new DslScriptSourceModel("D:/LabProjects/Inscape/story/court.inscape", """
+# intro
+Narrator: The lantern still burns tonight.
+Narrator: The lantern still shines tonight.
+"""),
+            }, "D:/LabProjects/Inscape");
+            StoryNodeMapModel nodeMap = StoryNodeMapUpdateDomain.Update(new StoryNodeMapModel(),
+                                                                        initial,
+                                                                        "D:/LabProjects/Inscape",
+                                                                        DateTimeOffset.Parse("2026-05-19T12:00:00Z", System.Globalization.CultureInfo.InvariantCulture));
+            string oldCsv = LocalizationCsvFlowDomain.Extract(initial.Graph);
+            string firstAnchor = AnchorForText(oldCsv, "The lantern still burns tonight.");
+            string secondAnchor = AnchorForText(oldCsv, "The lantern still shines tonight.");
+            string oldCsvWithTranslations = "anchor,node,kind,speaker,text,translation,sourcePath,line,column\n"
+                + firstAnchor + ",intro,Dialogue,Narrator,The lantern still burns tonight.,Lantern A,story/court.inscape,2,1\n"
+                + secondAnchor + ",intro,Dialogue,Narrator,The lantern still shines tonight.,Lantern B,story/court.inscape,3,1\n";
+
+            StoryGraphCompilationResultModel updated = compiler.Compile(new List<DslScriptSourceModel> {
+                new DslScriptSourceModel("D:/LabProjects/Inscape/story/court.inscape", """
+# intro
+Narrator: The lantern still watches tonight.
+"""),
+            }, "D:/LabProjects/Inscape");
+
+            LocalizationAlignmentReportModel report = LocalizationAlignmentAuditDomain.Audit(updated,
+                                                                                             new Inscape.Compiler.Localization.LocalizationCsvReaderDomain().Read(oldCsvWithTranslations),
+                                                                                             nodeMap,
+                                                                                             "D:/LabProjects/Inscape");
+
+            LocalizationAlignmentItemModel conflict = FindAlignmentItem(report, "conflict");
+            AssertEqual(0, report.Summary.ChangedCount, "Low-confidence similarity should not produce changed status.");
+            AssertEqual(1, report.Summary.ConflictCount, "Low-confidence similarity should produce conflict.");
+            AssertEqual(2, conflict.Candidates.Count, "Conflict should keep multiple review candidates.");
+            AssertEqual("", conflict.Translation, "Conflict should not fill confirmed translation.");
         }
 
         static void CliAuditL10nAlignmentProjectEmitsJson() {
@@ -387,6 +427,7 @@ Narrator: Hello.
             AssertEqual("inscape.localization-alignment", root.GetProperty("format").GetString(), "Alignment CLI format");
             AssertEqual(1, root.GetProperty("summary").GetProperty("keptCount").GetInt32(), "Alignment CLI kept count");
             AssertEqual("Hello translation", root.GetProperty("items")[0].GetProperty("translation").GetString(), "Alignment CLI should preserve kept translation.");
+            AssertTrue(root.GetProperty("items")[0].GetProperty("candidates").GetArrayLength() > 0, "Alignment CLI kept item should keep previous candidate trace.");
         }
 
         static LocalizationAlignmentItemModel FindAlignmentItem(LocalizationAlignmentReportModel report, string status) {

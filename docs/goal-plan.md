@@ -9,7 +9,7 @@
 - Goal 5 已完成当前阶段收口：VSCode 的 diagnostics、node completion、definition、references、hover、document symbols 与 Host Schema capability 已切到常驻 `LanguageServer` stdio 会话。
 - Goal 7 的 `off|click|selection` 真实 VSCode smoke 已通过。
 - Goal 11.1 的“LanguageServer 不可用 -> CLI diagnostics fallback”真实 VSCode smoke 已通过。
-- 当前下一步优先级回到 Goal 10：G10.3 已完成，下一步是 `G10.4`。
+- 当前下一步优先级回到 Goal 10：G10.4 已完成第一版，下一步可继续细化评分与 review 展示。
 
 本文把当前剩余工作写成 `/goal` 目标模式。每个 goal 都应独立完成、自检、验证、提交和推送；不要把多个无关 goal 合进同一提交。
 
@@ -180,7 +180,10 @@
   - [x] Internal Tooling 新增 `LocalizationAlignmentAuditDomain` 和 `inscape.localization-alignment` JSON report model。
   - [x] Internal CLI 新增显式 `audit-l10n-alignment-project <root> --from old.csv [-o l10n-review.json]`，不改变 `update-l10n-project` 默认行为。
   - [x] Report 只在 `kept` 项写入确认译文；`changed` / `conflict` 只携带旧译文候选并配套 `stale` 旧项。
-- [ ] G10.4 将相似文本匹配作为人工候选输出，不静默继承旧译文。
+- [x] G10.4 将相似文本匹配作为人工候选输出，不静默继承旧译文。
+  - [x] `LocalizationAlignmentAuditDomain` 现在区分高置信单候选 `changed` 与低置信 / 多候选 `conflict`。
+  - [x] report candidate 新增 `reason` 字段，说明候选来自 same stable node、near sequence、near source line 或 shared prefix。
+  - [x] 低置信相似文本不再被压成单候选 `changed`，而是保留为人工 `conflict` 审查项。
 
 ## Goal 11：Fallback 与外部宿主收口
 

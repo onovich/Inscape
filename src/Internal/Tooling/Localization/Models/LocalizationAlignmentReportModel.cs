@@ -64,6 +64,8 @@ namespace Inscape.Tooling {
 
     public sealed class LocalizationAlignmentCandidateModel {
 
+        public string Reason { get; set; } = string.Empty;
+
         public string Anchor { get; set; } = string.Empty;
 
         public string NodeId { get; set; } = string.Empty;
