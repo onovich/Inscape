@@ -7,9 +7,9 @@ const packageRoot = path.resolve(__dirname, "..");
 
 const sourceFiles = [
     "ExtensionManifestEntry.js",
-    "Entries/ExtensionRegistrationController.js",
-    "DslScript/Providers/DslScriptDefinitionProvider.js",
-    "Preview/Bridges/PreviewRevealBridge.js"
+    "Scripts/Entries/ExtensionRegistrationController.js",
+    "Scripts/DslScript/Providers/DslScriptDefinitionProvider.js",
+    "Scripts/Preview/Bridges/PreviewRevealBridge.js"
 ];
 
 function read(relativePath) {
@@ -36,7 +36,7 @@ function main() {
         "Preview text navigation must not use DocumentLinkProvider; keep DefinitionProvider + selection bridge."
     );
 
-    const registration = read("Entries/ExtensionRegistrationController.js");
+    const registration = read("Scripts/Entries/ExtensionRegistrationController.js");
     assertIncludes(
         registration,
         "registerDefinitionProvider(this.languageSelector, this.dslScriptDefinitionProvider)",
@@ -48,7 +48,7 @@ function main() {
         "PreviewRevealBridge must stay connected to selection changes."
     );
 
-    const definitionProvider = read("DslScript/Providers/DslScriptDefinitionProvider.js");
+    const definitionProvider = read("Scripts/DslScript/Providers/DslScriptDefinitionProvider.js");
     assertIncludes(
         definitionProvider,
         "this.previewRevealBridge.rememberDefinition(document, previewRevealInfo)",
@@ -60,7 +60,7 @@ function main() {
         "Definition provider must return a precise definition link produced by PreviewRevealBridge."
     );
 
-    const revealBridge = read("Preview/Bridges/PreviewRevealBridge.js");
+    const revealBridge = read("Scripts/Preview/Bridges/PreviewRevealBridge.js");
     assertIncludes(
         revealBridge,
         "async handleSelectionChange(context, event)",

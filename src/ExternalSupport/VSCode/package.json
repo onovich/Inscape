@@ -9,7 +9,7 @@
   "version": "0.1.0",
   "publisher": "onovich",
   "license": "UNLICENSED",
-  "main": "./ExtensionManifestEntry.js",
+  "main": "./Scripts/ExtensionManifestEntry.js",
   "scripts": {
     "check:diagnostics-fallback": "node DevScripts/DslScriptDiagnosticsFallbackContractCheck.js",
     "check:preview-navigation": "node DevScripts/PreviewNavigationContractCheck.js",

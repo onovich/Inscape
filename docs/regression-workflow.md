@@ -104,7 +104,7 @@ Inscape 当前仍处于研发期，没有已发布版本和真实用户项目需
 dotnet build Inscape.slnx --no-restore
 dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build
 dotnet run --project tests\ExternalSupport\UnityPlugin\Inscape.UnitySample.Tests\Inscape.UnitySample.Tests.csproj --no-build
-node --check src\ExternalSupport\VSCode\ExtensionManifestEntry.js
+node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js
 npm --prefix src\ExternalSupport\VSCode run check:diagnostics-fallback
 node -e "JSON.parse(require('fs').readFileSync('src/ExternalSupport/VSCode/package.json','utf8')); JSON.parse(require('fs').readFileSync('src/ExternalSupport/VSCode/Resources/Language/language-configuration.json','utf8')); JSON.parse(require('fs').readFileSync('src/ExternalSupport/VSCode/Resources/Syntaxes/inscape.tmLanguage.json','utf8')); JSON.parse(require('fs').readFileSync('src/ExternalSupport/VSCode/Resources/Snippets/inscape.code-snippets','utf8')); JSON.parse(require('fs').readFileSync('src/ExternalSupport/VSCode/Resources/Schemas/host-schema.schema.json','utf8')); console.log('json ok')"
 ```
@@ -140,7 +140,7 @@ npm run rebuild:vsix
 
 如果本轮还改了 VSCode 目录、命名、装配或 command / provider 边界，再额外补一轮“结构回归”：
 
-- `ExtensionManifestEntry.js` 是否仍只承载 activation、装配和注册 glue。
+- `Scripts/ExtensionManifestEntry.js` 是否仍只承载 activation、装配和注册 glue。
 - `Entries` 是否仍保持薄入口，不重新回填 feature 逻辑。
 - `Commands` / `Providers` / `Controllers` / `Bridges` 是否仍由业务主语目录承载，而不是重新长出类别层。
 - 新增代码是否与 [VSCode Directory Naming Audit](vscode-directory-naming-audit.md) 和 [渐进式重构计划](refactoring-plan.md) 的当前口径一致。

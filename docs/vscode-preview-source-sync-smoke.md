@@ -8,9 +8,9 @@
 
 ## 适用范围
 
-- `src/ExternalSupport/VSCode/Preview/**`
-- `src/ExternalSupport/VSCode/DslScript/**`
-- `src/ExternalSupport/VSCode/ExtensionManifestEntry.js`
+- `src/ExternalSupport/VSCode/Scripts/Preview/**`
+- `src/ExternalSupport/VSCode/Scripts/DslScript/**`
+- `src/ExternalSupport/VSCode/Scripts/ExtensionManifestEntry.js`
 - `src/ExternalSupport/VSCode/package.json`
 
 只要这些区域涉及正文 / 选项文本的预览定位、selection bridge、source sync mode、webview revealSource 消息或预览打开策略，就应重跑这份 smoke。

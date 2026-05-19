@@ -141,14 +141,14 @@ Narrator: Gold [player.gold].
         }
 
         static void PreviewSourceControllerKeepsColumnFallback() {
-            string controller = File.ReadAllText(RepositoryFile("src/ExternalSupport/VSCode/Preview/Controllers/PreviewSourceController.js"));
+            string controller = File.ReadAllText(RepositoryFile("src/ExternalSupport/VSCode/Scripts/Preview/Controllers/PreviewSourceController.js"));
 
             AssertTrue(controller.Contains("const character = Math.max(0, (source.character ?? source.column ?? 0));"), "Preview source controller should prefer character while accepting old column payloads.");
             AssertTrue(controller.Contains("new this.vscode.Range(\n                    line,\n                    character,\n                    line,\n                    character + 1"), "Preview source controller should use normalized editor coordinates.");
         }
 
         static void PreviewRevealBridgeTrimsChoicePrefixesFromLinkRange() {
-            string bridge = File.ReadAllText(RepositoryFile("src/ExternalSupport/VSCode/Preview/Bridges/PreviewRevealBridge.js"));
+            string bridge = File.ReadAllText(RepositoryFile("src/ExternalSupport/VSCode/Scripts/Preview/Bridges/PreviewRevealBridge.js"));
             string syncScript = File.ReadAllText(RepositoryFile("src/ExternalSupport/VSCode/DevScripts/PreviewSourceSyncContractCheck.js"));
 
             AssertTrue(bridge.Contains("const promptRange = this.trimRange(line, choicePromptMatch[1].length, line.length);"), "Choice prompt transient link range should start after the '? ' prefix.");
@@ -550,13 +550,13 @@ Narrator: Hello there.
         }
 
         static void VSCodeLocalizationCommandExposesReviewAlignmentEntry() {
-            string commandSource = File.ReadAllText(RepositoryFile("src/ExternalSupport/VSCode/Localization/Commands/LocalizationCommand.js"));
-            string reviewControllerSource = File.ReadAllText(RepositoryFile("src/ExternalSupport/VSCode/Localization/Controllers/LocalizationReviewController.js"));
-            string reviewViewModelBuilderSource = File.ReadAllText(RepositoryFile("src/ExternalSupport/VSCode/Localization/ViewModels/LocalizationReviewPresenterModelBuilder.js"));
-            string toolsMenuSource = File.ReadAllText(RepositoryFile("src/ExternalSupport/VSCode/EditorAuthoring/Commands/EditorAuthoringCommand.js"));
-            string nodeMapReviewControllerSource = File.ReadAllText(RepositoryFile("src/ExternalSupport/VSCode/EditorAuthoring/Controllers/StoryNodeMapReviewController.js"));
-            string extensionSource = File.ReadAllText(RepositoryFile("src/ExternalSupport/VSCode/ExtensionManifestEntry.js"));
-            string registrationSource = File.ReadAllText(RepositoryFile("src/ExternalSupport/VSCode/Entries/ExtensionRegistrationController.js"));
+            string commandSource = File.ReadAllText(RepositoryFile("src/ExternalSupport/VSCode/Scripts/Localization/Commands/LocalizationCommand.js"));
+            string reviewControllerSource = File.ReadAllText(RepositoryFile("src/ExternalSupport/VSCode/Scripts/Localization/Controllers/LocalizationReviewController.js"));
+            string reviewViewModelBuilderSource = File.ReadAllText(RepositoryFile("src/ExternalSupport/VSCode/Scripts/Localization/ViewModels/LocalizationReviewPresenterModelBuilder.js"));
+            string toolsMenuSource = File.ReadAllText(RepositoryFile("src/ExternalSupport/VSCode/Scripts/EditorAuthoring/Commands/EditorAuthoringCommand.js"));
+            string nodeMapReviewControllerSource = File.ReadAllText(RepositoryFile("src/ExternalSupport/VSCode/Scripts/EditorAuthoring/Controllers/StoryNodeMapReviewController.js"));
+            string extensionSource = File.ReadAllText(RepositoryFile("src/ExternalSupport/VSCode/Scripts/ExtensionManifestEntry.js"));
+            string registrationSource = File.ReadAllText(RepositoryFile("src/ExternalSupport/VSCode/Scripts/Entries/ExtensionRegistrationController.js"));
             string packageJson = File.ReadAllText(RepositoryFile("src/ExternalSupport/VSCode/package.json"));
 
             AssertTrue(commandSource.Contains("async reviewAlignment(context)"), "Localization command should expose reviewAlignment entrypoint.");
@@ -593,7 +593,7 @@ Narrator: Hello there.
         }
 
         static void PreviewHtmlProviderAddsCspToFallbackPages() {
-            string providerSource = File.ReadAllText(RepositoryFile("src/ExternalSupport/VSCode/Preview/Providers/PreviewHtmlProvider.js"));
+            string providerSource = File.ReadAllText(RepositoryFile("src/ExternalSupport/VSCode/Scripts/Preview/Providers/PreviewHtmlProvider.js"));
 
             AssertTrue(providerSource.Contains("Content-Security-Policy"), "Preview HTML provider should add CSP to loading and error pages.");
             AssertTrue(providerSource.Contains("default-src 'none'; img-src data:; style-src 'unsafe-inline'; script-src 'unsafe-inline';"), "Preview HTML provider should use restrictive fallback CSP.");

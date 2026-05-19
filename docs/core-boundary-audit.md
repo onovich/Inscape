@@ -74,7 +74,7 @@ rg -n "\b(Helper|Support|Manager|Utils|ProjectService|Workspace|InscapeCore|Insc
 - 类型名已按 `DslScript*Domain`、`StoryGraph*Domain`、`Localization*Domain`、`*Model` 和 `CompilerEntry` 收敛。
 - 命名空间当前保持在 `Inscape.Compiler.Model`、`Inscape.Compiler.Parsing`、`Inscape.Compiler.Analysis`、`Inscape.Compiler.Compilation`、`Inscape.Compiler.Localization`、`Inscape.Compiler.Diagnostics` 与 `Inscape.Compiler.Text` 这一级，没有继续按目录过细拆分。
 - 弱语义和旧阶段命名未在 Compiler 本体命中。
-- 已修正过期文档口径：Compiler 项目文件实际位于 `src/Internal/Compiler/Inscape.Compiler.csproj`，不再写成 `src/Internal/Compiler/Inscape.Compiler/` 子目录；`ExtensionManifestEntry.js` 已完成 B 阶段拆分，不再描述为“尚未真正拆入目录”。
+- 已修正过期文档口径：Compiler 项目文件实际位于 `src/Internal/Compiler/Inscape.Compiler.csproj`，不再写成 `src/Internal/Compiler/Inscape.Compiler/` 子目录；`Scripts/ExtensionManifestEntry.js` 已完成 B 阶段拆分，不再描述为“尚未真正拆入目录”。
 
 自检结论：
 

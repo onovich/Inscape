@@ -13,7 +13,7 @@
 - 当前下一步优先级回到 Goal 10：G10.4 与最小 review 输出闭环已完成，下一步可继续细化评分与编辑器 review 展示。
 - 2026-05-19 补充结论：VSCode 近期为快速收口 review / preview 体验又出现了一些不够符合重构与命名指南的实现痕迹。后续不能只追功能节点；必须把 VSCode 重构收口重新列回主计划，并把“每完成一个新功能节点后立即做命名 / 分层 /目录自检”纳入默认工作流。
 - 2026-05-19 进一步补充：用户明确 `Resources / Scripts` 的真正语义是“独立模块的资源侧 / 代码侧二分”，而不是“源码目录旁边再挂一个开发脚本桶”。这意味着当前 `src/ExternalSupport/VSCode` 里 `Scripts` 只装 package-only 开发脚本、业务源码目录继续与其平级的状态并不符合最终口径；`check-preview-source-sync-modes.js`、`preview-template.html`、`extension.js` 等历史例外命名也需要重新评估终局名称。
-- 2026-05-19 进一步补充：`src/ExternalSupport/VSCode/Localization` 不应被默认视为长期最终归宿。应把它拆成“宿主适配”与“宿主无关”两部分理解：命令入口、QuickPick、文件对话框、打开报告、源跳转属于 VSCode 适配；alignment review contract、candidate scoring、report model、未来多宿主都会复用的数据组织应继续优先下沉到 `Internal/Tooling`，或在需要编辑器查询能力时进入 `LanguageServer`。
+- 2026-05-19 进一步补充：`src/ExternalSupport/VSCode/Scripts/Localization` 不应被默认视为长期最终归宿。应把它拆成“宿主适配”与“宿主无关”两部分理解：命令入口、QuickPick、文件对话框、打开报告、源跳转属于 VSCode 适配；alignment review contract、candidate scoring、report model、未来多宿主都会复用的数据组织应继续优先下沉到 `Internal/Tooling`，或在需要编辑器查询能力时进入 `LanguageServer`。
 
 本文把当前剩余工作写成 `/goal` 目标模式。每个 goal 都应独立完成、自检、验证、提交和推送；不要把多个无关 goal 合进同一提交。
 
@@ -232,15 +232,15 @@
 - [ ] G13.2 把 VSCode 重构收口重新列回近期主 TODO：后续每推进一个 VSCode 功能节点，都要同步评估是否引入新的 glue 膨胀、跨业务拼装或命名倒退。
 - [ ] G13.3 固化“节点完成后立即自检”的工作流：至少检查命名、目录、入口厚度、跨层依赖、是否把可复用语义错误留在 VSCode 而非下沉 Tooling / LanguageServer。
 - [ ] G13.4 为 VSCode 包补更明确的结构自检脚本或 checklist，避免只靠人工记忆判断是否回退到 `Helper` / `Support` / 泛 `Workspace*` / 入口堆逻辑等旧问题。
-- [~] G13.5 重审 VSCode `Resources / Scripts` 终局结构：已先把当前 package-local 开发脚本桶从 `Scripts` 改名为过渡性 `DevScripts`，避免与最终 `Scripts` 代码侧父层语义冲突；下一步再决定是否把 `Preview`、`Localization`、`EditorAuthoring`、`DslScript`、`Entries` 等业务源码整体迁到 `Scripts` 之下，并同步 manifest、README、验证命令和测试路径。
-- [~] G13.6 清理 VSCode 当前命名例外：第一轮已完成 `extension.js` -> `ExtensionManifestEntry.js`、`preview-template.html` -> `PreviewHtmlDocumentTemplate.html`、`assert-preview-navigation-contract.js` -> `PreviewNavigationContractCheck.js`、`check-preview-source-sync-modes.js` -> `PreviewSourceSyncContractCheck.js`，并把新命名法补进规范；下一步继续清点剩余历史名并配合 G13.5 目录重排统一收口。
+- [x] G13.5 重审 VSCode `Resources / Scripts` 终局结构：已先把当前 package-local 开发脚本桶从 `Scripts` 改名为过渡性 `DevScripts`，避免与最终 `Scripts` 代码侧父层语义冲突；当前 `Scripts/` 下已承接 `ExtensionManifestEntry.js`、`Entries/`、`DslScript/`、`Localization/`、`Preview/`、`EditorAuthoring/`、`HostSchema/`、`HostBinding/`，manifest、README、验证命令和主要测试路径已同步更新。
+- [~] G13.6 清理 VSCode 当前命名例外：第一轮已完成 `extension.js` -> `Scripts/ExtensionManifestEntry.js`、`preview-template.html` -> `PreviewHtmlDocumentTemplate.html`、`assert-preview-navigation-contract.js` -> `PreviewNavigationContractCheck.js`、`check-preview-source-sync-modes.js` -> `PreviewSourceSyncContractCheck.js`，并把新命名法补进规范；下一步继续清点剩余历史名并配合 G13.5 目录重排统一收口。
 - [ ] G13.7 明确 Localization 分层终局：`VSCode/Localization` 只保留宿主适配壳；凡是别的宿主或自研编辑器也会需要的 review contract、candidate scoring、report view-model 组织，应优先评估下沉到 `Tooling` 或 `LanguageServer`。
   - [~] G13.7.1 首轮盘点已完成：
     - `LocalizationCommand` 目前主要是 VSCode 宿主适配：工作区选择、文件对话框、格式选择、CLI invocation、成功提示、报告文件打开。
     - `LocalizationReviewController` 目前仍直接依赖 VSCode QuickPick 与 source jump，但其承载的 `report -> item list -> candidate action list -> location` 交互骨架已经是跨宿主可复用概念。
     - `LocalizationAlignmentAuditDomain`、`LocalizationAlignmentReportModel`、candidate scoring、status/review 状态机已经正确位于 `Internal/Tooling`。
   - [ ] G13.7.2 下一步评估从 VSCode 下沉的第一批目标：把 report item / candidate action 的 view-model 组织与排序从 `LocalizationReviewController` 中抽成宿主无关契约，供未来 VSCode、自研编辑器或别的宿主复用。
-  - [~] G13.7.2 下一步评估从 VSCode 下沉的第一批目标：第一刀已把 report item / candidate action 的 view-model 组织从 `LocalizationReviewController` 拆到 `Localization/ViewModels/LocalizationReviewPresenterModelBuilder`；当前 controller 只保留 QuickPick 适配与 jump，builder 输出也已从 `label/description/detail` 进一步收窄为更中性的 `title/summary/detail` presenter model，并把显示路径格式化改成组合根注入。最新一刀又把动作文案从 presenter builder 里剥离：builder 现在输出 `actionKey` / `actionIndex` / `actionStatus`，VSCode-facing 标签映射由单独的 `LocalizationReviewQuickPickAdapter` 负责。后续可继续评估是否下沉到 `Tooling` 或转成更明确的 editor-neutral contract。
+  - [~] G13.7.2 下一步评估从 VSCode 下沉的第一批目标：第一刀已把 report item / candidate action 的 view-model 组织从 `LocalizationReviewController` 拆到 `Scripts/Localization/ViewModels/LocalizationReviewPresenterModelBuilder`；当前 controller 只保留 QuickPick 适配与 jump，builder 输出也已从 `label/description/detail` 进一步收窄为更中性的 `title/summary/detail` presenter model，并把显示路径格式化改成组合根注入。最新一刀又把动作文案从 presenter builder 里剥离：builder 现在输出 `actionKey` / `actionIndex` / `actionStatus`，VSCode-facing 标签映射由单独的 `LocalizationReviewQuickPickAdapter` 负责。后续可继续评估是否下沉到 `Tooling` 或转成更明确的 editor-neutral contract。
   - [ ] G13.7.3 若未来编辑器需要按 item / candidate 逐项查询，而不是只消费完整 JSON report，再评估是否把 Localization review 查询能力补进 `LanguageServer`，而不是让各宿主自行读文件和重拼交互模型。
 
 建议拆分顺序：

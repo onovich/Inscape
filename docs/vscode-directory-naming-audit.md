@@ -30,11 +30,11 @@ VSCode package 内部目录仍有不符合命名规范的部分。下一轮不�
 
 1. 已完成：先收敛资源 / 脚本目录：`media`、`schemas`、`snippets`、`syntaxes`、`scripts`。
 2. 已完成：收敛 `ExtensionEntry` 到 `Entries`。
-3. 已完成：拆 `PreviewWebview` 到 `Preview/*`。
-4. 已完成：先把 DslScript providers / diagnostics 从 `LanguageFeatures` 与 `WorkspaceIndex` 收敛到 `DslScript/*`。
-5. 已完成：拆 EditorAuthoring providers 到 `EditorAuthoring/Providers` 并删除 `LanguageFeatures`。
-6. 已完成：拆剩余 `WorkspaceIndex` 到 `HostBinding/Providers` 与 `HostSchema/Providers` 并删除 `WorkspaceIndex`。
-7. 已完成：迁 `Bridges/PreviewRevealBridge` 到 `Preview/Bridges`，删除根级 `Bridges`。
+3. 已完成：拆 `PreviewWebview` 到 `Scripts/Preview/*`。
+4. 已完成：先把 DslScript providers / diagnostics 从 `LanguageFeatures` 与 `WorkspaceIndex` 收敛到 `Scripts/DslScript/*`。
+5. 已完成：拆 EditorAuthoring providers 到 `Scripts/EditorAuthoring/Providers` 并删除 `LanguageFeatures`。
+6. 已完成：拆剩余 `WorkspaceIndex` 到 `Scripts/HostBinding/Providers` 与 `Scripts/HostSchema/Providers` 并删除 `WorkspaceIndex`。
+7. 已完成：迁 `Bridges/PreviewRevealBridge` 到 `Scripts/Preview/Bridges`，删除根级 `Bridges`。
 8. 已完成：拆根级 `Styles` 到 `EditorAuthoring` / `Preview`，并将 `StyleDefaults.js` 拆为带 `Model` 后缀的默认值文件。
 9. 已完成：拆根级 `Commands` 到 `EditorAuthoring` / `Preview` / `HostSchema` / `Localization` 的 `Commands` 目录。
 10. 已完成：`extension.js` 明确为 `package.json` 的 VSCode manifest main 入口例外，只允许承载 activation、依赖装配和注册 glue；但该命名是否仍应保留为长期例外，需在后续迁移中重新评估。

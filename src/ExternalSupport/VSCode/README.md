@@ -8,7 +8,7 @@ This package is first-party maintained, but it is bound to the VSCode platform. 
 
 The package is also a future split-repo candidate, so non-source extension assets live under `Resources`. The current `DevScripts` directory is only a transitional bucket for package-local development scripts until the full `Resources / Scripts` code-side migration is complete; do not treat `DevScripts` as the long-term code-side parent that the naming convention reserves for independent module source.
 
-`ExtensionManifestEntry.js` is the narrow VSCode manifest main entry declared by `package.json`. It should stay limited to activation, dependency assembly, and registration glue; feature behavior belongs under business directories such as `DslScript`, `EditorAuthoring`, `HostSchema`, `Localization`, and `Preview`.
+`Scripts/ExtensionManifestEntry.js` is the narrow VSCode manifest main entry declared by `package.json`. It should stay limited to activation, dependency assembly, and registration glue; feature behavior belongs under business directories such as `Scripts/Entries`, `Scripts/DslScript`, `Scripts/Localization`, `Scripts/Preview`, `Scripts/EditorAuthoring`, `Scripts/HostSchema`, and `Scripts/HostBinding` in the current migration stage.
 
 ## Capabilities
 
@@ -87,7 +87,7 @@ Any change under `src/ExternalSupport/VSCode/` must be checked with the reposito
 Run the static checks:
 
 ```powershell
-node --check src\ExternalSupport\VSCode\ExtensionManifestEntry.js
+node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js
 npm --prefix src\ExternalSupport\VSCode run check:diagnostics-fallback
 npm --prefix src\ExternalSupport\VSCode run check:preview-navigation
 npm --prefix src\ExternalSupport\VSCode run check:preview-source-sync

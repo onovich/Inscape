@@ -219,7 +219,7 @@
 - 允许后缀：`Provider`、`Bridge`、`Controller`、`ViewModel`、`Command`
 - 重语义能力长期迁移到 `LanguageServer`
 - 路径为 `src/ExternalSupport/VSCode`，不再增加 `EditorExtensions` 类别层，也不再保留 `vscode-inscape` 包名目录；npm 包名留在 `package.json`。
-- VSCode manifest 根入口文件应使用 `*Entry` 风格命名，例如 `ExtensionManifestEntry.js`，而不是长期保留裸 `extension.js` 这类宿主默认名。
+- VSCode manifest 根入口文件应使用 `*Entry` 风格命名，并位于代码侧父层下，例如 `Scripts/ExtensionManifestEntry.js`，而不是长期保留裸 `extension.js` 这类宿主默认名。
 - 资源模板文件应使用 `主语 + 角色 + Template` 风格命名，例如 `PreviewHtmlDocumentTemplate.html`，而不是长期保留裸 `preview-template.html` 这类历史名。
 - 包内契约检查脚本应使用 `主语 + Contract + Check` 风格命名，例如 `PreviewNavigationContractCheck.js`、`PreviewSourceSyncContractCheck.js`，不再使用 `check-*` / `assert-*` 句式文件名。
 

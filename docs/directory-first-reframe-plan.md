@@ -176,7 +176,7 @@ src/Internal/Cli/
 ```text
 src/ExternalSupport/VSCode/
   README.md
-  ExtensionManifestEntry.js
+  Scripts/ExtensionManifestEntry.js
   package.json
   Entries/
   LanguageFeatures/
@@ -399,7 +399,7 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 3. 若涉及 VSCode 前端路径或脚本迁移，额外执行：
 
 ```powershell
-node --check src\ExternalSupport\VSCode\ExtensionManifestEntry.js
+node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js
 ```
 
 或在 VSCode 入口路径再次调整后，对新入口脚本执行等价检查。
