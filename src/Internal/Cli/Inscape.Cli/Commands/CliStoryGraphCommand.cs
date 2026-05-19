@@ -22,6 +22,10 @@ namespace Inscape.Cli {
                 return RunStoryNodeMapUpdate(rootPath, args, outputPath, jsonOptions);
             }
 
+            if (command == "audit-l10n-alignment-project") {
+                return RunLocalizationAlignmentAudit(rootPath, args, outputPath, jsonOptions);
+            }
+
             if (!TryCompile(rootPath, args, jsonOptions, out ToolConfigModel config, out StoryGraphCompilationResultModel result)) {
                 return 1;
             }
@@ -163,6 +167,33 @@ namespace Inscape.Cli {
                 CliCore.WriteOrPrint(reportPath, JsonSerializer.Serialize(update.Report, jsonOptions));
             }
             Console.WriteLine(nodeMapPath);
+            return 0;
+        }
+
+        static int RunLocalizationAlignmentAudit(string rootPath, string[] args, string? outputPath, JsonSerializerOptions jsonOptions) {
+            string? configuredPath = CliCore.ReadOption(args, "--config");
+            if (!LocalizationCsvFlowDomain.TryReadPreviousEntries(CliCore.ReadOption(args, "--from"), out List<LocalizationEntryModel> previousEntries, out string? localizationError)) {
+                Console.Error.WriteLine(localizationError);
+                return 1;
+            }
+
+            if (!TryCompile(rootPath, args, jsonOptions, out ToolConfigModel config, out StoryGraphCompilationResultModel result)) {
+                return 1;
+            }
+
+            CliCore.PrintDiagnostics(result.Diagnostics);
+            if (result.HasErrors) {
+                return 1;
+            }
+
+            string nodeMapPath = StoryNodeMapPathResolverDomain.Resolve(rootPath, configuredPath, config.NodeMap);
+            if (!StoryNodeMapReaderDomain.TryRead(nodeMapPath, jsonOptions, out StoryNodeMapModel nodeMap, out string? nodeMapError)) {
+                Console.Error.WriteLine(nodeMapError);
+                return 3;
+            }
+
+            LocalizationAlignmentReportModel report = LocalizationAlignmentAuditDomain.Audit(result, previousEntries, nodeMap, rootPath);
+            CliCore.WriteOrPrint(outputPath, JsonSerializer.Serialize(report, jsonOptions));
             return 0;
         }
 

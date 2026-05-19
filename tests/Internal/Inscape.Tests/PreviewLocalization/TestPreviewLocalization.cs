@@ -4,6 +4,7 @@ using Inscape.Compiler.Analysis;
 using Inscape.Compiler.Compilation;
 using Inscape.Compiler.Diagnostics;
 using Inscape.Compiler.Model;
+using Inscape.Tooling;
 using CliCore = Inscape.Cli.CliCore;
 
 namespace Inscape.Tests {
@@ -295,6 +296,140 @@ Narrator: Project start.
 
             AssertTrue(csv.Contains("Project translation,current"), "Project update should preserve existing translation.");
             AssertEqual(2, CountCsvLines(csv), "Project update CSV line count");
+        }
+
+        static void LocalizationAlignmentAuditReportsReviewStatuses() {
+            StoryGraphCompilerDomain compiler = new StoryGraphCompilerDomain();
+            StoryGraphCompilationResultModel initial = compiler.Compile(new List<DslScriptSourceModel> {
+                new DslScriptSourceModel("D:/LabProjects/Inscape/story/court.inscape", """
+# intro
+@entry
+Narrator: Same line.
+Narrator: I waited here.
+Narrator: Removed line.
+Narrator: Shared line A.
+Narrator: Shared line B.
+"""),
+            }, "D:/LabProjects/Inscape");
+            StoryNodeMapModel nodeMap = StoryNodeMapUpdateDomain.Update(new StoryNodeMapModel(),
+                                                                        initial,
+                                                                        "D:/LabProjects/Inscape",
+                                                                        DateTimeOffset.Parse("2026-05-19T11:00:00Z", System.Globalization.CultureInfo.InvariantCulture));
+            string oldCsv = LocalizationCsvFlowDomain.Extract(initial.Graph);
+            string sameAnchor = AnchorForText(oldCsv, "Same line.");
+            string changedAnchor = AnchorForText(oldCsv, "I waited here.");
+            string removedAnchor = AnchorForText(oldCsv, "Removed line.");
+            string sharedFirstAnchor = AnchorForText(oldCsv, "Shared line A.");
+            string sharedSecondAnchor = AnchorForText(oldCsv, "Shared line B.");
+            string oldCsvWithTranslations = "anchor,node,kind,speaker,text,translation,sourcePath,line,column\n"
+                + sameAnchor + ",intro,Dialogue,Narrator,Same line.,Same translation,story/court.inscape,3,1\n"
+                + changedAnchor + ",intro,Dialogue,Narrator,I waited here.,Changed candidate translation,story/court.inscape,4,1\n"
+                + removedAnchor + ",intro,Dialogue,Narrator,Removed line.,Removed translation,story/court.inscape,5,1\n"
+                + sharedFirstAnchor + ",intro,Dialogue,Narrator,Shared line A.,Shared first translation,story/court.inscape,6,1\n"
+                + sharedSecondAnchor + ",intro,Dialogue,Narrator,Shared line B.,Shared second translation,story/court.inscape,7,1\n";
+
+            StoryGraphCompilationResultModel updated = compiler.Compile(new List<DslScriptSourceModel> {
+                new DslScriptSourceModel("D:/LabProjects/Inscape/story/court.inscape", """
+# intro
+@entry
+Narrator: Same line.
+Narrator: I waited here longer.
+Narrator: Brand new line.
+Narrator: Shared line C.
+"""),
+            }, "D:/LabProjects/Inscape");
+
+            LocalizationAlignmentReportModel report = LocalizationAlignmentAuditDomain.Audit(updated,
+                                                                                             new Inscape.Compiler.Localization.LocalizationCsvReaderDomain().Read(oldCsvWithTranslations),
+                                                                                             nodeMap,
+                                                                                             "D:/LabProjects/Inscape");
+
+            AssertEqual(1, report.Summary.KeptCount, "Alignment kept count");
+            AssertEqual(1, report.Summary.NewCount, "Alignment new count");
+            AssertEqual(1, report.Summary.ChangedCount, "Alignment changed count");
+            AssertEqual(1, report.Summary.RemovedCount, "Alignment removed count");
+            AssertEqual(1, report.Summary.ConflictCount, "Alignment conflict count");
+            AssertEqual(3, report.Summary.StaleCount, "Alignment stale count");
+            AssertEqual("Same translation", FindAlignmentItem(report, "kept").Translation, "Kept item should carry confirmed translation.");
+            AssertEqual("", FindAlignmentItem(report, "changed").Translation, "Changed item should not silently inherit candidate translation.");
+            AssertEqual("Changed candidate translation", FindAlignmentItem(report, "changed").Candidates[0].Translation, "Changed item should expose candidate translation.");
+            AssertEqual(2, FindAlignmentItem(report, "conflict").Candidates.Count, "Conflict item should expose multiple candidates.");
+        }
+
+        static void CliAuditL10nAlignmentProjectEmitsJson() {
+            string directory = Path.Combine(Path.GetTempPath(), "inscape-tests", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory);
+            string storyPath = Path.Combine(directory, "story.inscape");
+            string oldCsvPath = Path.Combine(directory, "old.csv");
+
+            File.WriteAllText(storyPath, """
+# intro
+@entry
+Narrator: Hello.
+""", Encoding.UTF8);
+            RunCliForOutput(new[] { "update-node-map-project", directory });
+            string initialCsv = RunCliForOutput(new[] { "extract-l10n-project", directory });
+            string anchor = FirstDataAnchor(initialCsv);
+            File.WriteAllText(oldCsvPath,
+                              "anchor,node,kind,speaker,text,translation,sourcePath,line,column\n"
+                              + anchor + ",intro,Dialogue,Narrator,Hello.,Hello translation,story.inscape,3,1\n",
+                              Encoding.UTF8);
+
+            string json;
+            try {
+                json = RunCliForOutput(new[] { "audit-l10n-alignment-project", directory, "--from", oldCsvPath });
+            } finally {
+                Directory.Delete(directory, true);
+            }
+
+            using JsonDocument document = JsonDocument.Parse(json);
+            JsonElement root = document.RootElement;
+            AssertEqual("inscape.localization-alignment", root.GetProperty("format").GetString(), "Alignment CLI format");
+            AssertEqual(1, root.GetProperty("summary").GetProperty("keptCount").GetInt32(), "Alignment CLI kept count");
+            AssertEqual("Hello translation", root.GetProperty("items")[0].GetProperty("translation").GetString(), "Alignment CLI should preserve kept translation.");
+        }
+
+        static LocalizationAlignmentItemModel FindAlignmentItem(LocalizationAlignmentReportModel report, string status) {
+            for (int i = 0; i < report.Items.Count; i += 1) {
+                if (report.Items[i].Status == status) {
+                    return report.Items[i];
+                }
+            }
+
+            throw new InvalidOperationException("Could not find alignment item: " + status);
+        }
+
+        static string AnchorForText(string csv, string text) {
+            using StringReader reader = new StringReader(csv);
+            reader.ReadLine();
+            string? line;
+            while ((line = reader.ReadLine()) != null) {
+                if (line.Contains(text, StringComparison.Ordinal)) {
+                    int comma = line.IndexOf(',');
+                    return comma < 0 ? line : line.Substring(0, comma);
+                }
+            }
+
+            throw new InvalidOperationException("Could not find CSV text: " + text);
+        }
+
+        static string LastAnchorForText(string csv, string text) {
+            string result = string.Empty;
+            using StringReader reader = new StringReader(csv);
+            reader.ReadLine();
+            string? line;
+            while ((line = reader.ReadLine()) != null) {
+                if (line.Contains(text, StringComparison.Ordinal)) {
+                    int comma = line.IndexOf(',');
+                    result = comma < 0 ? line : line.Substring(0, comma);
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(result)) {
+                throw new InvalidOperationException("Could not find CSV text: " + text);
+            }
+
+            return result;
         }
     }
 }

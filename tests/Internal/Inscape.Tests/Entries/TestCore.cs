@@ -70,6 +70,8 @@ namespace Inscape.Tests {
                 ("cli extract-l10n-project emits csv", CliExtractL10nProjectEmitsCsv),
                 ("cli update-l10n preserves translations", CliUpdateL10nPreservesTranslations),
                 ("cli update-l10n-project preserves translations", CliUpdateL10nProjectPreservesTranslations),
+                ("localization alignment audit reports review statuses", LocalizationAlignmentAuditReportsReviewStatuses),
+                ("cli audit-l10n-alignment-project emits json", CliAuditL10nAlignmentProjectEmitsJson),
             };
 
             int failed = 0;

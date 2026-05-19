@@ -9,7 +9,7 @@
 - Goal 5 已完成当前阶段收口：VSCode 的 diagnostics、node completion、definition、references、hover、document symbols 与 Host Schema capability 已切到常驻 `LanguageServer` stdio 会话。
 - Goal 7 的 `off|click|selection` 真实 VSCode smoke 已通过。
 - Goal 11.1 的“LanguageServer 不可用 -> CLI diagnostics fallback”真实 VSCode smoke 已通过。
-- 当前下一步优先级回到 Goal 10：`G10.3` -> `G10.4`。
+- 当前下一步优先级回到 Goal 10：G10.3 已完成，下一步是 `G10.4`。
 
 本文把当前剩余工作写成 `/goal` 目标模式。每个 goal 都应独立完成、自检、验证、提交和推送；不要把多个无关 goal 合进同一提交。
 
@@ -165,7 +165,7 @@
 
 ## Goal 10：Stable ID 与本地化迁移落地
 
-状态：进行中。Goal 1 / Goal 2 已完成设计；G10.1 已落首版 sidecar 创建 / 读取 / 更新 / missing / conflict 闭环，G10.2 已补第一版保守自动重命名识别，但标题入口接线、人工确认和本地化 alignment report 仍待实现。
+状态：进行中。Goal 1 / Goal 2 已完成设计；G10.1 已落首版 sidecar 创建 / 读取 / 更新 / missing / conflict 闭环，G10.2 已补第一版保守自动重命名识别、标题入口接线和人工确认报告，G10.3 已实现本地化 alignment / audit report。
 
 目标：把作者可读标题、系统 stable node id、行级 anchor、occurrence 与 diff 对齐串成可执行工具链，保护节点重命名和本地化旧译文。
 
@@ -176,7 +176,10 @@
   - [x] G10.2.1 VSCode 新增显式 `Inscape: Update Stable Node Map` 入口，调用 `update-node-map-project`，并把活动未保存 `.inscape` 文档通过 `--override` 传给 CLI。
   - [x] G10.2.2 标题创建后自动同步 stable node map，插入标题成功后会对当前工作区静默执行一次 `update-node-map-project`，失败时只提示自动同步失败，不回滚插入动作。
   - [x] G10.2.3 标题重命名的人工确认 / 冲突报告入口：`StoryNodeMapUpdateDomain` 现在会输出 `inscape.node-map-update-report`，CLI `update-node-map-project` 新增 `--report`，VSCode 新增显式 `Inscape: Review Stable Node Map Changes`，并在显式 `Update Stable Node Map` 发现 `manual-review` / `conflict` 时给出审查入口。
-- [ ] G10.3 实现本地化 alignment / audit report，输出 `kept` / `new` / `changed` / `removed` / `conflict` / `stale`。
+- [x] G10.3 实现本地化 alignment / audit report，输出 `kept` / `new` / `changed` / `removed` / `conflict` / `stale`。
+  - [x] Internal Tooling 新增 `LocalizationAlignmentAuditDomain` 和 `inscape.localization-alignment` JSON report model。
+  - [x] Internal CLI 新增显式 `audit-l10n-alignment-project <root> --from old.csv [-o l10n-review.json]`，不改变 `update-l10n-project` 默认行为。
+  - [x] Report 只在 `kept` 项写入确认译文；`changed` / `conflict` 只携带旧译文候选并配套 `stale` 旧项。
 - [ ] G10.4 将相似文本匹配作为人工候选输出，不静默继承旧译文。
 
 ## Goal 11：Fallback 与外部宿主收口

@@ -13,7 +13,8 @@
 - Goal 7 的 `off|click|selection` 真实 VSCode smoke 已通过。
 - Goal 11.1 的“LanguageServer 不可用 -> CLI diagnostics fallback”真实 VSCode smoke 已通过。
 - VSCode 的 diagnostics、node completion、definition、references、hover、document symbols 与 Host Schema capability 已切到常驻 `LanguageServer` stdio 会话；CLI fallback 继续保留，但不再是常态热路径。
-- 当前主线优先级重新回到 Goal 10：先做 `G10.3 本地化 alignment / audit report`，再做 `G10.4 相似文本人工候选`。
+- Goal 10.3 已实现本地化 alignment / audit report：Internal Tooling 新增 `LocalizationAlignmentAuditDomain` 与 `inscape.localization-alignment` JSON report model，Internal CLI 新增显式 `audit-l10n-alignment-project <root> --from old.csv [-o l10n-review.json]`，不改变 `update-l10n-project` 默认行为。
+- 当前主线优先级继续推进 Goal 10：下一步做 `G10.4 相似文本人工候选`。
 - 低优先级体验尾项：编辑区选项文字 `Ctrl+Hover` 的可点击下划线显示仍不稳定，但 `Ctrl+Click` 行为符合预期；`selection` 模式只驱动“已打开预览”的轻量跟随，不主动弹出新预览面板。
 
 Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原型。当前长期架构已经收敛为 Internal 与 ExternalSupport 两层：Internal 包含 `Compiler`、`Tooling`、`Cli`、`LanguageServer` 与未来 `Runtime`；ExternalSupport 包含外部平台支持，例如 `VSCode` 与 `UnityPlugin`。UnitySample 实验 adapter 继续保留，但只作为 ExternalSupport 过渡样例，不代表最终 Host Bridge 方案。
@@ -338,23 +339,19 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 
 建议优先做小而闭环的任务，不要直接跳到大规模重构。
 
-1. 先收口现有 VSCode 体验。
-   - Goal 7 只剩 `inscape.preview.sourceSyncMode = off|click|selection` 的真实手动 smoke。
-   - Goal 11.1 只剩真实 VSCode 场景下的 diagnostics fallback 手动 smoke。
+1. 继续推进 Stable Node ID / 本地化主线。
+   - ADR 0013、sidecar 闭环、保守自动重命名识别、VSCode 显式 `Update Stable Node Map` 入口、插入标题后的自动同步、标题重命名人工确认 / 冲突报告与本地化 alignment / audit report 都已落地。
+   - 下一步建议做 G10.4：相似文本只作人工候选，不静默继承旧译文。
 
-2. 再推进 Stable Node ID 主线。
-   - ADR 0013、sidecar 闭环、保守自动重命名识别、VSCode 显式 `Update Stable Node Map` 入口、插入标题后的自动同步都已落地。
-   - 下一步建议顺序是：标题重命名人工确认 / 冲突报告 -> 本地化 alignment / audit report。
+2. 本地化 Diff / Alignment 后续。
+   - 状态机、CSV / report 字段、anchor + occurrence + diff 对齐流程已经完成设计，显式 `audit-l10n-alignment-project` 已落地。
+   - 后续应把更宽松的相似文本匹配限制在人工候选 / review report，不进入默认 `update-l10n` 确认译文。
 
-3. 本地化 Diff / Alignment 落地。
-   - 状态机、CSV / report 字段、anchor + occurrence + diff 对齐流程已经完成设计。
-   - 注意它和 Goal 10 是一条主线，优先级排在 stable node id 维护之后，不建议脱离 stable node id 单独推进。
-
-4. Tooling 共享流程继续收敛。
+3. Tooling 共享流程继续收敛。
    - 继续落到 `DslScriptSources`、`ToolConfig`、`Preview`、`Localization`、`HostSchema`、`HostBinding` 等窄模块。
    - 不要新建泛化 `ProjectService`；如果要做，先挑一个仍重复的跨 Cli / VSCode / LanguageServer 流程做小闭环。
 
-5. Unity / Bird 只做准备和决策，暂不扩研发。
+4. Unity / Bird 只做准备和决策，暂不扩研发。
    - 待定：Bird 项目新增 importer 与 `InscapeGenerated` 资源提交策略。
    - 待验证：带真实 Timeline 绑定的 Bird Import Dry Run，确认 `talking.exit` 的 `TalkingEffectTM.PlayTimeline` 落地和其他 phase warning。
    - 低优先级：结合 Bird `L10N` 真实格式决定是否调整 Inscape CSV 字段和列顺序。
