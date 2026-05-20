@@ -43,6 +43,11 @@ class StoryNodeMapReviewController {
             return;
         }
 
+        if (action.revertNodeMap && nodeMapPath) {
+            await this.revertLastAppliedStableId(nodeMapPath);
+            return;
+        }
+
         if (action.filePath) {
             await this.openFile(action.filePath);
         }
@@ -85,6 +90,15 @@ class StoryNodeMapReviewController {
                 description: this.path.basename(nodeMapPath),
                 filePath: nodeMapPath
             });
+
+            if (this.fs.existsSync(this.reviewBackupPath(nodeMapPath))) {
+                actions.push({
+                    label: "Revert last applied stable id",
+                    description: this.path.basename(this.reviewBackupPath(nodeMapPath)),
+                    detail: "Restore the node map snapshot saved before the last apply action.",
+                    revertNodeMap: true
+                });
+            }
         }
 
         if (reportPath && this.fs.existsSync(reportPath)) {
@@ -126,6 +140,7 @@ class StoryNodeMapReviewController {
 
     async applyCandidateStableId(nodeMapPath, item, candidate) {
         const text = await this.fs.promises.readFile(nodeMapPath, "utf8");
+        await this.fs.promises.writeFile(this.reviewBackupPath(nodeMapPath), text, "utf8");
         const nodeMap = JSON.parse(text);
         const nodes = Array.isArray(nodeMap && nodeMap.nodes) ? nodeMap.nodes : [];
         const currentIndex = nodes.findIndex((node) => node && node.id === item.stableId && node.title === item.title);
@@ -152,10 +167,32 @@ class StoryNodeMapReviewController {
 
         nodeMap.nodes = nodes;
         await this.fs.promises.writeFile(nodeMapPath, JSON.stringify(nodeMap, null, 2), "utf8");
-        const selection = await this.vscode.window.showInformationMessage("Applied candidate stable id to node map: " + candidate.stableId, "Open Node Map");
+        const selection = await this.vscode.window.showInformationMessage("Applied candidate stable id to node map: " + candidate.stableId, "Open Node Map", "Revert Last Apply");
         if (selection === "Open Node Map") {
             await this.openFile(nodeMapPath);
         }
+        if (selection === "Revert Last Apply") {
+            await this.revertLastAppliedStableId(nodeMapPath);
+        }
+    }
+
+    async revertLastAppliedStableId(nodeMapPath) {
+        const backupPath = this.reviewBackupPath(nodeMapPath);
+        if (!this.fs.existsSync(backupPath)) {
+            throw new Error("Could not find a stable node map review backup to restore.");
+        }
+
+        const text = await this.fs.promises.readFile(backupPath, "utf8");
+        await this.fs.promises.writeFile(nodeMapPath, text, "utf8");
+        await this.fs.promises.unlink(backupPath);
+        const selection = await this.vscode.window.showInformationMessage("Reverted the last applied stable id review change.", "Open Node Map");
+        if (selection === "Open Node Map") {
+            await this.openFile(nodeMapPath);
+        }
+    }
+
+    reviewBackupPath(nodeMapPath) {
+        return nodeMapPath + ".review-backup.json";
     }
 
     formatNodeMapCandidate(candidate) {

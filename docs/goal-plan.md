@@ -180,7 +180,7 @@
   - [x] G10.2.1 VSCode 新增显式 `Inscape: Update Stable Node Map` 入口，调用 `update-node-map-project`，并把活动未保存 `.inscape` 文档通过 `--override` 传给 CLI。
   - [x] G10.2.2 标题创建后自动同步 stable node map，插入标题成功后会对当前工作区静默执行一次 `update-node-map-project`，失败时只提示自动同步失败，不回滚插入动作。
 - [x] G10.2.3 标题重命名的人工确认 / 冲突报告入口：`StoryNodeMapUpdateDomain` 现在会输出 `inscape.node-map-update-report`，CLI `update-node-map-project` 新增 `--report`，VSCode 新增显式 `Inscape: Review Stable Node Map Changes`，并在显式 `Update Stable Node Map` 发现 `manual-review` / `conflict` 时给出审查入口。
-- [~] G10.2.4 细化标题重命名人工确认流：已补 review item 列表、candidate 跳转和 node map / raw report 打开入口；当前 manual-review 项已支持显式 `Apply candidate stable id`，下一步可继续评估是否需要更安全的 dry-run / revert / multi-apply 流程。
+- [~] G10.2.4 细化标题重命名人工确认流：已补 review item 列表、candidate 跳转和 node map / raw report 打开入口；当前 manual-review 项已支持显式 `Apply candidate stable id`，并会保存 `.review-backup.json` 供 `Revert last applied stable id` 使用。下一步可继续评估是否需要 dry-run / multi-apply。
 - [x] G10.3 实现本地化 alignment / audit report，输出 `kept` / `new` / `changed` / `removed` / `conflict` / `stale`。
   - [x] Internal Tooling 新增 `LocalizationAlignmentAuditDomain` 和 `inscape.localization-alignment` JSON report model。
   - [x] Internal CLI 新增显式 `audit-l10n-alignment-project <root> --from old.csv [-o l10n-review.json]`，不改变 `update-l10n-project` 默认行为。

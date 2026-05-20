@@ -625,6 +625,9 @@ Narrator: Hello there.
             AssertTrue(nodeMapReviewControllerSource.Contains("createNodeMapReviewActions(item, nodeMapPath, reportPath)"), "Story node map review controller should expose candidate-specific node map actions.");
             AssertTrue(nodeMapReviewControllerSource.Contains("Apply candidate "), "Story node map review controller should expose explicit apply action for manual-review candidates.");
             AssertTrue(nodeMapReviewControllerSource.Contains("async applyCandidateStableId(nodeMapPath, item, candidate)"), "Story node map review controller should support applying a reviewed stable id choice.");
+            AssertTrue(nodeMapReviewControllerSource.Contains("Revert last applied stable id"), "Story node map review controller should expose a revert action for the last applied stable id.");
+            AssertTrue(nodeMapReviewControllerSource.Contains("async revertLastAppliedStableId(nodeMapPath)"), "Story node map review controller should support reverting the last applied stable id change.");
+            AssertTrue(nodeMapReviewControllerSource.Contains("reviewBackupPath(nodeMapPath)"), "Story node map review controller should keep a review backup path helper for apply/revert flow.");
             AssertTrue(registrationSource.Contains("inscape.reviewLocalizationAlignment"), "Extension registration should register localization alignment review command.");
             AssertTrue(packageJson.Contains("\"command\": \"inscape.reviewLocalizationAlignment\""), "VSCode package should contribute localization alignment review command.");
         }
