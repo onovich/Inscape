@@ -38,6 +38,11 @@ class StoryNodeMapReviewController {
             return;
         }
 
+        if (typeof action.applyCandidateIndex === "number" && nodeMapPath) {
+            await this.applyCandidateStableId(nodeMapPath, selected.item, selected.item.candidates[action.applyCandidateIndex]);
+            return;
+        }
+
         if (action.filePath) {
             await this.openFile(action.filePath);
         }
@@ -104,10 +109,53 @@ class StoryNodeMapReviewController {
                         length: String(candidate.title || "").length
                     }
                 });
+
+                if (item.kind === "manual-review" && nodeMapPath && this.fs.existsSync(nodeMapPath)) {
+                    actions.push({
+                        label: "Apply candidate " + String(i + 1) + " stable id",
+                        description: String(candidate.stableId || ""),
+                        detail: "Reuse the candidate stable id and remove its missing/manual-review duplicate from the node map.",
+                        applyCandidateIndex: i
+                    });
+                }
             }
         }
 
         return actions;
+    }
+
+    async applyCandidateStableId(nodeMapPath, item, candidate) {
+        const text = await this.fs.promises.readFile(nodeMapPath, "utf8");
+        const nodeMap = JSON.parse(text);
+        const nodes = Array.isArray(nodeMap && nodeMap.nodes) ? nodeMap.nodes : [];
+        const currentIndex = nodes.findIndex((node) => node && node.id === item.stableId && node.title === item.title);
+        const candidateIndex = nodes.findIndex((node) => node && node.id === candidate.stableId);
+
+        if (currentIndex < 0 || candidateIndex < 0) {
+            throw new Error("Could not find the selected stable node map entries to apply candidate review.");
+        }
+
+        const currentNode = nodes[currentIndex];
+        const candidateNode = nodes[candidateIndex];
+        const previousTitles = Array.isArray(candidateNode.previousTitles) ? candidateNode.previousTitles.slice() : [];
+        if (candidateNode.title && candidateNode.title !== currentNode.title && !previousTitles.includes(candidateNode.title)) {
+            previousTitles.push(candidateNode.title);
+        }
+
+        currentNode.id = candidateNode.id;
+        currentNode.previousTitles = previousTitles;
+        currentNode.createdAt = candidateNode.createdAt || currentNode.createdAt;
+
+        if (candidateIndex !== currentIndex) {
+            nodes.splice(candidateIndex, 1);
+        }
+
+        nodeMap.nodes = nodes;
+        await this.fs.promises.writeFile(nodeMapPath, JSON.stringify(nodeMap, null, 2), "utf8");
+        const selection = await this.vscode.window.showInformationMessage("Applied candidate stable id to node map: " + candidate.stableId, "Open Node Map");
+        if (selection === "Open Node Map") {
+            await this.openFile(nodeMapPath);
+        }
     }
 
     formatNodeMapCandidate(candidate) {

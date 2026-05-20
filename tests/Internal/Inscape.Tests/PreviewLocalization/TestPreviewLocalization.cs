@@ -623,6 +623,8 @@ Narrator: Hello there.
             AssertTrue(toolsMenuSource.Contains("Review Items"), "Editor authoring command should expose review items action for node map report.");
             AssertTrue(nodeMapReviewControllerSource.Contains("async reviewNodeMapReport(report, nodeMapPath, reportPath)"), "Story node map review controller should expose review entrypoint.");
             AssertTrue(nodeMapReviewControllerSource.Contains("createNodeMapReviewActions(item, nodeMapPath, reportPath)"), "Story node map review controller should expose candidate-specific node map actions.");
+            AssertTrue(nodeMapReviewControllerSource.Contains("Apply candidate "), "Story node map review controller should expose explicit apply action for manual-review candidates.");
+            AssertTrue(nodeMapReviewControllerSource.Contains("async applyCandidateStableId(nodeMapPath, item, candidate)"), "Story node map review controller should support applying a reviewed stable id choice.");
             AssertTrue(registrationSource.Contains("inscape.reviewLocalizationAlignment"), "Extension registration should register localization alignment review command.");
             AssertTrue(packageJson.Contains("\"command\": \"inscape.reviewLocalizationAlignment\""), "VSCode package should contribute localization alignment review command.");
         }
