@@ -17,6 +17,7 @@ namespace Inscape.Tooling {
         const int SequencePenaltyWeight = 2;
         const int LinePenaltyWeight = 1;
         const int ContextPenaltyWeight = 3;
+        const int FingerprintPenaltyWeight = 4;
 
         public static LocalizationAlignmentReportModel Audit(StoryGraphCompilationResultModel result,
                                                              IReadOnlyList<LocalizationEntryModel> previousEntries,
@@ -311,8 +312,9 @@ namespace Inscape.Tooling {
             int lineDistance = Math.Abs(current.Entry.Source.Line - previous.Entry.Source.Line);
             int exactPrefixLength = SharedPrefixLength(NormalizeText(current.Entry.Text), NormalizeText(previous.Entry.Text));
             int contextDistance = ContextDistance(current.Entry.Text, previous.Entry.Text);
+            int fingerprintDistance = FingerprintDistance(current.Entry.Text, previous.Entry.Text);
             List<string> reasons = new List<string>();
-            int rankingPenalty = sequenceDistance * SequencePenaltyWeight + lineDistance * LinePenaltyWeight + contextDistance * ContextPenaltyWeight;
+            int rankingPenalty = sequenceDistance * SequencePenaltyWeight + lineDistance * LinePenaltyWeight + contextDistance * ContextPenaltyWeight + fingerprintDistance * FingerprintPenaltyWeight;
 
             if (current.NodeId.Length > 0 && current.NodeId == previous.NodeId) {
                 reasons.Add("same-stable-node");
@@ -342,6 +344,15 @@ namespace Inscape.Tooling {
             } else if (contextDistance == 1) {
                 reasons.Add("near-context-shape");
                 similarity += 0.008;
+                rankingPenalty = Math.Max(0, rankingPenalty - 1);
+            }
+            if (fingerprintDistance == 0) {
+                reasons.Add("same-keyword-fingerprint");
+                similarity += 0.012;
+                rankingPenalty = Math.Max(0, rankingPenalty - 2);
+            } else if (fingerprintDistance == 1) {
+                reasons.Add("near-keyword-fingerprint");
+                similarity += 0.006;
                 rankingPenalty = Math.Max(0, rankingPenalty - 1);
             }
 
@@ -428,6 +439,44 @@ namespace Inscape.Tooling {
             }
 
             return parts[0] + "|" + parts[parts.Length - 1] + "|" + parts.Length.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        static int FingerprintDistance(string left, string right) {
+            string[] leftTokens = FingerprintTokens(NormalizeText(left));
+            string[] rightTokens = FingerprintTokens(NormalizeText(right));
+            if (leftTokens.Length == 0 && rightTokens.Length == 0) {
+                return 0;
+            }
+
+            int shared = 0;
+            for (int i = 0; i < leftTokens.Length; i += 1) {
+                for (int j = 0; j < rightTokens.Length; j += 1) {
+                    if (leftTokens[i] == rightTokens[j]) {
+                        shared += 1;
+                        break;
+                    }
+                }
+            }
+
+            int max = Math.Max(leftTokens.Length, rightTokens.Length);
+            if (shared == max) {
+                return 0;
+            }
+
+            return shared >= Math.Max(1, max - 1) ? 1 : 2;
+        }
+
+        static string[] FingerprintTokens(string value) {
+            string[] tokens = value.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            List<string> result = new List<string>();
+            for (int i = 0; i < tokens.Length; i += 1) {
+                string token = tokens[i].Trim().Trim('.', ',', '!', '?', ';', ':', '"', '\'', '(', ')', '[', ']');
+                if (token.Length >= 4) {
+                    result.Add(token.ToLowerInvariant());
+                }
+            }
+
+            return result.ToArray();
         }
 
         static int CompareCandidateMatch(LocalizationAlignmentCandidateMatch left, LocalizationAlignmentCandidateMatch right) {
