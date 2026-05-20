@@ -217,7 +217,7 @@
 
 - [x] G12.1 为 Preview webview 补 CSP，消除 `created a webview without a content security policy` warning，并确保现有 preview 脚本仍可运行。
 - [~] G12.2 继续收口正文 / 选项文本 `Ctrl+Hover` 链接态显示稳定性，保持“默认无下划线、Ctrl+指向才显示”。当前已排除 `? ` 与 `- ` 前缀区域进入 transient link range；下一步可继续做人体工学微调和手动 smoke。
-- [ ] G12.3 视需要补一次用户视角的 LanguageServer 冷启动 / 热会话体验记录，确认当前 `dotnet exec` / 已构建产物路径下不再有明显慢启动体感。
+- [x] G12.3 已补一次用户视角的 LanguageServer 冷启动 / 热会话体验记录：2026-05-19 用户在预构建产物路径下重测 VSCode 语言能力，主观反馈“体验不错”；日志未见 `LanguageServer session exited ...`、`[LanguageServer stderr] ...` 或 Inscape request failure，说明当前常驻 stdio 会话在已构建产物路径下没有明显慢启动体感。
 
 ## Goal 13：VSCode 重构守规与节点后自检
 

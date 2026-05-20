@@ -11,7 +11,7 @@
 - Goal 7 的 `inscape.preview.sourceSyncMode = off|click|selection` 真实 VSCode smoke 已通过。
 - Goal 11.1 的“LanguageServer 不可用 -> CLI diagnostics fallback”真实 VSCode smoke 已通过。
 - VSCode 的 diagnostics、node completion、definition、references、hover、document symbols 与 Host Schema capability 已切到常驻 `LanguageServer` stdio 会话；CLI fallback 继续保留，但不再是常态热路径。
-- 2026-05-19 用户重测 LanguageServer 体验反馈良好；日志未见 Inscape LanguageServer 崩溃或 stderr。Preview webview CSP 已补到 fallback 页面和主预览模板；`Ctrl+Hover` 链接态范围也已继续收口一刀，当前剩余尾项更偏人体工学微调。
+- 2026-05-19 用户重测 LanguageServer 体验反馈良好；预构建产物路径下的冷启动 / 热会话体感均无明显卡顿，日志未见 Inscape LanguageServer 崩溃或 stderr。Preview webview CSP 已补到 fallback 页面和主预览模板；`Ctrl+Hover` 链接态范围也已继续收口一刀，当前剩余尾项更偏人体工学微调。
 - 2026-05-19 新增流程约束：用户指出 VSCode 近期实现再次出现不够符合重构 / 命名指南的写法。后续必须把 VSCode 重构收口重新列回计划，并把“每完成一个新功能节点就做一轮命名 / 分层 / 入口厚度自检”当作默认工作流，而不是可选项。
 - 2026-05-19 新增目录边界澄清：用户明确 `Resources` / `Scripts` 的前提是模块足够独立；一旦采用这对目录，`Scripts` 应是代码侧父层，与 `Resources` 对偶，而不是只放 package-only 开发脚本。当前 VSCode 已先把开发脚本桶改成过渡性 `DevScripts`，避免继续误占 `Scripts` 语义位；但业务源码目录仍与其平级，完整 `Resources / Scripts` 终局结构仍待迁移。首批命名例外也已开始收口：`Scripts/ExtensionManifestEntry.js`、`PreviewHtmlDocumentTemplate.html`、`PreviewNavigationContractCheck.js`、`PreviewSourceSyncContractCheck.js` 已替换掉历史名。
 - 2026-05-19 新增 Localization 分层判断：`VSCode/Scripts/Localization` 当前仍可保留，但只能把它视为宿主适配层；凡是未来别的宿主、自研编辑器也会需要的 review contract、candidate scoring、report model / view-model 组织，都不应默认留在 VSCode，而应优先评估下沉到 `Internal/Tooling` 或在需要编辑器查询能力时进入 `LanguageServer`。
