@@ -18,6 +18,7 @@ namespace Inscape.Tooling {
         const int LinePenaltyWeight = 1;
         const int ContextPenaltyWeight = 3;
         const int FingerprintPenaltyWeight = 4;
+        const int NeighborPenaltyWeight = 5;
 
         public static LocalizationAlignmentReportModel Audit(StoryGraphCompilationResultModel result,
                                                              IReadOnlyList<LocalizationEntryModel> previousEntries,
@@ -314,8 +315,9 @@ namespace Inscape.Tooling {
             int exactPrefixLength = SharedPrefixLength(NormalizeText(current.Entry.Text), NormalizeText(previous.Entry.Text));
             int contextDistance = ContextDistance(current.Entry.Text, previous.Entry.Text);
             int fingerprintDistance = FingerprintDistance(current.Entry.Text, previous.Entry.Text);
+            int neighborDistance = NeighborDistance(current.Entry.Text, previous.Entry.Text);
             List<string> reasons = new List<string>();
-            int rankingPenalty = sequenceDistance * SequencePenaltyWeight + lineDistance * LinePenaltyWeight + contextDistance * ContextPenaltyWeight + fingerprintDistance * FingerprintPenaltyWeight;
+            int rankingPenalty = sequenceDistance * SequencePenaltyWeight + lineDistance * LinePenaltyWeight + contextDistance * ContextPenaltyWeight + fingerprintDistance * FingerprintPenaltyWeight + neighborDistance * NeighborPenaltyWeight;
 
             if (current.NodeId.Length > 0 && current.NodeId == previous.NodeId) {
                 reasons.Add("same-stable-node");
@@ -354,6 +356,15 @@ namespace Inscape.Tooling {
             } else if (fingerprintDistance == 1) {
                 reasons.Add("near-keyword-fingerprint");
                 similarity += 0.006;
+                rankingPenalty = Math.Max(0, rankingPenalty - 1);
+            }
+            if (neighborDistance == 0) {
+                reasons.Add("same-neighbor-shape");
+                similarity += 0.01;
+                rankingPenalty = Math.Max(0, rankingPenalty - 2);
+            } else if (neighborDistance == 1) {
+                reasons.Add("near-neighbor-shape");
+                similarity += 0.004;
                 rankingPenalty = Math.Max(0, rankingPenalty - 1);
             }
 
@@ -478,6 +489,31 @@ namespace Inscape.Tooling {
             }
 
             return result.ToArray();
+        }
+
+        static int NeighborDistance(string left, string right) {
+            string leftNeighbor = NeighborShape(NormalizeText(left));
+            string rightNeighbor = NeighborShape(NormalizeText(right));
+            if (leftNeighbor == rightNeighbor) {
+                return 0;
+            }
+
+            int distance = LevenshteinDistance(leftNeighbor, rightNeighbor);
+            return distance <= 2 ? 1 : 2;
+        }
+
+        static string NeighborShape(string value) {
+            string[] tokens = value.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (tokens.Length == 0) {
+                return string.Empty;
+            }
+
+            if (tokens.Length == 1) {
+                return tokens[0];
+            }
+
+            string middle = tokens.Length > 2 ? tokens[1] : string.Empty;
+            return tokens[0] + "|" + middle + "|" + tokens[tokens.Length - 1];
         }
 
         static int CompareCandidateMatch(LocalizationAlignmentCandidateMatch left, LocalizationAlignmentCandidateMatch right) {

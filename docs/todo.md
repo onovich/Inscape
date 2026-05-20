@@ -78,7 +78,7 @@
 	- 本地化候选评分 / 编辑器 review 体验细化。
 	- stable node map / localization review 交互细化。
 	- VSCode 重构守规与节点后自检机制。
-	- G10.4.2 candidate scoring 细化：相似度并列时优先使用 sequence / line ranking penalty 收口误匹配，第二轮已加 context shape 信号，第三轮已加 keyword fingerprint 信号。
+	- G10.4.2 candidate scoring 细化：相似度并列时优先使用 sequence / line ranking penalty 收口误匹配，第二轮已加 context shape 信号，第三轮已加 keyword fingerprint 信号，第四轮已加 neighbor shape 信号。
 - **低一层优先级但可随时切入**：
 	- Tooling 单点收敛。
 	- 体验细化后续项：`Ctrl+Hover` 链接态人体工学微调、Preview review 列表可读性。

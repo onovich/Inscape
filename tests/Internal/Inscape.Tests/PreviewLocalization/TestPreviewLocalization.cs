@@ -520,6 +520,43 @@ Narrator: Review captain records tonight.
             AssertTrue(chosen.Candidates[0].Reason.Contains("same-keyword-fingerprint", StringComparison.Ordinal) || chosen.Candidates[0].Reason.Contains("near-keyword-fingerprint", StringComparison.Ordinal), "Preferred candidate should record keyword fingerprint reason.");
         }
 
+        static void LocalizationAlignmentAuditPrefersNeighborShapeWhenFingerprintIsClose() {
+            StoryGraphCompilerDomain compiler = new StoryGraphCompilerDomain();
+            StoryGraphCompilationResultModel initial = compiler.Compile(new List<DslScriptSourceModel> {
+                new DslScriptSourceModel("D:/LabProjects/Inscape/story/court.inscape", """
+# intro
+Narrator: Return captain ledger tonight.
+Narrator: Return witness ledger tonight.
+"""),
+            }, "D:/LabProjects/Inscape");
+            StoryNodeMapModel nodeMap = StoryNodeMapUpdateDomain.Update(new StoryNodeMapModel(),
+                                                                        initial,
+                                                                        "D:/LabProjects/Inscape",
+                                                                        DateTimeOffset.Parse("2026-05-19T16:00:00Z", System.Globalization.CultureInfo.InvariantCulture));
+            string oldCsv = LocalizationCsvFlowDomain.Extract(initial.Graph);
+            string captainAnchor = AnchorForText(oldCsv, "Return captain ledger tonight.");
+            string witnessAnchor = AnchorForText(oldCsv, "Return witness ledger tonight.");
+            string oldCsvWithTranslations = "anchor,node,kind,speaker,text,translation,sourcePath,line,column\n"
+                + captainAnchor + ",intro,Dialogue,Narrator,Return captain ledger tonight.,Captain ledger,story/court.inscape,2,1\n"
+                + witnessAnchor + ",intro,Dialogue,Narrator,Return witness ledger tonight.,Witness ledger,story/court.inscape,3,1\n";
+
+            StoryGraphCompilationResultModel updated = compiler.Compile(new List<DslScriptSourceModel> {
+                new DslScriptSourceModel("D:/LabProjects/Inscape/story/court.inscape", """
+# intro
+Narrator: Return captain notes tonight.
+"""),
+            }, "D:/LabProjects/Inscape");
+
+            LocalizationAlignmentReportModel report = LocalizationAlignmentAuditDomain.Audit(updated,
+                                                                                             new Inscape.Compiler.Localization.LocalizationCsvReaderDomain().Read(oldCsvWithTranslations),
+                                                                                             nodeMap,
+                                                                                             "D:/LabProjects/Inscape");
+
+            LocalizationAlignmentItemModel chosen = FindFirstAlignmentItem(report, "changed", "conflict");
+            AssertEqual("Captain ledger", chosen.Candidates[0].Translation, "Chosen candidate should prefer the closer neighbor shape when keyword fingerprints are both close.");
+            AssertTrue(chosen.Candidates[0].Reason.Contains("same-neighbor-shape", StringComparison.Ordinal) || chosen.Candidates[0].Reason.Contains("near-neighbor-shape", StringComparison.Ordinal), "Preferred candidate should record neighbor-shape reason.");
+        }
+
         static void CliAuditL10nAlignmentProjectEmitsJson() {
             string directory = Path.Combine(Path.GetTempPath(), "inscape-tests", Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(directory);

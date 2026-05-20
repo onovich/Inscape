@@ -77,6 +77,7 @@ namespace Inscape.Tests {
                 ("localization alignment audit prefers near sequence when similarity ties", LocalizationAlignmentAuditPrefersNearSequenceWhenSimilarityTies),
                 ("localization alignment audit prefers near context shape when sequence ties", LocalizationAlignmentAuditPrefersNearContextShapeWhenSequenceTies),
                 ("localization alignment audit prefers keyword fingerprint when context is close", LocalizationAlignmentAuditPrefersKeywordFingerprintWhenContextIsClose),
+                ("localization alignment audit prefers neighbor shape when fingerprint is close", LocalizationAlignmentAuditPrefersNeighborShapeWhenFingerprintIsClose),
                 ("cli audit-l10n-alignment-project emits json", CliAuditL10nAlignmentProjectEmitsJson),
                 ("cli audit-l10n-alignment-project emits text", CliAuditL10nAlignmentProjectEmitsText),
                 ("vscode localization command exposes review alignment entry", VSCodeLocalizationCommandExposesReviewAlignmentEntry),
