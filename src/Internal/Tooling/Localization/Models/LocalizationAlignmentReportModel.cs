@@ -14,6 +14,8 @@ namespace Inscape.Tooling {
 
         public List<LocalizationAlignmentItemModel> Items { get; set; } = new List<LocalizationAlignmentItemModel>();
 
+        public LocalizationReviewPresenterModel Presenter { get; set; } = new LocalizationReviewPresenterModel();
+
     }
 
     public sealed class LocalizationAlignmentSummaryModel {

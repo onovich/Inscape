@@ -18,7 +18,6 @@ const { HostSchemaCapabilityProvider } = require("./HostSchema/Providers/HostSch
 const { LanguageServerSessionClient } = require("../LanguageServer/Clients/LanguageServerSessionClient");
 const { LocalizationCommand } = require("./Localization/Commands/LocalizationCommand");
 const { LocalizationReviewController } = require("./Localization/Controllers/LocalizationReviewController");
-const { LocalizationReviewPresenterModelBuilder } = require("./Localization/ViewModels/LocalizationReviewPresenterModelBuilder");
 const { LocalizationReviewQuickPickAdapter } = require("./Localization/ViewModels/LocalizationReviewQuickPickAdapter");
 const { ExtensionLifecycleController } = require("./Entries/ExtensionLifecycleController");
 const { ExtensionRegistrationController } = require("./Entries/ExtensionRegistrationController");
@@ -48,7 +47,6 @@ const previewPanels = new Map();
 let previewCommand;
 let localizationCommand;
 let localizationReviewController;
-let localizationReviewPresenterModelBuilder;
 let localizationReviewQuickPickAdapter;
 let storyNodeMapReviewController;
 let editorAuthoringCommand;
@@ -376,16 +374,11 @@ previewCommand = new PreviewCommand({
     normalizePath
 });
 
-localizationReviewPresenterModelBuilder = new LocalizationReviewPresenterModelBuilder({
-    formatDisplayPath: (value) => path.basename(String(value || ""))
-});
-
 localizationReviewQuickPickAdapter = new LocalizationReviewQuickPickAdapter();
 
 localizationReviewController = new LocalizationReviewController({
     vscode,
     fs,
-    localizationReviewPresenterModelBuilder,
     localizationReviewQuickPickAdapter,
     ...locationServices
 });

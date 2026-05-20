@@ -589,7 +589,8 @@ Narrator: Hello there.
         static void VSCodeLocalizationCommandExposesReviewAlignmentEntry() {
             string commandSource = File.ReadAllText(RepositoryFile("src/ExternalSupport/VSCode/Scripts/Localization/Commands/LocalizationCommand.js"));
             string reviewControllerSource = File.ReadAllText(RepositoryFile("src/ExternalSupport/VSCode/Scripts/Localization/Controllers/LocalizationReviewController.js"));
-            string reviewViewModelBuilderSource = File.ReadAllText(RepositoryFile("src/ExternalSupport/VSCode/Scripts/Localization/ViewModels/LocalizationReviewPresenterModelBuilder.js"));
+            string toolingPresenterBuilderSource = File.ReadAllText(RepositoryFile("src/Internal/Tooling/Localization/Domains/LocalizationReviewPresenterModelBuilderDomain.cs"));
+            string quickPickAdapterSource = File.ReadAllText(RepositoryFile("src/ExternalSupport/VSCode/Scripts/Localization/ViewModels/LocalizationReviewQuickPickAdapter.js"));
             string toolsMenuSource = File.ReadAllText(RepositoryFile("src/ExternalSupport/VSCode/Scripts/EditorAuthoring/Commands/EditorAuthoringCommand.js"));
             string nodeMapReviewControllerSource = File.ReadAllText(RepositoryFile("src/ExternalSupport/VSCode/Scripts/EditorAuthoring/Controllers/StoryNodeMapReviewController.js"));
             string extensionSource = File.ReadAllText(RepositoryFile("src/ExternalSupport/VSCode/Scripts/ExtensionManifestEntry.js"));
@@ -603,18 +604,15 @@ Narrator: Hello there.
             AssertTrue(commandSource.Contains("async handleSuccessSelection(selection, options)"), "Localization command should isolate post-success selection dispatch from CLI invocation flow.");
             AssertTrue(commandSource.Contains("Review Items"), "Localization command should offer quick review action for json report.");
             AssertTrue(reviewControllerSource.Contains("async reviewAlignmentReport(reportPath)"), "Localization review controller should expose interactive report review entrypoint.");
-            AssertTrue(reviewControllerSource.Contains("this.localizationReviewPresenterModelBuilder.build({ items }).Items"), "Localization review controller should delegate review item presenter model building.");
-            AssertTrue(reviewControllerSource.Contains("this.localizationReviewPresenterModelBuilder.buildItem(selected.item)"), "Localization review controller should delegate candidate action presenter model building.");
-            AssertTrue(reviewControllerSource.Contains("this.localizationReviewQuickPickAdapter.createQuickPickItems(models)"), "Localization review controller should keep QuickPick adaptation local to VSCode UI.");
+            AssertTrue(reviewControllerSource.Contains("const presenter = this.buildPresenter(report);"), "Localization review controller should consume presenter model from report payload.");
+            AssertTrue(reviewControllerSource.Contains("this.localizationReviewQuickPickAdapter.createQuickPickItems(presenter.Items)"), "Localization review controller should keep QuickPick adaptation local to VSCode UI.");
             AssertTrue(reviewControllerSource.Contains("this.localizationReviewQuickPickAdapter.createQuickPickItems(itemModel.Actions)"), "Localization review controller should adapt presenter actions through the QuickPick adapter.");
-            AssertTrue(reviewViewModelBuilderSource.Contains("buildItem(item)"), "Localization review presenter model builder should expose candidate review actions.");
-            AssertTrue(reviewViewModelBuilderSource.Contains("this.formatDisplayPath(String(sourcePath || \"\"))"), "Localization review presenter model builder should depend on injected display-path formatting rather than Node path utilities.");
-            AssertTrue(reviewViewModelBuilderSource.Contains("actionKey: \"open-current\""), "Localization review presenter model builder should encode action identity without VSCode-facing labels.");
-            AssertTrue(reviewViewModelBuilderSource.Contains("actionKey: \"open-candidate\""), "Localization review presenter model builder should encode candidate action identity without VSCode-facing labels.");
+            AssertTrue(toolingPresenterBuilderSource.Contains("public static LocalizationReviewPresenterModel Build"), "Localization review presenter model builder should now live in Tooling.");
+            AssertTrue(toolingPresenterBuilderSource.Contains("ActionKey = \"open-current\""), "Tooling presenter model builder should encode action identity without VSCode-facing labels.");
+            AssertTrue(toolingPresenterBuilderSource.Contains("ActionKey = \"open-candidate\""), "Tooling presenter model builder should encode candidate action identity without VSCode-facing labels.");
+            AssertTrue(quickPickAdapterSource.Contains("createQuickPickLabel(model)"), "QuickPick adapter should own VSCode-facing action label mapping.");
             AssertTrue(reviewControllerSource.Contains("openLocation(this.locationFromPayload(selected.location))"), "Localization review controller should jump to source location.");
-            AssertTrue(extensionSource.Contains("new LocalizationReviewPresenterModelBuilder({"), "Extension entry should assemble localization review presenter model builder separately from VSCode UI controller.");
             AssertTrue(extensionSource.Contains("new LocalizationReviewQuickPickAdapter()"), "Extension entry should assemble a separate QuickPick adapter for VSCode label mapping.");
-            AssertTrue(extensionSource.Contains("formatDisplayPath: (value) => path.basename(String(value || \"\"))"), "Extension entry should provide VSCode-specific display-path formatting at composition time.");
             AssertTrue(extensionSource.Contains("const locationServices = {"), "Extension entry should centralize repeated location service injection.");
             AssertTrue(extensionSource.Contains("const openFileInEditor = async (filePath) => {"), "Extension entry should centralize repeated file-open glue.");
             AssertTrue(extensionSource.Contains("...locationServices"), "Extension entry should reuse grouped location services across controllers and commands.");

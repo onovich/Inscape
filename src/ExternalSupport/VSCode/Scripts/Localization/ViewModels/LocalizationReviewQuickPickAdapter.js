@@ -8,6 +8,7 @@ class LocalizationReviewQuickPickAdapter {
             description: model.summary,
             detail: model.detail,
             item: model.item,
+            model,
             location: {
                 sourcePath: String(model.sourcePath || ""),
                 line: Math.max(0, Number(model.line || 1) - 1),

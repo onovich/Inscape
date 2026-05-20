@@ -77,6 +77,7 @@ namespace Inscape.Tooling {
             }
 
             FinalizeSummary(report);
+            report.Presenter = LocalizationReviewPresenterModelBuilderDomain.Build(report);
             return report;
         }
 

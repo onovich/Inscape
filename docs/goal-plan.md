@@ -240,7 +240,7 @@
     - `LocalizationReviewController` 目前仍直接依赖 VSCode QuickPick 与 source jump，但其承载的 `report -> item list -> candidate action list -> location` 交互骨架已经是跨宿主可复用概念。
     - `LocalizationAlignmentAuditDomain`、`LocalizationAlignmentReportModel`、candidate scoring、status/review 状态机已经正确位于 `Internal/Tooling`。
   - [ ] G13.7.2 下一步评估从 VSCode 下沉的第一批目标：把 report item / candidate action 的 view-model 组织与排序从 `LocalizationReviewController` 中抽成宿主无关契约，供未来 VSCode、自研编辑器或别的宿主复用。
-  - [~] G13.7.2 下一步评估从 VSCode 下沉的第一批目标：第一刀已把 report item / candidate action 的 view-model 组织从 `LocalizationReviewController` 拆到 `Scripts/Localization/ViewModels/LocalizationReviewPresenterModelBuilder`；当前 controller 只保留 QuickPick 适配与 jump，builder 输出也已从 `label/description/detail` 进一步收窄为更中性的 `title/summary/detail` presenter model，并把显示路径格式化改成组合根注入。最新一刀又把动作文案从 presenter builder 里剥离：builder 现在输出 `actionKey` / `actionIndex` / `actionStatus`，VSCode-facing 标签映射由单独的 `LocalizationReviewQuickPickAdapter` 负责。后续可继续评估是否下沉到 `Tooling` 或转成更明确的 editor-neutral contract。
+  - [x] G13.7.2 下一步评估从 VSCode 下沉的第一批目标：report item / candidate action 的 presenter model 组织已从 VSCode 下沉到 `Internal/Tooling/Localization/LocalizationReviewPresenterModelBuilderDomain`，并挂入 `LocalizationAlignmentReportModel.Presenter`。当前 VSCode 只保留 `Scripts/Localization/Controllers/LocalizationReviewController` 作为宿主交互壳，以及 `Scripts/Localization/ViewModels/LocalizationReviewQuickPickAdapter` 作为 QuickPick 标签映射层。
   - [ ] G13.7.3 若未来编辑器需要按 item / candidate 逐项查询，而不是只消费完整 JSON report，再评估是否把 Localization review 查询能力补进 `LanguageServer`，而不是让各宿主自行读文件和重拼交互模型。
 
 建议拆分顺序：

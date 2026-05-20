@@ -48,7 +48,7 @@
 	- 对 `Localization` 尤其要做这一步：命令入口、QuickPick、文件对话框、打开报告、源跳转留在 VSCode；alignment review contract、candidate scoring、report model / view-model 组织优先评估下沉。
 	- 2026-05-19 首轮 Localization 盘点结果：
 		- `LocalizationCommand` 仍主要是 VSCode 宿主适配，可暂留 VSCode。
-		- `LocalizationReviewController` 里 `report -> item list -> candidate action list -> jump` 的交互骨架已经接近跨宿主契约；第一刀已把 view-model 组织拆到 `Scripts/Localization/ViewModels/LocalizationReviewPresenterModelBuilder`，当前 controller 只保留 QuickPick 适配与 jump，builder 的显示路径格式也已改成组合根注入；最新一刀又把动作文案从 presenter builder 里剥离，改由独立的 `LocalizationReviewQuickPickAdapter` 做 VSCode 标签映射。下一步再评估是否继续下沉到 `Tooling` 或更明确的 editor-neutral contract。
+		- `LocalizationReviewController` 里 `report -> item list -> candidate action list -> jump` 的交互骨架已经接近跨宿主契约；当前 presenter model 组织已下沉到 `Internal/Tooling/Localization/LocalizationReviewPresenterModelBuilderDomain` 并挂入 `LocalizationAlignmentReportModel.Presenter`，VSCode 侧仅保留 `Scripts/Localization/Controllers/LocalizationReviewController` 作为宿主交互壳，以及 `Scripts/Localization/ViewModels/LocalizationReviewQuickPickAdapter` 作为 QuickPick 标签映射层。
 		- `LocalizationAlignmentAuditDomain`、`LocalizationAlignmentReportModel`、candidate scoring 与状态机已在 `Internal/Tooling`，这条边界目前是对的。
 	- 新增：把 VSCode 的 `Resources / Scripts` 终局结构重新澄清并列入迁移计划；当前先以 `DevScripts` 作为过渡脚本桶，避免继续误用 `Scripts`；若确认采用这对目录，就不能让业务源码目录继续与最终 `Scripts` 平级。
 	- 新增：清点并迁移当前命名例外文件，必要时发明符合既有风格的新名字，并把命名法补进规范，而不是长期保留历史名。
