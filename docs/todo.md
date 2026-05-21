@@ -57,7 +57,7 @@
 		- `LocalizationCommand` 原先同时承担 export / update / audit 命令入口、报告读取、Quick Pick 渲染、candidate action 二级交互、location jump 和 CLI invocation 编排；其中 review UI 已拆到 `LocalizationReviewController`，success action 分发也已收成 `handleSuccessSelection`，当前剩余主要还是命令入口自身的参数采集与 CLI 调度职责。
 		- `extension.js` 仍保持薄入口总体方向；`openLocation` / `locationFromPayload` 这类重复注入已开始收成共享 `locationServices`，文件打开 glue 也已收成 `openFileInEditor`。下一步要继续防止组合根参数表重新横向膨胀。
 		- `Review Items` / report review 相关 UI 现在分别散在 `EditorAuthoringCommand` 与 `LocalizationCommand`，存在重复的 report->pick->action->jump 模式，后续应评估提炼为更窄的 review presenter / controller，而不是继续在 command 中平铺复制。
-	- 已推进：第一轮命名例外已开始收口，`Scripts/ExtensionManifestEntry.js`、`PreviewHtmlDocumentTemplate.html`、`PreviewNavigationContractCheck.js`、`PreviewSourceSyncContractCheck.js` 已替换掉首批历史名；当前 `Scripts/` 下也已承接 `Entries/`、`DslScript/`、`Localization/`、`Preview/`、`EditorAuthoring/`、`HostSchema/`、`HostBinding/`。下一步继续清点剩余历史名并做迁移后的全局清扫。
+	- 已推进：第一轮命名例外已开始收口，`Scripts/ExtensionManifestEntry.js`、`PreviewHtmlDocumentTemplate.html`、`PreviewNavigationContractCheck.js`、`PreviewSourceSyncContractCheck.js` 已替换掉首批历史名；当前 `Scripts/` 下也已承接 `Entries/`、`DslScript/`、`Localization/`、`Preview/`、`EditorAuthoring/`、`HostSchema/`、`HostBinding/`；`AGENTS.md`、handoff、README 和回归流程里的当前验证入口也已同步到新路径。下一步继续清点剩余历史名并做迁移后的全局清扫。
 4. **最后再挑 Tooling 单点收敛。**
 	- 保持原则：继续落到 `DslScriptSources`、`ToolConfig`、`Preview`、`Localization`、`HostSchema`、`HostBinding` 等窄模块；不要新建泛化 `ProjectService`。
 	- 只挑一个仍重复的跨 Cli / VSCode / LanguageServer 流程做小闭环，不把“顺手统一”混进主线节点。

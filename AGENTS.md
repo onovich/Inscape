@@ -17,7 +17,8 @@ Core rules:
 ```powershell
 dotnet build Inscape.slnx --no-restore
 dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build
-node --check src\Internal\VSCode\vscode-inscape\extension.js
+node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js
+npm --prefix src\ExternalSupport\VSCode run check:structure
 ```
 
 On this Windows workspace, use:

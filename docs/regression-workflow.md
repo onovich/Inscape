@@ -131,8 +131,8 @@ node -e "JSON.parse(require('fs').readFileSync('src/ExternalSupport/VSCode/packa
 如果改了具体 VSCode 模块，额外检查对应文件：
 
 ```powershell
-node --check src\ExternalSupport\VSCode\WorkspaceIndex\HostBindingProvider.js
-node --check src\ExternalSupport\VSCode\WorkspaceIndex\DslScriptSpeakerProvider.js
+node --check src\ExternalSupport\VSCode\Scripts\HostBinding\Providers\HostBindingProvider.js
+node --check src\ExternalSupport\VSCode\Scripts\DslScript\Providers\DslScriptSpeakerProvider.js
 ```
 
 按实际改动替换文件路径。
