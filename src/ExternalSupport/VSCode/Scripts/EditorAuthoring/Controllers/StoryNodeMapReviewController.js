@@ -43,6 +43,11 @@ class StoryNodeMapReviewController {
             return;
         }
 
+        if (typeof action.previewCandidateIndex === "number" && nodeMapPath) {
+            await this.previewCandidateStableId(nodeMapPath, selected.item, selected.item.candidates[action.previewCandidateIndex]);
+            return;
+        }
+
         if (action.revertNodeMap && nodeMapPath) {
             await this.revertLastAppliedStableId(nodeMapPath);
             return;
@@ -126,6 +131,13 @@ class StoryNodeMapReviewController {
 
                 if (item.kind === "manual-review" && nodeMapPath && this.fs.existsSync(nodeMapPath)) {
                     actions.push({
+                        label: "Preview candidate " + String(i + 1) + " stable id",
+                        description: String(candidate.stableId || ""),
+                        detail: "Preview how the node map would change before applying this candidate stable id.",
+                        previewCandidateIndex: i
+                    });
+
+                    actions.push({
                         label: "Apply candidate " + String(i + 1) + " stable id",
                         description: String(candidate.stableId || ""),
                         detail: "Reuse the candidate stable id and remove its missing/manual-review duplicate from the node map.",
@@ -141,7 +153,29 @@ class StoryNodeMapReviewController {
     async applyCandidateStableId(nodeMapPath, item, candidate) {
         const text = await this.fs.promises.readFile(nodeMapPath, "utf8");
         await this.fs.promises.writeFile(this.reviewBackupPath(nodeMapPath), text, "utf8");
-        const nodeMap = JSON.parse(text);
+        const nodeMap = this.applyCandidateStableIdToNodeMap(JSON.parse(text), item, candidate);
+        await this.fs.promises.writeFile(nodeMapPath, JSON.stringify(nodeMap, null, 2), "utf8");
+        const selection = await this.vscode.window.showInformationMessage("Applied candidate stable id to node map: " + candidate.stableId, "Open Node Map", "Revert Last Apply");
+        if (selection === "Open Node Map") {
+            await this.openFile(nodeMapPath);
+        }
+        if (selection === "Revert Last Apply") {
+            await this.revertLastAppliedStableId(nodeMapPath);
+        }
+    }
+
+    async previewCandidateStableId(nodeMapPath, item, candidate) {
+        const text = await this.fs.promises.readFile(nodeMapPath, "utf8");
+        const nodeMap = this.applyCandidateStableIdToNodeMap(JSON.parse(text), item, candidate);
+        const previewPath = nodeMapPath + ".review-preview.json";
+        await this.fs.promises.writeFile(previewPath, JSON.stringify(nodeMap, null, 2), "utf8");
+        const selection = await this.vscode.window.showInformationMessage("Wrote stable node map dry-run preview for candidate: " + candidate.stableId, "Open Preview");
+        if (selection === "Open Preview") {
+            await this.openFile(previewPath);
+        }
+    }
+
+    applyCandidateStableIdToNodeMap(nodeMap, item, candidate) {
         const nodes = Array.isArray(nodeMap && nodeMap.nodes) ? nodeMap.nodes : [];
         const currentIndex = nodes.findIndex((node) => node && node.id === item.stableId && node.title === item.title);
         const candidateIndex = nodes.findIndex((node) => node && node.id === candidate.stableId);
@@ -166,14 +200,7 @@ class StoryNodeMapReviewController {
         }
 
         nodeMap.nodes = nodes;
-        await this.fs.promises.writeFile(nodeMapPath, JSON.stringify(nodeMap, null, 2), "utf8");
-        const selection = await this.vscode.window.showInformationMessage("Applied candidate stable id to node map: " + candidate.stableId, "Open Node Map", "Revert Last Apply");
-        if (selection === "Open Node Map") {
-            await this.openFile(nodeMapPath);
-        }
-        if (selection === "Revert Last Apply") {
-            await this.revertLastAppliedStableId(nodeMapPath);
-        }
+        return nodeMap;
     }
 
     async revertLastAppliedStableId(nodeMapPath) {
