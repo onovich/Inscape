@@ -3,19 +3,24 @@
 class LocalizationReviewQuickPickAdapter {
 
     createQuickPickItem(model) {
-        return {
+        const item = {
             label: this.createQuickPickLabel(model),
             description: model.summary,
             detail: model.detail,
             item: model.item,
-            model,
-            location: {
+            model
+        };
+
+        if (model.sourcePath) {
+            item.location = {
                 sourcePath: String(model.sourcePath || ""),
                 line: Math.max(0, Number(model.line || 1) - 1),
                 character: Math.max(0, Number(model.column || 1) - 1),
                 length: Number(model.length || 0)
-            }
-        };
+            };
+        }
+
+        return item;
     }
 
     createQuickPickItems(models) {
@@ -37,6 +42,10 @@ class LocalizationReviewQuickPickAdapter {
 
         if (model.actionKey == "open-candidate") {
             return "Candidate " + String((model.actionIndex ?? 0) + 1) + ": " + String(model.actionStatus || "candidate");
+        }
+
+        if (model.actionKey == "show-candidate-diff") {
+            return "Compare candidate " + String((model.actionIndex ?? 0) + 1);
         }
 
         return "Review item";

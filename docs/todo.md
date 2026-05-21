@@ -18,7 +18,7 @@
 - 2026-05-19 新增 line identity 设计原则：Inscape 行级 stable identity / sidecar 方案优先参考 Yarn Spinner 的 line id 思路；如遇到拆行、并行、刷新 diff、debug 展示等悬而未决点，先参考 Yarn Spinner 的显式 identity + 提取/同步工作流，而不是回退到更重的 heuristic 猜测。
 - 2026-05-19 新增 line sidecar 主线：当前已起第一版 `LocalizationLineMapModel` / `LocalizationLineMapRefreshDomain`，并接上 `refresh-l10n-line-map-project` 命令入口与 `debug` 模式配置；hover 现在也已接入 `LocalizationLineMapDebugController`，能显示真实 `blockId / lineId / lineNumber`。第一版刷新命令还补了 `Show Summary`，能直接提示 changed / added / removed 统计，并已新增 `Show Details` 查看 block/change 摘要且支持跳到对应 source 行；规则回归已覆盖中间插删行、拆行保留首行 id、并行保留首行 id、重复句邻接修改、复杂替换按 remove/add 处理，同时已补 `localization.lineMap` 配置路径解析、writer `.backup` 快照、`Restore Backup` 恢复入口与 `LastSourceFingerprint` 漂移字段。drift 检测现在也已进入 refresh result/status 与 VSCode 显式决策流（Continue / Show Details / Restore Backup / Cancel），并附带操作建议；CLI `--report` 也已输出完整 refresh result，方便本地化模块后续直接消费。下一步重点回到本地化模块消费整合。
 - 2026-05-19 Goal 15 第一版已完成：`audit-l10n-alignment-project` 现在会读取 `localization.lineMap` / 默认 `inscape.line-map.json`，在 sidecar 可用且未 drift 时把 `lineId` / line fingerprint / block-local line order 作为候选评分信号，并在 JSON / text report 中输出 line identity 状态与候选摘要；缺失 sidecar 保持旧行为，legacy / drift sidecar 只报告状态，不参与评分。
-- 当前最值得继续推进的主线已经回到 Goal 10：G10.3 / G10.4、最小 review 输出闭环和 json report source jump 都已落地；下一步可继续细化本地化候选评分和编辑器 review 体验。
+- 当前最值得继续推进的主线已经回到 Goal 10：G10.3 / G10.4、最小 review 输出闭环和 json report source jump 都已落地；最新一刀已给 localization review 补 `show-candidate-diff` 二级动作，由 Tooling presenter 生成 current / previous / translation / reason 摘要，VSCode 只展示宿主交互。下一步可继续细化本地化候选评分和编辑器 review 体验。
 - 低优先级体验尾项：编辑区选项文字 `Ctrl+Hover` 的可点击下划线显示仍不稳定，但 `Ctrl+Click` 行为符合预期；`selection` 模式只驱动“已打开预览”的轻量跟随，不主动弹出新预览面板。
 
 ## 接力优先队列
@@ -36,7 +36,7 @@
 	- 已完成：显式 alignment / audit report，保护旧译文，标记 `kept` / `new` / `changed` / `removed` / `conflict` / `stale`。
 	- 下一步建议顺序：
 		- 细化候选评分：sequence / context / line anchor 权重继续校准，减少“该 changed 还是 conflict”的灰区。
-		- 已推进：Quick Pick 已补主项摘要与 candidate 二级跳转；下一步可继续评估是否需要 candidate diff / secondary action。
+		- 已推进：Quick Pick 已补主项摘要、candidate 二级跳转，以及 presenter 驱动的 candidate diff / secondary action；下一步可继续评估是否需要更强的批量审查或逐项查询能力。
 		- 已完成 Goal 15 第一版：line sidecar refresh result / status / line id 信息已接入本地化 alignment audit，后续只需继续评估更强的 line identity 迁移契约或 report 体验。
 		- 再评估是否给 `update-l10n-project` 增加可选 `--alignment-report`，但默认行为仍不应自动继承相似旧译文。
 	- 注意：这条实际上依赖 Goal 10 的 stable node id 维护进一步落地，所以优先级排在 Goal 10 后半段，而不是独立抢跑。

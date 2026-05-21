@@ -369,6 +369,13 @@ Narrator: Shared line C.
             AssertEqual("Changed candidate translation", FindAlignmentItem(report, "changed").Candidates[0].Translation, "Changed item should expose candidate translation.");
             AssertTrue(FindAlignmentItem(report, "changed").Candidates[0].Reason.Contains("same-stable-node", StringComparison.Ordinal), "Changed candidate should explain why it was suggested.");
             AssertEqual(2, FindAlignmentItem(report, "conflict").Candidates.Count, "Conflict item should expose multiple candidates.");
+            LocalizationReviewActionPresenterModel diffAction = report.Presenter.Items
+                .First(item => item.Item.Status == "changed")
+                .Actions
+                .First(action => action.ActionKey == "show-candidate-diff");
+            AssertTrue(diffAction.Detail.Contains("current: I waited here a while longer.", StringComparison.Ordinal), "Review presenter should expose current text in candidate diff action.");
+            AssertTrue(diffAction.Detail.Contains("previous: I waited here a while.", StringComparison.Ordinal), "Review presenter should expose previous candidate text in candidate diff action.");
+            AssertTrue(diffAction.Detail.Contains("translation: Changed candidate translation", StringComparison.Ordinal), "Review presenter should expose candidate translation in diff action.");
         }
 
         static void LocalizationAlignmentAuditKeepsLowConfidenceSimilarTextAsConflict() {
@@ -1099,10 +1106,13 @@ Narrator: Beta.
             AssertTrue(reviewControllerSource.Contains("const presenter = this.buildPresenter(report);"), "Localization review controller should consume presenter model from report payload.");
             AssertTrue(reviewControllerSource.Contains("this.localizationReviewQuickPickAdapter.createQuickPickItems(presenter.Items)"), "Localization review controller should keep QuickPick adaptation local to VSCode UI.");
             AssertTrue(reviewControllerSource.Contains("this.localizationReviewQuickPickAdapter.createQuickPickItems(itemModel.Actions)"), "Localization review controller should adapt presenter actions through the QuickPick adapter.");
+            AssertTrue(reviewControllerSource.Contains("show-candidate-diff"), "Localization review controller should expose presenter-provided candidate diff actions.");
             AssertTrue(toolingPresenterBuilderSource.Contains("public static LocalizationReviewPresenterModel Build"), "Localization review presenter model builder should now live in Tooling.");
             AssertTrue(toolingPresenterBuilderSource.Contains("ActionKey = \"open-current\""), "Tooling presenter model builder should encode action identity without VSCode-facing labels.");
             AssertTrue(toolingPresenterBuilderSource.Contains("ActionKey = \"open-candidate\""), "Tooling presenter model builder should encode candidate action identity without VSCode-facing labels.");
+            AssertTrue(toolingPresenterBuilderSource.Contains("ActionKey = \"show-candidate-diff\""), "Tooling presenter model builder should encode candidate diff action identity without VSCode-facing labels.");
             AssertTrue(quickPickAdapterSource.Contains("createQuickPickLabel(model)"), "QuickPick adapter should own VSCode-facing action label mapping.");
+            AssertTrue(quickPickAdapterSource.Contains("Compare candidate "), "QuickPick adapter should own VSCode-facing candidate diff labels.");
             AssertTrue(reviewControllerSource.Contains("openLocation(this.locationFromPayload(selected.location))"), "Localization review controller should jump to source location.");
             AssertTrue(extensionSource.Contains("new LocalizationReviewQuickPickAdapter()"), "Extension entry should assemble a separate QuickPick adapter for VSCode label mapping.");
             AssertTrue(extensionSource.Contains("const locationServices = {"), "Extension entry should centralize repeated location service injection.");

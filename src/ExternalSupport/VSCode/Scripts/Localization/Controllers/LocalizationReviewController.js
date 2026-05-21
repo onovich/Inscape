@@ -38,6 +38,11 @@ class LocalizationReviewController {
                 return;
             }
 
+            if (reviewAction.model && reviewAction.model.actionKey === "show-candidate-diff") {
+                await this.vscode.window.showInformationMessage(String(reviewAction.model.detail || reviewAction.model.summary || "No candidate diff available."));
+                return;
+            }
+
             if (reviewAction.location) {
                 await this.openLocation(this.locationFromPayload(reviewAction.location));
                 return;

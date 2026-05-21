@@ -56,6 +56,13 @@ namespace Inscape.Tooling {
                     Column = candidateColumn,
                     Length = candidate.Text.Length,
                 });
+                model.Actions.Add(new LocalizationReviewActionPresenterModel {
+                    ActionKey = "show-candidate-diff",
+                    ActionIndex = i,
+                    ActionStatus = BuildCandidateStatus(candidate),
+                    Summary = BuildCandidateDiffSummary(item, candidate),
+                    Detail = BuildCandidateDiffDetail(item, candidate),
+                });
             }
 
             return model;
@@ -99,6 +106,23 @@ namespace Inscape.Tooling {
             return string.IsNullOrWhiteSpace(candidate.Reason)
                 ? similarity
                 : similarity + " / " + candidate.Reason;
+        }
+
+        static string BuildCandidateDiffSummary(LocalizationAlignmentItemModel item, LocalizationAlignmentCandidateModel candidate) {
+            return "current: " + item.Text + " -> previous: " + candidate.Text;
+        }
+
+        static string BuildCandidateDiffDetail(LocalizationAlignmentItemModel item, LocalizationAlignmentCandidateModel candidate) {
+            string translation = string.IsNullOrWhiteSpace(candidate.Translation)
+                ? "translation: (empty)"
+                : "translation: " + candidate.Translation;
+            string reason = string.IsNullOrWhiteSpace(candidate.Reason)
+                ? "reason: (none)"
+                : "reason: " + candidate.Reason;
+            return "current: " + item.Text
+                + " | previous: " + candidate.Text
+                + " | " + translation
+                + " | " + reason;
         }
 
         static string BuildSourceSummary(string sourcePath, int line, int column, Func<string, string> formatDisplayPath) {
