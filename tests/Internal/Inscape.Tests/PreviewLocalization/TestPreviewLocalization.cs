@@ -567,6 +567,57 @@ Narrator: Return captain notes tonight.
             AssertTrue(chosen.Candidates[0].Reason.Contains("same-neighbor-shape", StringComparison.Ordinal) || chosen.Candidates[0].Reason.Contains("near-neighbor-shape", StringComparison.Ordinal), "Preferred candidate should record neighbor-shape reason.");
         }
 
+        static void LocalizationAlignmentAuditPrefersMatchingLocalContext() {
+            StoryGraphCompilerDomain compiler = new StoryGraphCompilerDomain();
+            StoryGraphCompilationResultModel initial = compiler.Compile(new List<DslScriptSourceModel> {
+                new DslScriptSourceModel("D:/LabProjects/Inscape/story/court.inscape", """
+# intro
+Narrator: Court context begins.
+Narrator: Shared branch line.
+Narrator: Court context ends.
+Narrator: Archive context begins.
+Narrator: Shared branch line.
+Narrator: Archive context ends.
+"""),
+            }, "D:/LabProjects/Inscape");
+            StoryNodeMapModel nodeMap = StoryNodeMapUpdateDomain.Update(new StoryNodeMapModel(),
+                                                                        initial,
+                                                                        "D:/LabProjects/Inscape",
+                                                                        DateTimeOffset.Parse("2026-05-19T16:30:00Z", System.Globalization.CultureInfo.InvariantCulture));
+            string oldCsv = LocalizationCsvFlowDomain.Extract(initial.Graph);
+            string courtBeginAnchor = AnchorForText(oldCsv, "Court context begins.");
+            string courtAnchor = AnchorForText(oldCsv, "Shared branch line.");
+            string courtEndAnchor = AnchorForText(oldCsv, "Court context ends.");
+            string archiveBeginAnchor = AnchorForText(oldCsv, "Archive context begins.");
+            string archiveAnchor = LastAnchorForText(oldCsv, "Shared branch line.");
+            string archiveEndAnchor = AnchorForText(oldCsv, "Archive context ends.");
+            string oldCsvWithTranslations = "anchor,node,kind,speaker,text,translation,sourcePath,line,column\n"
+                + courtBeginAnchor + ",intro,Dialogue,Narrator,Court context begins.,Court begin translation,story/court.inscape,2,1\n"
+                + courtAnchor + ",intro,Dialogue,Narrator,Shared branch line.,Court translation,story/court.inscape,3,1\n"
+                + courtEndAnchor + ",intro,Dialogue,Narrator,Court context ends.,Court end translation,story/court.inscape,4,1\n"
+                + archiveBeginAnchor + ",intro,Dialogue,Narrator,Archive context begins.,Archive begin translation,story/court.inscape,5,1\n"
+                + archiveAnchor + ",intro,Dialogue,Narrator,Shared branch line.,Archive translation,story/court.inscape,6,1\n"
+                + archiveEndAnchor + ",intro,Dialogue,Narrator,Archive context ends.,Archive end translation,story/court.inscape,7,1\n";
+
+            StoryGraphCompilationResultModel updated = compiler.Compile(new List<DslScriptSourceModel> {
+                new DslScriptSourceModel("D:/LabProjects/Inscape/story/court.inscape", """
+# intro
+Narrator: Archive context begins.
+Narrator: Shared branch line extended.
+Narrator: Archive context ends.
+"""),
+            }, "D:/LabProjects/Inscape");
+
+            LocalizationAlignmentReportModel report = LocalizationAlignmentAuditDomain.Audit(updated,
+                                                                                             new Inscape.Compiler.Localization.LocalizationCsvReaderDomain().Read(oldCsvWithTranslations),
+                                                                                             nodeMap,
+                                                                                             "D:/LabProjects/Inscape");
+
+            LocalizationAlignmentItemModel chosen = FindFirstAlignmentItem(report, "changed", "conflict");
+            AssertEqual("Archive translation", chosen.Candidates[0].Translation, "Chosen candidate should prefer the matching surrounding localization context.");
+            AssertTrue(chosen.Candidates[0].Reason.Contains("same-local-context", StringComparison.Ordinal), "Preferred candidate should record local context reason.");
+        }
+
         static void LocalizationAlignmentAuditUsesLineSidecarIdentity() {
             StoryGraphCompilerDomain compiler = new StoryGraphCompilerDomain();
             StoryGraphCompilationResultModel initial = compiler.Compile(new List<DslScriptSourceModel> {
