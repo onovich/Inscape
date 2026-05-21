@@ -43,6 +43,7 @@
 3. **把 VSCode 重构守规重新列回近期计划。**
 	- 先做一次最近新增代码巡检：重点看 `EditorAuthoring`、`Localization`、`Preview` 近期节点是否又引入了不够稳的 glue、跨业务拼装、命名倒退或入口增厚。
 	- 后续每个 VSCode 功能节点完成后，立即补一轮命名 / 分层 / 目录 / 入口厚度自检；不能等到堆出下一轮大清理。
+	- 已推进：VSCode 包新增 `npm --prefix src/ExternalSupport/VSCode run check:structure`，自动检查 `Scripts` 顶层业务目录、Role 目录、文件 / class 角色后缀和弱命名，作为节点后结构自检的可执行入口。
 	- 如果发现某段 VSCode 逻辑本质上是可复用语义，而不是平台适配，应优先评估下沉到 `Tooling` 或 `LanguageServer`。
 	- 对 `Localization` 尤其要做这一步：命令入口、QuickPick、文件对话框、打开报告、源跳转留在 VSCode；alignment review contract、candidate scoring、report model / view-model 组织优先评估下沉。
 	- 2026-05-19 首轮 Localization 盘点结果：
@@ -71,6 +72,7 @@
 	- 本地化候选评分 / 编辑器 review 体验细化。
 	- 标题重命名人工确认流收尾。
 	- VSCode 最近增量代码的命名 / 分层巡检与收口。
+	- VSCode 结构自检脚本的规则继续按新增风险扩展。
 	- VSCode `Resources / Scripts` 终局结构与命名例外收口。
 	- Localization 宿主适配壳与宿主无关契约的进一步拆层。
 	- Localization review view-model / query contract 下沉评估。

@@ -14,6 +14,7 @@
     "check:diagnostics-fallback": "node DevScripts/DslScriptDiagnosticsFallbackContractCheck.js",
     "check:preview-navigation": "node DevScripts/PreviewNavigationContractCheck.js",
     "check:preview-source-sync": "node DevScripts/PreviewSourceSyncContractCheck.js",
+    "check:structure": "node DevScripts/VSCodeStructureContractCheck.js",
     "smoke:preview-source-sync": "powershell -NoProfile -ExecutionPolicy Bypass -File DevScripts/StartPreviewSourceSyncSmoke.ps1",
     "package:vsix": "vsce package --out inscape-vscode.vsix",
     "install:vsix": "powershell -NoProfile -ExecutionPolicy Bypass -File DevScripts/RebuildAndInstallVsix.ps1",

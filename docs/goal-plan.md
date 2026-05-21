@@ -231,7 +231,7 @@
 - [~] G13.1 做一次 VSCode 现状命名 / 分层巡检：首轮已确认 `EditorAuthoringCommand` 与 `LocalizationCommand` 最近都再次吸收了 report review UI、二级 Quick Pick、source jump 和 CLI invocation 编排，单文件角色继续膨胀；`extension.js` 也出现重复注入 `openLocation` / `locationFromPayload` 的装配重复。下一步要把这些问题拆成可执行收口节点，而不是只停留在审计结论。
 - [ ] G13.2 把 VSCode 重构收口重新列回近期主 TODO：后续每推进一个 VSCode 功能节点，都要同步评估是否引入新的 glue 膨胀、跨业务拼装或命名倒退。
 - [ ] G13.3 固化“节点完成后立即自检”的工作流：至少检查命名、目录、入口厚度、跨层依赖、是否把可复用语义错误留在 VSCode 而非下沉 Tooling / LanguageServer。
-- [ ] G13.4 为 VSCode 包补更明确的结构自检脚本或 checklist，避免只靠人工记忆判断是否回退到 `Helper` / `Support` / 泛 `Workspace*` / 入口堆逻辑等旧问题。
+- [x] G13.4 为 VSCode 包补更明确的结构自检脚本或 checklist：已新增 `npm --prefix src/ExternalSupport/VSCode run check:structure`，检查 `Scripts` 顶层业务目录、Role 目录、文件 / class 角色后缀，以及 `Helper` / `Support` / `Manager` / `Utils` 等弱命名，避免只靠人工记忆判断结构回退。
 - [x] G13.5 重审 VSCode `Resources / Scripts` 终局结构：已先把当前 package-local 开发脚本桶从 `Scripts` 改名为过渡性 `DevScripts`，避免与最终 `Scripts` 代码侧父层语义冲突；当前 `Scripts/` 下已承接 `ExtensionManifestEntry.js`、`Entries/`、`DslScript/`、`Localization/`、`Preview/`、`EditorAuthoring/`、`HostSchema/`、`HostBinding/`，manifest、README、验证命令和主要测试路径已同步更新。
 - [~] G13.6 清理 VSCode 当前命名例外：第一轮已完成 `extension.js` -> `Scripts/ExtensionManifestEntry.js`、`preview-template.html` -> `PreviewHtmlDocumentTemplate.html`、`assert-preview-navigation-contract.js` -> `PreviewNavigationContractCheck.js`、`check-preview-source-sync-modes.js` -> `PreviewSourceSyncContractCheck.js`，并把新命名法补进规范；下一步继续清点剩余历史名并配合 G13.5 目录重排统一收口。
 - [ ] G13.7 明确 Localization 分层终局：`VSCode/Localization` 只保留宿主适配壳；凡是别的宿主或自研编辑器也会需要的 review contract、candidate scoring、report view-model 组织，应优先评估下沉到 `Tooling` 或 `LanguageServer`。
