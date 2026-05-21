@@ -1204,6 +1204,8 @@ Narrator: Beta.
             string debugSource = File.ReadAllText(RepositoryFile("src/ExternalSupport/VSCode/Scripts/Localization/Controllers/LocalizationLineMapDebugController.js"));
             AssertTrue(debugSource.Contains("blockId:"), "Debug hover should expose blockId metadata from line sidecar.");
             AssertTrue(debugSource.Contains("lineId:"), "Debug hover should expose lineId metadata from line sidecar.");
+            AssertTrue(debugSource.Contains("kind:"), "Debug hover should expose kind metadata from line sidecar.");
+            AssertTrue(debugSource.Contains("speaker:"), "Debug hover should expose speaker metadata from line sidecar when present.");
             AssertTrue(hoverSource.Contains("localizationLineMapDebugController.tryCreateHover(document, position)"), "DslScript hover provider should delegate debug hover to line sidecar controller.");
         }
 
