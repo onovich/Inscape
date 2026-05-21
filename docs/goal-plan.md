@@ -222,15 +222,15 @@
 
 ## Goal 13：VSCode 重构守规与节点后自检
 
-状态：待启动。近期 VSCode 代码虽然功能持续推进，但部分新实现已经再次逼近“先能跑、后补结构”的滑坡；需要把重构收口和节点后自检重新提到显式计划层，而不是只留在规范文档里。
+状态：进行中。近期 VSCode 代码虽然功能持续推进，但部分新实现已经再次逼近“先能跑、后补结构”的滑坡；当前已把重构收口和节点后自检重新提到显式计划层，并补了第一版可执行结构检查。
 
 目标：确保 `src/ExternalSupport/VSCode` 后续新增功能不再持续侵蚀目录主语、角色边界、命名规则和入口薄层约束；每个功能节点完成后都必须做一轮最小结构自检。
 
 小节点：
 
 - [~] G13.1 做一次 VSCode 现状命名 / 分层巡检：首轮已确认 `EditorAuthoringCommand` 与 `LocalizationCommand` 最近都再次吸收了 report review UI、二级 Quick Pick、source jump 和 CLI invocation 编排，单文件角色继续膨胀；`extension.js` 也出现重复注入 `openLocation` / `locationFromPayload` 的装配重复。下一步要把这些问题拆成可执行收口节点，而不是只停留在审计结论。
-- [ ] G13.2 把 VSCode 重构收口重新列回近期主 TODO：后续每推进一个 VSCode 功能节点，都要同步评估是否引入新的 glue 膨胀、跨业务拼装或命名倒退。
-- [ ] G13.3 固化“节点完成后立即自检”的工作流：至少检查命名、目录、入口厚度、跨层依赖、是否把可复用语义错误留在 VSCode 而非下沉 Tooling / LanguageServer。
+- [x] G13.2 把 VSCode 重构收口重新列回近期主 TODO：当前 `docs/todo.md` 已把 VSCode 重构守规列为近期队列，并明确每个 VSCode 功能节点后都要同步评估 glue 膨胀、跨业务拼装或命名倒退。
+- [x] G13.3 固化“节点完成后立即自检”的工作流：`docs/regression-workflow.md` 已记录固定流程，要求检查命名、目录、入口厚度、跨层依赖、是否把可复用语义留在 VSCode；G13.4 又补了可执行 `check:structure` 入口。
 - [x] G13.4 为 VSCode 包补更明确的结构自检脚本或 checklist：已新增 `npm --prefix src/ExternalSupport/VSCode run check:structure`，检查 `Scripts` 顶层业务目录、Role 目录、文件 / class 角色后缀，以及 `Helper` / `Support` / `Manager` / `Utils` 等弱命名，避免只靠人工记忆判断结构回退。
 - [x] G13.5 重审 VSCode `Resources / Scripts` 终局结构：已先把当前 package-local 开发脚本桶从 `Scripts` 改名为过渡性 `DevScripts`，避免与最终 `Scripts` 代码侧父层语义冲突；当前 `Scripts/` 下已承接 `ExtensionManifestEntry.js`、`Entries/`、`DslScript/`、`Localization/`、`Preview/`、`EditorAuthoring/`、`HostSchema/`、`HostBinding/`，manifest、README、验证命令和主要测试路径已同步更新。
 - [~] G13.6 清理 VSCode 当前命名例外：第一轮已完成 `extension.js` -> `Scripts/ExtensionManifestEntry.js`、`preview-template.html` -> `PreviewHtmlDocumentTemplate.html`、`assert-preview-navigation-contract.js` -> `PreviewNavigationContractCheck.js`、`check-preview-source-sync-modes.js` -> `PreviewSourceSyncContractCheck.js`，并把新命名法补进规范；下一步继续清点剩余历史名并配合 G13.5 目录重排统一收口。
