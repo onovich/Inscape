@@ -80,6 +80,15 @@ namespace Inscape.Tests {
                 ("localization alignment audit prefers neighbor shape when fingerprint is close", LocalizationAlignmentAuditPrefersNeighborShapeWhenFingerprintIsClose),
                 ("cli audit-l10n-alignment-project emits json", CliAuditL10nAlignmentProjectEmitsJson),
                 ("cli audit-l10n-alignment-project emits text", CliAuditL10nAlignmentProjectEmitsText),
+                ("localization line map refresh tracks changed added and removed lines", LocalizationLineMapRefreshTracksChangedAddedAndRemovedLines),
+                ("tool config resolves localization line map path", ToolConfigResolvesLocalizationLineMapPath),
+                ("localization line map writer creates backup and restores it", LocalizationLineMapWriterCreatesBackupAndRestoresIt),
+                ("localization line map refresh treats inserted middle line as added", LocalizationLineMapRefreshTreatsInsertedMiddleLineAsAdded),
+                ("localization line map refresh treats deleted middle line as removed", LocalizationLineMapRefreshTreatsDeletedMiddleLineAsRemoved),
+                ("localization line map refresh keeps first line id when splitting line", LocalizationLineMapRefreshKeepsFirstLineIdWhenSplittingLine),
+                ("localization line map refresh keeps first line id when merging lines", LocalizationLineMapRefreshKeepsFirstLineIdWhenMergingLines),
+                ("localization line map refresh keeps stable ids for duplicate neighbor lines", LocalizationLineMapRefreshKeepsStableIdsForDuplicateNeighborLines),
+                ("localization line map refresh treats complex replacement as add and remove", LocalizationLineMapRefreshTreatsComplexReplacementAsAddAndRemove),
                 ("vscode localization command exposes review alignment entry", VSCodeLocalizationCommandExposesReviewAlignmentEntry),
             };
 

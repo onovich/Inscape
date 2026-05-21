@@ -8,6 +8,8 @@ namespace Inscape.Tooling {
 
         public string? NodeMap { get; set; }
 
+        public ToolConfigLocalizationModel Localization { get; set; } = new ToolConfigLocalizationModel();
+
         public ToolConfigStyleModel Styles { get; set; } = new ToolConfigStyleModel();
 
         public ToolConfigUnitySampleModel UnitySample { get; set; } = new ToolConfigUnitySampleModel();
@@ -35,6 +37,12 @@ namespace Inscape.Tooling {
         public string? ExistingTalkingRoot { get; set; }
 
         public int? TalkingIdStart { get; set; }
+
+    }
+
+    public sealed class ToolConfigLocalizationModel {
+
+        public string? LineMap { get; set; }
 
     }
 

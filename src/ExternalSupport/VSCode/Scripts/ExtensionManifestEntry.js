@@ -17,6 +17,7 @@ const { HostSchemaCommand } = require("./HostSchema/Commands/HostSchemaCommand")
 const { HostSchemaCapabilityProvider } = require("./HostSchema/Providers/HostSchemaCapabilityProvider");
 const { LanguageServerSessionClient } = require("../LanguageServer/Clients/LanguageServerSessionClient");
 const { LocalizationCommand } = require("./Localization/Commands/LocalizationCommand");
+const { LocalizationLineMapDebugController } = require("./Localization/Controllers/LocalizationLineMapDebugController");
 const { LocalizationReviewController } = require("./Localization/Controllers/LocalizationReviewController");
 const { LocalizationReviewQuickPickAdapter } = require("./Localization/ViewModels/LocalizationReviewQuickPickAdapter");
 const { ExtensionLifecycleController } = require("./Entries/ExtensionLifecycleController");
@@ -46,6 +47,7 @@ const previewPanels = new Map();
 
 let previewCommand;
 let localizationCommand;
+let localizationLineMapDebugController;
 let localizationReviewController;
 let localizationReviewQuickPickAdapter;
 let storyNodeMapReviewController;
@@ -180,6 +182,15 @@ const dslScriptReferenceProvider = new DslScriptReferenceProvider({
     dslScriptSpeakerProvider
 });
 
+localizationLineMapDebugController = new LocalizationLineMapDebugController({
+    fs,
+    path,
+    vscode,
+    readProjectConfig: (document) => editorAuthoringDataProvider.readProjectConfig(document),
+    resolveProjectConfigPath: (configPath, value) => editorAuthoringDataProvider.resolveProjectConfigPath(configPath, value),
+    normalizePath
+});
+
 const dslScriptHoverProvider = new DslScriptHoverProvider({
     childProcess,
     fs,
@@ -193,7 +204,9 @@ const dslScriptHoverProvider = new DslScriptHoverProvider({
     hostBindingProvider,
     dslScriptMetadataProvider,
     dslScriptQueryInterpolationProvider,
-    dslScriptHostEventProvider
+    dslScriptHostEventProvider,
+    isDebugSourceSyncMode,
+    localizationLineMapDebugController
 });
 
 const dslScriptDocumentSymbolProvider = new DslScriptDocumentSymbolProvider({
@@ -490,6 +503,10 @@ function resolveCliProjectPath(context, workspaceFolderPath) {
 function getSourceSyncMode(document) {
     const configuration = vscode.workspace.getConfiguration("inscape", document ? document.uri : undefined);
     return configuration.get("preview.sourceSyncMode", "click");
+}
+
+function isDebugSourceSyncMode(document) {
+    return getSourceSyncMode(document) === "debug";
 }
 
 function resolveLanguageServerProjectPathFromBase(workspaceFolderPath, extensionBasePath) {

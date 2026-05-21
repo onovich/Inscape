@@ -15,6 +15,8 @@
 - 2026-05-19 新增流程约束：用户指出 VSCode 近期实现再次出现不够符合重构 / 命名指南的写法。后续必须把 VSCode 重构收口重新列回计划，并把“每完成一个新功能节点就做一轮命名 / 分层 / 入口厚度自检”当作默认工作流，而不是可选项。
 - 2026-05-19 新增目录边界澄清：用户明确 `Resources` / `Scripts` 的前提是模块足够独立；一旦采用这对目录，`Scripts` 应是代码侧父层，与 `Resources` 对偶，而不是只放 package-only 开发脚本。当前 VSCode 已先把开发脚本桶改成过渡性 `DevScripts`，避免继续误占 `Scripts` 语义位；但业务源码目录仍与其平级，完整 `Resources / Scripts` 终局结构仍待迁移。首批命名例外也已开始收口：`Scripts/ExtensionManifestEntry.js`、`PreviewHtmlDocumentTemplate.html`、`PreviewNavigationContractCheck.js`、`PreviewSourceSyncContractCheck.js` 已替换掉历史名。
 - 2026-05-19 新增 Localization 分层判断：`VSCode/Scripts/Localization` 当前仍可保留，但只能把它视为宿主适配层；凡是未来别的宿主、自研编辑器也会需要的 review contract、candidate scoring、report model / view-model 组织，都不应默认留在 VSCode，而应优先评估下沉到 `Internal/Tooling` 或在需要编辑器查询能力时进入 `LanguageServer`。
+- 2026-05-19 新增 line identity 设计原则：Inscape 行级 stable identity / sidecar 方案优先参考 Yarn Spinner 的 line id 思路；如遇到拆行、并行、刷新 diff、debug 展示等悬而未决点，先参考 Yarn Spinner 的显式 identity + 提取/同步工作流，而不是回退到更重的 heuristic 猜测。
+- 2026-05-19 新增 line sidecar 主线：当前已起第一版 `LocalizationLineMapModel` / `LocalizationLineMapRefreshDomain`，并接上 `refresh-l10n-line-map-project` 命令入口与 `debug` 模式配置；hover 现在也已接入 `LocalizationLineMapDebugController`，能显示真实 `blockId / lineId / lineNumber`。第一版刷新命令还补了 `Show Summary`，能直接提示 changed / added / removed 统计；规则回归已覆盖中间插删行、拆行保留首行 id、并行保留首行 id、重复句邻接修改、复杂替换按 remove/add 处理，同时已补 `localization.lineMap` 配置路径解析、writer `.backup` 快照与 `Restore Backup` 恢复入口。下一步重点回到更细的本地化提示整合与 sidecar 冲突处理。
 - 当前最值得继续推进的主线已经回到 Goal 10：G10.3 / G10.4、最小 review 输出闭环和 json report source jump 都已落地；下一步可继续细化本地化候选评分和编辑器 review 体验。
 - 低优先级体验尾项：编辑区选项文字 `Ctrl+Hover` 的可点击下划线显示仍不稳定，但 `Ctrl+Click` 行为符合预期；`selection` 模式只驱动“已打开预览”的轻量跟随，不主动弹出新预览面板。
 
@@ -27,7 +29,7 @@
 1. **再推进 Stable Node ID 主线。**
 	- 已完成：ADR 0013、stable node id / title map 契约、`update-node-map-project` sidecar 闭环、保守自动重命名识别、VSCode 显式 `Update Stable Node Map` 入口、插入标题后的自动同步、`inscape.node-map-update-report` 审查报告、CLI `--report`、VSCode `Review Stable Node Map Changes` 入口。
 	- 下一步建议顺序：
-		- 已推进：标题重命名审查已有 review item 列表、candidate 跳转、node map / raw report 入口，以及 manual-review 项的显式 `Apply candidate stable id`；当前还会保存 `.review-backup.json` 并支持 `Revert last applied stable id`。下一步可再评估是否需要 dry-run / multi-apply。
+		- 已推进：标题重命名审查已有 review item 列表、candidate 跳转、node map / raw report 入口，以及 manual-review 项的显式 `Apply candidate stable id`；当前还会保存 `.review-backup.json` 并支持 `Revert last applied stable id`，也已支持 `Preview candidate stable id` 生成 dry-run `.review-preview.json`。下一步可再评估是否需要 multi-apply。
 		- 已完成：G10.3 本地化 alignment / audit report。
 		- 已完成：G10.4 相似文本只作人工候选，不静默继承旧译文。
 2. **把本地化迁移闭环做实。**

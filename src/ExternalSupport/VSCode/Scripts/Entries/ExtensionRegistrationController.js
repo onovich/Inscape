@@ -80,6 +80,7 @@ class ExtensionRegistrationController {
             this.vscode.commands.registerCommand("inscape.extractLocalization", () => this.localizationCommand.export(context)),
             this.vscode.commands.registerCommand("inscape.updateLocalization", () => this.localizationCommand.update(context)),
             this.vscode.commands.registerCommand("inscape.reviewLocalizationAlignment", () => this.localizationCommand.reviewAlignment(context)),
+            this.vscode.commands.registerCommand("inscape.refreshLocalizationLineState", () => this.localizationCommand.refreshLineState(context)),
             this.vscode.commands.registerCommand("inscape.showHostSchemaCapabilities", () => this.hostSchemaCommand.showCapabilities()),
             this.vscode.window.registerCustomEditorProvider(
                 "inscape.preview",

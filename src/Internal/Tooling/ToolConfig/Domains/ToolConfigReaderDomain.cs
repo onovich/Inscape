@@ -41,6 +41,7 @@ namespace Inscape.Tooling {
             config.HostSchema = ResolveConfigPath(configDirectory, config.HostSchema);
             config.HostBridge = ResolveConfigPath(configDirectory, config.HostBridge);
             config.NodeMap = ResolveConfigPath(configDirectory, config.NodeMap);
+            config.Localization.LineMap = ResolveConfigPath(configDirectory, config.Localization.LineMap);
             config.Styles.Editor = ResolveConfigPath(configDirectory, config.Styles.Editor);
             config.Styles.Preview = ResolveConfigPath(configDirectory, config.Styles.Preview);
             config.UnitySample.RoleMap = ResolveConfigPath(configDirectory, config.UnitySample.RoleMap);

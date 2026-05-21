@@ -131,6 +131,11 @@
         "category": "Inscape"
       },
       {
+        "command": "inscape.refreshLocalizationLineState",
+        "title": "Inscape: Refresh Localization Line State",
+        "category": "Inscape"
+      },
+      {
         "command": "inscape.showHostSchemaCapabilities",
         "title": "Inscape: Show Host Schema Capabilities",
         "category": "Inscape"
@@ -205,10 +210,11 @@
           "enum": [
             "off",
             "click",
-            "selection"
+            "selection",
+            "debug"
           ],
           "scope": "resource",
-          "description": "Preview/source sync mode. off keeps preview navigation explicit, click enables Ctrl+Click text reveal, and selection also makes an already-open preview follow the current editor selection."
+          "description": "Preview/source sync mode. off keeps preview navigation explicit, click enables Ctrl+Click text reveal, selection also makes an already-open preview follow the current editor selection, and debug enables the same sync behavior while exposing debug-only line identity hover details."
         },
         "inscape.compiler.command": {
           "type": "string",

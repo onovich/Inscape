@@ -151,6 +151,34 @@ class LocalizationCommand {
         });
     }
 
+    async refreshLineState(context) {
+        const workspaceFolder = await this.selectWorkspaceFolder();
+        if (!workspaceFolder) {
+            return;
+        }
+
+        const reportUri = await this.vscode.window.showSaveDialog({
+            defaultUri: this.vscode.Uri.file(this.path.join(workspaceFolder.uri.fsPath, "artifacts", "l10n-line-refresh.json")),
+            filters: {
+                "JSON": ["json"]
+            },
+            saveLabel: "Refresh Localization Line State"
+        });
+
+        if (!reportUri) {
+            return;
+        }
+
+        await this.run(context, workspaceFolder, {
+            commandName: "refresh-l10n-line-map-project",
+            reportPath: reportUri.fsPath,
+            workspaceFolderPath: workspaceFolder.uri.fsPath,
+            progressTitle: "Refreshing Inscape localization line state",
+            successMessage: "Inscape localization line refresh report written to " + reportUri.fsPath,
+            successActions: ["Open Report", "Show Summary", "Restore Backup"]
+        });
+    }
+
     async run(context, workspaceFolder, options) {
         const editorDocument = this.vscode.window.activeTextEditor ? this.vscode.window.activeTextEditor.document : undefined;
         const activeDocument = editorDocument
@@ -195,6 +223,67 @@ class LocalizationCommand {
         if (selection === "Open Report") {
             await this.openFile(options.outputPath);
         }
+
+        if (selection === "Show Summary" && options.reportPath) {
+            await this.showLineRefreshSummary(options.reportPath);
+        }
+
+        if (selection === "Restore Backup") {
+            await this.restoreLineMapBackup(options, options.workspaceFolderPath);
+        }
+    }
+
+    async showLineRefreshSummary(reportPath) {
+        const text = await this.fs.promises.readFile(reportPath, "utf8");
+        const report = JSON.parse(text);
+        const blocks = Array.isArray(report && report.blocks) ? report.blocks : [];
+        let added = 0;
+        let changed = 0;
+        let removed = 0;
+        for (let i = 0; i < blocks.length; i += 1) {
+            const changes = Array.isArray(blocks[i].changes) ? blocks[i].changes : [];
+            for (let changeIndex = 0; changeIndex < changes.length; changeIndex += 1) {
+                switch (changes[changeIndex].kind) {
+                    case "added":
+                        added += 1;
+                        break;
+                    case "changed":
+                        changed += 1;
+                        break;
+                    case "removed":
+                        removed += 1;
+                        break;
+                }
+            }
+        }
+
+        await this.vscode.window.showInformationMessage("Localization line refresh summary: changed " + changed + ", added " + added + ", removed " + removed + ".", "Open Report").then(async (selection) => {
+            if (selection === "Open Report") {
+                await this.openFile(reportPath);
+            }
+        });
+    }
+
+    async restoreLineMapBackup(options, workspaceFolderPath) {
+        const configuration = this.vscode.workspace.getConfiguration("inscape", this.vscode.Uri.file(workspaceFolderPath));
+        const configured = configuration.get("localization.lineMap", "");
+        const lineMapPath = configured && configured.length > 0
+            ? this.path.isAbsolute(configured)
+                ? configured
+                : this.path.resolve(workspaceFolderPath, configured)
+            : this.path.join(workspaceFolderPath, "inscape.line-map.json");
+        const backupPath = lineMapPath + ".backup";
+        if (!this.fs.existsSync(backupPath)) {
+            this.vscode.window.showWarningMessage("No localization line map backup was found.");
+            return;
+        }
+
+        const text = await this.fs.promises.readFile(backupPath, "utf8");
+        await this.fs.promises.writeFile(lineMapPath, text, "utf8");
+        const selection = await this.vscode.window.showInformationMessage("Restored localization line map backup.", "Open Line Map");
+        if (selection === "Open Line Map") {
+            await this.openFile(lineMapPath);
+        }
     }
 
     createInvocation(context, workspaceFolder, options, activeDocument, tempPath) {
@@ -218,11 +307,17 @@ class LocalizationCommand {
             args.push("--format", options.format);
         }
 
+        if (options.reportPath) {
+            args.push("--report", options.reportPath);
+        }
+
         if (activeDocument && tempPath) {
             args.push("--override", activeDocument.uri.fsPath, tempPath);
         }
 
-        args.push("-o", options.outputPath);
+        if (options.outputPath) {
+            args.push("-o", options.outputPath);
+        }
 
         return {
             command,

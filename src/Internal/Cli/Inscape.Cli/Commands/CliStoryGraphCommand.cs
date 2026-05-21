@@ -26,6 +26,10 @@ namespace Inscape.Cli {
                 return RunLocalizationAlignmentAudit(rootPath, args, outputPath, jsonOptions);
             }
 
+            if (command == "refresh-l10n-line-map-project") {
+                return RunLocalizationLineMapRefresh(rootPath, args, outputPath, jsonOptions);
+            }
+
             if (!TryCompile(rootPath, args, jsonOptions, out ToolConfigModel config, out StoryGraphCompilationResultModel result)) {
                 return 1;
             }
@@ -206,6 +210,45 @@ namespace Inscape.Cli {
 
             Console.Error.WriteLine("Unsupported audit format: " + format);
             return 2;
+        }
+
+        static int RunLocalizationLineMapRefresh(string rootPath, string[] args, string? outputPath, JsonSerializerOptions jsonOptions) {
+            string? configuredPath = CliCore.ReadOption(args, "--config");
+            if (!TryCompile(rootPath, args, jsonOptions, out ToolConfigModel config, out StoryGraphCompilationResultModel result)) {
+                return 1;
+            }
+
+            CliCore.PrintDiagnostics(result.Diagnostics);
+            if (result.HasErrors) {
+                return 1;
+            }
+
+            string lineMapPath = string.IsNullOrWhiteSpace(outputPath)
+                ? ResolveLocalizationLineMapPath(rootPath, configuredPath, config)
+                : Path.GetFullPath(outputPath);
+            if (!LocalizationLineMapReaderDomain.TryRead(lineMapPath, jsonOptions, out LocalizationLineMapModel existingMap, out string? errorMessage)) {
+                Console.Error.WriteLine(errorMessage);
+                return 3;
+            }
+
+            LocalizationLineRefreshResultModel refresh = LocalizationLineMapRefreshDomain.Refresh(existingMap, result, rootPath);
+            LocalizationLineMapWriterDomain.Write(lineMapPath, refresh.LineMap, jsonOptions);
+            CliCore.WriteOrPrint(CliCore.ReadOption(args, "--report"), JsonSerializer.Serialize(refresh.Report, jsonOptions));
+            Console.WriteLine(lineMapPath);
+            return 0;
+        }
+
+        static string ResolveLocalizationLineMapPath(string rootPath, string? configuredPath, ToolConfigModel config) {
+            if (!string.IsNullOrWhiteSpace(config.Localization.LineMap)) {
+                return config.Localization.LineMap;
+            }
+            string configPath = string.IsNullOrWhiteSpace(configuredPath)
+                ? Path.Combine(rootPath, "inscape.config.json")
+                : Path.GetFullPath(configuredPath);
+            string directory = File.Exists(configPath)
+                ? Path.GetDirectoryName(configPath) ?? rootPath
+                : rootPath;
+            return Path.Combine(directory, "inscape.line-map.json");
         }
 
         static string CreateLocalizationAlignmentAuditText(LocalizationAlignmentReportModel report) {

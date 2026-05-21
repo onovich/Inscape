@@ -16,6 +16,8 @@ class DslScriptHoverProvider {
         this.dslScriptMetadataProvider = dependencies.dslScriptMetadataProvider;
         this.dslScriptQueryInterpolationProvider = dependencies.dslScriptQueryInterpolationProvider;
         this.dslScriptHostEventProvider = dependencies.dslScriptHostEventProvider;
+        this.isDebugSourceSyncMode = dependencies.isDebugSourceSyncMode;
+        this.localizationLineMapDebugController = dependencies.localizationLineMapDebugController;
         this.languageServerHoversByDocumentVersion = new Map();
     }
 
@@ -77,6 +79,13 @@ class DslScriptHoverProvider {
         const metadataInfo = this.dslScriptMetadataProvider.getDirectiveAtPosition(document, position);
         if (metadataInfo) {
             return new this.vscode.Hover(this.dslScriptMetadataProvider.createHoverMarkdown(metadataInfo), metadataInfo.range);
+        }
+
+        if (this.isDebugSourceSyncMode && this.isDebugSourceSyncMode(document)) {
+            const debugHover = await this.localizationLineMapDebugController.tryCreateHover(document, position);
+            if (debugHover) {
+                return debugHover;
+            }
         }
 
         const declaredNode = this.dslScriptNodeProvider.getDeclaredNodeAtPosition(document, position);
