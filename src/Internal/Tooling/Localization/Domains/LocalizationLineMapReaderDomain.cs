@@ -41,6 +41,7 @@ namespace Inscape.Tooling {
             map.Format = string.IsNullOrWhiteSpace(map.Format) ? "inscape.localization-line-map" : map.Format;
             map.FormatVersion = map.FormatVersion == 0 ? 1 : map.FormatVersion;
             map.LastRefreshedAt ??= string.Empty;
+            map.LastSourceFingerprint ??= string.Empty;
             map.Documents ??= new List<LocalizationLineMapDocumentModel>();
 
             for (int i = 0; i < map.Documents.Count; i += 1) {

@@ -197,7 +197,18 @@ namespace Inscape.Cli {
                 return 3;
             }
 
-            LocalizationAlignmentReportModel report = LocalizationAlignmentAuditDomain.Audit(result, previousEntries, nodeMap, rootPath);
+            if (!TryCreateLocalizationLineIdentityInput(rootPath,
+                                                        configuredPath,
+                                                        config,
+                                                        result,
+                                                        jsonOptions,
+                                                        out LocalizationAlignmentLineIdentityInputModel lineIdentity,
+                                                        out string? lineIdentityError)) {
+                Console.Error.WriteLine(lineIdentityError);
+                return 3;
+            }
+
+            LocalizationAlignmentReportModel report = LocalizationAlignmentAuditDomain.Audit(result, previousEntries, nodeMap, rootPath, lineIdentity);
             if (format == "json") {
                 CliCore.WriteOrPrint(outputPath, JsonSerializer.Serialize(report, jsonOptions));
                 return 0;
@@ -233,7 +244,7 @@ namespace Inscape.Cli {
 
             LocalizationLineRefreshResultModel refresh = LocalizationLineMapRefreshDomain.Refresh(existingMap, result, rootPath);
             LocalizationLineMapWriterDomain.Write(lineMapPath, refresh.LineMap, jsonOptions);
-            CliCore.WriteOrPrint(CliCore.ReadOption(args, "--report"), JsonSerializer.Serialize(refresh.Report, jsonOptions));
+            CliCore.WriteOrPrint(CliCore.ReadOption(args, "--report"), JsonSerializer.Serialize(refresh, jsonOptions));
             Console.WriteLine(lineMapPath);
             return 0;
         }
@@ -251,9 +262,71 @@ namespace Inscape.Cli {
             return Path.Combine(directory, "inscape.line-map.json");
         }
 
+        static bool TryCreateLocalizationLineIdentityInput(string rootPath,
+                                                           string? configuredPath,
+                                                           ToolConfigModel config,
+                                                           StoryGraphCompilationResultModel result,
+                                                           JsonSerializerOptions jsonOptions,
+                                                           out LocalizationAlignmentLineIdentityInputModel input,
+                                                           out string? errorMessage) {
+            errorMessage = null;
+            string lineMapPath = ResolveLocalizationLineMapPath(rootPath, configuredPath, config);
+            input = new LocalizationAlignmentLineIdentityInputModel {
+                Status = "missing",
+                Path = lineMapPath,
+                Message = "Localization line sidecar not found. Run refresh-l10n-line-map-project before relying on line identity.",
+            };
+
+            if (!File.Exists(lineMapPath)) {
+                return true;
+            }
+
+            if (!LocalizationLineMapReaderDomain.TryRead(lineMapPath, jsonOptions, out LocalizationLineMapModel lineMap, out errorMessage)) {
+                return false;
+            }
+
+            if (lineMap.Documents.Count == 0) {
+                return true;
+            }
+
+            if (string.IsNullOrWhiteSpace(lineMap.LastSourceFingerprint)) {
+                input.Status = "legacy";
+                input.Message = "Localization line sidecar has no LastSourceFingerprint. Refresh it before using line identity for alignment.";
+                return true;
+            }
+
+            LocalizationLineRefreshResultModel refresh = LocalizationLineMapRefreshDomain.Refresh(lineMap, result, rootPath);
+            if (refresh.Status.HasDrift) {
+                input.Status = "drift";
+                input.HasDrift = true;
+                input.Message = string.IsNullOrWhiteSpace(refresh.Status.Message)
+                    ? "Localization line sidecar drift was detected. Refresh it before using line identity for alignment."
+                    : refresh.Status.Message;
+                return true;
+            }
+
+            input.Status = "available";
+            input.Message = "Localization line identity is available for alignment scoring.";
+            input.LineMap = refresh.LineMap;
+            return true;
+        }
+
         static string CreateLocalizationAlignmentAuditText(LocalizationAlignmentReportModel report) {
             System.Text.StringBuilder builder = new System.Text.StringBuilder();
             builder.AppendLine("Localization alignment audit: " + report.Workspace);
+            if (!string.IsNullOrWhiteSpace(report.LineIdentity.Status)) {
+                builder.Append("Line identity: ")
+                       .Append(report.LineIdentity.Status);
+                if (!string.IsNullOrWhiteSpace(report.LineIdentity.Path)) {
+                    builder.Append(" (")
+                           .Append(report.LineIdentity.Path)
+                           .Append(')');
+                }
+                builder.AppendLine();
+                if (!string.IsNullOrWhiteSpace(report.LineIdentity.Message)) {
+                    builder.AppendLine("  " + report.LineIdentity.Message);
+                }
+            }
             builder.AppendLine();
 
             if (report.Items.Count == 0) {
@@ -281,6 +354,11 @@ namespace Inscape.Cli {
                     builder.Append("  text: ")
                            .Append(item.Text)
                            .AppendLine();
+                    if (!string.IsNullOrWhiteSpace(item.LineId)) {
+                        builder.Append("  lineIdentity: ")
+                               .Append(item.LineId)
+                               .AppendLine();
+                    }
                     if (!string.IsNullOrWhiteSpace(item.Translation)) {
                         builder.Append("  translation: ")
                                .Append(item.Translation)
@@ -306,6 +384,11 @@ namespace Inscape.Cli {
                             builder.Append(" {")
                                    .Append(candidate.Reason)
                                    .Append('}');
+                        }
+                        if (!string.IsNullOrWhiteSpace(candidate.LineId)) {
+                            builder.Append(" <line ")
+                                   .Append(candidate.LineId)
+                                   .Append('>');
                         }
                         builder.AppendLine();
                     }

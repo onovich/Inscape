@@ -16,15 +16,14 @@
 - 2026-05-19 新增目录边界澄清：用户明确 `Resources` / `Scripts` 的前提是模块足够独立；一旦采用这对目录，`Scripts` 应是代码侧父层，与 `Resources` 对偶，而不是只放 package-only 开发脚本。当前 VSCode 已先把开发脚本桶改成过渡性 `DevScripts`，避免继续误占 `Scripts` 语义位；但业务源码目录仍与其平级，完整 `Resources / Scripts` 终局结构仍待迁移。首批命名例外也已开始收口：`Scripts/ExtensionManifestEntry.js`、`PreviewHtmlDocumentTemplate.html`、`PreviewNavigationContractCheck.js`、`PreviewSourceSyncContractCheck.js` 已替换掉历史名。
 - 2026-05-19 新增 Localization 分层判断：`VSCode/Scripts/Localization` 当前仍可保留，但只能把它视为宿主适配层；凡是未来别的宿主、自研编辑器也会需要的 review contract、candidate scoring、report model / view-model 组织，都不应默认留在 VSCode，而应优先评估下沉到 `Internal/Tooling` 或在需要编辑器查询能力时进入 `LanguageServer`。
 - 2026-05-19 新增 line identity 设计原则：Inscape 行级 stable identity / sidecar 方案优先参考 Yarn Spinner 的 line id 思路；如遇到拆行、并行、刷新 diff、debug 展示等悬而未决点，先参考 Yarn Spinner 的显式 identity + 提取/同步工作流，而不是回退到更重的 heuristic 猜测。
-- 2026-05-19 新增 line sidecar 主线：当前已起第一版 `LocalizationLineMapModel` / `LocalizationLineMapRefreshDomain`，并接上 `refresh-l10n-line-map-project` 命令入口与 `debug` 模式配置；hover 现在也已接入 `LocalizationLineMapDebugController`，能显示真实 `blockId / lineId / lineNumber`。第一版刷新命令还补了 `Show Summary`，能直接提示 changed / added / removed 统计；规则回归已覆盖中间插删行、拆行保留首行 id、并行保留首行 id、重复句邻接修改、复杂替换按 remove/add 处理，同时已补 `localization.lineMap` 配置路径解析、writer `.backup` 快照与 `Restore Backup` 恢复入口。下一步重点回到更细的本地化提示整合与 sidecar 冲突处理。
+- 2026-05-19 新增 line sidecar 主线：当前已起第一版 `LocalizationLineMapModel` / `LocalizationLineMapRefreshDomain`，并接上 `refresh-l10n-line-map-project` 命令入口与 `debug` 模式配置；hover 现在也已接入 `LocalizationLineMapDebugController`，能显示真实 `blockId / lineId / lineNumber`。第一版刷新命令还补了 `Show Summary`，能直接提示 changed / added / removed 统计，并已新增 `Show Details` 查看 block/change 摘要且支持跳到对应 source 行；规则回归已覆盖中间插删行、拆行保留首行 id、并行保留首行 id、重复句邻接修改、复杂替换按 remove/add 处理，同时已补 `localization.lineMap` 配置路径解析、writer `.backup` 快照、`Restore Backup` 恢复入口与 `LastSourceFingerprint` 漂移字段。drift 检测现在也已进入 refresh result/status 与 VSCode 显式决策流（Continue / Show Details / Restore Backup / Cancel），并附带操作建议；CLI `--report` 也已输出完整 refresh result，方便本地化模块后续直接消费。下一步重点回到本地化模块消费整合。
+- 2026-05-19 Goal 15 第一版已完成：`audit-l10n-alignment-project` 现在会读取 `localization.lineMap` / 默认 `inscape.line-map.json`，在 sidecar 可用且未 drift 时把 `lineId` / line fingerprint / block-local line order 作为候选评分信号，并在 JSON / text report 中输出 line identity 状态与候选摘要；缺失 sidecar 保持旧行为，legacy / drift sidecar 只报告状态，不参与评分。
 - 当前最值得继续推进的主线已经回到 Goal 10：G10.3 / G10.4、最小 review 输出闭环和 json report source jump 都已落地；下一步可继续细化本地化候选评分和编辑器 review 体验。
 - 低优先级体验尾项：编辑区选项文字 `Ctrl+Hover` 的可点击下划线显示仍不稳定，但 `Ctrl+Click` 行为符合预期；`selection` 模式只驱动“已打开预览”的轻量跟随，不主动弹出新预览面板。
 
 ## 接力优先队列
 
-下一位接手者建议按以下顺序推进。已完成的 Goal 0 / 3 / 4 / 5 / 6 / 9 不再放进优先队列，只保留在下方历史账本中。当前剩余事项可以收敛成四组：先补手动 smoke 收口现有体验，再推进 stable id / 本地化主线，然后再挑 Tooling 单点收敛，最后才是 Unity / Bird 的准备项。
-
-注：上面这句里的“先补手动 smoke”已经在 2026-05-19 收口完成；保留旧账本只是为了不丢历史上下文，新的实际优先级以本页“2026-05-19 最新收口”为准。
+下一位接手者建议按以下顺序推进。已完成的 Goal 0 / 3 / 4 / 5 / 6 / 7 / 9 / 11.1 不再放进优先队列，只保留在下方历史账本中。当前剩余事项可以收敛成五组：先推进 stable id / 本地化主线，再把 line sidecar 接入本地化消费闭环，同时保持 VSCode 重构守规；然后再挑 Tooling 单点收敛，最后才是 Unity / Bird 的准备项。
 
 1. **再推进 Stable Node ID 主线。**
 	- 已完成：ADR 0013、stable node id / title map 契约、`update-node-map-project` sidecar 闭环、保守自动重命名识别、VSCode 显式 `Update Stable Node Map` 入口、插入标题后的自动同步、`inscape.node-map-update-report` 审查报告、CLI `--report`、VSCode `Review Stable Node Map Changes` 入口。
@@ -38,12 +37,10 @@
 	- 下一步建议顺序：
 		- 细化候选评分：sequence / context / line anchor 权重继续校准，减少“该 changed 还是 conflict”的灰区。
 		- 已推进：Quick Pick 已补主项摘要与 candidate 二级跳转；下一步可继续评估是否需要 candidate diff / secondary action。
+		- 已完成 Goal 15 第一版：line sidecar refresh result / status / line id 信息已接入本地化 alignment audit，后续只需继续评估更强的 line identity 迁移契约或 report 体验。
 		- 再评估是否给 `update-l10n-project` 增加可选 `--alignment-report`，但默认行为仍不应自动继承相似旧译文。
 	- 注意：这条实际上依赖 Goal 10 的 stable node id 维护进一步落地，所以优先级排在 Goal 10 后半段，而不是独立抢跑。
-3. **最后再挑 Tooling 单点收敛。**
-	- 保持原则：继续落到 `DslScriptSources`、`ToolConfig`、`Preview`、`Localization`、`HostSchema`、`HostBinding` 等窄模块；不要新建泛化 `ProjectService`。
-	- 只挑一个仍重复的跨 Cli / VSCode / LanguageServer 流程做小闭环，不把“顺手统一”混进主线节点。
-4. **把 VSCode 重构守规重新列回近期计划。**
+3. **把 VSCode 重构守规重新列回近期计划。**
 	- 先做一次最近新增代码巡检：重点看 `EditorAuthoring`、`Localization`、`Preview` 近期节点是否又引入了不够稳的 glue、跨业务拼装、命名倒退或入口增厚。
 	- 后续每个 VSCode 功能节点完成后，立即补一轮命名 / 分层 / 目录 / 入口厚度自检；不能等到堆出下一轮大清理。
 	- 如果发现某段 VSCode 逻辑本质上是可复用语义，而不是平台适配，应优先评估下沉到 `Tooling` 或 `LanguageServer`。
@@ -60,7 +57,10 @@
 		- `extension.js` 仍保持薄入口总体方向；`openLocation` / `locationFromPayload` 这类重复注入已开始收成共享 `locationServices`，文件打开 glue 也已收成 `openFileInEditor`。下一步要继续防止组合根参数表重新横向膨胀。
 		- `Review Items` / report review 相关 UI 现在分别散在 `EditorAuthoringCommand` 与 `LocalizationCommand`，存在重复的 report->pick->action->jump 模式，后续应评估提炼为更窄的 review presenter / controller，而不是继续在 command 中平铺复制。
 	- 已推进：第一轮命名例外已开始收口，`Scripts/ExtensionManifestEntry.js`、`PreviewHtmlDocumentTemplate.html`、`PreviewNavigationContractCheck.js`、`PreviewSourceSyncContractCheck.js` 已替换掉首批历史名；当前 `Scripts/` 下也已承接 `Entries/`、`DslScript/`、`Localization/`、`Preview/`、`EditorAuthoring/`、`HostSchema/`、`HostBinding/`。下一步继续清点剩余历史名并做迁移后的全局清扫。
-4. **Unity / Bird 只做准备和决策。**
+4. **最后再挑 Tooling 单点收敛。**
+	- 保持原则：继续落到 `DslScriptSources`、`ToolConfig`、`Preview`、`Localization`、`HostSchema`、`HostBinding` 等窄模块；不要新建泛化 `ProjectService`。
+	- 只挑一个仍重复的跨 Cli / VSCode / LanguageServer 流程做小闭环，不把“顺手统一”混进主线节点。
+5. **Unity / Bird 只做准备和决策。**
 	- 待定：Bird 项目新增 importer 与 `InscapeGenerated` 资源提交策略。
 	- 待验证：带真实 Timeline 绑定的 Bird Import Dry Run，确认 `talking.exit` 的 `TalkingEffectTM.PlayTimeline` 落地和其他 phase warning。
 	- 低优先级：结合 Bird `L10N` 真实格式决定是否调整 Inscape CSV 字段和列顺序。
@@ -78,6 +78,7 @@
 	- 无。Goal 7 与 Goal 11.1 的真实 VSCode smoke 已在 2026-05-19 收口完成。
 - **当前主线研发**：
 	- 本地化候选评分 / 编辑器 review 体验细化。
+	- Localization line sidecar 的后续契约细化与 report 体验评估。
 	- stable node map / localization review 交互细化。
 	- VSCode 重构守规与节点后自检机制。
 	- G10.4.2 candidate scoring 细化：相似度并列时优先使用 sequence / line ranking penalty 收口误匹配，第二轮已加 context shape 信号，第三轮已加 keyword fingerprint 信号，第四轮已加 neighbor shape 信号。
@@ -263,9 +264,11 @@
 	- [x] 冻结作者标题与 stable node id 分离的长期决策；详见 [ADR 0013](adr/0013-author-title-and-stable-node-id.md)。
 	- [x] 设计 stable node id 的落盘位置：sidecar 索引、迁移表，或必要时显式 `@id`；详见 [Stable Node ID Contract](stable-node-id-contract.md)。
 	- [x] 设计标题重命名识别流程：source range、相邻文本锚点、旧标题、前后节点关系与人工确认；详见 [Stable Node ID Contract](stable-node-id-contract.md)。
-- [ ] 实现 stable node id sidecar 与标题重命名迁移流程。
+- [~] 实现 stable node id sidecar 与标题重命名迁移流程。
 	- [x] VSCode 新增显式 `Inscape: Update Stable Node Map` 命令，调用 `update-node-map-project` 并把活动未保存文档通过 `--override` 传给 CLI。
 	- [x] VSCode `Inscape: Insert Node Title` 在插入成功后会静默同步 stable node map；同步失败只提示 warning，不回滚标题插入。
+	- [x] 标题重命名已具备审查报告、review item 列表、candidate 跳转、显式 apply / revert / preview 操作。
+	- [ ] 后续只需评估是否需要 multi-apply 或更强的批量审查流。
 - [x] 定义并实现行级隐式 hash 的输入、规范化规则、版本号和碰撞处理。
 - [x] 实现第一版本地化 CSV 提取，覆盖旁白、对白、选择提示和选择项。
 - [x] 实现旧翻译表按锚点精确继承，并标记新增、保留、删除条目。
@@ -302,14 +305,14 @@
 - [x] 实现 VSCode 编辑器内可玩预览视图第一版，复用 CLI / Core 的项目级编译结果，并支持源码侧边打开、选项点击、正文点击继续、Back、Restart、源码回跳、编辑防抖刷新和保存后自动刷新。
 - [x] 修正 VSCode 预览体验关键问题：custom editor 改为 `option` 避免劫持源码标签页；webview 显式启用 scripts；刷新尽量保留当前页进度；CLI 调用优先已构建可执行文件 / 程序集，减少等待时间。
 - [x] 为编辑器语法配色与预览 UI 提供独立样式配置文件，允许开发者通过 `inscape.config.json` 指向简洁 JSON 样式表并在本机快速调参。
-- [ ] 为 VSCode 预览补充更细粒度的未保存内容热刷新、局部更新、状态提示与可选源码同步策略。
+- [x] 为 VSCode 预览补充更细粒度的未保存内容热刷新、局部更新、状态提示与可选源码同步策略。
 	- [x] 预览 webview 在防抖等待和刷新时显示轻量“等待刷新...” / “刷新中...”状态，不改变故事状态、路径或 Compiler 输出。
 	- [x] 未保存内容热刷新增加版本保护：保存或显式刷新会取消已挂起的 debounce timer，旧刷新完成不会清掉新一轮状态。
 	- [x] 继续细化局部更新策略：详见 [VSCode Preview Refresh Strategy](vscode-preview-refresh-strategy.md)，VSCode 暂只局部处理状态、源码定位和纯 UI 状态，语义相关变化继续全量重渲染。
 	- [x] 设计并实现第一版可选预览 / 源码同步模式：`inscape.preview.sourceSyncMode = off|click|selection`，默认 `click` 保持现有行为，`selection` 只驱动已打开预览。
 	- [x] 新增自动化自检：`npm --prefix src/ExternalSupport/VSCode run check:preview-source-sync`，覆盖 `off` / `click` / `selection` 的关键边界。
 	- [x] 新增可重复手动 smoke 入口：`npm --prefix src/ExternalSupport/VSCode run smoke:preview-source-sync -- -Mode <off|click|selection>`，统一生成临时工作区和模式设置。
-	- [ ] 补一次 VSCode 手动 smoke，确认 `off` / `click` / `selection` 三种模式的交互边界符合预期。
+	- [x] 补一次 VSCode 手动 smoke，确认 `off` / `click` / `selection` 三种模式的交互边界符合预期。
 - [x] 继续验证正文 / 选项文本的 `DefinitionProvider` 链接态与 selection bridge 是否稳定满足“默认无下划线、Ctrl+指向才显示链接态、Ctrl+Click 复用预览定位”；已新增 VSCode package 静态契约检查 `npm --prefix src/ExternalSupport/VSCode run check:preview-navigation`，防止回退到 `DocumentLinkProvider` 或断开 selection bridge。手动 UI smoke 仍按 VSCode README 执行。
 - [x] 补齐 C# Language Server 第一版能力范围：diagnostics、definition、references、completion、outline、hover 都已有基线 probe。
 - [x] 设计 VSCode 前端何时从 JS provider 切到 LanguageServer，并保留哪些 fallback 边界；详见 [VSCode LanguageServer Migration Plan](vscode-language-server-migration-plan.md)。
@@ -320,7 +323,7 @@
 - [x] 让 VSCode document symbols / Outline 优先调用 LanguageServer `--document-symbols-file` probe，并保留 JS `DslScriptNodeProvider` fallback。
 - [x] 让 VSCode node completion 优先调用 LanguageServer `--completion-file` probe，并保留 JS workspace node fallback 补齐跨文件节点。
 - [x] 让 VSCode node definition / references 调用 LanguageServer project navigation：新增 `--definition-project` / `--references-project`，支持跨文件和 unsaved override，并删除对应 JS node definition / reference semantic fallback。
-- [ ] 若后续准备删除 CLI fallback，先补一次 LanguageServer 不可用场景下的 CLI diagnostics fallback 专项 smoke test。
+- [x] 若后续准备删除 CLI fallback，先补一次 LanguageServer 不可用场景下的 CLI diagnostics fallback 专项 smoke test。
 - [x] 新增 diagnostics fallback 静态契约：`npm --prefix src/ExternalSupport/VSCode run check:diagnostics-fallback`，覆盖“LanguageServer 失败 -> CLI diagnose-project 成功”与 `diagnostics.backend=compiler` 跳过 LanguageServer。
 - [x] 设计补全数据来源：当前文件节点、项目节点、角色表、宿主绑定表、宿主 Schema 查询 / 事件清单。
 - [x] 将 `hostSchema` 中的事件清单接入 `.inscape` 脚本补全与 Hover，不改变当前 DSL 编译语义。

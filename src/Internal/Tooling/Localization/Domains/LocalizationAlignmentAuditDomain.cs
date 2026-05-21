@@ -19,23 +19,42 @@ namespace Inscape.Tooling {
         const int ContextPenaltyWeight = 3;
         const int FingerprintPenaltyWeight = 4;
         const int NeighborPenaltyWeight = 5;
+        const int LineIdentityPenaltyWeight = 8;
 
         public static LocalizationAlignmentReportModel Audit(StoryGraphCompilationResultModel result,
                                                              IReadOnlyList<LocalizationEntryModel> previousEntries,
                                                              StoryNodeMapModel nodeMap,
                                                              string rootPath) {
+            return Audit(result,
+                         previousEntries,
+                         nodeMap,
+                         rootPath,
+                         new LocalizationAlignmentLineIdentityInputModel {
+                             Status = "missing",
+                             Message = "Localization line sidecar was not provided.",
+                         });
+        }
+
+        public static LocalizationAlignmentReportModel Audit(StoryGraphCompilationResultModel result,
+                                                             IReadOnlyList<LocalizationEntryModel> previousEntries,
+                                                             StoryNodeMapModel nodeMap,
+                                                             string rootPath,
+                                                             LocalizationAlignmentLineIdentityInputModel lineIdentity) {
             LocalizationExtractorDomain extractor = new LocalizationExtractorDomain();
             List<LocalizationEntryModel> currentEntries = extractor.Extract(result.Graph);
             Dictionary<string, StoryNodeMapEntryModel> nodeMapByTitle = CreateNodeMapByTitle(nodeMap);
-            Dictionary<string, List<LocalizationAlignmentEntry>> previousByAnchor = CreateEntriesByAnchor(previousEntries, nodeMapByTitle, false);
-            List<LocalizationAlignmentEntry> previousAlignmentEntries = CreateAlignmentEntries(previousEntries, nodeMapByTitle, false);
+            LocalizationLineIdentityLookup lineIdentityLookup = CreateLineIdentityLookup(lineIdentity, rootPath);
+            Dictionary<string, List<LocalizationAlignmentEntry>> previousByAnchor = CreateEntriesByAnchor(previousEntries, nodeMapByTitle, lineIdentityLookup, rootPath, false);
+            List<LocalizationAlignmentEntry> previousAlignmentEntries = CreateAlignmentEntries(previousEntries, nodeMapByTitle, lineIdentityLookup, rootPath, false);
             HashSet<string> usedPreviousKeys = new HashSet<string>(System.StringComparer.Ordinal);
             LocalizationAlignmentReportModel report = new LocalizationAlignmentReportModel {
                 Workspace = Path.GetFullPath(rootPath),
+                LineIdentity = CreateReportLineIdentity(lineIdentity),
             };
+            Dictionary<string, int> currentLineCounters = new Dictionary<string, int>(System.StringComparer.Ordinal);
 
             for (int i = 0; i < currentEntries.Count; i += 1) {
-                LocalizationAlignmentEntry current = CreateAlignmentEntry(currentEntries[i], nodeMapByTitle, true, i);
+                LocalizationAlignmentEntry current = CreateAlignmentEntry(currentEntries[i], nodeMapByTitle, lineIdentityLookup, rootPath, currentLineCounters, true, i);
                 if (previousByAnchor.TryGetValue(current.Entry.Anchor, out List<LocalizationAlignmentEntry>? exactMatches)) {
                     LocalizationAlignmentEntry previous = exactMatches[0];
                     usedPreviousKeys.Add(previous.Key);
@@ -95,10 +114,13 @@ namespace Inscape.Tooling {
 
         static Dictionary<string, List<LocalizationAlignmentEntry>> CreateEntriesByAnchor(IReadOnlyList<LocalizationEntryModel> entries,
                                                                                          Dictionary<string, StoryNodeMapEntryModel> nodeMapByTitle,
+                                                                                         LocalizationLineIdentityLookup lineIdentityLookup,
+                                                                                         string rootPath,
                                                                                          bool isCurrent) {
             Dictionary<string, List<LocalizationAlignmentEntry>> map = new Dictionary<string, List<LocalizationAlignmentEntry>>(System.StringComparer.Ordinal);
+            Dictionary<string, int> lineCounters = new Dictionary<string, int>(System.StringComparer.Ordinal);
             for (int i = 0; i < entries.Count; i += 1) {
-                LocalizationAlignmentEntry entry = CreateAlignmentEntry(entries[i], nodeMapByTitle, isCurrent, i);
+                LocalizationAlignmentEntry entry = CreateAlignmentEntry(entries[i], nodeMapByTitle, lineIdentityLookup, rootPath, lineCounters, isCurrent, i);
                 if (string.IsNullOrWhiteSpace(entry.Entry.Anchor)) {
                     continue;
                 }
@@ -114,16 +136,22 @@ namespace Inscape.Tooling {
 
         static List<LocalizationAlignmentEntry> CreateAlignmentEntries(IReadOnlyList<LocalizationEntryModel> entries,
                                                                        Dictionary<string, StoryNodeMapEntryModel> nodeMapByTitle,
+                                                                       LocalizationLineIdentityLookup lineIdentityLookup,
+                                                                       string rootPath,
                                                                        bool isCurrent) {
             List<LocalizationAlignmentEntry> result = new List<LocalizationAlignmentEntry>();
+            Dictionary<string, int> lineCounters = new Dictionary<string, int>(System.StringComparer.Ordinal);
             for (int i = 0; i < entries.Count; i += 1) {
-                result.Add(CreateAlignmentEntry(entries[i], nodeMapByTitle, isCurrent, i));
+                result.Add(CreateAlignmentEntry(entries[i], nodeMapByTitle, lineIdentityLookup, rootPath, lineCounters, isCurrent, i));
             }
             return result;
         }
 
         static LocalizationAlignmentEntry CreateAlignmentEntry(LocalizationEntryModel entry,
                                                                Dictionary<string, StoryNodeMapEntryModel> nodeMapByTitle,
+                                                               LocalizationLineIdentityLookup lineIdentityLookup,
+                                                               string rootPath,
+                                                               Dictionary<string, int> lineCounters,
                                                                bool isCurrent,
                                                                int index) {
             string nodeId = string.Empty;
@@ -131,12 +159,120 @@ namespace Inscape.Tooling {
                 nodeId = nodeMapEntry.Id;
             }
 
-            return new LocalizationAlignmentEntry {
+            LocalizationAlignmentEntry result = new LocalizationAlignmentEntry {
                 Entry = entry,
                 NodeId = nodeId,
                 Sequence = index,
                 Key = (isCurrent ? "current:" : "previous:") + index.ToString(System.Globalization.CultureInfo.InvariantCulture) + ":" + entry.Anchor,
             };
+            ApplyLineIdentity(result, lineIdentityLookup, rootPath, lineCounters);
+            return result;
+        }
+
+        static LocalizationAlignmentLineIdentityModel CreateReportLineIdentity(LocalizationAlignmentLineIdentityInputModel input) {
+            return new LocalizationAlignmentLineIdentityModel {
+                Status = input.Status,
+                Path = input.Path,
+                Message = input.Message,
+                HasDrift = input.HasDrift,
+            };
+        }
+
+        static LocalizationLineIdentityLookup CreateLineIdentityLookup(LocalizationAlignmentLineIdentityInputModel input,
+                                                                       string rootPath) {
+            LocalizationLineIdentityLookup lookup = new LocalizationLineIdentityLookup {
+                Status = input.Status,
+            };
+            if (input.Status != "available") {
+                return lookup;
+            }
+
+            for (int documentIndex = 0; documentIndex < input.LineMap.Documents.Count; documentIndex += 1) {
+                LocalizationLineMapDocumentModel document = input.LineMap.Documents[documentIndex];
+                string sourcePath = NormalizeSourcePath(rootPath, document.SourcePath);
+                for (int blockIndex = 0; blockIndex < document.Blocks.Count; blockIndex += 1) {
+                    LocalizationLineMapBlockModel block = document.Blocks[blockIndex];
+                    for (int lineIndex = 0; lineIndex < block.Lines.Count; lineIndex += 1) {
+                        LocalizationLineMapEntryModel line = block.Lines[lineIndex];
+                        LocalizationLineIdentityEntry identity = new LocalizationLineIdentityEntry {
+                            LineId = line.LineId,
+                            Fingerprint = line.Fingerprint,
+                            LineNumber = line.LineNumber,
+                            Status = "available",
+                        };
+                        string blockKey = string.IsNullOrWhiteSpace(block.BlockTitle) ? block.BlockId : block.BlockTitle;
+                        lookup.ByKey[CreateLineIdentityKey(sourcePath, blockKey, NormalizeLineKind(line.Kind), line.Speaker, line.LineNumber)] = identity;
+                    }
+                }
+            }
+
+            return lookup;
+        }
+
+        static void ApplyLineIdentity(LocalizationAlignmentEntry entry,
+                                      LocalizationLineIdentityLookup lookup,
+                                      string rootPath,
+                                      Dictionary<string, int> lineCounters) {
+            if (lookup.Status != "available") {
+                entry.LineIdentityStatus = lookup.Status;
+                return;
+            }
+
+            string sourcePath = NormalizeSourcePath(rootPath, entry.Entry.Source.SourcePath);
+            string kind = NormalizeLineKind(entry.Entry.Kind);
+            string counterKey = sourcePath + "\n" + entry.Entry.NodeName;
+            lineCounters.TryGetValue(counterKey, out int currentCount);
+            int lineNumber = currentCount + 1;
+            lineCounters[counterKey] = lineNumber;
+
+            string identityKey = CreateLineIdentityKey(sourcePath, entry.Entry.NodeName, kind, entry.Entry.Speaker, lineNumber);
+            if (lookup.ByKey.TryGetValue(identityKey, out LocalizationLineIdentityEntry? identity)) {
+                entry.LineId = identity.LineId;
+                entry.LineFingerprint = identity.Fingerprint;
+                entry.LineIdentityStatus = identity.Status;
+            } else {
+                entry.LineIdentityStatus = "unmatched";
+            }
+        }
+
+        static string CreateLineIdentityKey(string sourcePath,
+                                            string blockTitle,
+                                            string kind,
+                                            string speaker,
+                                            int lineNumber) {
+            return sourcePath + "\n"
+                + blockTitle + "\n"
+                + kind + "\n"
+                + speaker + "\n"
+                + lineNumber.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        static string NormalizeLineKind(string kind) {
+            return kind switch {
+                "Dialogue" => "dialogue",
+                "ChoicePrompt" => "choice-prompt",
+                "ChoiceOption" => "choice-option",
+                _ => kind.ToLowerInvariant(),
+            };
+        }
+
+        static string NormalizeSourcePath(string rootPath, string sourcePath) {
+            if (string.IsNullOrWhiteSpace(sourcePath)) {
+                return string.Empty;
+            }
+
+            string normalizedSource = sourcePath.Replace('\\', '/');
+            if (!Path.IsPathRooted(sourcePath)) {
+                return normalizedSource;
+            }
+
+            string full = Path.GetFullPath(sourcePath);
+            string root = Path.GetFullPath(rootPath);
+            if (!full.StartsWith(root, System.StringComparison.OrdinalIgnoreCase)) {
+                return normalizedSource;
+            }
+
+            return Path.GetRelativePath(root, full).Replace('\\', '/');
         }
 
         static List<LocalizationAlignmentCandidateMatch> FindCandidates(LocalizationAlignmentEntry current,
@@ -243,6 +379,9 @@ namespace Inscape.Tooling {
                 SourcePath = entry.Source.SourcePath,
                 Line = entry.Source.Line,
                 Column = entry.Source.Column,
+                LineId = current.LineId,
+                LineFingerprint = current.LineFingerprint,
+                LineIdentityStatus = current.LineIdentityStatus,
             };
 
             if (previous != null) {
@@ -266,6 +405,9 @@ namespace Inscape.Tooling {
                 Line = entry.Entry.Source.Line,
                 Column = entry.Entry.Source.Column,
                 Similarity = Math.Round(similarity, 4),
+                LineId = entry.LineId,
+                LineFingerprint = entry.LineFingerprint,
+                LineIdentityStatus = entry.LineIdentityStatus,
             };
         }
 
@@ -316,8 +458,14 @@ namespace Inscape.Tooling {
             int contextDistance = ContextDistance(current.Entry.Text, previous.Entry.Text);
             int fingerprintDistance = FingerprintDistance(current.Entry.Text, previous.Entry.Text);
             int neighborDistance = NeighborDistance(current.Entry.Text, previous.Entry.Text);
+            int lineIdentityDistance = LineIdentityDistance(current, previous);
             List<string> reasons = new List<string>();
-            int rankingPenalty = sequenceDistance * SequencePenaltyWeight + lineDistance * LinePenaltyWeight + contextDistance * ContextPenaltyWeight + fingerprintDistance * FingerprintPenaltyWeight + neighborDistance * NeighborPenaltyWeight;
+            int rankingPenalty = sequenceDistance * SequencePenaltyWeight
+                + lineDistance * LinePenaltyWeight
+                + contextDistance * ContextPenaltyWeight
+                + fingerprintDistance * FingerprintPenaltyWeight
+                + neighborDistance * NeighborPenaltyWeight
+                + lineIdentityDistance * LineIdentityPenaltyWeight;
 
             if (current.NodeId.Length > 0 && current.NodeId == previous.NodeId) {
                 reasons.Add("same-stable-node");
@@ -365,6 +513,15 @@ namespace Inscape.Tooling {
             } else if (neighborDistance == 1) {
                 reasons.Add("near-neighbor-shape");
                 similarity += 0.004;
+                rankingPenalty = Math.Max(0, rankingPenalty - 1);
+            }
+            if (lineIdentityDistance == 0 && !string.IsNullOrWhiteSpace(current.LineId)) {
+                reasons.Add("same-line-id");
+                similarity += 0.035;
+                rankingPenalty = Math.Max(0, rankingPenalty - 6);
+            } else if (lineIdentityDistance == 1) {
+                reasons.Add("near-line-order");
+                similarity += 0.008;
                 rankingPenalty = Math.Max(0, rankingPenalty - 1);
             }
 
@@ -502,6 +659,18 @@ namespace Inscape.Tooling {
             return distance <= 2 ? 1 : 2;
         }
 
+        static int LineIdentityDistance(LocalizationAlignmentEntry current, LocalizationAlignmentEntry previous) {
+            if (string.IsNullOrWhiteSpace(current.LineId) || string.IsNullOrWhiteSpace(previous.LineId)) {
+                return 2;
+            }
+
+            if (current.LineId == previous.LineId) {
+                return 0;
+            }
+
+            return current.Entry.NodeName == previous.Entry.NodeName ? 1 : 2;
+        }
+
         static string NeighborShape(string value) {
             string[] tokens = value.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             if (tokens.Length == 0) {
@@ -539,6 +708,32 @@ namespace Inscape.Tooling {
             public int Sequence { get; set; }
 
             public string Key { get; set; } = string.Empty;
+
+            public string LineId { get; set; } = string.Empty;
+
+            public string LineFingerprint { get; set; } = string.Empty;
+
+            public string LineIdentityStatus { get; set; } = string.Empty;
+
+        }
+
+        sealed class LocalizationLineIdentityLookup {
+
+            public string Status { get; set; } = string.Empty;
+
+            public Dictionary<string, LocalizationLineIdentityEntry> ByKey { get; set; } = new Dictionary<string, LocalizationLineIdentityEntry>(System.StringComparer.Ordinal);
+
+        }
+
+        sealed class LocalizationLineIdentityEntry {
+
+            public string LineId { get; set; } = string.Empty;
+
+            public string Fingerprint { get; set; } = string.Empty;
+
+            public int LineNumber { get; set; }
+
+            public string Status { get; set; } = string.Empty;
 
         }
 

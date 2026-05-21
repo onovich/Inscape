@@ -35,6 +35,17 @@ namespace Inscape.Tooling {
             return true;
         }
 
+        public static bool HasDrift(LocalizationLineMapModel map,
+                                    LocalizationLineMapModel currentMap) {
+            if (string.IsNullOrWhiteSpace(map.LastSourceFingerprint)) {
+                return false;
+            }
+
+            return !string.Equals(map.LastSourceFingerprint,
+                                  currentMap.LastSourceFingerprint,
+                                  System.StringComparison.Ordinal);
+        }
+
     }
 
 }

@@ -177,7 +177,7 @@
 小节点：
 
 - [x] G10.1 实现 stable node id sidecar 的创建、读取、更新、删除和冲突处理。
-- [ ] G10.2 把标题创建 / 重命名流程接入 stable node id 维护；作者仍只写中文标题，机器 ID 由工具维护。
+- [~] G10.2 把标题创建 / 重命名流程接入 stable node id 维护；作者仍只写中文标题，机器 ID 由工具维护。当前标题创建、显式更新、自动同步和重命名审查入口都已落地，剩余只需评估是否继续补 multi-apply 或更强的批量审查流。
   - [x] G10.2.1 VSCode 新增显式 `Inscape: Update Stable Node Map` 入口，调用 `update-node-map-project`，并把活动未保存 `.inscape` 文档通过 `--override` 传给 CLI。
   - [x] G10.2.2 标题创建后自动同步 stable node map，插入标题成功后会对当前工作区静默执行一次 `update-node-map-project`，失败时只提示自动同步失败，不回滚插入动作。
 - [x] G10.2.3 标题重命名的人工确认 / 冲突报告入口：`StoryNodeMapUpdateDomain` 现在会输出 `inscape.node-map-update-report`，CLI `update-node-map-project` 新增 `--report`，VSCode 新增显式 `Inscape: Review Stable Node Map Changes`，并在显式 `Update Stable Node Map` 发现 `manual-review` / `conflict` 时给出审查入口。
@@ -228,7 +228,6 @@
 
 小节点：
 
-- [ ] G13.1 做一次 VSCode 现状命名 / 分层巡检：以 `EditorAuthoring`、`Localization`、`Preview` 最近新增代码为重点，列出不符合 `Layer / Business / Role / File`、角色后缀、薄入口和弱语义命名规则的点。
 - [~] G13.1 做一次 VSCode 现状命名 / 分层巡检：首轮已确认 `EditorAuthoringCommand` 与 `LocalizationCommand` 最近都再次吸收了 report review UI、二级 Quick Pick、source jump 和 CLI invocation 编排，单文件角色继续膨胀；`extension.js` 也出现重复注入 `openLocation` / `locationFromPayload` 的装配重复。下一步要把这些问题拆成可执行收口节点，而不是只停留在审计结论。
 - [ ] G13.2 把 VSCode 重构收口重新列回近期主 TODO：后续每推进一个 VSCode 功能节点，都要同步评估是否引入新的 glue 膨胀、跨业务拼装或命名倒退。
 - [ ] G13.3 固化“节点完成后立即自检”的工作流：至少检查命名、目录、入口厚度、跨层依赖、是否把可复用语义错误留在 VSCode 而非下沉 Tooling / LanguageServer。
@@ -246,15 +245,13 @@
 小节点：
 
 - [~] G14.1 第一版 line sidecar 数据结构与 refresh domain：已新增 `LocalizationLineMapModel`、`LocalizationLineMapRefreshDomain`、reader/writer 草案，并按保守规则处理改字/插行/删行/简单拆并。当前回归测试已覆盖：改字、中间插行、中间删行、拆行保留首行 id、并行保留首行 id、重复句邻接修改、复杂替换按 remove/add 处理。下一步再评估是否需要更强的重复句 disambiguation。
-- [~] G14.2 VSCode 显式刷新命令：已接入 `refresh-l10n-line-map-project` CLI/命令入口，下一步补完整 report 打开与使用路径。
-- [~] G14.2 VSCode 显式刷新命令：已接入 `refresh-l10n-line-map-project` CLI/命令入口，并补了第一版 `Show Summary` 提示，让作者在刷新后直接看到 changed / added / removed 统计；下一步再评估是否需要更细的 block 级展示。
+- [~] G14.2 VSCode 显式刷新命令：已接入 `refresh-l10n-line-map-project` CLI/命令入口，并补了第一版 `Show Summary` 提示，让作者在刷新后直接看到 changed / added / removed 统计；当前又补了 `Show Details`，能按 block/change 摘要查看细项，并已支持直接跳到对应 source 行。CLI `--report` 现在也会输出完整 refresh result（lineMap/report/status），方便后续本地化模块直接消费。下一步再评估是否需要更强的 block 级审查流。
 - [~] G14.3 debug 模式：已在 `preview.sourceSyncMode` 新增 `debug` 值，并补第一版 hover debug 信息；当前已接入 `LocalizationLineMapDebugController` 读取 line sidecar 并显示 `blockId / lineId / lineNumber`，下一步再评估是否要扩展 speaker / kind 等附加元数据。
-- [~] G14.4 sidecar 持久化闭环：当前已补 `inscape.line-map.json` reader/writer、CLI `refresh-l10n-line-map-project`、VSCode `Refresh Localization Line State` 命令、`Show Summary` 提示，以及 `localization.lineMap` 配置路径解析。最新一刀已补 writer `.backup` 快照与 `Restore Backup` 恢复入口；下一步继续补更细的本地化模块消费方式与冲突处理策略。
+- [~] G14.4 sidecar 持久化闭环：当前已补 `inscape.line-map.json` reader/writer、CLI `refresh-l10n-line-map-project`、VSCode `Refresh Localization Line State` 命令、`Show Summary`/`Show Details` 提示，以及 `localization.lineMap` 配置路径解析。最新一刀已补 writer `.backup` 快照、`Restore Backup` 恢复入口与 `LastSourceFingerprint` 漂移指纹基础字段；drift 检测现在也已进入 refresh result/status 与 VSCode 显式决策流（Continue / Show Details / Restore Backup / Cancel），并附带操作建议。下一步继续补更细的本地化模块消费方式。
   - [~] G13.7.1 首轮盘点已完成：
     - `LocalizationCommand` 目前主要是 VSCode 宿主适配：工作区选择、文件对话框、格式选择、CLI invocation、成功提示、报告文件打开。
     - `LocalizationReviewController` 目前仍直接依赖 VSCode QuickPick 与 source jump，但其承载的 `report -> item list -> candidate action list -> location` 交互骨架已经是跨宿主可复用概念。
     - `LocalizationAlignmentAuditDomain`、`LocalizationAlignmentReportModel`、candidate scoring、status/review 状态机已经正确位于 `Internal/Tooling`。
-  - [ ] G13.7.2 下一步评估从 VSCode 下沉的第一批目标：把 report item / candidate action 的 view-model 组织与排序从 `LocalizationReviewController` 中抽成宿主无关契约，供未来 VSCode、自研编辑器或别的宿主复用。
   - [x] G13.7.2 下一步评估从 VSCode 下沉的第一批目标：report item / candidate action 的 presenter model 组织已从 VSCode 下沉到 `Internal/Tooling/Localization/LocalizationReviewPresenterModelBuilderDomain`，并挂入 `LocalizationAlignmentReportModel.Presenter`。当前 VSCode 只保留 `Scripts/Localization/Controllers/LocalizationReviewController` 作为宿主交互壳，以及 `Scripts/Localization/ViewModels/LocalizationReviewQuickPickAdapter` 作为 QuickPick 标签映射层。
   - [ ] G13.7.3 若未来编辑器需要按 item / candidate 逐项查询，而不是只消费完整 JSON report，再评估是否把 Localization review 查询能力补进 `LanguageServer`，而不是让各宿主自行读文件和重拼交互模型。
 
@@ -268,6 +265,35 @@ Goal 10 后续细化：
 
 - [~] G10.4.2 candidate scoring 细化：已补第一轮 tie-break 收口，当前会在相似度并列时优先比较 ranking penalty（sequence / source line 距离），再比较 sequence distance，减少“文本相似但上下文更远”的旧译文排到前面的情况。第二轮已把 context shape（首词 / 末词 / token 数）并入 penalty 与 reason，第三轮又补了 keyword fingerprint（长度 >= 4 的 token 集）信号与回归测试，第四轮继续补了 neighbor shape（首词 / 第二词 / 末词）信号，进一步压低“位置接近、轮廓相似、关键词相近但邻接语义仍更远”的候选误排。后续仍可继续评估更强的局部上下文 fingerprint。
 - [~] G13.1.c 收 `extension.js` 装配重复：已把 `openLocation` / `locationFromPayload` 收成共享 `locationServices` 注入块，并把文件打开 glue 收成 `openFileInEditor`；下一步可继续评估是否要把更多 VSCode 共享依赖按组合根分组，而不是让 `extension.js` 参数表重新横向扩张。
+
+## Goal 15：本地化 line sidecar 消费闭环
+
+状态：已完成第一版。Goal 14 已经把 line sidecar 的数据结构、refresh、debug hover、报告详情、backup / restore 与 drift status 打通；本目标已把这些结果接入 `audit-l10n-alignment-project` 的 alignment 判断和 report 输出。后续如果要继续扩展，应优先评估更强的 line identity 多版本迁移契约，而不是继续堆 VSCode 局部提示。
+
+目标：让 `audit-l10n-alignment-project` / 未来可选本地化更新流程优先利用 line sidecar 的 `blockId / lineId / fingerprint / refresh status`，把 line identity 从调试信息提升为迁移判断依据；同时保持相似文本只作为人工候选，不回到静默继承旧译文。
+
+边界：
+
+- 不改变 `update-l10n-project` 默认确认译文行为。
+- 不把 VSCode QuickPick 交互模型下沉到 Compiler。
+- 不让 `Inscape.Compiler` 依赖 line sidecar writer、VSCode 或本地文件布局。
+- 不一次性设计完整翻译管理系统；只打通 line sidecar -> alignment audit / review 的最小闭环。
+
+小节点：
+
+- [x] G15.1 定义本地化 alignment 如何读取 line sidecar：CLI audit 会按 `localization.lineMap` / 默认 `inscape.line-map.json` 读取；缺失 sidecar 保持旧行为，旧格式无 `LastSourceFingerprint` 标记为 `legacy`，stale sidecar 标记为 `drift` 且不参与评分。
+- [x] G15.2 扩展 `LocalizationAlignmentAuditDomain` 的候选信号：在 stable node id 与文本/sequence/context 信号之外，引入 `lineId` / line fingerprint / block-local line order 作为可解释 ranking reason，当前 reason 会记录 `same-line-id` / `near-line-order`。
+- [x] G15.3 更新 JSON / text report：report 顶层新增 `lineIdentity` 状态，item / candidate 暴露 `lineId`、`lineFingerprint` 与 `lineIdentityStatus`，text report 也会展示 line identity 摘要。
+- [x] G15.4 补 CLI 验证样例：已覆盖 refresh line map -> 改写文本 -> 再 refresh -> audit alignment 的 available 路径，以及未 refresh 时的 drift 路径。
+- [x] G15.5 收口 VSCode 宿主适配：VSCode 不重新拼装 line identity 语义，继续消费 Tooling / CLI 输出的 report 与 presenter 字段。
+- [x] G15.6 文档收口：同步 `docs/todo.md`、`docs/agent-handoff.md` 与本目标状态；当前第一版没有新增长期语义分歧，暂不新增 ADR。
+
+验收：
+
+- 没有 line sidecar 时，现有 alignment audit 行为保持可用。
+- 有 line sidecar 且未 drift 时，候选排序和 reason 能体现 line identity 信号。
+- 有 drift 时，report 清晰提示身份依据降级或要求先 refresh，不静默使用可疑 sidecar。
+- `dotnet build Inscape.slnx --no-restore` 与内部测试通过；涉及 VSCode 入口时继续跑 Node 语法检查。
 
 ## Goal 9：项目资源 / 代码分层收口
 

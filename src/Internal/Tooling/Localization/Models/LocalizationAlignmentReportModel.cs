@@ -12,6 +12,8 @@ namespace Inscape.Tooling {
 
         public LocalizationAlignmentSummaryModel Summary { get; set; } = new LocalizationAlignmentSummaryModel();
 
+        public LocalizationAlignmentLineIdentityModel LineIdentity { get; set; } = new LocalizationAlignmentLineIdentityModel();
+
         public List<LocalizationAlignmentItemModel> Items { get; set; } = new List<LocalizationAlignmentItemModel>();
 
         public LocalizationReviewPresenterModel Presenter { get; set; } = new LocalizationReviewPresenterModel();
@@ -31,6 +33,32 @@ namespace Inscape.Tooling {
         public int ConflictCount { get; set; }
 
         public int StaleCount { get; set; }
+
+    }
+
+    public sealed class LocalizationAlignmentLineIdentityModel {
+
+        public string Status { get; set; } = string.Empty;
+
+        public string Path { get; set; } = string.Empty;
+
+        public string Message { get; set; } = string.Empty;
+
+        public bool HasDrift { get; set; }
+
+    }
+
+    public sealed class LocalizationAlignmentLineIdentityInputModel {
+
+        public string Status { get; set; } = string.Empty;
+
+        public string Path { get; set; } = string.Empty;
+
+        public string Message { get; set; } = string.Empty;
+
+        public bool HasDrift { get; set; }
+
+        public LocalizationLineMapModel LineMap { get; set; } = new LocalizationLineMapModel();
 
     }
 
@@ -59,6 +87,12 @@ namespace Inscape.Tooling {
         public int Line { get; set; }
 
         public int Column { get; set; }
+
+        public string LineId { get; set; } = string.Empty;
+
+        public string LineFingerprint { get; set; } = string.Empty;
+
+        public string LineIdentityStatus { get; set; } = string.Empty;
 
         public List<LocalizationAlignmentCandidateModel> Candidates { get; set; } = new List<LocalizationAlignmentCandidateModel>();
 
@@ -89,6 +123,12 @@ namespace Inscape.Tooling {
         public int Column { get; set; }
 
         public double Similarity { get; set; }
+
+        public string LineId { get; set; } = string.Empty;
+
+        public string LineFingerprint { get; set; } = string.Empty;
+
+        public string LineIdentityStatus { get; set; } = string.Empty;
 
     }
 

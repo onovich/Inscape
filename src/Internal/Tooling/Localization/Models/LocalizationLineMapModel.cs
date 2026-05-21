@@ -12,6 +12,8 @@ namespace Inscape.Tooling {
 
         public string LastRefreshedAt { get; set; } = string.Empty;
 
+        public string LastSourceFingerprint { get; set; } = string.Empty;
+
     }
 
     public sealed class LocalizationLineMapDocumentModel {
@@ -54,6 +56,18 @@ namespace Inscape.Tooling {
 
         public LocalizationLineRefreshReportModel Report { get; set; } = new LocalizationLineRefreshReportModel();
 
+        public LocalizationLineRefreshStatusModel Status { get; set; } = new LocalizationLineRefreshStatusModel();
+
+    }
+
+    public sealed class LocalizationLineRefreshStatusModel {
+
+        public bool HasDrift { get; set; }
+
+        public string Message { get; set; } = string.Empty;
+
+        public string Recommendation { get; set; } = string.Empty;
+
     }
 
     public sealed class LocalizationLineRefreshReportModel {
@@ -91,6 +105,10 @@ namespace Inscape.Tooling {
         public string OldText { get; set; } = string.Empty;
 
         public string NewText { get; set; } = string.Empty;
+
+        public string Summary { get; set; } = string.Empty;
+
+        public string BlockTitle { get; set; } = string.Empty;
 
     }
 

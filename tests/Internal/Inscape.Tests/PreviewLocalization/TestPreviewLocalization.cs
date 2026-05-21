@@ -560,6 +560,52 @@ Narrator: Return captain notes tonight.
             AssertTrue(chosen.Candidates[0].Reason.Contains("same-neighbor-shape", StringComparison.Ordinal) || chosen.Candidates[0].Reason.Contains("near-neighbor-shape", StringComparison.Ordinal), "Preferred candidate should record neighbor-shape reason.");
         }
 
+        static void LocalizationAlignmentAuditUsesLineSidecarIdentity() {
+            StoryGraphCompilerDomain compiler = new StoryGraphCompilerDomain();
+            StoryGraphCompilationResultModel initial = compiler.Compile(new List<DslScriptSourceModel> {
+                new DslScriptSourceModel("D:/LabProjects/Inscape/story/court.inscape", """
+# intro
+Narrator: Ask guard about lantern tonight.
+Narrator: Ask clerk about lantern tonight.
+"""),
+            }, "D:/LabProjects/Inscape");
+            StoryNodeMapModel nodeMap = StoryNodeMapUpdateDomain.Update(new StoryNodeMapModel(),
+                                                                        initial,
+                                                                        "D:/LabProjects/Inscape",
+                                                                        DateTimeOffset.Parse("2026-05-19T17:00:00Z", System.Globalization.CultureInfo.InvariantCulture));
+            LocalizationLineRefreshResultModel firstRefresh = LocalizationLineMapRefreshDomain.Refresh(new LocalizationLineMapModel(), initial, "D:/LabProjects/Inscape");
+            string oldCsv = LocalizationCsvFlowDomain.Extract(initial.Graph);
+            string guardAnchor = AnchorForText(oldCsv, "Ask guard about lantern tonight.");
+            string clerkAnchor = AnchorForText(oldCsv, "Ask clerk about lantern tonight.");
+            string oldCsvWithTranslations = "anchor,node,kind,speaker,text,translation,sourcePath,line,column\n"
+                + guardAnchor + ",intro,Dialogue,Narrator,Ask guard about lantern tonight.,Guard translation,story/court.inscape,2,1\n"
+                + clerkAnchor + ",intro,Dialogue,Narrator,Ask clerk about lantern tonight.,Clerk translation,story/court.inscape,3,1\n";
+
+            StoryGraphCompilationResultModel updated = compiler.Compile(new List<DslScriptSourceModel> {
+                new DslScriptSourceModel("D:/LabProjects/Inscape/story/court.inscape", """
+# intro
+Narrator: Ask guard about records tonight.
+Narrator: Ask clerk about lantern tonight.
+"""),
+            }, "D:/LabProjects/Inscape");
+            LocalizationLineRefreshResultModel refreshed = LocalizationLineMapRefreshDomain.Refresh(firstRefresh.LineMap, updated, "D:/LabProjects/Inscape");
+
+            LocalizationAlignmentReportModel report = LocalizationAlignmentAuditDomain.Audit(updated,
+                                                                                             new Inscape.Compiler.Localization.LocalizationCsvReaderDomain().Read(oldCsvWithTranslations),
+                                                                                             nodeMap,
+                                                                                             "D:/LabProjects/Inscape",
+                                                                                             new LocalizationAlignmentLineIdentityInputModel {
+                                                                                                 Status = "available",
+                                                                                                 LineMap = refreshed.LineMap,
+                                                                                             });
+
+            LocalizationAlignmentItemModel changed = FindAlignmentItem(report, "changed");
+            AssertEqual("Guard translation", changed.Candidates[0].Translation, "Line sidecar identity should keep the changed line paired with its previous translation candidate.");
+            AssertTrue(changed.Candidates[0].Reason.Contains("same-line-id", StringComparison.Ordinal), "Preferred candidate should record line identity reason.");
+            AssertEqual(changed.LineId, changed.Candidates[0].LineId, "Current item and preferred candidate should share the same line id.");
+            AssertTrue(!string.IsNullOrWhiteSpace(changed.LineFingerprint), "Current item should expose line fingerprint for review.");
+        }
+
         static void CliAuditL10nAlignmentProjectEmitsJson() {
             string directory = Path.Combine(Path.GetTempPath(), "inscape-tests", Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(directory);
@@ -626,6 +672,115 @@ Narrator: Hello there.
             AssertTrue(text.Contains("Summary: kept 1, new 0, changed 0, removed 0, conflict 0, stale 0."), "Alignment text report should include summary line.");
         }
 
+        static void CliAuditL10nAlignmentProjectReportsLineIdentityStatus() {
+            string directory = Path.Combine(Path.GetTempPath(), "inscape-tests", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory);
+            string storyPath = Path.Combine(directory, "story.inscape");
+            string oldCsvPath = Path.Combine(directory, "old.csv");
+
+            File.WriteAllText(storyPath, """
+# intro
+@entry
+Narrator: Ask guard about lantern tonight.
+""", Encoding.UTF8);
+            RunCliForOutput(new[] { "update-node-map-project", directory });
+            RunCliForOutput(new[] { "refresh-l10n-line-map-project", directory });
+            string initialCsv = RunCliForOutput(new[] { "extract-l10n-project", directory });
+            string anchor = FirstDataAnchor(initialCsv);
+            File.WriteAllText(oldCsvPath,
+                              "anchor,node,kind,speaker,text,translation,sourcePath,line,column\n"
+                              + anchor + ",intro,Dialogue,Narrator,Ask guard about lantern tonight.,Guard translation,story.inscape,3,1\n",
+                              Encoding.UTF8);
+
+            File.WriteAllText(storyPath, """
+# intro
+@entry
+Narrator: Ask guard about records tonight.
+""", Encoding.UTF8);
+            RunCliForOutput(new[] { "refresh-l10n-line-map-project", directory });
+
+            string json;
+            try {
+                json = RunCliForOutput(new[] { "audit-l10n-alignment-project", directory, "--from", oldCsvPath });
+            } finally {
+                Directory.Delete(directory, true);
+            }
+
+            using JsonDocument document = JsonDocument.Parse(json);
+            JsonElement root = document.RootElement;
+            AssertEqual("available", root.GetProperty("lineIdentity").GetProperty("status").GetString(), "Alignment report should expose available line identity status.");
+            JsonElement candidate = root.GetProperty("items")[0].GetProperty("candidates")[0];
+            AssertTrue(candidate.GetProperty("reason").GetString()!.Contains("same-line-id", StringComparison.Ordinal), "Alignment candidate should include line identity reason.");
+            AssertTrue(!string.IsNullOrWhiteSpace(candidate.GetProperty("lineId").GetString()), "Alignment candidate should expose line id.");
+        }
+
+        static void CliAuditL10nAlignmentProjectReportsLineIdentityDrift() {
+            string directory = Path.Combine(Path.GetTempPath(), "inscape-tests", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory);
+            string storyPath = Path.Combine(directory, "story.inscape");
+            string oldCsvPath = Path.Combine(directory, "old.csv");
+
+            File.WriteAllText(storyPath, """
+# intro
+@entry
+Narrator: Ask guard about lantern tonight.
+""", Encoding.UTF8);
+            RunCliForOutput(new[] { "update-node-map-project", directory });
+            RunCliForOutput(new[] { "refresh-l10n-line-map-project", directory });
+            string initialCsv = RunCliForOutput(new[] { "extract-l10n-project", directory });
+            string anchor = FirstDataAnchor(initialCsv);
+            File.WriteAllText(oldCsvPath,
+                              "anchor,node,kind,speaker,text,translation,sourcePath,line,column\n"
+                              + anchor + ",intro,Dialogue,Narrator,Ask guard about lantern tonight.,Guard translation,story.inscape,3,1\n",
+                              Encoding.UTF8);
+
+            File.WriteAllText(storyPath, """
+# intro
+@entry
+Narrator: Ask guard about records tonight.
+""", Encoding.UTF8);
+
+            string json;
+            try {
+                json = RunCliForOutput(new[] { "audit-l10n-alignment-project", directory, "--from", oldCsvPath });
+            } finally {
+                Directory.Delete(directory, true);
+            }
+
+            using JsonDocument document = JsonDocument.Parse(json);
+            JsonElement root = document.RootElement;
+            AssertEqual("drift", root.GetProperty("lineIdentity").GetProperty("status").GetString(), "Alignment report should expose drift status when sidecar is stale.");
+            AssertTrue(root.GetProperty("lineIdentity").GetProperty("hasDrift").GetBoolean(), "Alignment report should expose hasDrift flag.");
+            JsonElement candidate = root.GetProperty("items")[0].GetProperty("candidates")[0];
+            AssertFalse(candidate.GetProperty("reason").GetString()!.Contains("same-line-id", StringComparison.Ordinal), "Drifted sidecar should not feed line identity scoring.");
+        }
+
+        static void CliRefreshLocalizationLineStateEmitsRefreshResultJson() {
+            string directory = Path.Combine(Path.GetTempPath(), "inscape-tests", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory);
+
+            try {
+                File.WriteAllText(Path.Combine(directory, "story.inscape"), """
+# intro
+@entry
+Narrator: Hello.
+""", Encoding.UTF8);
+
+                string reportPath = Path.Combine(directory, "refresh-report.json");
+                string output = RunCliForOutput(new[] { "refresh-l10n-line-map-project", directory, "--report", reportPath });
+                AssertTrue(output.Contains("inscape.line-map.json"), "Line refresh command should print the line map path.");
+
+                using JsonDocument report = JsonDocument.Parse(File.ReadAllText(reportPath, Encoding.UTF8));
+                JsonElement root = report.RootElement;
+                AssertTrue(root.TryGetProperty("report", out JsonElement reportProperty), "Line refresh report output should contain nested report object.");
+                AssertTrue(root.TryGetProperty("status", out JsonElement statusProperty), "Line refresh report output should contain status object.");
+                AssertEqual("inscape.localization-line-refresh", reportProperty.GetProperty("format").GetString(), "Nested line refresh report should preserve format.");
+                AssertTrue(statusProperty.TryGetProperty("hasDrift", out _), "Status object should expose drift flag.");
+            } finally {
+                Directory.Delete(directory, true);
+            }
+        }
+
         static void LocalizationLineMapRefreshTracksChangedAddedAndRemovedLines() {
             StoryGraphCompilerDomain compiler = new StoryGraphCompilerDomain();
             StoryGraphCompilationResultModel initial = compiler.Compile(new List<DslScriptSourceModel> {
@@ -654,6 +809,7 @@ Narrator: Gamma.
             AssertEqual("changed", block.Changes[0].Kind, "First refresh change should be changed.");
             AssertEqual("Alpha.", block.Changes[0].OldText, "Changed line should preserve old text.");
             AssertEqual("Alpha changed.", block.Changes[0].NewText, "Changed line should preserve new text.");
+            AssertTrue(block.Changes[0].Summary.Contains("changed line"), "Changed line should include summary text.");
             AssertEqual("changed", block.Changes[1].Kind, "Second line replacement should be represented as changed in first-pass rules.");
         }
 
@@ -722,6 +878,44 @@ Narrator: Gamma.
             } finally {
                 Directory.Delete(directory, true);
             }
+        }
+
+        static void LocalizationLineMapRefreshStoresSourceFingerprint() {
+            StoryGraphCompilerDomain compiler = new StoryGraphCompilerDomain();
+            StoryGraphCompilationResultModel initial = compiler.Compile(new List<DslScriptSourceModel> {
+                new DslScriptSourceModel("D:/LabProjects/Inscape/story/court.inscape", """
+# intro
+Narrator: Alpha.
+"""),
+            }, "D:/LabProjects/Inscape");
+
+            LocalizationLineRefreshResultModel refresh = LocalizationLineMapRefreshDomain.Refresh(new LocalizationLineMapModel(), initial, "D:/LabProjects/Inscape");
+            AssertTrue(!string.IsNullOrWhiteSpace(refresh.LineMap.LastSourceFingerprint), "Line map refresh should store source fingerprint for drift detection.");
+        }
+
+        static void LocalizationLineMapRefreshReportsDriftWhenFingerprintChanged() {
+            StoryGraphCompilerDomain compiler = new StoryGraphCompilerDomain();
+            StoryGraphCompilationResultModel initial = compiler.Compile(new List<DslScriptSourceModel> {
+                new DslScriptSourceModel("D:/LabProjects/Inscape/story/court.inscape", """
+# intro
+Narrator: Alpha.
+"""),
+            }, "D:/LabProjects/Inscape");
+
+            LocalizationLineRefreshResultModel firstRefresh = LocalizationLineMapRefreshDomain.Refresh(new LocalizationLineMapModel(), initial, "D:/LabProjects/Inscape");
+            firstRefresh.LineMap.LastSourceFingerprint = "stale-fingerprint";
+
+            StoryGraphCompilationResultModel updated = compiler.Compile(new List<DslScriptSourceModel> {
+                new DslScriptSourceModel("D:/LabProjects/Inscape/story/court.inscape", """
+# intro
+Narrator: Alpha changed.
+"""),
+            }, "D:/LabProjects/Inscape");
+
+            LocalizationLineRefreshResultModel refresh = LocalizationLineMapRefreshDomain.Refresh(firstRefresh.LineMap, updated, "D:/LabProjects/Inscape");
+            AssertTrue(refresh.Status.HasDrift, "Line refresh should report drift when the stored source fingerprint no longer matches the refreshed content.");
+            AssertTrue(!string.IsNullOrWhiteSpace(refresh.Status.Message), "Drift status should include a warning message.");
+            AssertTrue(!string.IsNullOrWhiteSpace(refresh.Status.Recommendation), "Drift status should include a recommendation for the operator.");
         }
 
         static void LocalizationLineMapRefreshTreatsInsertedMiddleLineAsAdded() {
@@ -936,6 +1130,13 @@ Narrator: Beta.
             AssertTrue(commandSource.Contains("refresh-l10n-line-map-project"), "Localization command should invoke localization line refresh CLI command.");
             AssertTrue(commandSource.Contains("Show Summary"), "Localization command should expose a line refresh summary action.");
             AssertTrue(commandSource.Contains("async showLineRefreshSummary(reportPath)"), "Localization command should summarize line refresh changes for the user.");
+            AssertTrue(commandSource.Contains("Show Details"), "Localization command should expose a detailed line refresh review action.");
+            AssertTrue(commandSource.Contains("async showLineRefreshDetails(reportPath)"), "Localization command should expose detailed line refresh picks.");
+            AssertTrue(commandSource.Contains("async openLineRefreshChange(selection, reportPath)"), "Localization command should support jumping from line refresh details to source.");
+            AssertTrue(commandSource.Contains("handleLineMapDriftDecision(report, reportPath"), "Localization command should route drift detection through an explicit decision flow.");
+            AssertTrue(commandSource.Contains("\"Continue\""), "Localization command should offer a continue action when line map drift is detected.");
+            AssertTrue(commandSource.Contains("\"Restore Backup\""), "Localization command should offer restore backup action when line map drift is detected.");
+            AssertTrue(commandSource.Contains("report.status.recommendation"), "Localization command should surface drift recommendations along with the warning.");
             AssertTrue(extensionSource.Contains("isDebugSourceSyncMode"), "Extension entry should expose debug source sync mode helper.");
             AssertTrue(extensionSource.Contains("new LocalizationLineMapDebugController({"), "Extension entry should assemble localization line map debug controller.");
             string hoverSource = File.ReadAllText(RepositoryFile("src/ExternalSupport/VSCode/Scripts/DslScript/Providers/DslScriptHoverProvider.js"));

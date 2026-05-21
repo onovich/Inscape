@@ -51,9 +51,26 @@ namespace Inscape.Tooling {
                 updatedMap.Documents.Add(updatedDocument);
             }
 
+            updatedMap.LastSourceFingerprint = BuildSourceFingerprint(updatedMap);
+
+            LocalizationLineMapModel fingerprintMap = new LocalizationLineMapModel {
+                Documents = updatedMap.Documents,
+                LastSourceFingerprint = updatedMap.LastSourceFingerprint,
+            };
+            bool hasDrift = LocalizationLineMapWriterDomain.HasDrift(existingMap, fingerprintMap);
+
             return new LocalizationLineRefreshResultModel {
                 LineMap = updatedMap,
                 Report = report,
+                Status = new LocalizationLineRefreshStatusModel {
+                    HasDrift = hasDrift,
+                    Message = hasDrift
+                        ? "The existing line sidecar fingerprint does not match the refreshed source snapshot. Review changes before replacing the current line map."
+                        : string.Empty,
+                    Recommendation = hasDrift
+                        ? "Restore the backup if the current sidecar is still authoritative, or continue if the refreshed content should replace it."
+                        : string.Empty,
+                }
             };
         }
 
@@ -80,6 +97,8 @@ namespace Inscape.Tooling {
                         LineId = updatedBlock.Lines[^1].LineId,
                         LineNumber = newIndex + 1,
                         NewText = newLine.Text,
+                        BlockTitle = snapshot.BlockTitle,
+                        Summary = "added line " + (newIndex + 1) + ": " + newLine.Text,
                     });
                     newIndex += 1;
                     continue;
@@ -91,6 +110,8 @@ namespace Inscape.Tooling {
                         LineId = oldLine.LineId,
                         OldLineNumber = oldLine.LineNumber,
                         OldText = oldLine.Text,
+                        BlockTitle = snapshot.BlockTitle,
+                        Summary = "removed line " + oldLine.LineNumber + ": " + oldLine.Text,
                     });
                     oldIndex += 1;
                     continue;
@@ -117,6 +138,8 @@ namespace Inscape.Tooling {
                         LineId = oldLine.LineId,
                         OldLineNumber = oldLine.LineNumber,
                         OldText = oldLine.Text,
+                        BlockTitle = snapshot.BlockTitle,
+                        Summary = "removed line " + oldLine.LineNumber + ": " + oldLine.Text,
                     });
                     oldIndex += 1;
                     continue;
@@ -130,6 +153,8 @@ namespace Inscape.Tooling {
                         LineId = entry.LineId,
                         LineNumber = newIndex + 1,
                         NewText = newLine.Text,
+                        BlockTitle = snapshot.BlockTitle,
+                        Summary = "added line " + (newIndex + 1) + ": " + newLine.Text,
                     });
                     newIndex += 1;
                     continue;
@@ -145,6 +170,8 @@ namespace Inscape.Tooling {
                         OldLineNumber = oldLine.LineNumber,
                         OldText = oldLine.Text,
                         NewText = newLine.Text,
+                        BlockTitle = snapshot.BlockTitle,
+                        Summary = "changed line " + (newIndex + 1) + ": " + oldLine.Text + " -> " + newLine.Text,
                     });
                     oldIndex += 1;
                     newIndex += 1;
@@ -158,6 +185,8 @@ namespace Inscape.Tooling {
                     LineId = addedFallback.LineId,
                     LineNumber = newIndex + 1,
                     NewText = newLine.Text,
+                    BlockTitle = snapshot.BlockTitle,
+                    Summary = "added line " + (newIndex + 1) + ": " + newLine.Text,
                 });
                 newIndex += 1;
             }
@@ -290,6 +319,24 @@ namespace Inscape.Tooling {
                 return sourcePath.Replace('\\', '/');
             }
             return Path.GetRelativePath(root, full).Replace('\\', '/');
+        }
+
+        static string BuildSourceFingerprint(LocalizationLineMapModel map) {
+            List<string> parts = new List<string>();
+            for (int documentIndex = 0; documentIndex < map.Documents.Count; documentIndex += 1) {
+                LocalizationLineMapDocumentModel document = map.Documents[documentIndex];
+                parts.Add(document.SourcePath);
+                for (int blockIndex = 0; blockIndex < document.Blocks.Count; blockIndex += 1) {
+                    LocalizationLineMapBlockModel block = document.Blocks[blockIndex];
+                    parts.Add(block.BlockId);
+                    for (int lineIndex = 0; lineIndex < block.Lines.Count; lineIndex += 1) {
+                        LocalizationLineMapEntryModel line = block.Lines[lineIndex];
+                        parts.Add(line.Kind + "|" + line.Speaker + "|" + line.Fingerprint);
+                    }
+                }
+            }
+
+            return string.Join("\n", parts);
         }
 
         sealed class LocalizationLineSnapshotModel {

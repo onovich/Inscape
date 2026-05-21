@@ -175,7 +175,8 @@ class LocalizationCommand {
             workspaceFolderPath: workspaceFolder.uri.fsPath,
             progressTitle: "Refreshing Inscape localization line state",
             successMessage: "Inscape localization line refresh report written to " + reportUri.fsPath,
-            successActions: ["Open Report", "Show Summary", "Restore Backup"]
+            successActions: ["Open Report", "Show Summary", "Show Details", "Restore Backup"],
+            lineMapPath: this.resolveLineMapPath(workspaceFolder.uri.fsPath)
         });
     }
 
@@ -228,6 +229,10 @@ class LocalizationCommand {
             await this.showLineRefreshSummary(options.reportPath);
         }
 
+        if (selection === "Show Details" && options.reportPath) {
+            await this.showLineRefreshDetails(options.reportPath);
+        }
+
         if (selection === "Restore Backup") {
             await this.restoreLineMapBackup(options, options.workspaceFolderPath);
         }
@@ -236,6 +241,10 @@ class LocalizationCommand {
     async showLineRefreshSummary(reportPath) {
         const text = await this.fs.promises.readFile(reportPath, "utf8");
         const report = JSON.parse(text);
+        const canContinue = await this.handleLineMapDriftDecision(report, reportPath, null, null);
+        if (!canContinue) {
+            return;
+        }
         const blocks = Array.isArray(report && report.blocks) ? report.blocks : [];
         let added = 0;
         let changed = 0;
@@ -264,6 +273,61 @@ class LocalizationCommand {
         });
     }
 
+    async showLineRefreshDetails(reportPath) {
+        const text = await this.fs.promises.readFile(reportPath, "utf8");
+        const report = JSON.parse(text);
+        const canContinue = await this.handleLineMapDriftDecision(report, reportPath, null, null);
+        if (!canContinue) {
+            return;
+        }
+        const blocks = Array.isArray(report && report.blocks) ? report.blocks : [];
+        const picks = [];
+        for (let blockIndex = 0; blockIndex < blocks.length; blockIndex += 1) {
+            const block = blocks[blockIndex];
+            const changes = Array.isArray(block.changes) ? block.changes : [];
+            for (let i = 0; i < changes.length; i += 1) {
+                const change = changes[i];
+                picks.push({
+                    label: "[" + String(change.kind || "change") + "] " + String(block.blockId || "(unknown block)"),
+                    description: String(change.summary || ""),
+                    detail: String(change.blockTitle || ""),
+                    change,
+                    sourcePath: String(block.sourcePath || ""),
+                    lineNumber: Number(change.lineNumber || change.oldLineNumber || 1)
+                });
+            }
+        }
+
+        if (picks.length === 0) {
+            await this.vscode.window.showInformationMessage("Localization line refresh found no changes.");
+            return;
+        }
+
+        const selection = await this.vscode.window.showQuickPick(picks, {
+            placeHolder: "Review localization line refresh changes"
+        });
+        if (selection) {
+            await this.openLineRefreshChange(selection, reportPath);
+        }
+    }
+
+    async detectLineMapDrift(workspaceFolderPath) {
+        const configuration = this.vscode.workspace.getConfiguration("inscape", this.vscode.Uri.file(workspaceFolderPath));
+        const configured = configuration.get("localization.lineMap", "");
+        const lineMapPath = configured && configured.length > 0
+            ? this.path.isAbsolute(configured)
+                ? configured
+                : this.path.resolve(workspaceFolderPath, configured)
+            : this.path.join(workspaceFolderPath, "inscape.line-map.json");
+        if (!this.fs.existsSync(lineMapPath)) {
+            return false;
+        }
+
+        const text = await this.fs.promises.readFile(lineMapPath, "utf8");
+        const lineMap = JSON.parse(text);
+        return !lineMap.lastSourceFingerprint || lineMap.lastSourceFingerprint.length === 0;
+    }
+
     async restoreLineMapBackup(options, workspaceFolderPath) {
         const configuration = this.vscode.workspace.getConfiguration("inscape", this.vscode.Uri.file(workspaceFolderPath));
         const configured = configuration.get("localization.lineMap", "");
@@ -284,6 +348,69 @@ class LocalizationCommand {
         if (selection === "Open Line Map") {
             await this.openFile(lineMapPath);
         }
+    }
+
+    async handleLineMapDriftDecision(report, reportPath, lineMapPath, workspaceFolderPath) {
+        if (!report.status || !report.status.hasDrift) {
+            return true;
+        }
+
+        const selection = await this.vscode.window.showWarningMessage(
+            (report.status.message || "Localization line sidecar drift was detected.")
+                + (report.status.recommendation ? " " + report.status.recommendation : ""),
+            "Continue",
+            "Show Details",
+            "Restore Backup",
+            "Cancel"
+        );
+
+        if (selection === "Continue") {
+            return true;
+        }
+
+        if (selection === "Show Details" && reportPath) {
+            await this.openFile(reportPath);
+            return false;
+        }
+
+        if (selection === "Restore Backup" && workspaceFolderPath) {
+            await this.restoreLineMapBackup({ workspaceFolderPath }, workspaceFolderPath);
+            return false;
+        }
+
+        return false;
+    }
+
+    resolveLineMapPath(workspaceFolderPath) {
+        const configuration = this.vscode.workspace.getConfiguration("inscape", this.vscode.Uri.file(workspaceFolderPath));
+        const configured = configuration.get("localization.lineMap", "");
+        return configured && configured.length > 0
+            ? this.path.isAbsolute(configured)
+                ? configured
+                : this.path.resolve(workspaceFolderPath, configured)
+            : this.path.join(workspaceFolderPath, "inscape.line-map.json");
+    }
+
+    async openLineRefreshChange(selection, reportPath) {
+        const reportDirectory = this.path.dirname(reportPath);
+        const workspaceDirectory = this.path.dirname(reportDirectory);
+        const sourcePath = selection.sourcePath || "";
+        if (!sourcePath) {
+            return;
+        }
+
+        const resolvedPath = this.path.isAbsolute(sourcePath)
+            ? sourcePath
+            : this.path.resolve(workspaceDirectory, sourcePath);
+        const document = await this.vscode.workspace.openTextDocument(this.vscode.Uri.file(resolvedPath));
+        const line = Math.max(0, Number(selection.lineNumber || 1) - 1);
+        const editor = await this.vscode.window.showTextDocument(document, {
+            preview: false,
+            preserveFocus: false
+        });
+        const range = new this.vscode.Range(line, 0, line, 0);
+        editor.selection = new this.vscode.Selection(range.start, range.end);
+        editor.revealRange(range, this.vscode.TextEditorRevealType.InCenter);
     }
 
     createInvocation(context, workspaceFolder, options, activeDocument, tempPath) {
