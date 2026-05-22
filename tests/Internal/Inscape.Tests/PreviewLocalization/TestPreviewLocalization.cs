@@ -750,6 +750,47 @@ Narrator: Ask guard about lantern tonight?
             AssertTrue(changed.Candidates[0].Reason.Contains("same-line-id", StringComparison.Ordinal), "Resolved candidate should record exact line identity reason.");
         }
 
+        static void LocalizationAlignmentAuditKeepsRewrittenSameLineCandidate() {
+            StoryGraphCompilerDomain compiler = new StoryGraphCompilerDomain();
+            StoryGraphCompilationResultModel initial = compiler.Compile(new List<DslScriptSourceModel> {
+                new DslScriptSourceModel("D:/LabProjects/Inscape/story/court.inscape", """
+# intro
+Narrator: Ask guard about lantern tonight.
+"""),
+            }, "D:/LabProjects/Inscape");
+            StoryNodeMapModel nodeMap = StoryNodeMapUpdateDomain.Update(new StoryNodeMapModel(),
+                                                                        initial,
+                                                                        "D:/LabProjects/Inscape",
+                                                                        DateTimeOffset.Parse("2026-05-19T17:30:00Z", System.Globalization.CultureInfo.InvariantCulture));
+            LocalizationLineRefreshResultModel firstRefresh = LocalizationLineMapRefreshDomain.Refresh(new LocalizationLineMapModel(), initial, "D:/LabProjects/Inscape");
+            string oldCsv = LocalizationCsvFlowDomain.Extract(initial.Graph);
+            string anchor = AnchorForText(oldCsv, "Ask guard about lantern tonight.");
+            string oldCsvWithTranslations = "anchor,node,kind,speaker,text,translation,sourcePath,line,column\n"
+                + anchor + ",intro,Dialogue,Narrator,Ask guard about lantern tonight.,Guard lantern translation,story/court.inscape,2,1\n";
+
+            StoryGraphCompilationResultModel updated = compiler.Compile(new List<DslScriptSourceModel> {
+                new DslScriptSourceModel("D:/LabProjects/Inscape/story/court.inscape", """
+# intro
+Narrator: The verdict changes everything.
+"""),
+            }, "D:/LabProjects/Inscape");
+            LocalizationLineRefreshResultModel refreshed = LocalizationLineMapRefreshDomain.Refresh(firstRefresh.LineMap, updated, "D:/LabProjects/Inscape");
+
+            LocalizationAlignmentReportModel report = LocalizationAlignmentAuditDomain.Audit(updated,
+                                                                                             new Inscape.Compiler.Localization.LocalizationCsvReaderDomain().Read(oldCsvWithTranslations),
+                                                                                             nodeMap,
+                                                                                             "D:/LabProjects/Inscape",
+                                                                                             new LocalizationAlignmentLineIdentityInputModel {
+                                                                                                 Status = "available",
+                                                                                                 LineMap = refreshed.LineMap,
+                                                                                             });
+
+            LocalizationAlignmentItemModel changed = FindAlignmentItem(report, "changed");
+            AssertEqual("", changed.Translation, "Rewritten line should still require review instead of inheriting the translation.");
+            AssertEqual("Guard lantern translation", changed.Candidates[0].Translation, "Exact line identity should keep the previous translation as a review candidate even when text similarity is low.");
+            AssertTrue(changed.Candidates[0].Reason.Contains("same-line-id", StringComparison.Ordinal), "Rewritten same-line candidate should record exact line identity reason.");
+        }
+
         static void CliAuditL10nAlignmentProjectEmitsJson() {
             string directory = Path.Combine(Path.GetTempPath(), "inscape-tests", Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(directory);

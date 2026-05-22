@@ -67,7 +67,7 @@ namespace Inscape.Tooling {
                 List<LocalizationAlignmentCandidateMatch> candidates = FindCandidates(current, previousAlignmentEntries, usedPreviousKeys);
                 if (candidates.Count == 0) {
                     report.Items.Add(CreateItem(NewStatus, "needs-translation", current, null, 0));
-                } else if (candidates.Count == 1 && candidates[0].Similarity >= ChangedSimilarityThreshold) {
+                } else if (candidates.Count == 1 && IsChangedCandidate(candidates[0])) {
                     LocalizationAlignmentItemModel item = CreateItem(ChangedStatus, "needs-review", current, null, 0);
                     item.Candidates.Add(candidates[0].Candidate);
                     report.Items.Add(item);
@@ -315,7 +315,7 @@ namespace Inscape.Tooling {
                 }
 
                 CandidateScore score = ScoreCandidate(current, previous);
-                if (score.Similarity < CandidateSimilarityThreshold) {
+                if (score.Similarity < CandidateSimilarityThreshold && !score.HasExactLineIdentity) {
                     continue;
                 }
 
@@ -369,6 +369,10 @@ namespace Inscape.Tooling {
             }
 
             return true;
+        }
+
+        static bool IsChangedCandidate(LocalizationAlignmentCandidateMatch candidate) {
+            return candidate.Similarity >= ChangedSimilarityThreshold || candidate.HasExactLineIdentity;
         }
 
         static bool CanCompare(LocalizationAlignmentEntry current, LocalizationAlignmentEntry previous) {
