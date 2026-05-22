@@ -84,7 +84,7 @@
 	- Localization line sidecar 的后续契约细化与 report 体验评估。
 	- stable node map / localization review 交互细化。
 	- VSCode 重构守规与节点后自检机制。
-	- G10.4.2 candidate scoring 细化：相似度并列时优先使用 sequence / line ranking penalty 收口误匹配，第二轮已加 context shape 信号，第三轮已加 keyword fingerprint 信号，第四轮已加 neighbor shape 信号，第五轮已加同节点前后翻译单元 local context fingerprint 信号，第六轮已加轻微改写前后文的 `near-local-context` 信号。
+	- G10.4.2 candidate scoring 细化：相似度并列时优先使用 sequence / line ranking penalty 收口误匹配，第二轮已加 context shape 信号，第三轮已加 keyword fingerprint 信号，第四轮已加 neighbor shape 信号，第五轮已加同节点前后翻译单元 local context fingerprint 信号，第六轮已加轻微改写前后文的 `near-local-context` 信号，第七轮已让 `same-line-id` 收敛同窗口内的近似文本候选。
 - **低一层优先级但可随时切入**：
 	- Tooling 单点收敛。
 	- 体验细化后续项：`Ctrl+Hover` 链接态人体工学微调、Preview review 列表可读性。

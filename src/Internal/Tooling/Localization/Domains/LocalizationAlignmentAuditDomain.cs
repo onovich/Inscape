@@ -324,6 +324,7 @@ namespace Inscape.Tooling {
                     Similarity = score.Similarity,
                     SequenceDistance = score.SequenceDistance,
                     RankingPenalty = score.RankingPenalty,
+                    HasExactLineIdentity = score.HasExactLineIdentity,
                 });
             }
 
@@ -360,6 +361,10 @@ namespace Inscape.Tooling {
             }
 
             if (best.Similarity < ChangedSimilarityThreshold && best.Similarity - candidate.Similarity > 0.12) {
+                return false;
+            }
+
+            if (best.HasExactLineIdentity && !candidate.HasExactLineIdentity && best.Similarity >= ChangedSimilarityThreshold) {
                 return false;
             }
 
@@ -570,6 +575,7 @@ namespace Inscape.Tooling {
                 SequenceDistance = sequenceDistance,
                 RankingPenalty = rankingPenalty,
                 Reason = string.Join(",", reasons),
+                HasExactLineIdentity = lineIdentityDistance == 0 && !string.IsNullOrWhiteSpace(current.LineId),
             };
         }
 
@@ -839,6 +845,8 @@ namespace Inscape.Tooling {
 
             public int RankingPenalty { get; set; }
 
+            public bool HasExactLineIdentity { get; set; }
+
         }
 
         sealed class CandidateScore {
@@ -850,6 +858,8 @@ namespace Inscape.Tooling {
             public int RankingPenalty { get; set; }
 
             public string Reason { get; set; } = string.Empty;
+
+            public bool HasExactLineIdentity { get; set; }
 
         }
 
