@@ -416,10 +416,28 @@ Narrator: Shared line C.
 
             LocalizationReviewItemPresenterModel presenterItem = LocalizationReviewPresenterModelBuilderDomain.BuildItem(item, path => path);
 
+            AssertTrue(presenterItem.Title.Contains("(3 candidates)", StringComparison.Ordinal), "Review item title should expose plural candidate count.");
             AssertTrue(presenterItem.Detail.Contains("Candidate A.", StringComparison.Ordinal), "Review item summary should include the first candidate.");
             AssertTrue(presenterItem.Detail.Contains("Candidate B.", StringComparison.Ordinal), "Review item summary should include the second candidate.");
             AssertTrue(presenterItem.Detail.Contains("+1 more", StringComparison.Ordinal), "Review item summary should expose omitted candidate count.");
             AssertFalse(presenterItem.Detail.Contains("Candidate C.", StringComparison.Ordinal), "Review item summary should keep longer candidate lists compact.");
+
+            LocalizationAlignmentItemModel singleCandidateItem = new LocalizationAlignmentItemModel {
+                Status = "changed",
+                Review = "review",
+                NodeTitle = "intro",
+                Text = "Current text.",
+            };
+            singleCandidateItem.Candidates.Add(new LocalizationAlignmentCandidateModel {
+                Text = "Only candidate.",
+                Translation = "Only translation",
+                RankPenalty = 0,
+            });
+
+            LocalizationReviewItemPresenterModel singleCandidatePresenterItem = LocalizationReviewPresenterModelBuilderDomain.BuildItem(singleCandidateItem, path => path);
+
+            AssertTrue(singleCandidatePresenterItem.Title.Contains("(1 candidate)", StringComparison.Ordinal), "Review item title should expose singular candidate count.");
+            AssertFalse(singleCandidatePresenterItem.Title.Contains("(1 candidates)", StringComparison.Ordinal), "Review item title should avoid plural label for one candidate.");
         }
 
         static void LocalizationAlignmentAuditKeepsLowConfidenceSimilarTextAsConflict() {

@@ -70,7 +70,16 @@ namespace Inscape.Tooling {
 
         static string BuildItemTitle(LocalizationAlignmentItemModel item) {
             int candidateCount = item.Candidates.Count;
-            return "[" + item.Status + "] " + item.NodeTitle + " - " + item.Review + (candidateCount > 0 ? " (" + candidateCount.ToString(CultureInfo.InvariantCulture) + " candidates)" : string.Empty);
+            return "[" + item.Status + "] " + item.NodeTitle + " - " + item.Review + BuildCandidateCountSummary(candidateCount);
+        }
+
+        static string BuildCandidateCountSummary(int candidateCount) {
+            if (candidateCount <= 0) {
+                return string.Empty;
+            }
+
+            string label = candidateCount == 1 ? " candidate" : " candidates";
+            return " (" + candidateCount.ToString(CultureInfo.InvariantCulture) + label + ")";
         }
 
         static string BuildCandidateSummary(List<LocalizationAlignmentCandidateModel> candidates) {

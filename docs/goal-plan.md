@@ -192,7 +192,7 @@
   - [x] 低置信相似文本不再被压成单候选 `changed`，而是保留为人工 `conflict` 审查项。
   - [x] CLI `audit-l10n-alignment-project` 新增 `--format text`；VSCode 新增 `Review Localization Alignment` 命令，先用文件输出方式补最小审查闭环。
   - [x] VSCode 对 json report 补了最小 source jump：生成后可直接弹出 alignment item Quick Pick，并跳回对应源位置。
-  - [~] G10.4.1 细化 alignment review Quick Pick：已补 candidate / similarity / reason 的更强摘要展示、超过两个候选时的 `+N more` 摘要、candidate 二级跳转，以及 Tooling presenter 提供的 `show-candidate-diff` 二级动作；VSCode 只负责展示该动作和跳转，不重新拼装 diff 语义。下一步可视需要继续评估更强的批量审查或逐项查询能力。
+  - [~] G10.4.1 细化 alignment review Quick Pick：已补 candidate / similarity / reason 的更强摘要展示、超过两个候选时的 `+N more` 摘要、单复数正确的 candidate count、candidate 二级跳转，以及 Tooling presenter 提供的 `show-candidate-diff` 二级动作；VSCode 只负责展示该动作和跳转，不重新拼装 diff 语义。下一步可视需要继续评估更强的批量审查或逐项查询能力。
   - [~] G10.4.2 继续调整 candidate scoring：sequence / context / line anchor 等信号更稳地影响 `changed` 与 `conflict` 分界；当前 report candidate 与 Tooling presenter 都已暴露 `rankPenalty`，Tooling presenter 也会在 review detail 中展示 current / candidate `lineId`、`lineIdentityStatus` 与短 line fingerprint 摘要，并在有 line id 的 candidate action status 与 diff action summary 中显示身份摘要。
 
 ## Goal 11：Fallback 与外部宿主收口
