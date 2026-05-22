@@ -713,6 +713,13 @@ Narrator: Ask clerk about lantern tonight.
             AssertTrue(changed.Candidates[0].Reason.Contains("same-line-id", StringComparison.Ordinal), "Preferred candidate should record line identity reason.");
             AssertEqual(changed.LineId, changed.Candidates[0].LineId, "Current item and preferred candidate should share the same line id.");
             AssertTrue(!string.IsNullOrWhiteSpace(changed.LineFingerprint), "Current item should expose line fingerprint for review.");
+            LocalizationReviewItemPresenterModel reviewItem = report.Presenter.Items.First(item => item.Item.Status == "changed");
+            AssertTrue(reviewItem.Detail.Contains("<line " + changed.LineId + ">", StringComparison.Ordinal), "Review presenter should expose current line identity in item detail.");
+            LocalizationReviewActionPresenterModel candidateAction = reviewItem.Actions.First(action => action.ActionKey == "open-candidate");
+            AssertTrue(candidateAction.Detail.Contains("<line " + changed.Candidates[0].LineId + ">", StringComparison.Ordinal), "Review presenter should expose candidate line identity in action detail.");
+            LocalizationReviewActionPresenterModel diffAction = reviewItem.Actions.First(action => action.ActionKey == "show-candidate-diff");
+            AssertTrue(diffAction.Detail.Contains("<line " + changed.LineId + ">", StringComparison.Ordinal), "Review presenter diff should expose current line identity.");
+            AssertTrue(diffAction.Detail.Contains("<line " + changed.Candidates[0].LineId + ">", StringComparison.Ordinal), "Review presenter diff should expose candidate line identity.");
         }
 
         static void LocalizationAlignmentAuditResolvesCloseCandidatesByLineIdentity() {
@@ -1345,6 +1352,7 @@ Narrator: Beta.
             AssertTrue(toolingPresenterBuilderSource.Contains("ActionKey = \"open-candidate\""), "Tooling presenter model builder should encode candidate action identity without VSCode-facing labels.");
             AssertTrue(toolingPresenterBuilderSource.Contains("ActionKey = \"show-candidate-diff\""), "Tooling presenter model builder should encode candidate diff action identity without VSCode-facing labels.");
             AssertTrue(toolingPresenterBuilderSource.Contains("BuildRankPenaltySummary(candidate)"), "Tooling presenter model builder should expose rank penalty summaries for review UI.");
+            AssertTrue(toolingPresenterBuilderSource.Contains("BuildLineIdentitySummary(candidate.LineId)"), "Tooling presenter model builder should expose candidate line identity summaries for review UI.");
             AssertTrue(quickPickAdapterSource.Contains("createQuickPickLabel(model)"), "QuickPick adapter should own VSCode-facing action label mapping.");
             AssertTrue(quickPickAdapterSource.Contains("Compare candidate "), "QuickPick adapter should own VSCode-facing candidate diff labels.");
             AssertTrue(reviewControllerSource.Contains("openLocation(this.locationFromPayload(selected.location))"), "Localization review controller should jump to source location.");

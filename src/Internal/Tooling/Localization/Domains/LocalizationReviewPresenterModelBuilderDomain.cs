@@ -23,7 +23,7 @@ namespace Inscape.Tooling {
             LocalizationReviewItemPresenterModel model = new LocalizationReviewItemPresenterModel {
                 Title = BuildItemTitle(item),
                 Summary = string.IsNullOrWhiteSpace(item.Translation) ? "translation: (empty)" : "translation: " + item.Translation,
-                Detail = BuildSourceSummary(item.SourcePath, sourceLine, sourceColumn, displayFormatter) + " | " + item.Text + " | " + BuildCandidateSummary(item.Candidates),
+                Detail = BuildSourceSummary(item.SourcePath, sourceLine, sourceColumn, displayFormatter) + BuildLineIdentitySummary(item.LineId) + " | " + item.Text + " | " + BuildCandidateSummary(item.Candidates),
                 SourcePath = item.SourcePath,
                 Line = sourceLine,
                 Column = sourceColumn,
@@ -33,7 +33,7 @@ namespace Inscape.Tooling {
 
             model.Actions.Add(new LocalizationReviewActionPresenterModel {
                 ActionKey = "open-current",
-                Summary = BuildSourceSummary(item.SourcePath, sourceLine, sourceColumn, displayFormatter),
+                Summary = BuildSourceSummary(item.SourcePath, sourceLine, sourceColumn, displayFormatter) + BuildLineIdentitySummary(item.LineId),
                 Detail = item.Text,
                 SourcePath = item.SourcePath,
                 Line = sourceLine,
@@ -50,7 +50,7 @@ namespace Inscape.Tooling {
                     ActionIndex = i,
                     ActionStatus = BuildCandidateStatus(candidate),
                     Summary = string.IsNullOrWhiteSpace(candidate.Translation) ? "(no translation)" : candidate.Translation,
-                    Detail = BuildSourceSummary(candidate.SourcePath, candidateLine, candidateColumn, displayFormatter) + " | " + BuildCandidateInline(candidate),
+                    Detail = BuildSourceSummary(candidate.SourcePath, candidateLine, candidateColumn, displayFormatter) + BuildLineIdentitySummary(candidate.LineId) + " | " + BuildCandidateInline(candidate),
                     SourcePath = candidate.SourcePath,
                     Line = candidateLine,
                     Column = candidateColumn,
@@ -96,7 +96,7 @@ namespace Inscape.Tooling {
             string translation = string.IsNullOrWhiteSpace(candidate.Translation)
                 ? string.Empty
                 : " => " + candidate.Translation;
-            return candidate.Text + translation + similarity + " [" + BuildRankPenaltySummary(candidate) + "]" + reason;
+            return candidate.Text + translation + similarity + BuildLineIdentitySummary(candidate.LineId) + " [" + BuildRankPenaltySummary(candidate) + "]" + reason;
         }
 
         static string BuildCandidateStatus(LocalizationAlignmentCandidateModel candidate) {
@@ -113,6 +113,10 @@ namespace Inscape.Tooling {
             return "rankPenalty " + candidate.RankPenalty.ToString(CultureInfo.InvariantCulture);
         }
 
+        static string BuildLineIdentitySummary(string lineId) {
+            return string.IsNullOrWhiteSpace(lineId) ? string.Empty : " <line " + lineId + ">";
+        }
+
         static string BuildCandidateDiffSummary(LocalizationAlignmentItemModel item, LocalizationAlignmentCandidateModel candidate) {
             return "current: " + item.Text + " -> previous: " + candidate.Text;
         }
@@ -125,7 +129,9 @@ namespace Inscape.Tooling {
                 ? "reason: (none)"
                 : "reason: " + candidate.Reason;
             return "current: " + item.Text
+                + BuildLineIdentitySummary(item.LineId)
                 + " | previous: " + candidate.Text
+                + BuildLineIdentitySummary(candidate.LineId)
                 + " | " + translation
                 + " | " + BuildRankPenaltySummary(candidate)
                 + " | " + reason;
