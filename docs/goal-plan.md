@@ -193,7 +193,7 @@
   - [x] CLI `audit-l10n-alignment-project` 新增 `--format text`；VSCode 新增 `Review Localization Alignment` 命令，先用文件输出方式补最小审查闭环。
   - [x] VSCode 对 json report 补了最小 source jump：生成后可直接弹出 alignment item Quick Pick，并跳回对应源位置。
   - [~] G10.4.1 细化 alignment review Quick Pick：已补 candidate / similarity / reason 的更强摘要展示、candidate 二级跳转，以及 Tooling presenter 提供的 `show-candidate-diff` 二级动作；VSCode 只负责展示该动作和跳转，不重新拼装 diff 语义。下一步可视需要继续评估更强的批量审查或逐项查询能力。
-  - [~] G10.4.2 继续调整 candidate scoring：sequence / context / line anchor 等信号更稳地影响 `changed` 与 `conflict` 分界；当前 report candidate 与 Tooling presenter 都已暴露 `rankPenalty`，Tooling presenter 也会在 review detail 中展示 current / candidate `lineId`、`lineIdentityStatus` 与短 line fingerprint 摘要，并在有 line id 的 candidate action status 中显示身份摘要。
+  - [~] G10.4.2 继续调整 candidate scoring：sequence / context / line anchor 等信号更稳地影响 `changed` 与 `conflict` 分界；当前 report candidate 与 Tooling presenter 都已暴露 `rankPenalty`，Tooling presenter 也会在 review detail 中展示 current / candidate `lineId`、`lineIdentityStatus` 与短 line fingerprint 摘要，并在有 line id 的 candidate action status 与 diff action summary 中显示身份摘要。
 
 ## Goal 11：Fallback 与外部宿主收口
 
@@ -263,7 +263,7 @@
 
 Goal 10 后续细化：
 
-- [~] G10.4.2 candidate scoring 细化：已补第一轮 tie-break 收口，当前会在相似度并列时优先比较 ranking penalty（sequence / source line 距离），再比较 sequence distance，减少“文本相似但上下文更远”的旧译文排到前面的情况。第二轮已把 context shape（首词 / 末词 / token 数）并入 penalty 与 reason，第三轮又补了 keyword fingerprint（长度 >= 4 的 token 集）信号与回归测试，第四轮继续补了 neighbor shape（首词 / 第二词 / 末词）信号，第五轮又补了同节点前后翻译单元的 local context fingerprint 与 `same-local-context` reason，第六轮把轻微改写的前后文纳入 `near-local-context`，第七轮让 `same-line-id` 可以收敛同窗口内的近似文本候选，第八轮允许精确 line id 在文本大改时仍保留人工审查候选，第九轮让精确 line id 在排序上优先于纯文本相似度，第十轮把 `rankPenalty` 输出到 JSON / text report candidate，第十一轮把 `rankPenalty` 接入 Tooling presenter 的 candidate summary / action status / diff detail，第十二轮把 current / candidate `lineId` 接入 Tooling presenter 的 item / candidate / diff detail，第十三轮让 presenter 同步显示 `lineIdentityStatus`（例如 `available` / `missing`），第十四轮把 line fingerprint 以短 `fp` 摘要接入 review detail，第十五轮把有 line id 的候选身份摘要接入 action status，方便人工审查同时看到身份信号和排序依据。后续可继续评估是否需要跨节点或跨文件的更强上下文约束。
+- [~] G10.4.2 candidate scoring 细化：已补第一轮 tie-break 收口，当前会在相似度并列时优先比较 ranking penalty（sequence / source line 距离），再比较 sequence distance，减少“文本相似但上下文更远”的旧译文排到前面的情况。第二轮已把 context shape（首词 / 末词 / token 数）并入 penalty 与 reason，第三轮又补了 keyword fingerprint（长度 >= 4 的 token 集）信号与回归测试，第四轮继续补了 neighbor shape（首词 / 第二词 / 末词）信号，第五轮又补了同节点前后翻译单元的 local context fingerprint 与 `same-local-context` reason，第六轮把轻微改写的前后文纳入 `near-local-context`，第七轮让 `same-line-id` 可以收敛同窗口内的近似文本候选，第八轮允许精确 line id 在文本大改时仍保留人工审查候选，第九轮让精确 line id 在排序上优先于纯文本相似度，第十轮把 `rankPenalty` 输出到 JSON / text report candidate，第十一轮把 `rankPenalty` 接入 Tooling presenter 的 candidate summary / action status / diff detail，第十二轮把 current / candidate `lineId` 接入 Tooling presenter 的 item / candidate / diff detail，第十三轮让 presenter 同步显示 `lineIdentityStatus`（例如 `available` / `missing`），第十四轮把 line fingerprint 以短 `fp` 摘要接入 review detail，第十五轮把有 line id 的候选身份摘要接入 action status，第十六轮把 current / previous line identity 摘要接入 diff action summary，方便人工审查同时看到身份信号和排序依据。后续可继续评估是否需要跨节点或跨文件的更强上下文约束。
 - [~] G13.1.c 收 `extension.js` 装配重复：已把 `openLocation` / `locationFromPayload` 收成共享 `locationServices` 注入块，并把文件打开 glue 收成 `openFileInEditor`；下一步可继续评估是否要把更多 VSCode 共享依赖按组合根分组，而不是让 `extension.js` 参数表重新横向扩张。
 
 ## Goal 15：本地化 line sidecar 消费闭环

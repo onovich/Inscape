@@ -148,7 +148,10 @@ namespace Inscape.Tooling {
         }
 
         static string BuildCandidateDiffSummary(LocalizationAlignmentItemModel item, LocalizationAlignmentCandidateModel candidate) {
-            return "current: " + item.Text + " -> previous: " + candidate.Text;
+            return "current: " + item.Text
+                + BuildLineIdentitySummary(item.LineId, item.LineIdentityStatus, item.LineFingerprint)
+                + " -> previous: " + candidate.Text
+                + BuildLineIdentitySummary(candidate.LineId, candidate.LineIdentityStatus, candidate.LineFingerprint);
         }
 
         static string BuildCandidateDiffDetail(LocalizationAlignmentItemModel item, LocalizationAlignmentCandidateModel candidate) {

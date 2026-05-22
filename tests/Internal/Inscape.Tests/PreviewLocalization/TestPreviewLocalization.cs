@@ -724,6 +724,8 @@ Narrator: Ask clerk about lantern tonight.
             AssertTrue(candidateAction.Detail.Contains("<line " + changed.Candidates[0].LineId + " available fp ", StringComparison.Ordinal), "Review presenter should expose candidate line identity status in action detail.");
             AssertTrue(candidateAction.Detail.Contains("fp " + changed.Candidates[0].LineFingerprint.Substring(0, Math.Min(changed.Candidates[0].LineFingerprint.Length, 12)), StringComparison.Ordinal), "Review presenter should expose candidate line fingerprint in action detail.");
             LocalizationReviewActionPresenterModel diffAction = reviewItem.Actions.First(action => action.ActionKey == "show-candidate-diff");
+            AssertTrue(diffAction.Summary.Contains("<line " + changed.LineId + " available fp ", StringComparison.Ordinal), "Review presenter diff summary should expose current line identity status.");
+            AssertTrue(diffAction.Summary.Contains("<line " + changed.Candidates[0].LineId + " available fp ", StringComparison.Ordinal), "Review presenter diff summary should expose candidate line identity status.");
             AssertTrue(diffAction.Detail.Contains("<line " + changed.LineId + " available fp ", StringComparison.Ordinal), "Review presenter diff should expose current line identity status.");
             AssertTrue(diffAction.Detail.Contains("<line " + changed.Candidates[0].LineId + " available fp ", StringComparison.Ordinal), "Review presenter diff should expose candidate line identity status.");
         }
