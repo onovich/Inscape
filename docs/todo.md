@@ -84,7 +84,7 @@
 	- Localization line sidecar 的后续契约细化与 report 体验评估。
 	- stable node map / localization review 交互细化。
 	- VSCode 重构守规与节点后自检机制。
-	- G10.4.2 candidate scoring 细化：相似度并列时优先使用 sequence / line ranking penalty 收口误匹配，第二轮已加 context shape 信号，第三轮已加 keyword fingerprint 信号，第四轮已加 neighbor shape 信号，第五轮已加同节点前后翻译单元 local context fingerprint 信号，第六轮已加轻微改写前后文的 `near-local-context` 信号，第七轮已让 `same-line-id` 收敛同窗口内的近似文本候选，第八轮已允许精确 line id 在文本大改时仍保留人工审查候选，第九轮已让精确 line id 在排序上优先于纯文本相似度，第十轮已把 `rankPenalty` 暴露到 JSON / text report candidate，第十一轮已把 `rankPenalty` 接入 Tooling presenter 的 candidate summary / action status / diff detail，第十二轮已把 current / candidate `lineId` 接入 Tooling presenter 的 item / candidate / diff detail，第十三轮已让 presenter 同步显示 `lineIdentityStatus`（例如 `available` / `missing`），辅助人工审查身份信号和排序依据。
+	- G10.4.2 candidate scoring 细化：相似度并列时优先使用 sequence / line ranking penalty 收口误匹配，第二轮已加 context shape 信号，第三轮已加 keyword fingerprint 信号，第四轮已加 neighbor shape 信号，第五轮已加同节点前后翻译单元 local context fingerprint 信号，第六轮已加轻微改写前后文的 `near-local-context` 信号，第七轮已让 `same-line-id` 收敛同窗口内的近似文本候选，第八轮已允许精确 line id 在文本大改时仍保留人工审查候选，第九轮已让精确 line id 在排序上优先于纯文本相似度，第十轮已把 `rankPenalty` 暴露到 JSON / text report candidate，第十一轮已把 `rankPenalty` 接入 Tooling presenter 的 candidate summary / action status / diff detail，第十二轮已把 current / candidate `lineId` 接入 Tooling presenter 的 item / candidate / diff detail，第十三轮已让 presenter 同步显示 `lineIdentityStatus`（例如 `available` / `missing`），第十四轮已把 line fingerprint 以短 `fp` 摘要接入 review detail，辅助人工审查身份信号和排序依据。
 - **低一层优先级但可随时切入**：
 	- Tooling 单点收敛。
 	- 体验细化后续项：`Ctrl+Hover` 链接态人体工学微调、Preview review 列表可读性。
