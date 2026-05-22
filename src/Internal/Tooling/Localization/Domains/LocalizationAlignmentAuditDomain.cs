@@ -21,6 +21,7 @@ namespace Inscape.Tooling {
         const int NeighborPenaltyWeight = 5;
         const int LocalContextPenaltyWeight = 6;
         const int LineIdentityPenaltyWeight = 8;
+        const double LocalContextNearSimilarityThreshold = 0.72;
 
         public static LocalizationAlignmentReportModel Audit(StoryGraphCompilationResultModel result,
                                                              IReadOnlyList<LocalizationEntryModel> previousEntries,
@@ -700,21 +701,30 @@ namespace Inscape.Tooling {
 
         static int LocalContextDistance(LocalizationAlignmentEntry current, LocalizationAlignmentEntry previous) {
             int compared = 0;
-            int matches = 0;
+            int exactMatches = 0;
+            int nearMatches = 0;
 
             if (!string.IsNullOrWhiteSpace(current.PreviousContextFingerprint)
                 && !string.IsNullOrWhiteSpace(previous.PreviousContextFingerprint)) {
                 compared += 1;
-                if (current.PreviousContextFingerprint == previous.PreviousContextFingerprint) {
-                    matches += 1;
+                int distance = LocalContextFingerprintDistance(current.PreviousContextFingerprint, previous.PreviousContextFingerprint);
+                if (distance == 0) {
+                    exactMatches += 1;
+                    nearMatches += 1;
+                } else if (distance == 1) {
+                    nearMatches += 1;
                 }
             }
 
             if (!string.IsNullOrWhiteSpace(current.NextContextFingerprint)
                 && !string.IsNullOrWhiteSpace(previous.NextContextFingerprint)) {
                 compared += 1;
-                if (current.NextContextFingerprint == previous.NextContextFingerprint) {
-                    matches += 1;
+                int distance = LocalContextFingerprintDistance(current.NextContextFingerprint, previous.NextContextFingerprint);
+                if (distance == 0) {
+                    exactMatches += 1;
+                    nearMatches += 1;
+                } else if (distance == 1) {
+                    nearMatches += 1;
                 }
             }
 
@@ -722,11 +732,19 @@ namespace Inscape.Tooling {
                 return 2;
             }
 
-            if (matches == compared) {
+            if (exactMatches == compared) {
                 return 0;
             }
 
-            return matches > 0 ? 1 : 2;
+            return nearMatches > 0 ? 1 : 2;
+        }
+
+        static int LocalContextFingerprintDistance(string left, string right) {
+            if (left == right) {
+                return 0;
+            }
+
+            return TextSimilarity(left, right) >= LocalContextNearSimilarityThreshold ? 1 : 2;
         }
 
         static int LineIdentityDistance(LocalizationAlignmentEntry current, LocalizationAlignmentEntry previous) {

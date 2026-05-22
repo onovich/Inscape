@@ -618,6 +618,48 @@ Narrator: Archive context ends.
             AssertTrue(chosen.Candidates[0].Reason.Contains("same-local-context", StringComparison.Ordinal), "Preferred candidate should record local context reason.");
         }
 
+        static void LocalizationAlignmentAuditRecordsNearLocalContext() {
+            StoryGraphCompilerDomain compiler = new StoryGraphCompilerDomain();
+            StoryGraphCompilationResultModel initial = compiler.Compile(new List<DslScriptSourceModel> {
+                new DslScriptSourceModel("D:/LabProjects/Inscape/story/court.inscape", """
+# intro
+Narrator: Archive context begins.
+Narrator: Shared branch line.
+Narrator: Archive context ends.
+"""),
+            }, "D:/LabProjects/Inscape");
+            StoryNodeMapModel nodeMap = StoryNodeMapUpdateDomain.Update(new StoryNodeMapModel(),
+                                                                        initial,
+                                                                        "D:/LabProjects/Inscape",
+                                                                        DateTimeOffset.Parse("2026-05-19T16:45:00Z", System.Globalization.CultureInfo.InvariantCulture));
+            string oldCsv = LocalizationCsvFlowDomain.Extract(initial.Graph);
+            string beginAnchor = AnchorForText(oldCsv, "Archive context begins.");
+            string sharedAnchor = AnchorForText(oldCsv, "Shared branch line.");
+            string endAnchor = AnchorForText(oldCsv, "Archive context ends.");
+            string oldCsvWithTranslations = "anchor,node,kind,speaker,text,translation,sourcePath,line,column\n"
+                + beginAnchor + ",intro,Dialogue,Narrator,Archive context begins.,Archive begin translation,story/court.inscape,2,1\n"
+                + sharedAnchor + ",intro,Dialogue,Narrator,Shared branch line.,Shared translation,story/court.inscape,3,1\n"
+                + endAnchor + ",intro,Dialogue,Narrator,Archive context ends.,Archive end translation,story/court.inscape,4,1\n";
+
+            StoryGraphCompilationResultModel updated = compiler.Compile(new List<DslScriptSourceModel> {
+                new DslScriptSourceModel("D:/LabProjects/Inscape/story/court.inscape", """
+# intro
+Narrator: Archive context opens.
+Narrator: Shared branch line extended.
+Narrator: Archive context closes.
+"""),
+            }, "D:/LabProjects/Inscape");
+
+            LocalizationAlignmentReportModel report = LocalizationAlignmentAuditDomain.Audit(updated,
+                                                                                             new Inscape.Compiler.Localization.LocalizationCsvReaderDomain().Read(oldCsvWithTranslations),
+                                                                                             nodeMap,
+                                                                                             "D:/LabProjects/Inscape");
+
+            LocalizationAlignmentItemModel chosen = FindAlignmentItemByText(report, "Shared branch line extended.", "changed", "conflict");
+            AssertEqual("Shared translation", chosen.Candidates[0].Translation, "Chosen candidate should keep using surrounding context when neighboring lines are lightly rewritten.");
+            AssertTrue(chosen.Candidates[0].Reason.Contains("near-local-context", StringComparison.Ordinal), "Preferred candidate should record near local context reason.");
+        }
+
         static void LocalizationAlignmentAuditUsesLineSidecarIdentity() {
             StoryGraphCompilerDomain compiler = new StoryGraphCompilerDomain();
             StoryGraphCompilationResultModel initial = compiler.Compile(new List<DslScriptSourceModel> {
@@ -1240,6 +1282,19 @@ Narrator: Beta.
             }
 
             throw new InvalidOperationException("Could not find alignment item: " + string.Join(",", statuses));
+        }
+
+        static LocalizationAlignmentItemModel FindAlignmentItemByText(LocalizationAlignmentReportModel report, string text, params string[] statuses) {
+            for (int statusIndex = 0; statusIndex < statuses.Length; statusIndex += 1) {
+                string status = statuses[statusIndex];
+                for (int i = 0; i < report.Items.Count; i += 1) {
+                    if (report.Items[i].Status == status && report.Items[i].Text == text) {
+                        return report.Items[i];
+                    }
+                }
+            }
+
+            throw new InvalidOperationException("Could not find alignment item: " + text);
         }
 
         static string AnchorForText(string csv, string text) {

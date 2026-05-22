@@ -79,6 +79,7 @@ namespace Inscape.Tests {
                 ("localization alignment audit prefers keyword fingerprint when context is close", LocalizationAlignmentAuditPrefersKeywordFingerprintWhenContextIsClose),
                 ("localization alignment audit prefers neighbor shape when fingerprint is close", LocalizationAlignmentAuditPrefersNeighborShapeWhenFingerprintIsClose),
                 ("localization alignment audit prefers matching local context", LocalizationAlignmentAuditPrefersMatchingLocalContext),
+                ("localization alignment audit records near local context", LocalizationAlignmentAuditRecordsNearLocalContext),
                 ("localization alignment audit uses line sidecar identity", LocalizationAlignmentAuditUsesLineSidecarIdentity),
                 ("cli audit-l10n-alignment-project emits json", CliAuditL10nAlignmentProjectEmitsJson),
                 ("cli audit-l10n-alignment-project emits text", CliAuditL10nAlignmentProjectEmitsText),
