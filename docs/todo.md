@@ -50,6 +50,7 @@
 		- `LocalizationCommand` 仍主要是 VSCode 宿主适配，可暂留 VSCode。
 		- `LocalizationReviewController` 里 `report -> item list -> candidate action list -> jump` 的交互骨架已经接近跨宿主契约；当前 presenter model 组织已下沉到 `Internal/Tooling/Localization/LocalizationReviewPresenterModelBuilderDomain` 并挂入 `LocalizationAlignmentReportModel.Presenter`，VSCode 侧仅保留 `Scripts/Localization/Controllers/LocalizationReviewController` 作为宿主交互壳，以及 `Scripts/Localization/ViewModels/LocalizationReviewQuickPickAdapter` 作为 QuickPick 标签映射层。
 		- `LocalizationAlignmentAuditDomain`、`LocalizationAlignmentReportModel`、candidate scoring 与状态机已在 `Internal/Tooling`，这条边界目前是对的。
+		- 暂不新增 Localization review 的 LanguageServer 逐项查询 API；当前保持 CLI / Tooling 产出完整 report + presenter，宿主消费完整 report。只有未来需要 item / candidate 增量查询、长会话缓存或多宿主共享交互状态时，再进入 LanguageServer。
 	- 新增：把 VSCode 的 `Resources / Scripts` 终局结构重新澄清并列入迁移计划；当前先以 `DevScripts` 作为过渡脚本桶，避免继续误用 `Scripts`；若确认采用这对目录，就不能让业务源码目录继续与最终 `Scripts` 平级。
 	- 新增：清点并迁移当前命名例外文件，必要时发明符合既有风格的新名字，并把命名法补进规范，而不是长期保留历史名。
 	- 2026-05-19 巡检首批发现：

@@ -253,7 +253,7 @@
     - `LocalizationReviewController` 目前仍直接依赖 VSCode QuickPick 与 source jump，但其承载的 `report -> item list -> candidate action list -> location` 交互骨架已经是跨宿主可复用概念。
     - `LocalizationAlignmentAuditDomain`、`LocalizationAlignmentReportModel`、candidate scoring、status/review 状态机已经正确位于 `Internal/Tooling`。
   - [x] G13.7.2 下一步评估从 VSCode 下沉的第一批目标：report item / candidate action 的 presenter model 组织已从 VSCode 下沉到 `Internal/Tooling/Localization/LocalizationReviewPresenterModelBuilderDomain`，并挂入 `LocalizationAlignmentReportModel.Presenter`。当前 VSCode 只保留 `Scripts/Localization/Controllers/LocalizationReviewController` 作为宿主交互壳，以及 `Scripts/Localization/ViewModels/LocalizationReviewQuickPickAdapter` 作为 QuickPick 标签映射层。
-  - [ ] G13.7.3 若未来编辑器需要按 item / candidate 逐项查询，而不是只消费完整 JSON report，再评估是否把 Localization review 查询能力补进 `LanguageServer`，而不是让各宿主自行读文件和重拼交互模型。
+  - [x] G13.7.3 Localization review 查询能力决策：当前不补 `LanguageServer` 逐项查询 API。第一版继续由 CLI / Tooling 产出完整 `inscape.localization-alignment` JSON report 与 `Presenter`，各宿主只消费完整 report；只有未来出现“编辑器需要按 item / candidate 增量查询、跨文件长会话缓存或多宿主共享交互状态”时，再把查询能力补进 `LanguageServer`，避免过早扩张 LS API。
 
 建议拆分顺序：
 
