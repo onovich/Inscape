@@ -49,22 +49,35 @@ class LocalizationLineMapDebugController {
             ? this.resolveProjectConfigPath(config.configPath, config.config.localization.lineMap)
             : this.path.join(this.workspaceRoot(document), "inscape.line-map.json");
         const cacheKey = this.normalizePath(lineMapPath);
-        if (this.cache.has(cacheKey)) {
-            return this.cache.get(cacheKey);
+
+        let stat;
+        try {
+            stat = await this.fs.promises.stat(lineMapPath);
+        } catch {
+            this.cache.delete(cacheKey);
+            return undefined;
         }
 
-        if (!this.fs.existsSync(lineMapPath)) {
-            this.cache.set(cacheKey, undefined);
-            return undefined;
+        const cached = this.cache.get(cacheKey);
+        if (cached && cached.mtimeMs === stat.mtimeMs && cached.size === stat.size) {
+            return cached.value;
         }
 
         try {
             const text = await this.fs.promises.readFile(lineMapPath, "utf8");
             const parsed = JSON.parse(text);
-            this.cache.set(cacheKey, parsed);
+            this.cache.set(cacheKey, {
+                mtimeMs: stat.mtimeMs,
+                size: stat.size,
+                value: parsed
+            });
             return parsed;
         } catch {
-            this.cache.set(cacheKey, undefined);
+            this.cache.set(cacheKey, {
+                mtimeMs: stat.mtimeMs,
+                size: stat.size,
+                value: undefined
+            });
             return undefined;
         }
     }

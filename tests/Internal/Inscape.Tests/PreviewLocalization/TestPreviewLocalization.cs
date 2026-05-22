@@ -1206,6 +1206,9 @@ Narrator: Beta.
             AssertTrue(debugSource.Contains("lineId:"), "Debug hover should expose lineId metadata from line sidecar.");
             AssertTrue(debugSource.Contains("kind:"), "Debug hover should expose kind metadata from line sidecar.");
             AssertTrue(debugSource.Contains("speaker:"), "Debug hover should expose speaker metadata from line sidecar when present.");
+            AssertTrue(debugSource.Contains("this.fs.promises.stat(lineMapPath)"), "Debug hover should stat the line sidecar before using cached data.");
+            AssertTrue(debugSource.Contains("cached.mtimeMs === stat.mtimeMs"), "Debug hover line sidecar cache should invalidate when the sidecar mtime changes.");
+            AssertTrue(debugSource.Contains("this.cache.delete(cacheKey)"), "Debug hover line sidecar cache should recover when a missing sidecar later appears.");
             AssertTrue(hoverSource.Contains("localizationLineMapDebugController.tryCreateHover(document, position)"), "DslScript hover provider should delegate debug hover to line sidecar controller.");
         }
 

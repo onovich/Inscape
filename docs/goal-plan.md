@@ -246,7 +246,7 @@
 
 - [~] G14.1 第一版 line sidecar 数据结构与 refresh domain：已新增 `LocalizationLineMapModel`、`LocalizationLineMapRefreshDomain`、reader/writer 草案，并按保守规则处理改字/插行/删行/简单拆并。当前回归测试已覆盖：改字、中间插行、中间删行、拆行保留首行 id、并行保留首行 id、重复句邻接修改、复杂替换按 remove/add 处理。下一步再评估是否需要更强的重复句 disambiguation。
 - [~] G14.2 VSCode 显式刷新命令：已接入 `refresh-l10n-line-map-project` CLI/命令入口，并补了第一版 `Show Summary` 提示，让作者在刷新后直接看到 changed / added / removed 统计；当前又补了 `Show Details`，能按 block/change 摘要查看细项，并已支持直接跳到对应 source 行。CLI `--report` 现在也会输出完整 refresh result（lineMap/report/status），方便后续本地化模块直接消费。下一步再评估是否需要更强的 block 级审查流。
-- [x] G14.3 debug 模式：已在 `preview.sourceSyncMode` 新增 `debug` 值，并接入 `LocalizationLineMapDebugController` 读取 line sidecar；hover debug 信息现在显示 `blockId / lineId / lineNumber / kind`，并在存在 speaker 时显示 `speaker`。
+- [x] G14.3 debug 模式：已在 `preview.sourceSyncMode` 新增 `debug` 值，并接入 `LocalizationLineMapDebugController` 读取 line sidecar；hover debug 信息现在显示 `blockId / lineId / lineNumber / kind`，并在存在 speaker 时显示 `speaker`；缓存现在按 sidecar mtime/size 失效，缺失文件不再永久缓存，刷新或恢复后能读到最新 line map。
 - [~] G14.4 sidecar 持久化闭环：当前已补 `inscape.line-map.json` reader/writer、CLI `refresh-l10n-line-map-project`、VSCode `Refresh Localization Line State` 命令、`Show Summary`/`Show Details` 提示，以及 `localization.lineMap` 配置路径解析。最新一刀已补 writer `.backup` 快照、`Restore Backup` 恢复入口与 `LastSourceFingerprint` 漂移指纹基础字段；drift 检测现在也已进入 refresh result/status 与 VSCode 显式决策流（Continue / Show Details / Restore Backup / Cancel），并附带操作建议。下一步继续补更细的本地化模块消费方式。
   - [~] G13.7.1 首轮盘点已完成：
     - `LocalizationCommand` 目前主要是 VSCode 宿主适配：工作区选择、文件对话框、格式选择、CLI invocation、成功提示、报告文件打开。
