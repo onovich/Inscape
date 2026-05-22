@@ -385,6 +385,43 @@ Narrator: Shared line C.
             AssertTrue(candidateAction.Detail.Contains("rankPenalty ", StringComparison.Ordinal), "Review presenter should expose candidate rank penalty in candidate detail.");
         }
 
+        static void LocalizationReviewPresenterSummarizesAdditionalCandidates() {
+            LocalizationAlignmentItemModel item = new LocalizationAlignmentItemModel {
+                Status = "conflict",
+                Review = "manual",
+                NodeTitle = "intro",
+                Text = "Current text.",
+                SourcePath = "story/court.inscape",
+                Line = 2,
+                Column = 1,
+            };
+            item.Candidates.Add(new LocalizationAlignmentCandidateModel {
+                Text = "Candidate A.",
+                Translation = "Translation A",
+                Similarity = 0.8,
+                RankPenalty = 1,
+            });
+            item.Candidates.Add(new LocalizationAlignmentCandidateModel {
+                Text = "Candidate B.",
+                Translation = "Translation B",
+                Similarity = 0.7,
+                RankPenalty = 2,
+            });
+            item.Candidates.Add(new LocalizationAlignmentCandidateModel {
+                Text = "Candidate C.",
+                Translation = "Translation C",
+                Similarity = 0.6,
+                RankPenalty = 3,
+            });
+
+            LocalizationReviewItemPresenterModel presenterItem = LocalizationReviewPresenterModelBuilderDomain.BuildItem(item, path => path);
+
+            AssertTrue(presenterItem.Detail.Contains("Candidate A.", StringComparison.Ordinal), "Review item summary should include the first candidate.");
+            AssertTrue(presenterItem.Detail.Contains("Candidate B.", StringComparison.Ordinal), "Review item summary should include the second candidate.");
+            AssertTrue(presenterItem.Detail.Contains("+1 more", StringComparison.Ordinal), "Review item summary should expose omitted candidate count.");
+            AssertFalse(presenterItem.Detail.Contains("Candidate C.", StringComparison.Ordinal), "Review item summary should keep longer candidate lists compact.");
+        }
+
         static void LocalizationAlignmentAuditKeepsLowConfidenceSimilarTextAsConflict() {
             StoryGraphCompilerDomain compiler = new StoryGraphCompilerDomain();
             StoryGraphCompilationResultModel initial = compiler.Compile(new List<DslScriptSourceModel> {

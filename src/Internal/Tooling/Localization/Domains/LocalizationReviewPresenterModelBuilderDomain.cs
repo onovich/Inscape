@@ -83,6 +83,10 @@ namespace Inscape.Tooling {
                 values.Add(BuildCandidateInline(candidates[i]));
             }
 
+            if (candidates.Count > 2) {
+                values.Add("+" + (candidates.Count - 2).ToString(CultureInfo.InvariantCulture) + " more");
+            }
+
             return string.Join(" | ", values);
         }
 

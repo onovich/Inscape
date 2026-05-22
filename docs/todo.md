@@ -36,7 +36,7 @@
 	- 已完成：显式 alignment / audit report，保护旧译文，标记 `kept` / `new` / `changed` / `removed` / `conflict` / `stale`。
 	- 下一步建议顺序：
 		- 细化候选评分：sequence / context / line anchor 权重继续校准，减少“该 changed 还是 conflict”的灰区。
-		- 已推进：Quick Pick 已补主项摘要、candidate 二级跳转，以及 presenter 驱动的 candidate diff / secondary action；下一步可继续评估是否需要更强的批量审查或逐项查询能力。
+		- 已推进：Quick Pick 已补主项摘要、candidate 二级跳转，以及 presenter 驱动的 candidate diff / secondary action；当前主项候选摘要也会在超过两个候选时显示 `+N more`。下一步可继续评估是否需要更强的批量审查或逐项查询能力。
 		- 已完成 Goal 15 第一版：line sidecar refresh result / status / line id 信息已接入本地化 alignment audit，后续只需继续评估更强的 line identity 迁移契约或 report 体验。
 		- 再评估是否给 `update-l10n-project` 增加可选 `--alignment-report`，但默认行为仍不应自动继承相似旧译文。
 	- 注意：这条实际上依赖 Goal 10 的 stable node id 维护进一步落地，所以优先级排在 Goal 10 后半段，而不是独立抢跑。
