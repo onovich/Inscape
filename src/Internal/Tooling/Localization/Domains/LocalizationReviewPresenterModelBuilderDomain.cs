@@ -104,13 +104,23 @@ namespace Inscape.Tooling {
                 ? "similarity " + candidate.Similarity.ToString("0.000", CultureInfo.InvariantCulture)
                 : "candidate";
             string rankedSimilarity = similarity + " / " + BuildRankPenaltySummary(candidate);
-            return string.IsNullOrWhiteSpace(candidate.Reason)
+            string reasonedStatus = string.IsNullOrWhiteSpace(candidate.Reason)
                 ? rankedSimilarity
                 : rankedSimilarity + " / " + candidate.Reason;
+            return reasonedStatus + BuildCandidateLineStatus(candidate);
         }
 
         static string BuildRankPenaltySummary(LocalizationAlignmentCandidateModel candidate) {
             return "rankPenalty " + candidate.RankPenalty.ToString(CultureInfo.InvariantCulture);
+        }
+
+        static string BuildCandidateLineStatus(LocalizationAlignmentCandidateModel candidate) {
+            if (string.IsNullOrWhiteSpace(candidate.LineId)) {
+                return string.Empty;
+            }
+
+            string status = string.IsNullOrWhiteSpace(candidate.LineIdentityStatus) ? string.Empty : " " + candidate.LineIdentityStatus;
+            return " / line " + candidate.LineId + status + BuildLineFingerprintSummary(candidate.LineFingerprint);
         }
 
         static string BuildLineIdentitySummary(string lineId, string status, string fingerprint) {

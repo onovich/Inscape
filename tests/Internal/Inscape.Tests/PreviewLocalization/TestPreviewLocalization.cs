@@ -720,6 +720,7 @@ Narrator: Ask clerk about lantern tonight.
             AssertTrue(reviewItem.Detail.Contains("<line " + changed.LineId + " available fp ", StringComparison.Ordinal), "Review presenter should expose current line identity status in item detail.");
             AssertTrue(reviewItem.Detail.Contains("fp " + changed.LineFingerprint.Substring(0, Math.Min(changed.LineFingerprint.Length, 12)), StringComparison.Ordinal), "Review presenter should expose current line fingerprint in item detail.");
             LocalizationReviewActionPresenterModel candidateAction = reviewItem.Actions.First(action => action.ActionKey == "open-candidate");
+            AssertTrue(candidateAction.ActionStatus.Contains("line " + changed.Candidates[0].LineId + " available fp ", StringComparison.Ordinal), "Review presenter should expose candidate line identity status in action status.");
             AssertTrue(candidateAction.Detail.Contains("<line " + changed.Candidates[0].LineId + " available fp ", StringComparison.Ordinal), "Review presenter should expose candidate line identity status in action detail.");
             AssertTrue(candidateAction.Detail.Contains("fp " + changed.Candidates[0].LineFingerprint.Substring(0, Math.Min(changed.Candidates[0].LineFingerprint.Length, 12)), StringComparison.Ordinal), "Review presenter should expose candidate line fingerprint in action detail.");
             LocalizationReviewActionPresenterModel diffAction = reviewItem.Actions.First(action => action.ActionKey == "show-candidate-diff");
@@ -1357,6 +1358,7 @@ Narrator: Beta.
             AssertTrue(toolingPresenterBuilderSource.Contains("ActionKey = \"open-candidate\""), "Tooling presenter model builder should encode candidate action identity without VSCode-facing labels.");
             AssertTrue(toolingPresenterBuilderSource.Contains("ActionKey = \"show-candidate-diff\""), "Tooling presenter model builder should encode candidate diff action identity without VSCode-facing labels.");
             AssertTrue(toolingPresenterBuilderSource.Contains("BuildRankPenaltySummary(candidate)"), "Tooling presenter model builder should expose rank penalty summaries for review UI.");
+            AssertTrue(toolingPresenterBuilderSource.Contains("BuildCandidateLineStatus(candidate)"), "Tooling presenter model builder should expose candidate line identity in action status.");
             AssertTrue(toolingPresenterBuilderSource.Contains("BuildLineIdentitySummary(candidate.LineId, candidate.LineIdentityStatus, candidate.LineFingerprint)"), "Tooling presenter model builder should expose candidate line identity status summaries for review UI.");
             AssertTrue(toolingPresenterBuilderSource.Contains("BuildLineFingerprintSummary(fingerprint)"), "Tooling presenter model builder should expose line fingerprint summaries for review UI.");
             AssertTrue(quickPickAdapterSource.Contains("createQuickPickLabel(model)"), "QuickPick adapter should own VSCode-facing action label mapping.");
