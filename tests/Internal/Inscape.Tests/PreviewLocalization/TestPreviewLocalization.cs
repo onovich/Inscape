@@ -376,6 +376,13 @@ Narrator: Shared line C.
             AssertTrue(diffAction.Detail.Contains("current: I waited here a while longer.", StringComparison.Ordinal), "Review presenter should expose current text in candidate diff action.");
             AssertTrue(diffAction.Detail.Contains("previous: I waited here a while.", StringComparison.Ordinal), "Review presenter should expose previous candidate text in candidate diff action.");
             AssertTrue(diffAction.Detail.Contains("translation: Changed candidate translation", StringComparison.Ordinal), "Review presenter should expose candidate translation in diff action.");
+            AssertTrue(diffAction.Detail.Contains("rankPenalty ", StringComparison.Ordinal), "Review presenter should expose candidate rank penalty in diff action.");
+            LocalizationReviewActionPresenterModel candidateAction = report.Presenter.Items
+                .First(item => item.Item.Status == "changed")
+                .Actions
+                .First(action => action.ActionKey == "open-candidate");
+            AssertTrue(candidateAction.ActionStatus.Contains("rankPenalty ", StringComparison.Ordinal), "Review presenter should expose candidate rank penalty in action status.");
+            AssertTrue(candidateAction.Detail.Contains("rankPenalty ", StringComparison.Ordinal), "Review presenter should expose candidate rank penalty in candidate detail.");
         }
 
         static void LocalizationAlignmentAuditKeepsLowConfidenceSimilarTextAsConflict() {
@@ -1337,6 +1344,7 @@ Narrator: Beta.
             AssertTrue(toolingPresenterBuilderSource.Contains("ActionKey = \"open-current\""), "Tooling presenter model builder should encode action identity without VSCode-facing labels.");
             AssertTrue(toolingPresenterBuilderSource.Contains("ActionKey = \"open-candidate\""), "Tooling presenter model builder should encode candidate action identity without VSCode-facing labels.");
             AssertTrue(toolingPresenterBuilderSource.Contains("ActionKey = \"show-candidate-diff\""), "Tooling presenter model builder should encode candidate diff action identity without VSCode-facing labels.");
+            AssertTrue(toolingPresenterBuilderSource.Contains("BuildRankPenaltySummary(candidate)"), "Tooling presenter model builder should expose rank penalty summaries for review UI.");
             AssertTrue(quickPickAdapterSource.Contains("createQuickPickLabel(model)"), "QuickPick adapter should own VSCode-facing action label mapping.");
             AssertTrue(quickPickAdapterSource.Contains("Compare candidate "), "QuickPick adapter should own VSCode-facing candidate diff labels.");
             AssertTrue(reviewControllerSource.Contains("openLocation(this.locationFromPayload(selected.location))"), "Localization review controller should jump to source location.");

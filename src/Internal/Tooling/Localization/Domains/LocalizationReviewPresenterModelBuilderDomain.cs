@@ -96,16 +96,21 @@ namespace Inscape.Tooling {
             string translation = string.IsNullOrWhiteSpace(candidate.Translation)
                 ? string.Empty
                 : " => " + candidate.Translation;
-            return candidate.Text + translation + similarity + reason;
+            return candidate.Text + translation + similarity + " [" + BuildRankPenaltySummary(candidate) + "]" + reason;
         }
 
         static string BuildCandidateStatus(LocalizationAlignmentCandidateModel candidate) {
             string similarity = candidate.Similarity > 0
                 ? "similarity " + candidate.Similarity.ToString("0.000", CultureInfo.InvariantCulture)
                 : "candidate";
+            string rankedSimilarity = similarity + " / " + BuildRankPenaltySummary(candidate);
             return string.IsNullOrWhiteSpace(candidate.Reason)
-                ? similarity
-                : similarity + " / " + candidate.Reason;
+                ? rankedSimilarity
+                : rankedSimilarity + " / " + candidate.Reason;
+        }
+
+        static string BuildRankPenaltySummary(LocalizationAlignmentCandidateModel candidate) {
+            return "rankPenalty " + candidate.RankPenalty.ToString(CultureInfo.InvariantCulture);
         }
 
         static string BuildCandidateDiffSummary(LocalizationAlignmentItemModel item, LocalizationAlignmentCandidateModel candidate) {
@@ -122,6 +127,7 @@ namespace Inscape.Tooling {
             return "current: " + item.Text
                 + " | previous: " + candidate.Text
                 + " | " + translation
+                + " | " + BuildRankPenaltySummary(candidate)
                 + " | " + reason;
         }
 
