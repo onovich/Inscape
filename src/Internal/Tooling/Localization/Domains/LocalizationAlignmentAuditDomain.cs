@@ -364,7 +364,7 @@ namespace Inscape.Tooling {
                 return false;
             }
 
-            if (best.HasExactLineIdentity && !candidate.HasExactLineIdentity && best.Similarity >= ChangedSimilarityThreshold) {
+            if (best.HasExactLineIdentity && !candidate.HasExactLineIdentity) {
                 return false;
             }
 
@@ -784,6 +784,11 @@ namespace Inscape.Tooling {
         }
 
         static int CompareCandidateMatch(LocalizationAlignmentCandidateMatch left, LocalizationAlignmentCandidateMatch right) {
+            int lineIdentity = right.HasExactLineIdentity.CompareTo(left.HasExactLineIdentity);
+            if (lineIdentity != 0) {
+                return lineIdentity;
+            }
+
             int similarity = right.Similarity.CompareTo(left.Similarity);
             if (similarity != 0) {
                 return similarity;

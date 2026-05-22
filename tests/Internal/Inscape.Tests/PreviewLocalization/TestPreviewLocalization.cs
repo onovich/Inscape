@@ -791,6 +791,50 @@ Narrator: The verdict changes everything.
             AssertTrue(changed.Candidates[0].Reason.Contains("same-line-id", StringComparison.Ordinal), "Rewritten same-line candidate should record exact line identity reason.");
         }
 
+        static void LocalizationAlignmentAuditRanksExactLineIdentityBeforeTextSimilarity() {
+            StoryGraphCompilerDomain compiler = new StoryGraphCompilerDomain();
+            StoryGraphCompilationResultModel initial = compiler.Compile(new List<DslScriptSourceModel> {
+                new DslScriptSourceModel("D:/LabProjects/Inscape/story/court.inscape", """
+# intro
+Narrator: Ask guard about lantern tonight.
+Narrator: The verdict changes tomorrow.
+"""),
+            }, "D:/LabProjects/Inscape");
+            StoryNodeMapModel nodeMap = StoryNodeMapUpdateDomain.Update(new StoryNodeMapModel(),
+                                                                        initial,
+                                                                        "D:/LabProjects/Inscape",
+                                                                        DateTimeOffset.Parse("2026-05-19T17:45:00Z", System.Globalization.CultureInfo.InvariantCulture));
+            LocalizationLineRefreshResultModel firstRefresh = LocalizationLineMapRefreshDomain.Refresh(new LocalizationLineMapModel(), initial, "D:/LabProjects/Inscape");
+            string oldCsv = LocalizationCsvFlowDomain.Extract(initial.Graph);
+            string lineAnchor = AnchorForText(oldCsv, "Ask guard about lantern tonight.");
+            string similarAnchor = AnchorForText(oldCsv, "The verdict changes tomorrow.");
+            string oldCsvWithTranslations = "anchor,node,kind,speaker,text,translation,sourcePath,line,column\n"
+                + lineAnchor + ",intro,Dialogue,Narrator,Ask guard about lantern tonight.,Exact line translation,story/court.inscape,2,1\n"
+                + similarAnchor + ",intro,Dialogue,Narrator,The verdict changes tomorrow.,Similar text translation,story/court.inscape,3,1\n";
+
+            StoryGraphCompilationResultModel updated = compiler.Compile(new List<DslScriptSourceModel> {
+                new DslScriptSourceModel("D:/LabProjects/Inscape/story/court.inscape", """
+# intro
+Narrator: The verdict changes everything.
+"""),
+            }, "D:/LabProjects/Inscape");
+            LocalizationLineRefreshResultModel refreshed = LocalizationLineMapRefreshDomain.Refresh(firstRefresh.LineMap, updated, "D:/LabProjects/Inscape");
+
+            LocalizationAlignmentReportModel report = LocalizationAlignmentAuditDomain.Audit(updated,
+                                                                                             new Inscape.Compiler.Localization.LocalizationCsvReaderDomain().Read(oldCsvWithTranslations),
+                                                                                             nodeMap,
+                                                                                             "D:/LabProjects/Inscape",
+                                                                                             new LocalizationAlignmentLineIdentityInputModel {
+                                                                                                 Status = "available",
+                                                                                                 LineMap = refreshed.LineMap,
+                                                                                             });
+
+            LocalizationAlignmentItemModel changed = FindAlignmentItem(report, "changed");
+            AssertEqual(1, changed.Candidates.Count, "Exact line identity should prune higher-similarity text-only candidates.");
+            AssertEqual("Exact line translation", changed.Candidates[0].Translation, "Exact line identity should rank before a higher text-similarity candidate from another line.");
+            AssertTrue(changed.Candidates[0].Reason.Contains("same-line-id", StringComparison.Ordinal), "Preferred candidate should record exact line identity reason.");
+        }
+
         static void CliAuditL10nAlignmentProjectEmitsJson() {
             string directory = Path.Combine(Path.GetTempPath(), "inscape-tests", Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(directory);

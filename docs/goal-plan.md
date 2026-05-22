@@ -263,7 +263,7 @@
 
 Goal 10 后续细化：
 
-- [~] G10.4.2 candidate scoring 细化：已补第一轮 tie-break 收口，当前会在相似度并列时优先比较 ranking penalty（sequence / source line 距离），再比较 sequence distance，减少“文本相似但上下文更远”的旧译文排到前面的情况。第二轮已把 context shape（首词 / 末词 / token 数）并入 penalty 与 reason，第三轮又补了 keyword fingerprint（长度 >= 4 的 token 集）信号与回归测试，第四轮继续补了 neighbor shape（首词 / 第二词 / 末词）信号，第五轮又补了同节点前后翻译单元的 local context fingerprint 与 `same-local-context` reason，第六轮把轻微改写的前后文纳入 `near-local-context`，第七轮让 `same-line-id` 可以收敛同窗口内的近似文本候选，第八轮允许精确 line id 在文本大改时仍保留人工审查候选，进一步压低“候选文本相似但所处局部语义块不同”的误排。后续可继续评估是否需要跨节点或跨文件的更强上下文约束。
+- [~] G10.4.2 candidate scoring 细化：已补第一轮 tie-break 收口，当前会在相似度并列时优先比较 ranking penalty（sequence / source line 距离），再比较 sequence distance，减少“文本相似但上下文更远”的旧译文排到前面的情况。第二轮已把 context shape（首词 / 末词 / token 数）并入 penalty 与 reason，第三轮又补了 keyword fingerprint（长度 >= 4 的 token 集）信号与回归测试，第四轮继续补了 neighbor shape（首词 / 第二词 / 末词）信号，第五轮又补了同节点前后翻译单元的 local context fingerprint 与 `same-local-context` reason，第六轮把轻微改写的前后文纳入 `near-local-context`，第七轮让 `same-line-id` 可以收敛同窗口内的近似文本候选，第八轮允许精确 line id 在文本大改时仍保留人工审查候选，第九轮让精确 line id 在排序上优先于纯文本相似度，进一步压低“候选文本相似但所处局部语义块不同”的误排。后续可继续评估是否需要跨节点或跨文件的更强上下文约束。
 - [~] G13.1.c 收 `extension.js` 装配重复：已把 `openLocation` / `locationFromPayload` 收成共享 `locationServices` 注入块，并把文件打开 glue 收成 `openFileInEditor`；下一步可继续评估是否要把更多 VSCode 共享依赖按组合根分组，而不是让 `extension.js` 参数表重新横向扩张。
 
 ## Goal 15：本地化 line sidecar 消费闭环

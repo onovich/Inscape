@@ -83,6 +83,7 @@ namespace Inscape.Tests {
                 ("localization alignment audit uses line sidecar identity", LocalizationAlignmentAuditUsesLineSidecarIdentity),
                 ("localization alignment audit resolves close candidates by line identity", LocalizationAlignmentAuditResolvesCloseCandidatesByLineIdentity),
                 ("localization alignment audit keeps rewritten same line candidate", LocalizationAlignmentAuditKeepsRewrittenSameLineCandidate),
+                ("localization alignment audit ranks exact line identity before text similarity", LocalizationAlignmentAuditRanksExactLineIdentityBeforeTextSimilarity),
                 ("cli audit-l10n-alignment-project emits json", CliAuditL10nAlignmentProjectEmitsJson),
                 ("cli audit-l10n-alignment-project emits text", CliAuditL10nAlignmentProjectEmitsText),
                 ("cli audit-l10n-alignment-project reports line identity status", CliAuditL10nAlignmentProjectReportsLineIdentityStatus),
