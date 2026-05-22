@@ -320,7 +320,7 @@ namespace Inscape.Tooling {
                 }
 
                 scored.Add(new LocalizationAlignmentCandidateMatch {
-                    Candidate = CreateCandidate(previous, score.Similarity, score.Reason),
+                    Candidate = CreateCandidate(previous, score.Similarity, score.RankingPenalty, score.Reason),
                     Similarity = score.Similarity,
                     SequenceDistance = score.SequenceDistance,
                     RankingPenalty = score.RankingPenalty,
@@ -423,13 +423,13 @@ namespace Inscape.Tooling {
             };
 
             if (previous != null) {
-                item.Candidates.Add(CreateCandidate(previous, similarity, string.Empty));
+                item.Candidates.Add(CreateCandidate(previous, similarity, 0, string.Empty));
             }
 
             return item;
         }
 
-        static LocalizationAlignmentCandidateModel CreateCandidate(LocalizationAlignmentEntry entry, double similarity, string reason) {
+        static LocalizationAlignmentCandidateModel CreateCandidate(LocalizationAlignmentEntry entry, double similarity, int rankPenalty, string reason) {
             return new LocalizationAlignmentCandidateModel {
                 Reason = reason,
                 Anchor = entry.Entry.Anchor,
@@ -443,6 +443,7 @@ namespace Inscape.Tooling {
                 Line = entry.Entry.Source.Line,
                 Column = entry.Entry.Source.Column,
                 Similarity = Math.Round(similarity, 4),
+                RankPenalty = rankPenalty,
                 LineId = entry.LineId,
                 LineFingerprint = entry.LineFingerprint,
                 LineIdentityStatus = entry.LineIdentityStatus,

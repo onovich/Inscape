@@ -380,6 +380,9 @@ namespace Inscape.Cli {
                                    .Append(candidate.Similarity.ToString("0.0000", System.Globalization.CultureInfo.InvariantCulture))
                                    .Append(']');
                         }
+                        builder.Append(" [rankPenalty ")
+                               .Append(candidate.RankPenalty)
+                               .Append(']');
                         if (!string.IsNullOrWhiteSpace(candidate.Reason)) {
                             builder.Append(" {")
                                    .Append(candidate.Reason)

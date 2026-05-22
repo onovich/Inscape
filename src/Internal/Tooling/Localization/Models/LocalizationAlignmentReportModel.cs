@@ -124,6 +124,8 @@ namespace Inscape.Tooling {
 
         public double Similarity { get; set; }
 
+        public int RankPenalty { get; set; }
+
         public string LineId { get; set; } = string.Empty;
 
         public string LineFingerprint { get; set; } = string.Empty;

@@ -454,6 +454,8 @@ Narrator: Shared branch line extended.
 
             LocalizationAlignmentItemModel conflict = FindAlignmentItem(report, "conflict");
             AssertEqual("Near translation", conflict.Candidates[0].Translation, "Conflict candidates should prefer the nearer sequence match when similarity ties.");
+            AssertTrue(conflict.Candidates.Count > 1, "Near sequence tie should keep alternate candidates for review.");
+            AssertTrue(conflict.Candidates[0].RankPenalty <= conflict.Candidates[1].RankPenalty, "Preferred candidate should expose a rank penalty that is no worse than later candidates.");
         }
 
         static void LocalizationAlignmentAuditPrefersNearContextShapeWhenSequenceTies() {
@@ -898,6 +900,7 @@ Narrator: Hello there.
             AssertTrue(text.Contains("Localization alignment audit:"), "Alignment text report should include title.");
             AssertTrue(text.Contains("kept intro Dialogue"), "Alignment text report should list kept item summary.");
             AssertTrue(text.Contains("translation: Localized hello"), "Alignment text report should include confirmed translation.");
+            AssertTrue(text.Contains("[rankPenalty 0]"), "Alignment text report should expose candidate rank penalty.");
             AssertTrue(text.Contains("Summary: kept 1, new 0, changed 0, removed 0, conflict 0, stale 0."), "Alignment text report should include summary line.");
         }
 
@@ -940,6 +943,7 @@ Narrator: Ask guard about records tonight.
             AssertEqual("available", root.GetProperty("lineIdentity").GetProperty("status").GetString(), "Alignment report should expose available line identity status.");
             JsonElement candidate = root.GetProperty("items")[0].GetProperty("candidates")[0];
             AssertTrue(candidate.GetProperty("reason").GetString()!.Contains("same-line-id", StringComparison.Ordinal), "Alignment candidate should include line identity reason.");
+            AssertTrue(candidate.TryGetProperty("rankPenalty", out JsonElement rankPenalty) && rankPenalty.GetInt32() >= 0, "Alignment candidate should expose rank penalty for review ordering.");
             AssertTrue(!string.IsNullOrWhiteSpace(candidate.GetProperty("lineId").GetString()), "Alignment candidate should expose line id.");
         }
 
