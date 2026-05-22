@@ -422,6 +422,8 @@ Narrator: The lantern still watches tonight.
             AssertEqual(1, report.Summary.ConflictCount, "Low-confidence similarity should produce conflict.");
             AssertEqual(2, conflict.Candidates.Count, "Conflict should keep multiple review candidates.");
             AssertEqual("", conflict.Translation, "Conflict should not fill confirmed translation.");
+            LocalizationReviewItemPresenterModel conflictReview = report.Presenter.Items.First(item => item.Item.Status == "conflict");
+            AssertTrue(conflictReview.Detail.Contains("<lineIdentity missing>", StringComparison.Ordinal), "Review presenter should expose missing line identity status when no sidecar is available.");
         }
 
         static void LocalizationAlignmentAuditPrefersNearSequenceWhenSimilarityTies() {
@@ -714,12 +716,12 @@ Narrator: Ask clerk about lantern tonight.
             AssertEqual(changed.LineId, changed.Candidates[0].LineId, "Current item and preferred candidate should share the same line id.");
             AssertTrue(!string.IsNullOrWhiteSpace(changed.LineFingerprint), "Current item should expose line fingerprint for review.");
             LocalizationReviewItemPresenterModel reviewItem = report.Presenter.Items.First(item => item.Item.Status == "changed");
-            AssertTrue(reviewItem.Detail.Contains("<line " + changed.LineId + ">", StringComparison.Ordinal), "Review presenter should expose current line identity in item detail.");
+            AssertTrue(reviewItem.Detail.Contains("<line " + changed.LineId + " available>", StringComparison.Ordinal), "Review presenter should expose current line identity status in item detail.");
             LocalizationReviewActionPresenterModel candidateAction = reviewItem.Actions.First(action => action.ActionKey == "open-candidate");
-            AssertTrue(candidateAction.Detail.Contains("<line " + changed.Candidates[0].LineId + ">", StringComparison.Ordinal), "Review presenter should expose candidate line identity in action detail.");
+            AssertTrue(candidateAction.Detail.Contains("<line " + changed.Candidates[0].LineId + " available>", StringComparison.Ordinal), "Review presenter should expose candidate line identity status in action detail.");
             LocalizationReviewActionPresenterModel diffAction = reviewItem.Actions.First(action => action.ActionKey == "show-candidate-diff");
-            AssertTrue(diffAction.Detail.Contains("<line " + changed.LineId + ">", StringComparison.Ordinal), "Review presenter diff should expose current line identity.");
-            AssertTrue(diffAction.Detail.Contains("<line " + changed.Candidates[0].LineId + ">", StringComparison.Ordinal), "Review presenter diff should expose candidate line identity.");
+            AssertTrue(diffAction.Detail.Contains("<line " + changed.LineId + " available>", StringComparison.Ordinal), "Review presenter diff should expose current line identity status.");
+            AssertTrue(diffAction.Detail.Contains("<line " + changed.Candidates[0].LineId + " available>", StringComparison.Ordinal), "Review presenter diff should expose candidate line identity status.");
         }
 
         static void LocalizationAlignmentAuditResolvesCloseCandidatesByLineIdentity() {
@@ -1352,7 +1354,7 @@ Narrator: Beta.
             AssertTrue(toolingPresenterBuilderSource.Contains("ActionKey = \"open-candidate\""), "Tooling presenter model builder should encode candidate action identity without VSCode-facing labels.");
             AssertTrue(toolingPresenterBuilderSource.Contains("ActionKey = \"show-candidate-diff\""), "Tooling presenter model builder should encode candidate diff action identity without VSCode-facing labels.");
             AssertTrue(toolingPresenterBuilderSource.Contains("BuildRankPenaltySummary(candidate)"), "Tooling presenter model builder should expose rank penalty summaries for review UI.");
-            AssertTrue(toolingPresenterBuilderSource.Contains("BuildLineIdentitySummary(candidate.LineId)"), "Tooling presenter model builder should expose candidate line identity summaries for review UI.");
+            AssertTrue(toolingPresenterBuilderSource.Contains("BuildLineIdentitySummary(candidate.LineId, candidate.LineIdentityStatus)"), "Tooling presenter model builder should expose candidate line identity status summaries for review UI.");
             AssertTrue(quickPickAdapterSource.Contains("createQuickPickLabel(model)"), "QuickPick adapter should own VSCode-facing action label mapping.");
             AssertTrue(quickPickAdapterSource.Contains("Compare candidate "), "QuickPick adapter should own VSCode-facing candidate diff labels.");
             AssertTrue(reviewControllerSource.Contains("openLocation(this.locationFromPayload(selected.location))"), "Localization review controller should jump to source location.");
