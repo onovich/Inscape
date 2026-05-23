@@ -124,11 +124,33 @@ function checkClassNames(filePath, text) {
     }
 }
 
+function checkLocalRequires(filePath, text) {
+    const requirePattern = /\brequire\(["'](\.{1,2}\/[^"']+)["']\)/g;
+    let match = requirePattern.exec(text);
+    while (match) {
+        const requestedPath = match[1];
+        const resolvedPath = path.resolve(path.dirname(filePath), requestedPath);
+        const candidates = [
+            resolvedPath,
+            resolvedPath + ".js",
+            path.join(resolvedPath, "index.js"),
+        ];
+
+        if (!candidates.some((candidate) => fs.existsSync(candidate))) {
+            report(filePath, `local require "${requestedPath}" does not resolve to a packaged source file`);
+        }
+
+        match = requirePattern.exec(text);
+    }
+}
+
 checkTopLevelEntries();
 for (const filePath of walk(scriptsRoot).filter((file) => file.endsWith(".js"))) {
+    const text = fs.readFileSync(filePath, "utf8");
     checkDirectoryRoles(filePath);
     checkFileName(filePath);
-    checkClassNames(filePath, fs.readFileSync(filePath, "utf8"));
+    checkClassNames(filePath, text);
+    checkLocalRequires(filePath, text);
 }
 
 if (findings.length > 0) {
