@@ -16,8 +16,12 @@ export class PreviewPanelController {
     this.scriptText = "";
     this.pendingFlowAnimationLineIndex = -1;
     this.typewriterTimer = null;
+    this.flowWheelAccumulator = 0;
+    this.flowWheelLastDirection = 0;
+    this.flowWheelThreshold = 160;
     this.bindModeControls();
     this.previewElement.addEventListener("click", (event) => this.handlePreviewClick(event));
+    this.previewElement.addEventListener("wheel", (event) => this.handlePreviewWheel(event), { passive: false });
     this.updateModeControls();
   }
 
@@ -148,9 +152,40 @@ export class PreviewPanelController {
     this.advanceFlow();
   }
 
+  handlePreviewWheel(event) {
+    if (this.mode !== "flow" || !this.latestStoryModel) {
+      this.resetFlowWheelAccumulator();
+      return;
+    }
+
+    const deltaY = this.getNormalizedWheelDeltaY(event);
+    if (!Number.isFinite(deltaY) || deltaY === 0) {
+      return;
+    }
+
+    const direction = deltaY > 0 ? 1 : -1;
+    const atBoundary = direction < 0 ? this.isPreviewScrolledToTop() : this.isPreviewScrolledToBottom();
+    const canAdvance = direction > 0 && !this.areFlowChoicesVisible();
+    const canRewind = direction < 0 && this.flowVisibleLineCount > 0;
+    if (!atBoundary || (direction > 0 && !canAdvance) || (direction < 0 && !canRewind)) {
+      this.resetFlowWheelAccumulator();
+      return;
+    }
+
+    event.preventDefault?.();
+    const steps = this.consumeFlowWheelDelta(deltaY);
+    for (let index = 0; index < steps; index += 1) {
+      const changed = direction > 0 ? this.advanceFlow() : this.rewindFlow();
+      if (!changed) {
+        this.resetFlowWheelAccumulator();
+        break;
+      }
+    }
+  }
+
   advanceFlow() {
     if (!this.latestStoryModel) {
-      return;
+      return false;
     }
 
     const nextVisibleLineCount = Math.min(
@@ -158,7 +193,7 @@ export class PreviewPanelController {
       this.flowVisibleLineCount + 1
     );
     if (nextVisibleLineCount === this.flowVisibleLineCount) {
-      return;
+      return false;
     }
 
     this.pendingFlowAnimationLineIndex = nextVisibleLineCount <= this.latestStoryModel.lines.length
@@ -167,6 +202,72 @@ export class PreviewPanelController {
     this.flowVisibleLineCount = nextVisibleLineCount;
     this.renderStoryModel(this.latestStoryModel);
     this.highlightSourceLine(this.activeLineNumber);
+    return true;
+  }
+
+  rewindFlow() {
+    if (!this.latestStoryModel) {
+      return false;
+    }
+
+    const nextVisibleLineCount = Math.max(0, this.flowVisibleLineCount - 1);
+    if (nextVisibleLineCount === this.flowVisibleLineCount) {
+      return false;
+    }
+
+    this.pendingFlowAnimationLineIndex = -1;
+    this.flowVisibleLineCount = nextVisibleLineCount;
+    this.renderStoryModel(this.latestStoryModel);
+    this.highlightSourceLine(this.activeLineNumber);
+    return true;
+  }
+
+  consumeFlowWheelDelta(deltaY) {
+    const direction = deltaY > 0 ? 1 : -1;
+    if (direction !== this.flowWheelLastDirection) {
+      this.flowWheelAccumulator = 0;
+      this.flowWheelLastDirection = direction;
+    }
+
+    this.flowWheelAccumulator += Math.abs(deltaY);
+    const steps = Math.min(2, Math.floor(this.flowWheelAccumulator / this.flowWheelThreshold));
+    this.flowWheelAccumulator -= steps * this.flowWheelThreshold;
+    return steps;
+  }
+
+  getNormalizedWheelDeltaY(event) {
+    const deltaY = Number(event.deltaY || 0);
+    if (event.deltaMode === 1) {
+      return deltaY * 40;
+    }
+
+    if (event.deltaMode === 2) {
+      return deltaY * Math.max(Number(this.previewElement.clientHeight || 0), this.flowWheelThreshold);
+    }
+
+    return deltaY;
+  }
+
+  resetFlowWheelAccumulator() {
+    this.flowWheelAccumulator = 0;
+    this.flowWheelLastDirection = 0;
+  }
+
+  isPreviewScrolledToTop() {
+    return Number(this.previewElement.scrollTop || 0) <= 1;
+  }
+
+  isPreviewScrolledToBottom() {
+    const scrollTop = Number(this.previewElement.scrollTop || 0);
+    const clientHeight = Number(this.previewElement.clientHeight || 0);
+    const scrollHeight = Number(this.previewElement.scrollHeight || 0);
+    return scrollTop + clientHeight >= scrollHeight - 1;
+  }
+
+  areFlowChoicesVisible() {
+    return Boolean(this.latestStoryModel)
+      && this.mode === "flow"
+      && this.flowVisibleLineCount > this.latestStoryModel.lines.length;
   }
 
   getVisibleLines(storyModel) {

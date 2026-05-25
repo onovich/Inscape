@@ -33,7 +33,7 @@
 - Preview 当前会按活动源码行所在 block 渲染 Compiler graph 内容；编辑器 definition navigation 或其他源码定位进入新 block 时会切换预览 block，但编辑器滚动和预览滚动保持独立，不做滚动同步。外层 workbench body 不应再作为双栏共享滚动面。
 - SelfHostedEditor 当前已有安静 loading 状态，覆盖默认样例、Monaco、line-map、Compiler graph Preview / Graph、Runtime、diagnostics、outline、本地化和 workspace summary 刷新过程；不要回退成全屏遮罩或高饱和 spinner。
 - Preview 阅读表面不再显示总行数 meta；这类 session/debug 信息应留在 workspace 状态区，不进入正文阅读面。
-- Preview 现在有 `Static` / `Flow` 阅读模式：Static 是完整 block 一次性展示；Flow 从标题开始，点击预览区逐行放出正文，新出现的 speaker 快速淡入，正文使用打字机效果；正文结束后一次性显示全部选项，并在 flow 下默认显示选项目标标题。该状态仍是前端 presenter 状态，不是 Runtime state。
+- Preview 现在有 `Static` / `Flow` 阅读模式：Static 是完整 block 一次性展示；Flow 从标题开始，点击预览区逐行放出正文，新出现的 speaker 快速淡入，正文使用打字机效果；正文结束后一次性显示全部选项，并在 flow 下默认显示选项目标标题。Flow 滚轮导航只在预览面板自身滚到顶部 / 底部后接管：向上按阈值撤回上一步，向下按阈值快进一步；选项可见时禁止向下快进。该状态仍是前端 presenter 状态，不是 Runtime state。
 - 根布局现在是固定视口内应用：`body` 不滚动，Script 编辑器由 Monaco 内部滚动，Preview 由 `.story-preview` 独立滚动。不要把 `workbench-body` 重新改成共享页面滚动，也不要让 `height: 100%` 依赖不稳定的 `min-height` 链路。
 - Script 写作表面已关闭 Monaco sticky scroll；节点标题、prompt / choice 标题等结构行应像普通文本一样滚出视口，不要重新启用置顶结构行，否则会在顶部产生重影 / 错层。
 - Script 视图 Ctrl/Cmd + Click 节点标题或跳转目标时会显式走 source selection 管线，编辑器光标与预览 block 都会跳到 definition 位置；不要退回到只依赖 Monaco 内建同文件 goto，否则可能出现 Preview 跳转但编辑器不移动。

@@ -382,6 +382,16 @@ function createHoverModel(text) {
   };
 }
 
+function createWheelEvent(deltaY) {
+  return {
+    deltaY,
+    defaultPrevented: false,
+    preventDefault() {
+      this.defaultPrevented = true;
+    },
+  };
+}
+
 function createFakeMonaco(documentModel) {
   const text = documentModel.nodes
     .flatMap((node) => [`# ${node.title}`, ...node.lines.map((line) => line.text)])
@@ -445,6 +455,9 @@ class FakeElement {
     this.style = {};
     this.textContent = "";
     this.type = "";
+    this.scrollTop = 0;
+    this.clientHeight = 100;
+    this.scrollHeight = 100;
     this.eventHandlers = new Map();
     this.classList = {
       add: (...classNames) => {
@@ -608,6 +621,31 @@ assertEqual(Boolean(findElementByClass(flowPreviewElement, "story-speaker-name-e
 assertEqual(Boolean(findElementByClass(flowPreviewElement, "story-typewriter-body")), true, "flow body should use typewriter body");
 assertNotIncludesText(getTextContent(flowPreviewElement), "Review the evidence.");
 flowPreviewController.clearTypewriterTimer();
+flowPreviewElement.scrollTop = 0;
+flowPreviewElement.clientHeight = 100;
+flowPreviewElement.scrollHeight = 400;
+const shallowRewindWheel = createWheelEvent(-80);
+flowPreviewController.handlePreviewWheel(shallowRewindWheel);
+assertEqual(flowPreviewController.flowVisibleLineCount, 2, "flow wheel should wait for rewind threshold");
+assertEqual(shallowRewindWheel.defaultPrevented, true, "flow wheel should hold boundary scroll while accumulating rewind");
+flowPreviewController.handlePreviewWheel(createWheelEvent(-100));
+assertEqual(flowPreviewController.flowVisibleLineCount, 1, "flow wheel should rewind one step after the top-boundary threshold");
+flowPreviewElement.scrollTop = 300;
+const shallowAdvanceWheel = createWheelEvent(159);
+flowPreviewController.handlePreviewWheel(shallowAdvanceWheel);
+assertEqual(flowPreviewController.flowVisibleLineCount, 1, "flow wheel should wait for advance threshold");
+flowPreviewController.handlePreviewWheel(createWheelEvent(1));
+assertEqual(flowPreviewController.flowVisibleLineCount, 2, "flow wheel should advance one step after the bottom-boundary threshold");
+flowPreviewController.clearTypewriterTimer();
+flowPreviewController.advanceFlow();
+assertEqual(flowPreviewController.flowVisibleLineCount, 3, "flow choices should become visible after body lines");
+const blockedChoiceWheel = createWheelEvent(320);
+flowPreviewController.handlePreviewWheel(blockedChoiceWheel);
+assertEqual(flowPreviewController.flowVisibleLineCount, 3, "flow wheel should not fast-forward when choices are visible");
+assertEqual(blockedChoiceWheel.defaultPrevented, false, "flow choice wheel should not consume disabled fast-forward scroll");
+flowPreviewElement.scrollTop = 0;
+flowPreviewController.handlePreviewWheel(createWheelEvent(-160));
+assertEqual(flowPreviewController.flowVisibleLineCount, 2, "flow wheel should rewind from the visible choice step");
 const degradedStoryGraph = {
   ...storyGraph,
   nodes: storyGraph.nodes.map((node) => ({
