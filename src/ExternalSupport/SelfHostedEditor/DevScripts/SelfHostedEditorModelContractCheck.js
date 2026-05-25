@@ -420,6 +420,7 @@ class FakeElement {
     this.style = {};
     this.textContent = "";
     this.type = "";
+    this.eventHandlers = new Map();
     this.classList = {
       add: (...classNames) => {
         const classes = new Set(this.className.split(/\s+/).filter(Boolean));
@@ -448,7 +449,28 @@ class FakeElement {
     };
   }
 
-  addEventListener() {}
+  addEventListener(type, handler) {
+    const handlers = this.eventHandlers.get(type) || [];
+    handlers.push(handler);
+    this.eventHandlers.set(type, handlers);
+  }
+
+  click() {
+    for (const handler of this.eventHandlers.get("click") || []) {
+      handler({
+        stopPropagation: () => {},
+        target: this,
+      });
+    }
+  }
+
+  closest(selector) {
+    if (selector === "button" && this.tagName === "button") {
+      return this;
+    }
+
+    return null;
+  }
 
   append(...children) {
     this.children.push(...children);
@@ -524,10 +546,17 @@ const hintRailElement = new FakeElement("aside");
 globalThis.document = new FakeDocument();
 const previewElement = new FakeElement("main");
 const previewController = new PreviewPanelController(previewElement);
+let previewSelectedLine = 0;
+previewController.onSourceLineSelected((lineNumber) => {
+  previewSelectedLine = lineNumber;
+});
 previewController.render("", 2, storyGraph);
 assertEqual(previewController.documentModel.nodes[0].lines[0].speaker, "Narrator", "preview should consume compiler story graph lines");
 assertEqual(previewController.documentModel.nodes[0].choices[0].prompt, "Choose action", "preview should consume compiler story graph choices");
 assertEqual(findElementByClass(previewElement, "choice-prompt")?.textContent, "Choose action", "preview should render compiler choice prompt");
+findElementByClass(previewElement, "choice-button")?.click();
+assertEqual(findElementByClass(previewElement, "story-title")?.textContent, "Witness", "preview choice click should navigate the reading pane to the target node");
+assertEqual(previewSelectedLine, 8, "preview choice click should still reveal the target source line in the editor");
 const editorSurfaceController = new EditorSurfaceController(new FakeElement("div"), hintRailElement, createFakeMonaco(identityDocumentModel));
 editorSurfaceController.renderAuthoringState(`# Start
 旁白：Hello

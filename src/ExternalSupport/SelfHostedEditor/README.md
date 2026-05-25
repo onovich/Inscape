@@ -72,6 +72,7 @@ Most recent user-facing work focused on replacing fragile prototype behavior wit
 - Preview now renders the block that contains the active source line. Definition navigation or source-line focus into another block updates the preview content without coupling the editor and preview scroll positions.
 - Preview no longer renders the draft total-line-count meta text inside the reading surface; line counts belong in workspace/session status, not in the prose preview.
 - Preview mode is local presenter state: `static` renders the whole active block, while `flow` uses click-to-advance line disclosure and reveals all choices together with their target titles. It is not Runtime state yet.
+- Preview choice clicks are a product invariant: clicking a choice in the reading pane must advance the Preview to the target block and reveal the target block title in the editor. Do not regress this into source-only navigation.
 - Script Ctrl/Cmd-click definition navigation routes through the workbench source selection flow, so the editor cursor and preview block both reveal the resolved target.
 - The editor and preview panes use independent scroll containers. The outer workbench body is not a shared scroll surface, so scrolling Monaco should not move the preview pane.
 - Monaco sticky scroll is disabled in the writing surface. Node titles and choice / prompt lines should scroll out like normal prose instead of pinning at the top and creating overlay artifacts.

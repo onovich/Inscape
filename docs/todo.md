@@ -2,6 +2,8 @@
 
 状态：持续维护
 
+SelfHostedEditor regression invariant: Preview choice clicks must advance the reading Preview to the target block and reveal the target block title in the editor. `npm --prefix src\ExternalSupport\SelfHostedEditor run check:model` covers this so future Runtime / navigation work does not regress it into source-only navigation.
+
 本文件记录已经能执行或需要调研的工作。仍未形成共识的问题放在 [待确认问题](open-questions.md)，已经形成长期决策的问题放在 [ADR](adr/README.md)。
 
 当前目录迁移与不符合项总蓝图见 [目录优先重构蓝图](directory-first-reframe-plan.md)。当前后续执行面板见 [/goal 后续目标计划](goal-plan.md)。

@@ -145,7 +145,10 @@ export class PreviewPanelController {
     const activeNode = this.findNodeForLine(activeLineNumber);
     const firstNode = this.documentModel?.nodes?.[0];
     const previewNode = activeNode || firstNode;
+    return this.createPreviewModelFromNode(previewNode);
+  }
 
+  createPreviewModelFromNode(previewNode) {
     return {
       choices: previewNode?.choices || [],
       lines: previewNode?.lines || [],
@@ -158,6 +161,10 @@ export class PreviewPanelController {
     return (this.documentModel?.nodes || []).find(
       (node) => node.sourceLine <= lineNumber && lineNumber <= node.endLine
     ) || null;
+  }
+
+  findNodeByTitle(title) {
+    return (this.documentModel?.nodes || []).find((node) => node.title === title) || null;
   }
 
   buildDocumentModelFromStoryGraph(storyGraphModel) {
@@ -279,7 +286,7 @@ export class PreviewPanelController {
         button.className = "choice-button";
         button.type = "button";
         button.dataset.sourceLine = String(choice.sourceLine);
-        button.addEventListener("click", () => this.notifySourceLineSelected(choice.sourceLine));
+        button.addEventListener("click", (event) => this.selectChoice(choice, event));
 
         const text = document.createElement("span");
         text.className = "choice-text";
@@ -323,6 +330,23 @@ export class PreviewPanelController {
         sourceLine: 0,
       },
     ];
+  }
+
+  selectChoice(choice, event = null) {
+    event?.stopPropagation?.();
+    const targetNode = this.findNodeByTitle(choice.target || "");
+    if (targetNode) {
+      this.flowVisibleLineCount = 0;
+      const storyModel = this.createPreviewModelFromNode(targetNode);
+      this.currentNodeTitle = storyModel.nodeTitle;
+      this.latestStoryModel = storyModel;
+      this.renderStoryModel(storyModel);
+      this.highlightSourceLine(targetNode.sourceLine);
+      this.notifySourceLineSelected(targetNode.sourceLine);
+      return;
+    }
+
+    this.notifySourceLineSelected(choice.sourceLine);
   }
 
   notifySourceLineSelected(lineNumber) {
