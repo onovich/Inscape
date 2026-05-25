@@ -14,6 +14,8 @@ export class PreviewPanelController {
     this.latestStoryModel = null;
     this.storyGraphModel = null;
     this.scriptText = "";
+    this.pendingFlowAnimationLineIndex = -1;
+    this.typewriterTimer = null;
     this.bindModeControls();
     this.previewElement.addEventListener("click", (event) => this.handlePreviewClick(event));
     this.updateModeControls();
@@ -51,11 +53,16 @@ export class PreviewPanelController {
   }
 
   renderStoryModel(storyModel) {
+    this.clearTypewriterTimer();
     const visibleLines = this.getVisibleLines(storyModel);
     const shouldShowChoices = this.shouldShowChoices(storyModel);
+    const animatedLineIndex = this.pendingFlowAnimationLineIndex;
+    this.pendingFlowAnimationLineIndex = -1;
     this.previewElement.replaceChildren(
       this.createTitleElement(storyModel),
-      ...visibleLines.map((line) => this.createLineElement(line)),
+      ...visibleLines.map((line, index) => this.createLineElement(line, {
+        animateBody: this.mode === "flow" && index === animatedLineIndex,
+      })),
       this.createChoicesElement(shouldShowChoices ? storyModel.choices : [])
     );
     this.previewElement.dataset.previewMode = this.mode;
@@ -154,6 +161,9 @@ export class PreviewPanelController {
       return;
     }
 
+    this.pendingFlowAnimationLineIndex = nextVisibleLineCount <= this.latestStoryModel.lines.length
+      ? nextVisibleLineCount - 1
+      : -1;
     this.flowVisibleLineCount = nextVisibleLineCount;
     this.renderStoryModel(this.latestStoryModel);
     this.highlightSourceLine(this.activeLineNumber);
@@ -290,7 +300,7 @@ export class PreviewPanelController {
     return title;
   }
 
-  createLineElement(line) {
+  createLineElement(line, options = {}) {
     const paragraph = document.createElement("p");
     paragraph.className = "story-line";
     paragraph.dataset.sourceLine = String(line.sourceLine);
@@ -307,13 +317,83 @@ export class PreviewPanelController {
 
     if (line.speaker) {
       const speakerName = document.createElement("strong");
-      speakerName.className = "story-speaker-name";
+      speakerName.className = options.animateBody
+        ? "story-speaker-name story-speaker-name-enter"
+        : "story-speaker-name";
       speakerName.textContent = `${line.speaker}：`;
       paragraph.append(speakerName, document.createTextNode(" "));
     }
 
-    paragraph.append(...this.createTextFragments(line.text));
+    if (options.animateBody) {
+      paragraph.classList.add("story-line-typewriter");
+      paragraph.append(this.createTypewriterBodyElement(line.text));
+    } else {
+      paragraph.append(...this.createTextFragments(line.text));
+    }
+
     return paragraph;
+  }
+
+  createTypewriterBodyElement(text) {
+    const body = document.createElement("span");
+    body.className = "story-typewriter-body";
+    const fullText = String(text || "");
+    if (this.shouldReduceMotion() || fullText.length === 0) {
+      body.classList.add("is-complete");
+      body.append(...this.createTextFragments(fullText));
+      return body;
+    }
+
+    let cursor = 0;
+    const step = () => {
+      cursor += this.getTypewriterStepSize(fullText, cursor);
+      if (cursor >= fullText.length) {
+        body.classList.add("is-complete");
+        body.replaceChildren(...this.createTextFragments(fullText));
+        this.clearTypewriterTimer();
+        return;
+      }
+
+      body.textContent = fullText.slice(0, cursor);
+      this.typewriterTimer = setTimeout(step, this.getTypewriterDelay(fullText[cursor - 1]));
+    };
+
+    this.typewriterTimer = setTimeout(step, 80);
+    return body;
+  }
+
+  shouldReduceMotion() {
+    return typeof window !== "undefined"
+      && typeof window.matchMedia === "function"
+      && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  }
+
+  getTypewriterStepSize(text, cursor) {
+    const char = text[cursor] || "";
+    if (/[\s，。！？、,.!?;；:：]/.test(char)) {
+      return 1;
+    }
+
+    return /[\u4e00-\u9fff]/.test(char) ? 1 : 2;
+  }
+
+  getTypewriterDelay(char) {
+    if (/[。！？.!?]/.test(char || "")) {
+      return 72;
+    }
+
+    if (/[，、,;；:：]/.test(char || "")) {
+      return 46;
+    }
+
+    return 22;
+  }
+
+  clearTypewriterTimer() {
+    if (this.typewriterTimer !== null) {
+      clearTimeout(this.typewriterTimer);
+      this.typewriterTimer = null;
+    }
   }
 
   createMetadataTagElement(line) {

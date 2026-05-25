@@ -70,6 +70,29 @@ body {
   }
 }
 
+@keyframes story-speaker-enter {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes story-typewriter-caret {
+  0%,
+  100% {
+    opacity: 0.18;
+  }
+
+  50% {
+    opacity: 0.72;
+  }
+}
+
 [data-loading-state] {
   position: relative;
 }
@@ -1552,6 +1575,39 @@ button[aria-pressed="true"],
   font-family: "Inter", "Segoe UI", sans-serif;
   font-size: 0.7em;
   font-weight: 650;
+}
+
+.story-speaker-name-enter {
+  animation: story-speaker-enter 160ms ease-out both;
+  display: inline-block;
+}
+
+.story-line-typewriter {
+  cursor: default;
+}
+
+.story-typewriter-body {
+  white-space: pre-wrap;
+}
+
+.story-typewriter-body::after {
+  animation: story-typewriter-caret 900ms ease-in-out infinite;
+  background: rgba(106, 109, 87, 0.48);
+  border-radius: 999px;
+  content: "";
+  display: inline-block;
+  height: 1.1em;
+  margin-left: 3px;
+  transform: translateY(0.18em);
+  width: 2px;
+}
+
+.story-typewriter-body.is-complete::after {
+  content: none;
+}
+
+.story-line-typewriter:not(:hover) {
+  background: transparent;
 }
 
 .choice-list {

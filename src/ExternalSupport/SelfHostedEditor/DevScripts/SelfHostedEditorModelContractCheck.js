@@ -596,6 +596,18 @@ findElementByClass(previewElement, "choice-button")?.click();
 assertEqual(findElementByClass(previewElement, "story-title")?.textContent, "Witness", "preview choice click should navigate the reading pane to the target node");
 assertIncludesText(getTextContent(previewElement), "I saw the clock stop.");
 assertEqual(previewSelectedLine, 8, "preview choice click should still reveal the target source line in the editor");
+const flowPreviewElement = new FakeElement("main");
+const flowPreviewController = new PreviewPanelController(flowPreviewElement);
+flowPreviewController.render("", 2, storyGraph);
+flowPreviewController.setMode("flow");
+assertNotIncludesText(getTextContent(flowPreviewElement), "Review the evidence.");
+flowPreviewController.advanceFlow();
+assertEqual(findElementByClass(flowPreviewElement, "story-metadata-tag")?.textContent, "scene court", "flow first click should reveal metadata");
+flowPreviewController.advanceFlow();
+assertEqual(Boolean(findElementByClass(flowPreviewElement, "story-speaker-name-enter")), true, "flow speaker should fade in separately");
+assertEqual(Boolean(findElementByClass(flowPreviewElement, "story-typewriter-body")), true, "flow body should use typewriter body");
+assertNotIncludesText(getTextContent(flowPreviewElement), "Review the evidence.");
+flowPreviewController.clearTypewriterTimer();
 const degradedStoryGraph = {
   ...storyGraph,
   nodes: storyGraph.nodes.map((node) => ({

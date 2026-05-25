@@ -23,7 +23,7 @@ SelfHostedEditor regression invariant: Preview choice clicks must advance the re
 - 已完成：Preview 侧 `@...` 元数据不再显示 `@` 字符，改为不可点击、不可选中的淡蓝灰圆角 tag；`[query]` 也有轻量 inline token 样式。
 - 已完成：Preview 不再固定显示首个 block；编辑器 definition navigation 或源码定位落到其他 block 时，预览会切到该 block，但不会跟随编辑器滚动位置一起滚动。
 - 已完成：Preview 阅读表面移除总行数 meta 文本；行数这类 session/debug 信息应留在 workspace 状态区，不进入正文阅读面。
-- 已完成：Preview 增加 `Static` / `Flow` 阅读模式切换。Static 保持当前完整 block 展示；Flow 从标题开始，点击预览区逐行放出正文，正文结束后一次性显示全部选项，并同时显示选项文本与目标标题。
+- 已完成：Preview 增加 `Static` / `Flow` 阅读模式切换。Static 保持当前完整 block 展示；Flow 从标题开始，点击预览区逐行放出正文，新出现的 speaker 快速淡入，正文使用打字机效果；正文结束后一次性显示全部选项，并同时显示选项文本与目标标题。
 - 已完成：Script 视图 Ctrl/Cmd + Click 节点标题或跳转目标时会显式走 source selection 管线，编辑器光标与预览 block 都会跳到 definition 位置，避免只更新 Preview 而编辑器不移动。
 - 已完成：Script 编辑器和 Preview 滚动容器已拆开；外层 workbench 不再作为共享滚动面，Monaco 上下滚动不应带动右侧预览栏。
 - 已完成：Script 写作表面关闭 Monaco sticky scroll；节点标题、prompt / choice 标题等结构行不再在滚动时置顶，避免顶部重影和正文错层。

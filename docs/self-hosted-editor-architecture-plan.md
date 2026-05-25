@@ -292,7 +292,7 @@ src/ExternalSupport/SelfHostedEditor/
 - Script / Preview 对 `@` 元数据和 `[]` 查询插值已有第一版作者体验样式：`@...` 在编辑器中弱化，在预览中转为不显示 `@` 的淡蓝灰 tag；`[query]` 以低对比 inline token 区分。中文标点不应触发 Monaco 的 ambiguous character 提示。
 - Preview 当前按活动源码行所属 block 渲染，definition navigation / source focus 可以切换预览 block；编辑器滚动与预览滚动保持独立，不再通过外层 workbench 共享滚动。Script 视图 Ctrl/Cmd + Click 会显式走 source selection 管线，让编辑器光标和 Preview block 同步跳到 definition 位置，避免只更新 Preview。
 - Preview 阅读表面不显示总行数 meta；行数、诊断来源等 session/debug 信息应归入 workspace 状态区或诊断区，而不是混进正文阅读面。
-- Preview 阅读模式新增 Static / Flow 切换：Static 一次性展示当前 block；Flow 从标题开始，点击预览区逐行放出正文，正文结束后一次性展示全部选项，并把选项文本与目标标题一起呈现。当前内容模型已开始消费 Compiler project graph，Runtime 侧已有 `runtime-project` snapshot 契约；但阅读进度、当前节点推进和选项选择仍是前端 presenter 状态，后续 Runtime Player 接入时应映射到运行时状态。
+- Preview 阅读模式新增 Static / Flow 切换：Static 一次性展示当前 block；Flow 从标题开始，点击预览区逐行放出正文，新出现的 speaker 快速淡入，正文使用打字机效果；正文结束后一次性展示全部选项，并把选项文本与目标标题一起呈现。当前内容模型已开始消费 Compiler project graph，Runtime 侧已有 `runtime-project` snapshot 契约；但阅读进度、当前节点推进和选项选择仍是前端 presenter 状态，后续 Runtime Player 接入时应映射到运行时状态。
 - SelfHostedEditor 已新增 Runtime 开发宿主桥：`/api/runtime-state` 调用 `runtime-project` 并把 started snapshot 显示到 session 状态；`/api/runtime-action` 可以把 restored state 的 `continue` / `choose` 动作转发给同一个 CLI 契约。它证明 UI 可以消费 Runtime 输出，但 Preview 还没有改为 Runtime Player 状态，桌面端也还不是长生命周期 Player 会话。
 - Script 编辑器左侧行号 / line id 提示轨道应保持在 Monaco 内容坐标系里：提示轨道本身不加独立上下 padding，行提示按 Monaco 运行时 line height 建立高度，并通过 `getTopForLineNumber()` 定位。这样长行折行后，下一条逻辑行的行号仍跟随该行首字，而不是紧贴上一条视觉行。
 - Script 行号轨道已继续收口：写作表面关闭 Monaco 顶部滚动阴影，行号轨道不暴露横向滚动条；hover 整条 hint line 只显示块内行号，只有 hover 行号数字区域才会以稳定 id 替换块内行号显示。稳定 id 展示时去掉 `line_` 前缀，并提供小复制按钮复制完整去前缀后的 id；未追踪行继续保持安静。
