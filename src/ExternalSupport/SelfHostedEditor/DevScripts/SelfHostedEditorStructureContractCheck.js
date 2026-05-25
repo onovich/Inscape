@@ -112,6 +112,20 @@ if (/std(?:out|err)\s*\+=\s*String\(chunk\)/.test(devServerText)) {
   failed = true;
 }
 
+const utf8OutputEntryPaths = [
+  "src/Internal/Cli/Inscape.Cli/Entries/CliCore.cs",
+  "src/Internal/LanguageServer/Entries/LanguageServerEntry.cs",
+  "src/ExternalSupport/UnityPlugin/Inscape.UnitySample.Cli/Entries/UnitySampleCli.cs",
+];
+for (const relativePath of utf8OutputEntryPaths) {
+  const fullPath = path.join(repoRoot, relativePath);
+  const text = fs.readFileSync(fullPath, "utf8");
+  if (!text.includes("Console.OutputEncoding = new UTF8Encoding(false);")) {
+    console.error(`UTF-8 stdout guard is missing from ${relativePath}.`);
+    failed = true;
+  }
+}
+
 const suspiciousTextPatterns = [
   "\uFFFD",
   "锟斤拷",
