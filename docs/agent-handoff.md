@@ -2,14 +2,64 @@
 
 状态：基线
 
-最后更新：2026-05-19
+最后更新：2026-05-24
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
 
+### 2026-05-24 SelfHostedEditor 接手快照
+
+当前用户主线是继续推进自研编辑器体验，并逐步用真实 Internal 契约替换前端临时方案。下一位 Agent 最快接手路径：
+
+1. 先读 `docs/self-hosted-editor-architecture-plan.md` 与 `src/ExternalSupport/SelfHostedEditor/README.md`。
+2. 重点看 `src/ExternalSupport/SelfHostedEditor/Scripts/Entries/SelfHostedEditorAppEntry.js`、`StoryGraph/Controllers/StoryGraphPreviewController.js`、`EditorAuthoring/Controllers/EditorSurfaceController.js`、`LanguageServer/Bridges/SelfHostedEditorLineMapBridge.js`、`ProjectWorkspace/Models/ScriptLineIdentityModelBuilder.js`。
+3. 本地预览服务当前为 `http://127.0.0.1:5178/`，若未运行则用 `npm --prefix src\ExternalSupport\SelfHostedEditor run start`。
+4. 最近验证已通过：`npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax`、`check:structure`、`check:model`、`dotnet build Inscape.slnx --no-restore`。
+
+已完成的关键收口：
+
+- 默认样例已改为通过本地 preview server 读取真实文件 `samples/court-loop.inscape`；入口脚本不再保留任何硬编码脚本文本。若未通过本地服务打开、或真实样例文件读取失败，工作台应显示加载失败，而不是伪造脚本文本。
+- Graph 视图继续对齐 Blueprint / Shader Graph 端口交互：点击节点或出口不自动切回 Script；卡片主体可拖拽；每条 choice / jump 有输出端口；连线现在读取真实 DOM 端口中心，从输出端口连到目标节点输入端口，不再用布局估算坐标；拖拽输出端口到输入端口会 retarget，拖到非输入端口区域会断开，并通过受控文本 patch 回写 `-> target`。最近已补 SVG 层级和输入端口吸附热区，避免真实边被节点卡片遮住或手动连线释放后消失。
+- Graph 输出行 hover 会轻微标出 source 节点、当前显示目标节点和对应 SVG 线条，方便在密集连线中逐条读边；当前匹配兼容 Compiler project graph edge 的 `sourceTitle` / `targetTitle` 与离线 outgoing row 的 `nodeTitle` / `target`，并会在 SVG edge layer 刷新后恢复当前 hover 高亮；该反馈只属于显示层，不改变 selection，也不切换视图。
+- Graph 面板已补隐藏渲染后的重算逻辑：切到 Graph 视图或面板 resize 后会重新读取端口位置并刷新 SVG path，避免面板隐藏时 `getBoundingClientRect()` 为 0 导致真实边存在但画面无连线。
+- Graph 视图已从固定宽板改为可平移 / 缩放视口：空白处拖拽移动画布，滚轮按指针位置缩放，左上角提供 zoom in / out / reset 控制。节点拖拽、连线预览和 SVG path 均已转为 graph-space 坐标，缩放后仍应可编辑。Graph 激活时根节点会标记当前 view，CSS 将主体区切到紧凑单面板布局，让画布吃满可用空间，不再继承 Script 视图的大版心留白。
+- Graph 回环边当前通过视图层 reference projection 降噪：如果目标节点在布局顺序上不晚于 source，或一条边加入显示图后会闭合成环，边会改接到 source 右侧局部 return lane 中的 reference-only 节点，而不是统一拉到整图最右侧。reference 节点只接受输入、没有输出、不可重命名，点击仍跳真实目标；hover 到 reference 时会轻微标出 source 与真实 target。这是显示层 shortcut，不改变 Compiler graph truth。
+- Graph 模型来源已完成第一刀替换：正常本地服务路径会通过 `/api/story-graph` 调用现有 CLI `compile-project`，消费 Compiler project IR 中真实的 choice / default jump 边；`ScriptDocumentModelBuilder` 只作为直接打开 HTML 或开发宿主不可用时的离线 fallback。
+- Script / Preview 语义样式已继续收口：`@...` 元数据在 Script 高亮模式下弱化，在 Preview 中隐藏 `@` 并展示成不可点击、不可选中的淡蓝灰 tag；`[query]` 在两侧都有轻量差异化 token 样式。Monaco 写作表面已关闭 Unicode ambiguous character 警告，中文标点不应再被误报为源码混淆风险。
+- Preview 当前会按活动源码行所在 block 渲染内容；编辑器 definition navigation 或其他源码定位进入新 block 时会切换预览 block，但编辑器滚动和预览滚动保持独立，不做滚动同步。外层 workbench body 不应再作为双栏共享滚动面。
+- Preview 阅读表面不再显示总行数 meta；这类 session/debug 信息应留在 workspace 状态区，不进入正文阅读面。
+- Preview 现在有 `Static` / `Flow` 阅读模式：Static 是完整 block 一次性展示；Flow 从标题开始，点击预览区逐行放出正文，正文结束后一次性显示全部选项，并在 flow 下默认显示选项目标标题。该状态仍是前端 presenter 状态，不是 Runtime state。
+- 根布局现在是固定视口内应用：`body` 不滚动，Script 编辑器由 Monaco 内部滚动，Preview 由 `.story-preview` 独立滚动。不要把 `workbench-body` 重新改成共享页面滚动，也不要让 `height: 100%` 依赖不稳定的 `min-height` 链路。
+- Script 写作表面已关闭 Monaco sticky scroll；节点标题、prompt / choice 标题等结构行应像普通文本一样滚出视口，不要重新启用置顶结构行，否则会在顶部产生重影 / 错层。
+- Script 视图 Ctrl/Cmd + Click 节点标题或跳转目标时会显式走 source selection 管线，编辑器光标与预览 block 都会跳到 definition 位置；不要退回到只依赖 Monaco 内建同文件 goto，否则可能出现 Preview 跳转但编辑器不移动。
+- Script 编辑器左侧行号 / line id 提示轨道现在完全跟随 Monaco 内容坐标：`.hint-rail` 不再有独立上下 padding，`EditorSurfaceController.renderHints()` 用 Monaco 运行时 line height 和 `getTopForLineNumber()` 定位。后续不要重新给 hint rail 加垂直 padding，否则折行后的行号会再次与对应行首错位。
+- Script 行号轨道已继续收口：写作表面关闭 Monaco 顶部滚动阴影，`.hint-rail` 不再暴露横向滚动条；hover 整条 hint line 只显示块内行号，只有 hover 行号数字区域才会用稳定 id 替换行号显示。稳定 id 显示时去掉 `line_` 前缀，并带一个小复制按钮复制完整去前缀后的 id。`SelfHostedEditorModelContractCheck` 已覆盖 line-map -> authoring model -> hint rail DOM 的 stable id 渲染链路。
+- 本地 preview server 对静态资源已返回 `Cache-Control: no-store`；若仍看到 `Opening / Evidence / Witness`，优先确认浏览器是否连接到旧服务或需要强制刷新。
+- Script 引用浮层不再固定左上角：标题左侧 refs 按钮会把点击锚点传给 overlay，浮层跟随所点击 block 的位置，并在滚动时继续贴近该标题；列表展示 `choice -> target` / `Jump -> target` 摘要、上下文和命中高亮，不显示完整路径。
+- 左侧栏 Files / Outline 面板共享侧栏可用高度，内容过长时各自内部滚动；两个面板都有折叠按钮。Files 折叠后只留顶部标题行，Outline 折叠后只留底部标题行。
+- Files 面板当前使用和 Outline 一致的紧凑列表布局，内容不足时保持顶部小块列表；不要让 grid item 拉伸成填满面板的大卡片。
+- 左下角 workspace/session 信息现在在所有视图下保持常态可读，不再依赖侧栏 hover 才显形；后续不要把 `.sidebar-meta` 重新降成极低 opacity，否则不同视图下会因鼠标落点不同出现文字清晰度不一致。
+- Script `Syntax` 开关已从“状态切换但视觉不明显”修成真实表现：按钮有 pressed/off 状态，Monaco decorations 改为 inline text style + overlay background，标题、对白、旁白、prompt、choice 与当前 block 会得到安静的语义样式。
+- 行级稳定身份不再是纯前端占位：新增 `SelfHostedEditorLineMapBridge`，开发宿主暴露 `/api/line-map-refresh`，通过现有 Internal CLI/Tooling `refresh-l10n-line-map-project` 在临时 workspace 中生成真实 line-map；前端会把上一轮 line-map 作为下一轮 existing sidecar 传回，让 Tooling 负责迁移稳定 `line_...`。对白、prompt、choice 等本地化身份行显示真实 `line_...`，跳转等非本地化身份行不显示身份文本，不要伪造稳定 id。
+- 行号 hover 的稳定身份文本现在只在 status 为 `available` 时显示；`@`、跳转、旁白等未追踪行直接省略身份文本，不显示 `not tracked` / `line id not loaded` 占位。`ScriptLineIdentityModelBuilder` 已兼容 camelCase / PascalCase line-map JSON 字段。开发宿主读取 Tooling 生成的 `inscape.line-map.json` / refresh report 时必须剥离 UTF-8 BOM；否则 Node 端 `JSON.parse` 会失败，前端会静默回到 `provider: unavailable`，表现为 hover 行号永远只显示块内行号。
+
+仍是临时或下一步应替换的部分：
+
+- `ScriptDocumentModelBuilder` 仍是前端 UI-only 草模，用于预览、Graph、本地化草表和部分提示层；长期应继续用 `Tooling` / `LanguageServer` / `Runtime` 输出替换，而不是扩写 parser 语义。
+- 诊断虽已优先走 LanguageServer project probe，但当前仍只把 diagnostics marker 贴回活动文件；真正的多文件 Problems、跨文件 rename、长期会话缓存和桌面后端进程仍待补。
+- Graph 节点位置仍是会话内 `savedPositions`，尚未写入 graph layout sidecar；画布缩放/平移、连接合法性反馈、端口命中高亮仍可继续细化。
+- line-map bridge 当前走开发预览服务器 + CLI 临时 workspace，是正确复用 Tooling 语义的第一步，但未来桌面客户端应改为正式 Editor Backend / Tooling 会话桥，而不是每轮通过 HTTP dev server 启动 CLI。
+- L10N 视图仍是会话内 draft CSV 下载，没有接真实 CSV 读写、alignment review presenter 和写回契约。
+- Preview 仍是阅读面板 / Tooling 预览方向的雏形，不是 Runtime Player；后续 Player 应消费 `Runtime` 的 Narrative Graph IR 和运行状态。
+
+当前工作树提示：`src/ExternalSupport/SelfHostedEditor/` 与 `docs/self-hosted-editor-architecture-plan.md`、ADR 0017 仍处于未跟踪状态，若新 Agent 要提交，需要先复查 `git -c safe.directory=D:/LabProjects/Inscape status --short --branch`，不要回滚用户已有文档和样例改动。
+
 ### 2026-05-19 最新收口
 
+- SelfHostedEditor 主界面已确认需要按“硬重置”路线继续推进：用户明确给出当前壳的主观评分远低于 VSCode / Inky / Notion，并补充了多张对标截图。后续接手时，不要再把“功能链完整”误判成“值得体验”；在主编辑 / 预览双栏的沉浸式写作体验过线前，优先级应放在视觉层级、默认可见性和版心构图收口，而不是继续堆新视图或新功能。
+- SelfHostedEditor 的 workspace 底座已从“多文件导入”推进到“多文件语义探测”第一版：开发宿主桥现在会把 workspace 文档清单与活动文件相对路径一起发给 diagnostics / completion / definition / references / hover 查询，并优先改走 `LanguageServer` project probe；当前仍只把诊断贴回活动文件，跨文件 rename、真正的多文件 Problems 与长期桌面会话桥仍待后续接力。
+- SelfHostedEditor 的 references 交互当前已明确不能回退到 inline peek：现状是自定义 overlay，会显示跨文件来源标签并可切换到同一 workspace 的其他脚本；后续继续沿这条线完善，而不是重新接受会改排版流的候选面板。
 - Goal 7 的 `off|click|selection` 真实 VSCode smoke 已通过。
 - Goal 11.1 的“LanguageServer 不可用 -> CLI diagnostics fallback”真实 VSCode smoke 已通过。
 - VSCode 的 diagnostics、node completion、definition、references、hover、document symbols 与 Host Schema capability 已切到常驻 `LanguageServer` stdio 会话；CLI fallback 继续保留，但不再是常态热路径。

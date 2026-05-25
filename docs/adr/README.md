@@ -26,3 +26,4 @@ ADR 用于记录影响项目长期方向的决定。每条 ADR 应说明背景�
 - [0014：第一方工具与资源目录边界](0014-first-party-tooling-and-resource-boundaries.md)
 - [0015：编辑器扩展归属外部支持层](0015-editor-extension-external-support-boundary.md)
 - [0016：VSCode 语言能力使用常驻 LanguageServer 会话](0016-vscode-language-server-daemon-session.md)
+- [0017：自研编辑器归属 ExternalSupport 并复用 Internal 契约](0017-self-hosted-editor-external-support-boundary.md)

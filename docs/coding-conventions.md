@@ -7,7 +7,7 @@
 本文用于把 Inscape 的代码组织成可推理、可迁移、可演进的结构。当前长期目标已经收敛为：
 
 - Internal：`Compiler`、`Tooling`、`Cli`、`LanguageServer`、`Runtime`
-- ExternalSupport：`VSCode`、`UnityPlugin`
+- ExternalSupport：`VSCode`、`SelfHostedEditor`、`UnityPlugin`
 
 命名的首要目标不是“整齐”，而是让陌生维护者只看目录和类型名，就能推断代码在哪一层、属于哪个大业务、扮演什么角色。
 
@@ -84,6 +84,7 @@
 ### ExternalSupport
 
 - `VSCode`：外部编辑器平台支持层。负责 VSCode API、extension manifest、前端交互、Webview、样式和轻量客户端逻辑；共享语义应下沉到 Internal 的 LanguageServer / Tooling。
+- `SelfHostedEditor`：自研编辑器宿主客户端。负责桌面壳、Web UI、Monaco、文件对话框、菜单、打包与轻量宿主交互；共享语义应复用 Internal 的 LanguageServer / Tooling / Runtime。
 - `UnityPlugin`：Unity 环境下的外部支持层。负责 Unity 内的特性扫描、桥接应用、资产填写与导入流程。它可以与本仓库同存，但不应进入默认 .NET solution 编译链。
 
 ## 大业务主语
@@ -99,6 +100,7 @@
 - `HostBinding`
 - `EditorAuthoring`
 - `UnityPlugin` 仅限 `ExternalSupport`
+- `SelfHostedEditor` 仅限 `ExternalSupport`
 
 这些词不是“层”。层级进目录，业务主语进类型名。
 
@@ -222,6 +224,14 @@
 - VSCode manifest 根入口文件应使用 `*Entry` 风格命名，并位于代码侧父层下，例如 `Scripts/ExtensionManifestEntry.js`，而不是长期保留裸 `extension.js` 这类宿主默认名。
 - 资源模板文件应使用 `主语 + 角色 + Template` 风格命名，例如 `PreviewHtmlDocumentTemplate.html`，而不是长期保留裸 `preview-template.html` 这类历史名。
 - 包内契约检查脚本应使用 `主语 + Contract + Check` 风格命名，例如 `PreviewNavigationContractCheck.js`、`PreviewSourceSyncContractCheck.js`，不再使用 `check-*` / `assert-*` 句式文件名。
+
+### SelfHostedEditor
+
+- 允许主语：`ProjectWorkspace`、`WorkspaceLayout`、`LanguageServer`、`EditorAuthoring`、`Preview`、`Localization`、`StoryGraph`、`Runtime`、`HostSchema`、`HostBinding`
+- 允许后缀：`Entry`、`Controller`、`Bridge`、`Model`、`ViewModel`
+- 不允许在前端或桌面壳内重新实现 DSL parser、StoryGraph compiler 或 localization alignment scoring。
+- 同时被 VSCode 与 SelfHostedEditor 需要的 presenter model、report model、query contract 或定位契约，应优先下沉到 `Tooling` 或 `LanguageServer`。
+- 如果采用 `Resources / Scripts`，必须位于 `src/ExternalSupport/SelfHostedEditor` 模块根内；开发脚本使用 `DevScripts`。
 
 ### LanguageServer
 

@@ -1,4 +1,4 @@
-# 法庭开场
+﻿# 法庭开场
 @entry
 @scene court
 @timeline.talking.exit court_intro

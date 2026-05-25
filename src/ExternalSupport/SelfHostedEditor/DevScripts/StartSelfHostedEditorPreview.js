@@ -1,0 +1,799 @@
+import childProcess from "node:child_process";
+import fs from "node:fs";
+import fsp from "node:fs/promises";
+import http from "node:http";
+import os from "node:os";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const moduleRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const repoRoot = path.resolve(moduleRoot, "..", "..", "..");
+const languageServerProjectPath = path.join(
+  repoRoot,
+  "src",
+  "Internal",
+  "LanguageServer",
+  "Inscape.LanguageServer.csproj"
+);
+const cliProjectPath = path.join(
+  repoRoot,
+  "src",
+  "Internal",
+  "Cli",
+  "Inscape.Cli",
+  "Inscape.Cli.csproj"
+);
+const languageServerBuildRoot = path.join(
+  repoRoot,
+  "src",
+  "Internal",
+  "LanguageServer",
+  "bin",
+  "Debug",
+  "net10.0"
+);
+const languageServerExecutablePath = path.join(languageServerBuildRoot, "Inscape.LanguageServer.exe");
+const languageServerAssemblyPath = path.join(languageServerBuildRoot, "Inscape.LanguageServer.dll");
+const port = Number(process.env.PORT || 5178);
+
+const mimeTypes = new Map([
+  [".css", "text/css; charset=utf-8"],
+  [".html", "text/html; charset=utf-8"],
+  [".inscape", "text/plain; charset=utf-8"],
+  [".js", "text/javascript; charset=utf-8"],
+  [".json", "application/json; charset=utf-8"],
+  [".svg", "image/svg+xml"],
+  [".ttf", "font/ttf"],
+  [".woff", "font/woff"],
+  [".woff2", "font/woff2"],
+]);
+
+const server = http.createServer(async (request, response) => {
+  const requestUrl = new URL(request.url || "/", `http://localhost:${port}`);
+
+  if (request.method === "POST" && requestUrl.pathname === "/api/diagnostics") {
+    await handleDiagnosticsRequest(request, response);
+    return;
+  }
+
+  if (request.method === "POST" && requestUrl.pathname === "/api/hover") {
+    await handleHoverRequest(request, response);
+    return;
+  }
+
+  if (request.method === "POST" && requestUrl.pathname === "/api/definition") {
+    await handleDefinitionRequest(request, response);
+    return;
+  }
+
+  if (request.method === "POST" && requestUrl.pathname === "/api/references") {
+    await handleReferencesRequest(request, response);
+    return;
+  }
+
+  if (request.method === "POST" && requestUrl.pathname === "/api/completions") {
+    await handleCompletionsRequest(request, response);
+    return;
+  }
+
+  if (request.method === "POST" && requestUrl.pathname === "/api/document-symbols") {
+    await handleDocumentSymbolsRequest(request, response);
+    return;
+  }
+
+  if (request.method === "POST" && requestUrl.pathname === "/api/story-graph") {
+    await handleStoryGraphRequest(request, response);
+    return;
+  }
+
+  if (request.method === "POST" && requestUrl.pathname === "/api/line-map-refresh") {
+    await handleLineMapRefreshRequest(request, response);
+    return;
+  }
+
+  const relativePath = requestUrl.pathname === "/"
+    ? "Resources/Workbench/SelfHostedEditorWorkbenchDocument.html"
+    : requestUrl.pathname.replace(/^\/+/, "");
+  const fileRoot = relativePath.startsWith("samples/")
+    ? repoRoot
+    : moduleRoot;
+  const filePath = path.resolve(fileRoot, relativePath);
+
+  if (!filePath.startsWith(fileRoot)) {
+    response.writeHead(403);
+    response.end("Forbidden");
+    return;
+  }
+
+  fs.readFile(filePath, (error, body) => {
+    if (error) {
+      response.writeHead(404);
+      response.end("Not found");
+      return;
+    }
+
+    response.writeHead(200, {
+      "Cache-Control": "no-store, max-age=0",
+      "Content-Type": mimeTypes.get(path.extname(filePath)) || "application/octet-stream",
+    });
+    response.end(body);
+  });
+});
+
+server.listen(port, "127.0.0.1", () => {
+  console.log(`Inscape SelfHostedEditor prototype: http://127.0.0.1:${port}/`);
+});
+
+async function handleDiagnosticsRequest(request, response) {
+  try {
+    const body = await readRequestBody(request);
+    const payload = JSON.parse(body || "{}");
+    const scriptText = typeof payload.scriptText === "string"
+      ? payload.scriptText
+      : "";
+    const workspace = normalizeWorkspacePayload(payload.workspace);
+
+    const diagnosticsPayload = await diagnoseScriptText(scriptText, workspace);
+    response.writeHead(200, {
+      "Content-Type": "application/json; charset=utf-8",
+    });
+    response.end(JSON.stringify(diagnosticsPayload));
+  } catch (error) {
+    response.writeHead(500, {
+      "Content-Type": "application/json; charset=utf-8",
+    });
+    response.end(JSON.stringify({
+      error: error instanceof Error ? error.message : String(error),
+    }));
+  }
+}
+
+async function handleHoverRequest(request, response) {
+  try {
+    const body = await readRequestBody(request);
+    const payload = JSON.parse(body || "{}");
+    const scriptText = typeof payload.scriptText === "string"
+      ? payload.scriptText
+      : "";
+    const hoverKind = typeof payload.hoverKind === "string"
+      ? payload.hoverKind
+      : "";
+    const hoverName = typeof payload.hoverName === "string"
+      ? payload.hoverName
+      : "";
+    const workspace = normalizeWorkspacePayload(payload.workspace);
+
+    const hoverPayload = await getHoverForScriptText(scriptText, hoverKind, hoverName, workspace);
+    response.writeHead(200, {
+      "Content-Type": "application/json; charset=utf-8",
+    });
+    response.end(JSON.stringify(hoverPayload));
+  } catch (error) {
+    response.writeHead(500, {
+      "Content-Type": "application/json; charset=utf-8",
+    });
+    response.end(JSON.stringify({
+      error: error instanceof Error ? error.message : String(error),
+    }));
+  }
+}
+
+async function handleDefinitionRequest(request, response) {
+  try {
+    const body = await readRequestBody(request);
+    const payload = JSON.parse(body || "{}");
+    const scriptText = typeof payload.scriptText === "string"
+      ? payload.scriptText
+      : "";
+    const definitionName = typeof payload.definitionName === "string"
+      ? payload.definitionName
+      : "";
+    const workspace = normalizeWorkspacePayload(payload.workspace);
+
+    const definitionPayload = await getDefinitionForScriptText(scriptText, definitionName, workspace);
+    response.writeHead(200, {
+      "Content-Type": "application/json; charset=utf-8",
+    });
+    response.end(JSON.stringify(definitionPayload));
+  } catch (error) {
+    response.writeHead(500, {
+      "Content-Type": "application/json; charset=utf-8",
+    });
+    response.end(JSON.stringify({
+      error: error instanceof Error ? error.message : String(error),
+    }));
+  }
+}
+
+async function handleReferencesRequest(request, response) {
+  try {
+    const body = await readRequestBody(request);
+    const payload = JSON.parse(body || "{}");
+    const scriptText = typeof payload.scriptText === "string"
+      ? payload.scriptText
+      : "";
+    const referenceName = typeof payload.referenceName === "string"
+      ? payload.referenceName
+      : "";
+    const workspace = normalizeWorkspacePayload(payload.workspace);
+
+    const referencesPayload = await getReferencesForScriptText(scriptText, referenceName, workspace);
+    response.writeHead(200, {
+      "Content-Type": "application/json; charset=utf-8",
+    });
+    response.end(JSON.stringify(referencesPayload));
+  } catch (error) {
+    response.writeHead(500, {
+      "Content-Type": "application/json; charset=utf-8",
+    });
+    response.end(JSON.stringify({
+      error: error instanceof Error ? error.message : String(error),
+    }));
+  }
+}
+
+async function handleCompletionsRequest(request, response) {
+  try {
+    const body = await readRequestBody(request);
+    const payload = JSON.parse(body || "{}");
+    const scriptText = typeof payload.scriptText === "string"
+      ? payload.scriptText
+      : "";
+    const workspace = normalizeWorkspacePayload(payload.workspace);
+
+    const completionsPayload = await getCompletionsForScriptText(scriptText, workspace);
+    response.writeHead(200, {
+      "Content-Type": "application/json; charset=utf-8",
+    });
+    response.end(JSON.stringify(completionsPayload));
+  } catch (error) {
+    response.writeHead(500, {
+      "Content-Type": "application/json; charset=utf-8",
+    });
+    response.end(JSON.stringify({
+      error: error instanceof Error ? error.message : String(error),
+    }));
+  }
+}
+
+async function handleDocumentSymbolsRequest(request, response) {
+  try {
+    const body = await readRequestBody(request);
+    const payload = JSON.parse(body || "{}");
+    const scriptText = typeof payload.scriptText === "string"
+      ? payload.scriptText
+      : "";
+    const workspace = normalizeWorkspacePayload(payload.workspace);
+
+    const documentSymbolsPayload = await getDocumentSymbolsForScriptText(scriptText, workspace);
+    response.writeHead(200, {
+      "Content-Type": "application/json; charset=utf-8",
+    });
+    response.end(JSON.stringify(documentSymbolsPayload));
+  } catch (error) {
+    response.writeHead(500, {
+      "Content-Type": "application/json; charset=utf-8",
+    });
+    response.end(JSON.stringify({
+      error: error instanceof Error ? error.message : String(error),
+    }));
+  }
+}
+
+async function handleStoryGraphRequest(request, response) {
+  try {
+    const body = await readRequestBody(request);
+    const payload = JSON.parse(body || "{}");
+    const scriptText = typeof payload.scriptText === "string"
+      ? payload.scriptText
+      : "";
+    const workspace = normalizeWorkspacePayload(payload.workspace);
+
+    const graphPayload = await getStoryGraphForScriptText(scriptText, workspace);
+    response.writeHead(200, {
+      "Content-Type": "application/json; charset=utf-8",
+    });
+    response.end(JSON.stringify(graphPayload));
+  } catch (error) {
+    response.writeHead(500, {
+      "Content-Type": "application/json; charset=utf-8",
+    });
+    response.end(JSON.stringify({
+      error: error instanceof Error ? error.message : String(error),
+    }));
+  }
+}
+
+async function handleLineMapRefreshRequest(request, response) {
+  try {
+    const body = await readRequestBody(request);
+    const payload = JSON.parse(body || "{}");
+    const scriptText = typeof payload.scriptText === "string"
+      ? payload.scriptText
+      : "";
+    const workspace = normalizeWorkspacePayload(payload.workspace);
+    const existingLineMap = payload.existingLineMap && typeof payload.existingLineMap === "object"
+      ? payload.existingLineMap
+      : null;
+
+    const lineMapPayload = await refreshLineMapForScriptText(scriptText, workspace, existingLineMap);
+    response.writeHead(200, {
+      "Content-Type": "application/json; charset=utf-8",
+    });
+    response.end(JSON.stringify(lineMapPayload));
+  } catch (error) {
+    response.writeHead(500, {
+      "Content-Type": "application/json; charset=utf-8",
+    });
+    response.end(JSON.stringify({
+      error: error instanceof Error ? error.message : String(error),
+    }));
+  }
+}
+
+function readRequestBody(request) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    request.on("data", (chunk) => {
+      chunks.push(Buffer.from(chunk));
+    });
+    request.on("end", () => {
+      resolve(Buffer.concat(chunks).toString("utf8"));
+    });
+    request.on("error", reject);
+  });
+}
+
+async function diagnoseScriptText(scriptText, workspace) {
+  return withTemporaryWorkspace(workspace, scriptText, async ({ tempRoot, activeRelativePath }) => {
+    const result = await runLanguageServerProjectDiagnostics(tempRoot);
+    return filterProjectDiagnostics(JSON.parse(result.stdout), activeRelativePath);
+  });
+}
+
+async function getHoverForScriptText(scriptText, hoverKind, hoverName, workspace) {
+  return withTemporaryWorkspace(workspace, scriptText, async ({ tempRoot }) => {
+    const result = await runLanguageServerProjectHover(tempRoot, hoverKind, hoverName);
+    return JSON.parse(result.stdout);
+  });
+}
+
+async function getDefinitionForScriptText(scriptText, definitionName, workspace) {
+  return withTemporaryWorkspace(workspace, scriptText, async ({ tempRoot }) => {
+    const result = await runLanguageServerProjectDefinition(tempRoot, definitionName);
+    return JSON.parse(result.stdout);
+  });
+}
+
+async function getReferencesForScriptText(scriptText, referenceName, workspace) {
+  return withTemporaryWorkspace(workspace, scriptText, async ({ tempRoot }) => {
+    const result = await runLanguageServerProjectReferences(tempRoot, referenceName);
+    return JSON.parse(result.stdout);
+  });
+}
+
+async function getCompletionsForScriptText(scriptText, workspace) {
+  return withTemporaryWorkspace(workspace, scriptText, async ({ tempRoot }) => {
+    const result = await runLanguageServerProjectCompletions(tempRoot);
+    return JSON.parse(result.stdout);
+  });
+}
+
+async function getDocumentSymbolsForScriptText(scriptText, workspace) {
+  return withTemporaryWorkspace(workspace, scriptText, async ({ activeFilePath }) => {
+    const result = await runLanguageServerDocumentSymbols(activeFilePath);
+    return JSON.parse(result.stdout);
+  });
+}
+
+async function getStoryGraphForScriptText(scriptText, workspace) {
+  return withTemporaryWorkspace(workspace, scriptText, async ({ tempRoot }) => {
+    const result = await runCliCommand([
+      "compile-project",
+      tempRoot,
+    ], "CLI project graph compile");
+    return compactProjectGraphPayload(relativizeProjectSourcePaths(JSON.parse(result.stdout), tempRoot));
+  });
+}
+
+function compactProjectGraphPayload(payload) {
+  return {
+    diagnostics: payload?.diagnostics || [],
+    documents: (Array.isArray(payload?.documents) ? payload.documents : []).map((document) => ({
+      edges: Array.isArray(document.edges)
+        ? document.edges.map((edge) => ({
+          from: edge.from || "",
+          kind: edge.kind || "",
+          label: edge.label || "",
+          source: edge.source || null,
+          to: edge.to || "",
+        }))
+        : [],
+      nodes: (Array.isArray(document.nodes) ? document.nodes : []).map((node) => ({
+        choices: (Array.isArray(node.choices) ? node.choices : []).map((group) => ({
+          options: (Array.isArray(group.options) ? group.options : []).map((option) => ({
+            source: option.source || null,
+            target: option.target || "",
+            text: option.text || "",
+          })),
+          prompt: group.prompt || "",
+          source: group.source || null,
+        })),
+        defaultNext: node.defaultNext || "",
+        lineCount: Array.isArray(node.lines) ? node.lines.length : 0,
+        name: node.name || "",
+        source: node.source || null,
+      })),
+      sourcePath: document.sourcePath || "",
+    })),
+    entryNodeName: payload?.entryNodeName || "",
+    format: "inscape.self-hosted-editor.story-graph",
+    formatVersion: 1,
+    hasErrors: Boolean(payload?.hasErrors),
+  };
+}
+
+function relativizeProjectSourcePaths(payload, tempRoot) {
+  const relativizeSourcePath = (sourcePath) => {
+    const relativePath = path.relative(tempRoot, sourcePath);
+    if (!relativePath || relativePath.startsWith("..") || path.isAbsolute(relativePath)) {
+      return sourcePath
+        .replace(/\\/g, "/")
+        .replace(/^.*?inscape-self-hosted-editor-[^/]+\//, "");
+    }
+
+    return relativePath.replace(/\\/g, "/");
+  };
+  const normalizeSource = (source) => {
+    if (!source || typeof source.sourcePath !== "string") {
+      return source;
+    }
+
+    source.sourcePath = relativizeSourcePath(source.sourcePath);
+    return source;
+  };
+
+  for (const document of Array.isArray(payload?.documents) ? payload.documents : []) {
+    if (typeof document.sourcePath === "string") {
+      document.sourcePath = relativizeSourcePath(document.sourcePath);
+    }
+
+    for (const node of Array.isArray(document.nodes) ? document.nodes : []) {
+      normalizeSource(node.source);
+      for (const line of Array.isArray(node.lines) ? node.lines : []) {
+        normalizeSource(line.source);
+      }
+
+      for (const group of Array.isArray(node.choices) ? node.choices : []) {
+        normalizeSource(group.source);
+        for (const option of Array.isArray(group.options) ? group.options : []) {
+          normalizeSource(option.source);
+        }
+      }
+    }
+
+    for (const edge of Array.isArray(document.edges) ? document.edges : []) {
+      normalizeSource(edge.source);
+    }
+  }
+
+  return payload;
+}
+
+async function refreshLineMapForScriptText(scriptText, workspace, existingLineMap = null) {
+  return withTemporaryWorkspace(workspace, scriptText, async ({ tempRoot }) => {
+    const lineMapPath = path.join(tempRoot, "inscape.line-map.json");
+    const reportPath = path.join(tempRoot, "inscape.line-map-refresh.json");
+    if (existingLineMap) {
+      await fsp.writeFile(lineMapPath, JSON.stringify(existingLineMap, null, 2), "utf8");
+    }
+
+    await runCliCommand([
+      "refresh-l10n-line-map-project",
+      tempRoot,
+      "-o",
+      lineMapPath,
+      "--report",
+      reportPath,
+    ], "CLI localization line map refresh");
+    const lineMapText = await fsp.readFile(lineMapPath, "utf8");
+    const reportText = await fsp.readFile(reportPath, "utf8");
+    return {
+      lineMap: parseJsonFileText(lineMapText),
+      refresh: parseJsonFileText(reportText),
+    };
+  });
+}
+
+function parseJsonFileText(text) {
+  return JSON.parse(String(text || "").replace(/^\uFEFF/, ""));
+}
+
+function normalizeWorkspacePayload(workspace) {
+  if (!workspace || !Array.isArray(workspace.documents)) {
+    return null;
+  }
+
+  const documents = workspace.documents
+    .filter((document) => typeof document?.relativePath === "string" && typeof document?.text === "string")
+    .map((document) => ({
+      relativePath: sanitizeRelativePath(document.relativePath),
+      text: document.text,
+    }))
+    .filter((document) => document.relativePath);
+
+  if (documents.length === 0) {
+    return null;
+  }
+
+  return {
+    currentFilePath: sanitizeRelativePath(workspace.currentFilePath || documents[0].relativePath) || documents[0].relativePath,
+    documents,
+  };
+}
+
+async function withTemporaryWorkspace(workspace, fallbackScriptText, callback) {
+  const tempRoot = await fsp.mkdtemp(path.join(os.tmpdir(), "inscape-self-hosted-editor-"));
+  const normalizedWorkspace = workspace || {
+    currentFilePath: "draft.inscape",
+    documents: [{
+      relativePath: "draft.inscape",
+      text: fallbackScriptText,
+    }],
+  };
+
+  try {
+    for (const document of normalizedWorkspace.documents) {
+      const fullPath = path.join(tempRoot, document.relativePath);
+      await fsp.mkdir(path.dirname(fullPath), {
+        recursive: true,
+      });
+      await fsp.writeFile(fullPath, document.text, "utf8");
+    }
+
+    const activeRelativePath = normalizedWorkspace.currentFilePath || normalizedWorkspace.documents[0].relativePath;
+    const activeFilePath = path.join(tempRoot, activeRelativePath);
+    return await callback({
+      tempRoot,
+      activeFilePath,
+      activeRelativePath,
+    });
+  } finally {
+    await fsp.rm(tempRoot, {
+      force: true,
+      recursive: true,
+    });
+  }
+}
+
+function sanitizeRelativePath(relativePath) {
+  const normalized = String(relativePath || "").replace(/\\/g, "/").replace(/^\/+/, "");
+  if (!normalized || normalized.split("/").includes("..")) {
+    return "";
+  }
+
+  return normalized;
+}
+
+function filterProjectDiagnostics(payload, activeRelativePath) {
+  if (!Array.isArray(payload?.diagnostics)) {
+    return payload;
+  }
+
+  return {
+    ...payload,
+    diagnostics: payload.diagnostics.filter((diagnostic) => {
+      const sourcePath = diagnostic?.location?.sourcePath || "";
+      return !sourcePath || sourcePath === activeRelativePath;
+    }),
+  };
+}
+
+function runLanguageServerProjectDiagnostics(rootPath) {
+  return runLanguageServerCommand([
+    "--diagnose-project",
+    rootPath,
+  ], "LanguageServer project diagnostics");
+}
+
+function runLanguageServerDiagnostics(tempPath) {
+  return new Promise((resolve, reject) => {
+    const invocation = resolveLanguageServerInvocation([
+      "--diagnose-file",
+      tempPath,
+    ]);
+    const diagnosticsProcess = childProcess.spawn(invocation.command, invocation.args, {
+      cwd: repoRoot,
+      windowsHide: true,
+    });
+
+    let stdout = "";
+    let stderr = "";
+
+    diagnosticsProcess.stdout.on("data", (chunk) => {
+      stdout += String(chunk);
+    });
+
+    diagnosticsProcess.stderr.on("data", (chunk) => {
+      stderr += String(chunk);
+    });
+
+    diagnosticsProcess.on("error", reject);
+    diagnosticsProcess.on("exit", (code) => {
+      if (code !== 0) {
+        reject(new Error(stderr.trim() || `LanguageServer exited with code ${code}.`));
+        return;
+      }
+
+      resolve({
+        stderr,
+        stdout,
+      });
+    });
+  });
+}
+
+function runLanguageServerHover(tempPath, hoverKind, hoverName) {
+  return runLanguageServerCommand([
+    "--hover-file",
+    tempPath,
+    hoverKind,
+    hoverName,
+  ], "LanguageServer hover");
+}
+
+function runLanguageServerDefinition(tempPath, definitionName) {
+  return runLanguageServerCommand([
+    "--definition-file",
+    tempPath,
+    definitionName,
+  ], "LanguageServer definition");
+}
+
+function runLanguageServerReferences(tempPath, referenceName) {
+  return runLanguageServerCommand([
+    "--references-file",
+    tempPath,
+    referenceName,
+  ], "LanguageServer references");
+}
+
+function runLanguageServerCompletions(tempPath) {
+  return runLanguageServerCommand([
+    "--completion-file",
+    tempPath,
+  ], "LanguageServer completions");
+}
+
+function runLanguageServerDocumentSymbols(tempPath) {
+  return runLanguageServerCommand([
+    "--document-symbols-file",
+    tempPath,
+  ], "LanguageServer document symbols");
+}
+
+function runLanguageServerProjectHover(rootPath, hoverKind, hoverName) {
+  return runLanguageServerCommand([
+    "--hover-project",
+    rootPath,
+    hoverKind,
+    hoverName,
+  ], "LanguageServer project hover");
+}
+
+function runLanguageServerProjectDefinition(rootPath, definitionName) {
+  return runLanguageServerCommand([
+    "--definition-project",
+    rootPath,
+    definitionName,
+  ], "LanguageServer project definition");
+}
+
+function runLanguageServerProjectReferences(rootPath, referenceName) {
+  return runLanguageServerCommand([
+    "--references-project",
+    rootPath,
+    referenceName,
+  ], "LanguageServer project references");
+}
+
+function runLanguageServerProjectCompletions(rootPath) {
+  return runLanguageServerCommand([
+    "--completion-project",
+    rootPath,
+  ], "LanguageServer project completions");
+}
+
+function runLanguageServerCommand(languageServerArgs, label) {
+  return new Promise((resolve, reject) => {
+    const invocation = resolveLanguageServerInvocation(languageServerArgs);
+    const process = childProcess.spawn(invocation.command, invocation.args, {
+      cwd: repoRoot,
+      windowsHide: true,
+    });
+
+    let stdout = "";
+    let stderr = "";
+
+    process.stdout.on("data", (chunk) => {
+      stdout += String(chunk);
+    });
+
+    process.stderr.on("data", (chunk) => {
+      stderr += String(chunk);
+    });
+
+    process.on("error", reject);
+    process.on("exit", (code) => {
+      if (code !== 0) {
+        reject(new Error(stderr.trim() || `${label} exited with code ${code}.`));
+        return;
+      }
+
+      resolve({
+        stderr,
+        stdout,
+      });
+    });
+  });
+}
+
+function runCliCommand(cliArgs, label) {
+  return new Promise((resolve, reject) => {
+    const process = childProcess.spawn("dotnet", [
+      "run",
+      "--project",
+      cliProjectPath,
+      "--",
+      ...cliArgs,
+    ], {
+      cwd: repoRoot,
+      windowsHide: true,
+    });
+
+    let stdout = "";
+    let stderr = "";
+
+    process.stdout.on("data", (chunk) => {
+      stdout += String(chunk);
+    });
+
+    process.stderr.on("data", (chunk) => {
+      stderr += String(chunk);
+    });
+
+    process.on("error", reject);
+    process.on("exit", (code) => {
+      if (code !== 0) {
+        reject(new Error(stderr.trim() || `${label} exited with code ${code}.`));
+        return;
+      }
+
+      resolve({
+        stderr,
+        stdout,
+      });
+    });
+  });
+}
+
+function resolveLanguageServerInvocation(languageServerArgs) {
+  if (fs.existsSync(languageServerExecutablePath)) {
+    return {
+      command: languageServerExecutablePath,
+      args: languageServerArgs,
+    };
+  }
+
+  if (fs.existsSync(languageServerAssemblyPath)) {
+    return {
+      command: "dotnet",
+      args: ["exec", languageServerAssemblyPath, ...languageServerArgs],
+    };
+  }
+
+  return {
+    command: "dotnet",
+    args: ["run", "--project", languageServerProjectPath, "--", ...languageServerArgs],
+  };
+}

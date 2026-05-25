@@ -1,0 +1,446 @@
+import { ScriptDiagnosticsModelBuilder } from "../Scripts/ProjectWorkspace/Models/ScriptDiagnosticsModelBuilder.js";
+import { ScriptDocumentModelBuilder } from "../Scripts/ProjectWorkspace/Models/ScriptDocumentModelBuilder.js";
+import { ScriptLineIdentityModelBuilder } from "../Scripts/ProjectWorkspace/Models/ScriptLineIdentityModelBuilder.js";
+import { ScriptNodeRenamePatchBuilder } from "../Scripts/ProjectWorkspace/Models/ScriptNodeRenamePatchBuilder.js";
+import { ProjectWorkspaceSummaryModelBuilder } from "../Scripts/ProjectWorkspace/Models/ProjectWorkspaceSummaryModelBuilder.js";
+import { LocalizationDraftCsvBuilder } from "../Scripts/Localization/Models/LocalizationDraftCsvBuilder.js";
+import { LocalizationDraftStore } from "../Scripts/Localization/Models/LocalizationDraftStore.js";
+import { EditorHoverTargetModelBuilder } from "../Scripts/EditorAuthoring/Models/EditorHoverTargetModelBuilder.js";
+import { EditorCompletionTargetModelBuilder } from "../Scripts/EditorAuthoring/Models/EditorCompletionTargetModelBuilder.js";
+import { EditorSurfaceController } from "../Scripts/EditorAuthoring/Controllers/EditorSurfaceController.js";
+import { EditorReferenceOverlayController } from "../Scripts/EditorAuthoring/Controllers/EditorReferenceOverlayController.js";
+import { LanguageServerCompletionModelMapper } from "../Scripts/LanguageServer/Models/LanguageServerCompletionModelMapper.js";
+import { LanguageServerDefinitionModelMapper } from "../Scripts/LanguageServer/Models/LanguageServerDefinitionModelMapper.js";
+import { LanguageServerDiagnosticModelMapper } from "../Scripts/LanguageServer/Models/LanguageServerDiagnosticModelMapper.js";
+import { LanguageServerReferenceModelMapper } from "../Scripts/LanguageServer/Models/LanguageServerReferenceModelMapper.js";
+import { LanguageServerDocumentSymbolModelMapper } from "../Scripts/LanguageServer/Models/LanguageServerDocumentSymbolModelMapper.js";
+import { LanguageServerStoryGraphModelMapper } from "../Scripts/LanguageServer/Models/LanguageServerStoryGraphModelMapper.js";
+import { StoryGraphPreviewController } from "../Scripts/StoryGraph/Controllers/StoryGraphPreviewController.js";
+
+const sample = `# Start
+旁白：Hello
+-> Start
+-  -> Missing
+-> Missing
+
+# Start
+旁白：Again`;
+
+const documentModel = ScriptDocumentModelBuilder.build(sample);
+assertEqual(documentModel.nodes.length, 2, "node count");
+assertEqual(documentModel.translatableLines.length, 2, "translatable line count");
+assertEqual(documentModel.lineHints[0].kind, "title", "first hint kind");
+assertEqual(documentModel.lineHints[0].blockLineNumber, 0, "title hint has no block line number");
+assertEqual(documentModel.lineHints[1].blockLineNumber, 1, "first content line block-local number");
+assertEqual(documentModel.lineHints[2].blockLineNumber, 2, "second content line block-local number");
+assertEqual(documentModel.lineHints[2].stableIdentity.status, "untracked", "jump lines should not expose pending line identity");
+assertEqual(documentModel.lineHints[5].kind, "title", "second title hint kind");
+assertEqual(documentModel.lineHints[6].blockLineNumber, 1, "second node content line resets block-local number");
+
+const lineIdentityProvider = ScriptLineIdentityModelBuilder.build({
+  Documents: [
+    {
+      SourcePath: "samples/court-loop.inscape",
+      Blocks: [
+        {
+          BlockTitle: "Start",
+          Lines: [
+            {
+              Fingerprint: "fp1",
+              Kind: "dialogue",
+              LineId: "line_DIALOGUE",
+              LineNumber: 1,
+              Text: "Hello",
+            },
+            {
+              Fingerprint: "fp2",
+              Kind: "choice-prompt",
+              LineId: "line_PROMPT",
+              LineNumber: 2,
+              Text: "Prompt",
+            },
+            {
+              Fingerprint: "fp3",
+              Kind: "choice-option",
+              LineId: "line_CHOICE",
+              LineNumber: 3,
+              Text: "Choice",
+            },
+          ],
+        },
+      ],
+    },
+  ],
+}, "samples/court-loop.inscape");
+const identityDocumentModel = ScriptDocumentModelBuilder.build(`# Start
+旁白：Hello
+? Prompt
+- Choice -> Start
+@entry`, lineIdentityProvider);
+assertEqual(identityDocumentModel.lineHints[1].stableIdentity.value, "line_DIALOGUE", "dialogue line id maps from line sidecar");
+assertEqual(identityDocumentModel.lineHints[2].stableIdentity.value, "line_PROMPT", "prompt line id maps from line sidecar");
+assertEqual(identityDocumentModel.lineHints[3].stableIdentity.value, "line_CHOICE", "choice line id maps from line sidecar");
+assertEqual(identityDocumentModel.lineHints[4].stableIdentity.status, "untracked", "metadata line identity stays hidden");
+
+const diagnostics = ScriptDiagnosticsModelBuilder.build(sample);
+assertIncludes(diagnostics, "Duplicate node title: Start");
+assertIncludes(diagnostics, "Choice text is empty.");
+assertIncludes(diagnostics, "Missing choice target: Missing");
+assertIncludes(diagnostics, "Missing jump target: Missing");
+
+const renamePatch = ScriptNodeRenamePatchBuilder.build(sample, "Start", "Opening");
+assertIncludesText(renamePatch.text, "# Opening");
+assertIncludesText(renamePatch.text, "-> Opening");
+assertEqual(renamePatch.changedLineNumbers.length, 3, "rename changed line count");
+const jumpRenamePatch = ScriptNodeRenamePatchBuilder.build("# Opening\r\n-> Opening", "Opening", "Witness");
+assertIncludesText(jumpRenamePatch.text, "# Witness");
+assertIncludesText(jumpRenamePatch.text, "-> Witness");
+
+const draftStore = new LocalizationDraftStore();
+draftStore.setTranslation(documentModel.translatableLines[0], "Hello translated");
+assertEqual(draftStore.getStatus(documentModel.translatableLines[0]), "draft", "localization draft status");
+assertEqual(draftStore.getTranslation(documentModel.translatableLines[0]), "Hello translated", "localization draft text");
+const csv = LocalizationDraftCsvBuilder.build(documentModel.translatableLines, draftStore);
+assertIncludesText(csv, "translationDraft");
+assertIncludesText(csv, "Hello translated");
+const summary = ProjectWorkspaceSummaryModelBuilder.build(sample, draftStore);
+assertEqual(summary.nodeCount, 2, "summary node count");
+assertEqual(summary.localizationLineCount, 2, "summary localization count");
+assertEqual(summary.draftTranslationCount, 1, "summary draft count");
+assertEqual(summary.diagnosticCount, 4, "summary diagnostic count");
+
+const hoverModel = createHoverModel("# Opening\r\n- Review -> Witness\r\n-> Evidence");
+const nodeHoverTarget = EditorHoverTargetModelBuilder.build(hoverModel, { lineNumber: 1, column: 4 });
+assertEqual(nodeHoverTarget?.kind, "node", "node hover target kind");
+assertEqual(nodeHoverTarget?.name, "Opening", "node hover target name");
+const jumpHoverTarget = EditorHoverTargetModelBuilder.build(hoverModel, { lineNumber: 2, column: 13 });
+assertEqual(jumpHoverTarget?.kind, "jump", "jump hover target kind");
+assertEqual(jumpHoverTarget?.name, "Witness", "jump hover target name");
+const completionModel = createHoverModel("Narration: Lead\r\n- Review -> Wi");
+const completionTarget = EditorCompletionTargetModelBuilder.build(completionModel, { lineNumber: 2, column: 15 });
+assertEqual(completionTarget?.typedPrefix, "Wi", "completion target prefix");
+const completionMapper = LanguageServerCompletionModelMapper.mapCompletions({
+  completions: [
+    {
+      label: "Witness",
+      kind: "node",
+    },
+  ],
+});
+assertEqual(completionMapper.length, 1, "completion mapper count");
+assertEqual(completionMapper[0].label, "Witness", "completion mapper label");
+const diagnosticMapper = LanguageServerDiagnosticModelMapper.mapDiagnostics({
+  diagnostics: [
+    {
+      code: "INS001",
+      severity: "warning",
+      message: "Something happened.",
+      location: {
+        line: 2,
+        character: 4,
+        length: 3,
+      },
+    },
+  ],
+});
+assertEqual(diagnosticMapper.length, 1, "diagnostic mapper count");
+assertEqual(diagnosticMapper[0].startColumn, 5, "diagnostic mapper start column");
+assertEqual(diagnosticMapper[0].endColumn, 8, "diagnostic mapper end column");
+const symbolMapper = LanguageServerDocumentSymbolModelMapper.mapSymbols({
+  symbols: [
+    {
+      name: "Opening",
+      kind: "node",
+      location: {
+        line: 3,
+      },
+    },
+  ],
+});
+assertEqual(symbolMapper.length, 1, "symbol mapper count");
+assertEqual(symbolMapper[0].sourceLine, 4, "symbol mapper line");
+const definition = LanguageServerDefinitionModelMapper.mapDefinition({
+  definition: {
+    name: "Opening",
+    location: {
+      line: 0,
+      character: 2,
+      length: 7,
+    },
+  },
+});
+assertEqual(definition?.location.line, 0, "definition mapper line");
+const references = LanguageServerReferenceModelMapper.mapReferences({
+  references: [
+    {
+      target: "Opening",
+      location: {
+        line: 1,
+        character: 3,
+        length: 7,
+      },
+    },
+  ],
+});
+assertEqual(references.length, 1, "references mapper count");
+assertEqual(references[0].location.character, 3, "references mapper character");
+const storyGraph = LanguageServerStoryGraphModelMapper.mapProjectGraph({
+  documents: [
+    {
+      sourcePath: "samples/court-loop.inscape",
+      nodes: [
+        {
+          name: "Opening",
+          source: {
+            sourcePath: "samples/court-loop.inscape",
+            line: 1,
+          },
+          lines: [],
+          choices: [],
+        },
+        {
+          name: "Witness",
+          source: {
+            sourcePath: "samples/court-loop.inscape",
+            line: 8,
+          },
+          lines: [],
+          choices: [],
+        },
+      ],
+      edges: [
+        {
+          from: "Opening",
+          to: "Witness",
+          kind: "Choice",
+          label: "Question witness",
+          source: {
+            sourcePath: "samples/court-loop.inscape",
+            line: 5,
+          },
+        },
+        {
+          from: "Witness",
+          to: "Opening",
+          kind: "Default",
+          label: "",
+          source: {
+            sourcePath: "samples/court-loop.inscape",
+            line: 10,
+          },
+        },
+      ],
+    },
+  ],
+  entryNodeName: "Opening",
+}, "samples/court-loop.inscape");
+assertEqual(storyGraph.nodes.length, 2, "story graph node count");
+assertEqual(storyGraph.edges.length, 2, "story graph edge count");
+assertEqual(storyGraph.nodes[0].choices[0].target, "Witness", "story graph choice target");
+assertEqual(storyGraph.nodes[1].jumps[0].target, "Opening", "story graph jump target");
+assertEqual(storyGraph.nodes[0].incomingReferenceCount, 1, "story graph incoming count");
+const storyGraphController = new StoryGraphPreviewController({});
+const projectedGraph = storyGraphController.projectGraphForDisplay(storyGraph.nodes, storyGraph.edges);
+const referenceNode = projectedGraph.nodes.find((node) => node.isReference);
+const referenceEdge = projectedGraph.edges.find((edge) => edge.isReferenceEdge);
+assertEqual(Boolean(referenceNode), true, "story graph back edge should create reference node");
+assertEqual(referenceNode.choices.length, 0, "reference node should not expose choices");
+assertEqual(referenceNode.jumps.length, 0, "reference node should not expose jumps");
+assertEqual(referenceEdge.targetGraphId, referenceNode.graphId, "back edge should target reference graph id");
+storyGraphController.activeGraph = {
+  graphEdges: projectedGraph.edges,
+};
+const projectedLayout = storyGraphController.createGraphLayout(projectedGraph.nodes);
+const sourcePosition = projectedLayout.positions.get(referenceNode.referenceSourceGraphId);
+const referencePosition = projectedLayout.positions.get(referenceNode.graphId);
+assertEqual(referencePosition.x > sourcePosition.x, true, "reference node should sit to the right of its source");
+assertEqual(
+  storyGraphController.findProjectedEdge(storyGraph.nodes[0].choices[0])?.targetGraphId,
+  "Witness",
+  "graph row hover should match compiler edge shape"
+);
+assertEqual(
+  storyGraphController.getEdgeSourceTitle(storyGraph.nodes[0].choices[0]),
+  "Opening",
+  "graph row hover should read outgoing source title"
+);
+assertEqual(
+  storyGraphController.getEdgeTargetTitle(storyGraph.nodes[0].choices[0]),
+  "Witness",
+  "graph row hover should read outgoing target title"
+);
+const cycleProjection = storyGraphController.projectGraphForDisplay(
+  [
+    { title: "Alpha", choices: [], jumps: [], lineCount: 1, lines: [], sourceLine: 1 },
+    { title: "Beta", choices: [], jumps: [], lineCount: 1, lines: [], sourceLine: 5 },
+    { title: "Gamma", choices: [], jumps: [], lineCount: 1, lines: [], sourceLine: 9 },
+  ],
+  [
+    { sourceLine: 2, sourceTitle: "Alpha", targetTitle: "Beta", text: "A to B" },
+    { sourceLine: 6, sourceTitle: "Beta", targetTitle: "Gamma", text: "B to C" },
+    { sourceLine: 3, sourceTitle: "Alpha", targetTitle: "Gamma", text: "A to C" },
+    { sourceLine: 10, sourceTitle: "Gamma", targetTitle: "Alpha", text: "C closes cycle" },
+  ]
+);
+assertEqual(cycleProjection.edges.filter((edge) => edge.isReferenceEdge).length, 1, "cycle-closing edge should create one reference");
+assertEqual(cycleProjection.edges[3].isReferenceEdge, true, "cycle-closing edge should target a reference");
+assertEqual(cycleProjection.nodes.find((node) => node.graphId === cycleProjection.edges[3].targetGraphId)?.jumps.length, 0, "cycle reference should be outputless");
+assertEqual(
+  EditorReferenceOverlayController.prototype.getReferenceSummary("- Review evidence -> Evidence", "Evidence"),
+  "Review evidence -> Evidence",
+  "reference overlay choice summary"
+);
+assertEqual(
+  EditorReferenceOverlayController.prototype.getReferenceSummary("-> Opening", "Opening"),
+  "Jump -> Opening",
+  "reference overlay jump summary"
+);
+
+function assertEqual(actual, expected, label) {
+  if (actual !== expected) {
+    throw new Error(`${label}: expected ${expected}, got ${actual}`);
+  }
+}
+
+function assertIncludes(diagnostics, message) {
+  if (!diagnostics.some((diagnostic) => diagnostic.message === message)) {
+    throw new Error(`Expected diagnostic: ${message}`);
+  }
+}
+
+function assertIncludesText(text, expected) {
+  if (!text.includes(expected)) {
+    throw new Error(`Expected text to include: ${expected}`);
+  }
+}
+
+function createHoverModel(text) {
+  const lines = text.split(/\r?\n/);
+  return {
+    getLineContent(lineNumber) {
+      return lines[lineNumber - 1] || "";
+    },
+  };
+}
+
+function createFakeMonaco(documentModel) {
+  const text = documentModel.nodes
+    .flatMap((node) => [`# ${node.title}`, ...node.lines.map((line) => line.text)])
+    .join("\n");
+  const lines = text.split(/\r?\n/);
+  const fakeModel = {
+    getLineCount: () => 5,
+    getLineContent: (lineNumber) => lines[lineNumber - 1] || "",
+    getLineMaxColumn: (lineNumber) => (lines[lineNumber - 1] || "").length + 1,
+  };
+  const fakeEditor = {
+    deltaDecorations: (_oldDecorations, decorations) => decorations.map((_item, index) => `decoration-${index}`),
+    getContentHeight: () => 180,
+    getModel: () => fakeModel,
+    getOption: () => 36,
+    getScrollTop: () => 0,
+    getTopForLineNumber: (lineNumber) => (lineNumber - 1) * 36,
+    onDidChangeCursorPosition: () => {},
+    onDidChangeModelContent: () => {},
+    onDidContentSizeChange: () => {},
+    onDidScrollChange: () => {},
+    onMouseLeave: () => {},
+    onMouseMove: () => {},
+  };
+  return {
+    editor: {
+      create: () => fakeEditor,
+      createModel: () => fakeModel,
+      defineTheme: () => {},
+      EditorOption: {
+        lineHeight: "lineHeight",
+      },
+    },
+    Range: class {
+      constructor(startLineNumber, startColumn, endLineNumber, endColumn) {
+        this.startLineNumber = startLineNumber;
+        this.startColumn = startColumn;
+        this.endLineNumber = endLineNumber;
+        this.endColumn = endColumn;
+      }
+    },
+  };
+}
+
+class FakeDocument {
+  createElement(tagName) {
+    return new FakeElement(tagName);
+  }
+}
+
+class FakeElement {
+  constructor(tagName) {
+    this.tagName = tagName;
+    this.children = [];
+    this.className = "";
+    this.dataset = {};
+    this.style = {};
+    this.textContent = "";
+    this.type = "";
+    this.classList = {
+      add: (...classNames) => {
+        const classes = new Set(this.className.split(/\s+/).filter(Boolean));
+        for (const className of classNames) {
+          classes.add(className);
+        }
+        this.className = Array.from(classes).join(" ");
+      },
+      remove: (...classNames) => {
+        const removeSet = new Set(classNames);
+        this.className = this.className
+          .split(/\s+/)
+          .filter((className) => className && !removeSet.has(className))
+          .join(" ");
+      },
+    };
+  }
+
+  addEventListener() {}
+
+  append(...children) {
+    this.children.push(...children);
+  }
+
+  setAttribute(name, value) {
+    this[name] = String(value);
+  }
+
+  replaceChildren(...children) {
+    this.children = children;
+  }
+}
+
+function findElementByClass(element, className) {
+  if (element.className?.split(/\s+/).includes(className)) {
+    return element;
+  }
+
+  for (const child of element.children || []) {
+    const match = findElementByClass(child, className);
+    if (match) {
+      return match;
+    }
+  }
+
+  return null;
+}
+
+const hintRailElement = new FakeElement("aside");
+globalThis.document = new FakeDocument();
+const editorSurfaceController = new EditorSurfaceController(new FakeElement("div"), hintRailElement, createFakeMonaco(identityDocumentModel));
+editorSurfaceController.renderAuthoringState(`# Start
+旁白：Hello
+? Prompt
+- Choice -> Start
+@entry`, lineIdentityProvider);
+const stableIdElement = findElementByClass(hintRailElement, "hint-stable-id");
+assertEqual(Boolean(findElementByClass(hintRailElement, "has-stable-id")), true, "line hint host should expose stable id hover state");
+assertEqual(stableIdElement?.textContent, "DIALOGUE", "line hint should render stable id text without line prefix");
+assertEqual(Boolean(findElementByClass(hintRailElement, "hint-stable-id-copy")), true, "line hint should expose stable id copy control");
+
+console.log("SelfHostedEditor model contracts ok");

@@ -6,6 +6,41 @@
 
 当前目录迁移与不符合项总蓝图见 [目录优先重构蓝图](directory-first-reframe-plan.md)。当前后续执行面板见 [/goal 后续目标计划](goal-plan.md)。
 
+## 2026-05-24 SelfHostedEditor 接力优先事项
+
+- 当前用户主线：继续推进自研编辑器体验，并用真实 `LanguageServer` / `Tooling` / `Runtime` 契约替换 UI-only 临时层。接手时优先读 `docs/self-hosted-editor-architecture-plan.md` 与 `src/ExternalSupport/SelfHostedEditor/README.md`。
+- 已完成：默认样例只加载真实文件 `samples/court-loop.inscape`；入口脚本已移除硬编码脚本文本，真实文件不可读时显示加载失败而不是伪造脚本文本。
+- 已完成：Graph 连线改为真实端口中心绘制，从输出端口到目标输入端口；输出端口拖到输入端口会 retarget，拖到非输入端口会断开；节点选择和重命名后保持 Graph 视图。已补 SVG 层级和输入端口吸附热区，避免连线被节点卡片遮住或拖拽释放后因命中太窄而消失。
+- 已完成：Graph 输出行 hover 会轻微标出 source 节点、当前显示目标节点和对应 SVG 线条，让密集图里可以逐条读边；该匹配同时兼容 Compiler project graph edge 的 `sourceTitle` / `targetTitle` 与离线 outgoing row 的 `nodeTitle` / `target`，并会在 SVG edge layer 刷新后恢复当前 hover 高亮；该反馈不改变 selection，也不会自动切换视图。
+- 已完成：Graph 面板在隐藏状态渲染后会在可见 / resize 时重新计算端口位置，避免 `getBoundingClientRect()` 读到 0 尺寸导致真实边数据存在但画面无连线。
+- 已完成：Graph 视图已从固定宽板改为可平移 / 缩放视口；空白处拖拽移动画布，滚轮按指针位置缩放，左上角提供 zoom in / out / reset 控制。节点拖拽和连线绘制已改用 graph-space 坐标，缩放后仍保持可编辑。Graph 激活时工作区会切换为紧凑的单面板布局，让画布吃满可用主体空间，而不是沿用 Script 双栏的大留白。
+- 已完成：Graph 回环边改为视图层 reference projection。目标节点在布局顺序上不晚于 source、或加入显示图后会闭合成环的边，不再向左/向上连回真实节点，而是接到 source 右侧局部 return lane 中的 reference-only 节点；reference 节点只接受输入、没有输出、不可重命名，点击仍跳真实目标，手动连到它时回写真实目标标题。hover 到 reference 时会轻微标出 source 与真实 target，帮助理解替身关系。这一版让回环边保持短的向右连接，减少跨画布回拉线。
+- 已完成：Script 语义样式继续收口，`@...` 元数据在代码高亮模式下弱化显示，`[query]` 使用安静的 query token 样式；Monaco 的 Unicode ambiguous character 提示已在自研写作面关闭，避免中文标点被误报为源码混淆风险。
+- 已完成：Preview 侧 `@...` 元数据不再显示 `@` 字符，改为不可点击、不可选中的淡蓝灰圆角 tag；`[query]` 也有轻量 inline token 样式。
+- 已完成：Preview 不再固定显示首个 block；编辑器 definition navigation 或源码定位落到其他 block 时，预览会切到该 block，但不会跟随编辑器滚动位置一起滚动。
+- 已完成：Preview 阅读表面移除总行数 meta 文本；行数这类 session/debug 信息应留在 workspace 状态区，不进入正文阅读面。
+- 已完成：Preview 增加 `Static` / `Flow` 阅读模式切换。Static 保持当前完整 block 展示；Flow 从标题开始，点击预览区逐行放出正文，正文结束后一次性显示全部选项，并同时显示选项文本与目标标题。
+- 已完成：Script 视图 Ctrl/Cmd + Click 节点标题或跳转目标时会显式走 source selection 管线，编辑器光标与预览 block 都会跳到 definition 位置，避免只更新 Preview 而编辑器不移动。
+- 已完成：Script 编辑器和 Preview 滚动容器已拆开；外层 workbench 不再作为共享滚动面，Monaco 上下滚动不应带动右侧预览栏。
+- 已完成：Script 写作表面关闭 Monaco sticky scroll；节点标题、prompt / choice 标题等结构行不再在滚动时置顶，避免顶部重影和正文错层。
+- 已完成：根布局固定为视口内应用，页面本身不滚动；Script 编辑器继续由 Monaco 内部滚动，Preview 由 `.story-preview` 独立滚动。Ctrl/Cmd + Click definition navigation 会阻止默认点击流程抢回光标，避免 Preview 跳转但编辑器不移动。
+- 已完成：Script refs overlay 会跟随点击的 block 锚点，不再固定在左上；候选展示上下文与命中高亮。
+- 已完成：左侧栏 Files / Outline 面板改为共享侧栏可用高度并各自内部滚动；两个面板都支持折叠，Files 向上折叠为顶部标题行，Outline 向下折叠为底部标题行。
+- 已完成：Files 面板改为和 Outline 一样的紧凑列表布局，内容不足时保持顶部小块列表，不再把单个文件项拉伸成大卡片。
+- 已完成：左下角 workspace/session 信息在所有视图下统一为常态可读样式，不再依赖侧栏 hover 才变清楚；hover 只保留轻微增强。
+- 已完成：`Syntax` 开关已有真实视觉状态，并通过 Monaco inline decorations / overlay decorations 区分标题、对白、旁白、prompt、choice 和当前 block。
+- 已完成：SelfHostedEditor 已通过开发宿主桥复用 `refresh-l10n-line-map-project`，让 Script 行 id 来自真实 Tooling line-map；上一轮 line-map 会作为下一轮 existing sidecar 输入，避免每次刷新重建稳定 id；非本地化身份行显示 `not tracked`。
+- 已完成：Script 行号 hover 只在 Tooling 提供可用 `line_...` 时显示稳定 id；`@`、跳转、旁白等未追踪身份行不再显示 `not tracked` 或 `line id not loaded` 占位。line-map 适配器兼容 camelCase / PascalCase JSON 字段。开发宿主读取 Tooling 生成的 `inscape.line-map.json` / refresh report 时会剥离 UTF-8 BOM，避免 `JSON.parse` 失败后前端静默退回 `provider: unavailable`。
+- 已完成：Script 行号轨道继续收口：Monaco 顶部滚动阴影已在写作表面关闭，行号轨道不再暴露横向滚动条；hover 整条 hint line 只显示块内行号，只有 hover 行号数字区域才会用稳定 id 替换行号显示。稳定 id 显示时会去掉 `line_` 前缀，并提供一个小复制按钮复制完整去前缀后的 id。`check:model` 已覆盖 stable id 从 line-map 映射到 authoring model，并确认 hint rail DOM 渲染 `.has-stable-id` / `.hint-stable-id` / copy control。
+- 已完成：Graph 模型正常服务路径已改为通过 `/api/story-graph` 调用现有 CLI `compile-project`，消费真实 Compiler project IR 的节点和 choice / default jump 边；前端草模只保留为离线 fallback，端口拖拽继续通过受控文本 patch 回写 `-> target`。
+- 已完成：SelfHostedEditor 预览服务静态资源响应已加 `Cache-Control: no-store`，避免本地迭代时浏览器继续使用含旧硬编码样例 / 旧 Graph 逻辑的缓存 bundle。
+- 已完成：Script 编辑器左侧行号 / line id 提示轨道重新对齐 Monaco 内容坐标系；提示轨道不再拥有独立上下 padding，每行提示使用 Monaco 运行时 line height，避免长行折行后后续行号与对应行首错位。
+- 下一步优先：继续替换 `ScriptDocumentModelBuilder` 的 UI-only 草模。Graph 已完成第一刀，正常服务路径消费 Compiler project graph；下一刀建议转向 Preview 模型或 L10N 视图，让它们消费 `Tooling` / `Runtime` / localization presenter 输出，而不是继续扩前端 parser。
+- 下一步优先：把 line-map bridge 从“开发服务器 + CLI 临时 workspace”整理成更接近未来桌面客户端的 Editor Backend 会话边界；短期可先保留 HTTP dev bridge，但要避免在前端增加更多语义逻辑。
+- 下一步优先：Graph 继续补 sidecar 化布局、画布缩放/平移、连接合法性反馈和更明确的端口 hover/drag 状态。
+- 下一步优先：L10N 视图从 session draft CSV 过渡到真实 CSV / alignment review presenter 消费；优先复用 `LocalizationAlignmentReportModel.Presenter`，不要复刻 VSCode QuickPick 组织逻辑。
+- 验证入口：`npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax`、`check:structure`、`check:model`，以及 `dotnet build Inscape.slnx --no-restore`。最近一轮这些验证均已通过。
+
 ## 2026-05-19 最新收口
 
 - Goal 7 的 `inscape.preview.sourceSyncMode = off|click|selection` 真实 VSCode smoke 已通过。
@@ -23,7 +58,7 @@
 
 ## 接力优先队列
 
-下一位接手者建议按以下顺序推进。已完成的 Goal 0 / 3 / 4 / 5 / 6 / 7 / 9 / 11.1 不再放进优先队列，只保留在下方历史账本中。当前剩余事项可以收敛成五组：先推进 stable id / 本地化主线，再把 line sidecar 接入本地化消费闭环，同时保持 VSCode 重构守规；然后再挑 Tooling 单点收敛，最后才是 Unity / Bird 的准备项。
+下一位接手者建议按以下顺序推进。已完成的 Goal 0 / 3 / 4 / 5 / 6 / 7 / 9 / 11.1 不再放进优先队列，只保留在下方历史账本中。当前剩余事项可以收敛成六组：先推进 stable id / 本地化主线，再把 line sidecar 接入本地化消费闭环，同时保持 VSCode 重构守规；然后再挑 Tooling 单点收敛，最后分别推进 Unity / Bird 准备项与自研编辑器方案化准备。
 
 1. **再推进 Stable Node ID 主线。**
 	- 已完成：ADR 0013、stable node id / title map 契约、`update-node-map-project` sidecar 闭环、保守自动重命名识别、VSCode 显式 `Update Stable Node Map` 入口、插入标题后的自动同步、`inscape.node-map-update-report` 审查报告、CLI `--report`、VSCode `Review Stable Node Map Changes` 入口。
@@ -66,6 +101,59 @@
 	- 待定：Bird 项目新增 importer 与 `InscapeGenerated` 资源提交策略。
 	- 待验证：带真实 Timeline 绑定的 Bird Import Dry Run，确认 `talking.exit` 的 `TalkingEffectTM.PlayTimeline` 落地和其他 phase warning。
 	- 低优先级：结合 Bird `L10N` 真实格式决定是否调整 Inscape CSV 字段和列顺序。
+6. **自研编辑器进入方案化准备。**
+	- 已新增 [自研编辑器架构方案](self-hosted-editor-architecture-plan.md) 与 [ADR 0017](adr/0017-self-hosted-editor-external-support-boundary.md)，结论是自研编辑器作为第一方宿主客户端落在 `src/ExternalSupport/SelfHostedEditor`，而不是进入 `Internal`。
+	- 已创建 `src/ExternalSupport/SelfHostedEditor` 第一版静态工作台壳：Notion-like 写作表面、左栏编辑 / 右栏预览、`write-preview` / `write-only` / `preview-only` 布局切换、提示层弱化显示、本地化视图和节点图视图占位。
+	- 已将左栏脚本区替换为第一版 Monaco 编辑表面，并保留现有预览、本地化、节点图和诊断的 UI-only 数据流；下一步继续接 `LanguageServer`。
+	- 已新增浏览器文件选择入口，可导入单个 `.inscape` 脚本并刷新编辑区与预览；后续桌面壳应替换为真实项目工作区桥。
+	- 已新增临时 UI-only 脚本模型，让预览、本地化草表和节点图预览消费同一份前端模型；后续需要替换为 `Tooling` / `LanguageServer` / `Runtime` 输出。
+	- 已新增临时 UI-only 诊断面板，覆盖重复节点、缺失跳转目标和空选项文本，并支持跳回源行；后续需要替换为 `LanguageServer` diagnostics。
+	- 已接入第一条 SelfHostedEditor 开发宿主诊断桥：当前脚本文本会先经本地预览服务器调用 `Inscape.LanguageServer --diagnose-file`，失败时再回退到 UI-only 草稿诊断。
+	- 已接入第一条 SelfHostedEditor 开发宿主 hover 桥：Monaco 编辑区里的节点标题与 jump target 会先经本地预览服务器调用 `Inscape.LanguageServer --hover-file`。
+	- 已把 SelfHostedEditor 诊断贴回 Monaco 编辑区：当前诊断除了保留底部可点击列表，也会同步渲染为编辑区内 markers。
+	- 已把 SelfHostedEditor 状态栏接到诊断导航：当前底部状态栏会显示当前行、诊断来源和诊断数量，并支持 previous / next problem 导航。
+	- 已把 SelfHostedEditor 底部诊断区收成 Problems 面板雏形：当前支持 severity 筛选、每类问题计数和 active-line 高亮。
+	- 已把 SelfHostedEditor 侧栏 session 信息做成轻量状态面板：当前会显示 file、dirty state、source state、active view、layout mode 和 diagnostics backend。
+	- 已推进 SelfHostedEditor 第一轮沉浸式写作表面收口：当前工作台视觉已从偏表单式工具壳收向更安静的 paper-like 写作表面，编辑区、预览区和控制区的留白、字重、层级与交互边框都更强调连续写作体验。
+	- 已进入第二轮主界面硬重置：当前优先不再加新功能，而是把默认主视图重构成更接近 Inky / Notion 的沉浸式双栏写作器，收掉常驻厚面板和标签噪音，让编辑器 / 预览成为主舞台，辅助信息默认更淡、更小、更靠边，只在 hover / focus / 切换视图时增强。
+	- 已继续推进 hover-first 辅助层：当前侧栏 session 信息、outline 元信息、预览底部 meta 与 diagnostics 区都在默认态进一步弱化，只在 hover / focus / active 时增强，继续减少主视图里的“解释性噪音”。
+	- 已继续推进主视图缩骨：当前左侧导航进一步变窄、状态文字更短、顶栏来源信息更弱、右栏预览留白更大，目标是让主视图更像长期停留的写作桌，而不是功能说明页。
+	- 已继续推进“少壳、多内容”的主舞台策略：当前按钮文案进一步缩短，状态栏改用更轻的箭头式问题导航，右栏 choice / diagnostics / meta 的默认存在感继续下降，优先让阅读层自己成立。
+	- 已继续推进第三轮纸面收口：当前双栏主舞台的版心进一步收窄，左右栏背景与留白更接近同一张纸面，预览标题 / 正文 / choice 节奏继续往阅读页靠拢，侧栏、顶栏、状态栏和摘要也继续减重，避免“应用壳”抢走正文注意力。
+	- 已继续推进“默认隐身、hover 显形”的侧边层：当前文件名、outline 标题、outline 次信息和侧栏元状态都进一步改成常态更淡、悬停后再增强，目标是把左栏做得更像安静目录，而不是常亮控制面板。
+	- 已继续推进“目录化而非按钮化”的边缘层：当前左栏视图切换、文件打开入口、outline 条目和顶栏布局切换都进一步压低了控件感，尽量减少像表单按钮组那样的观感，让主舞台更像内容页而不是操作台。
+	- 已继续推进“顶栏 / 底栏近乎隐身”的边缘策略：当前顶部模式切换、来源信息、底部摘要和问题导航都继续减重，只在 hover 时抬头，默认尽量不打断正文与预览的连续阅读。
+	- 已新增底层约束：自研编辑器后续必须从“单文件壳”升级为“项目 workspace”，默认支持同目录多 `.inscape` 文件共享上下文、跨文件定义 / 引用 / 跳转 / 补全 / 重命名。
+	- 已新增节点图方向约束：节点图长期明确参考 Yarn Spinner Graph View，支持 workspace 级图、节点拖拽改画布位置、图中改连回写文本真相，并把节点位置视为 sidecar / layout 元数据，而不是逻辑语义本身。
+	- 已继续推进“轻导航、重正文”的主视图：当前左侧栏再次收窄，顶栏与状态栏继续减重，右栏预览留白继续增大，阅读区的诊断和辅助信息默认更弱，只在需要时浮出来。
+	- 已开始进一步统一左右两栏的纸面感：当前编辑区背景和预览区背景继续向同一套淡纸面靠拢，目标是不再让左栏像“编辑器壳”、右栏像“展示壳”，而是让两边更像同一张写作桌的两面。
+	- 已接入第一条 SelfHostedEditor 开发宿主 definition / references 桥：Monaco 编辑区里的节点标题与 jump target 会先经本地预览服务器调用 `Inscape.LanguageServer --definition-file` 与 `--references-file`。
+	- 已接入第一条 SelfHostedEditor 开发宿主 completion 桥：Monaco 编辑区在书写 `-> target` 时会先经本地预览服务器调用 `Inscape.LanguageServer --completion-file` 获取节点补全。
+	- 已接入第一条 SelfHostedEditor 开发宿主 outline 桥：侧栏 outline 会先经本地预览服务器调用 `Inscape.LanguageServer --document-symbols-file` 获取节点结构，并支持点击跳回源行。
+	- 已接入第一条 SelfHostedEditor Monaco 语义级重命名雏形：编辑区里的节点标题与 jump target 现在支持 rename provider，并通过受控整文 patch 回写 `# 标题` 与匹配的 `-> 标题` 引用。
+	- 已继续修正编辑交互：词级灰块高亮继续减轻，行号轨默认隐藏并改为 hover 显示完整数字，标题左侧引用候选开始转向不会撑开正文的 overlay 交互。
+	- 已继续澄清编辑区行号语义：行号默认隐藏，显示时只表示 block 内局部行号；标题不显示行号，也不在默认写作表面显示 stable node id。稳定 line id 必须来自 localization line sidecar，SelfHostedEditor 在真正接入 sidecar 前只能显示 `id not loaded` 占位，不能伪造稳定 id。
+	- 已新增节点图受控重命名雏形：节点图触发 rename 后会 patch 文本源中的 `# 标题` 与匹配的 `-> 标题` 引用，用于验证“图编辑回写文本源”的长期边界。
+	- 已新增本地化会话草稿：本地化视图支持在当前会话内填写译文草稿，并用 `empty` / `draft` 状态区分；当前可通过浏览器下载导出 draft CSV，后续需要替换为真实 CSV 读写和 alignment review 写回契约。
+	- 已新增工作区摘要状态：顶部状态栏显示节点数、本地化行数、译文草稿数和诊断数；后续可替换为真实项目工作区 / LanguageServer / Tooling 汇总。
+	- 已接入 workspace 导入第一版：文件选择入口允许一次导入同目录多份 `.inscape`，并保留 workspace 名称、文件数与相对路径状态；跨文件语义解析后续继续接入。
+	- 已继续推进 workspace 语义探测第二步：SelfHostedEditor 发给开发宿主的 diagnostics / completion / definition / references / hover 请求现在会附带当前 workspace 文档清单与活动文件相对路径，并优先改走 `LanguageServer` 的 project 级 probe；当前 marker / diagnostics 仍先只贴回活动文件。
+	- 已继续推进 references overlay：候选项开始显示 `relative/path.inscape:Lxx` 来源标签与引用行正文预览，并支持从浮层切换到同一 workspace 的其他脚本文档；目标仍是完全替代会撑开正文的 inline peek。
+	- 已继续推进标题 hover 操作：标题左侧 add / refs / edit / drag 控件改为更轻的 Notion-like 浮动胶囊；edit 入口复用语义级 node rename patch，并已从浏览器系统 prompt 改为自绘 rename dialog；drag handle 已从原生 HTML drag 改为按纵向位置命中最近标题的 pointer-drag，拖到另一标题附近会移动整个 block 的文本位置，不改逻辑跳转关系。
+	- 已继续推进第一眼视觉收口：侧栏从窄工具条调整为更接近桌面写作客户端的工作区侧栏；主写作/预览表面去掉大面积暖色渐变，改为更克制的白色文档面；预览字体、标题间距和选项按钮比例已从夸张展示态回收到阅读态。
+	- 已继续推进辅助信息降噪：底部状态栏、诊断区、workspace summary、L10N 表格和 Graph 卡片都改得更轻，避免在默认写作/阅读状态里呈现调试面板感。
+	- 已继续推进编辑/阅读字体基线：写作区和预览区从偏装饰的 serif 调整为更接近 Notion 的系统 sans；当前 block 高亮改为轻灰，不再使用明显蓝色 selection 面。
+	- 已继续推进交互与浮层质感：标题 hover 控件新增 `edit` 入口，接入现有语义级节点重命名 patch，并使用自绘 rename dialog 替代浏览器系统弹窗；Monaco hover / completion suggest 已覆写成当前白色文档面的轻浮层，减少默认 IDE 蓝色候选框割裂感。
+	- 已继续推进节点图视觉：Graph 视图从普通卡片网格改为第一版 Yarn Spinner 方向的节点画布，包含点阵背景、绝对定位节点和 SVG 曲线连线；当前节点已经支持会话内自由拖拽并让连线跟随刷新。后续仍需补画布缩放/平移、节点位置 sidecar 和图中改连 patch。
+	- 第一版建议从 Player Shell + Authoring Shell 开始：打开项目、接 LanguageServer、用 Runtime 跑 Narrative Graph、显示诊断 / 预览 / CSV / 本地化审查，并统一源位置跳转。
+	- 编辑体验基线：默认左栏 Monaco 脚本编辑器、右栏运行 / 效果预览；跳转、提示、引用、错误提示、补全、Hover 和语义级重命名需要尽量对齐当前 VSCode 体验。
+	- 布局基线：双栏可随时切换为仅编写或仅预览；布局切换不能丢失光标、选择、预览位置或运行状态。
+	- 产品体验基线：书写和阅读体验对标 Notion，正文阅读优先，辅助提示安静低干扰。
+	- 当前最近优先级：先把主编辑 / 预览视图做过体验线，再继续扩展 Localization / Node Graph / Runtime 视图能力；在主视图过线前，不再把“功能更多”误当成“更值得体验”。
+	- 视觉基线：编辑器内容分为文本层和提示层；提示层默认淡灰、字号更小、低干扰，只在 hover / focus / selection 或可交互状态下增强高亮。
+	- 视图基线：除编辑器视图、预览视图外，提前为本地化编辑视图和节点图视图保留架构位置；节点图长期需要既能编辑也是预览，但编辑结果必须通过受控 command / patch 回写文本源或 sidecar。
+	- 平台基线：优先支持 Windows 与 macOS；iOS / Android 只保留远期低优先级可能性。
+	- 在实现前先确认技术壳优先级：当前倾向 Tauri + Web UI + Monaco；如果 Windows 打包、进程管理或 .NET 调用链验证不合适，再用 ADR 调整。
 
 ## 剩余工作总览
 

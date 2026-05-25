@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Inscape Editor</title>
+    <link rel="stylesheet" href="/Resources/Styles/SelfHostedEditorWorkbench.css">
+  </head>
+  <body>
+    <main class="app-shell" data-layout="write-preview">
+      <aside class="app-sidebar">
+        <div class="sidebar-brand">
+          <span class="brand-mark" aria-hidden="true">I</span>
+          <div class="brand-copy">
+            <strong>Inscape</strong>
+            <span class="workspace-status">Loading samples/court-loop.inscape</span>
+          </div>
+        </div>
+        <div class="project-actions">
+          <label class="file-open-button">
+            <span>Open</span>
+            <input class="script-file-input" type="file" accept=".inscape,text/plain" multiple webkitdirectory directory>
+          </label>
+        </div>
+        <nav class="view-tabs" aria-label="Views">
+          <button class="view-tab is-active" type="button" data-view="editor">Script</button>
+          <button class="view-tab" type="button" data-view="localization">L10N</button>
+          <button class="view-tab" type="button" data-view="graph">Graph</button>
+        </nav>
+        <section class="workspace-files-shell" aria-label="Files">
+          <button class="section-toggle section-label" type="button" data-sidebar-toggle="files" aria-expanded="true">
+            <span>Files</span>
+          </button>
+          <div class="workspace-file-panel"></div>
+        </section>
+        <section class="document-outline-shell" aria-label="Outline">
+          <button class="section-toggle section-label" type="button" data-sidebar-toggle="outline" aria-expanded="true">
+            <span>Outline</span>
+          </button>
+          <div class="document-outline-panel"></div>
+        </section>
+        <div class="sidebar-meta">
+          <div class="workspace-session-panel" aria-label="Workspace session"></div>
+          <div class="workspace-runtime-panel" aria-label="Session state"></div>
+        </div>
+      </aside>
+
+      <section class="app-main">
+        <header class="top-bar">
+          <div class="top-bar-copy">
+            <strong class="active-view-label" data-active-view-label>Script</strong>
+            <span class="script-source-label">Current file</span>
+          </div>
+          <div class="layout-switcher" aria-label="Layout">
+            <button type="button" data-layout-mode="write-preview" aria-pressed="true">Split</button>
+            <button type="button" data-layout-mode="write-only" aria-pressed="false">Write</button>
+            <button type="button" data-layout-mode="preview-only" aria-pressed="false">Preview</button>
+          </div>
+          <button class="syntax-toggle" type="button" data-syntax-toggle aria-pressed="true">Syntax</button>
+        </header>
+
+        <section class="workbench-body">
+          <section class="workspace" data-view-panel="editor">
+            <section class="writer-pane" aria-label="Script editor">
+              <div class="pane-title">
+                <span>Writing</span>
+                <small>Draft</small>
+              </div>
+              <div class="editor-frame">
+                <aside class="hint-rail" aria-hidden="true"></aside>
+                <div class="script-editor" aria-label="Script editor"></div>
+              </div>
+            </section>
+
+            <section class="preview-pane" aria-label="Runtime preview">
+              <div class="pane-title">
+                <span>Reading</span>
+                <small data-preview-mode-label>Static</small>
+                <div class="preview-mode-switcher" aria-label="Preview mode">
+                  <button type="button" data-preview-mode="static" aria-pressed="true">Static</button>
+                  <button type="button" data-preview-mode="flow" aria-pressed="false">Flow</button>
+                </div>
+              </div>
+              <article class="story-preview"></article>
+              <section class="diagnostics-dock" aria-label="Draft diagnostics"></section>
+            </section>
+          </section>
+
+          <section class="workspace is-hidden" data-view-panel="localization">
+            <section class="single-pane">
+              <div class="pane-title">
+                <span>Localization</span>
+                <small>Draft</small>
+                <button class="localization-export-button" type="button">Export draft CSV</button>
+              </div>
+              <div class="localization-panel"></div>
+            </section>
+          </section>
+
+          <section class="workspace is-hidden" data-view-panel="graph">
+            <section class="single-pane">
+              <div class="pane-title">
+                <span>Node Graph</span>
+                <small>Map</small>
+              </div>
+              <div class="graph-panel"></div>
+            </section>
+          </section>
+        </section>
+
+        <footer class="status-bar">
+          <div class="workspace-summary" aria-label="Workspace summary"></div>
+          <div class="status-bar-diagnostics">
+            <button class="status-bar-nav-button" type="button" data-diagnostic-nav="previous" aria-label="Previous diagnostic">&lt;</button>
+            <button class="status-bar-nav-button" type="button" data-diagnostic-nav="next" aria-label="Next diagnostic">&gt;</button>
+            <span class="status-bar-note">Ready</span>
+          </div>
+        </footer>
+      </section>
+    </main>
+
+    <script src="/node_modules/monaco-editor/min/vs/loader.js"></script>
+    <script type="module" src="/Scripts/Entries/SelfHostedEditorAppEntry.js"></script>
+  </body>
+</html>

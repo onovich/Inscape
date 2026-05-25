@@ -9,7 +9,7 @@
 目录骨架、当前不符合点与迁移顺序的施工真相以 [目录优先重构蓝图](directory-first-reframe-plan.md) 为准。本文更适合作为结构总览与目录索引。
 
 - Internal：`Compiler`、`Tooling`、`Cli`、`LanguageServer`、`Runtime`
-- ExternalSupport：`VSCode`、`UnityPlugin`
+- ExternalSupport：`VSCode`、`SelfHostedEditor`、`UnityPlugin`
 
 ## 当前实际目录
 
@@ -32,6 +32,7 @@ src/
     Runtime/                    当前 Runtime 基线项目，已建立 NarrativeRuntime 最小 IR 消费生命周期
   ExternalSupport/
     VSCode/                     当前 VSCode 前端扩展，已按 Entries / DslScript / EditorAuthoring / HostBinding / HostSchema / Localization / Preview 等业务目录收敛
+    SelfHostedEditor/           自研编辑器宿主客户端第一版壳，详见 self-hosted-editor-architecture-plan.md
     UnityPlugin/
       Inscape.Adapters.UnitySample/ 当前 UnitySample 外部支持样例，已迁入 ExternalSupport 路径
       Inscape.UnitySample.Cli/      UnitySample 样例命令入口，已按 Entries / Commands 初步分目录，不进入默认 solution
@@ -99,6 +100,19 @@ Internal/
 
 ExternalSupport/
   VSCode/
+  SelfHostedEditor/
+    Scripts/
+      Entries/
+      ProjectWorkspace/
+      LanguageServer/
+      EditorAuthoring/
+      Preview/
+      Localization/
+      StoryGraph/
+      Runtime/
+      HostSchema/
+      HostBinding/
+
   UnityPlugin/
     PluginEntry/
     ScriptImport/
@@ -168,6 +182,14 @@ VSCode 是编辑器入口层。它负责：
 
 重语义能力长期迁移到 `LanguageServer`，而不是继续在前端或 Cli 里重复实现。
 
+### SelfHostedEditor
+
+SelfHostedEditor 是计划中的自研编辑器宿主客户端，归属 `ExternalSupport`。它负责桌面壳、Web UI、Monaco 集成、文件对话框、菜单、打包和轻量宿主交互。
+
+它不作为语义真相层。编辑语义复用 `LanguageServer`，项目扫描、本地化审查、预览模型、HostSchema / HostBinding 等共享流程复用 `Tooling`，剧情运行和状态观察复用 `Runtime`。
+
+自研编辑器不复用 VSCode package 内部结构；两个编辑器宿主共享 Internal 契约，而不是共享彼此的 UI 代码。详见 [自研编辑器架构方案](self-hosted-editor-architecture-plan.md) 与 [ADR 0017](adr/0017-self-hosted-editor-external-support-boundary.md)。
+
 ### LanguageServer
 
 LanguageServer 是 C# 语义服务层。它长期承担：
@@ -209,6 +231,7 @@ UnityPlugin 不属于 Internal 五层之一。它是 Unity 环境下的外部支
 - `src/Internal/Tooling/Inscape.Tooling.csproj` + `src/Internal/Tooling/{DslScriptSources,ToolConfig,Preview,Localization,HostSchema,HostBinding}/` → 当前 `Tooling` 项目，已开始按 Business / Role 目录落位
 - `src/Internal/Cli/Inscape.Cli/{Entries,Commands,Providers,ViewModels}/` → 当前 `Cli` 项目，已按入口、命令、命令元数据和输出 DTO 初步分目录
 - `src/ExternalSupport/VSCode/` → 当前 `VSCode` 前端，后续继续按 VSCode Layer 规则拆分
+- `src/ExternalSupport/SelfHostedEditor/` → 自研编辑器宿主目录；当前已有依赖为空的静态工作台壳，后续接入 Monaco / LanguageServer / Runtime
 - `src/ExternalSupport/UnityPlugin/Inscape.Adapters.UnitySample/` → 当前 `ExternalSupport/UnityPlugin` 过渡样例，下一阶段应迁到 `src/ExternalSupport/UnityPlugin/`
 - `src/ExternalSupport/UnityPlugin/unity-bird-importer/` → 当前 `ExternalSupport/UnityPlugin` 导入原型，也应跟随迁入 ExternalSupport 目录树
 
@@ -260,6 +283,7 @@ Runtime
   HostBridge
 
 ExternalSupport
+  SelfHostedEditor
   UnityPlugin
 ```
 
