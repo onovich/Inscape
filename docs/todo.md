@@ -40,14 +40,15 @@ SelfHostedEditor regression invariant: Preview choice clicks must advance the re
 - 已完成：SelfHostedEditor 预览服务静态资源响应已加 `Cache-Control: no-store`，避免本地迭代时浏览器继续使用含旧硬编码样例 / 旧 Graph 逻辑的缓存 bundle。
 - 已完成：Script 编辑器左侧行号 / line id 提示轨道重新对齐 Monaco 内容坐标系；提示轨道不再拥有独立上下 padding，每行提示使用 Monaco 运行时 line height，避免长行折行后后续行号与对应行首错位。
 - 已完成：SelfHostedEditor 增加安静 loading 状态，覆盖默认样例、Monaco、line-map、Compiler graph Preview / Graph、Runtime、diagnostics、outline、本地化和 workspace summary 刷新过程。
-- 下一步优先：继续替换 `ScriptDocumentModelBuilder` 的 UI-only 草模。Graph 已完成第一刀，正常服务路径消费 Compiler project graph；下一刀建议转向 Preview 模型或 L10N 视图，让它们消费 `Tooling` / `Runtime` / localization presenter 输出，而不是继续扩前端 parser。
 - 已推进：Preview 内容模型完成第一刀替换，正常服务路径现在消费 `/api/story-graph` 的 Compiler project graph，阅读行、元数据、choice prompt、choice option 与 default jump continue 入口不再从前端源码草模推断；`ScriptDocumentModelBuilder` 只保留为服务不可用时的离线 fallback。若已返回 `compiler-project` graph 但节点 `previewLines` 缺失或与 Compiler lines 数量不一致，Preview 必须显示 compiler graph contract error，不能按标题回退到前端草模正文。
 - 已推进：Runtime Player 接入前置契约完成第一刀，新增 `runtime-project` CLI 命令，项目编译后由 `NarrativeRuntime` 启动 entry，并输出 `inscape.runtime-state` JSON；后续 SelfHostedEditor 应消费这个运行态，而不是在前端模拟当前节点。
 - 已推进：SelfHostedEditor 新增开发宿主 `/api/runtime-state` 与 `SelfHostedEditorRuntimeBridge`，当前会把 Runtime entry snapshot 显示到 session 状态；`runtime-project` CLI 和 `/api/runtime-action` 已能在恢复上一帧 state 后执行 `continue` / `choose` 并输出新 snapshot。Preview 还没有消费这个 Player action 状态。
-- 下一步优先：继续把 Preview 的 `Static` / `Flow` presenter 状态推进到真实 `Runtime` Player 状态，或转向 L10N 视图消费真实 CSV / alignment review presenter；不要在前端 parser 上继续叠语义。
-- 下一步优先：把 line-map bridge 从“开发服务器 + CLI 临时 workspace”整理成更接近未来桌面客户端的 Editor Backend 会话边界；短期可先保留 HTTP dev bridge，但要避免在前端增加更多语义逻辑。
-- 下一步优先：Graph 继续补 sidecar 化布局、画布缩放/平移、连接合法性反馈和更明确的端口 hover/drag 状态。
-- 下一步优先：L10N 视图从 session draft CSV 过渡到真实 CSV / alignment review presenter 消费；优先复用 `LocalizationAlignmentReportModel.Presenter`，不要复刻 VSCode QuickPick 组织逻辑。
+- 当前执行顺序（2026-05-26）：
+	1. 先巩固最近 SelfHostedEditor 回归边界：Preview 不得静默丢 `previewLines`，UTF-8 桥接不得再产生中文乱码，Flow 的 typewriter / wheel / `@` 标签行为和 loading 状态都要由 `check:model` / `check:structure` 继续守住。
+	2. 第一实施节点转向 L10N 视图：从 session draft CSV 过渡到真实 CSV / alignment review presenter 消费，优先复用 `LocalizationAlignmentReportModel.Presenter`，不要复刻 VSCode QuickPick 组织逻辑，也不要在前端 parser 上继续叠语义。
+	3. 第二实施节点再推进 Preview Runtime Player：把 `Static` / `Flow` 的当前节点、continue、choice 和历史路径映射到 `/api/runtime-state` / `/api/runtime-action` 的 Runtime 状态，而不是继续扩展前端 presenter 状态机。
+	4. 第三实施节点整理 Editor Backend 会话边界：把 line-map、Runtime、LanguageServer 这些开发服务器 + CLI 临时 workspace 桥逐步收成更接近桌面客户端的会话模型；短期可保留 HTTP dev bridge，但前端不得新增语义真相。
+	5. 第四实施节点继续 Graph：补 graph layout sidecar、连接合法性反馈、端口 hover / drag 状态和跨文件图编辑回写边界。
 - 验证入口：`npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax`、`check:structure`、`check:model`，以及 `dotnet build Inscape.slnx --no-restore`。最近一轮这些验证均已通过。
 
 ## 2026-05-19 最新收口
@@ -67,7 +68,7 @@ SelfHostedEditor regression invariant: Preview choice clicks must advance the re
 
 ## 接力优先队列
 
-下一位接手者建议按以下顺序推进。已完成的 Goal 0 / 3 / 4 / 5 / 6 / 7 / 9 / 11.1 不再放进优先队列，只保留在下方历史账本中。当前剩余事项可以收敛成六组：先推进 stable id / 本地化主线，再把 line sidecar 接入本地化消费闭环，同时保持 VSCode 重构守规；然后再挑 Tooling 单点收敛，最后分别推进 Unity / Bird 准备项与自研编辑器方案化准备。
+下一位接手者建议按以下顺序推进。已完成的 Goal 0 / 3 / 4 / 5 / 6 / 7 / 9 / 11.1 不再放进优先队列，只保留在下方历史账本中。当前实际用户主线已经切到 SelfHostedEditor，因此本队列按“先稳住自研编辑器真实契约，再推进可复用的本地化 / stable identity 能力”的顺序执行：SelfHostedEditor 的 L10N presenter、Runtime Player 和 Editor Backend 会话边界优先；stable id / 本地化主线继续作为这些能力的底座；VSCode 重构守规、Tooling 单点收敛、Unity / Bird 准备项依次排后。
 
 1. **再推进 Stable Node ID 主线。**
 	- 已完成：ADR 0013、stable node id / title map 契约、`update-node-map-project` sidecar 闭环、保守自动重命名识别、VSCode 显式 `Update Stable Node Map` 入口、插入标题后的自动同步、`inscape.node-map-update-report` 审查报告、CLI `--report`、VSCode `Review Stable Node Map Changes` 入口。

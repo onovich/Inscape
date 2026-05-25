@@ -59,7 +59,7 @@
 - Preview 内容已来自 Compiler project graph，但 Static / Flow 进度仍是阅读面板 presenter 状态，不是 Runtime Player；后续 Player 应消费 `Runtime` 的 Narrative Graph IR 和运行状态。
 - `runtime-project` / `/api/runtime-state` / `/api/runtime-action` 已覆盖 Start、恢复 state 后 Continue、恢复 state 后 Choose 的最小 stateless action 契约；还没有让 Preview 的 Flow 模式完全受 Runtime state 驱动，也还没有桌面端长生命周期 Runtime 会话。
 
-当前工作树提示：`src/ExternalSupport/SelfHostedEditor/` 与 `docs/self-hosted-editor-architecture-plan.md`、ADR 0017 仍处于未跟踪状态，若新 Agent 要提交，需要先复查 `git -c safe.directory=D:/LabProjects/Inscape status --short --branch`，不要回滚用户已有文档和样例改动。
+当前工作树提示：最近一次复查时 `git -c safe.directory=D:/LabProjects/Inscape status --short --branch` 为干净状态。新 Agent 仍应在提交前重新执行 status，确认没有用户未提交改动；若出现未跟踪或未提交文件，只能按任务边界处理，不要回滚用户已有文档和样例改动。
 
 ### 2026-05-19 最新收口
 
