@@ -24,6 +24,7 @@ import { ProjectWorkspaceSummaryController } from "../ProjectWorkspace/Controlle
 import { ProjectWorkspaceSummaryModelBuilder } from "../ProjectWorkspace/Models/ProjectWorkspaceSummaryModelBuilder.js";
 import { ScriptLineIdentityModelBuilder } from "../ProjectWorkspace/Models/ScriptLineIdentityModelBuilder.js";
 import { ScriptNodeRenamePatchBuilder } from "../ProjectWorkspace/Models/ScriptNodeRenamePatchBuilder.js";
+import { SelfHostedEditorRuntimeBridge } from "../Runtime/Bridges/SelfHostedEditorRuntimeBridge.js";
 import { SelfHostedEditorDocumentSymbolBridge } from "../LanguageServer/Bridges/SelfHostedEditorDocumentSymbolBridge.js";
 import { StoryGraphPreviewController } from "../StoryGraph/Controllers/StoryGraphPreviewController.js";
 import { WorkspaceLayoutController } from "../WorkspaceLayout/Controllers/WorkspaceLayoutController.js";
@@ -79,6 +80,7 @@ async function main() {
   const hoverBridge = new SelfHostedEditorHoverBridge();
   const lineMapBridge = new SelfHostedEditorLineMapBridge();
   const referencesBridge = new SelfHostedEditorReferencesBridge();
+  const runtimeBridge = new SelfHostedEditorRuntimeBridge();
   const storyGraphBridge = new SelfHostedEditorStoryGraphBridge();
   const workspaceContextProvider = () => workspaceController.getWorkspaceContext();
   completionBridge.setWorkspaceContextProvider(workspaceContextProvider);
@@ -87,6 +89,7 @@ async function main() {
   hoverBridge.setWorkspaceContextProvider(workspaceContextProvider);
   lineMapBridge.setWorkspaceContextProvider(workspaceContextProvider);
   referencesBridge.setWorkspaceContextProvider(workspaceContextProvider);
+  runtimeBridge.setWorkspaceContextProvider(workspaceContextProvider);
   storyGraphBridge.setWorkspaceContextProvider(workspaceContextProvider);
   documentSymbolBridge.setWorkspaceContextProvider(workspaceContextProvider);
   const editorCompletionController = new EditorCompletionController(
@@ -141,6 +144,10 @@ async function main() {
     provider: "draft-fallback",
   };
   let latestLineIdentityProvider = null;
+  let latestRuntimeSnapshot = {
+    provider: "unavailable",
+    snapshot: null,
+  };
 
   const defaultSample = await loadDefaultSampleScript();
   editorController.setText(defaultSample.text);
@@ -407,6 +414,11 @@ async function main() {
       return;
     }
 
+    latestRuntimeSnapshot = await runtimeBridge.getRuntimeSnapshot(scriptText);
+    if (renderVersion !== diagnosticsRenderVersion) {
+      return;
+    }
+
     previewController.render(scriptText, activeLineNumber, storyGraphSnapshot.graph);
     storyGraphController.render(storyGraphSnapshot.graph, scriptText);
     const diagnosticSnapshot = await diagnosticsBridge.getDiagnostics(scriptText);
@@ -531,6 +543,9 @@ async function main() {
       diagnosticsLabel: latestDiagnosticSnapshot.provider === "language-server"
         ? "LanguageServer"
         : "Draft fallback",
+      runtimeLabel: latestRuntimeSnapshot.provider === "runtime-project"
+        ? (latestRuntimeSnapshot.snapshot?.state?.currentNodeName || "started")
+        : "unavailable",
     });
   }
 
@@ -556,6 +571,7 @@ async function main() {
   void editorRenameController;
   void editorReferenceOverlayController;
   void editorStatusController;
+  void runtimeBridge;
   void workspaceSessionController;
 }
 

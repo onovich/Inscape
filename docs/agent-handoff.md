@@ -28,6 +28,7 @@
 - Graph 模型来源已完成第一刀替换：正常本地服务路径会通过 `/api/story-graph` 调用现有 CLI `compile-project`，消费 Compiler project IR 中真实的 choice / default jump 边；`ScriptDocumentModelBuilder` 只作为直接打开 HTML 或开发宿主不可用时的离线 fallback。
 - Preview 内容模型也已完成第一刀替换：正常本地服务路径会消费同一份 Compiler project graph，阅读行、元数据、choice prompt、choice option 与 default jump continue 入口都来自 `/api/story-graph` 输出；`ScriptDocumentModelBuilder` 只作为 Compiler bridge 不可用时的离线 fallback。
 - Runtime Player 接入前置契约已完成第一刀：新增 `runtime-project` CLI 命令，项目编译后由 `NarrativeRuntime` 启动 entry，并输出 `inscape.runtime-state` JSON；下一步 SelfHostedEditor 应通过开发宿主桥消费这个运行态，而不是在前端模拟当前节点。
+- SelfHostedEditor 已新增 `/api/runtime-state` 与 `SelfHostedEditorRuntimeBridge`，当前会通过临时 workspace 调用 `runtime-project`，并把 Runtime 当前 entry 节点显示到左下 session 状态。它仍只是 started snapshot，不是长生命周期 Player 会话。
 - Script / Preview 语义样式已继续收口：`@...` 元数据在 Script 高亮模式下弱化，在 Preview 中隐藏 `@` 并展示成不可点击、不可选中的淡蓝灰 tag；`[query]` 在两侧都有轻量差异化 token 样式。Monaco 写作表面已关闭 Unicode ambiguous character 警告，中文标点不应再被误报为源码混淆风险。
 - Preview 当前会按活动源码行所在 block 渲染 Compiler graph 内容；编辑器 definition navigation 或其他源码定位进入新 block 时会切换预览 block，但编辑器滚动和预览滚动保持独立，不做滚动同步。外层 workbench body 不应再作为双栏共享滚动面。
 - Preview 阅读表面不再显示总行数 meta；这类 session/debug 信息应留在 workspace 状态区，不进入正文阅读面。
@@ -55,6 +56,7 @@
 - L10N 视图仍是会话内 draft CSV 下载，没有接真实 CSV 读写、alignment review presenter 和写回契约。
 - Preview 内容已来自 Compiler project graph，但 Static / Flow 进度仍是阅读面板 presenter 状态，不是 Runtime Player；后续 Player 应消费 `Runtime` 的 Narrative Graph IR 和运行状态。
 - `runtime-project` 目前只输出 Start 后的 runtime snapshot；还没有接入 SelfHostedEditor，也还没有暴露 Choose / Continue / Restore 的会话式开发宿主桥。
+- `runtime-project` / `/api/runtime-state` 目前只输出 Start 后的 runtime snapshot；还没有暴露 Choose / Continue / Restore 的会话式开发宿主桥，也还没有让 Preview 的 Flow 模式完全受 Runtime state 驱动。
 
 当前工作树提示：`src/ExternalSupport/SelfHostedEditor/` 与 `docs/self-hosted-editor-architecture-plan.md`、ADR 0017 仍处于未跟踪状态，若新 Agent 要提交，需要先复查 `git -c safe.directory=D:/LabProjects/Inscape status --short --branch`，不要回滚用户已有文档和样例改动。
 

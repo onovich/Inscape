@@ -16,6 +16,7 @@ export class ProjectWorkspaceSessionController {
       this.createStateItem("View", sessionState.viewLabel || "editor"),
       this.createStateItem("Layout", sessionState.layoutLabel || "split"),
       this.createStateItem("Diagnostics", sessionState.diagnosticsLabel || "fallback"),
+      this.createStateItem("Runtime", sessionState.runtimeLabel || "unavailable"),
     ];
 
     this.sessionPanelElement?.replaceChildren(...sessionItems);

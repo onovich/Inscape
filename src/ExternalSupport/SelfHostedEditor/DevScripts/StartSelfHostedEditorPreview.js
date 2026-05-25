@@ -86,6 +86,11 @@ const server = http.createServer(async (request, response) => {
     return;
   }
 
+  if (request.method === "POST" && requestUrl.pathname === "/api/runtime-state") {
+    await handleRuntimeStateRequest(request, response);
+    return;
+  }
+
   if (request.method === "POST" && requestUrl.pathname === "/api/line-map-refresh") {
     await handleLineMapRefreshRequest(request, response);
     return;
@@ -304,6 +309,30 @@ async function handleStoryGraphRequest(request, response) {
   }
 }
 
+async function handleRuntimeStateRequest(request, response) {
+  try {
+    const body = await readRequestBody(request);
+    const payload = JSON.parse(body || "{}");
+    const scriptText = typeof payload.scriptText === "string"
+      ? payload.scriptText
+      : "";
+    const workspace = normalizeWorkspacePayload(payload.workspace);
+
+    const runtimePayload = await getRuntimeStateForScriptText(scriptText, workspace);
+    response.writeHead(200, {
+      "Content-Type": "application/json; charset=utf-8",
+    });
+    response.end(JSON.stringify(runtimePayload));
+  } catch (error) {
+    response.writeHead(500, {
+      "Content-Type": "application/json; charset=utf-8",
+    });
+    response.end(JSON.stringify({
+      error: error instanceof Error ? error.message : String(error),
+    }));
+  }
+}
+
 async function handleLineMapRefreshRequest(request, response) {
   try {
     const body = await readRequestBody(request);
@@ -396,6 +425,16 @@ async function getStoryGraphForScriptText(scriptText, workspace) {
   });
 }
 
+async function getRuntimeStateForScriptText(scriptText, workspace) {
+  return withTemporaryWorkspace(workspace, scriptText, async ({ tempRoot }) => {
+    const result = await runCliCommand([
+      "runtime-project",
+      tempRoot,
+    ], "CLI runtime project snapshot");
+    return compactRuntimeStatePayload(relativizeProjectSourcePaths(JSON.parse(result.stdout), tempRoot));
+  });
+}
+
 function compactProjectGraphPayload(payload) {
   return {
     diagnostics: payload?.diagnostics || [],
@@ -421,6 +460,14 @@ function compactProjectGraphPayload(payload) {
         })),
         defaultNext: node.defaultNext || "",
         lineCount: Array.isArray(node.lines) ? node.lines.length : 0,
+        lines: (Array.isArray(node.lines) ? node.lines : []).map((line) => ({
+          anchor: line.anchor || "",
+          kind: line.kind || "",
+          raw: line.raw || "",
+          source: line.source || null,
+          speaker: line.speaker || "",
+          text: line.text || "",
+        })),
         name: node.name || "",
         source: node.source || null,
       })),
@@ -430,6 +477,42 @@ function compactProjectGraphPayload(payload) {
     format: "inscape.self-hosted-editor.story-graph",
     formatVersion: 1,
     hasErrors: Boolean(payload?.hasErrors),
+  };
+}
+
+function compactRuntimeStatePayload(payload) {
+  const currentNode = payload?.currentNode || null;
+  return {
+    currentNode: currentNode
+      ? {
+        choices: (Array.isArray(currentNode.choices) ? currentNode.choices : []).map((group) => ({
+          options: (Array.isArray(group.options) ? group.options : []).map((option) => ({
+            source: option.source || null,
+            target: option.target || "",
+            text: option.text || "",
+          })),
+          prompt: group.prompt || "",
+          source: group.source || null,
+        })),
+        defaultNext: currentNode.defaultNext || "",
+        lines: (Array.isArray(currentNode.lines) ? currentNode.lines : []).map((line) => ({
+          anchor: line.anchor || "",
+          kind: line.kind || "",
+          raw: line.raw || "",
+          source: line.source || null,
+          speaker: line.speaker || "",
+          text: line.text || "",
+        })),
+        name: currentNode.name || "",
+        source: currentNode.source || null,
+      }
+      : null,
+    format: "inscape.self-hosted-editor.runtime-state",
+    formatVersion: 1,
+    state: {
+      currentNodeName: payload?.state?.currentNodeName || "",
+      path: Array.isArray(payload?.state?.path) ? payload.state.path : [],
+    },
   };
 }
 
@@ -474,6 +557,21 @@ function relativizeProjectSourcePaths(payload, tempRoot) {
 
     for (const edge of Array.isArray(document.edges) ? document.edges : []) {
       normalizeSource(edge.source);
+    }
+  }
+
+  const currentNode = payload?.currentNode || null;
+  if (currentNode) {
+    normalizeSource(currentNode.source);
+    for (const line of Array.isArray(currentNode.lines) ? currentNode.lines : []) {
+      normalizeSource(line.source);
+    }
+
+    for (const group of Array.isArray(currentNode.choices) ? currentNode.choices : []) {
+      normalizeSource(group.source);
+      for (const option of Array.isArray(group.options) ? group.options : []) {
+        normalizeSource(option.source);
+      }
     }
   }
 
@@ -744,6 +842,7 @@ function runCliCommand(cliArgs, label) {
       "run",
       "--project",
       cliProjectPath,
+      "--no-restore",
       "--",
       ...cliArgs,
     ], {
