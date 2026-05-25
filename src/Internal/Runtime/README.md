@@ -12,4 +12,5 @@ Current baseline:
 - `StoryRuntime/Domains/NarrativeRuntime.cs` consumes `DslScriptDocumentModel` graph output from Compiler.
 - The runtime supports a minimal lifecycle: `LoadGraph`, `Start`, `Choose`, `Continue`, and `Restore`.
 - `NarrativeRuntime.CreateSnapshot()` returns `inscape.runtime-state` data with the current state and current Compiler node for editor Player integration.
+- The CLI `runtime-project` command can start a project or restore a previous snapshot state and apply one `Continue` / `Choose` action before returning the next snapshot.
 - Runtime does not parse `.inscape` text and does not know about VSCode, HTML Preview, UnitySample, or Host Bridge details.

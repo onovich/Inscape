@@ -60,6 +60,48 @@ Narrator: Second.
             }
         }
 
+        static void CliRuntimeProjectStepsRestoredState() {
+            string directory = Path.Combine(Path.GetTempPath(), "inscape-tests", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory);
+            string statePath = Path.Combine(directory, "runtime-state.json");
+            string choiceStatePath = Path.Combine(directory, "runtime-choice-state.json");
+            File.WriteAllText(Path.Combine(directory, "story.inscape"), """
+# start
+@entry
+Narrator: Start.
+? Next
+  - Go second -> second.node
+
+# second.node
+Narrator: Second.
+-> end.node
+
+# end.node
+Narrator: End.
+""", Encoding.UTF8);
+
+            try {
+                string initialJson = RunCliForOutput(new[] { "runtime-project", directory });
+                File.WriteAllText(statePath, initialJson, Encoding.UTF8);
+
+                string choiceJson = RunCliForOutput(new[] { "runtime-project", directory, "--state", statePath, "--choose", "0", "0" });
+                using (JsonDocument choiceDocument = JsonDocument.Parse(choiceJson)) {
+                    JsonElement choiceRoot = choiceDocument.RootElement;
+                    AssertEqual("second.node", choiceRoot.GetProperty("state").GetProperty("currentNodeName").GetString(), "Runtime CLI choice current node");
+                    AssertEqual(2, choiceRoot.GetProperty("state").GetProperty("path").GetArrayLength(), "Runtime CLI choice path count");
+                }
+
+                File.WriteAllText(choiceStatePath, choiceJson, Encoding.UTF8);
+                string continueJson = RunCliForOutput(new[] { "runtime-project", directory, "--state", choiceStatePath, "--continue" });
+                using JsonDocument continueDocument = JsonDocument.Parse(continueJson);
+                JsonElement continueRoot = continueDocument.RootElement;
+                AssertEqual("end.node", continueRoot.GetProperty("state").GetProperty("currentNodeName").GetString(), "Runtime CLI continue current node");
+                AssertEqual(3, continueRoot.GetProperty("state").GetProperty("path").GetArrayLength(), "Runtime CLI continue path count");
+            } finally {
+                Directory.Delete(directory, true);
+            }
+        }
+
     }
 
 }

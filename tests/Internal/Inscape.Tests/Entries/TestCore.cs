@@ -34,6 +34,7 @@ namespace Inscape.Tests {
                 ("language server stdio session serves project requests", LanguageServerStdioSessionServesProjectRequests),
                 ("narrative runtime consumes compiler graph", NarrativeRuntimeConsumesCompilerGraph),
                 ("cli runtime-project emits runtime state", CliRuntimeProjectEmitsRuntimeState),
+                ("cli runtime-project steps restored state", CliRuntimeProjectStepsRestoredState),
                 ("tool config resolves host bridge path", ToolConfigResolvesHostBridgePath),
                 ("tool config resolves node map path", ToolConfigResolvesNodeMapPath),
                 ("host schema event reader reports schema events", HostSchemaEventReaderReportsSchemaEvents),

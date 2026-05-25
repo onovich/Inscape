@@ -91,6 +91,11 @@ const server = http.createServer(async (request, response) => {
     return;
   }
 
+  if (request.method === "POST" && requestUrl.pathname === "/api/runtime-action") {
+    await handleRuntimeActionRequest(request, response);
+    return;
+  }
+
   if (request.method === "POST" && requestUrl.pathname === "/api/line-map-refresh") {
     await handleLineMapRefreshRequest(request, response);
     return;
@@ -333,6 +338,36 @@ async function handleRuntimeStateRequest(request, response) {
   }
 }
 
+async function handleRuntimeActionRequest(request, response) {
+  try {
+    const body = await readRequestBody(request);
+    const payload = JSON.parse(body || "{}");
+    const scriptText = typeof payload.scriptText === "string"
+      ? payload.scriptText
+      : "";
+    const workspace = normalizeWorkspacePayload(payload.workspace);
+    const runtimeState = payload.runtimeState && typeof payload.runtimeState === "object"
+      ? payload.runtimeState
+      : null;
+    const action = payload.action && typeof payload.action === "object"
+      ? payload.action
+      : {};
+
+    const runtimePayload = await stepRuntimeStateForScriptText(scriptText, workspace, runtimeState, action);
+    response.writeHead(200, {
+      "Content-Type": "application/json; charset=utf-8",
+    });
+    response.end(JSON.stringify(runtimePayload));
+  } catch (error) {
+    response.writeHead(500, {
+      "Content-Type": "application/json; charset=utf-8",
+    });
+    response.end(JSON.stringify({
+      error: error instanceof Error ? error.message : String(error),
+    }));
+  }
+}
+
 async function handleLineMapRefreshRequest(request, response) {
   try {
     const body = await readRequestBody(request);
@@ -431,6 +466,36 @@ async function getRuntimeStateForScriptText(scriptText, workspace) {
       "runtime-project",
       tempRoot,
     ], "CLI runtime project snapshot");
+    return compactRuntimeStatePayload(relativizeProjectSourcePaths(JSON.parse(result.stdout), tempRoot));
+  });
+}
+
+async function stepRuntimeStateForScriptText(scriptText, workspace, runtimeState, action) {
+  return withTemporaryWorkspace(workspace, scriptText, async ({ tempRoot }) => {
+    const statePath = path.join(tempRoot, "inscape.runtime-state.json");
+    const cliArgs = [
+      "runtime-project",
+      tempRoot,
+    ];
+
+    if (runtimeState) {
+      await fsp.writeFile(statePath, JSON.stringify(runtimeState, null, 2), "utf8");
+      cliArgs.push("--state", statePath);
+    }
+
+    if (action.type === "continue") {
+      cliArgs.push("--continue");
+    } else if (action.type === "choose") {
+      cliArgs.push(
+        "--choose",
+        String(Number(action.groupIndex || 0)),
+        String(Number(action.optionIndex || 0))
+      );
+    } else {
+      throw new Error("Runtime action requires type `continue` or `choose`.");
+    }
+
+    const result = await runCliCommand(cliArgs, "CLI runtime project action");
     return compactRuntimeStatePayload(relativizeProjectSourcePaths(JSON.parse(result.stdout), tempRoot));
   });
 }

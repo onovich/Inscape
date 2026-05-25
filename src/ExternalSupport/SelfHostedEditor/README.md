@@ -52,7 +52,7 @@ The current shell is intentionally small, but it now includes a first Monaco-bac
 - Dev-hosted outline bridge: the sidebar outline now tries `Inscape.LanguageServer --document-symbols-file` and supports click-to-reveal navigation.
 - Monaco rename bridge: node titles and jump targets now support the editor rename flow, then apply a controlled whole-document patch that updates `# title` lines and matching `-> title` references.
 - Dev-hosted story graph bridge: the Graph view now requests compact project graph data from the preview server, which runs the existing CLI `compile-project` flow and returns real Compiler nodes and edges. Choice and default jump ports are built from that graph output; dragging an output port still patches the source `-> target` text.
-- Dev-hosted runtime bridge: the workbench now requests a Runtime snapshot from `/api/runtime-state`, which runs the existing CLI `runtime-project` flow over the temporary workspace and reports the entry node in the session state. This is the first bridge toward a real Player path; Preview progression is still presenter state.
+- Dev-hosted runtime bridge: the workbench now requests a Runtime snapshot from `/api/runtime-state`, which runs the existing CLI `runtime-project` flow over the temporary workspace and reports the entry node in the session state. `/api/runtime-action` can restore a previous Runtime state and step it through `continue` or `choose` via the same CLI contract. This is the first bridge toward a real Player path; Preview progression is still presenter state.
 
 The draft extraction model is UI-only. It exists to make the shell useful while the real `Tooling` / `LanguageServer` / `Runtime` contracts are wired in.
 
@@ -91,7 +91,7 @@ Known prototype layers that should be replaced next:
 - Localization editing is still a session-local draft table and CSV download. It should consume real CSV data and `LocalizationAlignmentReportModel.Presenter`.
 - Preview is not yet Runtime Player. It should eventually consume `Runtime` state rather than only front-end preview extraction.
 - Preview content now starts from Compiler project graph data, but its `Static` / `Flow` progression is still presenter state. The next replacement should move player progression, current node, and choice selection onto `Runtime` state.
-- The Runtime bridge currently exposes only a started snapshot, not a long-lived session with Choose / Continue / Restore commands.
+- The Runtime bridge can now step restored snapshots through `continue` and `choose`, but Preview does not yet consume those actions as its Player state.
 
 ## Development
 

@@ -70,8 +70,23 @@ namespace Inscape.Cli {
 
                     NarrativeRuntime runtime = new NarrativeRuntime();
                     runtime.LoadGraph(result.Graph);
-                    if (!runtime.Start(result.EntryNodeName)) {
-                        Console.Error.WriteLine("Runtime could not start project entry: " + result.EntryNodeName);
+
+                    string? statePath = CliCore.ReadOption(args, "--state");
+                    if (string.IsNullOrWhiteSpace(statePath)) {
+                        if (!runtime.Start(result.EntryNodeName)) {
+                            Console.Error.WriteLine("Runtime could not start project entry: " + result.EntryNodeName);
+                            return 1;
+                        }
+                    } else if (!TryReadRuntimeState(statePath, jsonOptions, out NarrativeRuntimeStateModel runtimeState, out string? stateError)) {
+                        Console.Error.WriteLine(stateError);
+                        return 1;
+                    } else if (!runtime.Restore(runtimeState)) {
+                        Console.Error.WriteLine("Runtime could not restore state for node: " + runtimeState.CurrentNodeName);
+                        return 1;
+                    }
+
+                    if (!ApplyRuntimeAction(runtime, args, out string? runtimeActionError)) {
+                        Console.Error.WriteLine(runtimeActionError);
                         return 1;
                     }
 
@@ -98,6 +113,88 @@ namespace Inscape.Cli {
                     CliCommandProvider.PrintUsage();
                     return 1;
             }
+        }
+
+        static bool ApplyRuntimeAction(NarrativeRuntime runtime, string[] args, out string? errorMessage) {
+            errorMessage = null;
+            bool shouldContinue = HasOption(args, "--continue");
+            int chooseIndex = IndexOf(args, "--choose");
+
+            if (shouldContinue && chooseIndex >= 0) {
+                errorMessage = "Runtime action can use either --continue or --choose, not both.";
+                return false;
+            }
+
+            if (shouldContinue) {
+                if (!runtime.Continue()) {
+                    errorMessage = "Runtime could not continue from node: " + runtime.State.CurrentNodeName;
+                    return false;
+                }
+
+                return true;
+            }
+
+            if (chooseIndex >= 0) {
+                if (chooseIndex + 2 >= args.Length
+                    || !int.TryParse(args[chooseIndex + 1], System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out int groupIndex)
+                    || !int.TryParse(args[chooseIndex + 2], System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out int optionIndex)) {
+                    errorMessage = "Runtime --choose requires numeric group and option indexes.";
+                    return false;
+                }
+
+                if (!runtime.Choose(groupIndex, optionIndex)) {
+                    errorMessage = "Runtime could not choose option " + groupIndex + ":" + optionIndex + " from node: " + runtime.State.CurrentNodeName;
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        static bool TryReadRuntimeState(string statePath,
+                                        JsonSerializerOptions jsonOptions,
+                                        out NarrativeRuntimeStateModel runtimeState,
+                                        out string? errorMessage) {
+            runtimeState = new NarrativeRuntimeStateModel();
+            errorMessage = null;
+            string fullPath = Path.GetFullPath(statePath);
+            if (!File.Exists(fullPath)) {
+                errorMessage = "Runtime state file not found: " + fullPath;
+                return false;
+            }
+
+            try {
+                using JsonDocument document = JsonDocument.Parse(File.ReadAllText(fullPath));
+                JsonElement root = document.RootElement;
+                JsonElement stateElement = root.TryGetProperty("state", out JsonElement nestedState)
+                    ? nestedState
+                    : root;
+                NarrativeRuntimeStateModel? parsedState = stateElement.Deserialize<NarrativeRuntimeStateModel>(jsonOptions);
+                if (parsedState == null) {
+                    errorMessage = "Runtime state file did not contain a state object: " + fullPath;
+                    return false;
+                }
+
+                runtimeState = parsedState;
+                return true;
+            } catch (JsonException ex) {
+                errorMessage = "Runtime state file is not valid JSON: " + ex.Message;
+                return false;
+            }
+        }
+
+        static bool HasOption(string[] args, string optionName) {
+            return IndexOf(args, optionName) >= 0;
+        }
+
+        static int IndexOf(string[] args, string optionName) {
+            for (int i = 0; i < args.Length; i += 1) {
+                if (args[i] == optionName) {
+                    return i;
+                }
+            }
+
+            return -1;
         }
 
         static int RunHostSchemaInspection(string rootPath, string[] args, string? outputPath, JsonSerializerOptions jsonOptions) {

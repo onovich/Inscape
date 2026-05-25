@@ -37,4 +37,37 @@ export class SelfHostedEditorRuntimeBridge {
       };
     }
   }
+
+  async stepRuntimeSnapshot(scriptText, runtimeState, action) {
+    try {
+      const workspace = this.workspaceContextProvider?.() || null;
+      const response = await fetch("/api/runtime-action", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action,
+          runtimeState,
+          scriptText,
+          workspace,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Runtime action bridge returned HTTP ${response.status}.`);
+      }
+
+      return {
+        provider: "runtime-project",
+        snapshot: await response.json(),
+      };
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : String(error),
+        provider: "unavailable",
+        snapshot: null,
+      };
+    }
+  }
 }

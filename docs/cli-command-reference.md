@@ -105,6 +105,7 @@ dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- diagnose
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- compile-project samples -o artifacts\samples-project.json
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- preview-project samples --entry court.cross_exam.loop -o artifacts\samples-project.html
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- runtime-project samples -o artifacts\runtime-state.json
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- runtime-project samples --state artifacts\runtime-state.json --choose 0 0 -o artifacts\runtime-state.next.json
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- extract-l10n-project samples -o artifacts\l10n.csv
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- update-l10n-project samples --from artifacts\old-l10n.csv -o artifacts\l10n.updated.csv
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- audit-l10n-alignment-project samples --from artifacts\old-l10n.csv --format text
@@ -114,7 +115,7 @@ dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- audit-l1
 
 `audit-l10n-alignment-project` 会读取当前项目、旧 CSV 和 stable node map，输出 `inscape.localization-alignment` 审查报告。`--format json` 适合机器消费；`--format text` 会输出人工审查友好的摘要，列出 `kept`、`new`、`changed`、`removed`、`conflict`、`stale` 项及候选译文原因。VSCode 当前已接上最小入口：`Inscape: Review Localization Alignment` 会提示选择旧 CSV、输出格式和目标文件，然后直接打开生成的报告；如果选择 json，还可以直接弹出审查项列表并跳回源位置。
 
-`runtime-project` 会复用项目编译结果，把 Compiler graph 交给 `NarrativeRuntime`，并从项目入口 `Start` 后输出 `inscape.runtime-state` JSON。该命令面向自研编辑器 Player / Preview 运行态接入，不解析 `.inscape` 源文本。
+`runtime-project` 会复用项目编译结果，把 Compiler graph 交给 `NarrativeRuntime`，并从项目入口 `Start` 后输出 `inscape.runtime-state` JSON。传入 `--state runtime-state.json` 时会先恢复上一帧状态，再执行 `--continue` 或 `--choose group option`，并输出推进后的新 snapshot。该命令面向自研编辑器 Player / Preview 运行态接入，不解析 `.inscape` 源文本。
 
 ## UnitySample 实验样例命令
 
