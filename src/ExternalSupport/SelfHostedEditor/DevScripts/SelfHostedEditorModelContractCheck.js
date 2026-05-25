@@ -198,12 +198,20 @@ const storyGraph = LanguageServerStoryGraphModelMapper.mapProjectGraph({
           },
           lines: [
             {
+              kind: "Metadata",
+              text: "@scene court",
+              source: {
+                sourcePath: "samples/court-loop.inscape",
+                line: 2,
+              },
+            },
+            {
               kind: "Dialogue",
               speaker: "Narrator",
               text: "Review the evidence.",
               source: {
                 sourcePath: "samples/court-loop.inscape",
-                line: 2,
+                line: 3,
               },
             },
           ],
@@ -233,7 +241,17 @@ const storyGraph = LanguageServerStoryGraphModelMapper.mapProjectGraph({
             sourcePath: "samples/court-loop.inscape",
             line: 8,
           },
-          lines: [],
+          lines: [
+            {
+              kind: "Dialogue",
+              speaker: "Witness",
+              text: "I saw the clock stop.",
+              source: {
+                sourcePath: "samples/court-loop.inscape",
+                line: 9,
+              },
+            },
+          ],
           choices: [],
         },
       ],
@@ -268,8 +286,9 @@ assertEqual(storyGraph.edges.length, 2, "story graph edge count");
 assertEqual(storyGraph.nodes[0].choices[0].target, "Witness", "story graph choice target");
 assertEqual(storyGraph.nodes[1].jumps[0].target, "Opening", "story graph jump target");
 assertEqual(storyGraph.nodes[0].incomingReferenceCount, 1, "story graph incoming count");
-assertEqual(storyGraph.nodes[0].previewLines[0].kind, "dialogue", "story graph preview line kind");
-assertEqual(storyGraph.nodes[0].previewLines[0].speaker, "Narrator", "story graph preview line speaker");
+assertEqual(storyGraph.nodes[0].previewLines[0].kind, "metadata", "story graph preview metadata line kind");
+assertEqual(storyGraph.nodes[0].previewLines[1].kind, "dialogue", "story graph preview line kind");
+assertEqual(storyGraph.nodes[0].previewLines[1].speaker, "Narrator", "story graph preview line speaker");
 assertEqual(storyGraph.nodes[0].previewChoices[0].prompt, "Choose action", "story graph preview choice prompt");
 assertEqual(storyGraph.nodes[0].previewChoices[0].options[0].target, "Witness", "story graph preview choice target");
 assertEqual(storyGraph.nodes[1].previewChoices[0].options[0].text, "continue", "story graph default jump preview option");
@@ -520,6 +539,17 @@ function findElementByClass(element, className) {
   return null;
 }
 
+function getTextContent(element) {
+  if (!element) {
+    return "";
+  }
+
+  return [
+    element.textContent || "",
+    ...(element.children || []).map((child) => getTextContent(child)),
+  ].join("");
+}
+
 function collectMatchingElements(element, selector, results) {
   if (matchesSelector(element, selector)) {
     results.push(element);
@@ -551,12 +581,31 @@ previewController.onSourceLineSelected((lineNumber) => {
   previewSelectedLine = lineNumber;
 });
 previewController.render("", 2, storyGraph);
-assertEqual(previewController.documentModel.nodes[0].lines[0].speaker, "Narrator", "preview should consume compiler story graph lines");
+assertEqual(previewController.documentModel.nodes[0].lines[1].speaker, "Narrator", "preview should consume compiler story graph lines");
 assertEqual(previewController.documentModel.nodes[0].choices[0].prompt, "Choose action", "preview should consume compiler story graph choices");
+assertEqual(findElementByClass(previewElement, "story-metadata-tag")?.textContent, "scene court", "preview should render compiler metadata tags");
+assertIncludesText(getTextContent(previewElement), "Review the evidence.");
 assertEqual(findElementByClass(previewElement, "choice-prompt")?.textContent, "Choose action", "preview should render compiler choice prompt");
 findElementByClass(previewElement, "choice-button")?.click();
 assertEqual(findElementByClass(previewElement, "story-title")?.textContent, "Witness", "preview choice click should navigate the reading pane to the target node");
+assertIncludesText(getTextContent(previewElement), "I saw the clock stop.");
 assertEqual(previewSelectedLine, 8, "preview choice click should still reveal the target source line in the editor");
+const degradedStoryGraph = {
+  ...storyGraph,
+  nodes: storyGraph.nodes.map((node) => ({
+    ...node,
+    previewLines: [],
+  })),
+};
+previewController.render(`# Opening
+@scene fallback
+Narrator: Fallback body.
+? Choose action
+- Question witness -> Witness
+
+# Witness
+Witness: Fallback witness body.`, 2, degradedStoryGraph);
+assertIncludesText(getTextContent(previewElement), "Fallback body.");
 const editorSurfaceController = new EditorSurfaceController(new FakeElement("div"), hintRailElement, createFakeMonaco(identityDocumentModel));
 editorSurfaceController.renderAuthoringState(`# Start
 旁白：Hello

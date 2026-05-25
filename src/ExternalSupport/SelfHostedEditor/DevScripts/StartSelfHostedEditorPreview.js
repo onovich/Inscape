@@ -23,6 +23,18 @@ const cliProjectPath = path.join(
   "Inscape.Cli",
   "Inscape.Cli.csproj"
 );
+const cliBuildRoot = path.join(
+  repoRoot,
+  "src",
+  "Internal",
+  "Cli",
+  "Inscape.Cli",
+  "bin",
+  "Debug",
+  "net10.0"
+);
+const cliExecutablePath = path.join(cliBuildRoot, "Inscape.Cli.exe");
+const cliAssemblyPath = path.join(cliBuildRoot, "Inscape.Cli.dll");
 const languageServerBuildRoot = path.join(
   repoRoot,
   "src",
@@ -35,6 +47,7 @@ const languageServerBuildRoot = path.join(
 const languageServerExecutablePath = path.join(languageServerBuildRoot, "Inscape.LanguageServer.exe");
 const languageServerAssemblyPath = path.join(languageServerBuildRoot, "Inscape.LanguageServer.dll");
 const port = Number(process.env.PORT || 5178);
+const bridgeCommandTimeoutMilliseconds = 30000;
 
 const mimeTypes = new Map([
   [".css", "text/css; charset=utf-8"],
@@ -870,10 +883,20 @@ function runLanguageServerProjectCompletions(rootPath) {
 function runLanguageServerCommand(languageServerArgs, label) {
   return new Promise((resolve, reject) => {
     const invocation = resolveLanguageServerInvocation(languageServerArgs);
+    let settled = false;
     const process = childProcess.spawn(invocation.command, invocation.args, {
       cwd: repoRoot,
       windowsHide: true,
     });
+    const timeout = setTimeout(() => {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      process.kill();
+      reject(new Error(`${label} timed out after ${bridgeCommandTimeoutMilliseconds}ms.`));
+    }, bridgeCommandTimeoutMilliseconds);
 
     let stdout = "";
     let stderr = "";
@@ -886,8 +909,22 @@ function runLanguageServerCommand(languageServerArgs, label) {
       stderr += String(chunk);
     });
 
-    process.on("error", reject);
+    process.on("error", (error) => {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      clearTimeout(timeout);
+      reject(error);
+    });
     process.on("exit", (code) => {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      clearTimeout(timeout);
       if (code !== 0) {
         reject(new Error(stderr.trim() || `${label} exited with code ${code}.`));
         return;
@@ -903,17 +940,21 @@ function runLanguageServerCommand(languageServerArgs, label) {
 
 function runCliCommand(cliArgs, label) {
   return new Promise((resolve, reject) => {
-    const process = childProcess.spawn("dotnet", [
-      "run",
-      "--project",
-      cliProjectPath,
-      "--no-restore",
-      "--",
-      ...cliArgs,
-    ], {
+    let settled = false;
+    const invocation = resolveCliInvocation(cliArgs);
+    const process = childProcess.spawn(invocation.command, invocation.args, {
       cwd: repoRoot,
       windowsHide: true,
     });
+    const timeout = setTimeout(() => {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      process.kill();
+      reject(new Error(`${label} timed out after ${bridgeCommandTimeoutMilliseconds}ms.`));
+    }, bridgeCommandTimeoutMilliseconds);
 
     let stdout = "";
     let stderr = "";
@@ -926,8 +967,22 @@ function runCliCommand(cliArgs, label) {
       stderr += String(chunk);
     });
 
-    process.on("error", reject);
+    process.on("error", (error) => {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      clearTimeout(timeout);
+      reject(error);
+    });
     process.on("exit", (code) => {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      clearTimeout(timeout);
       if (code !== 0) {
         reject(new Error(stderr.trim() || `${label} exited with code ${code}.`));
         return;
@@ -939,6 +994,27 @@ function runCliCommand(cliArgs, label) {
       });
     });
   });
+}
+
+function resolveCliInvocation(cliArgs) {
+  if (fs.existsSync(cliExecutablePath)) {
+    return {
+      command: cliExecutablePath,
+      args: cliArgs,
+    };
+  }
+
+  if (fs.existsSync(cliAssemblyPath)) {
+    return {
+      command: "dotnet",
+      args: ["exec", cliAssemblyPath, ...cliArgs],
+    };
+  }
+
+  return {
+    command: "dotnet",
+    args: ["run", "--project", cliProjectPath, "--no-restore", "--", ...cliArgs],
+  };
 }
 
 function resolveLanguageServerInvocation(languageServerArgs) {

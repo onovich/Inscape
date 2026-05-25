@@ -27,8 +27,9 @@ export class PreviewPanelController {
     this.scriptText = scriptText;
     this.activeLineNumber = activeLineNumber;
     this.storyGraphModel = storyGraphModel;
-    this.documentModel = this.buildDocumentModelFromStoryGraph(storyGraphModel)
-      || ScriptDocumentModelBuilder.build(scriptText);
+    const draftDocumentModel = ScriptDocumentModelBuilder.build(scriptText);
+    this.documentModel = this.buildDocumentModelFromStoryGraph(storyGraphModel, draftDocumentModel)
+      || draftDocumentModel;
     const storyModel = this.buildPreviewModel(activeLineNumber);
     if (storyModel.nodeTitle !== this.currentNodeTitle) {
       this.flowVisibleLineCount = 0;
@@ -167,22 +168,29 @@ export class PreviewPanelController {
     return (this.documentModel?.nodes || []).find((node) => node.title === title) || null;
   }
 
-  buildDocumentModelFromStoryGraph(storyGraphModel) {
+  buildDocumentModelFromStoryGraph(storyGraphModel, fallbackDocumentModel = null) {
     if (storyGraphModel?.provider !== "compiler-project" || !Array.isArray(storyGraphModel.nodes)) {
       return null;
     }
 
     const activeNodes = storyGraphModel.nodes.filter((node) => node.isInActiveDocument);
     const sourceNodes = activeNodes.length > 0 ? activeNodes : storyGraphModel.nodes;
+    const fallbackNodesByTitle = new Map((fallbackDocumentModel?.nodes || [])
+      .map((node) => [node.title, node]));
     const nodes = sourceNodes
-      .map((node) => ({
-        choices: Array.isArray(node.previewChoices) ? node.previewChoices : [],
-        endLine: Number(node.endLine || node.sourceLine || 1),
-        lines: Array.isArray(node.previewLines) ? node.previewLines : [],
-        sourceLine: Number(node.sourceLine || 1),
-        sourcePath: node.sourcePath || "",
-        title: node.title || "Untitled Node",
-      }))
+      .map((node) => {
+        const title = node.title || "Untitled Node";
+        const fallbackNode = fallbackNodesByTitle.get(title) || null;
+        const previewLines = Array.isArray(node.previewLines) ? node.previewLines : [];
+        return {
+          choices: Array.isArray(node.previewChoices) ? node.previewChoices : [],
+          endLine: Number(node.endLine || fallbackNode?.endLine || node.sourceLine || 1),
+          lines: previewLines.length > 0 ? previewLines : fallbackNode?.lines || [],
+          sourceLine: Number(node.sourceLine || fallbackNode?.sourceLine || 1),
+          sourcePath: node.sourcePath || fallbackNode?.sourcePath || "",
+          title,
+        };
+      })
       .filter((node) => node.sourceLine > 0);
 
     if (nodes.length === 0) {
