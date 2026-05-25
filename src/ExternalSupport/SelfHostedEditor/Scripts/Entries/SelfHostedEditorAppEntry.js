@@ -27,6 +27,7 @@ import { ScriptNodeRenamePatchBuilder } from "../ProjectWorkspace/Models/ScriptN
 import { SelfHostedEditorRuntimeBridge } from "../Runtime/Bridges/SelfHostedEditorRuntimeBridge.js";
 import { SelfHostedEditorDocumentSymbolBridge } from "../LanguageServer/Bridges/SelfHostedEditorDocumentSymbolBridge.js";
 import { StoryGraphPreviewController } from "../StoryGraph/Controllers/StoryGraphPreviewController.js";
+import { WorkspaceLoadingStateController } from "../WorkspaceLayout/Controllers/WorkspaceLoadingStateController.js";
 import { WorkspaceLayoutController } from "../WorkspaceLayout/Controllers/WorkspaceLayoutController.js";
 
 const defaultSamplePath = "samples/court-loop.inscape";
@@ -56,6 +57,30 @@ async function main() {
   const workspaceStatusElement = document.querySelector(".workspace-status");
 
   const layoutController = new WorkspaceLayoutController(shell);
+  const loadingController = new WorkspaceLoadingStateController({
+    diagnostics: diagnosticsElement,
+    editor: editorFrameElement,
+    graph: graphPanelElement,
+    localization: localizationPanelElement,
+    outline: outlinePanelElement,
+    preview: previewElement,
+    runtime: runtimePanelElement,
+    shell,
+    status: workspaceStatusElement,
+    summary: workspaceSummaryElement,
+  });
+  loadingController.setManyLoading({
+    diagnostics: "Listening for problems",
+    editor: "Opening editor",
+    graph: "Preparing map",
+    localization: "Preparing table",
+    outline: "Preparing outline",
+    preview: "Preparing reading pane",
+    runtime: "Preparing runtime",
+    shell: "Opening workspace",
+    status: "Loading sample",
+    summary: "Preparing summary",
+  });
   setupSidebarPanelToggles(sidebarElement);
   const diagnosticsController = new EditorDiagnosticsController(diagnosticsElement);
   const editorStatusController = new EditorStatusController(statusBarElement);
@@ -72,6 +97,7 @@ async function main() {
   );
   const storyGraphController = new StoryGraphPreviewController(graphPanelElement);
   const editorController = await EditorSurfaceController.create(editorElement, hintRailElement);
+  loadingController.setIdle("editor");
   editorController.setSemanticHighlightEnabled(syntaxToggleElement?.getAttribute("aria-pressed") !== "false");
   const documentSymbolBridge = new SelfHostedEditorDocumentSymbolBridge();
   const completionBridge = new SelfHostedEditorCompletionBridge();
@@ -153,6 +179,7 @@ async function main() {
   editorController.setText(defaultSample.text);
   workspaceController.setSampleWorkspace(defaultSample.text, defaultSample.relativePath);
   await renderWorkbench(editorController.getText(), editorController.getActiveLineNumber());
+  loadingController.setManyIdle(["shell", "status"]);
   renderWorkspaceFiles();
   renderWorkspaceSession();
 
@@ -399,6 +426,17 @@ async function main() {
 
   async function renderWorkbench(scriptText, activeLineNumber = 1) {
     const renderVersion = ++diagnosticsRenderVersion;
+    loadingController.setManyLoading({
+      diagnostics: "Checking problems",
+      editor: "Syncing line ids",
+      graph: "Mapping story",
+      localization: "Gathering lines",
+      outline: "Reading outline",
+      preview: "Reading compiler graph",
+      runtime: "Starting runtime",
+      status: "Refreshing workspace",
+      summary: "Counting quietly",
+    });
     const lineIdentitySnapshot = await lineMapBridge.refreshLineMap(scriptText);
     if (renderVersion !== diagnosticsRenderVersion) {
       return;
@@ -408,7 +446,9 @@ async function main() {
       ? ScriptLineIdentityModelBuilder.build(lineIdentitySnapshot.lineMap, workspaceController.getState().filePath)
       : null;
     const documentModel = editorController.renderAuthoringState(scriptText, latestLineIdentityProvider);
+    loadingController.setIdle("editor");
     localizationController.render(scriptText);
+    loadingController.setIdle("localization");
     const storyGraphSnapshot = await storyGraphBridge.getStoryGraph(scriptText);
     if (renderVersion !== diagnosticsRenderVersion) {
       return;
@@ -418,15 +458,19 @@ async function main() {
     if (renderVersion !== diagnosticsRenderVersion) {
       return;
     }
+    loadingController.setIdle("runtime");
 
     previewController.render(scriptText, activeLineNumber, storyGraphSnapshot.graph);
     storyGraphController.render(storyGraphSnapshot.graph, scriptText);
+    loadingController.setManyIdle(["preview", "graph"]);
     const diagnosticSnapshot = await diagnosticsBridge.getDiagnostics(scriptText);
     latestDiagnosticSnapshot = diagnosticSnapshot;
+    loadingController.setIdle("diagnostics");
     const symbolSnapshot = await documentSymbolBridge.getDocumentSymbols(scriptText);
     if (renderVersion !== diagnosticsRenderVersion) {
       return;
     }
+    loadingController.setIdle("outline");
 
     diagnosticsController.render(diagnosticSnapshot);
     editorController.renderDiagnostics(diagnosticSnapshot);
@@ -435,6 +479,8 @@ async function main() {
     documentOutlineController.render(symbolSnapshot, documentModel);
     documentOutlineController.setActiveLine(activeLineNumber);
     renderWorkspaceSummary(scriptText, diagnosticSnapshot.diagnostics.length);
+    loadingController.setIdle("summary");
+    loadingController.setIdle("status");
     renderWorkspaceSession();
   }
 
@@ -581,10 +627,14 @@ main().catch((error) => {
   const editorElement = document.querySelector(".script-editor");
   if (workspaceStatusElement) {
     workspaceStatusElement.textContent = "Default .inscape sample failed to load";
+    workspaceStatusElement.dataset.loadingState = "error";
+    workspaceStatusElement.dataset.loadingLabel = "Sample failed";
   }
 
   if (editorElement) {
     editorElement.textContent = error instanceof Error ? error.message : String(error);
+    editorElement.dataset.loadingState = "error";
+    editorElement.dataset.loadingLabel = "Could not open workspace";
   }
 });
 

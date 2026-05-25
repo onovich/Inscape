@@ -7,13 +7,13 @@
     <link rel="stylesheet" href="/Resources/Styles/SelfHostedEditorWorkbench.css">
   </head>
   <body>
-    <main class="app-shell" data-layout="write-preview">
+    <main class="app-shell" data-layout="write-preview" data-loading-state="loading" data-loading-label="Opening workspace">
       <aside class="app-sidebar">
         <div class="sidebar-brand">
           <span class="brand-mark" aria-hidden="true">I</span>
           <div class="brand-copy">
             <strong>Inscape</strong>
-            <span class="workspace-status">Loading samples/court-loop.inscape</span>
+            <span class="workspace-status" data-loading-state="loading" data-loading-label="Loading sample">Loading samples/court-loop.inscape</span>
           </div>
         </div>
         <div class="project-actions">
@@ -109,7 +109,7 @@
         </section>
 
         <footer class="status-bar">
-          <div class="workspace-summary" aria-label="Workspace summary"></div>
+          <div class="workspace-summary" aria-label="Workspace summary" data-loading-state="loading" data-loading-label="Preparing summary"></div>
           <div class="status-bar-diagnostics">
             <button class="status-bar-nav-button" type="button" data-diagnostic-nav="previous" aria-label="Previous diagnostic">&lt;</button>
             <button class="status-bar-nav-button" type="button" data-diagnostic-nav="next" aria-label="Next diagnostic">&gt;</button>

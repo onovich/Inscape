@@ -33,6 +33,7 @@ The current shell is intentionally small, but it now includes a first Monaco-bac
 - Line identity hover text is only rendered when Tooling provides an available `line_...` id. Untracked rows such as metadata and jumps stay quiet, and the adapter accepts both camelCase and PascalCase line-map JSON fields.
 - Line hint positions are locked to Monaco's own content coordinate system. The hint rail has no independent vertical padding, and each hint row uses the editor's runtime line height so wrapped lines keep their following line numbers aligned with the next logical line start.
 - Workspace summary chips for node count, localization rows, draft translations, and diagnostics.
+- Quiet loading states now cover the workbench shell, Monaco editor setup, Preview, Graph, localization table, diagnostics, outline, Runtime, and workspace summary while local services refresh.
 - Monaco-backed writing surface with a quieter, more client-like shell than the initial textarea prototype.
 - Script semantic styling can be toggled from the top bar. When enabled, titles, narration, dialogue, prompts, choices, and the active block receive quiet text styling and soft block emphasis, and the toggle itself shows its pressed state.
 - Dev-hosted diagnostics bridge: the workbench now tries `Inscape.LanguageServer --diagnose-file` through the local preview server, then falls back to the UI-only draft diagnostics model if the host bridge is unavailable.
@@ -44,7 +45,7 @@ The current shell is intentionally small, but it now includes a first Monaco-bac
 - Main-view reset in progress: the default editor + preview split is being rebuilt around a calmer Inky-like split and Notion-like reading hierarchy, with thinner chrome, quieter sidebar metadata, and hover-first auxiliary text.
 - Preview speaker display is no longer duplicated on hover; the reading pane keeps the inline speaker label as the single speaker cue.
 - Preview reading mode can switch between `Static` and `Flow`. Static keeps the full active block visible; Flow starts from the title, advances one line per click, then reveals the full choice group at once.
-- Preview now consumes the served Compiler project graph in the normal dev-host path. Its visible lines, metadata, choice prompts, choice options, and default jump continue actions are mapped from `/api/story-graph` output; the UI-only script model remains only as an offline fallback when the Compiler bridge is unavailable.
+- Preview now consumes the served Compiler project graph in the normal dev-host path. Its visible lines, metadata, choice prompts, choice options, and default jump continue actions are mapped from `/api/story-graph` output. The UI-only script model remains only as an offline fallback when the Compiler bridge is unavailable; if a compiler-project graph is returned but a node loses `previewLines`, Preview reports a compiler graph contract error instead of filling the body from the draft model.
 - Dev-hosted hover bridge: node titles and jump targets in the Monaco surface now try `Inscape.LanguageServer --hover-file` through the local preview server.
 - Dev-hosted definition and references bridges: the Monaco surface now tries `Inscape.LanguageServer --definition-file` and `--references-file` for node titles and jump targets in the current script.
 - Ctrl/Cmd-click definition navigation explicitly reveals the resolved source line in the editor and updates the preview block, instead of relying only on Monaco same-model goto behavior.
@@ -91,7 +92,7 @@ Known prototype layers that should be replaced next:
 - Graph positions are session memory only. They need a layout sidecar before becoming persistent product behavior.
 - Localization editing is still a session-local draft table and CSV download. It should consume real CSV data and `LocalizationAlignmentReportModel.Presenter`.
 - Preview is not yet Runtime Player. It should eventually consume `Runtime` state rather than only front-end preview extraction.
-- Preview content now starts from Compiler project graph data, but its `Static` / `Flow` progression is still presenter state. The next replacement should move player progression, current node, and choice selection onto `Runtime` state.
+- Preview content now starts from Compiler project graph data, but its `Static` / `Flow` progression is still presenter state. A returned compiler-project graph must keep `previewLines` intact for every node that has compiler lines; malformed graph data is an explicit Preview error, not a draft-content fallback. The next replacement should move player progression, current node, and choice selection onto `Runtime` state.
 - The Runtime bridge can now step restored snapshots through `continue` and `choose`, but Preview does not yet consume those actions as its Player state.
 
 ## Development

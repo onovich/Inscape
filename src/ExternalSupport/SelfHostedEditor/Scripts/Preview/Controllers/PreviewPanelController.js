@@ -28,8 +28,17 @@ export class PreviewPanelController {
     this.activeLineNumber = activeLineNumber;
     this.storyGraphModel = storyGraphModel;
     const draftDocumentModel = ScriptDocumentModelBuilder.build(scriptText);
-    this.documentModel = this.buildDocumentModelFromStoryGraph(storyGraphModel, draftDocumentModel)
-      || draftDocumentModel;
+    try {
+      this.documentModel = this.buildDocumentModelFromStoryGraph(storyGraphModel) || draftDocumentModel;
+    } catch (error) {
+      this.documentModel = null;
+      this.latestStoryModel = null;
+      this.currentNodeTitle = "";
+      this.renderContractError(error);
+      console.error("SelfHostedEditor preview contract error:", error);
+      return;
+    }
+
     const storyModel = this.buildPreviewModel(activeLineNumber);
     if (storyModel.nodeTitle !== this.currentNodeTitle) {
       this.flowVisibleLineCount = 0;
@@ -50,6 +59,26 @@ export class PreviewPanelController {
       this.createChoicesElement(shouldShowChoices ? storyModel.choices : [])
     );
     this.previewElement.dataset.previewMode = this.mode;
+    delete this.previewElement.dataset.previewState;
+  }
+
+  renderContractError(error) {
+    const errorElement = document.createElement("section");
+    errorElement.className = "story-preview-error";
+    errorElement.dataset.previewError = "compiler-graph-contract";
+
+    const title = document.createElement("h1");
+    title.className = "story-title";
+    title.textContent = "Preview data error";
+
+    const message = document.createElement("p");
+    message.className = "story-line";
+    message.textContent = error instanceof Error ? error.message : String(error);
+
+    errorElement.append(title, message);
+    this.previewElement.replaceChildren(errorElement);
+    this.previewElement.dataset.previewMode = this.mode;
+    this.previewElement.dataset.previewState = "error";
   }
 
   highlightSourceLine(lineNumber) {
@@ -168,33 +197,36 @@ export class PreviewPanelController {
     return (this.documentModel?.nodes || []).find((node) => node.title === title) || null;
   }
 
-  buildDocumentModelFromStoryGraph(storyGraphModel, fallbackDocumentModel = null) {
+  buildDocumentModelFromStoryGraph(storyGraphModel) {
     if (storyGraphModel?.provider !== "compiler-project" || !Array.isArray(storyGraphModel.nodes)) {
       return null;
     }
 
     const activeNodes = storyGraphModel.nodes.filter((node) => node.isInActiveDocument);
     const sourceNodes = activeNodes.length > 0 ? activeNodes : storyGraphModel.nodes;
-    const fallbackNodesByTitle = new Map((fallbackDocumentModel?.nodes || [])
-      .map((node) => [node.title, node]));
     const nodes = sourceNodes
-      .map((node) => {
+      .map((node, index) => {
         const title = node.title || "Untitled Node";
-        const fallbackNode = fallbackNodesByTitle.get(title) || null;
-        const previewLines = Array.isArray(node.previewLines) ? node.previewLines : [];
+        const previewLines = this.requireCompilerPreviewLines(node, index, title);
+        const sourceLine = Number(node.sourceLine || 0);
+        if (!Number.isFinite(sourceLine) || sourceLine <= 0) {
+          throw new Error(
+            `Compiler story graph contract violation: node "${title}" at graph index ${index} has no valid sourceLine.`
+          );
+        }
+
         return {
           choices: Array.isArray(node.previewChoices) ? node.previewChoices : [],
-          endLine: Number(node.endLine || fallbackNode?.endLine || node.sourceLine || 1),
-          lines: previewLines.length > 0 ? previewLines : fallbackNode?.lines || [],
-          sourceLine: Number(node.sourceLine || fallbackNode?.sourceLine || 1),
-          sourcePath: node.sourcePath || fallbackNode?.sourcePath || "",
+          endLine: this.getCompilerNodeEndLine(node, previewLines),
+          lines: previewLines,
+          sourceLine,
+          sourcePath: node.sourcePath || "",
           title,
         };
-      })
-      .filter((node) => node.sourceLine > 0);
+      });
 
     if (nodes.length === 0) {
-      return null;
+      throw new Error("Compiler story graph contract violation: compiler-project provider returned no preview nodes for the active document.");
     }
 
     return {
@@ -202,6 +234,53 @@ export class PreviewPanelController {
       nodes,
       title: nodes[0]?.title || "Untitled Node",
     };
+  }
+
+  requireCompilerPreviewLines(node, index, title) {
+    if (!Array.isArray(node.previewLines)) {
+      throw new Error(
+        `Compiler story graph contract violation: node "${title}" at graph index ${index} is missing the previewLines array.`
+      );
+    }
+
+    const compilerLineCount = Array.isArray(node.lines) ? node.lines.length : 0;
+    if (compilerLineCount > 0 && node.previewLines.length !== compilerLineCount) {
+      throw new Error(
+        `Compiler story graph contract violation: node "${title}" has ${compilerLineCount} compiler line(s) but ${node.previewLines.length} previewLines. Preview refuses to render draft fallback content because that would hide lost compiler data.`
+      );
+    }
+
+    for (const [lineIndex, line] of node.previewLines.entries()) {
+      if (Number(line?.sourceLine || 0) <= 0) {
+        throw new Error(
+          `Compiler story graph contract violation: node "${title}" previewLines[${lineIndex}] has no valid sourceLine.`
+        );
+      }
+    }
+
+    return node.previewLines;
+  }
+
+  getCompilerNodeEndLine(node, previewLines) {
+    const lineNumbers = [
+      Number(node.endLine || 0),
+      Number(node.sourceLine || 0),
+      ...previewLines.map((line) => Number(line?.sourceLine || 0)),
+      ...this.getCompilerChoiceLineNumbers(node.previewChoices),
+    ].filter((lineNumber) => Number.isFinite(lineNumber) && lineNumber > 0);
+    return Math.max(...lineNumbers, 1);
+  }
+
+  getCompilerChoiceLineNumbers(previewChoices) {
+    const lineNumbers = [];
+    for (const group of Array.isArray(previewChoices) ? previewChoices : []) {
+      lineNumbers.push(Number(group?.sourceLine || 0));
+      for (const option of Array.isArray(group?.options) ? group.options : []) {
+        lineNumbers.push(Number(option?.sourceLine || 0));
+      }
+    }
+
+    return lineNumbers;
   }
 
   createTitleElement(storyModel) {

@@ -367,6 +367,12 @@ function assertIncludesText(text, expected) {
   }
 }
 
+function assertNotIncludesText(text, unexpected) {
+  if (text.includes(unexpected)) {
+    throw new Error(`Expected text not to include: ${unexpected}`);
+  }
+}
+
 function createHoverModel(text) {
   const lines = text.split(/\r?\n/);
   return {
@@ -597,7 +603,13 @@ const degradedStoryGraph = {
     previewLines: [],
   })),
 };
-previewController.render(`# Opening
+const originalConsoleError = console.error;
+const previewContractErrors = [];
+console.error = (...args) => {
+  previewContractErrors.push(args.map((arg) => String(arg)).join(" "));
+};
+try {
+  previewController.render(`# Opening
 @scene fallback
 Narrator: Fallback body.
 ? Choose action
@@ -605,7 +617,14 @@ Narrator: Fallback body.
 
 # Witness
 Witness: Fallback witness body.`, 2, degradedStoryGraph);
-assertIncludesText(getTextContent(previewElement), "Fallback body.");
+} finally {
+  console.error = originalConsoleError;
+}
+assertIncludesText(getTextContent(previewElement), "Compiler story graph contract violation");
+assertIncludesText(getTextContent(previewElement), "previewLines");
+assertIncludesText(getTextContent(previewElement), "Opening");
+assertNotIncludesText(getTextContent(previewElement), "Fallback body.");
+assertIncludesText(previewContractErrors.join("\n"), "SelfHostedEditor preview contract error");
 const editorSurfaceController = new EditorSurfaceController(new FakeElement("div"), hintRailElement, createFakeMonaco(identityDocumentModel));
 editorSurfaceController.renderAuthoringState(`# Start
 旁白：Hello

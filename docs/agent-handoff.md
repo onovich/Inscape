@@ -26,11 +26,12 @@
 - Graph 视图已从固定宽板改为可平移 / 缩放视口：空白处拖拽移动画布，滚轮按指针位置缩放，左上角提供 zoom in / out / reset 控制。节点拖拽、连线预览和 SVG path 均已转为 graph-space 坐标，缩放后仍应可编辑。Graph 激活时根节点会标记当前 view，CSS 将主体区切到紧凑单面板布局，让画布吃满可用空间，不再继承 Script 视图的大版心留白。
 - Graph 回环边当前通过视图层 reference projection 降噪：如果目标节点在布局顺序上不晚于 source，或一条边加入显示图后会闭合成环，边会改接到 source 右侧局部 return lane 中的 reference-only 节点，而不是统一拉到整图最右侧。reference 节点只接受输入、没有输出、不可重命名，点击仍跳真实目标；hover 到 reference 时会轻微标出 source 与真实 target。这是显示层 shortcut，不改变 Compiler graph truth。
 - Graph 模型来源已完成第一刀替换：正常本地服务路径会通过 `/api/story-graph` 调用现有 CLI `compile-project`，消费 Compiler project IR 中真实的 choice / default jump 边；`ScriptDocumentModelBuilder` 只作为直接打开 HTML 或开发宿主不可用时的离线 fallback。
-- Preview 内容模型也已完成第一刀替换：正常本地服务路径会消费同一份 Compiler project graph，阅读行、元数据、choice prompt、choice option 与 default jump continue 入口都来自 `/api/story-graph` 输出；`ScriptDocumentModelBuilder` 只作为 Compiler bridge 不可用时的离线 fallback。
+- Preview 内容模型也已完成第一刀替换：正常本地服务路径会消费同一份 Compiler project graph，阅读行、元数据、choice prompt、choice option 与 default jump continue 入口都来自 `/api/story-graph` 输出；`ScriptDocumentModelBuilder` 只作为 Compiler bridge 不可用时的离线 fallback。注意：如果已经拿到 `compiler-project` graph，但节点 `previewLines` 缺失、数量与 Compiler lines 不一致，或 source line 无效，Preview 必须显示 compiler graph contract error，不能回退到同标题草模正文掩盖事故。
 - Runtime Player 接入前置契约已完成第一刀：新增 `runtime-project` CLI 命令，项目编译后由 `NarrativeRuntime` 启动 entry，并输出 `inscape.runtime-state` JSON；下一步 SelfHostedEditor 应通过开发宿主桥消费这个运行态，而不是在前端模拟当前节点。
 - SelfHostedEditor 已新增 `/api/runtime-state` 与 `SelfHostedEditorRuntimeBridge`，当前会通过临时 workspace 调用 `runtime-project`，并把 Runtime 当前 entry 节点显示到左下 session 状态。`runtime-project` 现在也支持 `--state` 后接 `--continue` 或 `--choose group option`，开发宿主 `/api/runtime-action` 会把这些动作转发给 CLI 后返回新 snapshot；Preview 还没有消费这个 Player action 状态。
 - Script / Preview 语义样式已继续收口：`@...` 元数据在 Script 高亮模式下弱化，在 Preview 中隐藏 `@` 并展示成不可点击、不可选中的淡蓝灰 tag；`[query]` 在两侧都有轻量差异化 token 样式。Monaco 写作表面已关闭 Unicode ambiguous character 警告，中文标点不应再被误报为源码混淆风险。
 - Preview 当前会按活动源码行所在 block 渲染 Compiler graph 内容；编辑器 definition navigation 或其他源码定位进入新 block 时会切换预览 block，但编辑器滚动和预览滚动保持独立，不做滚动同步。外层 workbench body 不应再作为双栏共享滚动面。
+- SelfHostedEditor 当前已有安静 loading 状态，覆盖默认样例、Monaco、line-map、Compiler graph Preview / Graph、Runtime、diagnostics、outline、本地化和 workspace summary 刷新过程；不要回退成全屏遮罩或高饱和 spinner。
 - Preview 阅读表面不再显示总行数 meta；这类 session/debug 信息应留在 workspace 状态区，不进入正文阅读面。
 - Preview 现在有 `Static` / `Flow` 阅读模式：Static 是完整 block 一次性展示；Flow 从标题开始，点击预览区逐行放出正文，正文结束后一次性显示全部选项，并在 flow 下默认显示选项目标标题。该状态仍是前端 presenter 状态，不是 Runtime state。
 - 根布局现在是固定视口内应用：`body` 不滚动，Script 编辑器由 Monaco 内部滚动，Preview 由 `.story-preview` 独立滚动。不要把 `workbench-body` 重新改成共享页面滚动，也不要让 `height: 100%` 依赖不稳定的 `min-height` 链路。
@@ -478,6 +479,14 @@ Unity / Host Bridge                docs/unity-sample-adapter.md, docs/project-co
 git -c safe.directory=D:/LabProjects/Inscape status --short --branch
 git -c safe.directory=D:/LabProjects/Inscape log --oneline --decorate -12
 ```
+
+若用户明确要求“提交并推送”且当前任务边界清楚，可优先使用仓库脚本：
+
+```powershell
+tools\CommitAndPushInscape.cmd "commit message"
+```
+
+本机 Codex skill `inscape-git-push` 也记录了同一流程，供后续线程减少重复 git 操作上下文。
 
 验证：
 

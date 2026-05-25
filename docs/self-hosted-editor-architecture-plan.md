@@ -204,11 +204,12 @@ src/ExternalSupport/SelfHostedEditor/
 - 已将左栏脚本区替换为第一版 Monaco 编辑表面，保留现有预览 / 本地化 / 节点图 / 诊断数据流，先完成“真编辑器表面”替换，再继续接 `LanguageServer`。
 - 已新增浏览器文件选择入口，可导入单个 `.inscape` 脚本并刷新编辑区与预览。该入口只是第一版壳的浏览器桥；未来桌面客户端应替换为项目工作区桥。
 - 已新增临时 UI-only 脚本模型，让预览、本地化草表和节点图预览消费同一份前端模型；后续需要替换为 `Tooling` / `LanguageServer` / `Runtime` 输出。
-- 已把 Preview 正常开发宿主路径的内容来源切到 Compiler project graph：阅读行、元数据、choice prompt、choice option 和 default jump 的 continue 入口来自 `/api/story-graph`，前端 `ScriptDocumentModelBuilder` 只保留为 Compiler bridge 不可用时的离线 fallback。
+- 已把 Preview 正常开发宿主路径的内容来源切到 Compiler project graph：阅读行、元数据、choice prompt、choice option 和 default jump 的 continue 入口来自 `/api/story-graph`，前端 `ScriptDocumentModelBuilder` 只保留为 Compiler bridge 不可用时的离线 fallback。若已返回 `compiler-project` graph 但 `previewLines` 缺失、数量不匹配或 source line 无效，Preview 必须显示 compiler graph contract error，不能用草模正文回退掩盖数据丢失。
 - 已新增临时 UI-only 诊断面板，覆盖重复节点、缺失跳转目标和空选项文本，并支持跳回源行；后续需要替换为 `LanguageServer` diagnostics。
 - 已接入第一条开发宿主诊断桥：SelfHostedEditor 现在会通过本地预览服务器把当前脚本文本发给 `Inscape.LanguageServer --diagnose-file`，并在失败时回退到 UI-only 草稿诊断；这条桥只是一期开发宿主通道，后续应收敛为正式桌面宿主 / 会话桥。
 - 已把诊断贴回 Monaco 编辑表面：当前诊断除了保留底部可点击列表外，也会同步渲染为编辑区内的 Monaco markers，让“错误在哪里”直接出现在写作位置。
 - 已把状态栏接到诊断导航：当前底部状态栏会显示当前行、诊断来源和诊断数量，并支持 previous / next problem 导航。
+- 已新增安静 loading 状态：默认样例、Monaco、line-map、Compiler graph Preview / Graph、Runtime、diagnostics、outline、本地化和 workspace summary 刷新时都会显示与当前纸面 UI 一致的低干扰加载反馈。
 - 已把底部诊断区收成 Problems 面板雏形：当前支持 severity 筛选、每类问题计数和 active-line 高亮，让诊断区更接近真正客户端工作台。
 - 已把侧栏 session 信息做成轻量状态面板：当前会显示 file、dirty state、source state、active view、layout mode 和 diagnostics backend，让工作台更像持续可感知的客户端会话。
 - 已推进第一轮沉浸式写作表面收口：当前工作台视觉已从偏表单式工具壳收向更安静的 paper-like 写作表面，编辑区、预览区和控制区的留白、字重、层级与交互边框都更强调连续写作体验。

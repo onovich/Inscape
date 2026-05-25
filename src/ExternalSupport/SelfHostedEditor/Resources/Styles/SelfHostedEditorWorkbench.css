@@ -34,6 +34,133 @@ body {
   overflow: hidden;
 }
 
+@keyframes loading-breath {
+  0%,
+  100% {
+    opacity: 0.26;
+    transform: scaleX(0.88);
+  }
+
+  50% {
+    opacity: 0.72;
+    transform: scaleX(1);
+  }
+}
+
+@keyframes loading-drift {
+  0% {
+    background-position: 0 0;
+  }
+
+  100% {
+    background-position: 120px 0;
+  }
+}
+
+@keyframes loading-dot {
+  0%,
+  100% {
+    opacity: 0.26;
+    transform: translateY(0);
+  }
+
+  50% {
+    opacity: 0.74;
+    transform: translateY(-1px);
+  }
+}
+
+[data-loading-state] {
+  position: relative;
+}
+
+.editor-frame[data-loading-state="loading"]::before,
+.story-preview[data-loading-state="loading"]::before,
+.diagnostics-dock[data-loading-state="loading"]::before,
+.document-outline-panel[data-loading-state="loading"]::before,
+.localization-panel[data-loading-state="loading"]::before,
+.graph-panel[data-loading-state="loading"]::before,
+.workspace-runtime-panel[data-loading-state="loading"]::before {
+  background:
+    linear-gradient(90deg, transparent, rgba(106, 109, 87, 0.055), transparent),
+    rgba(255, 253, 250, 0.72);
+  background-size: 120px 100%, auto;
+  border: 1px solid rgba(106, 109, 87, 0.05);
+  border-radius: 999px;
+  box-shadow: 0 8px 24px rgba(39, 36, 31, 0.035);
+  color: rgba(101, 95, 84, 0.58);
+  content: attr(data-loading-label);
+  font-size: 9px;
+  font-weight: 560;
+  left: 50%;
+  letter-spacing: 0.05em;
+  line-height: 1;
+  padding: 9px 12px 9px 28px;
+  pointer-events: none;
+  position: absolute;
+  text-transform: uppercase;
+  top: 18px;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  z-index: 12;
+}
+
+.editor-frame[data-loading-state="loading"]::after,
+.story-preview[data-loading-state="loading"]::after,
+.diagnostics-dock[data-loading-state="loading"]::after,
+.document-outline-panel[data-loading-state="loading"]::after,
+.localization-panel[data-loading-state="loading"]::after,
+.graph-panel[data-loading-state="loading"]::after,
+.workspace-runtime-panel[data-loading-state="loading"]::after {
+  animation: loading-breath 1500ms ease-in-out infinite;
+  background: rgba(106, 109, 87, 0.42);
+  border-radius: 999px;
+  content: "";
+  height: 5px;
+  left: calc(50% - 70px);
+  pointer-events: none;
+  position: absolute;
+  top: 29px;
+  transform-origin: center;
+  width: 16px;
+  z-index: 13;
+}
+
+.editor-frame[data-loading-state="loading"]::before,
+.story-preview[data-loading-state="loading"]::before,
+.diagnostics-dock[data-loading-state="loading"]::before,
+.document-outline-panel[data-loading-state="loading"]::before,
+.localization-panel[data-loading-state="loading"]::before,
+.graph-panel[data-loading-state="loading"]::before,
+.workspace-runtime-panel[data-loading-state="loading"]::before {
+  animation: loading-drift 2200ms linear infinite;
+}
+
+.workspace-status[data-loading-state="loading"]::after,
+.workspace-summary[data-loading-state="loading"]::before {
+  animation: loading-dot 1400ms ease-in-out infinite;
+  background: rgba(106, 109, 87, 0.42);
+  border-radius: 999px;
+  content: "";
+  display: inline-block;
+  height: 4px;
+  margin-left: 6px;
+  vertical-align: 1px;
+  width: 4px;
+}
+
+.workspace-summary[data-loading-state="loading"]::after {
+  color: rgba(101, 95, 84, 0.5);
+  content: attr(data-loading-label);
+  font-size: 9px;
+}
+
+[data-loading-state="error"]::after {
+  color: rgba(165, 94, 82, 0.72);
+  content: attr(data-loading-label);
+  font-size: 9px;
+}
+
 button,
 .file-open-button {
   align-items: center;
@@ -432,6 +559,22 @@ button[aria-pressed="true"],
   height: 100%;
   min-height: 0;
   overflow: hidden;
+  position: relative;
+}
+
+.app-shell[data-loading-state="loading"] .app-main::before {
+  animation: loading-breath 1800ms ease-in-out infinite;
+  background: linear-gradient(90deg, transparent, rgba(106, 109, 87, 0.28), transparent);
+  border-radius: 999px;
+  content: "";
+  height: 1px;
+  left: clamp(24px, 8vw, 124px);
+  pointer-events: none;
+  position: absolute;
+  right: clamp(24px, 8vw, 124px);
+  top: 40px;
+  transform-origin: center;
+  z-index: 9;
 }
 
 .top-bar {

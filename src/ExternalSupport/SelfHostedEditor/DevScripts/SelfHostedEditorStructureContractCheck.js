@@ -53,6 +53,7 @@ const requiredPaths = [
   "Scripts/ProjectWorkspace/Models/ScriptNodeRenamePatchBuilder.js",
   "Scripts/Runtime/Bridges/SelfHostedEditorRuntimeBridge.js",
   "Scripts/StoryGraph/Controllers/StoryGraphPreviewController.js",
+  "Scripts/WorkspaceLayout/Controllers/WorkspaceLoadingStateController.js",
   "Scripts/WorkspaceLayout/Controllers/WorkspaceLayoutController.js",
 ];
 
