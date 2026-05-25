@@ -3,6 +3,7 @@ using Inscape.Compiler.Compilation;
 using Inscape.Compiler.Diagnostics;
 using Inscape.Compiler.Localization;
 using Inscape.Compiler.Model;
+using Inscape.Runtime;
 using Inscape.Tooling;
 
 namespace Inscape.Cli {
@@ -60,6 +61,22 @@ namespace Inscape.Cli {
                                                                        previewStyle));
                     CliCore.PrintDiagnostics(result.Diagnostics);
                     return result.HasErrors ? 1 : 0;
+
+                case "runtime-project":
+                    CliCore.PrintDiagnostics(result.Diagnostics);
+                    if (result.HasErrors) {
+                        return 1;
+                    }
+
+                    NarrativeRuntime runtime = new NarrativeRuntime();
+                    runtime.LoadGraph(result.Graph);
+                    if (!runtime.Start(result.EntryNodeName)) {
+                        Console.Error.WriteLine("Runtime could not start project entry: " + result.EntryNodeName);
+                        return 1;
+                    }
+
+                    CliCore.WriteOrPrint(outputPath, JsonSerializer.Serialize(runtime.CreateSnapshot(), jsonOptions));
+                    return 0;
 
                 case "extract-l10n-project":
                     CliCore.WriteOrPrint(outputPath, LocalizationCsvFlowDomain.Extract(result.Graph));

@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Compiler\Inscape.Compiler.csproj" />
+    <ProjectReference Include="..\..\Runtime\Inscape.Runtime.csproj" />
     <ProjectReference Include="..\..\Tooling\Inscape.Tooling.csproj" />
   </ItemGroup>
 

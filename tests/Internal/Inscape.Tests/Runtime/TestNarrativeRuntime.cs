@@ -1,5 +1,7 @@
 using Inscape.Compiler.Compilation;
 using Inscape.Runtime;
+using System.Text;
+using System.Text.Json;
 
 namespace Inscape.Tests {
 
@@ -30,6 +32,32 @@ namespace Inscape.Tests {
             AssertTrue(runtime.Continue(), "Runtime should follow default next.");
             AssertEqual("end.node", runtime.State.CurrentNodeName, "Runtime current node after continue");
             AssertEqual(3, runtime.State.Path.Count, "Runtime path count");
+        }
+
+        static void CliRuntimeProjectEmitsRuntimeState() {
+            string directory = Path.Combine(Path.GetTempPath(), "inscape-tests", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory);
+            File.WriteAllText(Path.Combine(directory, "story.inscape"), """
+# start
+@entry
+Narrator: Start.
+? Next
+  - Go second -> second.node
+
+# second.node
+Narrator: Second.
+""", Encoding.UTF8);
+
+            try {
+                string json = RunCliForOutput(new[] { "runtime-project", directory });
+                using JsonDocument document = JsonDocument.Parse(json);
+                JsonElement root = document.RootElement;
+                AssertEqual("inscape.runtime-state", root.GetProperty("format").GetString(), "Runtime CLI format");
+                AssertEqual("start", root.GetProperty("state").GetProperty("currentNodeName").GetString(), "Runtime CLI current node");
+                AssertEqual("start", root.GetProperty("currentNode").GetProperty("name").GetString(), "Runtime CLI current node payload");
+            } finally {
+                Directory.Delete(directory, true);
+            }
         }
 
     }

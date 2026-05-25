@@ -82,7 +82,14 @@ namespace Inscape.Runtime {
             return true;
         }
 
-        NarrativeRuntimeStateModel Snapshot() {
+        public NarrativeRuntimeSnapshotModel CreateSnapshot() {
+            return new NarrativeRuntimeSnapshotModel {
+                State = SnapshotState(),
+                CurrentNode = CurrentNode,
+            };
+        }
+
+        NarrativeRuntimeStateModel SnapshotState() {
             NarrativeRuntimeStateModel snapshot = new NarrativeRuntimeStateModel();
             snapshot.CurrentNodeName = State.CurrentNodeName;
             snapshot.Path.AddRange(State.Path);

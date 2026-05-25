@@ -37,6 +37,7 @@
 - 已完成：Script 编辑器左侧行号 / line id 提示轨道重新对齐 Monaco 内容坐标系；提示轨道不再拥有独立上下 padding，每行提示使用 Monaco 运行时 line height，避免长行折行后后续行号与对应行首错位。
 - 下一步优先：继续替换 `ScriptDocumentModelBuilder` 的 UI-only 草模。Graph 已完成第一刀，正常服务路径消费 Compiler project graph；下一刀建议转向 Preview 模型或 L10N 视图，让它们消费 `Tooling` / `Runtime` / localization presenter 输出，而不是继续扩前端 parser。
 - 已推进：Preview 内容模型完成第一刀替换，正常服务路径现在消费 `/api/story-graph` 的 Compiler project graph，阅读行、元数据、choice prompt、choice option 与 default jump continue 入口不再从前端源码草模推断；`ScriptDocumentModelBuilder` 只保留为服务不可用时的离线 fallback。
+- 已推进：Runtime Player 接入前置契约完成第一刀，新增 `runtime-project` CLI 命令，项目编译后由 `NarrativeRuntime` 启动 entry，并输出 `inscape.runtime-state` JSON；后续 SelfHostedEditor 应消费这个运行态，而不是在前端模拟当前节点。
 - 下一步优先：继续把 Preview 的 `Static` / `Flow` presenter 状态推进到真实 `Runtime` Player 状态，或转向 L10N 视图消费真实 CSV / alignment review presenter；不要在前端 parser 上继续叠语义。
 - 下一步优先：把 line-map bridge 从“开发服务器 + CLI 临时 workspace”整理成更接近未来桌面客户端的 Editor Backend 会话边界；短期可先保留 HTTP dev bridge，但要避免在前端增加更多语义逻辑。
 - 下一步优先：Graph 继续补 sidecar 化布局、画布缩放/平移、连接合法性反馈和更明确的端口 hover/drag 状态。

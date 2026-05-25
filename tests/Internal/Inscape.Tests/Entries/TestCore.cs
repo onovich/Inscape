@@ -33,6 +33,7 @@ namespace Inscape.Tests {
                 ("language server host schema capabilities use tooling contract", LanguageServerHostSchemaCapabilitiesUseToolingContract),
                 ("language server stdio session serves project requests", LanguageServerStdioSessionServesProjectRequests),
                 ("narrative runtime consumes compiler graph", NarrativeRuntimeConsumesCompilerGraph),
+                ("cli runtime-project emits runtime state", CliRuntimeProjectEmitsRuntimeState),
                 ("tool config resolves host bridge path", ToolConfigResolvesHostBridgePath),
                 ("tool config resolves node map path", ToolConfigResolvesNodeMapPath),
                 ("host schema event reader reports schema events", HostSchemaEventReaderReportsSchemaEvents),
