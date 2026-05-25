@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Text;
 using System.Text.Json;
 using Inscape.Tooling;
 
@@ -8,6 +9,8 @@ namespace Inscape.LanguageServer {
     public static class LanguageServerEntry {
 
         public static int Main(string[] args) {
+            Console.OutputEncoding = new UTF8Encoding(false);
+
             if (args.Length > 0 && args[0] == "--stdio") {
                 LanguageServerSessionController sessionController = new LanguageServerSessionController();
                 sessionController.Run(Console.OpenStandardInput(), Console.OpenStandardOutput());

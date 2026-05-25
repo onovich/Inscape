@@ -14,6 +14,8 @@ namespace Inscape.UnitySample.Cli {
         static readonly JsonSerializerOptions JsonOptions = CreateJsonOptions();
 
         public static int Main(string[] args) {
+            Console.OutputEncoding = new UTF8Encoding(false);
+
             if (args.Length == 0 || args[0] == "help" || args[0] == "--help" || args[0] == "-h") {
                 PrintUsage();
                 return 0;

@@ -14,6 +14,8 @@ namespace Inscape.Cli {
         static readonly JsonSerializerOptions JsonOptions = CreateJsonOptions();
 
         public static int Main(string[] args) {
+            Console.OutputEncoding = new UTF8Encoding(false);
+
             if (CliTopLevelCommand.TryRun(args, JsonOptions, out int exitCode)) {
                 return exitCode;
             }

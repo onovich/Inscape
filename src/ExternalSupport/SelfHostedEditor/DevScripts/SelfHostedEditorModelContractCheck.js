@@ -214,6 +214,14 @@ const storyGraph = LanguageServerStoryGraphModelMapper.mapProjectGraph({
                 line: 3,
               },
             },
+            {
+              kind: "Metadata",
+              text: "@emit after_line",
+              source: {
+                sourcePath: "samples/court-loop.inscape",
+                line: 4,
+              },
+            },
           ],
           choices: [
             {
@@ -289,6 +297,7 @@ assertEqual(storyGraph.nodes[0].incomingReferenceCount, 1, "story graph incoming
 assertEqual(storyGraph.nodes[0].previewLines[0].kind, "metadata", "story graph preview metadata line kind");
 assertEqual(storyGraph.nodes[0].previewLines[1].kind, "dialogue", "story graph preview line kind");
 assertEqual(storyGraph.nodes[0].previewLines[1].speaker, "Narrator", "story graph preview line speaker");
+assertEqual(storyGraph.nodes[0].previewLines[2].kind, "metadata", "story graph preview trailing metadata line kind");
 assertEqual(storyGraph.nodes[0].previewChoices[0].prompt, "Choose action", "story graph preview choice prompt");
 assertEqual(storyGraph.nodes[0].previewChoices[0].options[0].target, "Witness", "story graph preview choice target");
 assertEqual(storyGraph.nodes[1].previewChoices[0].options[0].text, "continue", "story graph default jump preview option");
@@ -613,39 +622,41 @@ const flowPreviewElement = new FakeElement("main");
 const flowPreviewController = new PreviewPanelController(flowPreviewElement);
 flowPreviewController.render("", 2, storyGraph);
 flowPreviewController.setMode("flow");
+assertEqual(findElementByClass(flowPreviewElement, "story-metadata-tag")?.textContent, "scene court", "flow should reveal leading metadata with the title");
+assertEqual(flowPreviewElement.querySelectorAll(".story-line-metadata").length, 0, "flow metadata should attach to nearby content instead of becoming a standalone line");
 assertNotIncludesText(getTextContent(flowPreviewElement), "Review the evidence.");
-flowPreviewController.advanceFlow();
-assertEqual(findElementByClass(flowPreviewElement, "story-metadata-tag")?.textContent, "scene court", "flow first click should reveal metadata");
+assertNotIncludesText(getTextContent(flowPreviewElement), "after_line");
 flowPreviewController.advanceFlow();
 assertEqual(Boolean(findElementByClass(flowPreviewElement, "story-speaker-name-enter")), true, "flow speaker should fade in separately");
 assertEqual(Boolean(findElementByClass(flowPreviewElement, "story-typewriter-body")), true, "flow body should use typewriter body");
 assertNotIncludesText(getTextContent(flowPreviewElement), "Review the evidence.");
+assertEqual(flowPreviewController.getVisibleLines(flowPreviewController.latestStoryModel).some((line) => line.text === "@emit after_line"), true, "flow trailing metadata should reveal with the preceding content step");
 flowPreviewController.clearTypewriterTimer();
 flowPreviewElement.scrollTop = 0;
 flowPreviewElement.clientHeight = 100;
 flowPreviewElement.scrollHeight = 400;
 const shallowRewindWheel = createWheelEvent(-80);
 flowPreviewController.handlePreviewWheel(shallowRewindWheel);
-assertEqual(flowPreviewController.flowVisibleLineCount, 2, "flow wheel should wait for rewind threshold");
+assertEqual(flowPreviewController.flowVisibleLineCount, 1, "flow wheel should wait for rewind threshold");
 assertEqual(shallowRewindWheel.defaultPrevented, true, "flow wheel should hold boundary scroll while accumulating rewind");
 flowPreviewController.handlePreviewWheel(createWheelEvent(-100));
-assertEqual(flowPreviewController.flowVisibleLineCount, 1, "flow wheel should rewind one step after the top-boundary threshold");
+assertEqual(flowPreviewController.flowVisibleLineCount, 0, "flow wheel should rewind one step after the top-boundary threshold");
 flowPreviewElement.scrollTop = 300;
 const shallowAdvanceWheel = createWheelEvent(159);
 flowPreviewController.handlePreviewWheel(shallowAdvanceWheel);
-assertEqual(flowPreviewController.flowVisibleLineCount, 1, "flow wheel should wait for advance threshold");
+assertEqual(flowPreviewController.flowVisibleLineCount, 0, "flow wheel should wait for advance threshold");
 flowPreviewController.handlePreviewWheel(createWheelEvent(1));
-assertEqual(flowPreviewController.flowVisibleLineCount, 2, "flow wheel should advance one step after the bottom-boundary threshold");
+assertEqual(flowPreviewController.flowVisibleLineCount, 1, "flow wheel should advance one step after the bottom-boundary threshold");
 flowPreviewController.clearTypewriterTimer();
 flowPreviewController.advanceFlow();
-assertEqual(flowPreviewController.flowVisibleLineCount, 3, "flow choices should become visible after body lines");
+assertEqual(flowPreviewController.flowVisibleLineCount, 2, "flow choices should become visible after body lines");
 const blockedChoiceWheel = createWheelEvent(320);
 flowPreviewController.handlePreviewWheel(blockedChoiceWheel);
-assertEqual(flowPreviewController.flowVisibleLineCount, 3, "flow wheel should not fast-forward when choices are visible");
+assertEqual(flowPreviewController.flowVisibleLineCount, 2, "flow wheel should not fast-forward when choices are visible");
 assertEqual(blockedChoiceWheel.defaultPrevented, false, "flow choice wheel should not consume disabled fast-forward scroll");
 flowPreviewElement.scrollTop = 0;
 flowPreviewController.handlePreviewWheel(createWheelEvent(-160));
-assertEqual(flowPreviewController.flowVisibleLineCount, 2, "flow wheel should rewind from the visible choice step");
+assertEqual(flowPreviewController.flowVisibleLineCount, 1, "flow wheel should rewind from the visible choice step");
 const degradedStoryGraph = {
   ...storyGraph,
   nodes: storyGraph.nodes.map((node) => ({

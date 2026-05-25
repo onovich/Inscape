@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const moduleRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const repoRoot = path.resolve(moduleRoot, "..", "..", "..");
 
 const requiredPaths = [
   "README.md",
@@ -104,8 +105,88 @@ if (!packageJson.scripts["check:model"] || !packageJson.scripts["check:structure
   failed = true;
 }
 
+const devServerPath = path.join(moduleRoot, "DevScripts/StartSelfHostedEditorPreview.js");
+const devServerText = fs.readFileSync(devServerPath, "utf8");
+if (/std(?:out|err)\s*\+=\s*String\(chunk\)/.test(devServerText)) {
+  console.error("SelfHostedEditor dev server must not decode child-process chunks one-by-one; collect buffers and decode once.");
+  failed = true;
+}
+
+const suspiciousTextPatterns = [
+  "\uFFFD",
+  "锟斤拷",
+  "浣犲ソ",
+  "鏃ц",
+  "鏃ф",
+  "鏃ч",
+  "鏂版",
+  "鏂板",
+  "鍘熸",
+];
+for (const finding of findSuspiciousTextArtifacts(repoRoot, suspiciousTextPatterns)) {
+  console.error(`Suspicious text encoding artifact in ${finding.relativePath}: ${finding.pattern}`);
+  failed = true;
+}
+
 if (failed) {
   process.exitCode = 1;
 } else {
   console.log("SelfHostedEditor structure ok");
+}
+
+function findSuspiciousTextArtifacts(root, patterns) {
+  const findings = [];
+  const ignoredDirectories = new Set([".git", "artifacts", "bin", "node_modules", "obj"]);
+  const textExtensions = new Set([
+    ".cmd",
+    ".cs",
+    ".css",
+    ".csv",
+    ".html",
+    ".inscape",
+    ".js",
+    ".json",
+    ".md",
+    ".ps1",
+    ".props",
+    ".slnx",
+    ".targets",
+    ".toml",
+    ".txt",
+    ".xml",
+  ]);
+
+  const visit = (directory) => {
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      if (entry.isDirectory()) {
+        if (!ignoredDirectories.has(entry.name)) {
+          visit(path.join(directory, entry.name));
+        }
+        continue;
+      }
+
+      const fullPath = path.join(directory, entry.name);
+      const relativePath = path.relative(root, fullPath).replace(/\\/g, "/");
+      if (relativePath === "src/ExternalSupport/SelfHostedEditor/DevScripts/SelfHostedEditorStructureContractCheck.js") {
+        continue;
+      }
+
+      if (!textExtensions.has(path.extname(entry.name))) {
+        continue;
+      }
+
+      const text = fs.readFileSync(fullPath, "utf8");
+      for (const pattern of patterns) {
+        if (text.includes(pattern)) {
+          findings.push({
+            pattern,
+            relativePath,
+          });
+        }
+      }
+    }
+  };
+
+  visit(root);
+  return findings;
 }

@@ -783,19 +783,21 @@ function runLanguageServerDiagnostics(tempPath) {
       windowsHide: true,
     });
 
-    let stdout = "";
-    let stderr = "";
+    const stdoutChunks = [];
+    const stderrChunks = [];
 
     diagnosticsProcess.stdout.on("data", (chunk) => {
-      stdout += String(chunk);
+      stdoutChunks.push(Buffer.from(chunk));
     });
 
     diagnosticsProcess.stderr.on("data", (chunk) => {
-      stderr += String(chunk);
+      stderrChunks.push(Buffer.from(chunk));
     });
 
     diagnosticsProcess.on("error", reject);
     diagnosticsProcess.on("exit", (code) => {
+      const stdout = decodeProcessOutput(stdoutChunks);
+      const stderr = decodeProcessOutput(stderrChunks);
       if (code !== 0) {
         reject(new Error(stderr.trim() || `LanguageServer exited with code ${code}.`));
         return;
@@ -898,15 +900,15 @@ function runLanguageServerCommand(languageServerArgs, label) {
       reject(new Error(`${label} timed out after ${bridgeCommandTimeoutMilliseconds}ms.`));
     }, bridgeCommandTimeoutMilliseconds);
 
-    let stdout = "";
-    let stderr = "";
+    const stdoutChunks = [];
+    const stderrChunks = [];
 
     process.stdout.on("data", (chunk) => {
-      stdout += String(chunk);
+      stdoutChunks.push(Buffer.from(chunk));
     });
 
     process.stderr.on("data", (chunk) => {
-      stderr += String(chunk);
+      stderrChunks.push(Buffer.from(chunk));
     });
 
     process.on("error", (error) => {
@@ -925,6 +927,8 @@ function runLanguageServerCommand(languageServerArgs, label) {
 
       settled = true;
       clearTimeout(timeout);
+      const stdout = decodeProcessOutput(stdoutChunks);
+      const stderr = decodeProcessOutput(stderrChunks);
       if (code !== 0) {
         reject(new Error(stderr.trim() || `${label} exited with code ${code}.`));
         return;
@@ -956,15 +960,15 @@ function runCliCommand(cliArgs, label) {
       reject(new Error(`${label} timed out after ${bridgeCommandTimeoutMilliseconds}ms.`));
     }, bridgeCommandTimeoutMilliseconds);
 
-    let stdout = "";
-    let stderr = "";
+    const stdoutChunks = [];
+    const stderrChunks = [];
 
     process.stdout.on("data", (chunk) => {
-      stdout += String(chunk);
+      stdoutChunks.push(Buffer.from(chunk));
     });
 
     process.stderr.on("data", (chunk) => {
-      stderr += String(chunk);
+      stderrChunks.push(Buffer.from(chunk));
     });
 
     process.on("error", (error) => {
@@ -983,6 +987,8 @@ function runCliCommand(cliArgs, label) {
 
       settled = true;
       clearTimeout(timeout);
+      const stdout = decodeProcessOutput(stdoutChunks);
+      const stderr = decodeProcessOutput(stderrChunks);
       if (code !== 0) {
         reject(new Error(stderr.trim() || `${label} exited with code ${code}.`));
         return;
@@ -994,6 +1000,10 @@ function runCliCommand(cliArgs, label) {
       });
     });
   });
+}
+
+function decodeProcessOutput(chunks) {
+  return Buffer.concat(chunks).toString("utf8");
 }
 
 function resolveCliInvocation(cliArgs) {

@@ -62,11 +62,16 @@ export class PreviewPanelController {
     const shouldShowChoices = this.shouldShowChoices(storyModel);
     const animatedLineIndex = this.pendingFlowAnimationLineIndex;
     this.pendingFlowAnimationLineIndex = -1;
+    const storyElements = this.mode === "flow"
+      ? this.createFlowStoryElements(storyModel, visibleLines, animatedLineIndex)
+      : [
+        this.createTitleElement(storyModel),
+        ...visibleLines.map((line, index) => this.createLineElement(line, {
+          animateBody: index === animatedLineIndex,
+        })),
+      ];
     this.previewElement.replaceChildren(
-      this.createTitleElement(storyModel),
-      ...visibleLines.map((line, index) => this.createLineElement(line, {
-        animateBody: this.mode === "flow" && index === animatedLineIndex,
-      })),
+      ...storyElements,
       this.createChoicesElement(shouldShowChoices ? storyModel.choices : [])
     );
     this.previewElement.dataset.previewMode = this.mode;
@@ -188,17 +193,16 @@ export class PreviewPanelController {
       return false;
     }
 
+    const flowStepCount = this.getFlowStepCount(this.latestStoryModel);
     const nextVisibleLineCount = Math.min(
-      this.latestStoryModel.lines.length + 1,
+      flowStepCount + 1,
       this.flowVisibleLineCount + 1
     );
     if (nextVisibleLineCount === this.flowVisibleLineCount) {
       return false;
     }
 
-    this.pendingFlowAnimationLineIndex = nextVisibleLineCount <= this.latestStoryModel.lines.length
-      ? nextVisibleLineCount - 1
-      : -1;
+    this.pendingFlowAnimationLineIndex = this.getFlowAnimationLineIndex(this.latestStoryModel, nextVisibleLineCount);
     this.flowVisibleLineCount = nextVisibleLineCount;
     this.renderStoryModel(this.latestStoryModel);
     this.highlightSourceLine(this.activeLineNumber);
@@ -267,7 +271,7 @@ export class PreviewPanelController {
   areFlowChoicesVisible() {
     return Boolean(this.latestStoryModel)
       && this.mode === "flow"
-      && this.flowVisibleLineCount > this.latestStoryModel.lines.length;
+      && this.flowVisibleLineCount > this.getFlowStepCount(this.latestStoryModel);
   }
 
   getVisibleLines(storyModel) {
@@ -275,11 +279,92 @@ export class PreviewPanelController {
       return storyModel.lines;
     }
 
-    return storyModel.lines.slice(0, Math.min(storyModel.lines.length, this.flowVisibleLineCount));
+    return storyModel.lines.filter((line) => this.isLineVisibleInFlow(line, storyModel));
   }
 
   shouldShowChoices(storyModel) {
-    return this.mode !== "flow" || this.flowVisibleLineCount > storyModel.lines.length;
+    return this.mode !== "flow" || this.flowVisibleLineCount > this.getFlowStepCount(storyModel);
+  }
+
+  isLineVisibleInFlow(targetLine, storyModel) {
+    return this.isLineVisibleInFlowForCount(targetLine, storyModel, this.flowVisibleLineCount);
+  }
+
+  getFlowStepCount(storyModel) {
+    return storyModel.lines.filter((line) => line.kind !== "metadata").length;
+  }
+
+  getFlowAnimationLineIndex(storyModel, visibleLineCount) {
+    if (visibleLineCount <= 0 || visibleLineCount > this.getFlowStepCount(storyModel)) {
+      return -1;
+    }
+
+    const visibleLines = storyModel.lines.filter((line) => this.isLineVisibleInFlowForCount(line, storyModel, visibleLineCount));
+    let contentCount = 0;
+    for (const line of visibleLines) {
+      if (line.kind === "metadata") {
+        continue;
+      }
+
+      contentCount += 1;
+      if (contentCount === visibleLineCount) {
+        return visibleLines.indexOf(line);
+      }
+    }
+
+    return -1;
+  }
+
+  isLineVisibleInFlowForCount(targetLine, storyModel, visibleLineCount) {
+    let visibleContentCount = 0;
+    for (const line of storyModel.lines) {
+      if (line.kind !== "metadata") {
+        visibleContentCount += 1;
+      }
+
+      if (line === targetLine) {
+        return visibleContentCount <= visibleLineCount;
+      }
+    }
+
+    return false;
+  }
+
+  createFlowStoryElements(storyModel, visibleLines, animatedLineIndex) {
+    const groupedLines = this.groupFlowLines(visibleLines);
+    return [
+      this.createTitleElement(storyModel, groupedLines.leadingMetadata),
+      ...groupedLines.contentRows.map((row) => this.createLineElement(row.line, {
+        animateBody: visibleLines.indexOf(row.line) === animatedLineIndex,
+        attachedMetadataLines: row.metadataLines,
+      })),
+    ];
+  }
+
+  groupFlowLines(visibleLines) {
+    const leadingMetadata = [];
+    const contentRows = [];
+    for (const line of visibleLines) {
+      if (line.kind === "metadata") {
+        const target = contentRows[contentRows.length - 1];
+        if (target) {
+          target.metadataLines.push(line);
+        } else {
+          leadingMetadata.push(line);
+        }
+        continue;
+      }
+
+      contentRows.push({
+        line,
+        metadataLines: [],
+      });
+    }
+
+    return {
+      contentRows,
+      leadingMetadata,
+    };
   }
 
   buildPreviewModel(activeLineNumber = 1) {
@@ -394,10 +479,11 @@ export class PreviewPanelController {
     return lineNumbers;
   }
 
-  createTitleElement(storyModel) {
+  createTitleElement(storyModel, attachedMetadataLines = []) {
     const title = document.createElement("h1");
     title.className = "story-title";
     title.textContent = storyModel.title;
+    this.appendMetadataTags(title, attachedMetadataLines);
     return title;
   }
 
@@ -425,23 +511,28 @@ export class PreviewPanelController {
       paragraph.append(speakerName, document.createTextNode(" "));
     }
 
+    const attachedMetadataLines = Array.isArray(options.attachedMetadataLines)
+      ? options.attachedMetadataLines
+      : [];
     if (options.animateBody) {
       paragraph.classList.add("story-line-typewriter");
-      paragraph.append(this.createTypewriterBodyElement(line.text));
+      paragraph.append(this.createTypewriterBodyElement(line.text, attachedMetadataLines));
     } else {
       paragraph.append(...this.createTextFragments(line.text));
+      this.appendMetadataTags(paragraph, attachedMetadataLines);
     }
 
     return paragraph;
   }
 
-  createTypewriterBodyElement(text) {
+  createTypewriterBodyElement(text, attachedMetadataLines = []) {
     const body = document.createElement("span");
     body.className = "story-typewriter-body";
     const fullText = String(text || "");
     if (this.shouldReduceMotion() || fullText.length === 0) {
       body.classList.add("is-complete");
       body.append(...this.createTextFragments(fullText));
+      this.appendMetadataTags(body, attachedMetadataLines);
       return body;
     }
 
@@ -451,6 +542,7 @@ export class PreviewPanelController {
       if (cursor >= fullText.length) {
         body.classList.add("is-complete");
         body.replaceChildren(...this.createTextFragments(fullText));
+        this.appendMetadataTags(body, attachedMetadataLines);
         this.clearTypewriterTimer();
         return;
       }
@@ -461,6 +553,12 @@ export class PreviewPanelController {
 
     this.typewriterTimer = setTimeout(step, 80);
     return body;
+  }
+
+  appendMetadataTags(parent, metadataLines) {
+    for (const line of metadataLines) {
+      parent.append(document.createTextNode(" "), this.createMetadataTagElement(line));
+    }
   }
 
   shouldReduceMotion() {

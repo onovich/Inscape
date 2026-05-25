@@ -452,15 +452,15 @@ Narrator: Second line.
 
             File.WriteAllText(existingPath, """
 ID,ZH_CN,EN_US,ES_ES
-1,鏃ч」鐩枃鏈?Old project,Texto viejo
-100,鍘熸枃娌″彉,Keep me,Conservar
-101,鏃ф簮鏂囨湰,Old translation,Traduccion vieja
+1,旧项目文本,Old project,Texto viejo
+100,原文没变,Keep me,Conservar
+101,旧源文本,Old translation,Traduccion vieja
 """, Encoding.UTF8);
             File.WriteAllText(generatedPath, """
 ID,ZH_CN,EN_US,ES_ES
-100,鍘熸枃娌″彉,,
-101,鏂版簮鏂囨湰,,
-102,鏂板婧愭枃鏈?,,
+100,原文没变,,
+101,新源文本,,
+102,新增源文本,,
 """, Encoding.UTF8);
 
             TextWriter originalOut = Console.Out;
@@ -484,15 +484,15 @@ ID,ZH_CN,EN_US,ES_ES
                 AssertEqual("", error.ToString().Trim(), "merge-unity-sample-l10n stderr");
 
                 string merged = File.ReadAllText(mergedPath, Encoding.UTF8);
-                AssertTrue(merged.Contains("1,鏃ч」鐩枃鏈?Old project,Texto viejo"), "Merge should preserve unrelated existing rows.");
-                AssertTrue(merged.Contains("100,鍘熸枃娌″彉,Keep me,Conservar"), "Merge should preserve translations when source is unchanged.");
-                AssertTrue(merged.Contains("101,鏂版簮鏂囨湰,,"), "Merge should clear target translations when source changes.");
-                AssertTrue(merged.Contains("102,鏂板婧愭枃鏈?,"), "Merge should add new generated rows.");
+                AssertTrue(merged.Contains("1,旧项目文本,Old project,Texto viejo"), "Merge should preserve unrelated existing rows.");
+                AssertTrue(merged.Contains("100,原文没变,Keep me,Conservar"), "Merge should preserve translations when source is unchanged.");
+                AssertTrue(merged.Contains("101,新源文本,,"), "Merge should clear target translations when source changes.");
+                AssertTrue(merged.Contains("102,新增源文本,"), "Merge should add new generated rows.");
                 AssertFalse(merged.Contains("Old translation"), "Stale translation should not remain in merged CSV.");
 
                 string report = File.ReadAllText(reportPath, Encoding.UTF8);
                 AssertTrue(report.Contains("changed,101"), "Report should include changed row.");
-                AssertTrue(report.Contains("鏃ф簮鏂囨湰"), "Report should preserve old source text.");
+                AssertTrue(report.Contains("旧源文本"), "Report should preserve old source text.");
                 AssertTrue(report.Contains("Old translation"), "Report should preserve old translation for reference.");
                 AssertTrue(report.Contains("added,102"), "Report should include added row.");
             } finally {

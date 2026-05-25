@@ -257,8 +257,8 @@ Narrator: Hello.
 
             File.WriteAllText(oldCsvPath,
                               "anchor,node,kind,speaker,text,translation,sourcePath,line,column\n"
-                              + anchor + ",start,Dialogue,Narrator,Hello.,浣犲ソ,old.inscape,2,1\n"
-                              + "l1_removed,old.node,Narration,,Removed.,鏃ц瘧鏂?old.inscape,8,1\n",
+                              + anchor + ",start,Dialogue,Narrator,Hello.,你好,old.inscape,2,1\n"
+                              + "l1_removed,old.node,Narration,,Removed.,旧译文,old.inscape,8,1\n",
                               Encoding.UTF8);
             File.WriteAllText(path, """
 # start
@@ -274,7 +274,7 @@ A new line.
             }
 
             AssertTrue(csv.Contains("anchor,node,kind,speaker,text,translation,status,sourcePath,line,column"), "Updated CSV should include status header.");
-            AssertTrue(csv.Contains("浣犲ソ,current"), "Updated CSV should preserve existing translation.");
+            AssertTrue(csv.Contains("你好,current"), "Updated CSV should preserve existing translation.");
             AssertTrue(csv.Contains("A new line."), "Updated CSV should include new text.");
             AssertTrue(csv.Contains(",new,"), "Updated CSV should mark new rows.");
             AssertTrue(csv.Contains("l1_removed"), "Updated CSV should keep removed rows for review.");
