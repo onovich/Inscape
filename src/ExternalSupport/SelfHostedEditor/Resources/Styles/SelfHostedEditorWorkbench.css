@@ -1423,6 +1423,15 @@ button[aria-pressed="true"],
   display: none;
 }
 
+.choice-prompt {
+  color: rgba(54, 50, 43, 0.58);
+  font-family: "Inter", "Segoe UI", sans-serif;
+  font-size: 11px;
+  font-weight: 560;
+  line-height: 1.5;
+  margin-bottom: -2px;
+}
+
 .choice-button {
   align-items: start;
   background: transparent;

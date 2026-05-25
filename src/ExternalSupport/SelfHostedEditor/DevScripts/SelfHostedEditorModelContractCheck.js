@@ -15,6 +15,7 @@ import { LanguageServerDiagnosticModelMapper } from "../Scripts/LanguageServer/M
 import { LanguageServerReferenceModelMapper } from "../Scripts/LanguageServer/Models/LanguageServerReferenceModelMapper.js";
 import { LanguageServerDocumentSymbolModelMapper } from "../Scripts/LanguageServer/Models/LanguageServerDocumentSymbolModelMapper.js";
 import { LanguageServerStoryGraphModelMapper } from "../Scripts/LanguageServer/Models/LanguageServerStoryGraphModelMapper.js";
+import { PreviewPanelController } from "../Scripts/Preview/Controllers/PreviewPanelController.js";
 import { StoryGraphPreviewController } from "../Scripts/StoryGraph/Controllers/StoryGraphPreviewController.js";
 
 const sample = `# Start
@@ -195,8 +196,36 @@ const storyGraph = LanguageServerStoryGraphModelMapper.mapProjectGraph({
             sourcePath: "samples/court-loop.inscape",
             line: 1,
           },
-          lines: [],
-          choices: [],
+          lines: [
+            {
+              kind: "Dialogue",
+              speaker: "Narrator",
+              text: "Review the evidence.",
+              source: {
+                sourcePath: "samples/court-loop.inscape",
+                line: 2,
+              },
+            },
+          ],
+          choices: [
+            {
+              prompt: "Choose action",
+              source: {
+                sourcePath: "samples/court-loop.inscape",
+                line: 4,
+              },
+              options: [
+                {
+                  text: "Question witness",
+                  target: "Witness",
+                  source: {
+                    sourcePath: "samples/court-loop.inscape",
+                    line: 5,
+                  },
+                },
+              ],
+            },
+          ],
         },
         {
           name: "Witness",
@@ -239,6 +268,11 @@ assertEqual(storyGraph.edges.length, 2, "story graph edge count");
 assertEqual(storyGraph.nodes[0].choices[0].target, "Witness", "story graph choice target");
 assertEqual(storyGraph.nodes[1].jumps[0].target, "Opening", "story graph jump target");
 assertEqual(storyGraph.nodes[0].incomingReferenceCount, 1, "story graph incoming count");
+assertEqual(storyGraph.nodes[0].previewLines[0].kind, "dialogue", "story graph preview line kind");
+assertEqual(storyGraph.nodes[0].previewLines[0].speaker, "Narrator", "story graph preview line speaker");
+assertEqual(storyGraph.nodes[0].previewChoices[0].prompt, "Choose action", "story graph preview choice prompt");
+assertEqual(storyGraph.nodes[0].previewChoices[0].options[0].target, "Witness", "story graph preview choice target");
+assertEqual(storyGraph.nodes[1].previewChoices[0].options[0].text, "continue", "story graph default jump preview option");
 const storyGraphController = new StoryGraphPreviewController({});
 const projectedGraph = storyGraphController.projectGraphForDisplay(storyGraph.nodes, storyGraph.edges);
 const referenceNode = projectedGraph.nodes.find((node) => node.isReference);
@@ -371,6 +405,10 @@ class FakeDocument {
   createElement(tagName) {
     return new FakeElement(tagName);
   }
+
+  createTextNode(text) {
+    return new FakeTextNode(text);
+  }
 }
 
 class FakeElement {
@@ -397,6 +435,16 @@ class FakeElement {
           .filter((className) => className && !removeSet.has(className))
           .join(" ");
       },
+      toggle: (className, force) => {
+        const classes = new Set(this.className.split(/\s+/).filter(Boolean));
+        if (force) {
+          classes.add(className);
+        } else {
+          classes.delete(className);
+        }
+
+        this.className = Array.from(classes).join(" ");
+      },
     };
   }
 
@@ -412,6 +460,26 @@ class FakeElement {
 
   replaceChildren(...children) {
     this.children = children;
+  }
+
+  removeAttribute(name) {
+    delete this[name];
+    if (name.startsWith("data-")) {
+      delete this.dataset[name.slice(5).replace(/-([a-z])/g, (_match, letter) => letter.toUpperCase())];
+    }
+  }
+
+  querySelectorAll(selector) {
+    const results = [];
+    collectMatchingElements(this, selector, results);
+    return results;
+  }
+}
+
+class FakeTextNode {
+  constructor(text) {
+    this.textContent = String(text);
+    this.children = [];
   }
 }
 
@@ -430,8 +498,36 @@ function findElementByClass(element, className) {
   return null;
 }
 
+function collectMatchingElements(element, selector, results) {
+  if (matchesSelector(element, selector)) {
+    results.push(element);
+  }
+
+  for (const child of element.children || []) {
+    collectMatchingElements(child, selector, results);
+  }
+}
+
+function matchesSelector(element, selector) {
+  if (selector === "[data-source-line]") {
+    return Boolean(element.dataset?.sourceLine);
+  }
+
+  if (selector.startsWith(".")) {
+    return element.className?.split(/\s+/).includes(selector.slice(1));
+  }
+
+  return false;
+}
+
 const hintRailElement = new FakeElement("aside");
 globalThis.document = new FakeDocument();
+const previewElement = new FakeElement("main");
+const previewController = new PreviewPanelController(previewElement);
+previewController.render("", 2, storyGraph);
+assertEqual(previewController.documentModel.nodes[0].lines[0].speaker, "Narrator", "preview should consume compiler story graph lines");
+assertEqual(previewController.documentModel.nodes[0].choices[0].prompt, "Choose action", "preview should consume compiler story graph choices");
+assertEqual(findElementByClass(previewElement, "choice-prompt")?.textContent, "Choose action", "preview should render compiler choice prompt");
 const editorSurfaceController = new EditorSurfaceController(new FakeElement("div"), hintRailElement, createFakeMonaco(identityDocumentModel));
 editorSurfaceController.renderAuthoringState(`# Start
 旁白：Hello

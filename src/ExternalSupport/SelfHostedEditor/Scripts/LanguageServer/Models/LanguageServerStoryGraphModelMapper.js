@@ -38,6 +38,13 @@ export class LanguageServerStoryGraphModelMapper {
       };
       if (edge.kind === "jump") {
         sourceNode.jumps.push(outgoing);
+        sourceNode.previewChoices.push({
+          kind: "jumpGroup",
+          options: [outgoing],
+          prompt: "",
+          sourceLine: edge.sourceLine,
+          sourcePath: edge.sourcePath,
+        });
       } else {
         sourceNode.choices.push(outgoing);
       }
@@ -72,9 +79,76 @@ export class LanguageServerStoryGraphModelMapper {
       jumps: [],
       lineCount: Number(node?.lineCount || 0),
       lines: Array.isArray(node?.lines) ? node.lines : [],
+      previewChoices: this.mapPreviewChoiceGroups(node),
+      previewLines: this.mapPreviewLines(node),
       sourceLine: this.toSourceLine(node?.source?.line),
       sourcePath: node?.source?.sourcePath || sourcePath,
       title: node?.name || "Untitled Node",
+    };
+  }
+
+  static mapPreviewLines(node) {
+    return (Array.isArray(node?.lines) ? node.lines : [])
+      .map((line) => this.mapPreviewLine(line, node?.name || "Untitled Node"))
+      .filter(Boolean);
+  }
+
+  static mapPreviewLine(line, nodeTitle) {
+    const sourceLine = this.toSourceLine(line?.source?.line);
+    if (sourceLine <= 0) {
+      return null;
+    }
+
+    const kind = String(line?.kind || "Narration").toLowerCase();
+    return {
+      anchor: line?.anchor || "",
+      kind,
+      nodeTitle,
+      raw: line?.raw || "",
+      sourceLine,
+      sourcePath: line?.source?.sourcePath || "",
+      speaker: line?.speaker || "",
+      text: line?.text || "",
+    };
+  }
+
+  static mapPreviewChoiceGroups(node) {
+    return (Array.isArray(node?.choices) ? node.choices : [])
+      .map((group) => {
+        const options = (Array.isArray(group?.options) ? group.options : [])
+          .map((option) => this.mapPreviewChoiceOption(option, node?.name || "Untitled Node"))
+          .filter(Boolean);
+        if (options.length === 0) {
+          return null;
+        }
+
+        return {
+          anchor: group?.anchor || "",
+          kind: "choiceGroup",
+          nodeTitle: node?.name || "Untitled Node",
+          options,
+          prompt: group?.prompt || "",
+          sourceLine: this.toSourceLine(group?.source?.line),
+          sourcePath: group?.source?.sourcePath || "",
+        };
+      })
+      .filter(Boolean);
+  }
+
+  static mapPreviewChoiceOption(option, nodeTitle) {
+    const sourceLine = this.toSourceLine(option?.source?.line);
+    if (sourceLine <= 0) {
+      return null;
+    }
+
+    return {
+      anchor: option?.anchor || "",
+      kind: "choice",
+      nodeTitle,
+      sourceLine,
+      sourcePath: option?.source?.sourcePath || "",
+      target: option?.target || "",
+      text: option?.text || "",
     };
   }
 

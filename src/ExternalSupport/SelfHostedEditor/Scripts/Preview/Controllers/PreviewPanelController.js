@@ -12,6 +12,7 @@ export class PreviewPanelController {
     this.currentNodeTitle = "";
     this.documentModel = null;
     this.latestStoryModel = null;
+    this.storyGraphModel = null;
     this.scriptText = "";
     this.bindModeControls();
     this.previewElement.addEventListener("click", (event) => this.handlePreviewClick(event));
@@ -22,10 +23,12 @@ export class PreviewPanelController {
     this.sourceLineSelectedHandlers.push(handler);
   }
 
-  render(scriptText, activeLineNumber = 1) {
+  render(scriptText, activeLineNumber = 1, storyGraphModel = null) {
     this.scriptText = scriptText;
     this.activeLineNumber = activeLineNumber;
-    this.documentModel = ScriptDocumentModelBuilder.build(scriptText);
+    this.storyGraphModel = storyGraphModel;
+    this.documentModel = this.buildDocumentModelFromStoryGraph(storyGraphModel)
+      || ScriptDocumentModelBuilder.build(scriptText);
     const storyModel = this.buildPreviewModel(activeLineNumber);
     if (storyModel.nodeTitle !== this.currentNodeTitle) {
       this.flowVisibleLineCount = 0;
@@ -52,7 +55,7 @@ export class PreviewPanelController {
     this.activeLineNumber = lineNumber;
     const activeNode = this.findNodeForLine(lineNumber);
     if (activeNode && activeNode.title !== this.currentNodeTitle) {
-      this.render(this.scriptText, lineNumber);
+      this.render(this.scriptText, lineNumber, this.storyGraphModel);
       return;
     }
 
@@ -157,6 +160,35 @@ export class PreviewPanelController {
     ) || null;
   }
 
+  buildDocumentModelFromStoryGraph(storyGraphModel) {
+    if (storyGraphModel?.provider !== "compiler-project" || !Array.isArray(storyGraphModel.nodes)) {
+      return null;
+    }
+
+    const activeNodes = storyGraphModel.nodes.filter((node) => node.isInActiveDocument);
+    const sourceNodes = activeNodes.length > 0 ? activeNodes : storyGraphModel.nodes;
+    const nodes = sourceNodes
+      .map((node) => ({
+        choices: Array.isArray(node.previewChoices) ? node.previewChoices : [],
+        endLine: Number(node.endLine || node.sourceLine || 1),
+        lines: Array.isArray(node.previewLines) ? node.previewLines : [],
+        sourceLine: Number(node.sourceLine || 1),
+        sourcePath: node.sourcePath || "",
+        title: node.title || "Untitled Node",
+      }))
+      .filter((node) => node.sourceLine > 0);
+
+    if (nodes.length === 0) {
+      return null;
+    }
+
+    return {
+      lineCount: 0,
+      nodes,
+      title: nodes[0]?.title || "Untitled Node",
+    };
+  }
+
   createTitleElement(storyModel) {
     const title = document.createElement("h1");
     title.className = "story-title";
@@ -175,7 +207,9 @@ export class PreviewPanelController {
       return paragraph;
     }
 
-    paragraph.addEventListener("click", () => this.notifySourceLineSelected(line.sourceLine));
+    if (line.sourceLine > 0) {
+      paragraph.addEventListener("click", () => this.notifySourceLineSelected(line.sourceLine));
+    }
 
     if (line.speaker) {
       const speakerName = document.createElement("strong");
@@ -221,34 +255,74 @@ export class PreviewPanelController {
   createChoicesElement(choices) {
     const list = document.createElement("div");
     list.className = "choice-list";
-    if (choices.length === 0) {
+    const groups = this.normalizeChoiceGroups(choices);
+    if (groups.length === 0) {
       list.classList.add("is-empty");
       return list;
     }
 
-    for (const choice of choices) {
-      const button = document.createElement("button");
-      button.className = "choice-button";
-      button.type = "button";
-      button.dataset.sourceLine = String(choice.sourceLine);
-      button.addEventListener("click", () => this.notifySourceLineSelected(choice.sourceLine));
+    for (const group of groups) {
+      if (group.prompt) {
+        const prompt = document.createElement("div");
+        prompt.className = "choice-prompt";
+        if (group.sourceLine > 0) {
+          prompt.dataset.sourceLine = String(group.sourceLine);
+          prompt.addEventListener("click", () => this.notifySourceLineSelected(group.sourceLine));
+        }
 
-      const text = document.createElement("span");
-      text.className = "choice-text";
-      text.textContent = choice.text || "Continue";
-      button.append(text);
-
-      if (choice.target) {
-        const target = document.createElement("small");
-        target.className = "choice-target";
-        target.textContent = choice.target;
-        button.append(target);
+        prompt.textContent = group.prompt;
+        list.append(prompt);
       }
 
-      list.append(button);
+      for (const choice of group.options) {
+        const button = document.createElement("button");
+        button.className = "choice-button";
+        button.type = "button";
+        button.dataset.sourceLine = String(choice.sourceLine);
+        button.addEventListener("click", () => this.notifySourceLineSelected(choice.sourceLine));
+
+        const text = document.createElement("span");
+        text.className = "choice-text";
+        text.textContent = choice.text || "Continue";
+        button.append(text);
+
+        if (choice.target) {
+          const target = document.createElement("small");
+          target.className = "choice-target";
+          target.textContent = choice.target;
+          button.append(target);
+        }
+
+        list.append(button);
+      }
     }
 
     return list;
+  }
+
+  normalizeChoiceGroups(choices) {
+    if (!Array.isArray(choices) || choices.length === 0) {
+      return [];
+    }
+
+    const compilerGroups = choices.filter((choice) => Array.isArray(choice.options));
+    if (compilerGroups.length > 0) {
+      return compilerGroups
+        .map((group) => ({
+          options: group.options || [],
+          prompt: group.prompt || "",
+          sourceLine: Number(group.sourceLine || 0),
+        }))
+        .filter((group) => group.options.length > 0);
+    }
+
+    return [
+      {
+        options: choices,
+        prompt: "",
+        sourceLine: 0,
+      },
+    ];
   }
 
   notifySourceLineSelected(lineNumber) {

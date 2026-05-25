@@ -203,6 +203,7 @@ src/ExternalSupport/SelfHostedEditor/
 - 已将左栏脚本区替换为第一版 Monaco 编辑表面，保留现有预览 / 本地化 / 节点图 / 诊断数据流，先完成“真编辑器表面”替换，再继续接 `LanguageServer`。
 - 已新增浏览器文件选择入口，可导入单个 `.inscape` 脚本并刷新编辑区与预览。该入口只是第一版壳的浏览器桥；未来桌面客户端应替换为项目工作区桥。
 - 已新增临时 UI-only 脚本模型，让预览、本地化草表和节点图预览消费同一份前端模型；后续需要替换为 `Tooling` / `LanguageServer` / `Runtime` 输出。
+- 已把 Preview 正常开发宿主路径的内容来源切到 Compiler project graph：阅读行、元数据、choice prompt、choice option 和 default jump 的 continue 入口来自 `/api/story-graph`，前端 `ScriptDocumentModelBuilder` 只保留为 Compiler bridge 不可用时的离线 fallback。
 - 已新增临时 UI-only 诊断面板，覆盖重复节点、缺失跳转目标和空选项文本，并支持跳回源行；后续需要替换为 `LanguageServer` diagnostics。
 - 已接入第一条开发宿主诊断桥：SelfHostedEditor 现在会通过本地预览服务器把当前脚本文本发给 `Inscape.LanguageServer --diagnose-file`，并在失败时回退到 UI-only 草稿诊断；这条桥只是一期开发宿主通道，后续应收敛为正式桌面宿主 / 会话桥。
 - 已把诊断贴回 Monaco 编辑表面：当前诊断除了保留底部可点击列表外，也会同步渲染为编辑区内的 Monaco markers，让“错误在哪里”直接出现在写作位置。
@@ -289,7 +290,7 @@ src/ExternalSupport/SelfHostedEditor/
 - Script / Preview 对 `@` 元数据和 `[]` 查询插值已有第一版作者体验样式：`@...` 在编辑器中弱化，在预览中转为不显示 `@` 的淡蓝灰 tag；`[query]` 以低对比 inline token 区分。中文标点不应触发 Monaco 的 ambiguous character 提示。
 - Preview 当前按活动源码行所属 block 渲染，definition navigation / source focus 可以切换预览 block；编辑器滚动与预览滚动保持独立，不再通过外层 workbench 共享滚动。Script 视图 Ctrl/Cmd + Click 会显式走 source selection 管线，让编辑器光标和 Preview block 同步跳到 definition 位置，避免只更新 Preview。
 - Preview 阅读表面不显示总行数 meta；行数、诊断来源等 session/debug 信息应归入 workspace 状态区或诊断区，而不是混进正文阅读面。
-- Preview 阅读模式新增 Static / Flow 切换：Static 一次性展示当前 block；Flow 从标题开始，点击预览区逐行放出正文，正文结束后一次性展示全部选项，并把选项文本与目标标题一起呈现。当前这是前端 presenter 状态，后续 Runtime Player 接入时再评估是否映射到运行时步进状态。
+- Preview 阅读模式新增 Static / Flow 切换：Static 一次性展示当前 block；Flow 从标题开始，点击预览区逐行放出正文，正文结束后一次性展示全部选项，并把选项文本与目标标题一起呈现。当前内容模型已开始消费 Compiler project graph，但阅读进度、当前节点推进和选项选择仍是前端 presenter 状态，后续 Runtime Player 接入时应映射到运行时状态。
 - Script 编辑器左侧行号 / line id 提示轨道应保持在 Monaco 内容坐标系里：提示轨道本身不加独立上下 padding，行提示按 Monaco 运行时 line height 建立高度，并通过 `getTopForLineNumber()` 定位。这样长行折行后，下一条逻辑行的行号仍跟随该行首字，而不是紧贴上一条视觉行。
 - Script 行号轨道已继续收口：写作表面关闭 Monaco 顶部滚动阴影，行号轨道不暴露横向滚动条；hover 整条 hint line 只显示块内行号，只有 hover 行号数字区域才会以稳定 id 替换块内行号显示。稳定 id 展示时去掉 `line_` 前缀，并提供小复制按钮复制完整去前缀后的 id；未追踪行继续保持安静。
 - Script 写作表面关闭 Monaco sticky scroll；节点标题、prompt / choice 标题等结构行不应置顶，而应像普通文本一样自然滚出视口，避免顶部重影与层级错乱。
@@ -299,7 +300,7 @@ src/ExternalSupport/SelfHostedEditor/
 - Files 面板采用和 Outline 一致的紧凑列表布局，内容不足时保持顶部小块列表，不把单个文件项拉伸成填满面板的大卡片。
 - line identity 已接入真实 Tooling sidecar 刷新：`SelfHostedEditorLineMapBridge` 调用开发宿主 `/api/line-map-refresh`，宿主运行 `refresh-l10n-line-map-project` 并返回 line-map；前端把上一轮 line-map 作为下一轮 existing sidecar，交给 Tooling 迁移稳定 `line_...`。对白、prompt、choice 显示真实 line id，跳转等非本地化身份行不显示身份文本。开发宿主读取 Tooling 生成的 JSON 文件时会剥离 UTF-8 BOM，避免 `JSON.parse` 失败导致前端静默退回 `provider: unavailable`。
 - 行号数字区域 hover 只在 Tooling 提供可用 `line_...` 时显示稳定身份；整条 hint line hover 仍只显示块内行号。`@`、跳转、旁白等未追踪行不显示 `not tracked` / `line id not loaded` 占位。line-map 适配器兼容 camelCase / PascalCase JSON 字段，避免拿到真实 sidecar 却映射不到。hint rail DOM 渲染已纳入 `SelfHostedEditorModelContractCheck`，覆盖 `.has-stable-id`、`.hint-stable-id` 与复制控件输出。
-- 仍需替换：`ScriptDocumentModelBuilder` 继续是 UI-only 草模；诊断 marker 仍主要贴活动文件；L10N 视图仍是 session draft；Preview 仍不是 Runtime Player；Graph 位置仍是 session memory。后续每次迭代应尽量挑一个窄消费者替换为 Internal 输出，而不是在前端草模上继续叠语义。
+- 仍需替换：`ScriptDocumentModelBuilder` 继续是 UI-only 草模，但 Graph 与 Preview 的正常服务路径已开始消费 Compiler project graph；诊断 marker 仍主要贴活动文件；L10N 视图仍是 session draft；Preview 仍不是 Runtime Player；Graph 位置仍是 session memory。后续每次迭代应尽量挑一个窄消费者替换为 Internal 输出，而不是在前端草模上继续叠语义。
 
 - references 候选默认不应依赖 Monaco inline peek；主路线是自定义 overlay，覆盖正文上方而不改变排版流。
 - 文件导入入口已进入 workspace 第一版：允许一次导入同目录多份 `.inscape`，并把当前文件、相对路径、workspace 名称与文件数纳入编辑会话状态。

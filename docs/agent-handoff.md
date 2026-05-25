@@ -26,8 +26,9 @@
 - Graph 视图已从固定宽板改为可平移 / 缩放视口：空白处拖拽移动画布，滚轮按指针位置缩放，左上角提供 zoom in / out / reset 控制。节点拖拽、连线预览和 SVG path 均已转为 graph-space 坐标，缩放后仍应可编辑。Graph 激活时根节点会标记当前 view，CSS 将主体区切到紧凑单面板布局，让画布吃满可用空间，不再继承 Script 视图的大版心留白。
 - Graph 回环边当前通过视图层 reference projection 降噪：如果目标节点在布局顺序上不晚于 source，或一条边加入显示图后会闭合成环，边会改接到 source 右侧局部 return lane 中的 reference-only 节点，而不是统一拉到整图最右侧。reference 节点只接受输入、没有输出、不可重命名，点击仍跳真实目标；hover 到 reference 时会轻微标出 source 与真实 target。这是显示层 shortcut，不改变 Compiler graph truth。
 - Graph 模型来源已完成第一刀替换：正常本地服务路径会通过 `/api/story-graph` 调用现有 CLI `compile-project`，消费 Compiler project IR 中真实的 choice / default jump 边；`ScriptDocumentModelBuilder` 只作为直接打开 HTML 或开发宿主不可用时的离线 fallback。
+- Preview 内容模型也已完成第一刀替换：正常本地服务路径会消费同一份 Compiler project graph，阅读行、元数据、choice prompt、choice option 与 default jump continue 入口都来自 `/api/story-graph` 输出；`ScriptDocumentModelBuilder` 只作为 Compiler bridge 不可用时的离线 fallback。
 - Script / Preview 语义样式已继续收口：`@...` 元数据在 Script 高亮模式下弱化，在 Preview 中隐藏 `@` 并展示成不可点击、不可选中的淡蓝灰 tag；`[query]` 在两侧都有轻量差异化 token 样式。Monaco 写作表面已关闭 Unicode ambiguous character 警告，中文标点不应再被误报为源码混淆风险。
-- Preview 当前会按活动源码行所在 block 渲染内容；编辑器 definition navigation 或其他源码定位进入新 block 时会切换预览 block，但编辑器滚动和预览滚动保持独立，不做滚动同步。外层 workbench body 不应再作为双栏共享滚动面。
+- Preview 当前会按活动源码行所在 block 渲染 Compiler graph 内容；编辑器 definition navigation 或其他源码定位进入新 block 时会切换预览 block，但编辑器滚动和预览滚动保持独立，不做滚动同步。外层 workbench body 不应再作为双栏共享滚动面。
 - Preview 阅读表面不再显示总行数 meta；这类 session/debug 信息应留在 workspace 状态区，不进入正文阅读面。
 - Preview 现在有 `Static` / `Flow` 阅读模式：Static 是完整 block 一次性展示；Flow 从标题开始，点击预览区逐行放出正文，正文结束后一次性显示全部选项，并在 flow 下默认显示选项目标标题。该状态仍是前端 presenter 状态，不是 Runtime state。
 - 根布局现在是固定视口内应用：`body` 不滚动，Script 编辑器由 Monaco 内部滚动，Preview 由 `.story-preview` 独立滚动。不要把 `workbench-body` 重新改成共享页面滚动，也不要让 `height: 100%` 依赖不稳定的 `min-height` 链路。
@@ -46,12 +47,12 @@
 
 仍是临时或下一步应替换的部分：
 
-- `ScriptDocumentModelBuilder` 仍是前端 UI-only 草模，用于预览、Graph、本地化草表和部分提示层；长期应继续用 `Tooling` / `LanguageServer` / `Runtime` 输出替换，而不是扩写 parser 语义。
+- `ScriptDocumentModelBuilder` 仍是前端 UI-only 草模，用于离线 fallback、本地化草表和部分提示层；Graph 与 Preview 的正常服务路径已消费 Compiler project graph。长期应继续用 `Tooling` / `LanguageServer` / `Runtime` 输出替换，而不是扩写 parser 语义。
 - 诊断虽已优先走 LanguageServer project probe，但当前仍只把 diagnostics marker 贴回活动文件；真正的多文件 Problems、跨文件 rename、长期会话缓存和桌面后端进程仍待补。
 - Graph 节点位置仍是会话内 `savedPositions`，尚未写入 graph layout sidecar；画布缩放/平移、连接合法性反馈、端口命中高亮仍可继续细化。
 - line-map bridge 当前走开发预览服务器 + CLI 临时 workspace，是正确复用 Tooling 语义的第一步，但未来桌面客户端应改为正式 Editor Backend / Tooling 会话桥，而不是每轮通过 HTTP dev server 启动 CLI。
 - L10N 视图仍是会话内 draft CSV 下载，没有接真实 CSV 读写、alignment review presenter 和写回契约。
-- Preview 仍是阅读面板 / Tooling 预览方向的雏形，不是 Runtime Player；后续 Player 应消费 `Runtime` 的 Narrative Graph IR 和运行状态。
+- Preview 内容已来自 Compiler project graph，但 Static / Flow 进度仍是阅读面板 presenter 状态，不是 Runtime Player；后续 Player 应消费 `Runtime` 的 Narrative Graph IR 和运行状态。
 
 当前工作树提示：`src/ExternalSupport/SelfHostedEditor/` 与 `docs/self-hosted-editor-architecture-plan.md`、ADR 0017 仍处于未跟踪状态，若新 Agent 要提交，需要先复查 `git -c safe.directory=D:/LabProjects/Inscape status --short --branch`，不要回滚用户已有文档和样例改动。
 

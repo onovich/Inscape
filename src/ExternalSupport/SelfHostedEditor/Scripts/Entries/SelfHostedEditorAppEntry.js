@@ -401,13 +401,13 @@ async function main() {
       ? ScriptLineIdentityModelBuilder.build(lineIdentitySnapshot.lineMap, workspaceController.getState().filePath)
       : null;
     const documentModel = editorController.renderAuthoringState(scriptText, latestLineIdentityProvider);
-    previewController.render(scriptText, activeLineNumber);
     localizationController.render(scriptText);
     const storyGraphSnapshot = await storyGraphBridge.getStoryGraph(scriptText);
     if (renderVersion !== diagnosticsRenderVersion) {
       return;
     }
 
+    previewController.render(scriptText, activeLineNumber, storyGraphSnapshot.graph);
     storyGraphController.render(storyGraphSnapshot.graph, scriptText);
     const diagnosticSnapshot = await diagnosticsBridge.getDiagnostics(scriptText);
     latestDiagnosticSnapshot = diagnosticSnapshot;
