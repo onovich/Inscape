@@ -38,6 +38,7 @@ const requiredPaths = [
   "Scripts/LanguageServer/Models/LanguageServerHoverModelMapper.js",
   "Scripts/LanguageServer/Models/LanguageServerReferenceModelMapper.js",
   "Scripts/LanguageServer/Models/LanguageServerStoryGraphModelMapper.js",
+  "Scripts/Localization/Bridges/SelfHostedEditorLocalizationReviewBridge.js",
   "Scripts/Localization/Controllers/LocalizationEditorController.js",
   "Scripts/Localization/Models/LocalizationDraftCsvBuilder.js",
   "Scripts/Localization/Models/LocalizationDraftStore.js",

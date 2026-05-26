@@ -5,6 +5,7 @@ import { ScriptNodeRenamePatchBuilder } from "../Scripts/ProjectWorkspace/Models
 import { ProjectWorkspaceSummaryModelBuilder } from "../Scripts/ProjectWorkspace/Models/ProjectWorkspaceSummaryModelBuilder.js";
 import { LocalizationDraftCsvBuilder } from "../Scripts/Localization/Models/LocalizationDraftCsvBuilder.js";
 import { LocalizationDraftStore } from "../Scripts/Localization/Models/LocalizationDraftStore.js";
+import { LocalizationEditorController } from "../Scripts/Localization/Controllers/LocalizationEditorController.js";
 import { EditorHoverTargetModelBuilder } from "../Scripts/EditorAuthoring/Models/EditorHoverTargetModelBuilder.js";
 import { EditorCompletionTargetModelBuilder } from "../Scripts/EditorAuthoring/Models/EditorCompletionTargetModelBuilder.js";
 import { EditorSurfaceController } from "../Scripts/EditorAuthoring/Controllers/EditorSurfaceController.js";
@@ -602,6 +603,46 @@ function matchesSelector(element, selector) {
 
 const hintRailElement = new FakeElement("aside");
 globalThis.document = new FakeDocument();
+const localizationPanel = new FakeElement("section");
+const localizationExportButton = new FakeElement("button");
+const localizationController = new LocalizationEditorController(
+  localizationPanel,
+  draftStore,
+  localizationExportButton,
+  {
+    async getLocalizationReview() {
+      return {
+        provider: "localization-review",
+        review: {
+          presenter: {
+            items: [
+              {
+                detail: "samples/court-loop.inscape:3:1 <line line_DIALOGUE available> | Compiler sourced row",
+                item: {
+                  kind: "Dialogue",
+                  line: 3,
+                  nodeTitle: "Opening",
+                  review: "needs-review",
+                  speaker: "Narrator",
+                  status: "changed",
+                  text: "Compiler sourced row",
+                  translation: "Previous translation",
+                },
+                summary: "translation: Previous translation",
+                title: "[changed] Opening - needs-review",
+              },
+            ],
+          },
+        },
+      };
+    },
+  }
+);
+await localizationController.render("# Opening\nDraft fallback row");
+assertIncludesText(getTextContent(localizationPanel), "Compiler sourced row");
+assertIncludesText(getTextContent(localizationPanel), "Previous translation");
+assertIncludesText(getTextContent(localizationPanel), "changed");
+assertNotIncludesText(getTextContent(localizationPanel), "Draft fallback row");
 const previewElement = new FakeElement("main");
 const previewController = new PreviewPanelController(previewElement);
 let previewSelectedLine = 0;

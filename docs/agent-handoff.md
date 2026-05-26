@@ -2,7 +2,7 @@
 
 状态：基线
 
-最后更新：2026-05-24
+最后更新：2026-05-26
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
@@ -16,6 +16,18 @@
 2. 重点看 `src/ExternalSupport/SelfHostedEditor/Scripts/Entries/SelfHostedEditorAppEntry.js`、`StoryGraph/Controllers/StoryGraphPreviewController.js`、`EditorAuthoring/Controllers/EditorSurfaceController.js`、`LanguageServer/Bridges/SelfHostedEditorLineMapBridge.js`、`ProjectWorkspace/Models/ScriptLineIdentityModelBuilder.js`。
 3. 本地预览服务当前为 `http://127.0.0.1:5178/`，若未运行则用 `npm --prefix src\ExternalSupport\SelfHostedEditor run start`。
 4. 最近验证已通过：`npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax`、`check:structure`、`check:model`、`dotnet build Inscape.slnx --no-restore`。
+
+2026-05-26 本会话交接状态：
+
+- 已完成并推送一次文档队列收口：提交 `f43ac69 docs: organize current todo queue`。该提交把 `docs/todo.md` 的当前执行顺序改为 SelfHostedEditor 优先，并明确下一步按 L10N presenter、Runtime Player、Editor Backend 会话边界、Graph sidecar / 交互的顺序推进；同时移除了 `agent-handoff` 中“SelfHostedEditor 仍未跟踪”的过期提示。
+- 当前工作树还有一组未提交实现改动，目标是 SelfHostedEditor L10N 视图接入真实 Tooling localization review presenter。涉及文件：`src/ExternalSupport/SelfHostedEditor/DevScripts/StartSelfHostedEditorPreview.js`、`Scripts/Localization/Bridges/SelfHostedEditorLocalizationReviewBridge.js`、`Scripts/Localization/Controllers/LocalizationEditorController.js`、`Scripts/Entries/SelfHostedEditorAppEntry.js`、`Resources/Styles/SelfHostedEditorWorkbench.css`、`DevScripts/SelfHostedEditorModelContractCheck.js`、`DevScripts/SelfHostedEditorStructureContractCheck.js`、`package.json`。
+- 已新增开发宿主 `/api/localization-review` 草案：它在临时 workspace 中先跑 `update-node-map-project`，再用传入的 `previousCsv` 或即时 `extract-l10n-project` 输出作为旧表，最后跑 `audit-l10n-alignment-project --from <csv>`，返回 `inscape.self-hosted-editor.localization-review`，其中包含完整 report、`summary`、`lineIdentity` 和 `presenter`。这条路径复用 Tooling / CLI 的 alignment 与 presenter，不在前端复制候选评分或 review 语义。
+- 已新增前端 `SelfHostedEditorLocalizationReviewBridge`，并让 `LocalizationEditorController.render()` 变成 async：正常 hosted 路径会优先渲染 `report.presenter.items`，表格新增 `Review` 列，状态 pill 使用 Tooling report 的 `kept / new / changed / conflict / stale / removed` 等状态；如果 bridge 不可用或 presenter 为空，仍回退旧的 `ScriptDocumentModelBuilder` session draft 行。该回退只能作为离线 / 开发宿主不可用 fallback，不能被当成真实 L10N 语义。
+- 已补一处 dev server 输入健壮性：所有 POST API 的 request body 现在通过 `parseJsonRequestBody()` 解析，统一剥离 UTF-8 BOM。这个问题是做真实 `/api/localization-review` smoke 时发现的：PowerShell `Set-Content -Encoding UTF8` 生成的 JSON 带 BOM，原先 `JSON.parse(body || "{}")` 会直接 500。
+- 已跑过并通过：`npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax`、`npm --prefix src\ExternalSupport\SelfHostedEditor run check:structure`、`npm --prefix src\ExternalSupport\SelfHostedEditor run check:model`。`check:model` 曾因新增测试放在 fake DOM 类定义之前失败，已把测试移动到 `FakeElement` 初始化之后并通过。
+- 已做过一次真实 CLI 拆分 smoke：在临时目录中分别运行 `update-node-map-project`、`extract-l10n-project -o old.csv`、`audit-l10n-alignment-project --from old.csv` 均快速通过，说明 CLI 侧不是阻塞点。
+- HTTP smoke 当前结论：用 `curl --noproxy "*"`、无 BOM JSON、最小脚本 `# Opening / Narrator: Hello` 直接 POST `/api/localization-review` 已成功返回 presenter；PowerShell `Invoke-RestMethod` 曾因本机代理路径超时，不要把它误判为服务端阻塞。完整 `samples/court-loop.inscape` 的 `/api/localization-review` smoke 仍在 60-120 秒窗口内超时，下一位 Agent 应优先定位 full sample 路径是 `update-node-map-project`、`extract-l10n-project`、`audit-l10n-alignment-project`、response JSON 体积，还是 HTTP 客户端读响应导致的阻塞。此前测试端口 `5182`、`5183`、`5184`、`5185`、`5187` 的残留监听已复查并清理。
+- 交接时如果继续本节点，建议第一件事执行：`npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax`、`check:structure`、`check:model`，再做 `/api/localization-review` full sample HTTP smoke；full sample 不卡住后，再运行仓库脚本 `tools\CommitAndPushInscape.cmd "feat: connect self hosted localization presenter"`。
 
 已完成的关键收口：
 
@@ -55,7 +67,7 @@
 - 诊断虽已优先走 LanguageServer project probe，但当前仍只把 diagnostics marker 贴回活动文件；真正的多文件 Problems、跨文件 rename、长期会话缓存和桌面后端进程仍待补。
 - Graph 节点位置仍是会话内 `savedPositions`，尚未写入 graph layout sidecar；画布缩放/平移、连接合法性反馈、端口命中高亮仍可继续细化。
 - line-map bridge 当前走开发预览服务器 + CLI 临时 workspace，是正确复用 Tooling 语义的第一步，但未来桌面客户端应改为正式 Editor Backend / Tooling 会话桥，而不是每轮通过 HTTP dev server 启动 CLI。
-- L10N 视图仍是会话内 draft CSV 下载，没有接真实 CSV 读写、alignment review presenter 和写回契约。
+- L10N 视图正在接入真实 alignment review presenter：当前未提交草案已通过 `/api/localization-review` 与 `SelfHostedEditorLocalizationReviewBridge` 消费 Tooling presenter，并保留 session draft fallback；真实 CSV 文件选择 / 写回契约仍未完成，最终 HTTP smoke 仍待重跑。
 - Preview 内容已来自 Compiler project graph，但 Static / Flow 进度仍是阅读面板 presenter 状态，不是 Runtime Player；后续 Player 应消费 `Runtime` 的 Narrative Graph IR 和运行状态。
 - `runtime-project` / `/api/runtime-state` / `/api/runtime-action` 已覆盖 Start、恢复 state 后 Continue、恢复 state 后 Choose 的最小 stateless action 契约；还没有让 Preview 的 Flow 模式完全受 Runtime state 驱动，也还没有桌面端长生命周期 Runtime 会话。
 

@@ -114,6 +114,11 @@ const server = http.createServer(async (request, response) => {
     return;
   }
 
+  if (request.method === "POST" && requestUrl.pathname === "/api/localization-review") {
+    await handleLocalizationReviewRequest(request, response);
+    return;
+  }
+
   const relativePath = requestUrl.pathname === "/"
     ? "Resources/Workbench/SelfHostedEditorWorkbenchDocument.html"
     : requestUrl.pathname.replace(/^\/+/, "");
@@ -150,7 +155,7 @@ server.listen(port, "127.0.0.1", () => {
 async function handleDiagnosticsRequest(request, response) {
   try {
     const body = await readRequestBody(request);
-    const payload = JSON.parse(body || "{}");
+    const payload = parseJsonRequestBody(body);
     const scriptText = typeof payload.scriptText === "string"
       ? payload.scriptText
       : "";
@@ -174,7 +179,7 @@ async function handleDiagnosticsRequest(request, response) {
 async function handleHoverRequest(request, response) {
   try {
     const body = await readRequestBody(request);
-    const payload = JSON.parse(body || "{}");
+    const payload = parseJsonRequestBody(body);
     const scriptText = typeof payload.scriptText === "string"
       ? payload.scriptText
       : "";
@@ -204,7 +209,7 @@ async function handleHoverRequest(request, response) {
 async function handleDefinitionRequest(request, response) {
   try {
     const body = await readRequestBody(request);
-    const payload = JSON.parse(body || "{}");
+    const payload = parseJsonRequestBody(body);
     const scriptText = typeof payload.scriptText === "string"
       ? payload.scriptText
       : "";
@@ -231,7 +236,7 @@ async function handleDefinitionRequest(request, response) {
 async function handleReferencesRequest(request, response) {
   try {
     const body = await readRequestBody(request);
-    const payload = JSON.parse(body || "{}");
+    const payload = parseJsonRequestBody(body);
     const scriptText = typeof payload.scriptText === "string"
       ? payload.scriptText
       : "";
@@ -258,7 +263,7 @@ async function handleReferencesRequest(request, response) {
 async function handleCompletionsRequest(request, response) {
   try {
     const body = await readRequestBody(request);
-    const payload = JSON.parse(body || "{}");
+    const payload = parseJsonRequestBody(body);
     const scriptText = typeof payload.scriptText === "string"
       ? payload.scriptText
       : "";
@@ -282,7 +287,7 @@ async function handleCompletionsRequest(request, response) {
 async function handleDocumentSymbolsRequest(request, response) {
   try {
     const body = await readRequestBody(request);
-    const payload = JSON.parse(body || "{}");
+    const payload = parseJsonRequestBody(body);
     const scriptText = typeof payload.scriptText === "string"
       ? payload.scriptText
       : "";
@@ -306,7 +311,7 @@ async function handleDocumentSymbolsRequest(request, response) {
 async function handleStoryGraphRequest(request, response) {
   try {
     const body = await readRequestBody(request);
-    const payload = JSON.parse(body || "{}");
+    const payload = parseJsonRequestBody(body);
     const scriptText = typeof payload.scriptText === "string"
       ? payload.scriptText
       : "";
@@ -330,7 +335,7 @@ async function handleStoryGraphRequest(request, response) {
 async function handleRuntimeStateRequest(request, response) {
   try {
     const body = await readRequestBody(request);
-    const payload = JSON.parse(body || "{}");
+    const payload = parseJsonRequestBody(body);
     const scriptText = typeof payload.scriptText === "string"
       ? payload.scriptText
       : "";
@@ -354,7 +359,7 @@ async function handleRuntimeStateRequest(request, response) {
 async function handleRuntimeActionRequest(request, response) {
   try {
     const body = await readRequestBody(request);
-    const payload = JSON.parse(body || "{}");
+    const payload = parseJsonRequestBody(body);
     const scriptText = typeof payload.scriptText === "string"
       ? payload.scriptText
       : "";
@@ -384,7 +389,7 @@ async function handleRuntimeActionRequest(request, response) {
 async function handleLineMapRefreshRequest(request, response) {
   try {
     const body = await readRequestBody(request);
-    const payload = JSON.parse(body || "{}");
+    const payload = parseJsonRequestBody(body);
     const scriptText = typeof payload.scriptText === "string"
       ? payload.scriptText
       : "";
@@ -408,6 +413,33 @@ async function handleLineMapRefreshRequest(request, response) {
   }
 }
 
+async function handleLocalizationReviewRequest(request, response) {
+  try {
+    const body = await readRequestBody(request);
+    const payload = parseJsonRequestBody(body);
+    const scriptText = typeof payload.scriptText === "string"
+      ? payload.scriptText
+      : "";
+    const workspace = normalizeWorkspacePayload(payload.workspace);
+    const previousCsv = typeof payload.previousCsv === "string"
+      ? payload.previousCsv
+      : "";
+
+    const reviewPayload = await getLocalizationReviewForScriptText(scriptText, workspace, previousCsv);
+    response.writeHead(200, {
+      "Content-Type": "application/json; charset=utf-8",
+    });
+    response.end(JSON.stringify(reviewPayload));
+  } catch (error) {
+    response.writeHead(500, {
+      "Content-Type": "application/json; charset=utf-8",
+    });
+    response.end(JSON.stringify({
+      error: error instanceof Error ? error.message : String(error),
+    }));
+  }
+}
+
 function readRequestBody(request) {
   return new Promise((resolve, reject) => {
     const chunks = [];
@@ -419,6 +451,10 @@ function readRequestBody(request) {
     });
     request.on("error", reject);
   });
+}
+
+function parseJsonRequestBody(body) {
+  return JSON.parse(String(body || "{}").replace(/^\uFEFF/, ""));
 }
 
 async function diagnoseScriptText(scriptText, workspace) {
@@ -513,6 +549,40 @@ async function stepRuntimeStateForScriptText(scriptText, workspace, runtimeState
   });
 }
 
+async function getLocalizationReviewForScriptText(scriptText, workspace, previousCsv) {
+  return withTemporaryWorkspace(workspace, scriptText, async ({ tempRoot }) => {
+    await runCliCommand([
+      "update-node-map-project",
+      tempRoot,
+    ], "CLI stable node map refresh");
+
+    const previousCsvText = previousCsv.trim()
+      ? previousCsv
+      : (await runCliCommand([
+        "extract-l10n-project",
+        tempRoot,
+      ], "CLI localization project extract")).stdout;
+    const previousCsvPath = path.join(tempRoot, "inscape.localization.previous.csv");
+    await fsp.writeFile(previousCsvPath, previousCsvText, "utf8");
+
+    const result = await runCliCommand([
+      "audit-l10n-alignment-project",
+      tempRoot,
+      "--from",
+      previousCsvPath,
+    ], "CLI localization alignment audit");
+    const report = relativizeLocalizationReviewPaths(parseJsonFileText(result.stdout), tempRoot);
+    return {
+      format: "inscape.self-hosted-editor.localization-review",
+      formatVersion: 1,
+      lineIdentity: report.lineIdentity || null,
+      presenter: report.presenter || { items: [] },
+      report,
+      summary: report.summary || null,
+    };
+  });
+}
+
 function compactProjectGraphPayload(payload) {
   return {
     diagnostics: payload?.diagnostics || [],
@@ -558,6 +628,32 @@ function compactProjectGraphPayload(payload) {
   };
 }
 
+function relativizeLocalizationReviewPaths(payload, tempRoot) {
+  const visit = (value) => {
+    if (!value || typeof value !== "object") {
+      return;
+    }
+
+    if (typeof value.sourcePath === "string") {
+      value.sourcePath = relativizeSourcePath(value.sourcePath, tempRoot);
+    }
+
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        visit(item);
+      }
+      return;
+    }
+
+    for (const nested of Object.values(value)) {
+      visit(nested);
+    }
+  };
+
+  visit(payload);
+  return payload;
+}
+
 function compactRuntimeStatePayload(payload) {
   const currentNode = payload?.currentNode || null;
   return {
@@ -595,16 +691,6 @@ function compactRuntimeStatePayload(payload) {
 }
 
 function relativizeProjectSourcePaths(payload, tempRoot) {
-  const relativizeSourcePath = (sourcePath) => {
-    const relativePath = path.relative(tempRoot, sourcePath);
-    if (!relativePath || relativePath.startsWith("..") || path.isAbsolute(relativePath)) {
-      return sourcePath
-        .replace(/\\/g, "/")
-        .replace(/^.*?inscape-self-hosted-editor-[^/]+\//, "");
-    }
-
-    return relativePath.replace(/\\/g, "/");
-  };
   const normalizeSource = (source) => {
     if (!source || typeof source.sourcePath !== "string") {
       return source;
@@ -654,6 +740,17 @@ function relativizeProjectSourcePaths(payload, tempRoot) {
   }
 
   return payload;
+}
+
+function relativizeSourcePath(sourcePath, tempRoot) {
+  const relativePath = path.relative(tempRoot, sourcePath);
+  if (!relativePath || relativePath.startsWith("..") || path.isAbsolute(relativePath)) {
+    return sourcePath
+      .replace(/\\/g, "/")
+      .replace(/^.*?inscape-self-hosted-editor-[^/]+\//, "");
+  }
+
+  return relativePath.replace(/\\/g, "/");
 }
 
 async function refreshLineMapForScriptText(scriptText, workspace, existingLineMap = null) {

@@ -1892,6 +1892,31 @@ button[aria-pressed="true"],
   color: var(--muted);
 }
 
+.status-pill-kept {
+  background: rgba(106, 109, 87, 0.1);
+  color: var(--accent);
+}
+
+.status-pill-new,
+.status-pill-changed {
+  background: rgba(144, 116, 74, 0.12);
+  color: #8a6230;
+}
+
+.status-pill-conflict,
+.status-pill-stale,
+.status-pill-removed {
+  background: rgba(139, 74, 60, 0.12);
+  color: #8c4b3e;
+}
+
+.localization-review-summary {
+  color: var(--muted-strong);
+  font-size: 11px;
+  line-height: 1.5;
+  max-width: 220px;
+}
+
 .localization-translation-input {
   background: #fff;
   border: 1px solid rgba(39, 36, 31, 0.06);

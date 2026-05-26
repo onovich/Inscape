@@ -13,6 +13,7 @@ import { SelfHostedEditorHoverBridge } from "../LanguageServer/Bridges/SelfHoste
 import { SelfHostedEditorLineMapBridge } from "../LanguageServer/Bridges/SelfHostedEditorLineMapBridge.js";
 import { SelfHostedEditorReferencesBridge } from "../LanguageServer/Bridges/SelfHostedEditorReferencesBridge.js";
 import { SelfHostedEditorStoryGraphBridge } from "../LanguageServer/Bridges/SelfHostedEditorStoryGraphBridge.js";
+import { SelfHostedEditorLocalizationReviewBridge } from "../Localization/Bridges/SelfHostedEditorLocalizationReviewBridge.js";
 import { LocalizationEditorController } from "../Localization/Controllers/LocalizationEditorController.js";
 import { LocalizationDraftStore } from "../Localization/Models/LocalizationDraftStore.js";
 import { PreviewPanelController } from "../Preview/Controllers/PreviewPanelController.js";
@@ -85,10 +86,12 @@ async function main() {
   const diagnosticsController = new EditorDiagnosticsController(diagnosticsElement);
   const editorStatusController = new EditorStatusController(statusBarElement);
   const localizationDraftStore = new LocalizationDraftStore();
+  const localizationReviewBridge = new SelfHostedEditorLocalizationReviewBridge();
   const localizationController = new LocalizationEditorController(
     localizationPanelElement,
     localizationDraftStore,
-    exportLocalizationButtonElement
+    exportLocalizationButtonElement,
+    localizationReviewBridge
   );
   const previewController = new PreviewPanelController(
     previewElement,
@@ -114,6 +117,7 @@ async function main() {
   diagnosticsBridge.setWorkspaceContextProvider(workspaceContextProvider);
   hoverBridge.setWorkspaceContextProvider(workspaceContextProvider);
   lineMapBridge.setWorkspaceContextProvider(workspaceContextProvider);
+  localizationReviewBridge.setWorkspaceContextProvider(workspaceContextProvider);
   referencesBridge.setWorkspaceContextProvider(workspaceContextProvider);
   runtimeBridge.setWorkspaceContextProvider(workspaceContextProvider);
   storyGraphBridge.setWorkspaceContextProvider(workspaceContextProvider);
@@ -447,7 +451,7 @@ async function main() {
       : null;
     const documentModel = editorController.renderAuthoringState(scriptText, latestLineIdentityProvider);
     loadingController.setIdle("editor");
-    localizationController.render(scriptText);
+    await localizationController.render(scriptText);
     loadingController.setIdle("localization");
     const storyGraphSnapshot = await storyGraphBridge.getStoryGraph(scriptText);
     if (renderVersion !== diagnosticsRenderVersion) {
