@@ -655,10 +655,148 @@ assertEqual(previewController.documentModel.nodes[0].choices[0].prompt, "Choose 
 assertEqual(findElementByClass(previewElement, "story-metadata-tag")?.textContent, "scene court", "preview should render compiler metadata tags");
 assertIncludesText(getTextContent(previewElement), "Review the evidence.");
 assertEqual(findElementByClass(previewElement, "choice-prompt")?.textContent, "Choose action", "preview should render compiler choice prompt");
-findElementByClass(previewElement, "choice-button")?.click();
+const previewChoice = previewController.normalizeChoiceGroups(previewController.latestStoryModel.choices)[0].options[0];
+await previewController.selectChoice(previewChoice);
 assertEqual(findElementByClass(previewElement, "story-title")?.textContent, "Witness", "preview choice click should navigate the reading pane to the target node");
 assertIncludesText(getTextContent(previewElement), "I saw the clock stop.");
 assertEqual(previewSelectedLine, 8, "preview choice click should still reveal the target source line in the editor");
+const runtimePreviewElement = new FakeElement("main");
+const runtimePreviewController = new PreviewPanelController(runtimePreviewElement);
+const runtimeOpeningSnapshot = {
+  currentNode: {
+    choices: [
+      {
+        options: [
+          {
+            source: {
+              line: 5,
+              sourcePath: "samples/court-loop.inscape",
+            },
+            target: "Witness",
+            text: "Question witness",
+          },
+        ],
+        prompt: "Choose action",
+        source: {
+          line: 4,
+          sourcePath: "samples/court-loop.inscape",
+        },
+      },
+    ],
+    defaultNext: "",
+    lines: [
+      {
+        kind: "Dialogue",
+        source: {
+          line: 3,
+          sourcePath: "samples/court-loop.inscape",
+        },
+        speaker: "Narrator",
+        text: "Review the evidence.",
+      },
+    ],
+    name: "Opening",
+    source: {
+      line: 1,
+      sourcePath: "samples/court-loop.inscape",
+    },
+  },
+  state: {
+    currentNodeName: "Opening",
+    path: ["Opening"],
+  },
+};
+const runtimeWitnessSnapshot = {
+  currentNode: {
+    choices: [],
+    defaultNext: "End",
+    lines: [
+      {
+        kind: "Dialogue",
+        source: {
+          line: 9,
+          sourcePath: "samples/court-loop.inscape",
+        },
+        speaker: "Witness",
+        text: "I saw the clock stop.",
+      },
+    ],
+    name: "Witness",
+    source: {
+      line: 8,
+      sourcePath: "samples/court-loop.inscape",
+    },
+  },
+  state: {
+    currentNodeName: "Witness",
+    path: ["Opening", "Witness"],
+  },
+};
+const runtimeEndSnapshot = {
+  currentNode: {
+    choices: [],
+    defaultNext: "",
+    lines: [
+      {
+        kind: "Dialogue",
+        source: {
+          line: 12,
+          sourcePath: "samples/court-loop.inscape",
+        },
+        speaker: "Narrator",
+        text: "Done.",
+      },
+    ],
+    name: "End",
+    source: {
+      line: 11,
+      sourcePath: "samples/court-loop.inscape",
+    },
+  },
+  state: {
+    currentNodeName: "End",
+    path: ["Opening", "Witness", "End"],
+  },
+};
+let runtimeAction = null;
+runtimePreviewController.onChoiceSelected(async (choice) => {
+  runtimeAction = choice.runtimeAction;
+  runtimePreviewController.renderRuntimeSnapshot(runtimeWitnessSnapshot);
+  return true;
+});
+runtimePreviewController.render("", 2, storyGraph);
+const runtimeChoice = {
+  ...runtimePreviewController.normalizeChoiceGroups(runtimePreviewController.latestStoryModel.choices)[0].options[0],
+  nodeTitle: "Opening",
+  runtimeAction: {
+    groupIndex: 0,
+    optionIndex: 0,
+    type: "choose",
+  },
+};
+await runtimePreviewController.selectChoice(runtimeChoice);
+assertEqual(runtimeAction?.type, "choose", "runtime-backed preview choice should emit choose action");
+assertEqual(runtimeAction?.groupIndex, 0, "runtime-backed preview choice should preserve choice group index");
+assertEqual(runtimeAction?.optionIndex, 0, "runtime-backed preview choice should preserve choice option index");
+assertEqual(findElementByClass(runtimePreviewElement, "story-title")?.textContent, "Witness", "runtime-backed preview choice should re-render from returned runtime node");
+assertIncludesText(getTextContent(runtimePreviewElement), "I saw the clock stop.");
+let runtimeContinueAction = null;
+const runtimeContinuePreviewElement = new FakeElement("main");
+const runtimeContinuePreviewController = new PreviewPanelController(runtimeContinuePreviewElement);
+runtimeContinuePreviewController.onChoiceSelected(async (choice) => {
+  runtimeContinueAction = choice.runtimeAction;
+  runtimeContinuePreviewController.renderRuntimeSnapshot(runtimeEndSnapshot);
+  return true;
+});
+runtimeContinuePreviewController.renderRuntimeSnapshot(runtimeWitnessSnapshot);
+assertIncludesText(getTextContent(runtimeContinuePreviewElement), "continue");
+const runtimeContinueChoice = runtimeContinuePreviewController.normalizeChoiceGroups(
+  runtimeContinuePreviewController.latestStoryModel.choices
+)[0].options[0];
+await runtimeContinuePreviewController.selectChoice(runtimeContinueChoice);
+assertEqual(runtimeContinueAction?.type, "continue", "runtime-backed preview continue should emit continue action");
+assertEqual(findElementByClass(runtimeContinuePreviewElement, "story-title")?.textContent, "End", "runtime-backed continue should render returned runtime node");
+assertIncludesText(getTextContent(runtimeContinuePreviewElement), "Done.");
 const flowPreviewElement = new FakeElement("main");
 const flowPreviewController = new PreviewPanelController(flowPreviewElement);
 flowPreviewController.render("", 2, storyGraph);

@@ -217,6 +217,44 @@ async function main() {
     layoutController.ensureEditorVisible();
   });
 
+  previewController.onChoiceSelected(async (choice) => {
+    if (latestRuntimeSnapshot.provider !== "runtime-project" || !latestRuntimeSnapshot.snapshot?.currentNode) {
+      return false;
+    }
+
+    if (choice.nodeTitle !== latestRuntimeSnapshot.snapshot.currentNode.name || !choice.runtimeAction) {
+      return false;
+    }
+
+    const steppedRuntimeSnapshot = await runtimeBridge.stepRuntimeSnapshot(
+      editorController.getText(),
+      latestRuntimeSnapshot.snapshot,
+      choice.runtimeAction
+    );
+    if (steppedRuntimeSnapshot.provider !== "runtime-project" || !steppedRuntimeSnapshot.snapshot?.currentNode) {
+      console.error(
+        "SelfHostedEditor runtime action failed:",
+        steppedRuntimeSnapshot.error || "runtime snapshot unavailable"
+      );
+      return true;
+    }
+
+    latestRuntimeSnapshot = steppedRuntimeSnapshot;
+    previewController.renderRuntimeSnapshot(steppedRuntimeSnapshot.snapshot);
+    const focusLineNumber = Number(
+      steppedRuntimeSnapshot.snapshot.currentNode?.source?.line
+      || steppedRuntimeSnapshot.snapshot.currentNode?.lines?.[0]?.source?.line
+      || 0
+    );
+    if (focusLineNumber > 0) {
+      editorController.focusLine(focusLineNumber);
+      layoutController.ensureEditorVisible();
+    }
+
+    renderWorkspaceSession();
+    return true;
+  });
+
   diagnosticsController.onSourceLineSelected((lineNumber) => {
     editorController.focusLine(lineNumber);
     layoutController.ensureEditorVisible();

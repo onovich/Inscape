@@ -6,6 +6,7 @@ export class PreviewPanelController {
     this.modeButtonElements = Array.from(modeButtonElements);
     this.modeLabelElement = modeLabelElement;
     this.sourceLineSelectedHandlers = [];
+    this.choiceSelectedHandlers = [];
     this.activeLineNumber = 1;
     this.flowVisibleLineCount = 0;
     this.mode = "static";
@@ -27,6 +28,10 @@ export class PreviewPanelController {
 
   onSourceLineSelected(handler) {
     this.sourceLineSelectedHandlers.push(handler);
+  }
+
+  onChoiceSelected(handler) {
+    this.choiceSelectedHandlers.push(handler);
   }
 
   render(scriptText, activeLineNumber = 1, storyGraphModel = null) {
@@ -54,6 +59,23 @@ export class PreviewPanelController {
     this.latestStoryModel = storyModel;
     this.renderStoryModel(storyModel);
     this.highlightSourceLine(activeLineNumber);
+  }
+
+  renderRuntimeSnapshot(runtimeSnapshot) {
+    const storyModel = this.buildPreviewModelFromRuntimeSnapshot(runtimeSnapshot);
+    if (!storyModel) {
+      return false;
+    }
+
+    if (storyModel.nodeTitle !== this.currentNodeTitle) {
+      this.flowVisibleLineCount = 0;
+    }
+
+    this.currentNodeTitle = storyModel.nodeTitle;
+    this.latestStoryModel = storyModel;
+    this.renderStoryModel(storyModel);
+    this.highlightSourceLine(storyModel.sourceLine || 0);
+    return true;
   }
 
   renderStoryModel(storyModel) {
@@ -379,7 +401,90 @@ export class PreviewPanelController {
       choices: previewNode?.choices || [],
       lines: previewNode?.lines || [],
       nodeTitle: previewNode?.title || "",
+      sourceLine: Number(previewNode?.sourceLine || 0),
       title: previewNode?.title || this.documentModel?.title || "Untitled Node",
+    };
+  }
+
+  buildPreviewModelFromRuntimeSnapshot(runtimeSnapshot) {
+    const currentNode = runtimeSnapshot?.currentNode || null;
+    if (!currentNode) {
+      return null;
+    }
+
+    const nodeTitle = currentNode.name || "Untitled Node";
+    const sourceLine = Number(currentNode?.source?.line || currentNode?.lines?.[0]?.source?.line || 0);
+    const lines = (Array.isArray(currentNode.lines) ? currentNode.lines : [])
+      .map((line) => ({
+        anchor: line?.anchor || "",
+        kind: String(line?.kind || "narration").toLowerCase(),
+        nodeTitle,
+        raw: line?.raw || "",
+        sourceLine: Number(line?.source?.line || 0),
+        sourcePath: line?.source?.sourcePath || "",
+        speaker: line?.speaker || "",
+        text: line?.text || "",
+      }))
+      .filter((line) => line.sourceLine > 0);
+    const choices = (Array.isArray(currentNode.choices) ? currentNode.choices : [])
+      .map((group, groupIndex) => {
+        const options = (Array.isArray(group?.options) ? group.options : [])
+          .map((option, optionIndex) => ({
+            anchor: option?.anchor || "",
+            kind: "choice",
+            nodeTitle,
+            runtimeAction: {
+              groupIndex,
+              optionIndex,
+              type: "choose",
+            },
+            sourceLine: Number(option?.source?.line || 0),
+            sourcePath: option?.source?.sourcePath || "",
+            target: option?.target || "",
+            text: option?.text || "",
+          }))
+          .filter((option) => option.sourceLine > 0);
+        if (options.length === 0) {
+          return null;
+        }
+
+        return {
+          kind: "choiceGroup",
+          nodeTitle,
+          options,
+          prompt: group?.prompt || "",
+          sourceLine: Number(group?.source?.line || 0),
+          sourcePath: group?.source?.sourcePath || "",
+        };
+      })
+      .filter(Boolean);
+    if (currentNode.defaultNext) {
+      choices.push({
+        kind: "jumpGroup",
+        nodeTitle,
+        options: [{
+          kind: "jump",
+          nodeTitle,
+          runtimeAction: {
+            type: "continue",
+          },
+          sourceLine: 0,
+          sourcePath: "",
+          target: currentNode.defaultNext,
+          text: "continue",
+        }],
+        prompt: "",
+        sourceLine: 0,
+        sourcePath: "",
+      });
+    }
+
+    return {
+      choices,
+      lines,
+      nodeTitle,
+      sourceLine,
+      title: nodeTitle,
     };
   }
 
@@ -634,7 +739,7 @@ export class PreviewPanelController {
       return list;
     }
 
-    for (const group of groups) {
+    for (const [groupIndex, group] of groups.entries()) {
       if (group.prompt) {
         const prompt = document.createElement("div");
         prompt.className = "choice-prompt";
@@ -647,12 +752,26 @@ export class PreviewPanelController {
         list.append(prompt);
       }
 
-      for (const choice of group.options) {
+      for (const [optionIndex, choice] of group.options.entries()) {
         const button = document.createElement("button");
         button.className = "choice-button";
         button.type = "button";
         button.dataset.sourceLine = String(choice.sourceLine);
-        button.addEventListener("click", (event) => this.selectChoice(choice, event));
+        button.addEventListener("click", (event) => {
+          void this.selectChoice({
+            ...choice,
+            nodeTitle: choice.nodeTitle || group.nodeTitle || this.currentNodeTitle,
+            runtimeAction: choice.runtimeAction || (
+              group.kind === "jumpGroup"
+                ? { type: "continue" }
+                : {
+                  groupIndex,
+                  optionIndex,
+                  type: "choose",
+                }
+            ),
+          }, event);
+        });
 
         const text = document.createElement("span");
         text.className = "choice-text";
@@ -698,8 +817,12 @@ export class PreviewPanelController {
     ];
   }
 
-  selectChoice(choice, event = null) {
+  async selectChoice(choice, event = null) {
     event?.stopPropagation?.();
+    if (await this.notifyChoiceSelected(choice)) {
+      return;
+    }
+
     const targetNode = this.findNodeByTitle(choice.target || "");
     if (targetNode) {
       this.flowVisibleLineCount = 0;
@@ -719,5 +842,15 @@ export class PreviewPanelController {
     for (const handler of this.sourceLineSelectedHandlers) {
       handler(lineNumber);
     }
+  }
+
+  async notifyChoiceSelected(choice) {
+    for (const handler of this.choiceSelectedHandlers) {
+      if (await handler(choice)) {
+        return true;
+      }
+    }
+
+    return false;
   }
 }
