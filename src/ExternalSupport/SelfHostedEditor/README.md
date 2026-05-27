@@ -54,6 +54,7 @@ The current shell is intentionally small, but it now includes a first Monaco-bac
 - Monaco rename bridge: node titles and jump targets now support the editor rename flow, then apply a controlled whole-document patch that updates `# title` lines and matching `-> title` references.
 - Dev-hosted story graph bridge: the Graph view now requests compact project graph data from the preview server, which runs the existing CLI `compile-project` flow and returns real Compiler nodes and edges. Choice and default jump ports are built from that graph output; dragging an output port still patches the source `-> target` text.
 - Dev-hosted runtime bridge: the workbench now requests a Runtime snapshot from `/api/runtime-state`, which runs the existing CLI `runtime-project` flow over the temporary workspace and reports the entry node in the session state. `/api/runtime-action` can restore a previous Runtime state and step it through `continue` or `choose` via the same CLI contract. This is the first bridge toward a real Player path; Preview progression is still presenter state.
+- Runtime dev-host smoke now covers both direct bridge logic and real HTTP transport. `check:runtime` asserts the compact Runtime payload and the `choose` -> `continue` transition chain without starting a server first, while `check:runtime-http` starts the preview dev server in-process and exercises `/api/runtime-state` plus `/api/runtime-action` end to end.
 - Dev-host process output is treated as UTF-8 end to end: CLI / LanguageServer entries set UTF-8 stdout, and the SelfHostedEditor dev server collects child-process stdout/stderr buffers before decoding. Do not decode child-process chunks one-by-one, because split multibyte text can corrupt Chinese preview/runtime content.
 
 The draft extraction model is UI-only. It exists to make the shell useful while the real `Tooling` / `LanguageServer` / `Runtime` contracts are wired in.
@@ -106,10 +107,14 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:localization-review
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:localization-review-http
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:runtime
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:runtime-http
 ```
 
 `check:localization-review` exercises the full localization-review dev-host path for `samples/court-loop.inscape` without requiring the local HTTP server to be started first.
 `check:localization-review-http` starts the preview dev server in-process and performs a real HTTP request to `/api/localization-review`.
+`check:runtime` exercises the Runtime dev-host path without requiring the local HTTP server to be started first, and asserts `choose` plus `continue` transitions over a compact payload.
+`check:runtime-http` starts the preview dev server in-process and performs real HTTP requests to `/api/runtime-state` and `/api/runtime-action`.
 
 Serve the prototype locally:
 

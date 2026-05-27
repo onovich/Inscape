@@ -2,7 +2,7 @@
 
 状态：基线
 
-最后更新：2026-05-26
+最后更新：2026-05-27
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
@@ -20,7 +20,7 @@
 2026-05-26 本会话交接状态：
 
 - 已完成并推送一次文档队列收口：提交 `f43ac69 docs: organize current todo queue`。该提交把 `docs/todo.md` 的当前执行顺序改为 SelfHostedEditor 优先，并明确下一步按 L10N presenter、Runtime Player、Editor Backend 会话边界、Graph sidecar / 交互的顺序推进；同时移除了 `agent-handoff` 中“SelfHostedEditor 仍未跟踪”的过期提示。
-- 当前工作树还有一组未提交实现改动，目标是 SelfHostedEditor L10N 视图接入真实 Tooling localization review presenter。涉及文件：`src/ExternalSupport/SelfHostedEditor/DevScripts/StartSelfHostedEditorPreview.js`、`Scripts/Localization/Bridges/SelfHostedEditorLocalizationReviewBridge.js`、`Scripts/Localization/Controllers/LocalizationEditorController.js`、`Scripts/Entries/SelfHostedEditorAppEntry.js`、`Resources/Styles/SelfHostedEditorWorkbench.css`、`DevScripts/SelfHostedEditorModelContractCheck.js`、`DevScripts/SelfHostedEditorStructureContractCheck.js`、`package.json`。
+- 当前工作树这轮新增的是 Runtime dev-host 回归护栏：`StartSelfHostedEditorPreview.js` 现在导出 Runtime 直连 helper，`SelfHostedEditorRuntimeSmoke.js` / `SelfHostedEditorRuntimeHttpSmoke.js` 分别覆盖直连与真实 HTTP 的 `choose` / `continue` 链路，`package.json` 与相关文档也已同步更新。
 - 已新增开发宿主 `/api/localization-review`：它在临时 workspace 中先跑 `update-node-map-project`，再用传入的 `previousCsv` 或即时 `extract-l10n-project` 输出作为旧表，最后跑 `audit-l10n-alignment-project --from <csv>`。当前返回 `inscape.self-hosted-editor.localization-review` 的精简 UI 契约，但仍保持通用层已有的 `presenter.items` 形状，只裁掉浏览器暂时不需要的完整 audit report 和冗余字段。这条路径仍复用 Tooling / CLI 的 alignment 与 presenter，不在前端复制候选评分或 review 语义。
 - 已新增前端 `SelfHostedEditorLocalizationReviewBridge`，并让 `LocalizationEditorController.render()` 变成 async：正常 hosted 路径会优先渲染 `report.presenter.items`，表格新增 `Review` 列，状态 pill 使用 Tooling report 的 `kept / new / changed / conflict / stale / removed` 等状态；如果 bridge 不可用或 presenter 为空，仍回退旧的 `ScriptDocumentModelBuilder` session draft 行。该回退只能作为离线 / 开发宿主不可用 fallback，不能被当成真实 L10N 语义。
 - 已补一处 dev server 输入健壮性：所有 POST API 的 request body 现在通过 `parseJsonRequestBody()` 解析，统一剥离 UTF-8 BOM。这个问题是做真实 `/api/localization-review` smoke 时发现的：PowerShell `Set-Content -Encoding UTF8` 生成的 JSON 带 BOM，原先 `JSON.parse(body || "{}")` 会直接 500。
@@ -28,6 +28,7 @@
 - 已做过一次真实 CLI 拆分 smoke：在临时目录中分别运行 `update-node-map-project`、`extract-l10n-project -o old.csv`、`audit-l10n-alignment-project --from old.csv` 均快速通过，说明 CLI 侧不是阻塞点。
 - 已新增 `npm --prefix src\ExternalSupport\SelfHostedEditor run check:localization-review`。它直接导入 `StartSelfHostedEditorPreview.js` 里的本地化 review 路径，对 `samples/court-loop.inscape` 执行完整 dev-host 逻辑，不依赖本机先拉起 HTTP server；当前 smoke 结果为 170 items、约 94 KB payload、约 558ms。
 - 已新增 `npm --prefix src\ExternalSupport\SelfHostedEditor run check:localization-review-http`。它在同一 Node 进程里启动 preview dev server 实例，再真实 POST `/api/localization-review`，把完整 `court-loop` 样例的 HTTP 传输层也纳入回归；当前结果为 170 items、约 94 KB payload、约 590ms。
+- 已新增 `npm --prefix src\ExternalSupport\SelfHostedEditor run check:runtime` 与 `check:runtime-http`。它们分别覆盖 Runtime dev-host 直连路径与真实 HTTP transport，验证 compact Runtime payload 以及恢复 state 后的 `choose` / `continue` 推进，不再只靠 session 面板的人工观察来判断 Runtime bridge 是否还活着。
 - HTTP smoke 当前结论：用 `curl --noproxy "*"`、无 BOM JSON、最小脚本 `# Opening / Narrator: Hello` 直接 POST `/api/localization-review` 已成功返回 presenter；PowerShell `Invoke-RestMethod` 曾因本机代理路径超时，不要把它误判为服务端阻塞。后续复查显示完整 `samples/court-loop.inscape` 的底层 CLI 链路并不慢：临时 workspace 下 `update-node-map-project`、`extract-l10n-project`、`audit-l10n-alignment-project` 合计约 10 秒，因此当前更值得怀疑的是 HTTP 客户端、响应体积或 dev-host 传输层，而不是 Tooling 算法本身。此前测试端口 `5182`、`5183`、`5184`、`5185`、`5187` 的残留监听已复查并清理。
 - 交接时如果继续本节点，建议第一件事执行：`npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax`、`check:structure`、`check:model`，再做 `/api/localization-review` full sample HTTP smoke；full sample 不卡住后，再运行仓库脚本 `tools\CommitAndPushInscape.cmd "feat: connect self hosted localization presenter"`。
 
@@ -43,6 +44,7 @@
 - Preview 内容模型也已完成第一刀替换：正常本地服务路径会消费同一份 Compiler project graph，阅读行、元数据、choice prompt、choice option 与 default jump continue 入口都来自 `/api/story-graph` 输出；`ScriptDocumentModelBuilder` 只作为 Compiler bridge 不可用时的离线 fallback。注意：如果已经拿到 `compiler-project` graph，但节点 `previewLines` 缺失、数量与 Compiler lines 不一致，或 source line 无效，Preview 必须显示 compiler graph contract error，不能回退到同标题草模正文掩盖事故。
 - Runtime Player 接入前置契约已完成第一刀：新增 `runtime-project` CLI 命令，项目编译后由 `NarrativeRuntime` 启动 entry，并输出 `inscape.runtime-state` JSON；下一步 SelfHostedEditor 应通过开发宿主桥消费这个运行态，而不是在前端模拟当前节点。
 - SelfHostedEditor 已新增 `/api/runtime-state` 与 `SelfHostedEditorRuntimeBridge`，当前会通过临时 workspace 调用 `runtime-project`，并把 Runtime 当前 entry 节点显示到左下 session 状态。`runtime-project` 现在也支持 `--state` 后接 `--continue` 或 `--choose group option`，开发宿主 `/api/runtime-action` 会把这些动作转发给 CLI 后返回新 snapshot；Preview 还没有消费这个 Player action 状态。
+- Runtime 这条线现在已有明确回归护栏：`check:runtime` 直接验证 `runtime-project` 桥的 compact payload、相对 sourcePath 与 `Opening -> Witness -> End` 的 `choose -> continue` 状态链；`check:runtime-http` 额外验证 `/api/runtime-state` 与 `/api/runtime-action` 的真实请求往返。下一步若接 Preview Runtime Player，应直接复用这组契约，不要再在前端补一套新的运行时真相。
 - Script / Preview 语义样式已继续收口：`@...` 元数据在 Script 高亮模式下弱化，在 Preview 中隐藏 `@` 并展示成不可点击、不可选中的淡蓝灰 tag；`[query]` 在两侧都有轻量差异化 token 样式。Monaco 写作表面已关闭 Unicode ambiguous character 警告，中文标点不应再被误报为源码混淆风险。
 - Preview 当前会按活动源码行所在 block 渲染 Compiler graph 内容；编辑器 definition navigation 或其他源码定位进入新 block 时会切换预览 block，但编辑器滚动和预览滚动保持独立，不做滚动同步。外层 workbench body 不应再作为双栏共享滚动面。
 - SelfHostedEditor 当前已有安静 loading 状态，覆盖默认样例、Monaco、line-map、Compiler graph Preview / Graph、Runtime、diagnostics、outline、本地化和 workspace summary 刷新过程；不要回退成全屏遮罩或高饱和 spinner。

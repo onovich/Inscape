@@ -508,7 +508,7 @@ async function getStoryGraphForScriptText(scriptText, workspace) {
   });
 }
 
-async function getRuntimeStateForScriptText(scriptText, workspace) {
+export async function getRuntimeStateForScriptText(scriptText, workspace) {
   return withTemporaryWorkspace(workspace, scriptText, async ({ tempRoot }) => {
     const result = await runCliCommand([
       "runtime-project",
@@ -518,7 +518,7 @@ async function getRuntimeStateForScriptText(scriptText, workspace) {
   });
 }
 
-async function stepRuntimeStateForScriptText(scriptText, workspace, runtimeState, action) {
+export async function stepRuntimeStateForScriptText(scriptText, workspace, runtimeState, action) {
   return withTemporaryWorkspace(workspace, scriptText, async ({ tempRoot }) => {
     const statePath = path.join(tempRoot, "inscape.runtime-state.json");
     const cliArgs = [
@@ -738,7 +738,7 @@ function relativizeProjectSourcePaths(payload, tempRoot) {
       return source;
     }
 
-    source.sourcePath = relativizeSourcePath(source.sourcePath);
+    source.sourcePath = relativizeSourcePath(source.sourcePath, tempRoot);
     return source;
   };
 
