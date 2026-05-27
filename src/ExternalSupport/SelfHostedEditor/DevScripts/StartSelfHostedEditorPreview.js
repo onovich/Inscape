@@ -62,9 +62,9 @@ const mimeTypes = new Map([
   [".woff2", "font/woff2"],
 ]);
 
-function createSelfHostedEditorPreviewServer() {
+export function createSelfHostedEditorPreviewServer(serverPort = port) {
   return http.createServer(async (request, response) => {
-    const requestUrl = new URL(request.url || "/", `http://localhost:${port}`);
+    const requestUrl = new URL(request.url || "/", `http://localhost:${serverPort}`);
 
     if (request.method === "POST" && requestUrl.pathname === "/api/diagnostics") {
       await handleDiagnosticsRequest(request, response);

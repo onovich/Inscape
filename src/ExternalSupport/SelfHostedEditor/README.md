@@ -105,9 +105,11 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:structure
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:localization-review
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:localization-review-http
 ```
 
 `check:localization-review` exercises the full localization-review dev-host path for `samples/court-loop.inscape` without requiring the local HTTP server to be started first.
+`check:localization-review-http` starts the preview dev server in-process and performs a real HTTP request to `/api/localization-review`.
 
 Serve the prototype locally:
 
