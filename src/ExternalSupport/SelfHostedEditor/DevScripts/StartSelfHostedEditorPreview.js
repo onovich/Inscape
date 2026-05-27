@@ -6,7 +6,8 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const moduleRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const currentModulePath = fileURLToPath(import.meta.url);
+const moduleRoot = path.resolve(path.dirname(currentModulePath), "..");
 const repoRoot = path.resolve(moduleRoot, "..", "..", "..");
 const languageServerProjectPath = path.join(
   repoRoot,
@@ -61,96 +62,94 @@ const mimeTypes = new Map([
   [".woff2", "font/woff2"],
 ]);
 
-const server = http.createServer(async (request, response) => {
-  const requestUrl = new URL(request.url || "/", `http://localhost:${port}`);
+function createSelfHostedEditorPreviewServer() {
+  return http.createServer(async (request, response) => {
+    const requestUrl = new URL(request.url || "/", `http://localhost:${port}`);
 
-  if (request.method === "POST" && requestUrl.pathname === "/api/diagnostics") {
-    await handleDiagnosticsRequest(request, response);
-    return;
-  }
-
-  if (request.method === "POST" && requestUrl.pathname === "/api/hover") {
-    await handleHoverRequest(request, response);
-    return;
-  }
-
-  if (request.method === "POST" && requestUrl.pathname === "/api/definition") {
-    await handleDefinitionRequest(request, response);
-    return;
-  }
-
-  if (request.method === "POST" && requestUrl.pathname === "/api/references") {
-    await handleReferencesRequest(request, response);
-    return;
-  }
-
-  if (request.method === "POST" && requestUrl.pathname === "/api/completions") {
-    await handleCompletionsRequest(request, response);
-    return;
-  }
-
-  if (request.method === "POST" && requestUrl.pathname === "/api/document-symbols") {
-    await handleDocumentSymbolsRequest(request, response);
-    return;
-  }
-
-  if (request.method === "POST" && requestUrl.pathname === "/api/story-graph") {
-    await handleStoryGraphRequest(request, response);
-    return;
-  }
-
-  if (request.method === "POST" && requestUrl.pathname === "/api/runtime-state") {
-    await handleRuntimeStateRequest(request, response);
-    return;
-  }
-
-  if (request.method === "POST" && requestUrl.pathname === "/api/runtime-action") {
-    await handleRuntimeActionRequest(request, response);
-    return;
-  }
-
-  if (request.method === "POST" && requestUrl.pathname === "/api/line-map-refresh") {
-    await handleLineMapRefreshRequest(request, response);
-    return;
-  }
-
-  if (request.method === "POST" && requestUrl.pathname === "/api/localization-review") {
-    await handleLocalizationReviewRequest(request, response);
-    return;
-  }
-
-  const relativePath = requestUrl.pathname === "/"
-    ? "Resources/Workbench/SelfHostedEditorWorkbenchDocument.html"
-    : requestUrl.pathname.replace(/^\/+/, "");
-  const fileRoot = relativePath.startsWith("samples/")
-    ? repoRoot
-    : moduleRoot;
-  const filePath = path.resolve(fileRoot, relativePath);
-
-  if (!filePath.startsWith(fileRoot)) {
-    response.writeHead(403);
-    response.end("Forbidden");
-    return;
-  }
-
-  fs.readFile(filePath, (error, body) => {
-    if (error) {
-      response.writeHead(404);
-      response.end("Not found");
+    if (request.method === "POST" && requestUrl.pathname === "/api/diagnostics") {
+      await handleDiagnosticsRequest(request, response);
       return;
     }
 
-    response.writeHead(200, {
-      "Cache-Control": "no-store, max-age=0",
-      "Content-Type": mimeTypes.get(path.extname(filePath)) || "application/octet-stream",
-    });
-    response.end(body);
-  });
-});
+    if (request.method === "POST" && requestUrl.pathname === "/api/hover") {
+      await handleHoverRequest(request, response);
+      return;
+    }
 
-server.listen(port, "127.0.0.1", () => {
-  console.log(`Inscape SelfHostedEditor prototype: http://127.0.0.1:${port}/`);
-});
+    if (request.method === "POST" && requestUrl.pathname === "/api/definition") {
+      await handleDefinitionRequest(request, response);
+      return;
+    }
+
+    if (request.method === "POST" && requestUrl.pathname === "/api/references") {
+      await handleReferencesRequest(request, response);
+      return;
+    }
+
+    if (request.method === "POST" && requestUrl.pathname === "/api/completions") {
+      await handleCompletionsRequest(request, response);
+      return;
+    }
+
+    if (request.method === "POST" && requestUrl.pathname === "/api/document-symbols") {
+      await handleDocumentSymbolsRequest(request, response);
+      return;
+    }
+
+    if (request.method === "POST" && requestUrl.pathname === "/api/story-graph") {
+      await handleStoryGraphRequest(request, response);
+      return;
+    }
+
+    if (request.method === "POST" && requestUrl.pathname === "/api/runtime-state") {
+      await handleRuntimeStateRequest(request, response);
+      return;
+    }
+
+    if (request.method === "POST" && requestUrl.pathname === "/api/runtime-action") {
+      await handleRuntimeActionRequest(request, response);
+      return;
+    }
+
+    if (request.method === "POST" && requestUrl.pathname === "/api/line-map-refresh") {
+      await handleLineMapRefreshRequest(request, response);
+      return;
+    }
+
+    if (request.method === "POST" && requestUrl.pathname === "/api/localization-review") {
+      await handleLocalizationReviewRequest(request, response);
+      return;
+    }
+
+    const relativePath = requestUrl.pathname === "/"
+      ? "Resources/Workbench/SelfHostedEditorWorkbenchDocument.html"
+      : requestUrl.pathname.replace(/^\/+/, "");
+    const fileRoot = relativePath.startsWith("samples/")
+      ? repoRoot
+      : moduleRoot;
+    const filePath = path.resolve(fileRoot, relativePath);
+
+    if (!filePath.startsWith(fileRoot)) {
+      response.writeHead(403);
+      response.end("Forbidden");
+      return;
+    }
+
+    fs.readFile(filePath, (error, body) => {
+      if (error) {
+        response.writeHead(404);
+        response.end("Not found");
+        return;
+      }
+
+      response.writeHead(200, {
+        "Cache-Control": "no-store, max-age=0",
+        "Content-Type": mimeTypes.get(path.extname(filePath)) || "application/octet-stream",
+      });
+      response.end(body);
+    });
+  });
+}
 
 async function handleDiagnosticsRequest(request, response) {
   try {
@@ -549,7 +548,7 @@ async function stepRuntimeStateForScriptText(scriptText, workspace, runtimeState
   });
 }
 
-async function getLocalizationReviewForScriptText(scriptText, workspace, previousCsv) {
+export async function getLocalizationReviewForScriptText(scriptText, workspace, previousCsv) {
   return withTemporaryWorkspace(workspace, scriptText, async ({ tempRoot }) => {
     await runCliCommand([
       "update-node-map-project",
@@ -572,14 +571,18 @@ async function getLocalizationReviewForScriptText(scriptText, workspace, previou
       previousCsvPath,
     ], "CLI localization alignment audit");
     const report = relativizeLocalizationReviewPaths(parseJsonFileText(result.stdout), tempRoot);
-    return {
-      format: "inscape.self-hosted-editor.localization-review",
-      formatVersion: 1,
-      lineIdentity: report.lineIdentity || null,
-      presenter: report.presenter || { items: [] },
-      report,
-      summary: report.summary || null,
-    };
+    return compactLocalizationReviewPayload(report);
+  });
+}
+
+function isMainModule() {
+  return Boolean(process.argv[1]) && path.resolve(process.argv[1]) === currentModulePath;
+}
+
+if (isMainModule()) {
+  const server = createSelfHostedEditorPreviewServer();
+  server.listen(port, "127.0.0.1", () => {
+    console.log(`Inscape SelfHostedEditor prototype: http://127.0.0.1:${port}/`);
   });
 }
 
@@ -688,6 +691,45 @@ function compactRuntimeStatePayload(payload) {
       path: Array.isArray(payload?.state?.path) ? payload.state.path : [],
     },
   };
+}
+
+function compactLocalizationReviewPayload(report) {
+  return {
+    format: "inscape.self-hosted-editor.localization-review",
+    formatVersion: 2,
+    lineIdentity: report?.lineIdentity || null,
+    presenter: {
+      items: compactLocalizationReviewItems(report?.presenter?.items),
+    },
+    summary: report?.summary || null,
+  };
+}
+
+function compactLocalizationReviewItems(items) {
+  if (!Array.isArray(items)) {
+    return [];
+  }
+
+  return items.map((presenterItem) => {
+    const item = presenterItem?.item || {};
+    return {
+      detail: presenterItem?.detail || "",
+      item: {
+        kind: item.kind || "",
+        line: Number(item.line || presenterItem?.line || 0),
+        nodeTitle: item.nodeTitle || "",
+        review: item.review || "",
+        speaker: item.speaker || "",
+        status: item.status || "",
+        text: item.text || "",
+        translation: item.translation || "",
+      },
+      line: Number(presenterItem?.line || item.line || 0),
+      sourcePath: presenterItem?.sourcePath || item.sourcePath || "",
+      summary: presenterItem?.summary || "",
+      title: presenterItem?.title || "",
+    };
+  });
 }
 
 function relativizeProjectSourcePaths(payload, tempRoot) {

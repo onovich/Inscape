@@ -91,7 +91,7 @@ Known prototype layers that should be replaced next:
 - Graph has started that replacement path: it still uses draft extraction only as an offline fallback, while the served prototype consumes Compiler project graph output.
 - The line-map bridge is a dev-host HTTP + CLI bridge. It is semantically correct because it reuses Tooling, but the desktop client should eventually route this through a real editor backend or long-lived Tooling session.
 - Graph positions are session memory only. They need a layout sidecar before becoming persistent product behavior.
-- Localization editing is mid-migration from a session-local draft table toward `LocalizationAlignmentReportModel.Presenter`. The current in-progress branch adds a dev-host `/api/localization-review` bridge and a front-end `SelfHostedEditorLocalizationReviewBridge`; hosted mode should consume Tooling presenter items, while direct/offline mode still falls back to the draft table. Real CSV selection and write-back are still open.
+- Localization editing is mid-migration from a session-local draft table toward `LocalizationAlignmentReportModel.Presenter`. The dev-host `/api/localization-review` bridge now returns a compact review payload tailored to the workbench table instead of forwarding the full audit report, but it keeps the shared `presenter.items` shape rather than inventing a second host-only presenter contract. The front-end `SelfHostedEditorLocalizationReviewBridge` consumes those hosted review items while direct/offline mode still falls back to the draft table. Real CSV selection and write-back are still open.
 - Preview is not yet Runtime Player. It should eventually consume `Runtime` state rather than only front-end preview extraction.
 - Preview content now starts from Compiler project graph data, but its `Static` / `Flow` progression is still presenter state. A returned compiler-project graph must keep `previewLines` intact for every node that has compiler lines; malformed graph data is an explicit Preview error, not a draft-content fallback. The next replacement should move player progression, current node, and choice selection onto `Runtime` state.
 - The Runtime bridge can now step restored snapshots through `continue` and `choose`, but Preview does not yet consume those actions as its Player state.
@@ -104,7 +104,10 @@ Run static checks:
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:structure
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:localization-review
 ```
+
+`check:localization-review` exercises the full localization-review dev-host path for `samples/court-loop.inscape` without requiring the local HTTP server to be started first.
 
 Serve the prototype locally:
 
