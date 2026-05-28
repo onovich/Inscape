@@ -72,6 +72,12 @@ namespace Inscape.Cli {
                         return true;
                     }
 
+                    if (!CliStoryGraphCommand.TryApplyTranslationOverrides(args, jsonOptions, ref previousEntries, out string? overridesError)) {
+                        Console.Error.WriteLine(overridesError);
+                        exitCode = 1;
+                        return true;
+                    }
+
                     CliCore.WriteOrPrint(outputPath, LocalizationCsvFlowDomain.Update(result.Document, previousEntries));
                     CliCore.PrintDiagnostics(result.Diagnostics);
                     exitCode = result.HasErrors ? 1 : 0;

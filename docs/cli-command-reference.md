@@ -73,6 +73,7 @@ dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- compile 
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- preview samples\court-loop.inscape -o artifacts\court-loop.html
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- extract-l10n samples\court-loop.inscape -o artifacts\court-loop.l10n.csv
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- update-l10n samples\court-loop.inscape --from artifacts\old-l10n.csv -o artifacts\court-loop.l10n.updated.csv
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- update-l10n samples\court-loop.inscape --from artifacts\old-l10n.csv --translation-overrides artifacts\overrides.json -o artifacts\court-loop.l10n.updated.csv
 ```
 
 ## 项目级命令
@@ -108,6 +109,7 @@ dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- runtime-
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- runtime-project samples --state artifacts\runtime-state.json --choose 0 0 -o artifacts\runtime-state.next.json
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- extract-l10n-project samples -o artifacts\l10n.csv
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- update-l10n-project samples --from artifacts\old-l10n.csv -o artifacts\l10n.updated.csv
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- update-l10n-project samples --from artifacts\old-l10n.csv --translation-overrides artifacts\overrides.json -o artifacts\l10n.updated.csv
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- audit-l10n-alignment-project samples --from artifacts\old-l10n.csv --format text
 ```
 

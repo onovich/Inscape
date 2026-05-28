@@ -25,6 +25,7 @@ dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- extract-
 ```powershell
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- update-l10n path\story.inscape --from artifacts\old-l10n.csv -o artifacts\l10n.csv
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- update-l10n-project path\project --from artifacts\old-l10n.csv -o artifacts\l10n.csv
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- update-l10n-project path\project --from artifacts\old-l10n.csv --translation-overrides artifacts\overrides.json -o artifacts\l10n.updated.csv
 ```
 
 更新命令会按 `anchor` 精确继承旧表里的 `translation`，并输出额外的 `status` 列：
@@ -32,6 +33,18 @@ dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- update-l
 - `current`：当前脚本中仍然存在，并且在旧表中找到同一锚点。
 - `new`：当前脚本新增，旧表中没有同一锚点。
 - `removed`：旧表中存在，但当前脚本中已经没有同一锚点；这一行保留在输出中，仅供审校和迁移参考。
+- `--translation-overrides`：在真正执行更新前，先按 `anchor` 把一组草稿译文覆盖到旧表，再走原有 `update-l10n` / `update-l10n-project` 语义。这个入口适合编辑器把会话内草稿译文交回共享 CLI 流，而不是在前端自己拼真实 CSV。
+
+`overrides.json` 当前是一个数组，每项形如：
+
+```json
+[
+  {
+    "anchor": "l1_xxxxx",
+    "translation": "Edited translation"
+  }
+]
+```
 
 ## CSV 字段
 

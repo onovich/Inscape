@@ -40,9 +40,13 @@ async function main() {
   const diagnosticsElement = document.querySelector(".diagnostics-dock");
   const editorFrameElement = document.querySelector(".editor-frame");
   const exportLocalizationButtonElement = document.querySelector(".localization-export-button");
+  const exportUpdatedLocalizationButtonElement = document.querySelector(".localization-export-updated-button");
   const hintRailElement = document.querySelector(".hint-rail");
   const graphPanelElement = document.querySelector(".graph-panel");
   const localizationPanelElement = document.querySelector(".localization-panel");
+  const localizationPreviousCsvInputElement = document.querySelector(".localization-csv-input");
+  const localizationPreviousCsvButtonElement = document.querySelector(".localization-open-button");
+  const localizationPreviousCsvStatusElement = document.querySelector(".localization-source-status");
   const outlinePanelElement = document.querySelector(".document-outline-panel");
   const workspaceFilePanelElement = document.querySelector(".workspace-file-panel");
   const scriptFileInputElement = document.querySelector(".script-file-input");
@@ -87,12 +91,16 @@ async function main() {
   const editorStatusController = new EditorStatusController(statusBarElement);
   const localizationDraftStore = new LocalizationDraftStore();
   const localizationReviewBridge = new SelfHostedEditorLocalizationReviewBridge();
-  const localizationController = new LocalizationEditorController(
-    localizationPanelElement,
-    localizationDraftStore,
-    exportLocalizationButtonElement,
-    localizationReviewBridge
-  );
+  const localizationController = new LocalizationEditorController({
+    panelElement: localizationPanelElement,
+    draftStore: localizationDraftStore,
+    exportDraftButtonElement: exportLocalizationButtonElement,
+    exportUpdatedButtonElement: exportUpdatedLocalizationButtonElement,
+    openPreviousCsvButtonElement: localizationPreviousCsvButtonElement,
+    previousCsvInputElement: localizationPreviousCsvInputElement,
+    previousCsvStatusElement: localizationPreviousCsvStatusElement,
+    reviewBridge: localizationReviewBridge,
+  });
   const previewController = new PreviewPanelController(
     previewElement,
     previewModeButtonElements,

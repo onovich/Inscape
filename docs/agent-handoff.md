@@ -28,6 +28,9 @@
 - 已做过一次真实 CLI 拆分 smoke：在临时目录中分别运行 `update-node-map-project`、`extract-l10n-project -o old.csv`、`audit-l10n-alignment-project --from old.csv` 均快速通过，说明 CLI 侧不是阻塞点。
 - 已新增 `npm --prefix src\ExternalSupport\SelfHostedEditor run check:localization-review`。它直接导入 `StartSelfHostedEditorPreview.js` 里的本地化 review 路径，对 `samples/court-loop.inscape` 执行完整 dev-host 逻辑，不依赖本机先拉起 HTTP server；当前 smoke 结果为 170 items、约 94 KB payload、约 558ms。
 - 已新增 `npm --prefix src\ExternalSupport\SelfHostedEditor run check:localization-review-http`。它在同一 Node 进程里启动 preview dev server 实例，再真实 POST `/api/localization-review`，把完整 `court-loop` 样例的 HTTP 传输层也纳入回归；当前结果为 170 items、约 94 KB payload、约 590ms。
+- 已补上 SelfHostedEditor L10N 第一条真实写回链路：共享层 / CLI 新增 `--translation-overrides`，允许在 `update-l10n` / `update-l10n-project` 前按 anchor 应用前端草稿覆盖；开发宿主新增 `/api/localization-update`，前端只传 `previousCsv + translationOverrides`，继续由 CLI 生成真实 updated CSV，不在浏览器里重造 CSV 语义。
+- 已补上前端“真实旧 CSV 选择 + 真实 updated CSV 导出”薄适配：`LocalizationEditorController` 现在会显示 review baseline、读取旧 CSV、保留 session draft overrides，并通过 `SelfHostedEditorLocalizationReviewBridge.exportUpdatedLocalizationCsv()` 下载真实 updated CSV；draft CSV 导出仍保留给纯会话草稿场景。
+- 已新增 `npm --prefix src\ExternalSupport\SelfHostedEditor run check:localization-update` 与 `check:localization-update-http`。前者直连 dev-host helper，后者真实 POST `/api/localization-update`，两者都验证“真实旧 CSV + anchor overrides -> 真实 updated CSV”闭环。
 - 已新增 `npm --prefix src\ExternalSupport\SelfHostedEditor run check:runtime` 与 `check:runtime-http`。它们分别覆盖 Runtime dev-host 直连路径与真实 HTTP transport，验证 compact Runtime payload 以及恢复 state 后的 `advance-flow` / `rewind-flow` / `choose` / `continue` / `rewind` 推进，不再只靠 session 面板的人工观察来判断 Runtime bridge 是否还活着。
 - 已推进 Preview Runtime Player 第一小刀：阅读面板中的 choice / continue 点击现在会在“当前预览节点 === 最新 Runtime snapshot 当前节点”时优先走 `/api/runtime-action` 的 `choose` / `continue`，成功后直接用返回 snapshot 重绘阅读面并把编辑器定位到 Runtime 当前节点；若 Runtime 不可用或当前预览节点与 snapshot 脱节，仍回退为原来的 source-only 导航。这样先把最值钱的点击链路接到真实 Runtime，上游初始节点选择和 Flow 步进仍保持 presenter 状态，留给下一刀继续替换。
 - 已继续推进 Preview Runtime Player 第二小刀：普通 renderWorkbench 刷新时，只要当前编辑光标仍位于最新 Runtime snapshot 的当前节点中，阅读面板就优先继续渲染这个 Runtime 当前节点，而不是退回 compiler graph 的 presenter 节点。这样可以把“当前节点是谁”这层真相也挂到 Runtime 上，减少一刷新就掉回前端 presenter 的情况；但初始 player 选点、Flow 历史与步骤计数仍未接入 Runtime。
@@ -35,7 +38,7 @@
 - 已继续推进 Preview Runtime Player 第四小刀：Runtime 共享层现已新增 `rewind`，开发宿主 `/api/runtime-action` 与 SelfHostedEditor Runtime bridge 会原样透传它。阅读面板会显示轻量 Runtime path，并在 path 长度大于 1 时给出 Runtime-backed `Back` 按钮，点击后回退到上一个已访问节点并直接用返回 snapshot 重绘。这样“读过哪些节点、退回到哪一步”也开始挂到 Runtime 真相上；当前还没接上的主要只剩节点内 Flow 步进与步骤计数。
 - 已继续推进 Preview Runtime Player 第五小刀：节点内 Flow 步进现已开始挂到共享 Runtime。`NarrativeRuntime` 新增 `VisibleStepCount` 与 `ReadingProgress`，CLI `runtime-project` / 开发宿主 `/api/runtime-action` 新增 `advance-flow` / `rewind-flow`，SelfHostedEditor Preview 在 Runtime 可用时只透传这些动作并消费返回 snapshot，不再把“当前节点内读到第几步”继续保存在浏览器私有 presenter 里。现阶段仍保留本地 Flow fallback，只在 Runtime 不可用时使用。
 - HTTP smoke 当前结论：用 `curl --noproxy "*"`、无 BOM JSON、最小脚本 `# Opening / Narrator: Hello` 直接 POST `/api/localization-review` 已成功返回 presenter；PowerShell `Invoke-RestMethod` 曾因本机代理路径超时，不要把它误判为服务端阻塞。后续复查显示完整 `samples/court-loop.inscape` 的底层 CLI 链路并不慢：临时 workspace 下 `update-node-map-project`、`extract-l10n-project`、`audit-l10n-alignment-project` 合计约 10 秒，因此当前更值得怀疑的是 HTTP 客户端、响应体积或 dev-host 传输层，而不是 Tooling 算法本身。此前测试端口 `5182`、`5183`、`5184`、`5185`、`5187` 的残留监听已复查并清理。
-- 交接时如果继续本节点，建议第一件事执行：`npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax`、`check:structure`、`check:model`，再做 `/api/localization-review` full sample HTTP smoke；full sample 不卡住后，再运行仓库脚本 `tools\CommitAndPushInscape.cmd "feat: connect self hosted localization presenter"`。
+- 交接时如果继续本节点，建议第一件事执行：`npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax`、`check:structure`、`check:model`、`check:localization-review-http`、`check:localization-update-http`。若都通过，再决定下一刀是继续补 L10N 的直接文件写回 / review 筛选，还是转去 Runtime 长会话边界。
 
 已完成的关键收口：
 
@@ -76,7 +79,7 @@
 - 诊断虽已优先走 LanguageServer project probe，但当前仍只把 diagnostics marker 贴回活动文件；真正的多文件 Problems、跨文件 rename、长期会话缓存和桌面后端进程仍待补。
 - Graph 节点位置仍是会话内 `savedPositions`，尚未写入 graph layout sidecar；画布缩放/平移、连接合法性反馈、端口命中高亮仍可继续细化。
 - line-map bridge 当前走开发预览服务器 + CLI 临时 workspace，是正确复用 Tooling 语义的第一步，但未来桌面客户端应改为正式 Editor Backend / Tooling 会话桥，而不是每轮通过 HTTP dev server 启动 CLI。
-- L10N 视图正在接入真实 alignment review presenter：当前未提交草案已通过 `/api/localization-review` 与 `SelfHostedEditorLocalizationReviewBridge` 消费 Tooling presenter，并保留 session draft fallback；真实 CSV 文件选择 / 写回契约仍未完成，最终 HTTP smoke 仍待重跑。
+- L10N 视图已接入真实 alignment review presenter，并已补上真实旧 CSV 选择与真实 updated CSV 导出第一刀：`/api/localization-review` 负责 review presenter，`/api/localization-update` 负责把旧 CSV 与 draft overrides 交回 CLI 产出 updated CSV。当前仍未完成的是直接文件写回、review 筛选/批量操作，以及更清晰的 CSV 会话状态。
 - Preview 内容已来自 Compiler project graph；当 Runtime 可用时，节点内 Static / Flow 进度也开始消费 Runtime 阅读状态。当前仍未落地的是桌面端长生命周期 Runtime 会话，以及 Runtime 不可用时如何继续缩小本地 fallback 面积。
 - `runtime-project` / `/api/runtime-state` / `/api/runtime-action` 现已覆盖 Start、恢复 state 后 `advance-flow` / `rewind-flow` / `continue` / `rewind` / `choose` 的最小 stateless action 契约；Preview 的节点内 Flow 进度在 Runtime 可用时已受 Runtime state 驱动，但桌面端长生命周期 Runtime 会话仍未落地。
 

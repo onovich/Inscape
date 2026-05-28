@@ -605,11 +605,19 @@ const hintRailElement = new FakeElement("aside");
 globalThis.document = new FakeDocument();
 const localizationPanel = new FakeElement("section");
 const localizationExportButton = new FakeElement("button");
-const localizationController = new LocalizationEditorController(
-  localizationPanel,
+const localizationExportUpdatedButton = new FakeElement("button");
+const localizationOpenButton = new FakeElement("button");
+const localizationCsvInput = new FakeElement("input");
+const localizationSourceStatus = new FakeElement("span");
+const localizationController = new LocalizationEditorController({
+  panelElement: localizationPanel,
   draftStore,
-  localizationExportButton,
-  {
+  exportDraftButtonElement: localizationExportButton,
+  exportUpdatedButtonElement: localizationExportUpdatedButton,
+  openPreviousCsvButtonElement: localizationOpenButton,
+  previousCsvInputElement: localizationCsvInput,
+  previousCsvStatusElement: localizationSourceStatus,
+  reviewBridge: {
     async getLocalizationReview() {
       return {
         provider: "localization-review",
@@ -619,6 +627,7 @@ const localizationController = new LocalizationEditorController(
               {
                 detail: "samples/court-loop.inscape:3:1 <line line_DIALOGUE available> | Compiler sourced row",
                 item: {
+                  anchor: "line_anchor_1",
                   kind: "Dialogue",
                   line: 3,
                   nodeTitle: "Opening",
@@ -636,13 +645,19 @@ const localizationController = new LocalizationEditorController(
         },
       };
     },
-  }
-);
+  },
+});
 await localizationController.render("# Opening\nDraft fallback row");
 assertIncludesText(getTextContent(localizationPanel), "Compiler sourced row");
 assertIncludesText(getTextContent(localizationPanel), "Previous translation");
 assertIncludesText(getTextContent(localizationPanel), "changed");
 assertNotIncludesText(getTextContent(localizationPanel), "Draft fallback row");
+assertEqual(localizationSourceStatus.textContent, "Review baseline: current extract", "localization review should show default review baseline");
+draftStore.setTranslation(localizationController.rows[0], "");
+const localizationOverrides = localizationController.collectTranslationOverrides();
+assertEqual(localizationOverrides.length, 1, "localization controller should collect draft overrides by anchor");
+assertEqual(localizationOverrides[0].anchor, "line_anchor_1", "localization controller should preserve review anchor for overrides");
+assertEqual(localizationOverrides[0].translation, "", "localization controller should allow clearing previous translations");
 const previewElement = new FakeElement("main");
 const previewController = new PreviewPanelController(previewElement);
 let previewSelectedLine = 0;

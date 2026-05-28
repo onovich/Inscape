@@ -2,16 +2,41 @@ import { ScriptDocumentModelBuilder } from "../../ProjectWorkspace/Models/Script
 import { LocalizationDraftCsvBuilder } from "../Models/LocalizationDraftCsvBuilder.js";
 
 export class LocalizationEditorController {
-  constructor(panelElement, draftStore, exportButtonElement, reviewBridge = null) {
+  constructor({
+    panelElement,
+    draftStore,
+    exportDraftButtonElement,
+    exportUpdatedButtonElement = null,
+    openPreviousCsvButtonElement = null,
+    previousCsvInputElement = null,
+    previousCsvStatusElement = null,
+    reviewBridge = null,
+  }) {
     this.panelElement = panelElement;
     this.draftStore = draftStore;
-    this.exportButtonElement = exportButtonElement;
+    this.exportDraftButtonElement = exportDraftButtonElement;
+    this.exportUpdatedButtonElement = exportUpdatedButtonElement;
+    this.openPreviousCsvButtonElement = openPreviousCsvButtonElement;
+    this.previousCsvInputElement = previousCsvInputElement;
+    this.previousCsvStatusElement = previousCsvStatusElement;
     this.reviewBridge = reviewBridge;
     this.rows = [];
+    this.lastReviewProvider = "draft-fallback";
+    this.lastScriptText = "";
+    this.previousCsvName = "";
+    this.previousCsvText = "";
     this.translationChangedHandlers = [];
     this.sourceLineSelectedHandlers = [];
 
-    this.exportButtonElement.addEventListener("click", () => this.exportDraftCsv());
+    this.exportDraftButtonElement.addEventListener("click", () => this.exportDraftCsv());
+    this.exportUpdatedButtonElement?.addEventListener("click", () => {
+      void this.exportUpdatedCsv();
+    });
+    this.openPreviousCsvButtonElement?.addEventListener("click", () => this.previousCsvInputElement?.click());
+    this.previousCsvInputElement?.addEventListener("change", (event) => {
+      void this.handlePreviousCsvSelection(event.target?.files?.[0] || null);
+    });
+    this.renderPreviousCsvStatus();
   }
 
   onTranslationChanged(handler) {
@@ -23,13 +48,17 @@ export class LocalizationEditorController {
   }
 
   async render(scriptText) {
+    this.lastScriptText = scriptText;
     const documentModel = ScriptDocumentModelBuilder.build(scriptText);
     const reviewSnapshot = this.reviewBridge
-      ? await this.reviewBridge.getLocalizationReview(scriptText)
+      ? await this.reviewBridge.getLocalizationReview(scriptText, this.previousCsvText)
       : null;
     const rows = this.mapReviewRows(reviewSnapshot) || documentModel.translatableLines;
+    this.lastReviewProvider = reviewSnapshot?.provider || "draft-fallback";
     this.rows = rows;
-    this.exportButtonElement.disabled = rows.length === 0;
+    this.exportDraftButtonElement.disabled = rows.length === 0;
+    this.syncUpdatedExportAvailability();
+    this.renderPreviousCsvStatus();
 
     if (rows.length === 0) {
       this.panelElement.replaceChildren(this.createEmptyState());
@@ -108,16 +137,28 @@ export class LocalizationEditorController {
     input.className = "localization-translation-input";
     input.placeholder = "Translation draft";
     input.type = "text";
-    input.value = this.draftStore.getTranslation(item) || item.translation || "";
+    input.value = this.draftStore.hasDraft(item)
+      ? this.draftStore.getTranslation(item)
+      : (item.translation || "");
 
     input.addEventListener("input", () => {
-      this.draftStore.setTranslation(item, input.value.trim());
-      item.status = input.value.trim() ? "draft" : (item.reviewStatus || "empty");
+      const nextTranslation = input.value.trim();
+      const baseTranslation = item.translation || "";
+      if (nextTranslation === baseTranslation) {
+        this.draftStore.clearTranslation(item);
+      } else {
+        this.draftStore.setTranslation(item, nextTranslation);
+      }
+
+      item.status = this.draftStore.hasDraft(item)
+        ? "draft"
+        : (item.reviewStatus || (baseTranslation ? "review" : "empty"));
       const row = input.closest("tr");
       const statusCell = row?.querySelector("td");
       if (statusCell) {
         statusCell.replaceChildren(this.createStatusPill(item));
       }
+      this.syncUpdatedExportAvailability();
       this.notifyTranslationChanged();
     });
 
@@ -154,6 +195,7 @@ export class LocalizationEditorController {
       const item = presenterItem.item || {};
       const status = item.status || "review";
       return {
+        anchor: item.anchor || "",
         kind: this.normalizeKind(item.kind),
         nodeTitle: item.nodeTitle || "",
         review: item.review || "",
@@ -180,11 +222,90 @@ export class LocalizationEditorController {
 
   exportDraftCsv() {
     const csv = LocalizationDraftCsvBuilder.build(this.rows, this.draftStore);
+    this.downloadCsv(csv, "inscape-localization-draft.csv");
+  }
+
+  async handlePreviousCsvSelection(file) {
+    if (!file) {
+      return;
+    }
+
+    this.previousCsvName = file.name || "previous.csv";
+    this.previousCsvText = await file.text();
+    this.renderPreviousCsvStatus();
+    this.syncUpdatedExportAvailability();
+    if (this.lastScriptText) {
+      await this.render(this.lastScriptText);
+    }
+  }
+
+  syncUpdatedExportAvailability() {
+    if (!this.exportUpdatedButtonElement) {
+      return;
+    }
+
+    const hasAnchorRows = this.rows.some((row) => row.anchor);
+    const hasPreviousCsv = Boolean(this.previousCsvText.trim());
+    const hasReviewBridge = Boolean(this.reviewBridge);
+    this.exportUpdatedButtonElement.disabled = !hasAnchorRows || !hasPreviousCsv || !hasReviewBridge;
+  }
+
+  renderPreviousCsvStatus() {
+    if (!this.previousCsvStatusElement) {
+      return;
+    }
+
+    if (this.previousCsvName) {
+      this.previousCsvStatusElement.textContent = `Review baseline: ${this.previousCsvName}`;
+      this.previousCsvStatusElement.title = this.previousCsvName;
+      return;
+    }
+
+    this.previousCsvStatusElement.textContent = "Review baseline: current extract";
+    this.previousCsvStatusElement.title = "Review baseline: current extract";
+  }
+
+  collectTranslationOverrides() {
+    return this.rows
+      .filter((row) => row.anchor && this.draftStore.hasDraft(row))
+      .map((row) => ({
+        anchor: row.anchor,
+        translation: this.draftStore.getTranslation(row),
+      }));
+  }
+
+  async exportUpdatedCsv() {
+    if (!this.reviewBridge || !this.previousCsvText.trim() || !this.lastScriptText) {
+      return;
+    }
+
+    const payload = await this.reviewBridge.exportUpdatedLocalizationCsv(
+      this.lastScriptText,
+      this.previousCsvText,
+      this.collectTranslationOverrides()
+    );
+    if (payload.provider !== "localization-update" || !payload.csv) {
+      console.error("SelfHostedEditor localization update failed:", payload.error || "updated CSV unavailable");
+      return;
+    }
+
+    this.downloadCsv(payload.csv, this.buildUpdatedCsvFilename());
+  }
+
+  buildUpdatedCsvFilename() {
+    if (!this.previousCsvName) {
+      return "inscape-localization-updated.csv";
+    }
+
+    return this.previousCsvName.replace(/(?:\.csv)?$/i, ".updated.csv");
+  }
+
+  downloadCsv(csv, filename) {
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = "inscape-localization-draft.csv";
+    link.download = filename;
     document.body.append(link);
     link.click();
     link.remove();

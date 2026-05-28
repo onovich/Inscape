@@ -312,6 +312,52 @@ Narrator: Project start.
             AssertEqual(2, CountCsvLines(csv), "Project update CSV line count");
         }
 
+        static void CliUpdateL10nProjectAppliesTranslationOverrides() {
+            string directory = Path.Combine(Path.GetTempPath(), "inscape-tests", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory);
+            string storyPath = Path.Combine(directory, "00-start.inscape");
+            string oldCsvPath = Path.Combine(directory, "old.csv");
+            string overridesPath = Path.Combine(directory, "overrides.json");
+
+            File.WriteAllText(storyPath, """
+# start
+@entry
+Narrator: Project start.
+""", Encoding.UTF8);
+            string initialCsv = RunCliForOutput(new[] { "extract-l10n-project", directory });
+            string anchor = FirstDataAnchor(initialCsv);
+
+            File.WriteAllText(oldCsvPath,
+                              "anchor,node,kind,speaker,text,translation,sourcePath,line,column\n"
+                              + anchor + ",start,Dialogue,Narrator,Project start.,Project translation,old.inscape,3,1\n",
+                              Encoding.UTF8);
+            File.WriteAllText(overridesPath,
+                              "[\n"
+                              + "  {\n"
+                              + "    \"anchor\": \"" + anchor + "\",\n"
+                              + "    \"translation\": \"Edited translation\"\n"
+                              + "  }\n"
+                              + "]\n",
+                              Encoding.UTF8);
+
+            string csv;
+            try {
+                csv = RunCliForOutput(new[] {
+                    "update-l10n-project",
+                    directory,
+                    "--from",
+                    oldCsvPath,
+                    "--translation-overrides",
+                    overridesPath,
+                });
+            } finally {
+                Directory.Delete(directory, true);
+            }
+
+            AssertTrue(csv.Contains("Edited translation,current"), "Project update should apply translation overrides before merge.");
+            AssertFalse(csv.Contains("Project translation,current"), "Project update should not keep the old translation when an override is present.");
+        }
+
         static void LocalizationAlignmentAuditReportsReviewStatuses() {
             StoryGraphCompilerDomain compiler = new StoryGraphCompilerDomain();
             StoryGraphCompilationResultModel initial = compiler.Compile(new List<DslScriptSourceModel> {

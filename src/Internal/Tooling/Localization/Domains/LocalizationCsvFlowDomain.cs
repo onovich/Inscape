@@ -19,6 +19,31 @@ namespace Inscape.Tooling {
             return writer.Write(merger.Merge(extractor.Extract(document), previousEntries), true);
         }
 
+        public static List<LocalizationEntryModel> ApplyTranslationOverrides(IReadOnlyList<LocalizationEntryModel> previousEntries,
+                                                                             IReadOnlyList<LocalizationTranslationOverrideModel> overrides) {
+            Dictionary<string, string> translationsByAnchor = new Dictionary<string, string>(System.StringComparer.Ordinal);
+            for (int i = 0; i < overrides.Count; i += 1) {
+                LocalizationTranslationOverrideModel item = overrides[i];
+                if (string.IsNullOrWhiteSpace(item.Anchor)) {
+                    continue;
+                }
+
+                translationsByAnchor[item.Anchor] = item.Translation ?? string.Empty;
+            }
+
+            List<LocalizationEntryModel> entries = new List<LocalizationEntryModel>();
+            for (int i = 0; i < previousEntries.Count; i += 1) {
+                LocalizationEntryModel entry = Copy(previousEntries[i]);
+                if (translationsByAnchor.TryGetValue(entry.Anchor, out string? translation)) {
+                    entry.Translation = translation;
+                }
+
+                entries.Add(entry);
+            }
+
+            return entries;
+        }
+
         public static bool TryReadPreviousEntries(string? previousLocalizationPath,
                                                   out List<LocalizationEntryModel> entries,
                                                   out string? errorMessage) {
@@ -37,6 +62,19 @@ namespace Inscape.Tooling {
             LocalizationCsvReaderDomain reader = new LocalizationCsvReaderDomain();
             entries = reader.Read(File.ReadAllText(previousLocalizationPath, Encoding.UTF8));
             return true;
+        }
+
+        static LocalizationEntryModel Copy(LocalizationEntryModel entry) {
+            return new LocalizationEntryModel {
+                Anchor = entry.Anchor,
+                Kind = entry.Kind,
+                NodeName = entry.NodeName,
+                Source = new SourceSpanModel(entry.Source.SourcePath, entry.Source.Line, entry.Source.Column),
+                Speaker = entry.Speaker,
+                Status = entry.Status,
+                Text = entry.Text,
+                Translation = entry.Translation,
+            };
         }
 
     }

@@ -121,6 +121,11 @@ export function createSelfHostedEditorPreviewServer(serverPort = port) {
       return;
     }
 
+    if (request.method === "POST" && requestUrl.pathname === "/api/localization-update") {
+      await handleLocalizationUpdateRequest(request, response);
+      return;
+    }
+
     const relativePath = requestUrl.pathname === "/"
       ? "Resources/Workbench/SelfHostedEditorWorkbenchDocument.html"
       : requestUrl.pathname.replace(/^\/+/, "");
@@ -439,6 +444,41 @@ async function handleLocalizationReviewRequest(request, response) {
   }
 }
 
+async function handleLocalizationUpdateRequest(request, response) {
+  try {
+    const body = await readRequestBody(request);
+    const payload = parseJsonRequestBody(body);
+    const scriptText = typeof payload.scriptText === "string"
+      ? payload.scriptText
+      : "";
+    const workspace = normalizeWorkspacePayload(payload.workspace);
+    const previousCsv = typeof payload.previousCsv === "string"
+      ? payload.previousCsv
+      : "";
+    const translationOverrides = Array.isArray(payload.translationOverrides)
+      ? payload.translationOverrides
+      : [];
+
+    const updatePayload = await getUpdatedLocalizationCsvForScriptText(
+      scriptText,
+      workspace,
+      previousCsv,
+      translationOverrides
+    );
+    response.writeHead(200, {
+      "Content-Type": "application/json; charset=utf-8",
+    });
+    response.end(JSON.stringify(updatePayload));
+  } catch (error) {
+    response.writeHead(500, {
+      "Content-Type": "application/json; charset=utf-8",
+    });
+    response.end(JSON.stringify({
+      error: error instanceof Error ? error.message : String(error),
+    }));
+  }
+}
+
 function readRequestBody(request) {
   return new Promise((resolve, reject) => {
     const chunks = [];
@@ -578,6 +618,35 @@ export async function getLocalizationReviewForScriptText(scriptText, workspace, 
     ], "CLI localization alignment audit");
     const report = relativizeLocalizationReviewPaths(parseJsonFileText(result.stdout), tempRoot);
     return compactLocalizationReviewPayload(report);
+  });
+}
+
+export async function getUpdatedLocalizationCsvForScriptText(scriptText, workspace, previousCsv, translationOverrides = []) {
+  return withTemporaryWorkspace(workspace, scriptText, async ({ tempRoot }) => {
+    if (!String(previousCsv || "").trim()) {
+      throw new Error("Localization update requires previousCsv text.");
+    }
+
+    const previousCsvPath = path.join(tempRoot, "inscape.localization.previous.csv");
+    const overridesPath = path.join(tempRoot, "inscape.localization.overrides.json");
+    await fsp.writeFile(previousCsvPath, previousCsv, "utf8");
+    const cliArgs = [
+      "update-l10n-project",
+      tempRoot,
+      "--from",
+      previousCsvPath,
+    ];
+    if (Array.isArray(translationOverrides) && translationOverrides.length > 0) {
+      await fsp.writeFile(overridesPath, JSON.stringify(translationOverrides, null, 2), "utf8");
+      cliArgs.push("--translation-overrides", overridesPath);
+    }
+
+    const result = await runCliCommand(cliArgs, "CLI localization project update");
+    return {
+      csv: result.stdout,
+      format: "inscape.self-hosted-editor.localization-updated-csv",
+      formatVersion: 1,
+    };
   });
 }
 
@@ -731,6 +800,7 @@ function compactLocalizationReviewItems(items) {
     return {
       detail: presenterItem?.detail || "",
       item: {
+        anchor: item.anchor || "",
         kind: item.kind || "",
         line: Number(item.line || presenterItem?.line || 0),
         nodeTitle: item.nodeTitle || "",

@@ -25,8 +25,8 @@
                                      "dotnet run --project src\\Internal\\Cli\\Inscape.Cli\\Inscape.Cli.csproj -- extract-l10n samples\\court-loop.inscape -o artifacts\\court-loop.l10n.csv"),
             new CliCommandModel("update-l10n", "Single-file", false,
                                      "Update a one-file localization CSV from a previous CSV by exact anchor match.",
-                                     "inscape update-l10n <file.inscape> --from old.csv [-o strings.csv]",
-                                     "dotnet run --project src\\Internal\\Cli\\Inscape.Cli\\Inscape.Cli.csproj -- update-l10n samples\\court-loop.inscape --from artifacts\\old-l10n.csv -o artifacts\\court-loop.l10n.csv"),
+                                     "inscape update-l10n <file.inscape> --from old.csv [--translation-overrides overrides.json] [-o strings.csv]",
+                                     "dotnet run --project src\\Internal\\Cli\\Inscape.Cli\\Inscape.Cli.csproj -- update-l10n samples\\court-loop.inscape --from artifacts\\old-l10n.csv --translation-overrides artifacts\\overrides.json -o artifacts\\court-loop.l10n.csv"),
             new CliCommandModel("export-host-schema-template", "Host schema", false,
                                      "Write a first host schema template for pure queries and host events.",
                                      "inscape export-host-schema-template [-o inscape.host.schema.json]",
@@ -84,8 +84,8 @@
                                      "dotnet run --project src\\Internal\\Cli\\Inscape.Cli\\Inscape.Cli.csproj -- extract-l10n-project samples -o artifacts\\l10n.csv"),
             new CliCommandModel("update-l10n-project", "Project", true,
                                      "Update a project localization CSV from a previous CSV by exact anchor match.",
-                                     "inscape update-l10n-project <root> --from old.csv [--entry node.name] [--override source.inscape temp.inscape] [-o strings.csv]",
-                                     "dotnet run --project src\\Internal\\Cli\\Inscape.Cli\\Inscape.Cli.csproj -- update-l10n-project samples --from artifacts\\old-l10n.csv -o artifacts\\l10n.updated.csv"),
+                                     "inscape update-l10n-project <root> --from old.csv [--translation-overrides overrides.json] [--entry node.name] [--override source.inscape temp.inscape] [-o strings.csv]",
+                                     "dotnet run --project src\\Internal\\Cli\\Inscape.Cli\\Inscape.Cli.csproj -- update-l10n-project samples --from artifacts\\old-l10n.csv --translation-overrides artifacts\\overrides.json -o artifacts\\l10n.updated.csv"),
         };
 
         static readonly string[] CategoryOrder = new[] {
@@ -113,11 +113,11 @@
             Console.WriteLine("  inscape check <file.inscape>");
             Console.WriteLine("  inscape diagnose <file.inscape> [-o diagnostics.json]");
             Console.WriteLine("  inscape extract-l10n <file.inscape> [-o strings.csv]");
-            Console.WriteLine("  inscape update-l10n <file.inscape> --from old.csv [-o strings.csv]");
+            Console.WriteLine("  inscape update-l10n <file.inscape> --from old.csv [--translation-overrides overrides.json] [-o strings.csv]");
             Console.WriteLine("  inscape check-project <root> [--entry node.name]");
             Console.WriteLine("  inscape diagnose-project <root> [--entry node.name] [--override source.inscape temp.inscape] [-o diagnostics.json]");
             Console.WriteLine("  inscape extract-l10n-project <root> [--entry node.name] [--override source.inscape temp.inscape] [-o strings.csv]");
-            Console.WriteLine("  inscape update-l10n-project <root> --from old.csv [--entry node.name] [--override source.inscape temp.inscape] [-o strings.csv]");
+            Console.WriteLine("  inscape update-l10n-project <root> --from old.csv [--translation-overrides overrides.json] [--entry node.name] [--override source.inscape temp.inscape] [-o strings.csv]");
             Console.WriteLine("  inscape compile-project <root> [--entry node.name] [-o output.json]");
             Console.WriteLine("  inscape preview-project <root> [--entry node.name] [-o preview.html]");
             Console.WriteLine("  inscape runtime-project <root> [--entry node.name] [--state runtime-state.json] [--continue|--advance-flow|--rewind|--rewind-flow|--choose group option] [-o runtime-state.json]");

@@ -104,6 +104,11 @@ namespace Inscape.Cli {
                         return 1;
                     }
 
+                    if (!TryApplyTranslationOverrides(args, jsonOptions, ref previousEntries, out string? overridesError)) {
+                        Console.Error.WriteLine(overridesError);
+                        return 1;
+                    }
+
                     CliCore.WriteOrPrint(outputPath, LocalizationCsvFlowDomain.Update(result.Graph, previousEntries));
                     CliCore.PrintDiagnostics(result.Diagnostics);
                     return result.HasErrors ? 1 : 0;
@@ -184,6 +189,33 @@ namespace Inscape.Cli {
             }
 
             return true;
+        }
+
+        internal static bool TryApplyTranslationOverrides(string[] args,
+                                                          JsonSerializerOptions jsonOptions,
+                                                          ref List<LocalizationEntryModel> previousEntries,
+                                                          out string? errorMessage) {
+            errorMessage = null;
+            string? overridesPath = CliCore.ReadOption(args, "--translation-overrides");
+            if (string.IsNullOrWhiteSpace(overridesPath)) {
+                return true;
+            }
+
+            string fullPath = Path.GetFullPath(overridesPath);
+            if (!File.Exists(fullPath)) {
+                errorMessage = "Translation overrides file not found: " + fullPath;
+                return false;
+            }
+
+            try {
+                List<LocalizationTranslationOverrideModel>? overrides = JsonSerializer.Deserialize<List<LocalizationTranslationOverrideModel>>(File.ReadAllText(fullPath), jsonOptions);
+                previousEntries = LocalizationCsvFlowDomain.ApplyTranslationOverrides(previousEntries,
+                                                                                     overrides ?? new List<LocalizationTranslationOverrideModel>());
+                return true;
+            } catch (JsonException ex) {
+                errorMessage = "Translation overrides file is not valid JSON: " + ex.Message;
+                return false;
+            }
         }
 
         static bool TryReadRuntimeState(string statePath,

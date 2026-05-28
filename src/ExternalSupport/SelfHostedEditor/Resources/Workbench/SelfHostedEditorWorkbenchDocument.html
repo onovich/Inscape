@@ -91,7 +91,13 @@
               <div class="pane-title">
                 <span>Localization</span>
                 <small>Draft</small>
-                <button class="localization-export-button" type="button">Export draft CSV</button>
+                <div class="localization-toolbar">
+                  <button class="localization-open-button" type="button">Open previous CSV</button>
+                  <input class="localization-csv-input" type="file" accept=".csv,text/csv">
+                  <span class="localization-source-status">Review baseline: current extract</span>
+                  <button class="localization-export-updated-button" type="button" disabled>Export updated CSV</button>
+                  <button class="localization-export-button" type="button">Export draft CSV</button>
+                </div>
               </div>
               <div class="localization-panel"></div>
             </section>

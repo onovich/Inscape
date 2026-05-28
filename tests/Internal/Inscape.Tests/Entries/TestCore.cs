@@ -74,6 +74,7 @@ namespace Inscape.Tests {
                 ("cli extract-l10n-project emits csv", CliExtractL10nProjectEmitsCsv),
                 ("cli update-l10n preserves translations", CliUpdateL10nPreservesTranslations),
                 ("cli update-l10n-project preserves translations", CliUpdateL10nProjectPreservesTranslations),
+                ("cli update-l10n-project applies translation overrides", CliUpdateL10nProjectAppliesTranslationOverrides),
                 ("localization alignment audit reports review statuses", LocalizationAlignmentAuditReportsReviewStatuses),
                 ("localization review presenter summarizes additional candidates", LocalizationReviewPresenterSummarizesAdditionalCandidates),
                 ("localization alignment audit keeps low confidence similar text as conflict", LocalizationAlignmentAuditKeepsLowConfidenceSimilarTextAsConflict),
