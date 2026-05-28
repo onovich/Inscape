@@ -40,12 +40,14 @@ async function main() {
   const diagnosticsElement = document.querySelector(".diagnostics-dock");
   const editorFrameElement = document.querySelector(".editor-frame");
   const exportLocalizationButtonElement = document.querySelector(".localization-export-button");
+  const clearLocalizationDraftsButtonElement = document.querySelector(".localization-clear-drafts-button");
   const exportUpdatedLocalizationButtonElement = document.querySelector(".localization-export-updated-button");
   const hintRailElement = document.querySelector(".hint-rail");
   const graphPanelElement = document.querySelector(".graph-panel");
   const localizationPanelElement = document.querySelector(".localization-panel");
   const localizationFilterModeElement = document.querySelector(".localization-filter-select");
   const localizationFilterSummaryElement = document.querySelector(".localization-filter-summary");
+  const localizationSessionStatusElement = document.querySelector(".localization-session-status");
   const localizationPreviousCsvInputElement = document.querySelector(".localization-csv-input");
   const localizationPreviousCsvButtonElement = document.querySelector(".localization-open-button");
   const localizationPreviousCsvStatusElement = document.querySelector(".localization-source-status");
@@ -96,6 +98,7 @@ async function main() {
   const localizationController = new LocalizationEditorController({
     panelElement: localizationPanelElement,
     draftStore: localizationDraftStore,
+    clearVisibleDraftsButtonElement: clearLocalizationDraftsButtonElement,
     exportDraftButtonElement: exportLocalizationButtonElement,
     exportUpdatedButtonElement: exportUpdatedLocalizationButtonElement,
     filterModeElement: localizationFilterModeElement,
@@ -103,6 +106,7 @@ async function main() {
     openPreviousCsvButtonElement: localizationPreviousCsvButtonElement,
     previousCsvInputElement: localizationPreviousCsvInputElement,
     previousCsvStatusElement: localizationPreviousCsvStatusElement,
+    sessionStatusElement: localizationSessionStatusElement,
     reviewBridge: localizationReviewBridge,
   });
   const previewController = new PreviewPanelController(

@@ -854,6 +854,16 @@ button[aria-pressed="true"],
   white-space: nowrap;
 }
 
+.localization-session-status {
+  color: var(--muted);
+  font-size: 9px;
+  max-width: 320px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .preview-mode-switcher {
   align-items: center;
   display: inline-flex;
@@ -2041,7 +2051,8 @@ button[aria-pressed="true"],
 }
 
 .localization-export-updated-button:disabled,
-.localization-export-button:disabled {
+.localization-export-button:disabled,
+.localization-clear-drafts-button:disabled {
   cursor: default;
   opacity: 0.4;
 }

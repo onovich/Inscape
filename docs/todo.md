@@ -51,12 +51,13 @@ SelfHostedEditor regression invariant: Preview choice clicks must advance the re
 - 已新增 `check:runtime` 与 `check:runtime-http`：前者直接导入 SelfHostedEditor preview dev script，验证 compact Runtime payload 与 `choose -> continue` 状态推进；后者在同一 Node 进程里启动 preview dev server，再真实请求 `/api/runtime-state` 与 `/api/runtime-action`，把 Runtime transport 这一层也纳入稳定回归入口。
 - 2026-05-28 已完成：SelfHostedEditor L10N 视图已从“只有 session draft CSV”推进到“真实旧 CSV 选择 + 真实 updated CSV 导出”第一刀。共享层 / CLI 新增 `--translation-overrides`，开发宿主新增 `/api/localization-update`，前端只传 `previousCsv + anchor-based translation overrides`，不在浏览器里自己拼真实 CSV。当前用户既可以继续导出轻量 draft CSV，也可以选择真实旧 CSV 后导出真实 updated CSV。
 - 2026-05-28 已完成：SelfHostedEditor L10N 视图已补一层宿主侧 review 筛选，不改共享 review 语义。`LocalizationEditorController` 现在支持按 `all / actionable / draft / empty / kept / new / changed / conflict / stale / removed` 切换可见行，并显示当前 `Showing X of Y rows` 摘要；筛选只作用于浏览器可见性，不改变 Tooling presenter、draft overrides 或 updated CSV 导出链路。
+- 2026-05-28 已完成：SelfHostedEditor L10N 视图已补一层更清楚的 CSV 会话状态与当前筛选范围的一键清草稿。当前会显示 session override 数、当前筛选下可见 draft 数，以及 updated CSV 为什么还不能导出；同时支持只清掉当前 filter 下可见的 draft overrides，不影响 review presenter 或真实 updated CSV 语义。
 - 已新增 `check:localization-review` dev-host smoke：它直接导入 SelfHostedEditor preview dev script，对 `samples/court-loop.inscape` 执行完整本地化 review 路径，不依赖先拉起本地 HTTP server。当前结果为 170 items、约 94 KB payload、约 558ms，可作为后续 `/api/localization-review` 收口的稳定回归入口。
 - 已新增 `check:localization-review-http`：它在同一 Node 进程里启动 SelfHostedEditor preview dev server，再真实请求 `/api/localization-review`，补上 HTTP transport 这一层的稳定回归入口。
 - 已新增 `check:localization-update` 与 `check:localization-update-http`：它们分别覆盖 `/api/localization-update` 的直连 helper 与真实 HTTP transport，验证“真实旧 CSV + draft overrides -> 真实 updated CSV”这条写回链路。
 - 当前执行顺序（2026-05-26）：
 	1. 先巩固最近 SelfHostedEditor 回归边界：Preview 不得静默丢 `previewLines`，UTF-8 桥接不得再产生中文乱码，Flow 的 typewriter / wheel / `@` 标签行为和 loading 状态都要由 `check:model` / `check:structure` 继续守住。
-	2. 第一实施节点继续留在 L10N 视图，但目标改为“筛选之后的下一刀”：补更明确的 CSV 会话状态、直接文件保存/替换边界，或加一层批量审校动作，不要把真实 CSV 语义搬回浏览器。
+	2. 第一实施节点继续留在 L10N 视图，但目标改为“会话状态之后的下一刀”：补直接文件保存/替换边界，或加一层批量审校动作，不要把真实 CSV 语义搬回浏览器。
 	3. 第二实施节点再推进 Preview Runtime Player：Runtime smoke 现在已经守住 `/api/runtime-state` / `/api/runtime-action` 的 compact payload，以及 `advance-flow` / `rewind-flow` / `choose` / `continue` / `rewind` 契约；下一刀更适合继续缩小 Runtime 不可用时的本地 fallback，或开始整理长生命周期 Runtime 会话边界，而不是重新扩展前端 presenter 状态机。
 	4. 第三实施节点整理 Editor Backend 会话边界：把 line-map、Runtime、LanguageServer、localization update 这些开发服务器 + CLI 临时 workspace 桥逐步收成更接近桌面客户端的会话模型；短期可保留 HTTP dev bridge，但前端不得新增语义真相。
 	5. 第四实施节点继续 Graph：补 graph layout sidecar、连接合法性反馈、端口 hover / drag 状态和跨文件图编辑回写边界。

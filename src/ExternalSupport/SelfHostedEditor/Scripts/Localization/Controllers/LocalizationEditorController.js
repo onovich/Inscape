@@ -5,6 +5,7 @@ export class LocalizationEditorController {
   constructor({
     panelElement,
     draftStore,
+    clearVisibleDraftsButtonElement = null,
     exportDraftButtonElement,
     exportUpdatedButtonElement = null,
     filterModeElement = null,
@@ -12,10 +13,12 @@ export class LocalizationEditorController {
     openPreviousCsvButtonElement = null,
     previousCsvInputElement = null,
     previousCsvStatusElement = null,
+    sessionStatusElement = null,
     reviewBridge = null,
   }) {
     this.panelElement = panelElement;
     this.draftStore = draftStore;
+    this.clearVisibleDraftsButtonElement = clearVisibleDraftsButtonElement;
     this.exportDraftButtonElement = exportDraftButtonElement;
     this.exportUpdatedButtonElement = exportUpdatedButtonElement;
     this.filterModeElement = filterModeElement;
@@ -23,6 +26,7 @@ export class LocalizationEditorController {
     this.openPreviousCsvButtonElement = openPreviousCsvButtonElement;
     this.previousCsvInputElement = previousCsvInputElement;
     this.previousCsvStatusElement = previousCsvStatusElement;
+    this.sessionStatusElement = sessionStatusElement;
     this.reviewBridge = reviewBridge;
     this.filterMode = "all";
     this.rows = [];
@@ -39,6 +43,9 @@ export class LocalizationEditorController {
     this.exportUpdatedButtonElement?.addEventListener("click", () => {
       void this.exportUpdatedCsv();
     });
+    this.clearVisibleDraftsButtonElement?.addEventListener("click", () => {
+      void this.clearVisibleDrafts();
+    });
     this.filterModeElement?.addEventListener("change", () => {
       this.setFilterMode(this.filterModeElement.value);
     });
@@ -48,6 +55,7 @@ export class LocalizationEditorController {
     });
     this.renderPreviousCsvStatus();
     this.renderFilterSummary();
+    this.renderSessionStatus();
   }
 
   onTranslationChanged(handler) {
@@ -76,6 +84,8 @@ export class LocalizationEditorController {
       this.tableBodyElement = null;
       this.filterEmptyStateElement = null;
       this.renderFilterSummary();
+      this.syncClearVisibleDraftsAvailability();
+      this.renderSessionStatus();
       this.panelElement.replaceChildren(this.createEmptyState());
       return;
     }
@@ -269,6 +279,7 @@ export class LocalizationEditorController {
     this.previousCsvText = await file.text();
     this.renderPreviousCsvStatus();
     this.syncUpdatedExportAvailability();
+    this.renderSessionStatus();
     if (this.lastScriptText) {
       await this.render(this.lastScriptText);
     }
@@ -282,7 +293,9 @@ export class LocalizationEditorController {
     const hasAnchorRows = this.rows.some((row) => row.anchor);
     const hasPreviousCsv = Boolean(this.previousCsvText.trim());
     const hasReviewBridge = Boolean(this.reviewBridge);
-    this.exportUpdatedButtonElement.disabled = !hasAnchorRows || !hasPreviousCsv || !hasReviewBridge;
+    const readiness = this.getUpdatedExportReadiness();
+    this.exportUpdatedButtonElement.disabled = !(hasAnchorRows && hasPreviousCsv && hasReviewBridge);
+    this.exportUpdatedButtonElement.title = readiness;
   }
 
   renderPreviousCsvStatus() {
@@ -307,6 +320,22 @@ export class LocalizationEditorController {
         anchor: row.anchor,
         translation: this.draftStore.getTranslation(row),
       }));
+  }
+
+  async clearVisibleDrafts() {
+    const visibleDraftRows = this.getVisibleDraftRows();
+    if (visibleDraftRows.length === 0) {
+      return;
+    }
+
+    this.draftStore.clearDraftsForRows(visibleDraftRows);
+    this.syncUpdatedExportAvailability();
+    this.syncClearVisibleDraftsAvailability();
+    this.renderSessionStatus();
+    if (this.lastScriptText) {
+      await this.render(this.lastScriptText);
+    }
+    this.notifyTranslationChanged();
   }
 
   async exportUpdatedCsv() {
@@ -398,6 +427,8 @@ export class LocalizationEditorController {
     }
 
     this.renderFilterSummary(visibleRows.length);
+    this.syncClearVisibleDraftsAvailability();
+    this.renderSessionStatus(visibleRows.length);
   }
 
   renderFilterSummary(visibleRowCount = this.getVisibleRows().length) {
@@ -410,6 +441,21 @@ export class LocalizationEditorController {
     this.filterSummaryElement.textContent = filterLabel === "All rows"
       ? `Showing ${visibleRowCount} of ${totalCount} rows`
       : `Showing ${visibleRowCount} of ${totalCount} rows | ${filterLabel}`;
+  }
+
+  renderSessionStatus(visibleRowCount = this.getVisibleRows().length) {
+    if (!this.sessionStatusElement) {
+      return;
+    }
+
+    const draftEntryCount = this.draftStore.countDraftEntriesForRows(this.rows);
+    const visibleDraftEntryCount = this.getVisibleDraftRows().length;
+    const draftSummary = visibleDraftEntryCount === draftEntryCount
+      ? `${draftEntryCount} overrides in session`
+      : `${draftEntryCount} overrides in session | ${visibleDraftEntryCount} visible`;
+    this.sessionStatusElement.textContent = `${draftSummary} | ${this.getUpdatedExportReadiness()}`;
+    this.sessionStatusElement.title = this.sessionStatusElement.textContent;
+    this.sessionStatusElement.dataset.visibleRowCount = String(visibleRowCount);
   }
 
   buildFilterLabel() {
@@ -463,5 +509,41 @@ export class LocalizationEditorController {
     }
 
     return `${item.nodeTitle}:${item.sourceLine}:${item.kind}:${item.text}`;
+  }
+
+  getVisibleDraftRows() {
+    return this.getVisibleRows().filter((row) => this.draftStore.hasDraft(row));
+  }
+
+  syncClearVisibleDraftsAvailability() {
+    if (!this.clearVisibleDraftsButtonElement) {
+      return;
+    }
+
+    const visibleDraftRowCount = this.getVisibleDraftRows().length;
+    this.clearVisibleDraftsButtonElement.disabled = visibleDraftRowCount === 0;
+    this.clearVisibleDraftsButtonElement.title = visibleDraftRowCount > 0
+      ? `Clear ${visibleDraftRowCount} visible draft overrides`
+      : "No visible draft overrides to clear";
+  }
+
+  getUpdatedExportReadiness() {
+    if (!this.reviewBridge) {
+      return "Updated export unavailable in draft fallback mode";
+    }
+
+    if (this.rows.length === 0) {
+      return "Updated export needs localization rows";
+    }
+
+    if (!this.rows.some((row) => row.anchor)) {
+      return "Updated export needs anchored review rows";
+    }
+
+    if (!this.previousCsvText.trim()) {
+      return "Updated export needs previous CSV";
+    }
+
+    return "Updated export ready";
   }
 }

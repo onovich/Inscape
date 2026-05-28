@@ -604,17 +604,20 @@ function matchesSelector(element, selector) {
 const hintRailElement = new FakeElement("aside");
 globalThis.document = new FakeDocument();
 const localizationPanel = new FakeElement("section");
+const localizationClearDraftsButton = new FakeElement("button");
 const localizationExportButton = new FakeElement("button");
 const localizationExportUpdatedButton = new FakeElement("button");
 const localizationFilterMode = new FakeElement("select");
 localizationFilterMode.value = "all";
 const localizationFilterSummary = new FakeElement("span");
+const localizationSessionStatus = new FakeElement("span");
 const localizationOpenButton = new FakeElement("button");
 const localizationCsvInput = new FakeElement("input");
 const localizationSourceStatus = new FakeElement("span");
 const localizationController = new LocalizationEditorController({
   panelElement: localizationPanel,
   draftStore,
+  clearVisibleDraftsButtonElement: localizationClearDraftsButton,
   exportDraftButtonElement: localizationExportButton,
   exportUpdatedButtonElement: localizationExportUpdatedButton,
   filterModeElement: localizationFilterMode,
@@ -622,6 +625,7 @@ const localizationController = new LocalizationEditorController({
   openPreviousCsvButtonElement: localizationOpenButton,
   previousCsvInputElement: localizationCsvInput,
   previousCsvStatusElement: localizationSourceStatus,
+  sessionStatusElement: localizationSessionStatus,
   reviewBridge: {
     async getLocalizationReview() {
       return {
@@ -677,21 +681,33 @@ assertIncludesText(getTextContent(localizationPanel), "kept");
 assertNotIncludesText(getTextContent(localizationPanel), "Draft fallback row");
 assertEqual(localizationSourceStatus.textContent, "Review baseline: current extract", "localization review should show default review baseline");
 assertEqual(localizationFilterSummary.textContent, "Showing 2 of 2 rows", "localization review should show all rows by default");
+assertEqual(localizationSessionStatus.textContent, "0 overrides in session | Updated export needs previous CSV", "localization session status should explain missing baseline");
+assertEqual(localizationClearDraftsButton.disabled, true, "localization clear drafts button should stay disabled without visible drafts");
 localizationController.setFilterMode("changed");
 assertEqual(localizationFilterMode.value, "changed", "localization filter control should track current filter");
 assertEqual(localizationController.getVisibleRows().length, 1, "localization filter should keep only matching changed rows");
 assertEqual(localizationPanel.querySelectorAll("[data-source-line]").filter((row) => !row.hidden).length, 1, "localization filter should hide non-matching table rows");
 assertEqual(localizationFilterSummary.textContent, "Showing 1 of 2 rows | Changed", "localization filter summary should reflect narrowed rows");
 draftStore.setTranslation(localizationController.rows[0], "");
+localizationController.applyRowFilters();
 const localizationOverrides = localizationController.collectTranslationOverrides();
 assertEqual(localizationOverrides.length, 1, "localization controller should collect draft overrides by anchor");
 assertEqual(localizationOverrides[0].anchor, "line_anchor_1", "localization controller should preserve review anchor for overrides");
 assertEqual(localizationOverrides[0].translation, "", "localization controller should allow clearing previous translations");
+assertEqual(localizationClearDraftsButton.disabled, true, "localization clear drafts button should stay disabled when the current filter hides draft rows");
+assertEqual(localizationSessionStatus.textContent, "1 overrides in session | 0 visible | Updated export needs previous CSV", "localization session status should count hidden empty-string overrides");
 draftStore.setTranslation(localizationController.rows[1], "Fresh draft");
 localizationController.applyRowFilters();
 localizationController.setFilterMode("draft");
 assertEqual(localizationController.getVisibleRows().length, 2, "localization draft filter should surface anchor-based draft overrides");
 assertEqual(localizationFilterSummary.textContent, "Showing 2 of 2 rows | Drafts", "localization draft filter summary should reflect draft rows");
+assertEqual(localizationSessionStatus.textContent, "2 overrides in session | Updated export needs previous CSV", "localization session status should count visible draft overrides");
+assertEqual(localizationClearDraftsButton.disabled, false, "localization clear drafts button should enable when the current filter shows draft rows");
+await localizationController.clearVisibleDrafts();
+assertEqual(localizationController.getVisibleRows().length, 0, "localization clear visible drafts should empty the current draft filter");
+assertEqual(localizationFilterSummary.textContent, "Showing 0 of 2 rows | Drafts", "localization filter summary should reflect cleared visible drafts");
+assertEqual(localizationSessionStatus.textContent, "0 overrides in session | Updated export needs previous CSV", "localization session status should reset after clearing visible drafts");
+assertEqual(localizationClearDraftsButton.disabled, true, "localization clear drafts button should disable after clearing visible drafts");
 const previewElement = new FakeElement("main");
 const previewController = new PreviewPanelController(previewElement);
 let previewSelectedLine = 0;

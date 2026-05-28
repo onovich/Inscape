@@ -30,6 +30,16 @@ export class LocalizationDraftStore {
     return rows.filter((row) => this.hasDraft(row) && this.getTranslation(row)).length;
   }
 
+  countDraftEntriesForRows(rows) {
+    return rows.filter((row) => this.hasDraft(row)).length;
+  }
+
+  clearDraftsForRows(rows) {
+    for (const row of rows) {
+      this.clearTranslation(row);
+    }
+  }
+
   createKey(item) {
     if (item?.anchor) {
       return `anchor:${item.anchor}`;
