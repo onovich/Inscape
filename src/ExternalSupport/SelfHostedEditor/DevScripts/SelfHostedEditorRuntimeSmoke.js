@@ -30,7 +30,29 @@ async function main() {
   assertEqual(openingSnapshot.currentNode?.choices?.length, 1, "opening choice group count");
   assertEqual(openingSnapshot.currentNode?.choices?.[0]?.options?.[0]?.target, "Witness", "opening first choice target");
   assertEqual(openingSnapshot.currentNode?.choices?.[0]?.options?.[1]?.target, "Stay", "opening second choice target");
+  assertEqual(openingSnapshot.readingProgress?.contentStepCount, 1, "opening content step count");
+  assertEqual(openingSnapshot.readingProgress?.visibleStepCount, 0, "opening visible step count");
   assertPayloadSize(openingSnapshot, "opening runtime snapshot");
+
+  const openingLineSnapshot = await stepRuntimeStateForScriptText(runtimeScript, null, openingSnapshot, {
+    type: "advance-flow",
+  });
+  assertRuntimeSnapshot(openingLineSnapshot, "Opening");
+  assertEqual(openingLineSnapshot.state?.visibleStepCount, 1, "opening visible step count after first flow advance");
+  assertEqual(openingLineSnapshot.readingProgress?.isChoiceStageVisible, false, "opening choices should stay hidden after first flow advance");
+
+  const openingChoiceStageSnapshot = await stepRuntimeStateForScriptText(runtimeScript, null, openingLineSnapshot, {
+    type: "advance-flow",
+  });
+  assertRuntimeSnapshot(openingChoiceStageSnapshot, "Opening");
+  assertEqual(openingChoiceStageSnapshot.state?.visibleStepCount, 2, "opening visible step count after second flow advance");
+  assertEqual(openingChoiceStageSnapshot.readingProgress?.isChoiceStageVisible, true, "opening choices should become visible after second flow advance");
+
+  const openingRewoundFlowSnapshot = await stepRuntimeStateForScriptText(runtimeScript, null, openingChoiceStageSnapshot, {
+    type: "rewind-flow",
+  });
+  assertRuntimeSnapshot(openingRewoundFlowSnapshot, "Opening");
+  assertEqual(openingRewoundFlowSnapshot.state?.visibleStepCount, 1, "opening visible step count after flow rewind");
 
   const witnessSnapshot = await stepRuntimeStateForScriptText(runtimeScript, null, openingSnapshot, {
     groupIndex: 0,
@@ -41,7 +63,22 @@ async function main() {
   assertEqual(witnessSnapshot.currentNode?.defaultNext, "End", "witness default next");
   assertEqual(witnessSnapshot.state?.path?.length, 2, "witness path length");
   assertEqual(witnessSnapshot.state?.path?.[1], "Witness", "witness path tail");
+  assertEqual(witnessSnapshot.state?.visibleStepCount, 0, "witness visible step count");
   assertPayloadSize(witnessSnapshot, "witness runtime snapshot");
+
+  const witnessContinueStageSnapshot = await stepRuntimeStateForScriptText(runtimeScript, null, witnessSnapshot, {
+    type: "advance-flow",
+  });
+  assertRuntimeSnapshot(witnessContinueStageSnapshot, "Witness");
+  assertEqual(witnessContinueStageSnapshot.state?.visibleStepCount, 1, "witness visible step count after flow advance");
+  assertEqual(witnessContinueStageSnapshot.readingProgress?.isContinueStageVisible, false, "witness continue should stay hidden after first flow advance");
+
+  const witnessContinueVisibleSnapshot = await stepRuntimeStateForScriptText(runtimeScript, null, witnessContinueStageSnapshot, {
+    type: "advance-flow",
+  });
+  assertRuntimeSnapshot(witnessContinueVisibleSnapshot, "Witness");
+  assertEqual(witnessContinueVisibleSnapshot.state?.visibleStepCount, 2, "witness visible step count after second flow advance");
+  assertEqual(witnessContinueVisibleSnapshot.readingProgress?.isContinueStageVisible, true, "witness continue should become visible after second flow advance");
 
   const rewoundSnapshot = await stepRuntimeStateForScriptText(runtimeScript, null, witnessSnapshot, {
     type: "rewind",
@@ -49,6 +86,7 @@ async function main() {
   assertRuntimeSnapshot(rewoundSnapshot, "Opening");
   assertEqual(rewoundSnapshot.state?.path?.length, 1, "rewound path length");
   assertEqual(rewoundSnapshot.state?.path?.[0], "Opening", "rewound path tail");
+  assertEqual(rewoundSnapshot.state?.visibleStepCount, 2, "rewound visible step count");
   assertPayloadSize(rewoundSnapshot, "rewound runtime snapshot");
 
   const endSnapshot = await stepRuntimeStateForScriptText(runtimeScript, null, witnessSnapshot, {

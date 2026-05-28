@@ -41,7 +41,32 @@ async function main() {
     }
 
     assertRuntimeSnapshot(openingSnapshot, "Opening");
+    assertEqual(openingSnapshot.readingProgress?.contentStepCount, 1, "opening content step count");
+    assertEqual(openingSnapshot.readingProgress?.visibleStepCount, 0, "opening visible step count");
     assertPayloadSize(openingPayloadText, "opening runtime HTTP payload");
+
+    const openingAdvanceResponse = await fetch(`http://127.0.0.1:${address.port}/api/runtime-action`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        action: {
+          type: "advance-flow",
+        },
+        runtimeState: openingSnapshot,
+        scriptText: runtimeScript,
+      }),
+    });
+    const openingAdvancePayloadText = await openingAdvanceResponse.text();
+    const openingAdvanceSnapshot = JSON.parse(openingAdvancePayloadText);
+    if (!openingAdvanceResponse.ok) {
+      throw new Error(`Runtime advance-flow HTTP smoke failed with HTTP ${openingAdvanceResponse.status}.`);
+    }
+
+    assertRuntimeSnapshot(openingAdvanceSnapshot, "Opening");
+    assertEqual(openingAdvanceSnapshot.state?.visibleStepCount, 1, "opening visible step count after first flow advance");
+    assertEqual(openingAdvanceSnapshot.readingProgress?.isChoiceStageVisible, false, "opening choices should stay hidden after first flow advance");
 
     const stayResponse = await fetch(`http://127.0.0.1:${address.port}/api/runtime-action`, {
       method: "POST",
@@ -66,8 +91,31 @@ async function main() {
 
     assertRuntimeSnapshot(staySnapshot, "Stay");
     assertEqual(staySnapshot.state?.path?.length, 2, "stay path length");
+    assertEqual(staySnapshot.state?.visibleStepCount, 0, "stay visible step count");
     assertEqual(staySnapshot.currentNode?.defaultNext, "End", "stay default next");
     assertPayloadSize(stayPayloadText, "stay runtime HTTP payload");
+
+    const stayAdvanceResponse = await fetch(`http://127.0.0.1:${address.port}/api/runtime-action`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        action: {
+          type: "advance-flow",
+        },
+        runtimeState: staySnapshot,
+        scriptText: runtimeScript,
+      }),
+    });
+    const stayAdvancePayloadText = await stayAdvanceResponse.text();
+    const stayAdvanceSnapshot = JSON.parse(stayAdvancePayloadText);
+    if (!stayAdvanceResponse.ok) {
+      throw new Error(`Runtime stay advance-flow HTTP smoke failed with HTTP ${stayAdvanceResponse.status}.`);
+    }
+
+    assertRuntimeSnapshot(stayAdvanceSnapshot, "Stay");
+    assertEqual(stayAdvanceSnapshot.state?.visibleStepCount, 1, "stay visible step count after first flow advance");
 
     const rewindResponse = await fetch(`http://127.0.0.1:${address.port}/api/runtime-action`, {
       method: "POST",
@@ -90,6 +138,7 @@ async function main() {
 
     assertRuntimeSnapshot(rewindSnapshot, "Opening");
     assertEqual(rewindSnapshot.state?.path?.length, 1, "rewind path length");
+    assertEqual(rewindSnapshot.state?.visibleStepCount, 2, "rewind visible step count");
     assertPayloadSize(rewindPayloadText, "rewind runtime HTTP payload");
 
     const endResponse = await fetch(`http://127.0.0.1:${address.port}/api/runtime-action`, {

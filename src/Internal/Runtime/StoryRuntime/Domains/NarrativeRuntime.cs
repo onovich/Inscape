@@ -30,6 +30,7 @@ namespace Inscape.Runtime {
             nodesByName.Clear();
             State.CurrentNodeName = string.Empty;
             State.Path.Clear();
+            State.VisibleStepCount = 0;
 
             foreach (StoryGraphNodeModel node in narrativeGraph.Nodes) {
                 if (!nodesByName.ContainsKey(node.Name)) {
@@ -71,6 +72,30 @@ namespace Inscape.Runtime {
             return target.Length > 0 && EnterNode(target, false);
         }
 
+        public bool AdvanceFlow() {
+            StoryGraphNodeModel? node = CurrentNode;
+            if (node == null) {
+                return false;
+            }
+
+            int maxVisibleStepCount = GetMaxVisibleStepCount(node);
+            if (State.VisibleStepCount >= maxVisibleStepCount) {
+                return false;
+            }
+
+            State.VisibleStepCount += 1;
+            return true;
+        }
+
+        public bool RewindFlow() {
+            if (State.VisibleStepCount <= 0) {
+                return false;
+            }
+
+            State.VisibleStepCount -= 1;
+            return true;
+        }
+
         public bool Rewind() {
             if (State.Path.Count <= 1) {
                 return false;
@@ -83,6 +108,7 @@ namespace Inscape.Runtime {
 
             State.Path.RemoveAt(State.Path.Count - 1);
             State.CurrentNodeName = previousNodeName;
+            State.VisibleStepCount = GetMaxVisibleStepCount(nodesByName[previousNodeName]);
             return true;
         }
 
@@ -91,14 +117,23 @@ namespace Inscape.Runtime {
                 return false;
             }
 
+            StoryGraphNodeModel? restoredNode = state.CurrentNodeName.Length > 0
+                ? nodesByName[state.CurrentNodeName]
+                : null;
+            if (state.VisibleStepCount < 0 || (restoredNode != null && state.VisibleStepCount > GetMaxVisibleStepCount(restoredNode))) {
+                return false;
+            }
+
             State.CurrentNodeName = state.CurrentNodeName;
             State.Path.Clear();
             State.Path.AddRange(state.Path);
+            State.VisibleStepCount = state.VisibleStepCount;
             return true;
         }
 
         public NarrativeRuntimeSnapshotModel CreateSnapshot() {
             return new NarrativeRuntimeSnapshotModel {
+                ReadingProgress = SnapshotReadingProgress(),
                 State = SnapshotState(),
                 CurrentNode = CurrentNode,
             };
@@ -108,7 +143,23 @@ namespace Inscape.Runtime {
             NarrativeRuntimeStateModel snapshot = new NarrativeRuntimeStateModel();
             snapshot.CurrentNodeName = State.CurrentNodeName;
             snapshot.Path.AddRange(State.Path);
+            snapshot.VisibleStepCount = State.VisibleStepCount;
             return snapshot;
+        }
+
+        NarrativeRuntimeReadingProgressModel SnapshotReadingProgress() {
+            StoryGraphNodeModel? node = CurrentNode;
+            int contentStepCount = GetContentStepCount(node);
+            int maxVisibleStepCount = GetMaxVisibleStepCount(node);
+            return new NarrativeRuntimeReadingProgressModel {
+                ContentStepCount = contentStepCount,
+                MaxVisibleStepCount = maxVisibleStepCount,
+                VisibleStepCount = State.VisibleStepCount,
+                CanAdvance = State.VisibleStepCount < maxVisibleStepCount,
+                CanRewind = State.VisibleStepCount > 0,
+                IsChoiceStageVisible = node != null && node.Choices.Count > 0 && State.VisibleStepCount > contentStepCount,
+                IsContinueStageVisible = node != null && node.DefaultNext.Length > 0 && State.VisibleStepCount > contentStepCount,
+            };
         }
 
         bool EnterNode(string nodeName, bool resetPath) {
@@ -117,11 +168,37 @@ namespace Inscape.Runtime {
             }
 
             State.CurrentNodeName = nodeName;
+            State.VisibleStepCount = 0;
             if (resetPath) {
                 State.Path.Clear();
             }
             State.Path.Add(nodeName);
             return true;
+        }
+
+        static int GetContentStepCount(StoryGraphNodeModel? node) {
+            if (node == null) {
+                return 0;
+            }
+
+            int contentStepCount = 0;
+            foreach (DslScriptLineModel line in node.Lines) {
+                if (line.Kind != DslScriptLineKindModel.Metadata) {
+                    contentStepCount += 1;
+                }
+            }
+
+            return contentStepCount;
+        }
+
+        static int GetMaxVisibleStepCount(StoryGraphNodeModel? node) {
+            if (node == null) {
+                return 0;
+            }
+
+            int contentStepCount = GetContentStepCount(node);
+            bool hasTerminalChoiceStage = node.Choices.Count > 0 || node.DefaultNext.Length > 0;
+            return contentStepCount + (hasTerminalChoiceStage ? 1 : 0);
         }
 
     }

@@ -118,12 +118,18 @@ namespace Inscape.Cli {
         static bool ApplyRuntimeAction(NarrativeRuntime runtime, string[] args, out string? errorMessage) {
             errorMessage = null;
             bool shouldContinue = HasOption(args, "--continue");
+            bool shouldAdvanceFlow = HasOption(args, "--advance-flow");
             bool shouldRewind = HasOption(args, "--rewind");
+            bool shouldRewindFlow = HasOption(args, "--rewind-flow");
             int chooseIndex = IndexOf(args, "--choose");
 
-            int actionCount = (shouldContinue ? 1 : 0) + (shouldRewind ? 1 : 0) + (chooseIndex >= 0 ? 1 : 0);
+            int actionCount = (shouldContinue ? 1 : 0)
+                              + (shouldAdvanceFlow ? 1 : 0)
+                              + (shouldRewind ? 1 : 0)
+                              + (shouldRewindFlow ? 1 : 0)
+                              + (chooseIndex >= 0 ? 1 : 0);
             if (actionCount > 1) {
-                errorMessage = "Runtime action can use only one of --continue, --rewind, or --choose.";
+                errorMessage = "Runtime action can use only one of --continue, --advance-flow, --rewind, --rewind-flow, or --choose.";
                 return false;
             }
 
@@ -136,9 +142,27 @@ namespace Inscape.Cli {
                 return true;
             }
 
+            if (shouldAdvanceFlow) {
+                if (!runtime.AdvanceFlow()) {
+                    errorMessage = "Runtime could not advance flow from node: " + runtime.State.CurrentNodeName;
+                    return false;
+                }
+
+                return true;
+            }
+
             if (shouldRewind) {
                 if (!runtime.Rewind()) {
                     errorMessage = "Runtime could not rewind from node: " + runtime.State.CurrentNodeName;
+                    return false;
+                }
+
+                return true;
+            }
+
+            if (shouldRewindFlow) {
+                if (!runtime.RewindFlow()) {
+                    errorMessage = "Runtime could not rewind flow from node: " + runtime.State.CurrentNodeName;
                     return false;
                 }
 

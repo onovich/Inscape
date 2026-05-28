@@ -2,7 +2,7 @@
 
 状态：基线
 
-最后更新：2026-05-27
+最后更新：2026-05-28
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
@@ -28,11 +28,12 @@
 - 已做过一次真实 CLI 拆分 smoke：在临时目录中分别运行 `update-node-map-project`、`extract-l10n-project -o old.csv`、`audit-l10n-alignment-project --from old.csv` 均快速通过，说明 CLI 侧不是阻塞点。
 - 已新增 `npm --prefix src\ExternalSupport\SelfHostedEditor run check:localization-review`。它直接导入 `StartSelfHostedEditorPreview.js` 里的本地化 review 路径，对 `samples/court-loop.inscape` 执行完整 dev-host 逻辑，不依赖本机先拉起 HTTP server；当前 smoke 结果为 170 items、约 94 KB payload、约 558ms。
 - 已新增 `npm --prefix src\ExternalSupport\SelfHostedEditor run check:localization-review-http`。它在同一 Node 进程里启动 preview dev server 实例，再真实 POST `/api/localization-review`，把完整 `court-loop` 样例的 HTTP 传输层也纳入回归；当前结果为 170 items、约 94 KB payload、约 590ms。
-- 已新增 `npm --prefix src\ExternalSupport\SelfHostedEditor run check:runtime` 与 `check:runtime-http`。它们分别覆盖 Runtime dev-host 直连路径与真实 HTTP transport，验证 compact Runtime payload 以及恢复 state 后的 `choose` / `continue` 推进，不再只靠 session 面板的人工观察来判断 Runtime bridge 是否还活着。
+- 已新增 `npm --prefix src\ExternalSupport\SelfHostedEditor run check:runtime` 与 `check:runtime-http`。它们分别覆盖 Runtime dev-host 直连路径与真实 HTTP transport，验证 compact Runtime payload 以及恢复 state 后的 `advance-flow` / `rewind-flow` / `choose` / `continue` / `rewind` 推进，不再只靠 session 面板的人工观察来判断 Runtime bridge 是否还活着。
 - 已推进 Preview Runtime Player 第一小刀：阅读面板中的 choice / continue 点击现在会在“当前预览节点 === 最新 Runtime snapshot 当前节点”时优先走 `/api/runtime-action` 的 `choose` / `continue`，成功后直接用返回 snapshot 重绘阅读面并把编辑器定位到 Runtime 当前节点；若 Runtime 不可用或当前预览节点与 snapshot 脱节，仍回退为原来的 source-only 导航。这样先把最值钱的点击链路接到真实 Runtime，上游初始节点选择和 Flow 步进仍保持 presenter 状态，留给下一刀继续替换。
 - 已继续推进 Preview Runtime Player 第二小刀：普通 renderWorkbench 刷新时，只要当前编辑光标仍位于最新 Runtime snapshot 的当前节点中，阅读面板就优先继续渲染这个 Runtime 当前节点，而不是退回 compiler graph 的 presenter 节点。这样可以把“当前节点是谁”这层真相也挂到 Runtime 上，减少一刷新就掉回前端 presenter 的情况；但初始 player 选点、Flow 历史与步骤计数仍未接入 Runtime。
 - 已继续推进 Preview Runtime Player 第三小刀：当新文档刚打开、工作台还没建立 presenter 当前节点、并且当前光标还停在文件顶部起步位置时，阅读面板会直接用最新 Runtime snapshot 的当前节点作为第一次 player 选点，而不是默认拿第一个脚本节点当开场。这样 Runtime entry 真相终于接到了首次阅读落点；当前还没接上的只剩 Flow 历史与步骤计数。
 - 已继续推进 Preview Runtime Player 第四小刀：Runtime 共享层现已新增 `rewind`，开发宿主 `/api/runtime-action` 与 SelfHostedEditor Runtime bridge 会原样透传它。阅读面板会显示轻量 Runtime path，并在 path 长度大于 1 时给出 Runtime-backed `Back` 按钮，点击后回退到上一个已访问节点并直接用返回 snapshot 重绘。这样“读过哪些节点、退回到哪一步”也开始挂到 Runtime 真相上；当前还没接上的主要只剩节点内 Flow 步进与步骤计数。
+- 已继续推进 Preview Runtime Player 第五小刀：节点内 Flow 步进现已开始挂到共享 Runtime。`NarrativeRuntime` 新增 `VisibleStepCount` 与 `ReadingProgress`，CLI `runtime-project` / 开发宿主 `/api/runtime-action` 新增 `advance-flow` / `rewind-flow`，SelfHostedEditor Preview 在 Runtime 可用时只透传这些动作并消费返回 snapshot，不再把“当前节点内读到第几步”继续保存在浏览器私有 presenter 里。现阶段仍保留本地 Flow fallback，只在 Runtime 不可用时使用。
 - HTTP smoke 当前结论：用 `curl --noproxy "*"`、无 BOM JSON、最小脚本 `# Opening / Narrator: Hello` 直接 POST `/api/localization-review` 已成功返回 presenter；PowerShell `Invoke-RestMethod` 曾因本机代理路径超时，不要把它误判为服务端阻塞。后续复查显示完整 `samples/court-loop.inscape` 的底层 CLI 链路并不慢：临时 workspace 下 `update-node-map-project`、`extract-l10n-project`、`audit-l10n-alignment-project` 合计约 10 秒，因此当前更值得怀疑的是 HTTP 客户端、响应体积或 dev-host 传输层，而不是 Tooling 算法本身。此前测试端口 `5182`、`5183`、`5184`、`5185`、`5187` 的残留监听已复查并清理。
 - 交接时如果继续本节点，建议第一件事执行：`npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax`、`check:structure`、`check:model`，再做 `/api/localization-review` full sample HTTP smoke；full sample 不卡住后，再运行仓库脚本 `tools\CommitAndPushInscape.cmd "feat: connect self hosted localization presenter"`。
 
@@ -76,8 +77,8 @@
 - Graph 节点位置仍是会话内 `savedPositions`，尚未写入 graph layout sidecar；画布缩放/平移、连接合法性反馈、端口命中高亮仍可继续细化。
 - line-map bridge 当前走开发预览服务器 + CLI 临时 workspace，是正确复用 Tooling 语义的第一步，但未来桌面客户端应改为正式 Editor Backend / Tooling 会话桥，而不是每轮通过 HTTP dev server 启动 CLI。
 - L10N 视图正在接入真实 alignment review presenter：当前未提交草案已通过 `/api/localization-review` 与 `SelfHostedEditorLocalizationReviewBridge` 消费 Tooling presenter，并保留 session draft fallback；真实 CSV 文件选择 / 写回契约仍未完成，最终 HTTP smoke 仍待重跑。
-- Preview 内容已来自 Compiler project graph，但 Static / Flow 进度仍是阅读面板 presenter 状态，不是 Runtime Player；后续 Player 应消费 `Runtime` 的 Narrative Graph IR 和运行状态。
-- `runtime-project` / `/api/runtime-state` / `/api/runtime-action` 已覆盖 Start、恢复 state 后 Continue、恢复 state 后 Choose 的最小 stateless action 契约；还没有让 Preview 的 Flow 模式完全受 Runtime state 驱动，也还没有桌面端长生命周期 Runtime 会话。
+- Preview 内容已来自 Compiler project graph；当 Runtime 可用时，节点内 Static / Flow 进度也开始消费 Runtime 阅读状态。当前仍未落地的是桌面端长生命周期 Runtime 会话，以及 Runtime 不可用时如何继续缩小本地 fallback 面积。
+- `runtime-project` / `/api/runtime-state` / `/api/runtime-action` 现已覆盖 Start、恢复 state 后 `advance-flow` / `rewind-flow` / `continue` / `rewind` / `choose` 的最小 stateless action 契约；Preview 的节点内 Flow 进度在 Runtime 可用时已受 Runtime state 驱动，但桌面端长生命周期 Runtime 会话仍未落地。
 
 当前工作树提示：最近一次复查时 `git -c safe.directory=D:/LabProjects/Inscape status --short --branch` 为干净状态。新 Agent 仍应在提交前重新执行 status，确认没有用户未提交改动；若出现未跟踪或未提交文件，只能按任务边界处理，不要回滚用户已有文档和样例改动。
 

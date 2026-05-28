@@ -704,6 +704,16 @@ const runtimeOpeningSnapshot = {
   state: {
     currentNodeName: "Opening",
     path: ["Opening"],
+    visibleStepCount: 0,
+  },
+  readingProgress: {
+    canAdvance: true,
+    canRewind: false,
+    contentStepCount: 1,
+    isChoiceStageVisible: false,
+    isContinueStageVisible: false,
+    maxVisibleStepCount: 2,
+    visibleStepCount: 0,
   },
 };
 const runtimeWitnessSnapshot = {
@@ -730,6 +740,16 @@ const runtimeWitnessSnapshot = {
   state: {
     currentNodeName: "Witness",
     path: ["Opening", "Witness"],
+    visibleStepCount: 0,
+  },
+  readingProgress: {
+    canAdvance: true,
+    canRewind: false,
+    contentStepCount: 1,
+    isChoiceStageVisible: false,
+    isContinueStageVisible: false,
+    maxVisibleStepCount: 2,
+    visibleStepCount: 0,
   },
 };
 const runtimeEndSnapshot = {
@@ -756,6 +776,42 @@ const runtimeEndSnapshot = {
   state: {
     currentNodeName: "End",
     path: ["Opening", "Witness", "End"],
+    visibleStepCount: 0,
+  },
+  readingProgress: {
+    canAdvance: false,
+    canRewind: false,
+    contentStepCount: 1,
+    isChoiceStageVisible: false,
+    isContinueStageVisible: false,
+    maxVisibleStepCount: 1,
+    visibleStepCount: 0,
+  },
+};
+const runtimeOpeningLineSnapshot = {
+  ...runtimeOpeningSnapshot,
+  state: {
+    ...runtimeOpeningSnapshot.state,
+    visibleStepCount: 1,
+  },
+  readingProgress: {
+    ...runtimeOpeningSnapshot.readingProgress,
+    canRewind: true,
+    visibleStepCount: 1,
+  },
+};
+const runtimeOpeningChoiceStageSnapshot = {
+  ...runtimeOpeningSnapshot,
+  state: {
+    ...runtimeOpeningSnapshot.state,
+    visibleStepCount: 2,
+  },
+  readingProgress: {
+    ...runtimeOpeningSnapshot.readingProgress,
+    canAdvance: false,
+    canRewind: true,
+    isChoiceStageVisible: true,
+    visibleStepCount: 2,
   },
 };
 let runtimeAction = null;
@@ -812,12 +868,40 @@ await runtimeContinuePreviewController.selectChoice(runtimeContinueChoice);
 assertEqual(runtimeContinueAction?.type, "continue", "runtime-backed preview continue should emit continue action");
 assertEqual(findElementByClass(runtimeContinuePreviewElement, "story-title")?.textContent, "End", "runtime-backed continue should render returned runtime node");
 assertIncludesText(getTextContent(runtimeContinuePreviewElement), "Done.");
+let runtimeFlowAction = null;
+const runtimeFlowPreviewElement = new FakeElement("main");
+const runtimeFlowPreviewController = new PreviewPanelController(runtimeFlowPreviewElement);
+runtimeFlowPreviewController.onChoiceSelected(async (choice) => {
+  runtimeFlowAction = choice.runtimeAction;
+  if (choice.runtimeAction?.type === "advance-flow") {
+    runtimeFlowPreviewController.renderRuntimeSnapshot(runtimeOpeningLineSnapshot);
+    return true;
+  }
+
+  if (choice.runtimeAction?.type === "rewind-flow") {
+    runtimeFlowPreviewController.renderRuntimeSnapshot(runtimeOpeningSnapshot);
+    return true;
+  }
+
+  return false;
+});
+runtimeFlowPreviewController.render("", 2, storyGraph, runtimeOpeningSnapshot);
+runtimeFlowPreviewController.setMode("flow");
+assertNotIncludesText(getTextContent(runtimeFlowPreviewElement), "Review the evidence.");
+await runtimeFlowPreviewController.advanceFlow();
+assertEqual(runtimeFlowAction?.type, "advance-flow", "runtime-backed flow should emit advance-flow action");
+assertIncludesText(getTextContent(runtimeFlowPreviewElement), "Review the evidence.");
+runtimeFlowPreviewController.renderRuntimeSnapshot(runtimeOpeningChoiceStageSnapshot);
+assertIncludesText(getTextContent(runtimeFlowPreviewElement), "Question witness");
+await runtimeFlowPreviewController.rewindFlow();
+assertEqual(runtimeFlowAction?.type, "rewind-flow", "runtime-backed flow should emit rewind-flow action");
+assertNotIncludesText(getTextContent(runtimeFlowPreviewElement), "Question witness");
 let runtimeRewindAction = null;
 const runtimeRewindPreviewElement = new FakeElement("main");
 const runtimeRewindPreviewController = new PreviewPanelController(runtimeRewindPreviewElement);
 runtimeRewindPreviewController.onChoiceSelected(async (choice) => {
   runtimeRewindAction = choice.runtimeAction;
-  runtimeRewindPreviewController.renderRuntimeSnapshot(runtimeOpeningSnapshot);
+  runtimeRewindPreviewController.renderRuntimeSnapshot(runtimeOpeningChoiceStageSnapshot);
   return true;
 });
 runtimeRewindPreviewController.renderRuntimeSnapshot(runtimeWitnessSnapshot);
@@ -829,6 +913,7 @@ runtimeRewindButton?.click();
 assertEqual(runtimeRewindAction?.type, "rewind", "runtime-backed preview rewind should emit rewind action");
 assertEqual(findElementByClass(runtimeRewindPreviewElement, "story-title")?.textContent, "Opening", "runtime-backed rewind should render the previous runtime node");
 assertIncludesText(getTextContent(runtimeRewindPreviewElement), "Review the evidence.");
+assertIncludesText(getTextContent(runtimeRewindPreviewElement), "Question witness");
 const flowPreviewElement = new FakeElement("main");
 const flowPreviewController = new PreviewPanelController(flowPreviewElement);
 flowPreviewController.render("", 2, storyGraph);

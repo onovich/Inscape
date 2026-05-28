@@ -533,8 +533,12 @@ export async function stepRuntimeStateForScriptText(scriptText, workspace, runti
 
     if (action.type === "continue") {
       cliArgs.push("--continue");
+    } else if (action.type === "advance-flow") {
+      cliArgs.push("--advance-flow");
     } else if (action.type === "rewind") {
       cliArgs.push("--rewind");
+    } else if (action.type === "rewind-flow") {
+      cliArgs.push("--rewind-flow");
     } else if (action.type === "choose") {
       cliArgs.push(
         "--choose",
@@ -542,7 +546,7 @@ export async function stepRuntimeStateForScriptText(scriptText, workspace, runti
         String(Number(action.optionIndex || 0))
       );
     } else {
-      throw new Error("Runtime action requires type `continue`, `rewind`, or `choose`.");
+      throw new Error("Runtime action requires type `continue`, `advance-flow`, `rewind`, `rewind-flow`, or `choose`.");
     }
 
     const result = await runCliCommand(cliArgs, "CLI runtime project action");
@@ -688,9 +692,19 @@ function compactRuntimeStatePayload(payload) {
       : null,
     format: "inscape.self-hosted-editor.runtime-state",
     formatVersion: 1,
+    readingProgress: {
+      canAdvance: Boolean(payload?.readingProgress?.canAdvance),
+      canRewind: Boolean(payload?.readingProgress?.canRewind),
+      contentStepCount: Number(payload?.readingProgress?.contentStepCount || 0),
+      isChoiceStageVisible: Boolean(payload?.readingProgress?.isChoiceStageVisible),
+      isContinueStageVisible: Boolean(payload?.readingProgress?.isContinueStageVisible),
+      maxVisibleStepCount: Number(payload?.readingProgress?.maxVisibleStepCount || 0),
+      visibleStepCount: Number(payload?.readingProgress?.visibleStepCount || 0),
+    },
     state: {
       currentNodeName: payload?.state?.currentNodeName || "",
       path: Array.isArray(payload?.state?.path) ? payload.state.path : [],
+      visibleStepCount: Number(payload?.state?.visibleStepCount || 0),
     },
   };
 }

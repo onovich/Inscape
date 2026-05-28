@@ -239,16 +239,20 @@ async function main() {
       return true;
     }
 
+    const previousRuntimeNodeName = latestRuntimeSnapshot.snapshot.currentNode?.name || "";
     latestRuntimeSnapshot = steppedRuntimeSnapshot;
     previewController.renderRuntimeSnapshot(steppedRuntimeSnapshot.snapshot);
-    const focusLineNumber = Number(
-      steppedRuntimeSnapshot.snapshot.currentNode?.source?.line
-      || steppedRuntimeSnapshot.snapshot.currentNode?.lines?.[0]?.source?.line
-      || 0
-    );
-    if (focusLineNumber > 0) {
-      editorController.focusLine(focusLineNumber);
-      layoutController.ensureEditorVisible();
+    const nextRuntimeNodeName = steppedRuntimeSnapshot.snapshot.currentNode?.name || "";
+    if (nextRuntimeNodeName !== previousRuntimeNodeName) {
+      const focusLineNumber = Number(
+        steppedRuntimeSnapshot.snapshot.currentNode?.source?.line
+        || steppedRuntimeSnapshot.snapshot.currentNode?.lines?.[0]?.source?.line
+        || 0
+      );
+      if (focusLineNumber > 0) {
+        editorController.focusLine(focusLineNumber);
+        layoutController.ensureEditorVisible();
+      }
     }
 
     renderWorkspaceSession();

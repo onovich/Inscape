@@ -106,7 +106,8 @@ Runtime
 - 从当前 `NarrativeRuntime` 最小 IR 消费生命周期继续扩展。
 - 自研编辑器的 Player 模式直接消费 Runtime，而不是用 HTML Preview 当运行时。
 - Runtime 不解析 `.inscape` 源文本，只消费 Compiler / Tooling 产物。
-- 当前已新增 `runtime-project` CLI 前置契约：项目编译后由 `NarrativeRuntime` 启动 entry，并输出 `inscape.runtime-state` JSON；也可以通过 `--state` 恢复上一帧状态后执行 `--continue` 或 `--choose group option`，供后续 SelfHostedEditor Player 桥接入。
+- 当前已新增 `runtime-project` CLI 前置契约：项目编译后由 `NarrativeRuntime` 启动 entry，并输出 `inscape.runtime-state` JSON；也可以通过 `--state` 恢复上一帧状态后执行 `--continue`、`--advance-flow`、`--rewind`、`--rewind-flow` 或 `--choose group option`，供后续 SelfHostedEditor Player 桥接入。
+- Runtime 快照现已包含节点内阅读进度：`state.visibleStepCount` 保存当前节点已露出的步骤数，`readingProgress` 暴露内容步数、最大步数、是否还能前进/回退，以及 choice/continue 阶段是否已经出现。这个语义属于共享 Runtime，不属于 SelfHostedEditor 前端。
 
 ### ExternalSupport 侧职责
 
@@ -305,7 +306,7 @@ src/ExternalSupport/SelfHostedEditor/
 - Files 面板采用和 Outline 一致的紧凑列表布局，内容不足时保持顶部小块列表，不把单个文件项拉伸成填满面板的大卡片。
 - line identity 已接入真实 Tooling sidecar 刷新：`SelfHostedEditorLineMapBridge` 调用开发宿主 `/api/line-map-refresh`，宿主运行 `refresh-l10n-line-map-project` 并返回 line-map；前端把上一轮 line-map 作为下一轮 existing sidecar，交给 Tooling 迁移稳定 `line_...`。对白、prompt、choice 显示真实 line id，跳转等非本地化身份行不显示身份文本。开发宿主读取 Tooling 生成的 JSON 文件时会剥离 UTF-8 BOM，避免 `JSON.parse` 失败导致前端静默退回 `provider: unavailable`。
 - 行号数字区域 hover 只在 Tooling 提供可用 `line_...` 时显示稳定身份；整条 hint line hover 仍只显示块内行号。`@`、跳转、旁白等未追踪行不显示 `not tracked` / `line id not loaded` 占位。line-map 适配器兼容 camelCase / PascalCase JSON 字段，避免拿到真实 sidecar 却映射不到。hint rail DOM 渲染已纳入 `SelfHostedEditorModelContractCheck`，覆盖 `.has-stable-id`、`.hint-stable-id` 与复制控件输出。
-- 仍需替换：`ScriptDocumentModelBuilder` 继续是 UI-only 草模，但 Graph 与 Preview 的正常服务路径已开始消费 Compiler project graph；诊断 marker 仍主要贴活动文件；L10N 视图正在从 session draft 过渡到 Tooling presenter，但真实 CSV 文件选择 / 写回仍未完成；Preview 虽已把当前节点、首次 player 选点、choice / continue 与节点级历史回退接到 Runtime，但节点内 Flow 步进仍不是 Runtime Player；Graph 位置仍是 session memory。后续每次迭代应尽量挑一个窄消费者替换为 Internal 输出，而不是在前端草模上继续叠语义。
+- 仍需替换：`ScriptDocumentModelBuilder` 继续是 UI-only 草模，但 Graph 与 Preview 的正常服务路径已开始消费 Compiler project graph；诊断 marker 仍主要贴活动文件；L10N 视图正在从 session draft 过渡到 Tooling presenter，但真实 CSV 文件选择 / 写回仍未完成；Preview 虽已把当前节点、首次 player 选点、choice / continue、节点级历史回退与节点内 Flow 步进接到 Runtime，但当前仍不是桌面端长生命周期 Runtime Player，会话边界还在开发宿主 + CLI 临时 workspace 这一层；Graph 位置仍是 session memory。后续每次迭代应尽量挑一个窄消费者替换为 Internal 输出，而不是在前端草模上继续叠语义。
 
 - references 候选默认不应依赖 Monaco inline peek；主路线是自定义 overlay，覆盖正文上方而不改变排版流。
 - 文件导入入口已进入 workspace 第一版：允许一次导入同目录多份 `.inscape`，并把当前文件、相对路径、workspace 名称与文件数纳入编辑会话状态。

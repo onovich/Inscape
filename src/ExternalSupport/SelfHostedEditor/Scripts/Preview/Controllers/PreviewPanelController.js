@@ -21,8 +21,12 @@ export class PreviewPanelController {
     this.flowWheelLastDirection = 0;
     this.flowWheelThreshold = 160;
     this.bindModeControls();
-    this.previewElement.addEventListener("click", (event) => this.handlePreviewClick(event));
-    this.previewElement.addEventListener("wheel", (event) => this.handlePreviewWheel(event), { passive: false });
+    this.previewElement.addEventListener("click", (event) => {
+      void this.handlePreviewClick(event);
+    });
+    this.previewElement.addEventListener("wheel", (event) => {
+      void this.handlePreviewWheel(event);
+    }, { passive: false });
     this.updateModeControls();
   }
 
@@ -51,9 +55,10 @@ export class PreviewPanelController {
     }
 
     const storyModel = this.buildPreferredPreviewModel(activeLineNumber, runtimeSnapshot);
-    if (storyModel.nodeTitle !== this.currentNodeTitle) {
+    if (storyModel.nodeTitle !== this.currentNodeTitle && !this.hasRuntimeReadingProgress(storyModel)) {
       this.flowVisibleLineCount = 0;
     }
+    this.syncFlowVisibleLineCount(storyModel);
 
     this.currentNodeTitle = storyModel.nodeTitle;
     this.latestStoryModel = storyModel;
@@ -101,6 +106,8 @@ export class PreviewPanelController {
     if (storyModel.nodeTitle !== this.currentNodeTitle) {
       this.flowVisibleLineCount = 0;
     }
+    this.syncFlowVisibleLineCount(storyModel);
+    this.pendingFlowAnimationLineIndex = -1;
 
     this.currentNodeTitle = storyModel.nodeTitle;
     this.latestStoryModel = storyModel;
@@ -185,6 +192,7 @@ export class PreviewPanelController {
     this.flowVisibleLineCount = mode === "flow" ? 0 : Number.MAX_SAFE_INTEGER;
     this.updateModeControls();
     if (this.latestStoryModel) {
+      this.syncFlowVisibleLineCount(this.latestStoryModel);
       this.renderStoryModel(this.latestStoryModel);
       this.highlightSourceLine(this.activeLineNumber);
     }
@@ -200,7 +208,7 @@ export class PreviewPanelController {
     }
   }
 
-  handlePreviewClick(event) {
+  async handlePreviewClick(event) {
     if (this.mode !== "flow") {
       return;
     }
@@ -209,10 +217,10 @@ export class PreviewPanelController {
       return;
     }
 
-    this.advanceFlow();
+    await this.advanceFlow();
   }
 
-  handlePreviewWheel(event) {
+  async handlePreviewWheel(event) {
     if (this.mode !== "flow" || !this.latestStoryModel) {
       this.resetFlowWheelAccumulator();
       return;
@@ -226,7 +234,7 @@ export class PreviewPanelController {
     const direction = deltaY > 0 ? 1 : -1;
     const atBoundary = direction < 0 ? this.isPreviewScrolledToTop() : this.isPreviewScrolledToBottom();
     const canAdvance = direction > 0 && !this.areFlowChoicesVisible();
-    const canRewind = direction < 0 && this.flowVisibleLineCount > 0;
+    const canRewind = direction < 0 && this.getFlowVisibleLineCount(this.latestStoryModel) > 0;
     if (!atBoundary || (direction > 0 && !canAdvance) || (direction < 0 && !canRewind)) {
       this.resetFlowWheelAccumulator();
       return;
@@ -235,7 +243,9 @@ export class PreviewPanelController {
     event.preventDefault?.();
     const steps = this.consumeFlowWheelDelta(deltaY);
     for (let index = 0; index < steps; index += 1) {
-      const changed = direction > 0 ? this.advanceFlow() : this.rewindFlow();
+      const changed = direction > 0
+        ? await this.advanceFlow()
+        : await this.rewindFlow();
       if (!changed) {
         this.resetFlowWheelAccumulator();
         break;
@@ -243,9 +253,18 @@ export class PreviewPanelController {
     }
   }
 
-  advanceFlow() {
+  async advanceFlow() {
     if (!this.latestStoryModel) {
       return false;
+    }
+
+    if (this.hasRuntimeReadingProgress(this.latestStoryModel)) {
+      return this.notifyChoiceSelected({
+        nodeTitle: this.latestStoryModel.nodeTitle,
+        runtimeAction: {
+          type: "advance-flow",
+        },
+      });
     }
 
     const flowStepCount = this.getFlowStepCount(this.latestStoryModel);
@@ -264,9 +283,18 @@ export class PreviewPanelController {
     return true;
   }
 
-  rewindFlow() {
+  async rewindFlow() {
     if (!this.latestStoryModel) {
       return false;
+    }
+
+    if (this.hasRuntimeReadingProgress(this.latestStoryModel)) {
+      return this.notifyChoiceSelected({
+        nodeTitle: this.latestStoryModel.nodeTitle,
+        runtimeAction: {
+          type: "rewind-flow",
+        },
+      });
     }
 
     const nextVisibleLineCount = Math.max(0, this.flowVisibleLineCount - 1);
@@ -326,7 +354,7 @@ export class PreviewPanelController {
   areFlowChoicesVisible() {
     return Boolean(this.latestStoryModel)
       && this.mode === "flow"
-      && this.flowVisibleLineCount > this.getFlowStepCount(this.latestStoryModel);
+      && this.getFlowVisibleLineCount(this.latestStoryModel) > this.getFlowStepCount(this.latestStoryModel);
   }
 
   getVisibleLines(storyModel) {
@@ -338,14 +366,19 @@ export class PreviewPanelController {
   }
 
   shouldShowChoices(storyModel) {
-    return this.mode !== "flow" || this.flowVisibleLineCount > this.getFlowStepCount(storyModel);
+    return this.mode !== "flow" || this.getFlowVisibleLineCount(storyModel) > this.getFlowStepCount(storyModel);
   }
 
   isLineVisibleInFlow(targetLine, storyModel) {
-    return this.isLineVisibleInFlowForCount(targetLine, storyModel, this.flowVisibleLineCount);
+    return this.isLineVisibleInFlowForCount(targetLine, storyModel, this.getFlowVisibleLineCount(storyModel));
   }
 
   getFlowStepCount(storyModel) {
+    const runtimeStepCount = Number(storyModel?.runtimeState?.readingProgress?.contentStepCount);
+    if (Number.isFinite(runtimeStepCount) && runtimeStepCount >= 0) {
+      return runtimeStepCount;
+    }
+
     return storyModel.lines.filter((line) => line.kind !== "metadata").length;
   }
 
@@ -520,6 +553,8 @@ export class PreviewPanelController {
       runtimeState: {
         currentNodeName: runtimeSnapshot?.state?.currentNodeName || nodeTitle,
         path: Array.isArray(runtimeSnapshot?.state?.path) ? runtimeSnapshot.state.path : [],
+        readingProgress: runtimeSnapshot?.readingProgress || null,
+        visibleStepCount: Number(runtimeSnapshot?.state?.visibleStepCount || 0),
       },
       sourceLine,
       title: nodeTitle,
@@ -680,6 +715,27 @@ export class PreviewPanelController {
     });
     history.append(pathElement);
     return history;
+  }
+
+  hasRuntimeReadingProgress(storyModel) {
+    return Number.isFinite(Number(storyModel?.runtimeState?.readingProgress?.visibleStepCount));
+  }
+
+  syncFlowVisibleLineCount(storyModel) {
+    if (!this.hasRuntimeReadingProgress(storyModel)) {
+      return;
+    }
+
+    this.flowVisibleLineCount = this.getFlowVisibleLineCount(storyModel);
+  }
+
+  getFlowVisibleLineCount(storyModel) {
+    const runtimeVisibleLineCount = Number(storyModel?.runtimeState?.readingProgress?.visibleStepCount);
+    if (Number.isFinite(runtimeVisibleLineCount) && runtimeVisibleLineCount >= 0) {
+      return runtimeVisibleLineCount;
+    }
+
+    return this.flowVisibleLineCount;
   }
 
   createLineElement(line, options = {}) {

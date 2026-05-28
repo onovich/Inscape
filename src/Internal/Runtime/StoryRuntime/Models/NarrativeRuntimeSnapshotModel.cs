@@ -12,10 +12,13 @@ namespace Inscape.Runtime {
 
         public StoryGraphNodeModel? CurrentNode { get; set; }
 
+        public NarrativeRuntimeReadingProgressModel ReadingProgress { get; set; }
+
         public NarrativeRuntimeSnapshotModel() {
             Format = "inscape.runtime-state";
             FormatVersion = 1;
             State = new NarrativeRuntimeStateModel();
+            ReadingProgress = new NarrativeRuntimeReadingProgressModel();
         }
 
     }

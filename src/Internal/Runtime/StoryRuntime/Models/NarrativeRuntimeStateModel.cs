@@ -8,9 +8,12 @@ namespace Inscape.Runtime {
 
         public List<string> Path { get; set; }
 
+        public int VisibleStepCount { get; set; }
+
         public NarrativeRuntimeStateModel() {
             CurrentNodeName = string.Empty;
             Path = new List<string>();
+            VisibleStepCount = 0;
         }
 
     }
