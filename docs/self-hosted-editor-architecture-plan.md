@@ -229,6 +229,7 @@ src/ExternalSupport/SelfHostedEditor/
 - 已接入第一条 Monaco 语义级重命名雏形：编辑区里的节点标题与 jump target 现在支持 rename provider，并通过受控整文 patch 回写 `# 标题` 与匹配的 `-> 标题` 引用，用于验证“语义改名回写文本真相”的长期边界。
 - 已新增节点图受控重命名雏形：节点图触发 rename 后会 patch 文本源中的 `# 标题` 与匹配的 `-> 标题` 引用，用于验证“图编辑回写文本源”的长期边界。
 - 已新增本地化会话草稿：本地化视图支持在当前会话内填写译文草稿，并用 `empty` / `draft` 状态区分；当前既可下载浏览器 draft CSV，也可选择真实旧 CSV，经开发宿主 `/api/localization-update` 复用 CLI `update-l10n-project` 导出真实 updated CSV。前端只传 `previousCsv + anchor-based translation overrides`，不自己拼真实 CSV 语义。
+- 已新增宿主侧本地化 review 筛选：`LocalizationEditorController` 会直接消费 shared `presenter.items` 与 draft store，在浏览器里按 `all / actionable / draft / empty / kept / new / changed / conflict / stale / removed` 切换可见行，并显示 `Showing X of Y rows` 摘要；这层只负责可见性，不改 Tooling review 语义。
 - 已新增工作区摘要状态：顶部状态栏显示节点数、本地化行数、译文草稿数和诊断数；后续可替换为真实项目工作区 / LanguageServer / Tooling 汇总。
 - 下一步打开真实项目目录。
 - 下一步调用 `Tooling` / `Cli` 或 `LanguageServer` 获取项目 IR。
@@ -247,7 +248,7 @@ src/ExternalSupport/SelfHostedEditor/
 
 - 脚本编辑视图：Monaco 主编辑区，默认左栏编辑、右栏预览；可切换为仅编写或仅预览。
 - 预览视图：运行 / 效果预览，支持从预览定位回脚本源。
-- 本地化编辑视图：当前已有从脚本临时提取的草表、会话内译文草稿、真实旧 CSV 选择、alignment review presenter 渲染、浏览器 draft CSV 导出，以及通过共享 CLI 流程导出的真实 updated CSV；后续继续补筛选、审校动作、直接文件写回和更清晰的 CSV 会话状态。
+- 本地化编辑视图：当前已有从脚本临时提取的草表、会话内译文草稿、真实旧 CSV 选择、alignment review presenter 渲染、宿主侧 review 筛选、浏览器 draft CSV 导出，以及通过共享 CLI 流程导出的真实 updated CSV；后续继续补审校动作、直接文件写回和更清晰的 CSV 会话状态。
 - 节点图视图：当前已有从脚本临时提取的结构预览和受控标题重命名雏形；后续模型和交互契约要为“既能编辑也是预览”保留空间。
 - 编辑区提示层：节点名、line id、anchor、候选翻译、跳转目标等辅助信息默认弱化显示，只在 hover / focus / selection 或可交互状态下高亮。
 
@@ -296,7 +297,7 @@ src/ExternalSupport/SelfHostedEditor/
 - Preview 阅读模式新增 Static / Flow 切换：Static 一次性展示当前 block；Flow 从标题开始，点击预览区逐行放出正文，新出现的 speaker 快速淡入，正文使用打字机效果；正文结束后一次性展示全部选项，并把选项文本与目标标题一起呈现。`@` 标签不消耗 Flow 点击：开头标签随标题出现，正文后的标签随该句完成后出现。Flow 的滚轮导航只在 `.story-preview` 自身已经滚到顶部或底部时接管：向上滚轮按阈值撤回上一步，向下滚轮按阈值快进一步；选项可见时向下快进无效。当前内容模型已开始消费 Compiler project graph，Runtime 侧已有 `runtime-project` snapshot 契约；但阅读进度、当前节点推进和选项选择仍是前端 presenter 状态，后续 Runtime Player 接入时应映射到运行时状态。
 - SelfHostedEditor 已新增 Runtime 开发宿主桥：`/api/runtime-state` 调用 `runtime-project` 并把 started snapshot 显示到 session 状态；`/api/runtime-action` 可以把 restored state 的 `continue` / `choose` 动作转发给同一个 CLI 契约。它证明 UI 可以消费 Runtime 输出，但 Preview 还没有改为 Runtime Player 状态，桌面端也还不是长生命周期 Player 会话。
 - Runtime 最小生命周期现已继续补到 `rewind`：共享层会依据 `state.path` 回退一个已访问节点，开发宿主与 SelfHostedEditor 只负责透传这个动作并显示轻量 path / Back 控件，不在浏览器里另建一份节点历史真相。
-- 2026-05-28 当前状态：SelfHostedEditor L10N 视图已补上“真实旧 CSV 选择 + 真实 updated CSV 导出”第一刀。共享层 / CLI 新增 `--translation-overrides`，允许在 `update-l10n` / `update-l10n-project` 前按 anchor 吃掉前端草稿覆盖；开发宿主新增 `/api/localization-update`，前端只传 `previousCsv + translationOverrides`，由 CLI 继续产出真实 updated CSV。`LocalizationEditorController` 现在会显示 review baseline、读取真实旧 CSV、保留 session draft overrides，并通过浏览器下载导出真实 updated CSV。该链路已补 `check:localization-update` 与 `check:localization-update-http` 两层 smoke，保持“共享语义留在 Internal / CLI，消费端只做薄适配”。
+- 2026-05-28 当前状态：SelfHostedEditor L10N 视图已补上“真实旧 CSV 选择 + 真实 updated CSV 导出”第一刀，并新增宿主侧 review 筛选。共享层 / CLI 新增 `--translation-overrides`，允许在 `update-l10n` / `update-l10n-project` 前按 anchor 吃掉前端草稿覆盖；开发宿主新增 `/api/localization-update`，前端只传 `previousCsv + translationOverrides`，由 CLI 继续产出真实 updated CSV。`LocalizationEditorController` 现在会显示 review baseline、读取真实旧 CSV、保留 session draft overrides、按状态筛选当前可见 review 行，并通过浏览器下载导出真实 updated CSV。该链路已补 `check:localization-update` 与 `check:localization-update-http` 两层 smoke，保持“共享语义留在 Internal / CLI，消费端只做薄适配”。
 - Script 编辑器左侧行号 / line id 提示轨道应保持在 Monaco 内容坐标系里：提示轨道本身不加独立上下 padding，行提示按 Monaco 运行时 line height 建立高度，并通过 `getTopForLineNumber()` 定位。这样长行折行后，下一条逻辑行的行号仍跟随该行首字，而不是紧贴上一条视觉行。
 - Script 行号轨道已继续收口：写作表面关闭 Monaco 顶部滚动阴影，行号轨道不暴露横向滚动条；hover 整条 hint line 只显示块内行号，只有 hover 行号数字区域才会以稳定 id 替换块内行号显示。稳定 id 展示时去掉 `line_` 前缀，并提供小复制按钮复制完整去前缀后的 id；未追踪行继续保持安静。
 - Script 写作表面关闭 Monaco sticky scroll；节点标题、prompt / choice 标题等结构行不应置顶，而应像普通文本一样自然滚出视口，避免顶部重影与层级错乱。
@@ -306,7 +307,7 @@ src/ExternalSupport/SelfHostedEditor/
 - Files 面板采用和 Outline 一致的紧凑列表布局，内容不足时保持顶部小块列表，不把单个文件项拉伸成填满面板的大卡片。
 - line identity 已接入真实 Tooling sidecar 刷新：`SelfHostedEditorLineMapBridge` 调用开发宿主 `/api/line-map-refresh`，宿主运行 `refresh-l10n-line-map-project` 并返回 line-map；前端把上一轮 line-map 作为下一轮 existing sidecar，交给 Tooling 迁移稳定 `line_...`。对白、prompt、choice 显示真实 line id，跳转等非本地化身份行不显示身份文本。开发宿主读取 Tooling 生成的 JSON 文件时会剥离 UTF-8 BOM，避免 `JSON.parse` 失败导致前端静默退回 `provider: unavailable`。
 - 行号数字区域 hover 只在 Tooling 提供可用 `line_...` 时显示稳定身份；整条 hint line hover 仍只显示块内行号。`@`、跳转、旁白等未追踪行不显示 `not tracked` / `line id not loaded` 占位。line-map 适配器兼容 camelCase / PascalCase JSON 字段，避免拿到真实 sidecar 却映射不到。hint rail DOM 渲染已纳入 `SelfHostedEditorModelContractCheck`，覆盖 `.has-stable-id`、`.hint-stable-id` 与复制控件输出。
-- 仍需替换：`ScriptDocumentModelBuilder` 继续是 UI-only 草模，但 Graph 与 Preview 的正常服务路径已开始消费 Compiler project graph；诊断 marker 仍主要贴活动文件；L10N 视图虽然已经接上真实旧 CSV 选择、review presenter 和真实 updated CSV 导出，但直接文件写回、筛选/批量审校与更完整的 CSV 会话状态仍未完成；Preview 虽已把当前节点、首次 player 选点、choice / continue、节点级历史回退与节点内 Flow 步进接到 Runtime，但当前仍不是桌面端长生命周期 Runtime Player，会话边界还在开发宿主 + CLI 临时 workspace 这一层；Graph 位置仍是 session memory。后续每次迭代应尽量挑一个窄消费者替换为 Internal 输出，而不是在前端草模上继续叠语义。
+- 仍需替换：`ScriptDocumentModelBuilder` 继续是 UI-only 草模，但 Graph 与 Preview 的正常服务路径已开始消费 Compiler project graph；诊断 marker 仍主要贴活动文件；L10N 视图虽然已经接上真实旧 CSV 选择、review presenter、宿主侧筛选和真实 updated CSV 导出，但直接文件写回、批量审校与更完整的 CSV 会话状态仍未完成；Preview 虽已把当前节点、首次 player 选点、choice / continue、节点级历史回退与节点内 Flow 步进接到 Runtime，但当前仍不是桌面端长生命周期 Runtime Player，会话边界还在开发宿主 + CLI 临时 workspace 这一层；Graph 位置仍是 session memory。后续每次迭代应尽量挑一个窄消费者替换为 Internal 输出，而不是在前端草模上继续叠语义。
 
 - references 候选默认不应依赖 Monaco inline peek；主路线是自定义 overlay，覆盖正文上方而不改变排版流。
 - 文件导入入口已进入 workspace 第一版：允许一次导入同目录多份 `.inscape`，并把当前文件、相对路径、workspace 名称与文件数纳入编辑会话状态。

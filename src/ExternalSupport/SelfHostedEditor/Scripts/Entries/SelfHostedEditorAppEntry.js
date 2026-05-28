@@ -44,6 +44,8 @@ async function main() {
   const hintRailElement = document.querySelector(".hint-rail");
   const graphPanelElement = document.querySelector(".graph-panel");
   const localizationPanelElement = document.querySelector(".localization-panel");
+  const localizationFilterModeElement = document.querySelector(".localization-filter-select");
+  const localizationFilterSummaryElement = document.querySelector(".localization-filter-summary");
   const localizationPreviousCsvInputElement = document.querySelector(".localization-csv-input");
   const localizationPreviousCsvButtonElement = document.querySelector(".localization-open-button");
   const localizationPreviousCsvStatusElement = document.querySelector(".localization-source-status");
@@ -96,6 +98,8 @@ async function main() {
     draftStore: localizationDraftStore,
     exportDraftButtonElement: exportLocalizationButtonElement,
     exportUpdatedButtonElement: exportUpdatedLocalizationButtonElement,
+    filterModeElement: localizationFilterModeElement,
+    filterSummaryElement: localizationFilterSummaryElement,
     openPreviousCsvButtonElement: localizationPreviousCsvButtonElement,
     previousCsvInputElement: localizationPreviousCsvInputElement,
     previousCsvStatusElement: localizationPreviousCsvStatusElement,

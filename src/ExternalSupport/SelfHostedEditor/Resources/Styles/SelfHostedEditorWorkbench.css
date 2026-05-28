@@ -802,9 +802,11 @@ button[aria-pressed="true"],
 .localization-toolbar {
   align-items: center;
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin-left: auto;
   min-width: 0;
+  justify-content: flex-end;
 }
 
 .pane-title .localization-toolbar button {
@@ -826,6 +828,29 @@ button[aria-pressed="true"],
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.localization-filter-select {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(39, 36, 31, 0.08);
+  border-radius: 999px;
+  color: var(--muted-strong);
+  font: inherit;
+  font-size: 10px;
+  min-height: 28px;
+  outline: none;
+  padding: 0 10px;
+}
+
+.localization-filter-select:focus {
+  border-color: rgba(106, 109, 87, 0.3);
+  box-shadow: 0 0 0 3px rgba(106, 109, 87, 0.08);
+}
+
+.localization-filter-summary {
+  color: var(--muted);
+  font-size: 9px;
   white-space: nowrap;
 }
 
@@ -1917,6 +1942,16 @@ button[aria-pressed="true"],
   border-collapse: collapse;
   font-size: 12px;
   width: 100%;
+}
+
+.localization-filter-empty {
+  color: var(--muted);
+  font-size: 12px;
+  padding: 16px;
+}
+
+.localization-filter-empty.is-hidden {
+  display: none;
 }
 
 .localization-table th,

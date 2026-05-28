@@ -7,6 +7,8 @@ export class LocalizationEditorController {
     draftStore,
     exportDraftButtonElement,
     exportUpdatedButtonElement = null,
+    filterModeElement = null,
+    filterSummaryElement = null,
     openPreviousCsvButtonElement = null,
     previousCsvInputElement = null,
     previousCsvStatusElement = null,
@@ -16,11 +18,16 @@ export class LocalizationEditorController {
     this.draftStore = draftStore;
     this.exportDraftButtonElement = exportDraftButtonElement;
     this.exportUpdatedButtonElement = exportUpdatedButtonElement;
+    this.filterModeElement = filterModeElement;
+    this.filterSummaryElement = filterSummaryElement;
     this.openPreviousCsvButtonElement = openPreviousCsvButtonElement;
     this.previousCsvInputElement = previousCsvInputElement;
     this.previousCsvStatusElement = previousCsvStatusElement;
     this.reviewBridge = reviewBridge;
+    this.filterMode = "all";
     this.rows = [];
+    this.tableBodyElement = null;
+    this.filterEmptyStateElement = null;
     this.lastReviewProvider = "draft-fallback";
     this.lastScriptText = "";
     this.previousCsvName = "";
@@ -32,11 +39,15 @@ export class LocalizationEditorController {
     this.exportUpdatedButtonElement?.addEventListener("click", () => {
       void this.exportUpdatedCsv();
     });
+    this.filterModeElement?.addEventListener("change", () => {
+      this.setFilterMode(this.filterModeElement.value);
+    });
     this.openPreviousCsvButtonElement?.addEventListener("click", () => this.previousCsvInputElement?.click());
     this.previousCsvInputElement?.addEventListener("change", (event) => {
       void this.handlePreviousCsvSelection(event.target?.files?.[0] || null);
     });
     this.renderPreviousCsvStatus();
+    this.renderFilterSummary();
   }
 
   onTranslationChanged(handler) {
@@ -59,12 +70,18 @@ export class LocalizationEditorController {
     this.exportDraftButtonElement.disabled = rows.length === 0;
     this.syncUpdatedExportAvailability();
     this.renderPreviousCsvStatus();
+    this.updateFilterControl();
 
     if (rows.length === 0) {
+      this.tableBodyElement = null;
+      this.filterEmptyStateElement = null;
+      this.renderFilterSummary();
       this.panelElement.replaceChildren(this.createEmptyState());
       return;
     }
 
+    const shell = document.createElement("div");
+    shell.className = "localization-table-shell";
     const table = document.createElement("table");
     table.className = "localization-table";
     table.append(this.createHeader());
@@ -75,7 +92,14 @@ export class LocalizationEditorController {
     }
 
     table.append(body);
-    this.panelElement.replaceChildren(table);
+    const filterEmptyState = document.createElement("div");
+    filterEmptyState.className = "localization-filter-empty is-hidden";
+    filterEmptyState.textContent = "No rows match the current filter.";
+    shell.append(table, filterEmptyState);
+    this.panelElement.replaceChildren(shell);
+    this.tableBodyElement = body;
+    this.filterEmptyStateElement = filterEmptyState;
+    this.applyRowFilters();
   }
 
   createHeader() {
@@ -93,6 +117,7 @@ export class LocalizationEditorController {
   createRow(item) {
     const row = document.createElement("tr");
     row.dataset.sourceLine = String(item.sourceLine);
+    this.updateRowStatusState(row, item);
 
     const status = document.createElement("td");
     status.append(this.createStatusPill(item));
@@ -126,7 +151,7 @@ export class LocalizationEditorController {
 
   createStatusPill(item) {
     const pill = document.createElement("span");
-    const status = item.status || this.draftStore.getStatus(item);
+    const status = this.getRowStatus(item);
     pill.className = `status-pill status-pill-${status}`;
     pill.textContent = status;
     return pill;
@@ -150,14 +175,15 @@ export class LocalizationEditorController {
         this.draftStore.setTranslation(item, nextTranslation);
       }
 
-      item.status = this.draftStore.hasDraft(item)
-        ? "draft"
-        : (item.reviewStatus || (baseTranslation ? "review" : "empty"));
       const row = input.closest("tr");
-      const statusCell = row?.querySelector("td");
+      const statusCell = row?.children?.[0] || null;
       if (statusCell) {
         statusCell.replaceChildren(this.createStatusPill(item));
       }
+      if (row) {
+        this.updateRowStatusState(row, item);
+      }
+      this.applyRowFilters();
       this.syncUpdatedExportAvailability();
       this.notifyTranslationChanged();
     });
@@ -185,6 +211,16 @@ export class LocalizationEditorController {
     }
   }
 
+  setFilterMode(filterMode) {
+    this.filterMode = this.normalizeFilterMode(filterMode);
+    this.updateFilterControl();
+    this.applyRowFilters();
+  }
+
+  getVisibleRows() {
+    return this.rows.filter((row) => this.matchesFilter(row));
+  }
+
   mapReviewRows(reviewSnapshot) {
     const presenterItems = reviewSnapshot?.review?.presenter?.items;
     if (!Array.isArray(presenterItems) || presenterItems.length === 0) {
@@ -204,7 +240,6 @@ export class LocalizationEditorController {
         reviewSummary: presenterItem.summary || "",
         sourceLine: Number(item.line || presenterItem.line || 1),
         speaker: item.speaker || "",
-        status,
         text: item.text || "",
         translation: item.translation || "",
       };
@@ -310,5 +345,123 @@ export class LocalizationEditorController {
     link.click();
     link.remove();
     URL.revokeObjectURL(url);
+  }
+
+  getRowStatus(item) {
+    if (this.draftStore.hasDraft(item)) {
+      return "draft";
+    }
+
+    if (item.reviewStatus) {
+      return item.reviewStatus;
+    }
+
+    return item.translation ? "review" : "empty";
+  }
+
+  normalizeFilterMode(filterMode) {
+    const value = String(filterMode || "").trim().toLowerCase();
+    const allowedValues = new Set([
+      "all",
+      "actionable",
+      "draft",
+      "empty",
+      "review",
+      "kept",
+      "new",
+      "changed",
+      "conflict",
+      "stale",
+      "removed",
+    ]);
+    return allowedValues.has(value) ? value : "all";
+  }
+
+  updateFilterControl() {
+    if (!this.filterModeElement) {
+      return;
+    }
+
+    this.filterModeElement.value = this.filterMode;
+  }
+
+  applyRowFilters() {
+    const visibleRows = this.getVisibleRows();
+    const visibleRowKeys = new Set(visibleRows.map((row) => this.getRowKey(row)));
+    for (const rowElement of this.tableBodyElement?.children || []) {
+      const rowKey = rowElement.dataset.rowKey || "";
+      rowElement.hidden = !visibleRowKeys.has(rowKey);
+    }
+
+    if (this.filterEmptyStateElement) {
+      this.filterEmptyStateElement.classList.toggle("is-hidden", visibleRows.length > 0);
+    }
+
+    this.renderFilterSummary(visibleRows.length);
+  }
+
+  renderFilterSummary(visibleRowCount = this.getVisibleRows().length) {
+    if (!this.filterSummaryElement) {
+      return;
+    }
+
+    const totalCount = this.rows.length;
+    const filterLabel = this.buildFilterLabel();
+    this.filterSummaryElement.textContent = filterLabel === "All rows"
+      ? `Showing ${visibleRowCount} of ${totalCount} rows`
+      : `Showing ${visibleRowCount} of ${totalCount} rows | ${filterLabel}`;
+  }
+
+  buildFilterLabel() {
+    switch (this.filterMode) {
+      case "actionable":
+        return "Needs action";
+      case "draft":
+        return "Drafts";
+      case "empty":
+        return "Empty";
+      case "review":
+        return "Review";
+      case "kept":
+        return "Kept";
+      case "new":
+        return "New";
+      case "changed":
+        return "Changed";
+      case "conflict":
+        return "Conflict";
+      case "stale":
+        return "Stale";
+      case "removed":
+        return "Removed";
+      default:
+        return "All rows";
+    }
+  }
+
+  matchesFilter(item) {
+    const status = this.getRowStatus(item);
+    switch (this.filterMode) {
+      case "actionable":
+        return ["draft", "empty", "new", "changed", "conflict", "stale", "removed"].includes(status);
+      case "all":
+        return true;
+      default:
+        return status === this.filterMode;
+    }
+  }
+
+  updateRowStatusState(rowElement, item) {
+    const status = this.getRowStatus(item);
+    rowElement.dataset.rowKey = this.getRowKey(item);
+    rowElement.dataset.status = status;
+  }
+
+  getRowKey(item) {
+    if (item.anchor) {
+      return `anchor:${item.anchor}`;
+    }
+
+    return `${item.nodeTitle}:${item.sourceLine}:${item.kind}:${item.text}`;
   }
 }

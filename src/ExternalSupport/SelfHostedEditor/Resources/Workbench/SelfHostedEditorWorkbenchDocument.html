@@ -95,6 +95,19 @@
                   <button class="localization-open-button" type="button">Open previous CSV</button>
                   <input class="localization-csv-input" type="file" accept=".csv,text/csv">
                   <span class="localization-source-status">Review baseline: current extract</span>
+                  <select class="localization-filter-select" aria-label="Localization row filter">
+                    <option value="all">All rows</option>
+                    <option value="actionable">Needs action</option>
+                    <option value="draft">Drafts</option>
+                    <option value="empty">Empty</option>
+                    <option value="new">New</option>
+                    <option value="changed">Changed</option>
+                    <option value="conflict">Conflict</option>
+                    <option value="stale">Stale</option>
+                    <option value="removed">Removed</option>
+                    <option value="kept">Kept</option>
+                  </select>
+                  <span class="localization-filter-summary">Showing 0 of 0 rows</span>
                   <button class="localization-export-updated-button" type="button" disabled>Export updated CSV</button>
                   <button class="localization-export-button" type="button">Export draft CSV</button>
                 </div>

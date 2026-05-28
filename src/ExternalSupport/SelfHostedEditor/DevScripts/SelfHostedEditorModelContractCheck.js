@@ -606,6 +606,9 @@ globalThis.document = new FakeDocument();
 const localizationPanel = new FakeElement("section");
 const localizationExportButton = new FakeElement("button");
 const localizationExportUpdatedButton = new FakeElement("button");
+const localizationFilterMode = new FakeElement("select");
+localizationFilterMode.value = "all";
+const localizationFilterSummary = new FakeElement("span");
 const localizationOpenButton = new FakeElement("button");
 const localizationCsvInput = new FakeElement("input");
 const localizationSourceStatus = new FakeElement("span");
@@ -614,6 +617,8 @@ const localizationController = new LocalizationEditorController({
   draftStore,
   exportDraftButtonElement: localizationExportButton,
   exportUpdatedButtonElement: localizationExportUpdatedButton,
+  filterModeElement: localizationFilterMode,
+  filterSummaryElement: localizationFilterSummary,
   openPreviousCsvButtonElement: localizationOpenButton,
   previousCsvInputElement: localizationCsvInput,
   previousCsvStatusElement: localizationSourceStatus,
@@ -640,6 +645,22 @@ const localizationController = new LocalizationEditorController({
                 summary: "translation: Previous translation",
                 title: "[changed] Opening - needs-review",
               },
+              {
+                detail: "samples/court-loop.inscape:8:1 <line line_DIALOGUE_2 available> | Already aligned row",
+                item: {
+                  anchor: "line_anchor_2",
+                  kind: "Dialogue",
+                  line: 8,
+                  nodeTitle: "Witness",
+                  review: "aligned",
+                  speaker: "Witness",
+                  status: "kept",
+                  text: "Already aligned row",
+                  translation: "Kept translation",
+                },
+                summary: "translation: Kept translation",
+                title: "[kept] Witness - aligned",
+              },
             ],
           },
         },
@@ -651,13 +672,26 @@ await localizationController.render("# Opening\nDraft fallback row");
 assertIncludesText(getTextContent(localizationPanel), "Compiler sourced row");
 assertIncludesText(getTextContent(localizationPanel), "Previous translation");
 assertIncludesText(getTextContent(localizationPanel), "changed");
+assertIncludesText(getTextContent(localizationPanel), "Already aligned row");
+assertIncludesText(getTextContent(localizationPanel), "kept");
 assertNotIncludesText(getTextContent(localizationPanel), "Draft fallback row");
 assertEqual(localizationSourceStatus.textContent, "Review baseline: current extract", "localization review should show default review baseline");
+assertEqual(localizationFilterSummary.textContent, "Showing 2 of 2 rows", "localization review should show all rows by default");
+localizationController.setFilterMode("changed");
+assertEqual(localizationFilterMode.value, "changed", "localization filter control should track current filter");
+assertEqual(localizationController.getVisibleRows().length, 1, "localization filter should keep only matching changed rows");
+assertEqual(localizationPanel.querySelectorAll("[data-source-line]").filter((row) => !row.hidden).length, 1, "localization filter should hide non-matching table rows");
+assertEqual(localizationFilterSummary.textContent, "Showing 1 of 2 rows | Changed", "localization filter summary should reflect narrowed rows");
 draftStore.setTranslation(localizationController.rows[0], "");
 const localizationOverrides = localizationController.collectTranslationOverrides();
 assertEqual(localizationOverrides.length, 1, "localization controller should collect draft overrides by anchor");
 assertEqual(localizationOverrides[0].anchor, "line_anchor_1", "localization controller should preserve review anchor for overrides");
 assertEqual(localizationOverrides[0].translation, "", "localization controller should allow clearing previous translations");
+draftStore.setTranslation(localizationController.rows[1], "Fresh draft");
+localizationController.applyRowFilters();
+localizationController.setFilterMode("draft");
+assertEqual(localizationController.getVisibleRows().length, 2, "localization draft filter should surface anchor-based draft overrides");
+assertEqual(localizationFilterSummary.textContent, "Showing 2 of 2 rows | Drafts", "localization draft filter summary should reflect draft rows");
 const previewElement = new FakeElement("main");
 const previewController = new PreviewPanelController(previewElement);
 let previewSelectedLine = 0;
