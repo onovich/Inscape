@@ -764,7 +764,7 @@ runtimePreviewController.onChoiceSelected(async (choice) => {
   runtimePreviewController.renderRuntimeSnapshot(runtimeWitnessSnapshot);
   return true;
 });
-runtimePreviewController.render("", 2, storyGraph);
+runtimePreviewController.render("", 2, storyGraph, runtimeOpeningSnapshot);
 const runtimeChoice = {
   ...runtimePreviewController.normalizeChoiceGroups(runtimePreviewController.latestStoryModel.choices)[0].options[0],
   nodeTitle: "Opening",
@@ -780,6 +780,16 @@ assertEqual(runtimeAction?.groupIndex, 0, "runtime-backed preview choice should 
 assertEqual(runtimeAction?.optionIndex, 0, "runtime-backed preview choice should preserve choice option index");
 assertEqual(findElementByClass(runtimePreviewElement, "story-title")?.textContent, "Witness", "runtime-backed preview choice should re-render from returned runtime node");
 assertIncludesText(getTextContent(runtimePreviewElement), "I saw the clock stop.");
+const runtimePreferredPreviewElement = new FakeElement("main");
+const runtimePreferredPreviewController = new PreviewPanelController(runtimePreferredPreviewElement);
+runtimePreferredPreviewController.render("", 8, storyGraph, runtimeWitnessSnapshot);
+assertEqual(findElementByClass(runtimePreferredPreviewElement, "story-title")?.textContent, "Witness", "preview should prefer runtime current node when active line stays inside that node");
+assertIncludesText(getTextContent(runtimePreferredPreviewElement), "I saw the clock stop.");
+const runtimeMismatchPreviewElement = new FakeElement("main");
+const runtimeMismatchPreviewController = new PreviewPanelController(runtimeMismatchPreviewElement);
+runtimeMismatchPreviewController.render("", 2, storyGraph, runtimeWitnessSnapshot);
+assertEqual(findElementByClass(runtimeMismatchPreviewElement, "story-title")?.textContent, "Opening", "preview should fall back to compiler graph when active line and runtime node are out of sync");
+assertIncludesText(getTextContent(runtimeMismatchPreviewElement), "Review the evidence.");
 let runtimeContinueAction = null;
 const runtimeContinuePreviewElement = new FakeElement("main");
 const runtimeContinuePreviewController = new PreviewPanelController(runtimeContinuePreviewElement);

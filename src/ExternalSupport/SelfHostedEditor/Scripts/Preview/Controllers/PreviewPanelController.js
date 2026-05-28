@@ -34,7 +34,7 @@ export class PreviewPanelController {
     this.choiceSelectedHandlers.push(handler);
   }
 
-  render(scriptText, activeLineNumber = 1, storyGraphModel = null) {
+  render(scriptText, activeLineNumber = 1, storyGraphModel = null, runtimeSnapshot = null) {
     this.scriptText = scriptText;
     this.activeLineNumber = activeLineNumber;
     this.storyGraphModel = storyGraphModel;
@@ -50,7 +50,7 @@ export class PreviewPanelController {
       return;
     }
 
-    const storyModel = this.buildPreviewModel(activeLineNumber);
+    const storyModel = this.buildPreferredPreviewModel(activeLineNumber, runtimeSnapshot);
     if (storyModel.nodeTitle !== this.currentNodeTitle) {
       this.flowVisibleLineCount = 0;
     }
@@ -59,6 +59,24 @@ export class PreviewPanelController {
     this.latestStoryModel = storyModel;
     this.renderStoryModel(storyModel);
     this.highlightSourceLine(activeLineNumber);
+  }
+
+  buildPreferredPreviewModel(activeLineNumber, runtimeSnapshot) {
+    const runtimeStoryModel = this.buildPreviewModelFromRuntimeSnapshot(runtimeSnapshot);
+    if (runtimeStoryModel && this.isRuntimeStoryModelAlignedWithActiveLine(runtimeStoryModel, activeLineNumber)) {
+      return runtimeStoryModel;
+    }
+
+    return this.buildPreviewModel(activeLineNumber);
+  }
+
+  isRuntimeStoryModelAlignedWithActiveLine(runtimeStoryModel, activeLineNumber) {
+    const activeNode = this.findNodeForLine(activeLineNumber);
+    if (!activeNode) {
+      return false;
+    }
+
+    return activeNode.title === runtimeStoryModel.nodeTitle;
   }
 
   renderRuntimeSnapshot(runtimeSnapshot) {

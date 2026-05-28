@@ -502,7 +502,14 @@ async function main() {
     }
     loadingController.setIdle("runtime");
 
-    previewController.render(scriptText, activeLineNumber, storyGraphSnapshot.graph);
+    previewController.render(
+      scriptText,
+      activeLineNumber,
+      storyGraphSnapshot.graph,
+      latestRuntimeSnapshot.provider === "runtime-project"
+        ? latestRuntimeSnapshot.snapshot
+        : null
+    );
     storyGraphController.render(storyGraphSnapshot.graph, scriptText);
     loadingController.setManyIdle(["preview", "graph"]);
     const diagnosticSnapshot = await diagnosticsBridge.getDiagnostics(scriptText);
