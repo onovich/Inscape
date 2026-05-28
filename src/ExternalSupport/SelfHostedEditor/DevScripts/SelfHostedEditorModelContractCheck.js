@@ -785,6 +785,11 @@ const runtimePreferredPreviewController = new PreviewPanelController(runtimePref
 runtimePreferredPreviewController.render("", 8, storyGraph, runtimeWitnessSnapshot);
 assertEqual(findElementByClass(runtimePreferredPreviewElement, "story-title")?.textContent, "Witness", "preview should prefer runtime current node when active line stays inside that node");
 assertIncludesText(getTextContent(runtimePreferredPreviewElement), "I saw the clock stop.");
+const runtimeInitialPreviewElement = new FakeElement("main");
+const runtimeInitialPreviewController = new PreviewPanelController(runtimeInitialPreviewElement);
+runtimeInitialPreviewController.render("", 1, storyGraph, runtimeWitnessSnapshot);
+assertEqual(findElementByClass(runtimeInitialPreviewElement, "story-title")?.textContent, "Witness", "preview should start from the runtime current node before the first presenter node is established");
+assertIncludesText(getTextContent(runtimeInitialPreviewElement), "I saw the clock stop.");
 const runtimeMismatchPreviewElement = new FakeElement("main");
 const runtimeMismatchPreviewController = new PreviewPanelController(runtimeMismatchPreviewElement);
 runtimeMismatchPreviewController.render("", 2, storyGraph, runtimeWitnessSnapshot);

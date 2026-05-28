@@ -58,16 +58,29 @@ export class PreviewPanelController {
     this.currentNodeTitle = storyModel.nodeTitle;
     this.latestStoryModel = storyModel;
     this.renderStoryModel(storyModel);
-    this.highlightSourceLine(activeLineNumber);
+    this.highlightSourceLine(activeLineNumber, { allowNodeSwitch: false });
   }
 
   buildPreferredPreviewModel(activeLineNumber, runtimeSnapshot) {
     const runtimeStoryModel = this.buildPreviewModelFromRuntimeSnapshot(runtimeSnapshot);
+    if (runtimeStoryModel && this.shouldPreferRuntimeInitialSelection(activeLineNumber)) {
+      return runtimeStoryModel;
+    }
+
     if (runtimeStoryModel && this.isRuntimeStoryModelAlignedWithActiveLine(runtimeStoryModel, activeLineNumber)) {
       return runtimeStoryModel;
     }
 
     return this.buildPreviewModel(activeLineNumber);
+  }
+
+  shouldPreferRuntimeInitialSelection(activeLineNumber) {
+    if (this.findNodeByTitle(this.currentNodeTitle)) {
+      return false;
+    }
+
+    const firstNodeSourceLine = Number(this.documentModel?.nodes?.[0]?.sourceLine || 1);
+    return activeLineNumber <= Math.max(1, firstNodeSourceLine);
   }
 
   isRuntimeStoryModelAlignedWithActiveLine(runtimeStoryModel, activeLineNumber) {
@@ -92,7 +105,7 @@ export class PreviewPanelController {
     this.currentNodeTitle = storyModel.nodeTitle;
     this.latestStoryModel = storyModel;
     this.renderStoryModel(storyModel);
-    this.highlightSourceLine(storyModel.sourceLine || 0);
+    this.highlightSourceLine(storyModel.sourceLine || 0, { allowNodeSwitch: false });
     return true;
   }
 
@@ -137,10 +150,10 @@ export class PreviewPanelController {
     this.previewElement.dataset.previewState = "error";
   }
 
-  highlightSourceLine(lineNumber) {
+  highlightSourceLine(lineNumber, options = {}) {
     this.activeLineNumber = lineNumber;
     const activeNode = this.findNodeForLine(lineNumber);
-    if (activeNode && activeNode.title !== this.currentNodeTitle) {
+    if (options.allowNodeSwitch !== false && activeNode && activeNode.title !== this.currentNodeTitle) {
       this.render(this.scriptText, lineNumber, this.storyGraphModel);
       return;
     }
