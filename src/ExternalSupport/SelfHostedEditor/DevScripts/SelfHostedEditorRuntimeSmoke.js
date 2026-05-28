@@ -43,6 +43,14 @@ async function main() {
   assertEqual(witnessSnapshot.state?.path?.[1], "Witness", "witness path tail");
   assertPayloadSize(witnessSnapshot, "witness runtime snapshot");
 
+  const rewoundSnapshot = await stepRuntimeStateForScriptText(runtimeScript, null, witnessSnapshot, {
+    type: "rewind",
+  });
+  assertRuntimeSnapshot(rewoundSnapshot, "Opening");
+  assertEqual(rewoundSnapshot.state?.path?.length, 1, "rewound path length");
+  assertEqual(rewoundSnapshot.state?.path?.[0], "Opening", "rewound path tail");
+  assertPayloadSize(rewoundSnapshot, "rewound runtime snapshot");
+
   const endSnapshot = await stepRuntimeStateForScriptText(runtimeScript, null, witnessSnapshot, {
     type: "continue",
   });

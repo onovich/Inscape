@@ -115,6 +115,7 @@ export class PreviewPanelController {
     const shouldShowChoices = this.shouldShowChoices(storyModel);
     const animatedLineIndex = this.pendingFlowAnimationLineIndex;
     this.pendingFlowAnimationLineIndex = -1;
+    const historyElement = this.createRuntimeHistoryElement(storyModel);
     const storyElements = this.mode === "flow"
       ? this.createFlowStoryElements(storyModel, visibleLines, animatedLineIndex)
       : [
@@ -124,6 +125,7 @@ export class PreviewPanelController {
         })),
       ];
     this.previewElement.replaceChildren(
+      ...(historyElement ? [historyElement] : []),
       ...storyElements,
       this.createChoicesElement(shouldShowChoices ? storyModel.choices : [])
     );
@@ -432,6 +434,7 @@ export class PreviewPanelController {
       choices: previewNode?.choices || [],
       lines: previewNode?.lines || [],
       nodeTitle: previewNode?.title || "",
+      runtimeState: null,
       sourceLine: Number(previewNode?.sourceLine || 0),
       title: previewNode?.title || this.documentModel?.title || "Untitled Node",
     };
@@ -514,6 +517,10 @@ export class PreviewPanelController {
       choices,
       lines,
       nodeTitle,
+      runtimeState: {
+        currentNodeName: runtimeSnapshot?.state?.currentNodeName || nodeTitle,
+        path: Array.isArray(runtimeSnapshot?.state?.path) ? runtimeSnapshot.state.path : [],
+      },
       sourceLine,
       title: nodeTitle,
     };
@@ -621,6 +628,58 @@ export class PreviewPanelController {
     title.textContent = storyModel.title;
     this.appendMetadataTags(title, attachedMetadataLines);
     return title;
+  }
+
+  createRuntimeHistoryElement(storyModel) {
+    const runtimePath = Array.isArray(storyModel.runtimeState?.path)
+      ? storyModel.runtimeState.path.filter((nodeTitle) => String(nodeTitle || "").trim().length > 0)
+      : [];
+    if (runtimePath.length === 0) {
+      return null;
+    }
+
+    const history = document.createElement("div");
+    history.className = "story-runtime-history";
+
+    if (runtimePath.length > 1) {
+      const backButton = document.createElement("button");
+      backButton.className = "story-runtime-back-button";
+      backButton.type = "button";
+      backButton.textContent = "Back";
+      backButton.addEventListener("click", (event) => {
+        void this.selectChoice({
+          nodeTitle: storyModel.nodeTitle,
+          runtimeAction: {
+            type: "rewind",
+          },
+          sourceLine: Number(storyModel.sourceLine || 0),
+          target: runtimePath[runtimePath.length - 2] || "",
+          text: "Back",
+        }, event);
+      });
+      history.append(backButton);
+    }
+
+    const pathElement = document.createElement("div");
+    pathElement.className = "story-runtime-path";
+    runtimePath.forEach((nodeTitle, index) => {
+      if (index > 0) {
+        const separator = document.createElement("span");
+        separator.className = "story-runtime-path-separator";
+        separator.textContent = "/";
+        pathElement.append(separator);
+      }
+
+      const segment = document.createElement("span");
+      segment.className = "story-runtime-path-segment";
+      if (index === runtimePath.length - 1) {
+        segment.classList.add("is-current");
+      }
+      segment.textContent = nodeTitle;
+      pathElement.append(segment);
+    });
+    history.append(pathElement);
+    return history;
   }
 
   createLineElement(line, options = {}) {

@@ -533,6 +533,8 @@ export async function stepRuntimeStateForScriptText(scriptText, workspace, runti
 
     if (action.type === "continue") {
       cliArgs.push("--continue");
+    } else if (action.type === "rewind") {
+      cliArgs.push("--rewind");
     } else if (action.type === "choose") {
       cliArgs.push(
         "--choose",
@@ -540,7 +542,7 @@ export async function stepRuntimeStateForScriptText(scriptText, workspace, runti
         String(Number(action.optionIndex || 0))
       );
     } else {
-      throw new Error("Runtime action requires type `continue` or `choose`.");
+      throw new Error("Runtime action requires type `continue`, `rewind`, or `choose`.");
     }
 
     const result = await runCliCommand(cliArgs, "CLI runtime project action");

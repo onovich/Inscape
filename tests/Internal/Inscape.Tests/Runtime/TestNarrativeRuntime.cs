@@ -29,6 +29,10 @@ namespace Inscape.Tests {
             AssertEqual("start", runtime.State.CurrentNodeName, "Runtime current node after start");
             AssertTrue(runtime.Choose(0, 0), "Runtime should choose a valid option.");
             AssertEqual("second.node", runtime.State.CurrentNodeName, "Runtime current node after choice");
+            AssertTrue(runtime.Rewind(), "Runtime should rewind a visited path.");
+            AssertEqual("start", runtime.State.CurrentNodeName, "Runtime current node after rewind");
+            AssertEqual(1, runtime.State.Path.Count, "Runtime path count after rewind");
+            AssertTrue(runtime.Choose(0, 0), "Runtime should choose again after rewind.");
             AssertTrue(runtime.Continue(), "Runtime should follow default next.");
             AssertEqual("end.node", runtime.State.CurrentNodeName, "Runtime current node after continue");
             AssertEqual(3, runtime.State.Path.Count, "Runtime path count");
@@ -92,6 +96,13 @@ Narrator: End.
                 }
 
                 File.WriteAllText(choiceStatePath, choiceJson, Encoding.UTF8);
+                string rewindJson = RunCliForOutput(new[] { "runtime-project", directory, "--state", choiceStatePath, "--rewind" });
+                using (JsonDocument rewindDocument = JsonDocument.Parse(rewindJson)) {
+                    JsonElement rewindRoot = rewindDocument.RootElement;
+                    AssertEqual("start", rewindRoot.GetProperty("state").GetProperty("currentNodeName").GetString(), "Runtime CLI rewind current node");
+                    AssertEqual(1, rewindRoot.GetProperty("state").GetProperty("path").GetArrayLength(), "Runtime CLI rewind path count");
+                }
+
                 string continueJson = RunCliForOutput(new[] { "runtime-project", directory, "--state", choiceStatePath, "--continue" });
                 using JsonDocument continueDocument = JsonDocument.Parse(continueJson);
                 JsonElement continueRoot = continueDocument.RootElement;

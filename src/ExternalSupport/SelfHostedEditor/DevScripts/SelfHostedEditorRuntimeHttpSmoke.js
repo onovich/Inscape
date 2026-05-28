@@ -69,6 +69,29 @@ async function main() {
     assertEqual(staySnapshot.currentNode?.defaultNext, "End", "stay default next");
     assertPayloadSize(stayPayloadText, "stay runtime HTTP payload");
 
+    const rewindResponse = await fetch(`http://127.0.0.1:${address.port}/api/runtime-action`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        action: {
+          type: "rewind",
+        },
+        runtimeState: staySnapshot,
+        scriptText: runtimeScript,
+      }),
+    });
+    const rewindPayloadText = await rewindResponse.text();
+    const rewindSnapshot = JSON.parse(rewindPayloadText);
+    if (!rewindResponse.ok) {
+      throw new Error(`Runtime rewind HTTP smoke failed with HTTP ${rewindResponse.status}.`);
+    }
+
+    assertRuntimeSnapshot(rewindSnapshot, "Opening");
+    assertEqual(rewindSnapshot.state?.path?.length, 1, "rewind path length");
+    assertPayloadSize(rewindPayloadText, "rewind runtime HTTP payload");
+
     const endResponse = await fetch(`http://127.0.0.1:${address.port}/api/runtime-action`, {
       method: "POST",
       headers: {

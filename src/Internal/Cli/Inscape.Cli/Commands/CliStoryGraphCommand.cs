@@ -118,16 +118,27 @@ namespace Inscape.Cli {
         static bool ApplyRuntimeAction(NarrativeRuntime runtime, string[] args, out string? errorMessage) {
             errorMessage = null;
             bool shouldContinue = HasOption(args, "--continue");
+            bool shouldRewind = HasOption(args, "--rewind");
             int chooseIndex = IndexOf(args, "--choose");
 
-            if (shouldContinue && chooseIndex >= 0) {
-                errorMessage = "Runtime action can use either --continue or --choose, not both.";
+            int actionCount = (shouldContinue ? 1 : 0) + (shouldRewind ? 1 : 0) + (chooseIndex >= 0 ? 1 : 0);
+            if (actionCount > 1) {
+                errorMessage = "Runtime action can use only one of --continue, --rewind, or --choose.";
                 return false;
             }
 
             if (shouldContinue) {
                 if (!runtime.Continue()) {
                     errorMessage = "Runtime could not continue from node: " + runtime.State.CurrentNodeName;
+                    return false;
+                }
+
+                return true;
+            }
+
+            if (shouldRewind) {
+                if (!runtime.Rewind()) {
+                    errorMessage = "Runtime could not rewind from node: " + runtime.State.CurrentNodeName;
                     return false;
                 }
 

@@ -71,6 +71,21 @@ namespace Inscape.Runtime {
             return target.Length > 0 && EnterNode(target, false);
         }
 
+        public bool Rewind() {
+            if (State.Path.Count <= 1) {
+                return false;
+            }
+
+            string previousNodeName = State.Path[State.Path.Count - 2];
+            if (!nodesByName.ContainsKey(previousNodeName)) {
+                return false;
+            }
+
+            State.Path.RemoveAt(State.Path.Count - 1);
+            State.CurrentNodeName = previousNodeName;
+            return true;
+        }
+
         public bool Restore(NarrativeRuntimeStateModel state) {
             if (state.CurrentNodeName.Length > 0 && !nodesByName.ContainsKey(state.CurrentNodeName)) {
                 return false;
