@@ -13,6 +13,7 @@ export class LocalizationEditorController {
     openPreviousCsvButtonElement = null,
     previousCsvInputElement = null,
     previousCsvStatusElement = null,
+    replacePreviousCsvButtonElement = null,
     sessionStatusElement = null,
     reviewBridge = null,
   }) {
@@ -26,6 +27,7 @@ export class LocalizationEditorController {
     this.openPreviousCsvButtonElement = openPreviousCsvButtonElement;
     this.previousCsvInputElement = previousCsvInputElement;
     this.previousCsvStatusElement = previousCsvStatusElement;
+    this.replacePreviousCsvButtonElement = replacePreviousCsvButtonElement;
     this.sessionStatusElement = sessionStatusElement;
     this.reviewBridge = reviewBridge;
     this.filterMode = "all";
@@ -34,6 +36,7 @@ export class LocalizationEditorController {
     this.filterEmptyStateElement = null;
     this.lastReviewProvider = "draft-fallback";
     this.lastScriptText = "";
+    this.previousCsvFileHandle = null;
     this.previousCsvName = "";
     this.previousCsvText = "";
     this.translationChangedHandlers = [];
@@ -49,9 +52,14 @@ export class LocalizationEditorController {
     this.filterModeElement?.addEventListener("change", () => {
       this.setFilterMode(this.filterModeElement.value);
     });
-    this.openPreviousCsvButtonElement?.addEventListener("click", () => this.previousCsvInputElement?.click());
+    this.openPreviousCsvButtonElement?.addEventListener("click", () => {
+      void this.openPreviousCsv();
+    });
     this.previousCsvInputElement?.addEventListener("change", (event) => {
-      void this.handlePreviousCsvSelection(event.target?.files?.[0] || null);
+      void this.applyPreviousCsvSelection(event.target?.files?.[0] || null);
+    });
+    this.replacePreviousCsvButtonElement?.addEventListener("click", () => {
+      void this.replacePreviousCsv();
     });
     this.renderPreviousCsvStatus();
     this.renderFilterSummary();
@@ -85,6 +93,7 @@ export class LocalizationEditorController {
       this.filterEmptyStateElement = null;
       this.renderFilterSummary();
       this.syncClearVisibleDraftsAvailability();
+      this.syncReplacePreviousCsvAvailability();
       this.renderSessionStatus();
       this.panelElement.replaceChildren(this.createEmptyState());
       return;
@@ -271,18 +280,54 @@ export class LocalizationEditorController {
   }
 
   async handlePreviousCsvSelection(file) {
+    await this.applyPreviousCsvSelection(file, null);
+  }
+
+  async applyPreviousCsvSelection(file, fileHandle = null) {
     if (!file) {
       return;
     }
 
     this.previousCsvName = file.name || "previous.csv";
     this.previousCsvText = await file.text();
+    this.previousCsvFileHandle = fileHandle;
     this.renderPreviousCsvStatus();
     this.syncUpdatedExportAvailability();
+    this.syncReplacePreviousCsvAvailability();
     this.renderSessionStatus();
     if (this.lastScriptText) {
       await this.render(this.lastScriptText);
     }
+  }
+
+  async openPreviousCsv() {
+    if (this.supportsNativeFileHandles()) {
+      try {
+        const handles = await globalThis.window.showOpenFilePicker({
+          excludeAcceptAllOption: true,
+          multiple: false,
+          types: [
+            {
+              accept: {
+                "text/csv": [".csv"],
+              },
+              description: "CSV files",
+            },
+          ],
+        });
+        const fileHandle = Array.isArray(handles) ? handles[0] : null;
+        const file = fileHandle ? await fileHandle.getFile() : null;
+        await this.applyPreviousCsvSelection(file, fileHandle);
+        return;
+      } catch (error) {
+        if (error?.name === "AbortError") {
+          return;
+        }
+        console.error("SelfHostedEditor previous CSV picker failed:", error);
+      }
+    }
+
+    this.previousCsvInputElement?.click();
   }
 
   syncUpdatedExportAvailability() {
@@ -304,8 +349,9 @@ export class LocalizationEditorController {
     }
 
     if (this.previousCsvName) {
-      this.previousCsvStatusElement.textContent = `Review baseline: ${this.previousCsvName}`;
-      this.previousCsvStatusElement.title = this.previousCsvName;
+      const handleSuffix = this.previousCsvFileHandle ? " | linked" : "";
+      this.previousCsvStatusElement.textContent = `Review baseline: ${this.previousCsvName}${handleSuffix}`;
+      this.previousCsvStatusElement.title = `${this.previousCsvName}${handleSuffix}`;
       return;
     }
 
@@ -339,21 +385,59 @@ export class LocalizationEditorController {
   }
 
   async exportUpdatedCsv() {
-    if (!this.reviewBridge || !this.previousCsvText.trim() || !this.lastScriptText) {
-      return;
-    }
-
-    const payload = await this.reviewBridge.exportUpdatedLocalizationCsv(
-      this.lastScriptText,
-      this.previousCsvText,
-      this.collectTranslationOverrides()
-    );
+    const payload = await this.getUpdatedCsvPayload();
     if (payload.provider !== "localization-update" || !payload.csv) {
       console.error("SelfHostedEditor localization update failed:", payload.error || "updated CSV unavailable");
       return;
     }
 
     this.downloadCsv(payload.csv, this.buildUpdatedCsvFilename());
+  }
+
+  async replacePreviousCsv() {
+    if (!this.previousCsvFileHandle) {
+      return;
+    }
+
+    const payload = await this.getUpdatedCsvPayload();
+    if (payload.provider !== "localization-update" || !payload.csv) {
+      console.error("SelfHostedEditor localization replace failed:", payload.error || "updated CSV unavailable");
+      return;
+    }
+
+    try {
+      const writable = await this.previousCsvFileHandle.createWritable();
+      await writable.write(payload.csv);
+      await writable.close();
+      this.previousCsvText = payload.csv;
+      this.draftStore.clearDraftsForRows(this.rows.filter((row) => row.anchor && this.draftStore.hasDraft(row)));
+      this.syncUpdatedExportAvailability();
+      this.syncReplacePreviousCsvAvailability();
+      this.renderPreviousCsvStatus();
+      this.renderSessionStatus();
+      if (this.lastScriptText) {
+        await this.render(this.lastScriptText);
+      }
+      this.notifyTranslationChanged();
+    } catch (error) {
+      console.error("SelfHostedEditor previous CSV replace failed:", error);
+    }
+  }
+
+  async getUpdatedCsvPayload() {
+    if (!this.reviewBridge || !this.previousCsvText.trim() || !this.lastScriptText) {
+      return {
+        csv: "",
+        error: this.getUpdatedExportReadiness(),
+        provider: "localization-update-unavailable",
+      };
+    }
+
+    return this.reviewBridge.exportUpdatedLocalizationCsv(
+      this.lastScriptText,
+      this.previousCsvText,
+      this.collectTranslationOverrides()
+    );
   }
 
   buildUpdatedCsvFilename() {
@@ -428,6 +512,7 @@ export class LocalizationEditorController {
 
     this.renderFilterSummary(visibleRows.length);
     this.syncClearVisibleDraftsAvailability();
+    this.syncReplacePreviousCsvAvailability();
     this.renderSessionStatus(visibleRows.length);
   }
 
@@ -453,7 +538,10 @@ export class LocalizationEditorController {
     const draftSummary = visibleDraftEntryCount === draftEntryCount
       ? `${draftEntryCount} overrides in session`
       : `${draftEntryCount} overrides in session | ${visibleDraftEntryCount} visible`;
-    this.sessionStatusElement.textContent = `${draftSummary} | ${this.getUpdatedExportReadiness()}`;
+    const replaceSummary = this.previousCsvFileHandle
+      ? "Replace linked"
+      : "Replace needs linked baseline";
+    this.sessionStatusElement.textContent = `${draftSummary} | ${this.getUpdatedExportReadiness()} | ${replaceSummary}`;
     this.sessionStatusElement.title = this.sessionStatusElement.textContent;
     this.sessionStatusElement.dataset.visibleRowCount = String(visibleRowCount);
   }
@@ -527,6 +615,16 @@ export class LocalizationEditorController {
       : "No visible draft overrides to clear";
   }
 
+  syncReplacePreviousCsvAvailability() {
+    if (!this.replacePreviousCsvButtonElement) {
+      return;
+    }
+
+    const isReady = this.getDirectReplaceReadiness() === "Replace previous CSV ready";
+    this.replacePreviousCsvButtonElement.disabled = !isReady;
+    this.replacePreviousCsvButtonElement.title = this.getDirectReplaceReadiness();
+  }
+
   getUpdatedExportReadiness() {
     if (!this.reviewBridge) {
       return "Updated export unavailable in draft fallback mode";
@@ -545,5 +643,21 @@ export class LocalizationEditorController {
     }
 
     return "Updated export ready";
+  }
+
+  getDirectReplaceReadiness() {
+    if (!this.previousCsvFileHandle) {
+      return "Replace previous CSV needs a linked previous CSV";
+    }
+
+    if (this.getUpdatedExportReadiness() !== "Updated export ready") {
+      return this.getUpdatedExportReadiness();
+    }
+
+    return "Replace previous CSV ready";
+  }
+
+  supportsNativeFileHandles() {
+    return typeof globalThis.window?.showOpenFilePicker === "function";
   }
 }

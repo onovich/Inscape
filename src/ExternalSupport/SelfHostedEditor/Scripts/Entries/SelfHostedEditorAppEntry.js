@@ -41,6 +41,7 @@ async function main() {
   const editorFrameElement = document.querySelector(".editor-frame");
   const exportLocalizationButtonElement = document.querySelector(".localization-export-button");
   const clearLocalizationDraftsButtonElement = document.querySelector(".localization-clear-drafts-button");
+  const replacePreviousLocalizationCsvButtonElement = document.querySelector(".localization-replace-button");
   const exportUpdatedLocalizationButtonElement = document.querySelector(".localization-export-updated-button");
   const hintRailElement = document.querySelector(".hint-rail");
   const graphPanelElement = document.querySelector(".graph-panel");
@@ -106,6 +107,7 @@ async function main() {
     openPreviousCsvButtonElement: localizationPreviousCsvButtonElement,
     previousCsvInputElement: localizationPreviousCsvInputElement,
     previousCsvStatusElement: localizationPreviousCsvStatusElement,
+    replacePreviousCsvButtonElement: replacePreviousLocalizationCsvButtonElement,
     sessionStatusElement: localizationSessionStatusElement,
     reviewBridge: localizationReviewBridge,
   });

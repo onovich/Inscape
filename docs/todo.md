@@ -52,12 +52,13 @@ SelfHostedEditor regression invariant: Preview choice clicks must advance the re
 - 2026-05-28 已完成：SelfHostedEditor L10N 视图已从“只有 session draft CSV”推进到“真实旧 CSV 选择 + 真实 updated CSV 导出”第一刀。共享层 / CLI 新增 `--translation-overrides`，开发宿主新增 `/api/localization-update`，前端只传 `previousCsv + anchor-based translation overrides`，不在浏览器里自己拼真实 CSV。当前用户既可以继续导出轻量 draft CSV，也可以选择真实旧 CSV 后导出真实 updated CSV。
 - 2026-05-28 已完成：SelfHostedEditor L10N 视图已补一层宿主侧 review 筛选，不改共享 review 语义。`LocalizationEditorController` 现在支持按 `all / actionable / draft / empty / kept / new / changed / conflict / stale / removed` 切换可见行，并显示当前 `Showing X of Y rows` 摘要；筛选只作用于浏览器可见性，不改变 Tooling presenter、draft overrides 或 updated CSV 导出链路。
 - 2026-05-28 已完成：SelfHostedEditor L10N 视图已补一层更清楚的 CSV 会话状态与当前筛选范围的一键清草稿。当前会显示 session override 数、当前筛选下可见 draft 数，以及 updated CSV 为什么还不能导出；同时支持只清掉当前 filter 下可见的 draft overrides，不影响 review presenter 或真实 updated CSV 语义。
+- 2026-05-29 已完成：SelfHostedEditor L10N 视图已补上“直接替换旧 CSV 文件”这一刀。若浏览器支持 native file handle，`Open previous CSV` 会优先链接真实旧 CSV，`Replace previous CSV` 会通过既有 `/api/localization-update` 生成真实 updated CSV 并直接写回原文件；宿主层只负责文件句柄与写回，CSV 语义仍留在 shared CLI。若 native file handle 不可用，则继续保留浏览器下载路径，不在前端模拟写文件。
 - 已新增 `check:localization-review` dev-host smoke：它直接导入 SelfHostedEditor preview dev script，对 `samples/court-loop.inscape` 执行完整本地化 review 路径，不依赖先拉起本地 HTTP server。当前结果为 170 items、约 94 KB payload、约 558ms，可作为后续 `/api/localization-review` 收口的稳定回归入口。
 - 已新增 `check:localization-review-http`：它在同一 Node 进程里启动 SelfHostedEditor preview dev server，再真实请求 `/api/localization-review`，补上 HTTP transport 这一层的稳定回归入口。
 - 已新增 `check:localization-update` 与 `check:localization-update-http`：它们分别覆盖 `/api/localization-update` 的直连 helper 与真实 HTTP transport，验证“真实旧 CSV + draft overrides -> 真实 updated CSV”这条写回链路。
 - 当前执行顺序（2026-05-26）：
 	1. 先巩固最近 SelfHostedEditor 回归边界：Preview 不得静默丢 `previewLines`，UTF-8 桥接不得再产生中文乱码，Flow 的 typewriter / wheel / `@` 标签行为和 loading 状态都要由 `check:model` / `check:structure` 继续守住。
-	2. 第一实施节点继续留在 L10N 视图，但目标改为“会话状态之后的下一刀”：补直接文件保存/替换边界，或加一层批量审校动作，不要把真实 CSV 语义搬回浏览器。
+	2. 第一实施节点继续留在 L10N 视图，但目标改为“直接替换之后的下一刀”：补一层批量审校动作，或补更清楚的已保存/未保存状态，不要把真实 CSV 语义搬回浏览器。
 	3. 第二实施节点再推进 Preview Runtime Player：Runtime smoke 现在已经守住 `/api/runtime-state` / `/api/runtime-action` 的 compact payload，以及 `advance-flow` / `rewind-flow` / `choose` / `continue` / `rewind` 契约；下一刀更适合继续缩小 Runtime 不可用时的本地 fallback，或开始整理长生命周期 Runtime 会话边界，而不是重新扩展前端 presenter 状态机。
 	4. 第三实施节点整理 Editor Backend 会话边界：把 line-map、Runtime、LanguageServer、localization update 这些开发服务器 + CLI 临时 workspace 桥逐步收成更接近桌面客户端的会话模型；短期可保留 HTTP dev bridge，但前端不得新增语义真相。
 	5. 第四实施节点继续 Graph：补 graph layout sidecar、连接合法性反馈、端口 hover / drag 状态和跨文件图编辑回写边界。
@@ -156,7 +157,7 @@ SelfHostedEditor regression invariant: Preview choice clicks must advance the re
 	- 已继续修正编辑交互：词级灰块高亮继续减轻，行号轨默认隐藏并改为 hover 显示完整数字，标题左侧引用候选开始转向不会撑开正文的 overlay 交互。
 	- 已继续澄清编辑区行号语义：行号默认隐藏，显示时只表示 block 内局部行号；标题不显示行号，也不在默认写作表面显示 stable node id。稳定 line id 必须来自 localization line sidecar，SelfHostedEditor 在真正接入 sidecar 前只能显示 `id not loaded` 占位，不能伪造稳定 id。
 	- 已新增节点图受控重命名雏形：节点图触发 rename 后会 patch 文本源中的 `# 标题` 与匹配的 `-> 标题` 引用，用于验证“图编辑回写文本源”的长期边界。
-	- 已新增本地化会话草稿：本地化视图支持在当前会话内填写译文草稿，并用 `empty` / `draft` 状态区分；当前既可导出浏览器 draft CSV，也可在选择真实旧 CSV 后导出共享 CLI 生成的真实 updated CSV。后续继续补直接文件写回和更完整的 review 工作流。
+	- 已新增本地化会话草稿：本地化视图支持在当前会话内填写译文草稿，并用 `empty` / `draft` 状态区分；当前既可导出浏览器 draft CSV，也可在选择真实旧 CSV 后导出共享 CLI 生成的真实 updated CSV；若浏览器支持 native file handle，还可把 updated CSV 直接写回已链接旧文件。后续继续补更完整的 review 工作流与更清楚的保存状态。
 	- 已新增工作区摘要状态：顶部状态栏显示节点数、本地化行数、译文草稿数和诊断数；后续可替换为真实项目工作区 / LanguageServer / Tooling 汇总。
 	- 已接入 workspace 导入第一版：文件选择入口允许一次导入同目录多份 `.inscape`，并保留 workspace 名称、文件数与相对路径状态；跨文件语义解析后续继续接入。
 	- 已继续推进 workspace 语义探测第二步：SelfHostedEditor 发给开发宿主的 diagnostics / completion / definition / references / hover 请求现在会附带当前 workspace 文档清单与活动文件相对路径，并优先改走 `LanguageServer` 的 project 级 probe；当前 marker / diagnostics 仍先只贴回活动文件。

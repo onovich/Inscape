@@ -603,8 +603,33 @@ function matchesSelector(element, selector) {
 
 const hintRailElement = new FakeElement("aside");
 globalThis.document = new FakeDocument();
+const linkedPreviousCsvWrites = [];
+const linkedPreviousCsvHandle = {
+  async createWritable() {
+    return {
+      async close() {},
+      async write(text) {
+        linkedPreviousCsvWrites.push(String(text));
+      },
+    };
+  },
+  async getFile() {
+    return {
+      name: "baseline.csv",
+      async text() {
+        return "anchor,text,translation\nline_anchor_1,Compiler sourced row,Previous translation";
+      },
+    };
+  },
+};
+globalThis.window = {
+  async showOpenFilePicker() {
+    return [linkedPreviousCsvHandle];
+  },
+};
 const localizationPanel = new FakeElement("section");
 const localizationClearDraftsButton = new FakeElement("button");
+const localizationReplaceButton = new FakeElement("button");
 const localizationExportButton = new FakeElement("button");
 const localizationExportUpdatedButton = new FakeElement("button");
 const localizationFilterMode = new FakeElement("select");
@@ -625,6 +650,7 @@ const localizationController = new LocalizationEditorController({
   openPreviousCsvButtonElement: localizationOpenButton,
   previousCsvInputElement: localizationCsvInput,
   previousCsvStatusElement: localizationSourceStatus,
+  replacePreviousCsvButtonElement: localizationReplaceButton,
   sessionStatusElement: localizationSessionStatus,
   reviewBridge: {
     async getLocalizationReview() {
@@ -670,6 +696,12 @@ const localizationController = new LocalizationEditorController({
         },
       };
     },
+    async exportUpdatedLocalizationCsv() {
+      return {
+        csv: "anchor,text,translation\nline_anchor_1,Compiler sourced row,\nline_anchor_2,Already aligned row,Fresh draft",
+        provider: "localization-update",
+      };
+    },
   },
 });
 await localizationController.render("# Opening\nDraft fallback row");
@@ -681,8 +713,13 @@ assertIncludesText(getTextContent(localizationPanel), "kept");
 assertNotIncludesText(getTextContent(localizationPanel), "Draft fallback row");
 assertEqual(localizationSourceStatus.textContent, "Review baseline: current extract", "localization review should show default review baseline");
 assertEqual(localizationFilterSummary.textContent, "Showing 2 of 2 rows", "localization review should show all rows by default");
-assertEqual(localizationSessionStatus.textContent, "0 overrides in session | Updated export needs previous CSV", "localization session status should explain missing baseline");
+assertEqual(localizationSessionStatus.textContent, "0 overrides in session | Updated export needs previous CSV | Replace needs linked baseline", "localization session status should explain missing baseline");
 assertEqual(localizationClearDraftsButton.disabled, true, "localization clear drafts button should stay disabled without visible drafts");
+assertEqual(localizationReplaceButton.disabled, true, "localization replace button should stay disabled without linked previous CSV");
+await localizationController.openPreviousCsv();
+assertEqual(localizationSourceStatus.textContent, "Review baseline: baseline.csv | linked", "localization review should show linked baseline file");
+assertEqual(localizationSessionStatus.textContent, "0 overrides in session | Updated export ready | Replace linked", "localization session status should show linked baseline readiness");
+assertEqual(localizationReplaceButton.disabled, false, "localization replace button should enable after linking previous CSV");
 localizationController.setFilterMode("changed");
 assertEqual(localizationFilterMode.value, "changed", "localization filter control should track current filter");
 assertEqual(localizationController.getVisibleRows().length, 1, "localization filter should keep only matching changed rows");
@@ -695,19 +732,26 @@ assertEqual(localizationOverrides.length, 1, "localization controller should col
 assertEqual(localizationOverrides[0].anchor, "line_anchor_1", "localization controller should preserve review anchor for overrides");
 assertEqual(localizationOverrides[0].translation, "", "localization controller should allow clearing previous translations");
 assertEqual(localizationClearDraftsButton.disabled, true, "localization clear drafts button should stay disabled when the current filter hides draft rows");
-assertEqual(localizationSessionStatus.textContent, "1 overrides in session | 0 visible | Updated export needs previous CSV", "localization session status should count hidden empty-string overrides");
+assertEqual(localizationSessionStatus.textContent, "1 overrides in session | 0 visible | Updated export ready | Replace linked", "localization session status should count hidden empty-string overrides");
 draftStore.setTranslation(localizationController.rows[1], "Fresh draft");
 localizationController.applyRowFilters();
 localizationController.setFilterMode("draft");
 assertEqual(localizationController.getVisibleRows().length, 2, "localization draft filter should surface anchor-based draft overrides");
 assertEqual(localizationFilterSummary.textContent, "Showing 2 of 2 rows | Drafts", "localization draft filter summary should reflect draft rows");
-assertEqual(localizationSessionStatus.textContent, "2 overrides in session | Updated export needs previous CSV", "localization session status should count visible draft overrides");
+assertEqual(localizationSessionStatus.textContent, "2 overrides in session | Updated export ready | Replace linked", "localization session status should count visible draft overrides");
 assertEqual(localizationClearDraftsButton.disabled, false, "localization clear drafts button should enable when the current filter shows draft rows");
 await localizationController.clearVisibleDrafts();
 assertEqual(localizationController.getVisibleRows().length, 0, "localization clear visible drafts should empty the current draft filter");
 assertEqual(localizationFilterSummary.textContent, "Showing 0 of 2 rows | Drafts", "localization filter summary should reflect cleared visible drafts");
-assertEqual(localizationSessionStatus.textContent, "0 overrides in session | Updated export needs previous CSV", "localization session status should reset after clearing visible drafts");
+assertEqual(localizationSessionStatus.textContent, "0 overrides in session | Updated export ready | Replace linked", "localization session status should reset after clearing visible drafts");
 assertEqual(localizationClearDraftsButton.disabled, true, "localization clear drafts button should disable after clearing visible drafts");
+draftStore.setTranslation(localizationController.rows[0], "");
+draftStore.setTranslation(localizationController.rows[1], "Fresh draft");
+localizationController.applyRowFilters();
+await localizationController.replacePreviousCsv();
+assertEqual(linkedPreviousCsvWrites.length, 1, "localization replace should write updated csv through the linked file handle");
+assertIncludesText(linkedPreviousCsvWrites[0], "Fresh draft");
+assertEqual(localizationSessionStatus.textContent, "0 overrides in session | Updated export ready | Replace linked", "localization replace should clear session drafts after writing");
 const previewElement = new FakeElement("main");
 const previewController = new PreviewPanelController(previewElement);
 let previewSelectedLine = 0;
