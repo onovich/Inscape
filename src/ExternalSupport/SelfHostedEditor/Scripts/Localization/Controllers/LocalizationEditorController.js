@@ -204,6 +204,7 @@ export class LocalizationEditorController {
       }
       this.applyRowFilters();
       this.syncUpdatedExportAvailability();
+      this.renderPreviousCsvStatus();
       this.notifyTranslationChanged();
     });
 
@@ -349,7 +350,8 @@ export class LocalizationEditorController {
     }
 
     if (this.previousCsvName) {
-      const handleSuffix = this.previousCsvFileHandle ? " | linked" : "";
+      const linkSummary = this.getLinkedPreviousCsvSummary();
+      const handleSuffix = linkSummary ? ` | ${linkSummary}` : "";
       this.previousCsvStatusElement.textContent = `Review baseline: ${this.previousCsvName}${handleSuffix}`;
       this.previousCsvStatusElement.title = `${this.previousCsvName}${handleSuffix}`;
       return;
@@ -377,6 +379,8 @@ export class LocalizationEditorController {
     this.draftStore.clearDraftsForRows(visibleDraftRows);
     this.syncUpdatedExportAvailability();
     this.syncClearVisibleDraftsAvailability();
+    this.syncReplacePreviousCsvAvailability();
+    this.renderPreviousCsvStatus();
     this.renderSessionStatus();
     if (this.lastScriptText) {
       await this.render(this.lastScriptText);
@@ -513,6 +517,7 @@ export class LocalizationEditorController {
     this.renderFilterSummary(visibleRows.length);
     this.syncClearVisibleDraftsAvailability();
     this.syncReplacePreviousCsvAvailability();
+    this.renderPreviousCsvStatus();
     this.renderSessionStatus(visibleRows.length);
   }
 
@@ -538,9 +543,7 @@ export class LocalizationEditorController {
     const draftSummary = visibleDraftEntryCount === draftEntryCount
       ? `${draftEntryCount} overrides in session`
       : `${draftEntryCount} overrides in session | ${visibleDraftEntryCount} visible`;
-    const replaceSummary = this.previousCsvFileHandle
-      ? "Replace linked"
-      : "Replace needs linked baseline";
+    const replaceSummary = this.getReplaceSessionSummary();
     this.sessionStatusElement.textContent = `${draftSummary} | ${this.getUpdatedExportReadiness()} | ${replaceSummary}`;
     this.sessionStatusElement.title = this.sessionStatusElement.textContent;
     this.sessionStatusElement.dataset.visibleRowCount = String(visibleRowCount);
@@ -654,7 +657,48 @@ export class LocalizationEditorController {
       return this.getUpdatedExportReadiness();
     }
 
+    if (this.countPersistableDraftOverrides() === 0) {
+      return "Replace previous CSV has no unsaved drafts";
+    }
+
     return "Replace previous CSV ready";
+  }
+
+  getLinkedPreviousCsvSummary() {
+    if (!this.previousCsvFileHandle) {
+      return "";
+    }
+
+    const unsavedDraftCount = this.countPersistableDraftOverrides();
+    if (unsavedDraftCount === 0) {
+      return "linked clean";
+    }
+
+    return `linked ${unsavedDraftCount} unsaved`;
+  }
+
+  getReplaceSessionSummary() {
+    if (!this.previousCsvFileHandle) {
+      return "Replace needs linked baseline";
+    }
+
+    const unsavedDraftCount = this.countPersistableDraftOverrides();
+    if (unsavedDraftCount === 0) {
+      return "Linked clean";
+    }
+
+    return `Linked ${unsavedDraftCount} unsaved`;
+  }
+
+  countPersistableDraftOverrides() {
+    let count = 0;
+    for (const row of this.rows) {
+      if (row.anchor && this.draftStore.hasDraft(row)) {
+        count += 1;
+      }
+    }
+
+    return count;
   }
 
   supportsNativeFileHandles() {
