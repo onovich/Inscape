@@ -586,28 +586,29 @@ function parseJsonRequestBody(body) {
 async function diagnoseScriptText(scriptText, workspace) {
   return withTemporaryWorkspace(workspace, scriptText, async ({ tempRoot, activeRelativePath }) => {
     const result = await runLanguageServerProjectDiagnostics(tempRoot);
-    return filterProjectDiagnostics(JSON.parse(result.stdout), activeRelativePath);
+    const payload = relativizeLanguageServerSemanticPaths(JSON.parse(result.stdout), tempRoot);
+    return filterProjectDiagnostics(payload, activeRelativePath);
   });
 }
 
 async function getHoverForScriptText(scriptText, hoverKind, hoverName, workspace) {
   return withTemporaryWorkspace(workspace, scriptText, async ({ tempRoot }) => {
     const result = await runLanguageServerProjectHover(tempRoot, hoverKind, hoverName);
-    return JSON.parse(result.stdout);
+    return relativizeLanguageServerSemanticPaths(JSON.parse(result.stdout), tempRoot);
   });
 }
 
 async function getDefinitionForScriptText(scriptText, definitionName, workspace) {
   return withTemporaryWorkspace(workspace, scriptText, async ({ tempRoot }) => {
     const result = await runLanguageServerProjectDefinition(tempRoot, definitionName);
-    return relativizeLanguageServerNavigationPaths(JSON.parse(result.stdout), tempRoot);
+    return relativizeLanguageServerSemanticPaths(JSON.parse(result.stdout), tempRoot);
   });
 }
 
 export async function getReferencesForScriptText(scriptText, referenceName, workspace) {
   return withTemporaryWorkspace(workspace, scriptText, async ({ tempRoot }) => {
     const result = await runLanguageServerProjectReferences(tempRoot, referenceName);
-    return relativizeLanguageServerNavigationPaths(JSON.parse(result.stdout), tempRoot);
+    return relativizeLanguageServerSemanticPaths(JSON.parse(result.stdout), tempRoot);
   });
 }
 
@@ -619,9 +620,9 @@ async function getCompletionsForScriptText(scriptText, workspace) {
 }
 
 async function getDocumentSymbolsForScriptText(scriptText, workspace) {
-  return withTemporaryWorkspace(workspace, scriptText, async ({ activeFilePath }) => {
+  return withTemporaryWorkspace(workspace, scriptText, async ({ activeFilePath, tempRoot }) => {
     const result = await runLanguageServerDocumentSymbols(activeFilePath);
-    return JSON.parse(result.stdout);
+    return relativizeLanguageServerSemanticPaths(JSON.parse(result.stdout), tempRoot);
   });
 }
 
@@ -1108,7 +1109,7 @@ function relativizeHostBindingCapabilityPaths(payload, tempRoot) {
   return payload;
 }
 
-function relativizeLanguageServerNavigationPaths(payload, tempRoot) {
+function relativizeLanguageServerSemanticPaths(payload, tempRoot) {
   const normalizeLocation = (location) => {
     if (!location || typeof location.sourcePath !== "string") {
       return;
@@ -1118,8 +1119,15 @@ function relativizeLanguageServerNavigationPaths(payload, tempRoot) {
   };
 
   normalizeLocation(payload?.definition?.location);
+  normalizeLocation(payload?.hover?.location);
+  for (const diagnostic of Array.isArray(payload?.diagnostics) ? payload.diagnostics : []) {
+    normalizeLocation(diagnostic?.location);
+  }
   for (const reference of Array.isArray(payload?.references) ? payload.references : []) {
     normalizeLocation(reference?.location);
+  }
+  for (const symbol of Array.isArray(payload?.symbols) ? payload.symbols : []) {
+    normalizeLocation(symbol?.location);
   }
 
   return payload;

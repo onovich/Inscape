@@ -50,6 +50,7 @@ The current shell is intentionally small, but it now includes a first Monaco-bac
 - Dev-hosted hover bridge: node titles and jump targets in the Monaco surface now try `Inscape.LanguageServer --hover-file` through the local preview server.
 - Dev-hosted definition and references bridges: the Monaco surface now tries `Inscape.LanguageServer --definition-file` and `--references-file` for node titles and jump targets in the current script.
 - References parity is guarded by direct and HTTP smoke checks. `/api/references` uses `Inscape.LanguageServer --references-project`, includes the current workspace draft documents, returns cross-file references, and normalizes dev-host temporary source paths back to workspace-relative paths before the browser renders the refs overlay.
+- Semantic parity across the LanguageServer-backed authoring endpoints is guarded by `check:semantic-parity-http`. It exercises diagnostics, node completion, definition, references, hover, and document symbols through real HTTP requests against a temporary workspace with current draft content and a cross-file target.
 - Ctrl/Cmd-click definition navigation explicitly reveals the resolved source line in the editor and updates the preview block, instead of relying only on Monaco same-model goto behavior.
 - Dev-hosted completion bridge: jump targets now try `Inscape.LanguageServer --completion-file` so the Monaco surface can suggest node names while writing `-> target`.
 - Dev-hosted Host Schema bridge: `[query]` interpolation and `@emit` event authoring now request `Inscape.LanguageServer --host-schema-capabilities-project` through `/api/host-schema-capabilities`, so completion and hover hints stay aligned with the shared Host Schema catalog instead of browser-side guesses.
@@ -128,6 +129,7 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:localization-update
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:localization-update-http
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:runtime
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:runtime-http
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:references
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:references-http
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:node-map
@@ -144,6 +146,7 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:node-map-http
 `check:localization-update-http` starts the preview dev server in-process and performs a real HTTP request to `/api/localization-update`.
 `check:runtime` exercises the Runtime dev-host path without requiring the local HTTP server to be started first, and asserts `advance-flow` / `rewind-flow` plus `choose` / `continue` transitions over a compact payload.
 `check:runtime-http` starts the preview dev server in-process and performs real HTTP requests to `/api/runtime-state` and `/api/runtime-action`.
+`check:semantic-parity-http` starts the preview dev server in-process and performs real HTTP requests to the LanguageServer-backed authoring endpoints: diagnostics, completions, definition, references, hover, and document symbols.
 `check:references` exercises the LanguageServer project references dev-host helper without requiring the local HTTP server to be started first, including cross-file references and current draft content.
 `check:references-http` starts the preview dev server in-process and performs a real HTTP request to `/api/references`, including workspace-relative source path normalization.
 `check:node-map` exercises the stable node map review helper without requiring the local HTTP server to be started first, including a title rename over an existing generated sidecar.
