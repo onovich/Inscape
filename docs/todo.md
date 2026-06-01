@@ -57,13 +57,15 @@ SelfHostedEditor regression invariant: Preview choice clicks must advance the re
 - 已新增 `check:localization-review` dev-host smoke：它直接导入 SelfHostedEditor preview dev script，对 `samples/court-loop.inscape` 执行完整本地化 review 路径，不依赖先拉起本地 HTTP server。当前结果为 170 items、约 94 KB payload、约 558ms，可作为后续 `/api/localization-review` 收口的稳定回归入口。
 - 已新增 `check:localization-review-http`：它在同一 Node 进程里启动 SelfHostedEditor preview dev server，再真实请求 `/api/localization-review`，补上 HTTP transport 这一层的稳定回归入口。
 - 已新增 `check:localization-update` 与 `check:localization-update-http`：它们分别覆盖 `/api/localization-update` 的直连 helper 与真实 HTTP transport，验证“真实旧 CSV + draft overrides -> 真实 updated CSV”这条写回链路。
-- 当前执行顺序（2026-05-26）：
+- 当前执行顺序（2026-06-01）：
 	1. 先巩固最近 SelfHostedEditor 回归边界：Preview 不得静默丢 `previewLines`，UTF-8 桥接不得再产生中文乱码，Flow 的 typewriter / wheel / `@` 标签行为和 loading 状态都要由 `check:model` / `check:structure` 继续守住。
 	2. 第一实施节点继续留在 L10N 视图，但目标改为“保存状态之后的下一刀”：补一层批量审校动作，不要把真实 CSV 语义搬回浏览器。
 	3. 第二实施节点再推进 Preview Runtime Player：Runtime smoke 现在已经守住 `/api/runtime-state` / `/api/runtime-action` 的 compact payload，以及 `advance-flow` / `rewind-flow` / `choose` / `continue` / `rewind` 契约；下一刀更适合继续缩小 Runtime 不可用时的本地 fallback，或开始整理长生命周期 Runtime 会话边界，而不是重新扩展前端 presenter 状态机。
-	4. 第三实施节点整理 Editor Backend 会话边界：把 line-map、Runtime、LanguageServer、localization update 这些开发服务器 + CLI 临时 workspace 桥逐步收成更接近桌面客户端的会话模型；短期可保留 HTTP dev bridge，但前端不得新增语义真相。
-	5. 第四实施节点继续 Graph：补 graph layout sidecar、连接合法性反馈、端口 hover / drag 状态和跨文件图编辑回写边界。
-- 验证入口：`npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax`、`check:structure`、`check:model`，以及 `dotnet build Inscape.slnx --no-restore`。最近一轮这些验证均已通过。
+	4. 第三实施节点对齐 VSCode 与 SelfHostedEditor 的作者功能：先按 [VSCode / SelfHostedEditor 功能对齐盘点](vscode-self-hosted-editor-parity.md) 确认 diagnostics、completion、definition、references、hover、outline、本地化 review、stable node map、Host Schema / Host Bridge 提示等能力差异，再补 SelfHostedEditor 缺少的高频作者入口。2026-06-01 已先补 SelfHostedEditor `[query]` 与 `@emit` 的 Host Schema completion / hover；speaker / timeline 等 Host Bridge 提示等共享 capability 后再做。
+	5. 第四实施节点整理 Editor Backend 会话边界：把 line-map、Runtime、LanguageServer、localization update 这些开发服务器 + CLI 临时 workspace 桥逐步收成更接近桌面客户端的会话模型；短期可保留 HTTP dev bridge，但前端不得新增语义真相。
+	6. Graph 视图设计优化暂时降级：现有端口连线、retarget、reference projection、缩放 / 平移和 Compiler graph 来源只守回归，不再把 graph layout sidecar 或交互设计作为近期主线。
+	7. Unity / Bird 支持继续低优先级：只保留 importer 提交策略、真实 Timeline 绑定 Dry Run、Bird L10N 格式决策等准备项，不抢 SelfHostedEditor / VSCode parity 主线。
+- 验证入口：`npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax`、`check:structure`、`check:model`、`check:host-schema`、`check:host-schema-http`，以及 `dotnet build Inscape.slnx --no-restore`。最近一轮这些验证均已通过。
 
 ## 2026-05-19 最新收口
 
@@ -82,7 +84,7 @@ SelfHostedEditor regression invariant: Preview choice clicks must advance the re
 
 ## 接力优先队列
 
-下一位接手者建议按以下顺序推进。已完成的 Goal 0 / 3 / 4 / 5 / 6 / 7 / 9 / 11.1 不再放进优先队列，只保留在下方历史账本中。当前实际用户主线已经切到 SelfHostedEditor，因此本队列按“先稳住自研编辑器真实契约，再推进可复用的本地化 / stable identity 能力”的顺序执行：SelfHostedEditor 的 L10N presenter、Runtime Player 和 Editor Backend 会话边界优先；stable id / 本地化主线继续作为这些能力的底座；VSCode 重构守规、Tooling 单点收敛、Unity / Bird 准备项依次排后。
+下一位接手者建议按以下顺序推进。已完成的 Goal 0 / 3 / 4 / 5 / 6 / 7 / 9 / 11.1 不再放进优先队列，只保留在下方历史账本中。当前实际用户主线已经切到 SelfHostedEditor，因此本队列按“先稳住自研编辑器真实契约，再对齐 VSCode / SelfHostedEditor 作者功能，再推进可复用的本地化 / stable identity 能力”的顺序执行。Graph 设计优化与 Unity / Bird 支持明确降为低优先级；VSCode 不只做重构守规，还要与 SelfHostedEditor 做功能 parity 盘点，避免两边作者体验长期分叉。
 
 1. **再推进 Stable Node ID 主线。**
 	- 已完成：ADR 0013、stable node id / title map 契约、`update-node-map-project` sidecar 闭环、保守自动重命名识别、VSCode 显式 `Update Stable Node Map` 入口、插入标题后的自动同步、`inscape.node-map-update-report` 审查报告、CLI `--report`、VSCode `Review Stable Node Map Changes` 入口。

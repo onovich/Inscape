@@ -5,12 +5,63 @@ export class EditorHoverTargetModelBuilder {
       return null;
     }
 
+    const queryTarget = this.tryBuildQueryTarget(lineContent, position);
+    if (queryTarget) {
+      return queryTarget;
+    }
+
+    const hostEventTarget = this.tryBuildHostEventTarget(lineContent, position);
+    if (hostEventTarget) {
+      return hostEventTarget;
+    }
+
     const nodeTarget = this.tryBuildNodeTarget(lineContent, position);
     if (nodeTarget) {
       return nodeTarget;
     }
 
     return this.tryBuildJumpTarget(lineContent, position);
+  }
+
+  static tryBuildQueryTarget(lineContent, position) {
+    const pattern = /\[([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*)\]/g;
+    let match = pattern.exec(lineContent);
+    while (match) {
+      const startColumn = match.index + 2;
+      const endColumn = startColumn + match[1].length;
+      if (position.column >= startColumn && position.column <= endColumn) {
+        return {
+          kind: "query",
+          name: match[1],
+          startColumn,
+          endColumn,
+        };
+      }
+
+      match = pattern.exec(lineContent);
+    }
+
+    return null;
+  }
+
+  static tryBuildHostEventTarget(lineContent, position) {
+    const match = /^(\s*@emit(?::|\s+)\s*)([A-Za-z_][A-Za-z0-9_.-]*)/.exec(lineContent);
+    if (!match) {
+      return null;
+    }
+
+    const startColumn = match[1].length + 1;
+    const endColumn = startColumn + match[2].length;
+    if (position.column < startColumn || position.column > endColumn) {
+      return null;
+    }
+
+    return {
+      kind: "host-event",
+      name: match[2],
+      startColumn,
+      endColumn,
+    };
   }
 
   static tryBuildNodeTarget(lineContent, position) {

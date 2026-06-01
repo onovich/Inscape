@@ -90,28 +90,27 @@ export class ProjectWorkspaceController {
   }
 
   async loadSelectedWorkspace() {
-    const selectedFiles = Array.from(this.fileInputElement.files || []).filter((file) =>
-      file.name.toLowerCase().endsWith(".inscape")
-    );
-    if (selectedFiles.length === 0) {
-      return;
-    }
-
-    const workspaceFiles = selectedFiles
+    const selectedEntries = Array.from(this.fileInputElement.files || [])
+      .filter((file) => this.isWorkspaceContextFile(file))
       .map((file) => ({
         file,
         relativePath: this.getRelativePath(file),
       }))
       .sort((left, right) => left.relativePath.localeCompare(right.relativePath));
-    const activeFile = workspaceFiles[0];
+    const scriptEntries = selectedEntries.filter((entry) => entry.relativePath.toLowerCase().endsWith(".inscape"));
+    if (scriptEntries.length === 0) {
+      return;
+    }
+
+    const activeFile = scriptEntries[0];
     const text = await activeFile.file.text();
 
     this.currentWorkspaceName = this.getWorkspaceName(activeFile.relativePath);
     this.currentFileName = activeFile.file.name;
     this.currentFilePath = activeFile.relativePath;
-    this.workspaceFiles = workspaceFiles.map((entry) => entry.relativePath);
+    this.workspaceFiles = scriptEntries.map((entry) => entry.relativePath);
     this.workspaceDocuments = await Promise.all(
-      workspaceFiles.map(async (entry) => ({
+      selectedEntries.map(async (entry) => ({
         relativePath: entry.relativePath,
         text: await entry.file.text(),
       }))
@@ -166,6 +165,14 @@ export class ProjectWorkspaceController {
     }
 
     return file.name;
+  }
+
+  isWorkspaceContextFile(file) {
+    const relativePath = this.getRelativePath(file).toLowerCase();
+    return relativePath.endsWith(".inscape")
+      || relativePath.endsWith("inscape.config.json")
+      || relativePath.endsWith(".host.schema.json")
+      || relativePath.endsWith(".host.bridge.json");
   }
 
   getWorkspaceName(relativePath) {

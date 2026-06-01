@@ -96,6 +96,11 @@ export function createSelfHostedEditorPreviewServer(serverPort = port) {
       return;
     }
 
+    if (request.method === "POST" && requestUrl.pathname === "/api/host-schema-capabilities") {
+      await handleHostSchemaCapabilitiesRequest(request, response);
+      return;
+    }
+
     if (request.method === "POST" && requestUrl.pathname === "/api/story-graph") {
       await handleStoryGraphRequest(request, response);
       return;
@@ -302,6 +307,30 @@ async function handleDocumentSymbolsRequest(request, response) {
       "Content-Type": "application/json; charset=utf-8",
     });
     response.end(JSON.stringify(documentSymbolsPayload));
+  } catch (error) {
+    response.writeHead(500, {
+      "Content-Type": "application/json; charset=utf-8",
+    });
+    response.end(JSON.stringify({
+      error: error instanceof Error ? error.message : String(error),
+    }));
+  }
+}
+
+async function handleHostSchemaCapabilitiesRequest(request, response) {
+  try {
+    const body = await readRequestBody(request);
+    const payload = parseJsonRequestBody(body);
+    const scriptText = typeof payload.scriptText === "string"
+      ? payload.scriptText
+      : "";
+    const workspace = normalizeWorkspacePayload(payload.workspace);
+
+    const capabilitiesPayload = await getHostSchemaCapabilitiesForScriptText(scriptText, workspace);
+    response.writeHead(200, {
+      "Content-Type": "application/json; charset=utf-8",
+    });
+    response.end(JSON.stringify(capabilitiesPayload));
   } catch (error) {
     response.writeHead(500, {
       "Content-Type": "application/json; charset=utf-8",
@@ -534,6 +563,13 @@ async function getCompletionsForScriptText(scriptText, workspace) {
 async function getDocumentSymbolsForScriptText(scriptText, workspace) {
   return withTemporaryWorkspace(workspace, scriptText, async ({ activeFilePath }) => {
     const result = await runLanguageServerDocumentSymbols(activeFilePath);
+    return JSON.parse(result.stdout);
+  });
+}
+
+export async function getHostSchemaCapabilitiesForScriptText(scriptText, workspace) {
+  return withTemporaryWorkspace(workspace, scriptText, async ({ tempRoot }) => {
+    const result = await runLanguageServerHostSchemaCapabilities(tempRoot);
     return JSON.parse(result.stdout);
   });
 }
@@ -1105,6 +1141,13 @@ function runLanguageServerProjectCompletions(rootPath) {
     "--completion-project",
     rootPath,
   ], "LanguageServer project completions");
+}
+
+function runLanguageServerHostSchemaCapabilities(rootPath) {
+  return runLanguageServerCommand([
+    "--host-schema-capabilities-project",
+    rootPath,
+  ], "LanguageServer host schema capabilities");
 }
 
 function runLanguageServerCommand(languageServerArgs, label) {

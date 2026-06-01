@@ -1,0 +1,173 @@
+# VSCode / SelfHostedEditor 功能对齐盘点
+
+状态：工作清单
+
+最后更新：2026-06-01
+
+本文用业务语言记录 VSCode 扩展与 SelfHostedEditor 自研编辑器之间的能力差异。目标不是让两边 UI 长得一样，而是让作者在两边处理同一类写作任务时不会遇到“这里能做、那里完全断掉”的落差。
+
+## 当前结论
+
+SelfHostedEditor 近期主线继续优先，但 VSCode 不应退化成历史入口。两边应共享 `LanguageServer` / `Tooling` / `Runtime` 的真实契约，并按功能 parity 补齐差异。
+
+2026-06-01 已收口第一项：SelfHostedEditor 现在通过开发宿主读取 `LanguageServer --host-schema-capabilities-project`，补上 `[query]` 与 `@emit` 的 completion / hover。业务上这意味着作者在自研编辑器里写“读宿主变量”和“发宿主事件”时，已经能看到和 VSCode 同源的候选与说明。
+
+仍不急着对齐的部分：speaker 与 `@timeline` 现在依赖 Host Bridge 信息，SelfHostedEditor 暂时没有共享的 Host Bridge capability endpoint。下一步应先补共享能力入口，再让前端消费；不要把 VSCode 里读取 `.host.bridge.json` 的逻辑复制到浏览器端。
+
+当前优先级：
+
+1. 先守住 SelfHostedEditor 已有工作流：打开项目 / 编辑 / 预览 / Runtime 推进 / L10N review-update 写回。
+2. 再补 VSCode 与 SelfHostedEditor 的功能不一致，优先补作者每天会用到的编辑提示、跳转、审查入口。
+3. Graph 设计优化暂时降级，只保留“不回退已完成能力”的维护要求。
+4. Unity / Bird 支持继续低优先级，只做准备和决策。
+
+## 已基本对齐
+
+### 脚本编辑基础
+
+- 两边都支持 `.inscape` 脚本编辑。
+- 两边都识别 `# 标题`、对白、旁白、prompt、choice、jump、metadata、query token。
+- 两边都通过 `LanguageServer` 或开发宿主桥获取 diagnostics、completion、definition、references、hover、document symbols。
+- 两边都支持未保存内容参与语义查询：VSCode 通过 LanguageServer 会话 / override，SelfHostedEditor 通过当前 workspace 文档 payload。
+
+### 源码定位与预览联动
+
+- VSCode 支持 Ctrl+Click / preview reveal / source badge 回跳。
+- SelfHostedEditor 支持编辑器定位后刷新 Preview block，Preview choice / continue 后回到对应源码标题。
+- 两边都不能回退到“Preview 跳了但源码不动”或“源码动了但 Preview 悄悄显示旧块”的状态。
+
+### 本地化底层语义
+
+- 两边都不应在宿主侧重新实现 CSV / alignment 语义。
+- VSCode 通过 CLI / Tooling 执行 export、update、alignment review。
+- SelfHostedEditor 通过 `/api/localization-review` 与 `/api/localization-update` 消费同一类 Tooling / CLI 结果。
+
+## VSCode 目前更完整
+
+这些能力 SelfHostedEditor 需要后续补齐或明确替代方式。
+
+### 1. Host Schema / Host Bridge 作者提示
+
+VSCode 已有：
+
+- `[query.path]` completion / Hover。
+- `@emit eventName` completion / Hover。
+- `@timeline...` host binding completion / Hover / Ctrl+Click。
+- speaker completion / Hover / Go to Definition / Find All References。
+- `Inscape: Show Host Schema Capabilities`。
+
+SelfHostedEditor 已补齐：
+
+- `[query.path]` completion / Hover，经由开发宿主调用共享 LanguageServer Host Schema capability。
+- `@emit eventName` completion / Hover，经由同一 Host Schema capability。
+
+SelfHostedEditor 仍缺：
+
+- `@timeline...` host binding completion / Hover / Ctrl+Click。
+- speaker completion / Hover / Go to Definition / Find All References。
+- `Inscape: Show Host Schema Capabilities` 的等价查看入口。
+
+建议下一步：先补共享 Host Bridge capability，再做 speaker / timeline binding 提示。这里有必要对齐“作者能不能找到宿主字段 / 事件 / 绑定目标”，但不需要对齐 VSCode 的 UI 形态。
+
+### 2. Stable Node Map 工作流
+
+VSCode 已有：
+
+- `Insert Node Title`。
+- `Update Stable Node Map`。
+- `Review Stable Node Map Changes`。
+- rename/manual-review/conflict/missing report 的 Quick Pick 审查入口。
+
+SelfHostedEditor 目前有节点 rename patch 与 line identity hint，但还没有 stable node map 的显式更新 / 审查工作流。
+
+建议下一步：SelfHostedEditor 不需要复制 VSCode Quick Pick，可做一个轻量 Review 面板或状态入口；语义仍调用 `update-node-map-project --report`。
+
+### 3. CodeLens / 引用入口
+
+VSCode 已有节点标题 CodeLens，显示 `N 个引用` 并打开 References Peek。
+
+SelfHostedEditor 已有标题旁 refs 浮层，但不是同一套 CodeLens 心智；业务上接近，但需要确认：
+
+- 跨文件引用是否完整。
+- 未保存 workspace 文档是否都参与。
+- 与 VSCode References Peek 展示的信息是否等价。
+
+建议下一步：把 refs overlay 作为 SelfHostedEditor 的等价入口，不强行实现 CodeLens 样式；重点验证跨文件与未保存内容。
+
+### 4. Preview source sync 模式
+
+VSCode 有 `inscape.preview.sourceSyncMode = off|click|selection|debug`。
+
+SelfHostedEditor 目前是自研工作台内的固定联动模型，没有显式 source sync 模式。
+
+建议下一步：不急着照搬设置项。先确认业务是否真的需要 off / selection；如果需要，作为 SelfHostedEditor 偏好设置，而不是让前端产生第二套预览真相。
+
+## SelfHostedEditor 目前更完整
+
+这些能力 VSCode 不一定要复制 UI，但需要确认是否需要业务等价。
+
+### 1. Runtime-backed 阅读体验
+
+SelfHostedEditor 已把 Preview choice / continue、Back、节点内 Flow advance / rewind 接到共享 Runtime。
+
+VSCode Preview 仍主要是 CLI 生成的 HTML preview，虽然能 click choices、Back、Restart，但不是当前这条 Runtime-backed workbench 状态链。
+
+建议下一步：先不强行重做 VSCode Preview。只需明确 VSCode Preview 是“调试预览”，SelfHostedEditor Player 是“未来主 Runtime 体验”。如果需要业务一致，先从共享 Runtime HTML payload 或 Runtime-backed preview endpoint 评估。
+
+### 2. L10N 表格编辑与写回
+
+SelfHostedEditor 已有：
+
+- 选择真实旧 CSV。
+- review 状态筛选。
+- session draft overrides。
+- export updated CSV。
+- native file handle 下直接 Replace previous CSV。
+- linked clean / unsaved 状态。
+
+VSCode 已有 export/update/review 命令和 Quick Pick alignment review，但没有像 SelfHostedEditor 这样的表格式持续编辑 / 写回体验。
+
+建议下一步：不必在 VSCode 复刻整张表。VSCode 可以保持命令式入口；但应确认它至少能做到 review candidate、source jump、update old CSV 的核心闭环。
+
+### 3. 沉浸式写作表面
+
+SelfHostedEditor 的产品目标是写作桌面，侧栏、状态、诊断、预览都更低干扰。
+
+VSCode 是专业编辑器，不需要一致视觉。但两边语义能力要一致：补全、跳转、引用、诊断、hover、rename、localization review 不能因为宿主不同而给出矛盾结果。
+
+## 当前不一致清单
+
+| 能力 | VSCode | SelfHostedEditor | 优先级 |
+| --- | --- | --- | --- |
+| Diagnostics | LanguageServer 常驻会话 + CLI fallback | dev-host HTTP + LanguageServer probe + fallback | 高，保持 |
+| Completion: node jump | 支持跨文件与未保存内容 | 已接 project probe，需继续验证跨文件 | 高 |
+| Completion: speaker | 支持 hostBridge / workspace fallback | 未见等价入口 | 中高，等共享 Host Bridge capability |
+| Completion: `[query]` | 支持 Host Schema query | 已通过 dev-host + LanguageServer Host Schema capability 对齐 | 已对齐，守回归 |
+| Completion: `@emit` | 支持 Host Schema event | 已通过 dev-host + LanguageServer Host Schema capability 对齐 | 已对齐，守回归 |
+| Completion/Hover: `@timeline` | 支持 Host Bridge | 未见等价入口 | 中 |
+| Definition / References: node | LanguageServer project navigation | 已接 project probe，refs overlay 已有 | 高，继续验证 |
+| Definition / References: speaker | 支持 hostBridge + workspace references | 未见等价入口 | 中 |
+| Hover: metadata | VSCode 有 authoring hint | SelfHostedEditor 主要走 LS node/jump hover | 中 |
+| Outline | LanguageServer | LanguageServer bridge | 高，保持 |
+| CodeLens / refs count | 有 CodeLens | 有 refs overlay，不同 UI | 中，确认等价 |
+| Stable node map update/review | 有命令与 review UI | 未见等价入口 | 中高 |
+| Localization export/update | 有命令 | 有表格 + update/export/replace | 高，保持 |
+| Localization alignment review | Quick Pick review | 表格 review/filter | 高，确认状态语义一致 |
+| Localization candidate diff/actions | VSCode 有 candidate 二级动作 | SelfHostedEditor 尚待丰富 review actions | 中高 |
+| Line identity debug | VSCode debug hover | SelfHostedEditor hint rail 显示真实 line id | 中 |
+| Preview static reading | 有 HTML preview | 有 workbench preview | 高，保持 |
+| Preview Flow / Runtime step | HTML preview 非主 Runtime 会话 | Runtime-backed Flow | 中，VSCode 可暂不追 |
+| Source sync modes | off/click/selection/debug | 无显式模式 | 低到中 |
+| Graph view | 无等价主功能 | SelfHostedEditor 已有 | 低，按用户要求降级 |
+| Unity / Bird | 外部支持命令 / docs | 不进入核心 | 低 |
+
+## 建议实施顺序
+
+1. 先跑并修 SelfHostedEditor 回归：`check:syntax`、`check:structure`、`check:model`、`check:localization-review-http`、`check:localization-update-http`、`check:runtime-http`。
+2. 做 VSCode / SelfHostedEditor 语义 parity smoke：用同一组脚本验证 diagnostics、node completion、definition、references、hover、outline 在两边结果一致。
+3. 已补 SelfHostedEditor Host Schema 作者提示第一版：query、event 的 completion / hover；继续守 `check:host-schema` 与 `check:host-schema-http`。
+4. 补共享 Host Bridge capability，再做 SelfHostedEditor speaker、timeline binding 的 completion / hover / navigation。
+5. 补 SelfHostedEditor 的 stable node map update / review 入口。
+6. 补 L10N review actions parity：确认 VSCode candidate diff / source jump 与 SelfHostedEditor 表格 review 的状态和候选信息一致。
+7. 继续整理 Editor Backend 会话边界：把 workspace、runtime、line-map、localization baseline 从“一次请求一套临时上下文”收向“打开项目后持续存在的会话”。
+8. Graph 与 Unity / Bird 暂不进入近期主线，只保留回归不倒退。

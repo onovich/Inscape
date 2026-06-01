@@ -16,6 +16,7 @@ import { LanguageServerDiagnosticModelMapper } from "../Scripts/LanguageServer/M
 import { LanguageServerReferenceModelMapper } from "../Scripts/LanguageServer/Models/LanguageServerReferenceModelMapper.js";
 import { LanguageServerDocumentSymbolModelMapper } from "../Scripts/LanguageServer/Models/LanguageServerDocumentSymbolModelMapper.js";
 import { LanguageServerStoryGraphModelMapper } from "../Scripts/LanguageServer/Models/LanguageServerStoryGraphModelMapper.js";
+import { HostSchemaCapabilityModelMapper } from "../Scripts/HostSchema/Models/HostSchemaCapabilityModelMapper.js";
 import { PreviewPanelController } from "../Scripts/Preview/Controllers/PreviewPanelController.js";
 import { StoryGraphPreviewController } from "../Scripts/StoryGraph/Controllers/StoryGraphPreviewController.js";
 
@@ -120,7 +121,20 @@ assertEqual(jumpHoverTarget?.kind, "jump", "jump hover target kind");
 assertEqual(jumpHoverTarget?.name, "Witness", "jump hover target name");
 const completionModel = createHoverModel("Narration: Lead\r\n- Review -> Wi");
 const completionTarget = EditorCompletionTargetModelBuilder.build(completionModel, { lineNumber: 2, column: 15 });
+assertEqual(completionTarget?.kind, "node", "completion target kind");
 assertEqual(completionTarget?.typedPrefix, "Wi", "completion target prefix");
+const queryCompletionTarget = EditorCompletionTargetModelBuilder.build(createHoverModel("Narrator: Gold [player.g"), { lineNumber: 1, column: 25 });
+assertEqual(queryCompletionTarget?.kind, "query", "query completion target kind");
+assertEqual(queryCompletionTarget?.typedPrefix, "player.g", "query completion target prefix");
+const eventCompletionTarget = EditorCompletionTargetModelBuilder.build(createHoverModel("@emit quest."), { lineNumber: 1, column: 13 });
+assertEqual(eventCompletionTarget?.kind, "host-event", "host event completion target kind");
+assertEqual(eventCompletionTarget?.typedPrefix, "quest.", "host event completion target prefix");
+const queryHoverTarget = EditorHoverTargetModelBuilder.build(createHoverModel("Narrator: Gold [player.gold]"), { lineNumber: 1, column: 18 });
+assertEqual(queryHoverTarget?.kind, "query", "query hover target kind");
+assertEqual(queryHoverTarget?.name, "player.gold", "query hover target name");
+const eventHoverTarget = EditorHoverTargetModelBuilder.build(createHoverModel("@emit quest.accepted"), { lineNumber: 1, column: 10 });
+assertEqual(eventHoverTarget?.kind, "host-event", "host event hover target kind");
+assertEqual(eventHoverTarget?.name, "quest.accepted", "host event hover target name");
 const completionMapper = LanguageServerCompletionModelMapper.mapCompletions({
   completions: [
     {
@@ -131,6 +145,30 @@ const completionMapper = LanguageServerCompletionModelMapper.mapCompletions({
 });
 assertEqual(completionMapper.length, 1, "completion mapper count");
 assertEqual(completionMapper[0].label, "Witness", "completion mapper label");
+const hostSchemaCatalog = HostSchemaCapabilityModelMapper.mapCatalog({
+  events: [
+    {
+      delivery: "fire-and-forget",
+      isNamedHostEvent: true,
+      name: "quest.accepted",
+    },
+  ],
+  format: "inscape.host-schema.capabilities",
+  formatVersion: 1,
+  hostSchema: {
+    loaded: true,
+  },
+  queries: [
+    {
+      isSimpleTextInterpolationQuery: true,
+      name: "player.gold",
+      returnType: "number",
+    },
+  ],
+});
+assertEqual(hostSchemaCatalog.hostSchema.loaded, true, "host schema mapper loaded");
+assertEqual(hostSchemaCatalog.queries[0].name, "player.gold", "host schema mapper query");
+assertEqual(hostSchemaCatalog.events[0].name, "quest.accepted", "host schema mapper event");
 const diagnosticMapper = LanguageServerDiagnosticModelMapper.mapDiagnostics({
   diagnostics: [
     {
