@@ -22,7 +22,7 @@
 - VSCode / SelfHostedEditor parity 盘点已落到 `docs/vscode-self-hosted-editor-parity.md`。Graph 设计优化与 Unity / Bird 继续低优先级，VSCode 与 SelfHostedEditor 重点按作者功能 parity 补齐。
 - SelfHostedEditor 已通过开发宿主复用 `LanguageServer --host-schema-capabilities-project`，补齐 `[query]` 与 `@emit` 的 completion / hover；新增 `check:host-schema` 与 `check:host-schema-http` 守住直连 helper 和真实 HTTP。
 - Host Bridge 作者提示已从 VSCode 私有 JSON 解析上提到共享能力：`LanguageServer --host-binding-capabilities-project` 现在输出 `inscape.host-binding.capabilities`，Tooling 汇总 Host Bridge 配置行与 workspace 编译出的 speaker / `@timeline` 出现位置。
-- SelfHostedEditor 已消费 `/api/host-binding-capabilities`，补齐 speaker 与 `@timeline` 的 completion / hover；新增 `check:host-binding` 与 `check:host-binding-http`。speaker definition / references 与 `@timeline` Ctrl+Click navigation 仍待继续接同一 capability。
+- SelfHostedEditor 已消费 `/api/host-binding-capabilities`，补齐 speaker 与 `@timeline` 的 completion / hover / navigation；新增 `check:host-binding` 与 `check:host-binding-http`。speaker definition / references 和 `@timeline` Ctrl+Click 现在走同一 Host Binding capability，前端只做 Monaco target 识别与 source reveal。
 
 2026-05-26 本会话交接状态：
 

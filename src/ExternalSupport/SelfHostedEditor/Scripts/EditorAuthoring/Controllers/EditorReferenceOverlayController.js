@@ -1,9 +1,10 @@
 export class EditorReferenceOverlayController {
-  constructor(frameElement, editorController, referencesBridge, workspaceContextProvider = null) {
+  constructor(frameElement, editorController, referencesBridge, workspaceContextProvider = null, hostBindingBridge = null) {
     this.frameElement = frameElement;
     this.editorController = editorController;
     this.referencesBridge = referencesBridge;
     this.workspaceContextProvider = workspaceContextProvider;
+    this.hostBindingBridge = hostBindingBridge;
     this.sourceLineSelectedHandlers = [];
     this.currentNode = null;
     this.anchorPosition = null;
@@ -61,6 +62,26 @@ export class EditorReferenceOverlayController {
     this.overlayElement.style.visibility = "";
   }
 
+  async openForTarget(target, anchorRect = null) {
+    if (!target || (target.kind !== "speaker" && target.kind !== "host-binding") || !this.hostBindingBridge) {
+      return;
+    }
+
+    const lineNumber = Number(target.lineNumber || this.editorController.getEditor().getPosition()?.lineNumber || 1);
+    const overlayTarget = {
+      sourceLine: lineNumber,
+      title: target.name,
+    };
+    this.currentNode = overlayTarget;
+    this.anchorPosition = this.createAnchorPosition(overlayTarget, anchorRect);
+    const references = await this.hostBindingBridge.getReferences(this.editorController.getText(), target);
+    this.renderTarget(target, references);
+    this.overlayElement.style.visibility = "hidden";
+    this.overlayElement.classList.remove("is-hidden");
+    this.reposition();
+    this.overlayElement.style.visibility = "";
+  }
+
   close() {
     this.currentNode = null;
     this.anchorPosition = null;
@@ -69,11 +90,36 @@ export class EditorReferenceOverlayController {
   }
 
   render(node, references) {
+    this.renderReferenceList({
+      emptyText: "No incoming references.",
+      references,
+      target: {
+        kind: "node",
+        name: node.title,
+        title: node.title,
+      },
+      titleText: `${node.title} - ${references.length} refs`,
+    });
+  }
+
+  renderTarget(target, references) {
+    const label = target.kind === "speaker"
+      ? `Speaker ${target.name}`
+      : `${target.bindingKind || "binding"}:${target.name}`;
+    this.renderReferenceList({
+      emptyText: "No matching references.",
+      references,
+      target,
+      titleText: `${label} - ${references.length} refs`,
+    });
+  }
+
+  renderReferenceList({ emptyText, references, target, titleText }) {
     const titleRow = document.createElement("div");
     titleRow.className = "editor-reference-overlay-header";
 
     const title = document.createElement("strong");
-    title.textContent = `${node.title} - ${references.length} refs`;
+    title.textContent = titleText;
 
     const closeButton = document.createElement("button");
     closeButton.type = "button";
@@ -89,7 +135,7 @@ export class EditorReferenceOverlayController {
     if (references.length === 0) {
       const empty = document.createElement("div");
       empty.className = "editor-reference-overlay-empty";
-      empty.textContent = "No incoming references.";
+      empty.textContent = emptyText;
       list.append(empty);
     } else {
       for (const reference of references) {
@@ -97,7 +143,7 @@ export class EditorReferenceOverlayController {
         button.type = "button";
         button.className = "editor-reference-overlay-item";
 
-        const model = this.buildReferencePreviewModel(reference, node.title);
+        const model = this.buildReferencePreviewModel(reference, target);
 
         const summary = document.createElement("span");
         summary.className = "editor-reference-overlay-summary";
@@ -110,7 +156,7 @@ export class EditorReferenceOverlayController {
           lineElement.className = "editor-reference-overlay-context-line";
           if (line.isHit) {
             lineElement.classList.add("is-hit");
-            this.appendHighlightedText(lineElement, line.text, node.title);
+            this.appendHighlightedText(lineElement, line.text, target.name || target.title || "");
           } else {
             lineElement.textContent = line.text;
           }
@@ -191,7 +237,7 @@ export class EditorReferenceOverlayController {
     return `${sourcePath}:${lineLabel}`;
   }
 
-  buildReferencePreviewModel(reference, targetTitle) {
+  buildReferencePreviewModel(reference, target) {
     const document = this.getReferenceDocument(reference);
     const lineNumber = reference.location.line + 1;
     const lines = document?.text?.split(/\r?\n/) || [];
@@ -199,7 +245,7 @@ export class EditorReferenceOverlayController {
     const contextLines = this.getContextLines(lines, lineNumber);
     return {
       contextLines,
-      summary: this.getReferenceSummary(hitText, targetTitle),
+      summary: this.getReferenceSummary(hitText, target),
     };
   }
 
@@ -237,8 +283,17 @@ export class EditorReferenceOverlayController {
       }];
   }
 
-  getReferenceSummary(lineText, targetTitle) {
+  getReferenceSummary(lineText, target) {
+    const targetTitle = target.name || target.title || "";
     const trimmed = lineText.trim();
+    if (target.kind === "speaker") {
+      return `Speaker ${targetTitle}`;
+    }
+
+    if (target.kind === "host-binding") {
+      return `${target.bindingKind || "binding"} -> ${targetTitle}`;
+    }
+
     if (trimmed.startsWith("- ")) {
       const body = trimmed.slice(2).trim();
       const [choiceText, target] = body.split("->").map((part) => part.trim());

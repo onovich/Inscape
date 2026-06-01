@@ -165,20 +165,70 @@ namespace Inscape.Tooling {
 
         static void AddSpeaker(List<HostBindingSpeakerCapabilityModel> speakers,
                                HostBindingSpeakerCapabilityModel speaker) {
-            if (speakers.Any(candidate => candidate.Name == speaker.Name)) {
+            HostBindingSpeakerCapabilityModel? existing = speakers.FirstOrDefault(candidate => candidate.Name == speaker.Name);
+            HostBindingCapabilityLocationModel location = CreateLocation(speaker.SourcePath,
+                                                                         speaker.SourceLabel,
+                                                                         speaker.SourceKind,
+                                                                         speaker.SourceRank,
+                                                                         speaker.Line,
+                                                                         speaker.Character,
+                                                                         speaker.Length);
+            if (existing != null) {
+                AddLocation(existing.Locations, location);
                 return;
             }
 
+            AddLocation(speaker.Locations, location);
             speakers.Add(speaker);
         }
 
         static void AddBinding(List<HostBindingResourceCapabilityModel> bindings,
                                HostBindingResourceCapabilityModel binding) {
-            if (bindings.Any(candidate => candidate.Kind == binding.Kind && candidate.Name == binding.Name)) {
+            HostBindingResourceCapabilityModel? existing = bindings.FirstOrDefault(candidate => candidate.Kind == binding.Kind && candidate.Name == binding.Name);
+            HostBindingCapabilityLocationModel location = CreateLocation(binding.SourcePath,
+                                                                         binding.SourceLabel,
+                                                                         binding.SourceKind,
+                                                                         binding.SourceRank,
+                                                                         binding.Line,
+                                                                         binding.Character,
+                                                                         binding.Length);
+            if (existing != null) {
+                AddLocation(existing.Locations, location);
                 return;
             }
 
+            AddLocation(binding.Locations, location);
             bindings.Add(binding);
+        }
+
+        static HostBindingCapabilityLocationModel CreateLocation(string sourcePath,
+                                                                 string sourceLabel,
+                                                                 string sourceKind,
+                                                                 int sourceRank,
+                                                                 int line,
+                                                                 int character,
+                                                                 int length) {
+            return new HostBindingCapabilityLocationModel {
+                SourcePath = sourcePath,
+                SourceLabel = sourceLabel,
+                SourceKind = sourceKind,
+                SourceRank = sourceRank,
+                Line = line,
+                Character = character,
+                Length = Math.Max(length, 1),
+            };
+        }
+
+        static void AddLocation(List<HostBindingCapabilityLocationModel> locations,
+                                HostBindingCapabilityLocationModel location) {
+            if (locations.Any(candidate => candidate.SourcePath == location.SourcePath
+                                           && candidate.Line == location.Line
+                                           && candidate.Character == location.Character
+                                           && candidate.Length == location.Length)) {
+                return;
+            }
+
+            locations.Add(location);
         }
 
         static string NormalizeBindingKind(string kind) {

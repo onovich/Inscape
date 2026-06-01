@@ -169,11 +169,17 @@ async function main() {
       const node = (documentModel?.nodes || []).find((candidate) => candidate.title === hoverTarget.name);
       if (node) {
         await editorReferenceOverlayController.openForNode(node);
+        return;
+      }
+
+      if (hoverTarget.kind === "speaker" || hoverTarget.kind === "host-binding") {
+        await editorReferenceOverlayController.openForTarget(hoverTarget);
       }
     },
     (selection) => {
       focusSourceSelection(selection);
-    }
+    },
+    hostBindingBridge
   );
   const editorRenameController = new EditorRenameController(
     editorController.getMonaco()
@@ -182,7 +188,8 @@ async function main() {
     editorFrameElement,
     editorController,
     referencesBridge,
-    workspaceContextProvider
+    workspaceContextProvider,
+    hostBindingBridge
   );
   const documentOutlineController = new DocumentOutlineController(outlinePanelElement);
   const workspaceFileListController = new ProjectWorkspaceFileListController(workspaceFilePanelElement);

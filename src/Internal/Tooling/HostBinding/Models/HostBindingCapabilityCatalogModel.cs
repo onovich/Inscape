@@ -50,6 +50,8 @@ namespace Inscape.Tooling {
 
         public int Length { get; set; }
 
+        public List<HostBindingCapabilityLocationModel> Locations { get; set; } = new List<HostBindingCapabilityLocationModel>();
+
     }
 
     public sealed class HostBindingResourceCapabilityModel {
@@ -65,6 +67,26 @@ namespace Inscape.Tooling {
         public string AddressableKey { get; set; } = string.Empty;
 
         public string AssetPath { get; set; } = string.Empty;
+
+        public string SourcePath { get; set; } = string.Empty;
+
+        public string SourceLabel { get; set; } = string.Empty;
+
+        public string SourceKind { get; set; } = string.Empty;
+
+        public int SourceRank { get; set; }
+
+        public int Line { get; set; }
+
+        public int Character { get; set; }
+
+        public int Length { get; set; }
+
+        public List<HostBindingCapabilityLocationModel> Locations { get; set; } = new List<HostBindingCapabilityLocationModel>();
+
+    }
+
+    public sealed class HostBindingCapabilityLocationModel {
 
         public string SourcePath { get; set; } = string.Empty;
 

@@ -137,6 +137,7 @@ VSCode 编辑器扩展作者体验只读取 `hostBridge`。ExternalSupport 的 `
 - `hostBridge`：配置路径、解析路径、是否加载成功和错误信息。
 - `speakers`：来自 Host Bridge `ids[kind="speaker"]` 的绑定角色，以及 workspace 编译结果中的对白 speaker 出现位置。
 - `bindings`：来自 Host Bridge `ids[]` 的非 speaker 资源绑定，以及 workspace 编译结果中的 `@timeline...` 出现位置。
+- `locations`：每个 speaker / binding 保留映射行与 workspace 出现位置。编辑器宿主用它做 definition / references / Ctrl+Click；若同名能力同时存在 Host Bridge 行和脚本出现位置，Host Bridge 行可作为定义位置，脚本出现位置作为引用位置。
 
 这个输出只服务补全、Hover 和导航。Compiler 仍不读取 Host Bridge，也不会因为缺少绑定而报 DSL 语法错误。
 

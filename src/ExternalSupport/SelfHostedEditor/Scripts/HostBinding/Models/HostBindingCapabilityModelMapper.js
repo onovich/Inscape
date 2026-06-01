@@ -27,8 +27,10 @@ export class HostBindingCapabilityModelMapper {
       .filter((speaker) => speaker && typeof speaker.name === "string")
       .map((speaker) => ({
         displayName: speaker.displayName || "",
+        character: Number(speaker.character || 0),
         length: Number(speaker.length || 0),
         line: Number(speaker.line || 0),
+        locations: this.mapLocations(speaker.locations),
         name: speaker.name.trim(),
         roleId: speaker.roleId || "",
         sourceKind: speaker.sourceKind || "",
@@ -51,8 +53,10 @@ export class HostBindingCapabilityModelMapper {
         assetId: binding.assetId || "",
         assetPath: binding.assetPath || "",
         kind: binding.kind || "",
+        character: Number(binding.character || 0),
         length: Number(binding.length || 0),
         line: Number(binding.line || 0),
+        locations: this.mapLocations(binding.locations),
         name: binding.name.trim(),
         sourceKind: binding.sourceKind || "",
         sourceLabel: binding.sourceLabel || "",
@@ -61,5 +65,40 @@ export class HostBindingCapabilityModelMapper {
       }))
       .filter((binding) => binding.kind && binding.name)
       .sort((left, right) => `${left.kind}:${left.name}`.localeCompare(`${right.kind}:${right.name}`));
+  }
+
+  static mapLocations(locations) {
+    if (!Array.isArray(locations)) {
+      return [];
+    }
+
+    return locations
+      .filter((location) => location && typeof location.sourcePath === "string")
+      .map((location) => ({
+        character: Number(location.character || 0),
+        length: Number(location.length || 0),
+        line: Number(location.line || 0),
+        sourceKind: location.sourceKind || "",
+        sourceLabel: location.sourceLabel || "",
+        sourcePath: location.sourcePath || "",
+        sourceRank: Number(location.sourceRank || 0),
+      }))
+      .filter((location) => location.sourcePath)
+      .sort((left, right) => {
+        if (left.sourceRank !== right.sourceRank) {
+          return left.sourceRank - right.sourceRank;
+        }
+
+        const sourceCompare = left.sourcePath.localeCompare(right.sourcePath);
+        if (sourceCompare !== 0) {
+          return sourceCompare;
+        }
+
+        if (left.line !== right.line) {
+          return left.line - right.line;
+        }
+
+        return left.character - right.character;
+      });
   }
 }

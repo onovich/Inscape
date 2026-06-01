@@ -14,6 +14,8 @@ SelfHostedEditor 近期主线继续优先，但 VSCode 不应退化成历史入�
 
 2026-06-01 已收口第二项：SelfHostedEditor 现在通过 `LanguageServer --host-binding-capabilities-project` 补上 speaker 与 `@timeline` 的 completion / hover。候选来自共享 Tooling Host Binding capability，包含配置好的 Host Bridge 行和当前 workspace 编译出来的 speaker / timeline 出现位置；浏览器端不再需要复制 VSCode 的 `.host.bridge.json` 解析。
 
+2026-06-01 已收口第三项：同一 Host Binding capability 现在也承载 speaker / `@timeline` 的导航位置。SelfHostedEditor 的 Ctrl+Click、definition provider 和 references provider 会优先跳到 Host Bridge 映射行，并保留 workspace 出现位置用于 references；dev-host 会把临时 workspace 路径还原成项目相对路径，避免前端拿临时目录当源码真相。
+
 当前优先级：
 
 1. 先守住 SelfHostedEditor 已有工作流：打开项目 / 编辑 / 预览 / Runtime 推进 / L10N review-update 写回。
@@ -60,16 +62,14 @@ SelfHostedEditor 已补齐：
 
 - `[query.path]` completion / Hover，经由开发宿主调用共享 LanguageServer Host Schema capability。
 - `@emit eventName` completion / Hover，经由同一 Host Schema capability。
-- speaker completion / Hover，经由共享 LanguageServer Host Binding capability。
-- `@timeline...` completion / Hover，经由同一 Host Binding capability。
+- speaker completion / Hover / Go to Definition / Find All References，经由共享 LanguageServer Host Binding capability。
+- `@timeline...` completion / Hover / Ctrl+Click / references，经由同一 Host Binding capability。
 
 SelfHostedEditor 仍缺：
 
-- `@timeline...` host binding Ctrl+Click。
-- speaker Go to Definition / Find All References。
 - `Inscape: Show Host Schema Capabilities` 的等价查看入口。
 
-建议下一步：在已共享的 Host Binding capability 上补 speaker / timeline navigation。这里有必要对齐“作者能不能找到宿主字段 / 事件 / 绑定目标”，但不需要对齐 VSCode 的 UI 形态。
+建议下一步：补一个 Host Schema / Host Binding capability 查看入口，或转去 stable node map update / review。这里不需要复制 VSCode 的 Quick Pick UI，重点是让作者能看到同一份共享能力清单。
 
 ### 2. Stable Node Map 工作流
 
@@ -148,7 +148,8 @@ VSCode 是专业编辑器，不需要一致视觉。但两边语义能力要一�
 | Completion: `@emit` | 支持 Host Schema event | 已通过 dev-host + LanguageServer Host Schema capability 对齐 | 已对齐，守回归 |
 | Completion/Hover: `@timeline` | 支持 Host Bridge | 已通过 dev-host + LanguageServer Host Binding capability 对齐 | 已对齐，守回归 |
 | Definition / References: node | LanguageServer project navigation | 已接 project probe，refs overlay 已有 | 高，继续验证 |
-| Definition / References: speaker | 支持 hostBridge + workspace references | 未见等价入口 | 中 |
+| Definition / References: speaker | 支持 hostBridge + workspace references | 已通过 Host Binding capability 对齐 | 已对齐，守回归 |
+| Definition / References: `@timeline` | 支持 Host Bridge / workspace hook | 已通过 Host Binding capability 对齐 | 已对齐，守回归 |
 | Hover: metadata | VSCode 有 authoring hint | SelfHostedEditor 主要走 LS node/jump hover | 中 |
 | Outline | LanguageServer | LanguageServer bridge | 高，保持 |
 | CodeLens / refs count | 有 CodeLens | 有 refs overlay，不同 UI | 中，确认等价 |
@@ -168,8 +169,8 @@ VSCode 是专业编辑器，不需要一致视觉。但两边语义能力要一�
 1. 先跑并修 SelfHostedEditor 回归：`check:syntax`、`check:structure`、`check:model`、`check:localization-review-http`、`check:localization-update-http`、`check:runtime-http`。
 2. 做 VSCode / SelfHostedEditor 语义 parity smoke：用同一组脚本验证 diagnostics、node completion、definition、references、hover、outline 在两边结果一致。
 3. 已补 SelfHostedEditor Host Schema 作者提示第一版：query、event 的 completion / hover；继续守 `check:host-schema` 与 `check:host-schema-http`。
-4. 已补共享 Host Binding capability，并完成 SelfHostedEditor speaker、timeline binding 的 completion / hover；继续守 `check:host-binding` 与 `check:host-binding-http`。
-5. 补 SelfHostedEditor speaker / timeline navigation，让 Ctrl+Click / definition / references 能消费同一 Host Binding capability。
+4. 已补共享 Host Binding capability，并完成 SelfHostedEditor speaker、timeline binding 的 completion / hover / navigation；继续守 `check:host-binding` 与 `check:host-binding-http`。
+5. 已补 SelfHostedEditor speaker / timeline navigation，让 Ctrl+Click / definition / references 消费同一 Host Binding capability。
 6. 补 SelfHostedEditor 的 stable node map update / review 入口。
 7. 补 L10N review actions parity：确认 VSCode candidate diff / source jump 与 SelfHostedEditor 表格 review 的状态和候选信息一致。
 8. 继续整理 Editor Backend 会话边界：把 workspace、runtime、line-map、localization baseline 从“一次请求一套临时上下文”收向“打开项目后持续存在的会话”。

@@ -10,6 +10,7 @@ import { EditorHoverTargetModelBuilder } from "../Scripts/EditorAuthoring/Models
 import { EditorCompletionTargetModelBuilder } from "../Scripts/EditorAuthoring/Models/EditorCompletionTargetModelBuilder.js";
 import { EditorSurfaceController } from "../Scripts/EditorAuthoring/Controllers/EditorSurfaceController.js";
 import { EditorReferenceOverlayController } from "../Scripts/EditorAuthoring/Controllers/EditorReferenceOverlayController.js";
+import { SelfHostedEditorHostBindingBridge } from "../Scripts/HostBinding/Bridges/SelfHostedEditorHostBindingBridge.js";
 import { LanguageServerCompletionModelMapper } from "../Scripts/LanguageServer/Models/LanguageServerCompletionModelMapper.js";
 import { LanguageServerDefinitionModelMapper } from "../Scripts/LanguageServer/Models/LanguageServerDefinitionModelMapper.js";
 import { LanguageServerDiagnosticModelMapper } from "../Scripts/LanguageServer/Models/LanguageServerDiagnosticModelMapper.js";
@@ -189,6 +190,20 @@ const hostBindingCatalog = HostBindingCapabilityModelMapper.mapCatalog({
     {
       assetId: "2001",
       kind: "timeline",
+      locations: [
+        {
+          character: 0,
+          line: 0,
+          sourceKind: "hostBridge",
+          sourcePath: "config/inscape.host.bridge.json",
+        },
+        {
+          character: 10,
+          line: 4,
+          sourceKind: "script",
+          sourcePath: "story/opening.inscape",
+        },
+      ],
       name: "court_intro",
     },
   ],
@@ -199,6 +214,20 @@ const hostBindingCatalog = HostBindingCapabilityModelMapper.mapCatalog({
   },
   speakers: [
     {
+      locations: [
+        {
+          character: 0,
+          line: 0,
+          sourceKind: "hostBridge",
+          sourcePath: "config/inscape.host.bridge.json",
+        },
+        {
+          character: 0,
+          line: 2,
+          sourceKind: "script",
+          sourcePath: "story/opening.inscape",
+        },
+      ],
       name: "Narrator",
       roleId: "1001",
     },
@@ -206,7 +235,33 @@ const hostBindingCatalog = HostBindingCapabilityModelMapper.mapCatalog({
 });
 assertEqual(hostBindingCatalog.hostBridge.loaded, true, "host binding mapper loaded");
 assertEqual(hostBindingCatalog.speakers[0].name, "Narrator", "host binding mapper speaker");
+assertEqual(hostBindingCatalog.speakers[0].locations.length, 2, "host binding mapper speaker locations");
 assertEqual(hostBindingCatalog.bindings[0].name, "court_intro", "host binding mapper binding");
+assertEqual(hostBindingCatalog.bindings[0].locations[1].sourcePath, "story/opening.inscape", "host binding mapper binding location");
+const hostBindingBridge = new SelfHostedEditorHostBindingBridge();
+hostBindingBridge.getCapabilityCatalog = async () => hostBindingCatalog;
+const speakerDefinition = await hostBindingBridge.getDefinition("", {
+  kind: "speaker",
+  name: "Narrator",
+});
+assertEqual(speakerDefinition?.location.sourcePath, "config/inscape.host.bridge.json", "host binding bridge speaker definition should prefer host bridge");
+const speakerReferences = await hostBindingBridge.getReferences("", {
+  kind: "speaker",
+  name: "Narrator",
+});
+assertEqual(speakerReferences.length, 2, "host binding bridge speaker references");
+const timelineDefinition = await hostBindingBridge.getDefinition("", {
+  bindingKind: "timeline",
+  kind: "host-binding",
+  name: "court_intro",
+});
+assertEqual(timelineDefinition?.location.sourcePath, "config/inscape.host.bridge.json", "host binding bridge timeline definition should prefer host bridge");
+const timelineReferences = await hostBindingBridge.getReferences("", {
+  bindingKind: "timeline",
+  kind: "host-binding",
+  name: "court_intro",
+});
+assertEqual(timelineReferences.length, 2, "host binding bridge timeline references");
 const diagnosticMapper = LanguageServerDiagnosticModelMapper.mapDiagnostics({
   diagnostics: [
     {

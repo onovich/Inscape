@@ -431,6 +431,7 @@ Narrator: unsaved node
 # opening
 Witness: I saw it.
 @timeline camera_push
+@timeline court_intro
 """);
 
             try {
@@ -442,12 +443,15 @@ Witness: I saw it.
                 AssertEqual(2, catalog.GetProperty("speakers").GetArrayLength(), "Host binding speaker count should include configured and script speakers");
                 AssertEqual("Narrator", catalog.GetProperty("speakers")[0].GetProperty("name").GetString(), "Configured speaker should sort first");
                 AssertEqual("1001", catalog.GetProperty("speakers")[0].GetProperty("roleId").GetString(), "Configured speaker role id");
+                AssertEqual(1, catalog.GetProperty("speakers")[0].GetProperty("locations").GetArrayLength(), "Configured speaker should expose definition location");
                 AssertEqual("Witness", catalog.GetProperty("speakers")[1].GetProperty("name").GetString(), "Script speaker should be included");
                 AssertEqual("script", catalog.GetProperty("speakers")[1].GetProperty("sourceKind").GetString(), "Script speaker source kind");
+                AssertEqual(1, catalog.GetProperty("speakers")[1].GetProperty("locations").GetArrayLength(), "Script speaker should expose reference location");
                 AssertEqual(2, catalog.GetProperty("bindings").GetArrayLength(), "Host binding resource count should include configured and script timeline bindings");
                 AssertEqual("timeline", catalog.GetProperty("bindings")[0].GetProperty("kind").GetString(), "Configured binding kind");
                 AssertEqual("court_intro", catalog.GetProperty("bindings")[0].GetProperty("name").GetString(), "Configured binding name");
                 AssertEqual("2001", catalog.GetProperty("bindings")[0].GetProperty("assetId").GetString(), "Configured binding asset id");
+                AssertEqual(2, catalog.GetProperty("bindings")[0].GetProperty("locations").GetArrayLength(), "Configured binding should include mapping row and workspace reference");
                 AssertEqual("camera_push", catalog.GetProperty("bindings")[1].GetProperty("name").GetString(), "Script timeline binding should be included");
                 AssertEqual("script", catalog.GetProperty("bindings")[1].GetProperty("sourceKind").GetString(), "Script timeline source kind");
             } finally {

@@ -606,7 +606,7 @@ export async function getHostSchemaCapabilitiesForScriptText(scriptText, workspa
 export async function getHostBindingCapabilitiesForScriptText(scriptText, workspace) {
   return withTemporaryWorkspace(workspace, scriptText, async ({ tempRoot }) => {
     const result = await runLanguageServerHostBindingCapabilities(tempRoot);
-    return JSON.parse(result.stdout);
+    return relativizeHostBindingCapabilityPaths(JSON.parse(result.stdout), tempRoot);
   });
 }
 
@@ -937,6 +937,40 @@ function relativizeProjectSourcePaths(payload, tempRoot) {
         normalizeSource(option.source);
       }
     }
+  }
+
+  return payload;
+}
+
+function relativizeHostBindingCapabilityPaths(payload, tempRoot) {
+  const normalizeLocation = (location) => {
+    if (!location || typeof location.sourcePath !== "string") {
+      return;
+    }
+
+    location.sourcePath = relativizeSourcePath(location.sourcePath, tempRoot);
+  };
+
+  for (const speaker of Array.isArray(payload?.speakers) ? payload.speakers : []) {
+    normalizeLocation(speaker);
+    for (const location of Array.isArray(speaker.locations) ? speaker.locations : []) {
+      normalizeLocation(location);
+    }
+  }
+
+  for (const binding of Array.isArray(payload?.bindings) ? payload.bindings : []) {
+    normalizeLocation(binding);
+    for (const location of Array.isArray(binding.locations) ? binding.locations : []) {
+      normalizeLocation(location);
+    }
+  }
+
+  if (typeof payload?.hostBridge?.resolvedPath === "string") {
+    payload.hostBridge.resolvedPath = relativizeSourcePath(payload.hostBridge.resolvedPath, tempRoot);
+  }
+
+  if (typeof payload?.hostBridge?.configuredPath === "string") {
+    payload.hostBridge.configuredPath = relativizeSourcePath(payload.hostBridge.configuredPath, tempRoot);
   }
 
   return payload;

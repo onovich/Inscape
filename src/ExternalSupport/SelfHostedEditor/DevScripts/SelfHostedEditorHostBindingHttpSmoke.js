@@ -5,7 +5,8 @@ import {
 const scriptText = `# Opening
 Narrator: Welcome.
 Witness: I saw it.
-@timeline camera_push`;
+@timeline camera_push
+@timeline court_intro`;
 
 const workspace = {
   currentFilePath: "story/opening.inscape",
@@ -71,7 +72,9 @@ async function main() {
     assertEqual(catalog.format, "inscape.host-binding.capabilities", "catalog format");
     assertEqual(catalog.hostBridge?.loaded, true, "host bridge loaded");
     assertEqual(catalog.speakers?.[0]?.name, "Narrator", "configured speaker name");
+    assertEqual(catalog.speakers?.[0]?.locations?.[0]?.sourcePath, "config/inscape.host.bridge.json", "configured speaker relative source path");
     assertEqual(catalog.bindings?.[0]?.name, "court_intro", "configured timeline name");
+    assertEqual(catalog.bindings?.[0]?.locations?.length, 2, "configured timeline location count");
     console.log(`SelfHostedEditor Host Binding HTTP smoke ok (${Buffer.byteLength(payloadText, "utf8")} bytes)`);
   } finally {
     await close(server);
