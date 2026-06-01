@@ -126,6 +126,11 @@ export function createSelfHostedEditorPreviewServer(serverPort = port) {
       return;
     }
 
+    if (request.method === "POST" && requestUrl.pathname === "/api/node-map-review") {
+      await handleNodeMapReviewRequest(request, response);
+      return;
+    }
+
     if (request.method === "POST" && requestUrl.pathname === "/api/localization-review") {
       await handleLocalizationReviewRequest(request, response);
       return;
@@ -475,6 +480,30 @@ async function handleLineMapRefreshRequest(request, response) {
   }
 }
 
+async function handleNodeMapReviewRequest(request, response) {
+  try {
+    const body = await readRequestBody(request);
+    const payload = parseJsonRequestBody(body);
+    const scriptText = typeof payload.scriptText === "string"
+      ? payload.scriptText
+      : "";
+    const workspace = normalizeWorkspacePayload(payload.workspace);
+
+    const reviewPayload = await getStoryNodeMapReviewForScriptText(scriptText, workspace);
+    response.writeHead(200, {
+      "Content-Type": "application/json; charset=utf-8",
+    });
+    response.end(JSON.stringify(reviewPayload));
+  } catch (error) {
+    response.writeHead(500, {
+      "Content-Type": "application/json; charset=utf-8",
+    });
+    response.end(JSON.stringify({
+      error: error instanceof Error ? error.message : String(error),
+    }));
+  }
+}
+
 async function handleLocalizationReviewRequest(request, response) {
   try {
     const body = await readRequestBody(request);
@@ -663,6 +692,29 @@ export async function stepRuntimeStateForScriptText(scriptText, workspace, runti
 
     const result = await runCliCommand(cliArgs, "CLI runtime project action");
     return compactRuntimeStatePayload(relativizeProjectSourcePaths(JSON.parse(result.stdout), tempRoot));
+  });
+}
+
+export async function getStoryNodeMapReviewForScriptText(scriptText, workspace) {
+  return withTemporaryWorkspace(workspace, scriptText, async ({ tempRoot }) => {
+    const reportPath = path.join(tempRoot, "inscape.node-map-review.json");
+    const result = await runCliCommand([
+      "update-node-map-project",
+      tempRoot,
+      "--report",
+      reportPath,
+    ], "CLI stable node map review");
+    const nodeMapPath = String(result.stdout || "").trim().split(/\r?\n/).filter(Boolean).at(-1)
+      || path.join(tempRoot, "inscape.node-map.json");
+    const nodeMapText = await fsp.readFile(nodeMapPath, "utf8");
+    const reportText = await fsp.readFile(reportPath, "utf8");
+    return compactStoryNodeMapReviewPayload({
+      nodeMap: parseJsonFileText(nodeMapText),
+      nodeMapPath,
+      nodeMapText,
+      report: relativizeStoryNodeMapReviewPaths(parseJsonFileText(reportText), tempRoot),
+      tempRoot,
+    });
   });
 }
 
@@ -862,6 +914,47 @@ function compactLocalizationReviewPayload(report) {
   };
 }
 
+function compactStoryNodeMapReviewPayload({ nodeMap, nodeMapPath, nodeMapText, report, tempRoot }) {
+  return {
+    format: "inscape.self-hosted-editor.node-map-review",
+    formatVersion: 1,
+    nodeMap,
+    nodeMapPath: relativizeSourcePath(nodeMapPath, tempRoot),
+    nodeMapText,
+    report: {
+      format: report?.format || "inscape.node-map-update-report",
+      formatVersion: Number(report?.formatVersion || 0),
+      items: compactStoryNodeMapReviewItems(report?.items),
+      summary: report?.summary || null,
+      workspace: "",
+    },
+  };
+}
+
+function compactStoryNodeMapReviewItems(items) {
+  if (!Array.isArray(items)) {
+    return [];
+  }
+
+  return items.map((item) => ({
+    candidates: (Array.isArray(item?.candidates) ? item.candidates : []).map((candidate) => ({
+      score: Number(candidate?.score || 0),
+      sourceLine: Number(candidate?.sourceLine || 0),
+      sourcePath: candidate?.sourcePath || "",
+      stableId: candidate?.stableId || "",
+      title: candidate?.title || "",
+    })),
+    kind: item?.kind || "",
+    message: item?.message || "",
+    previousTitle: item?.previousTitle || "",
+    sourceLine: Number(item?.sourceLine || 0),
+    sourcePath: item?.sourcePath || "",
+    stableId: item?.stableId || "",
+    status: item?.status || "",
+    title: item?.title || "",
+  }));
+}
+
 function compactLocalizationReviewItems(items) {
   if (!Array.isArray(items)) {
     return [];
@@ -888,6 +981,22 @@ function compactLocalizationReviewItems(items) {
       title: presenterItem?.title || "",
     };
   });
+}
+
+function relativizeStoryNodeMapReviewPaths(payload, tempRoot) {
+  for (const item of Array.isArray(payload?.items) ? payload.items : []) {
+    if (typeof item.sourcePath === "string") {
+      item.sourcePath = relativizeSourcePath(item.sourcePath, tempRoot);
+    }
+
+    for (const candidate of Array.isArray(item.candidates) ? item.candidates : []) {
+      if (typeof candidate.sourcePath === "string") {
+        candidate.sourcePath = relativizeSourcePath(candidate.sourcePath, tempRoot);
+      }
+    }
+  }
+
+  return payload;
 }
 
 function relativizeProjectSourcePaths(payload, tempRoot) {

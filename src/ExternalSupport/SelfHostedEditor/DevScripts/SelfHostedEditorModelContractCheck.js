@@ -10,6 +10,7 @@ import { EditorHoverTargetModelBuilder } from "../Scripts/EditorAuthoring/Models
 import { EditorCompletionTargetModelBuilder } from "../Scripts/EditorAuthoring/Models/EditorCompletionTargetModelBuilder.js";
 import { EditorSurfaceController } from "../Scripts/EditorAuthoring/Controllers/EditorSurfaceController.js";
 import { EditorReferenceOverlayController } from "../Scripts/EditorAuthoring/Controllers/EditorReferenceOverlayController.js";
+import { StoryNodeMapReviewController } from "../Scripts/EditorAuthoring/Controllers/StoryNodeMapReviewController.js";
 import { SelfHostedEditorHostBindingBridge } from "../Scripts/HostBinding/Bridges/SelfHostedEditorHostBindingBridge.js";
 import { LanguageServerCompletionModelMapper } from "../Scripts/LanguageServer/Models/LanguageServerCompletionModelMapper.js";
 import { LanguageServerDefinitionModelMapper } from "../Scripts/LanguageServer/Models/LanguageServerDefinitionModelMapper.js";
@@ -578,6 +579,10 @@ function createFakeMonaco(documentModel) {
 }
 
 class FakeDocument {
+  constructor() {
+    this.body = new FakeElement("body");
+  }
+
   createElement(tagName) {
     return new FakeElement(tagName);
   }
@@ -754,8 +759,13 @@ const linkedPreviousCsvHandle = {
   },
 };
 globalThis.window = {
+  clearTimeout() {},
   async showOpenFilePicker() {
     return [linkedPreviousCsvHandle];
+  },
+  setTimeout(handler) {
+    handler();
+    return 1;
   },
 };
 const localizationPanel = new FakeElement("section");
@@ -890,6 +900,64 @@ assertIncludesText(linkedPreviousCsvWrites[0], "Fresh draft");
 assertEqual(localizationSourceStatus.textContent, "Review baseline: baseline.csv | linked clean", "localization replace should reset linked baseline state after writing");
 assertEqual(localizationSessionStatus.textContent, "0 overrides in session | Updated export ready | Linked clean", "localization replace should clear session drafts after writing");
 assertEqual(localizationReplaceButton.disabled, true, "localization replace should disable once linked baseline is clean");
+const nodeMapButton = new FakeElement("button");
+let selectedNodeMapLine = 0;
+const nodeMapReviewController = new StoryNodeMapReviewController({
+  reviewBridge: {
+    async reviewNodeMap() {
+      return {
+        provider: "node-map-review",
+        review: {
+          nodeMapPath: "inscape.node-map.json",
+          nodeMapText: "{\n  \"format\": \"inscape.node-map\"\n}",
+          report: {
+            items: [
+              {
+                candidates: [
+                  {
+                    score: 23,
+                    sourceLine: 4,
+                    sourcePath: "story.inscape",
+                    stableId: "node_OLD",
+                    title: "Opening",
+                  },
+                ],
+                kind: "manual-review",
+                message: "Multiple rename candidates matched this title.",
+                previousTitle: "",
+                sourceLine: 12,
+                sourcePath: "story.inscape",
+                stableId: "node_NEW",
+                status: "active",
+                title: "Court Opening",
+              },
+            ],
+            summary: {
+              conflictNodeCount: 0,
+              manualReviewCount: 1,
+              missingNodeCount: 0,
+              newNodeCount: 1,
+              renamedNodeCount: 0,
+            },
+          },
+        },
+      };
+    },
+  },
+  reviewButtonElement: nodeMapButton,
+});
+nodeMapReviewController.onSourceLineSelected((selection) => {
+  selectedNodeMapLine = selection.lineNumber;
+});
+await nodeMapReviewController.review("# Court Opening\nNarrator: Hello");
+assertEqual(nodeMapButton.textContent, "Node Map", "stable node map review button should reset after summary status");
+assertIncludesText(getTextContent(document.body), "Stable Node Map");
+assertIncludesText(getTextContent(document.body), "Court Opening");
+assertIncludesText(getTextContent(document.body), "manual-review");
+assertIncludesText(getTextContent(document.body), "Opening · score 23");
+const nodeMapReviewItemButton = findElementByClass(document.body, "node-map-review-item-main");
+nodeMapReviewItemButton?.click();
+assertEqual(selectedNodeMapLine, 12, "stable node map review item should jump to its current source line");
 const previewElement = new FakeElement("main");
 const previewController = new PreviewPanelController(previewElement);
 let previewSelectedLine = 0;

@@ -6,6 +6,8 @@ import { EditorReferenceOverlayController } from "../EditorAuthoring/Controllers
 import { EditorRenameController } from "../EditorAuthoring/Controllers/EditorRenameController.js";
 import { EditorStatusController } from "../EditorAuthoring/Controllers/EditorStatusController.js";
 import { EditorSurfaceController } from "../EditorAuthoring/Controllers/EditorSurfaceController.js";
+import { SelfHostedEditorStoryNodeMapBridge } from "../EditorAuthoring/Bridges/SelfHostedEditorStoryNodeMapBridge.js";
+import { StoryNodeMapReviewController } from "../EditorAuthoring/Controllers/StoryNodeMapReviewController.js";
 import { SelfHostedEditorHostBindingBridge } from "../HostBinding/Bridges/SelfHostedEditorHostBindingBridge.js";
 import { SelfHostedEditorHostSchemaBridge } from "../HostSchema/Bridges/SelfHostedEditorHostSchemaBridge.js";
 import { SelfHostedEditorCompletionBridge } from "../LanguageServer/Bridges/SelfHostedEditorCompletionBridge.js";
@@ -64,6 +66,7 @@ async function main() {
   const runtimePanelElement = document.querySelector(".workspace-runtime-panel");
   const statusBarElement = document.querySelector(".status-bar");
   const sessionPanelElement = document.querySelector(".workspace-session-panel");
+  const nodeMapReviewButtonElement = document.querySelector(".node-map-review-button");
   const syntaxToggleElement = document.querySelector("[data-syntax-toggle]");
   const workspaceSummaryElement = document.querySelector(".workspace-summary");
   const workspaceStatusElement = document.querySelector(".workspace-status");
@@ -130,6 +133,7 @@ async function main() {
   const hostBindingBridge = new SelfHostedEditorHostBindingBridge();
   const hostSchemaBridge = new SelfHostedEditorHostSchemaBridge();
   const lineMapBridge = new SelfHostedEditorLineMapBridge();
+  const nodeMapBridge = new SelfHostedEditorStoryNodeMapBridge();
   const referencesBridge = new SelfHostedEditorReferencesBridge();
   const runtimeBridge = new SelfHostedEditorRuntimeBridge();
   const storyGraphBridge = new SelfHostedEditorStoryGraphBridge();
@@ -141,6 +145,7 @@ async function main() {
   hostBindingBridge.setWorkspaceContextProvider(workspaceContextProvider);
   hostSchemaBridge.setWorkspaceContextProvider(workspaceContextProvider);
   lineMapBridge.setWorkspaceContextProvider(workspaceContextProvider);
+  nodeMapBridge.setWorkspaceContextProvider(workspaceContextProvider);
   localizationReviewBridge.setWorkspaceContextProvider(workspaceContextProvider);
   referencesBridge.setWorkspaceContextProvider(workspaceContextProvider);
   runtimeBridge.setWorkspaceContextProvider(workspaceContextProvider);
@@ -184,6 +189,10 @@ async function main() {
   const editorRenameController = new EditorRenameController(
     editorController.getMonaco()
   );
+  const storyNodeMapReviewController = new StoryNodeMapReviewController({
+    reviewBridge: nodeMapBridge,
+    reviewButtonElement: nodeMapReviewButtonElement,
+  });
   const editorReferenceOverlayController = new EditorReferenceOverlayController(
     editorFrameElement,
     editorController,
@@ -397,6 +406,15 @@ async function main() {
   editorReferenceOverlayController.onSourceLineSelected((selection) => {
     focusSourceSelection(selection);
     layoutController.ensureEditorVisible();
+  });
+
+  storyNodeMapReviewController.onSourceLineSelected((selection) => {
+    focusSourceSelection(selection);
+    layoutController.ensureEditorVisible();
+  });
+
+  nodeMapReviewButtonElement?.addEventListener("click", () => {
+    void storyNodeMapReviewController.review(editorController.getText());
   });
 
   function focusSourceSelection(selection) {
@@ -705,6 +723,7 @@ async function main() {
   void editorRenameController;
   void editorReferenceOverlayController;
   void editorStatusController;
+  void storyNodeMapReviewController;
   void runtimeBridge;
   void workspaceSessionController;
 }

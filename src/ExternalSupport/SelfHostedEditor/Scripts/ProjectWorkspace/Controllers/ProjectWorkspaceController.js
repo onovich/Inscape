@@ -171,6 +171,7 @@ export class ProjectWorkspaceController {
     const relativePath = this.getRelativePath(file).toLowerCase();
     return relativePath.endsWith(".inscape")
       || relativePath.endsWith("inscape.config.json")
+      || relativePath.endsWith("inscape.node-map.json")
       || relativePath.endsWith(".host.schema.json")
       || relativePath.endsWith(".host.bridge.json");
   }

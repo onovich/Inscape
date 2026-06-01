@@ -14,6 +14,7 @@ const requiredPaths = [
   "Resources/Styles/SelfHostedEditorWorkbench.css",
   "Scripts/Entries/SelfHostedEditorAppEntry.js",
   "Scripts/EditorAuthoring/Bridges/MonacoEditorBridge.js",
+  "Scripts/EditorAuthoring/Bridges/SelfHostedEditorStoryNodeMapBridge.js",
   "Scripts/EditorAuthoring/Controllers/EditorCompletionController.js",
   "Scripts/EditorAuthoring/Controllers/EditorDefinitionController.js",
   "Scripts/EditorAuthoring/Controllers/EditorDiagnosticsController.js",
@@ -21,6 +22,7 @@ const requiredPaths = [
   "Scripts/EditorAuthoring/Controllers/EditorRenameController.js",
   "Scripts/EditorAuthoring/Controllers/EditorStatusController.js",
   "Scripts/EditorAuthoring/Controllers/EditorSurfaceController.js",
+  "Scripts/EditorAuthoring/Controllers/StoryNodeMapReviewController.js",
   "Scripts/EditorAuthoring/Models/EditorCompletionTargetModelBuilder.js",
   "Scripts/EditorAuthoring/Models/EditorHoverTargetModelBuilder.js",
   "Scripts/HostBinding/Bridges/SelfHostedEditorHostBindingBridge.js",
@@ -105,8 +107,8 @@ if (!html.includes("/Scripts/Entries/SelfHostedEditorAppEntry.js")) {
 }
 
 const packageJson = JSON.parse(fs.readFileSync(path.join(moduleRoot, "package.json"), "utf8"));
-if (!packageJson.scripts["check:model"] || !packageJson.scripts["check:structure"] || !packageJson.scripts["check:syntax"]) {
-  console.error("SelfHostedEditor package.json must expose check:model, check:structure, and check:syntax.");
+if (!packageJson.scripts["check:model"] || !packageJson.scripts["check:structure"] || !packageJson.scripts["check:syntax"] || !packageJson.scripts["check:node-map"] || !packageJson.scripts["check:node-map-http"]) {
+  console.error("SelfHostedEditor package.json must expose check:model, check:structure, check:syntax, check:node-map, and check:node-map-http.");
   failed = true;
 }
 

@@ -52,6 +52,7 @@ The current shell is intentionally small, but it now includes a first Monaco-bac
 - Dev-hosted completion bridge: jump targets now try `Inscape.LanguageServer --completion-file` so the Monaco surface can suggest node names while writing `-> target`.
 - Dev-hosted Host Schema bridge: `[query]` interpolation and `@emit` event authoring now request `Inscape.LanguageServer --host-schema-capabilities-project` through `/api/host-schema-capabilities`, so completion and hover hints stay aligned with the shared Host Schema catalog instead of browser-side guesses.
 - Dev-hosted Host Binding bridge: speaker names and `@timeline` authoring now request `Inscape.LanguageServer --host-binding-capabilities-project` through `/api/host-binding-capabilities`, so completion, hover, definition, references, and Ctrl/Cmd-click navigation come from shared Host Bridge data plus compiled workspace occurrences instead of VSCode-specific JSON parsing.
+- Dev-hosted stable node map bridge: the top bar `Node Map` action now requests `/api/node-map-review`, which runs shared CLI `update-node-map-project --report` over the current temporary workspace. The review surface shows the shared `renamed / new / missing / conflict / manual-review` report, can jump to current or candidate source lines, and can download the generated `inscape.node-map.json`. It does not reimplement rename matching or candidate apply logic in the browser.
 - Dev-hosted outline bridge: the sidebar outline now tries `Inscape.LanguageServer --document-symbols-file` and supports click-to-reveal navigation.
 - Monaco rename bridge: node titles and jump targets now support the editor rename flow, then apply a controlled whole-document patch that updates `# title` lines and matching `-> title` references.
 - Dev-hosted story graph bridge: the Graph view now requests compact project graph data from the preview server, which runs the existing CLI `compile-project` flow and returns real Compiler nodes and edges. Choice and default jump ports are built from that graph output; dragging an output port still patches the source `-> target` text.
@@ -97,6 +98,7 @@ Known prototype layers that should be replaced next:
 
 - `ScriptDocumentModelBuilder` is still a UI-only extraction model. Do not expand it into parser truth; replace narrow consumers with `Tooling` / `LanguageServer` / `Runtime` outputs.
 - Host Schema `[query]` / `@emit` and Host Binding speaker / `@timeline` hints now come from LanguageServer capabilities. Speaker definition / references and `@timeline` navigation also use the same Host Binding capability path instead of copying VSCode's `.host.bridge.json` parsing into the browser.
+- Stable node map update / review now has a SelfHostedEditor entry point, but it remains a thin host bridge over `update-node-map-project --report`. The browser can download the updated sidecar; applying candidate stable ids is intentionally not copied from VSCode host code and should become a shared Tooling action if needed by both hosts.
 - Graph has started that replacement path: it still uses draft extraction only as an offline fallback, while the served prototype consumes Compiler project graph output.
 - The line-map bridge is a dev-host HTTP + CLI bridge. It is semantically correct because it reuses Tooling, but the desktop client should eventually route this through a real editor backend or long-lived Tooling session.
 - Graph positions are session memory only. They need a layout sidecar before becoming persistent product behavior.
@@ -123,6 +125,8 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:localization-update
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:localization-update-http
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:runtime
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:runtime-http
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:node-map
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:node-map-http
 ```
 
 `check:localization-review` exercises the full localization-review dev-host path for `samples/court-loop.inscape` without requiring the local HTTP server to be started first.
@@ -135,6 +139,8 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:runtime-http
 `check:localization-update-http` starts the preview dev server in-process and performs a real HTTP request to `/api/localization-update`.
 `check:runtime` exercises the Runtime dev-host path without requiring the local HTTP server to be started first, and asserts `advance-flow` / `rewind-flow` plus `choose` / `continue` transitions over a compact payload.
 `check:runtime-http` starts the preview dev server in-process and performs real HTTP requests to `/api/runtime-state` and `/api/runtime-action`.
+`check:node-map` exercises the stable node map review helper without requiring the local HTTP server to be started first, including a title rename over an existing generated sidecar.
+`check:node-map-http` starts the preview dev server in-process and performs a real HTTP request to `/api/node-map-review`.
 
 Serve the prototype locally:
 

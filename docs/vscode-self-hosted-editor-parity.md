@@ -16,6 +16,8 @@ SelfHostedEditor 近期主线继续优先，但 VSCode 不应退化成历史入�
 
 2026-06-01 已收口第三项：同一 Host Binding capability 现在也承载 speaker / `@timeline` 的导航位置。SelfHostedEditor 的 Ctrl+Click、definition provider 和 references provider 会优先跳到 Host Bridge 映射行，并保留 workspace 出现位置用于 references；dev-host 会把临时 workspace 路径还原成项目相对路径，避免前端拿临时目录当源码真相。
 
+2026-06-01 已收口第四项：SelfHostedEditor 现在有 `Node Map` 入口，会通过开发宿主调用共享 CLI `update-node-map-project --report`，展示 `renamed / new / missing / conflict / manual-review` 摘要和审查项，支持跳到当前标题 / 候选标题源码，并可下载生成的 `inscape.node-map.json`。浏览器端不复制 VSCode 里的 candidate apply 逻辑；这类 node map 变更语义后续应先下沉为 Internal 共享能力，再让两边消费。
+
 当前优先级：
 
 1. 先守住 SelfHostedEditor 已有工作流：打开项目 / 编辑 / 预览 / Runtime 推进 / L10N review-update 写回。
@@ -80,9 +82,17 @@ VSCode 已有：
 - `Review Stable Node Map Changes`。
 - rename/manual-review/conflict/missing report 的 Quick Pick 审查入口。
 
-SelfHostedEditor 目前有节点 rename patch 与 line identity hint，但还没有 stable node map 的显式更新 / 审查工作流。
+SelfHostedEditor 已补齐：
 
-建议下一步：SelfHostedEditor 不需要复制 VSCode Quick Pick，可做一个轻量 Review 面板或状态入口；语义仍调用 `update-node-map-project --report`。
+- `Node Map` 显式入口。
+- 通过 `/api/node-map-review` 调用共享 CLI `update-node-map-project --report`。
+- 轻量 review 面板展示 `new / renamed / manual-review / conflict / missing`。
+- 当前标题与候选标题可跳源码。
+- 生成后的 `inscape.node-map.json` 可下载，用于浏览器壳无法直接写 sidecar 的阶段。
+
+SelfHostedEditor 仍缺：
+
+- VSCode 当前已有的 `Apply candidate stable id` / dry-run preview / revert 操作。该能力不应在 SelfHostedEditor 里复制一套前端 mutation；如果两边都需要，应先收成 Internal / Tooling 共享动作。
 
 ### 3. CodeLens / 引用入口
 
@@ -153,7 +163,7 @@ VSCode 是专业编辑器，不需要一致视觉。但两边语义能力要一�
 | Hover: metadata | VSCode 有 authoring hint | SelfHostedEditor 主要走 LS node/jump hover | 中 |
 | Outline | LanguageServer | LanguageServer bridge | 高，保持 |
 | CodeLens / refs count | 有 CodeLens | 有 refs overlay，不同 UI | 中，确认等价 |
-| Stable node map update/review | 有命令与 review UI | 未见等价入口 | 中高 |
+| Stable node map update/review | 有命令与 review UI，含 apply/revert | 已有 Node Map 入口、共享 report、source jump、sidecar 下载；apply/revert 未对齐 | 中，下一步先评估 shared apply 契约 |
 | Localization export/update | 有命令 | 有表格 + update/export/replace | 高，保持 |
 | Localization alignment review | Quick Pick review | 表格 review/filter | 高，确认状态语义一致 |
 | Localization candidate diff/actions | VSCode 有 candidate 二级动作 | SelfHostedEditor 尚待丰富 review actions | 中高 |
@@ -171,7 +181,8 @@ VSCode 是专业编辑器，不需要一致视觉。但两边语义能力要一�
 3. 已补 SelfHostedEditor Host Schema 作者提示第一版：query、event 的 completion / hover；继续守 `check:host-schema` 与 `check:host-schema-http`。
 4. 已补共享 Host Binding capability，并完成 SelfHostedEditor speaker、timeline binding 的 completion / hover / navigation；继续守 `check:host-binding` 与 `check:host-binding-http`。
 5. 已补 SelfHostedEditor speaker / timeline navigation，让 Ctrl+Click / definition / references 消费同一 Host Binding capability。
-6. 补 SelfHostedEditor 的 stable node map update / review 入口。
+6. 已补 SelfHostedEditor 的 stable node map update / review 入口；继续守 `check:node-map` 与 `check:node-map-http`。
 7. 补 L10N review actions parity：确认 VSCode candidate diff / source jump 与 SelfHostedEditor 表格 review 的状态和候选信息一致。
-8. 继续整理 Editor Backend 会话边界：把 workspace、runtime、line-map、localization baseline 从“一次请求一套临时上下文”收向“打开项目后持续存在的会话”。
-9. Graph 与 Unity / Bird 暂不进入近期主线，只保留回归不倒退。
+8. 评估 Stable Node Map candidate apply 是否需要下沉为共享 Tooling 动作，而不是让 VSCode / SelfHostedEditor 各自修改 sidecar。
+9. 继续整理 Editor Backend 会话边界：把 workspace、runtime、line-map、localization baseline 从“一次请求一套临时上下文”收向“打开项目后持续存在的会话”。
+10. Graph 与 Unity / Bird 暂不进入近期主线，只保留回归不倒退。
