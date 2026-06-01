@@ -10,6 +10,7 @@ import { SelfHostedEditorStoryNodeMapBridge } from "../EditorAuthoring/Bridges/S
 import { StoryNodeMapReviewController } from "../EditorAuthoring/Controllers/StoryNodeMapReviewController.js";
 import { SelfHostedEditorHostBindingBridge } from "../HostBinding/Bridges/SelfHostedEditorHostBindingBridge.js";
 import { SelfHostedEditorHostSchemaBridge } from "../HostSchema/Bridges/SelfHostedEditorHostSchemaBridge.js";
+import { HostCapabilityCatalogController } from "../HostSchema/Controllers/HostCapabilityCatalogController.js";
 import { SelfHostedEditorCompletionBridge } from "../LanguageServer/Bridges/SelfHostedEditorCompletionBridge.js";
 import { SelfHostedEditorDefinitionBridge } from "../LanguageServer/Bridges/SelfHostedEditorDefinitionBridge.js";
 import { SelfHostedEditorDiagnosticsBridge } from "../LanguageServer/Bridges/SelfHostedEditorDiagnosticsBridge.js";
@@ -49,6 +50,7 @@ async function main() {
   const exportUpdatedLocalizationButtonElement = document.querySelector(".localization-export-updated-button");
   const hintRailElement = document.querySelector(".hint-rail");
   const graphPanelElement = document.querySelector(".graph-panel");
+  const hostCapabilityPanelElement = document.querySelector(".host-capability-panel");
   const localizationPanelElement = document.querySelector(".localization-panel");
   const localizationFilterModeElement = document.querySelector(".localization-filter-select");
   const localizationFilterSummaryElement = document.querySelector(".localization-filter-summary");
@@ -76,6 +78,7 @@ async function main() {
     diagnostics: diagnosticsElement,
     editor: editorFrameElement,
     graph: graphPanelElement,
+    host: hostCapabilityPanelElement,
     localization: localizationPanelElement,
     outline: outlinePanelElement,
     preview: previewElement,
@@ -88,6 +91,7 @@ async function main() {
     diagnostics: "Listening for problems",
     editor: "Opening editor",
     graph: "Preparing map",
+    host: "Preparing host catalog",
     localization: "Preparing table",
     outline: "Preparing outline",
     preview: "Preparing reading pane",
@@ -192,6 +196,11 @@ async function main() {
   const storyNodeMapReviewController = new StoryNodeMapReviewController({
     reviewBridge: nodeMapBridge,
     reviewButtonElement: nodeMapReviewButtonElement,
+  });
+  const hostCapabilityCatalogController = new HostCapabilityCatalogController({
+    hostBindingBridge,
+    hostSchemaBridge,
+    panelElement: hostCapabilityPanelElement,
   });
   const editorReferenceOverlayController = new EditorReferenceOverlayController(
     editorFrameElement,
@@ -315,6 +324,11 @@ async function main() {
 
   documentOutlineController.onSourceLineSelected((lineNumber) => {
     editorController.focusLine(lineNumber);
+    layoutController.ensureEditorVisible();
+  });
+
+  hostCapabilityCatalogController.onSourceLineSelected((selection) => {
+    focusSourceSelection(selection);
     layoutController.ensureEditorVisible();
   });
 
@@ -535,6 +549,7 @@ async function main() {
       diagnostics: "Checking problems",
       editor: "Syncing line ids",
       graph: "Mapping story",
+      host: "Reading host catalog",
       localization: "Gathering lines",
       outline: "Reading outline",
       preview: "Reading compiler graph",
@@ -554,6 +569,8 @@ async function main() {
     loadingController.setIdle("editor");
     await localizationController.render(scriptText);
     loadingController.setIdle("localization");
+    await hostCapabilityCatalogController.render(scriptText);
+    loadingController.setIdle("host");
     const storyGraphSnapshot = await storyGraphBridge.getStoryGraph(scriptText);
     if (renderVersion !== diagnosticsRenderVersion) {
       return;
@@ -729,6 +746,7 @@ async function main() {
   void editorRenameController;
   void editorReferenceOverlayController;
   void editorStatusController;
+  void hostCapabilityCatalogController;
   void storyNodeMapReviewController;
   void runtimeBridge;
   void workspaceSessionController;

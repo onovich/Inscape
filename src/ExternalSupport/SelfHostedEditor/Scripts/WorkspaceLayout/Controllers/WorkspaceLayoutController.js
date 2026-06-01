@@ -84,6 +84,10 @@ export class WorkspaceLayoutController {
       return "Localization";
     }
 
+    if (viewName === "host") {
+      return "Host Capabilities";
+    }
+
     if (viewName === "graph") {
       return "Node Graph";
     }

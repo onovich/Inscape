@@ -28,6 +28,7 @@ const requiredPaths = [
   "Scripts/HostBinding/Bridges/SelfHostedEditorHostBindingBridge.js",
   "Scripts/HostBinding/Models/HostBindingCapabilityModelMapper.js",
   "Scripts/HostSchema/Bridges/SelfHostedEditorHostSchemaBridge.js",
+  "Scripts/HostSchema/Controllers/HostCapabilityCatalogController.js",
   "Scripts/HostSchema/Models/HostSchemaCapabilityModelMapper.js",
   "Scripts/LanguageServer/Bridges/SelfHostedEditorCompletionBridge.js",
   "Scripts/LanguageServer/Bridges/SelfHostedEditorDefinitionBridge.js",
@@ -103,6 +104,11 @@ const htmlPath = path.join(moduleRoot, "Resources/Workbench/SelfHostedEditorWork
 const html = fs.readFileSync(htmlPath, "utf8");
 if (!html.includes("/Scripts/Entries/SelfHostedEditorAppEntry.js")) {
   console.error("Workbench document must load /Scripts/Entries/SelfHostedEditorAppEntry.js.");
+  failed = true;
+}
+
+if (!html.includes('data-view="host"') || !html.includes("host-capability-panel")) {
+  console.error("Workbench document must expose the Host capability view and panel.");
   failed = true;
 }
 

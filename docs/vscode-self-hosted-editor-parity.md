@@ -20,6 +20,8 @@ SelfHostedEditor 近期主线继续优先，但 VSCode 不应退化成历史入�
 
 2026-06-01 已收口第五项：SelfHostedEditor L10N 表格现在保留 Tooling presenter 里的 review actions，并在每行提供 `Current` / `Candidate` / `Diff` 轻量动作。作者可以从表格跳当前行、跳候选旧文本来源，并展开候选 diff；前端只展示和导航，不重算 alignment、candidate scoring 或 CSV 语义。`/api/localization-review` 继续裁掉完整 audit report，只保留 compact presenter payload。
 
+2026-06-01 已收口第六项：SelfHostedEditor 现在新增 `Host` 视图，展示同源 Host Schema / Host Binding capability catalog。作者可以看到 query、event、speaker、timeline binding 清单，并从条目来源按钮跳到 schema、bridge 或脚本出现位置；前端不解析 Host Schema / Host Bridge JSON，只消费既有 `/api/host-schema-capabilities` 与 `/api/host-binding-capabilities`。
+
 当前优先级：
 
 1. 先守住 SelfHostedEditor 已有工作流：打开项目 / 编辑 / 预览 / Runtime 推进 / L10N review-update 写回。
@@ -71,9 +73,9 @@ SelfHostedEditor 已补齐：
 
 SelfHostedEditor 仍缺：
 
-- `Inscape: Show Host Schema Capabilities` 的等价查看入口。
+- 无。SelfHostedEditor 已用 `Host` 视图提供等价查看入口，UI 不是 Quick Pick，但展示同源 query / event / speaker / timeline 清单和 source jump。
 
-建议下一步：补一个 Host Schema / Host Binding capability 查看入口，或转去 stable node map update / review。这里不需要复制 VSCode 的 Quick Pick UI，重点是让作者能看到同一份共享能力清单。
+建议下一步：继续守 `check:host-schema` / `check:host-schema-http` / `check:host-binding` / `check:host-binding-http`，避免 Host 视图退回宿主侧 JSON 解析。
 
 ### 2. Stable Node Map 工作流
 
@@ -156,6 +158,7 @@ VSCode 是专业编辑器，不需要一致视觉。但两边语义能力要一�
 | --- | --- | --- | --- |
 | Diagnostics | LanguageServer 常驻会话 + CLI fallback | dev-host HTTP + LanguageServer probe + fallback | 高，保持 |
 | Completion: node jump | 支持跨文件与未保存内容 | 已接 project probe，需继续验证跨文件 | 高 |
+| Host Schema / Host Binding capability 查看 | 命令面板查看 query / event，并能打开 schema 来源 | `Host` 视图展示 query / event / speaker / timeline，并能跳 schema / bridge / script 来源 | 已对齐，守回归 |
 | Completion: speaker | 支持 hostBridge / workspace fallback | 已通过 dev-host + LanguageServer Host Binding capability 对齐 | 已对齐，守回归 |
 | Completion: `[query]` | 支持 Host Schema query | 已通过 dev-host + LanguageServer Host Schema capability 对齐 | 已对齐，守回归 |
 | Completion: `@emit` | 支持 Host Schema event | 已通过 dev-host + LanguageServer Host Schema capability 对齐 | 已对齐，守回归 |
@@ -186,6 +189,7 @@ VSCode 是专业编辑器，不需要一致视觉。但两边语义能力要一�
 5. 已补 SelfHostedEditor speaker / timeline navigation，让 Ctrl+Click / definition / references 消费同一 Host Binding capability。
 6. 已补 SelfHostedEditor 的 stable node map update / review 入口；继续守 `check:node-map` 与 `check:node-map-http`。
 7. 已补 L10N review actions parity：SelfHostedEditor 表格 review 现在消费 Tooling presenter actions，支持 VSCode 已有的 current / candidate source jump 与 candidate diff 信息。
-8. 评估 Stable Node Map candidate apply 是否需要下沉为共享 Tooling 动作，而不是让 VSCode / SelfHostedEditor 各自修改 sidecar。
-9. 继续整理 Editor Backend 会话边界：把 workspace、runtime、line-map、localization baseline 从“一次请求一套临时上下文”收向“打开项目后持续存在的会话”。
-10. Graph 与 Unity / Bird 暂不进入近期主线，只保留回归不倒退。
+8. 已补 Host Schema / Host Binding capability 查看入口：SelfHostedEditor `Host` 视图消费共享 capability catalog，不复制 VSCode Quick Pick UI 或 JSON 解析。
+9. 评估 Stable Node Map candidate apply 是否需要下沉为共享 Tooling 动作，而不是让 VSCode / SelfHostedEditor 各自修改 sidecar。
+10. 继续整理 Editor Backend 会话边界：把 workspace、runtime、line-map、localization baseline 从“一次请求一套临时上下文”收向“打开项目后持续存在的会话”。
+11. Graph 与 Unity / Bird 暂不进入近期主线，只保留回归不倒退。

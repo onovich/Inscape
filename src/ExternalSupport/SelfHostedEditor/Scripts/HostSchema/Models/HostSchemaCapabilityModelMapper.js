@@ -27,8 +27,11 @@ export class HostSchemaCapabilityModelMapper {
       .filter((query) => query && typeof query.name === "string")
       .filter((query) => query.isSimpleTextInterpolationQuery !== false)
       .map((query) => ({
+        character: Math.max(Number(query.column || 1) - 1, 0),
         description: query.description || "",
         isAsync: query.isAsync === true,
+        length: Math.max(Number(query.length || query.name.length || 1), 1),
+        line: Math.max(Number(query.line || 1) - 1, 0),
         name: query.name.trim(),
         parameters: Array.isArray(query.parameters) ? query.parameters : [],
         returnType: query.returnType || "",
@@ -47,8 +50,11 @@ export class HostSchemaCapabilityModelMapper {
       .filter((event) => event && typeof event.name === "string")
       .filter((event) => event.isNamedHostEvent !== false)
       .map((event) => ({
+        character: Math.max(Number(event.column || 1) - 1, 0),
         delivery: event.delivery || "fire-and-forget",
         description: event.description || "",
+        length: Math.max(Number(event.length || event.name.length || 1), 1),
+        line: Math.max(Number(event.line || 1) - 1, 0),
         name: event.name.trim(),
         parameters: Array.isArray(event.parameters) ? event.parameters : [],
         sideEffects: event.sideEffects !== false,

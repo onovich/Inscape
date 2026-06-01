@@ -12,6 +12,7 @@ import { EditorSurfaceController } from "../Scripts/EditorAuthoring/Controllers/
 import { EditorReferenceOverlayController } from "../Scripts/EditorAuthoring/Controllers/EditorReferenceOverlayController.js";
 import { StoryNodeMapReviewController } from "../Scripts/EditorAuthoring/Controllers/StoryNodeMapReviewController.js";
 import { SelfHostedEditorHostBindingBridge } from "../Scripts/HostBinding/Bridges/SelfHostedEditorHostBindingBridge.js";
+import { HostCapabilityCatalogController } from "../Scripts/HostSchema/Controllers/HostCapabilityCatalogController.js";
 import { LanguageServerCompletionModelMapper } from "../Scripts/LanguageServer/Models/LanguageServerCompletionModelMapper.js";
 import { LanguageServerDefinitionModelMapper } from "../Scripts/LanguageServer/Models/LanguageServerDefinitionModelMapper.js";
 import { LanguageServerDiagnosticModelMapper } from "../Scripts/LanguageServer/Models/LanguageServerDiagnosticModelMapper.js";
@@ -768,6 +769,34 @@ globalThis.window = {
     return 1;
   },
 };
+const hostCapabilityPanel = new FakeElement("section");
+let selectedHostCapabilitySource = null;
+const hostCapabilityCatalogController = new HostCapabilityCatalogController({
+  hostBindingBridge: {
+    async getCapabilityCatalog() {
+      return hostBindingCatalog;
+    },
+  },
+  hostSchemaBridge: {
+    async getCapabilityCatalog() {
+      return hostSchemaCatalog;
+    },
+  },
+  panelElement: hostCapabilityPanel,
+});
+hostCapabilityCatalogController.onSourceLineSelected((selection) => {
+  selectedHostCapabilitySource = selection;
+});
+await hostCapabilityCatalogController.render("");
+assertIncludesText(getTextContent(hostCapabilityPanel), "Host Schema");
+assertIncludesText(getTextContent(hostCapabilityPanel), "Host Bridge");
+assertIncludesText(getTextContent(hostCapabilityPanel), "player.gold");
+assertIncludesText(getTextContent(hostCapabilityPanel), "quest.accepted");
+assertIncludesText(getTextContent(hostCapabilityPanel), "Narrator");
+assertIncludesText(getTextContent(hostCapabilityPanel), "court_intro");
+findElementByClass(hostCapabilityPanel, "host-capability-source")?.click();
+assertEqual(selectedHostCapabilitySource?.sourcePath, "config/inscape.host.bridge.json", "host capability source button should jump to shared capability source path");
+assertEqual(selectedHostCapabilitySource?.lineNumber, 1, "host capability source button should convert source line to editor line number");
 const localizationPanel = new FakeElement("section");
 const localizationClearDraftsButton = new FakeElement("button");
 const localizationReplaceButton = new FakeElement("button");

@@ -1966,11 +1966,147 @@ button[aria-pressed="true"],
 }
 
 .localization-panel,
+.host-capability-panel,
 .graph-panel {
   background: var(--surface);
   border-top: 1px solid rgba(39, 36, 31, 0.035);
   overflow: hidden;
   padding: 0;
+}
+
+.host-capability-panel {
+  display: grid;
+  gap: 14px;
+  overflow: auto;
+  padding: 16px;
+}
+
+.host-capability-loading,
+.host-capability-empty {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.host-capability-summary {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.host-capability-summary-card {
+  border: 1px solid rgba(39, 36, 31, 0.06);
+  border-radius: 8px;
+  display: grid;
+  gap: 5px;
+  padding: 10px;
+}
+
+.host-capability-summary-card strong {
+  color: var(--text);
+  font-size: 13px;
+}
+
+.host-capability-summary-card span {
+  color: var(--accent);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.host-capability-summary-card.is-unavailable span {
+  color: #8c4b3e;
+}
+
+.host-capability-summary-card small {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.host-capability-section {
+  display: grid;
+  gap: 8px;
+}
+
+.host-capability-section-header {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.host-capability-section-header h2 {
+  color: var(--text);
+  font-size: 13px;
+  margin: 0;
+}
+
+.host-capability-section-header span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.host-capability-list {
+  display: grid;
+  gap: 7px;
+}
+
+.host-capability-item {
+  border: 1px solid rgba(39, 36, 31, 0.055);
+  border-radius: 8px;
+  display: grid;
+  gap: 7px;
+  padding: 10px;
+}
+
+.host-capability-item-main {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.host-capability-item-main strong {
+  color: var(--text);
+  font-size: 13px;
+}
+
+.host-capability-item-main span,
+.host-capability-meta {
+  color: var(--muted-strong);
+  font-size: 11px;
+}
+
+.host-capability-meta {
+  margin: 0;
+}
+
+.host-capability-sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.host-capability-source {
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(39, 36, 31, 0.08);
+  border-radius: 6px;
+  color: var(--muted-strong);
+  cursor: pointer;
+  font: inherit;
+  font-size: 10px;
+  line-height: 1;
+  min-height: 24px;
+  padding: 5px 7px;
+}
+
+.host-capability-source:hover {
+  background: rgba(106, 109, 87, 0.08);
+  color: var(--text);
+}
+
+.host-capability-source-more {
+  color: var(--muted);
+  font-size: 10px;
+  padding: 5px 0;
 }
 
 .localization-table {

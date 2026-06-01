@@ -24,6 +24,7 @@
         </div>
         <nav class="view-tabs" aria-label="Views">
           <button class="view-tab is-active" type="button" data-view="editor">Script</button>
+          <button class="view-tab" type="button" data-view="host">Host</button>
           <button class="view-tab" type="button" data-view="localization">L10N</button>
           <button class="view-tab" type="button" data-view="graph">Graph</button>
         </nav>
@@ -117,6 +118,16 @@
                 </div>
               </div>
               <div class="localization-panel"></div>
+            </section>
+          </section>
+
+          <section class="workspace is-hidden" data-view-panel="host">
+            <section class="single-pane">
+              <div class="pane-title">
+                <span>Host Capabilities</span>
+                <small>Schema / Bridge</small>
+              </div>
+              <div class="host-capability-panel"></div>
             </section>
           </section>
 
