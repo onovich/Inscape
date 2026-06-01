@@ -3,8 +3,8 @@
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
-const { DslScriptDiagnosticController } = require(path.join("..", "DslScript", "Controllers", "DslScriptDiagnosticController"));
-const { DslScriptDiagnosticScheduler } = require(path.join("..", "DslScript", "Controllers", "DslScriptDiagnosticScheduler"));
+const { DslScriptDiagnosticController } = require(path.join("..", "Scripts", "DslScript", "Controllers", "DslScriptDiagnosticController"));
+const { DslScriptDiagnosticScheduler } = require(path.join("..", "Scripts", "DslScript", "Controllers", "DslScriptDiagnosticScheduler"));
 
 function assert(condition, message) {
     if (!condition) {

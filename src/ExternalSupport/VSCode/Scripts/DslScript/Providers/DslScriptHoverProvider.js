@@ -125,6 +125,7 @@ class DslScriptHoverProvider {
                 return undefined;
             }
 
+            this.normalizeLanguageServerLocations(payload, tempPath, document.uri.fsPath);
             const markdown = new this.vscode.MarkdownString(undefined, true);
             markdown.isTrusted = false;
             markdown.appendMarkdown(payload.hover.markdown);
@@ -185,6 +186,20 @@ class DslScriptHoverProvider {
             + ":" + range.start.character
             + ":" + range.end.line
             + ":" + range.end.character;
+    }
+
+    normalizeLanguageServerLocations(payload, tempPath, documentPath) {
+        this.normalizeLocation(payload && payload.hover ? payload.hover.location : undefined, tempPath, documentPath);
+    }
+
+    normalizeLocation(location, tempPath, documentPath) {
+        if (location && this.samePath(location.sourcePath, tempPath)) {
+            location.sourcePath = documentPath;
+        }
+    }
+
+    samePath(left, right) {
+        return String(left || "").toLowerCase() === String(right || "").toLowerCase();
     }
 
 }

@@ -123,7 +123,9 @@ class DslScriptDiagnosticScheduler {
                     return;
                 }
 
-                this.applyDiagnostics(this.diagnostics, document, payload.diagnostics);
+                this.applyDiagnostics(this.diagnostics,
+                    document,
+                    this.normalizeLanguageServerDiagnostics(payload.diagnostics, tempPath, document.uri.fsPath));
                 this.fs.unlink(tempPath, () => { });
             })
             .catch((error) => {
@@ -165,6 +167,26 @@ class DslScriptDiagnosticScheduler {
         }
         this.timers.clear();
         this.runIds.clear();
+    }
+
+    normalizeLanguageServerDiagnostics(diagnostics, tempPath, documentPath) {
+        return diagnostics.map((diagnostic) => {
+            if (!diagnostic || !diagnostic.location || !this.samePath(diagnostic.location.sourcePath, tempPath)) {
+                return diagnostic;
+            }
+
+            return {
+                ...diagnostic,
+                location: {
+                    ...diagnostic.location,
+                    sourcePath: documentPath
+                }
+            };
+        });
+    }
+
+    samePath(left, right) {
+        return String(left || "").toLowerCase() === String(right || "").toLowerCase();
     }
 
 }

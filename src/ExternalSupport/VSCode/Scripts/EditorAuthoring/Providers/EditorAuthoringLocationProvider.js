@@ -42,7 +42,7 @@ class EditorAuthoringLocationProvider {
 
     createLocation(item) {
         return new this.vscode.Location(
-            this.vscode.Uri.file(item.sourcePath),
+            this.vscode.Uri.file(this.resolveSourcePath(item.sourcePath)),
             new this.vscode.Range(item.line, item.character, item.line, item.character + (item.length || 0))
         );
     }
@@ -97,13 +97,26 @@ class EditorAuthoringLocationProvider {
     }
 
     formatDisplayPath(sourcePath) {
-        const uri = this.vscode.Uri.file(sourcePath);
+        const resolvedPath = this.resolveSourcePath(sourcePath);
+        const uri = this.vscode.Uri.file(resolvedPath);
         const folder = this.vscode.workspace.getWorkspaceFolder(uri);
         if (!folder) {
             return sourcePath;
         }
 
-        return this.path.relative(folder.uri.fsPath, sourcePath).replace(/\\/g, "/");
+        return this.path.relative(folder.uri.fsPath, resolvedPath).replace(/\\/g, "/");
+    }
+
+    resolveSourcePath(sourcePath) {
+        if (!sourcePath || this.path.isAbsolute(sourcePath)) {
+            return sourcePath;
+        }
+
+        if (this.vscode.workspace.workspaceFolders && this.vscode.workspace.workspaceFolders.length > 0) {
+            return this.path.resolve(this.vscode.workspace.workspaceFolders[0].uri.fsPath, sourcePath);
+        }
+
+        return sourcePath;
     }
 
     clamp(value, minimum, maximum) {

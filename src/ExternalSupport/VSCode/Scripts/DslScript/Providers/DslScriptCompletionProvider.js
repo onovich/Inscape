@@ -114,6 +114,7 @@ class DslScriptCompletionProvider {
                 return [];
             }
 
+            this.normalizeLanguageServerLocations(payload, tempPath, document.uri.fsPath);
             const completions = payload.completions.filter((completion) => completion && typeof completion.label === "string");
             this.languageServerCompletionsByDocumentVersion.set(cacheKey, completions);
             return completions;
@@ -163,6 +164,22 @@ class DslScriptCompletionProvider {
     createCacheKey(document) {
         const version = typeof document.version === "number" ? document.version : document.getText();
         return document.uri.toString() + ":" + version;
+    }
+
+    normalizeLanguageServerLocations(payload, tempPath, documentPath) {
+        for (const completion of Array.isArray(payload.completions) ? payload.completions : []) {
+            this.normalizeLocation(completion.location, tempPath, documentPath);
+        }
+    }
+
+    normalizeLocation(location, tempPath, documentPath) {
+        if (location && this.samePath(location.sourcePath, tempPath)) {
+            location.sourcePath = documentPath;
+        }
+    }
+
+    samePath(left, right) {
+        return String(left || "").toLowerCase() === String(right || "").toLowerCase();
     }
 
 }

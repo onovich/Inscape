@@ -114,6 +114,8 @@ SelfHostedEditor 已有标题旁 refs 浮层，但不是同一套 CodeLens 心�
 
 2026-06-02 继续收口：新增 `check:semantic-parity-http`，用同一个临时 workspace 真实请求 SelfHostedEditor dev-host 的 diagnostics、completion、definition、references、hover、outline 六个 LanguageServer 入口。该 smoke 验证当前 draft、跨文件节点、缺失目标诊断、跳转/引用 sourcePath 和 outline sourcePath 都来自项目级 LanguageServer 结果，并且返回给浏览器前不泄漏 dev-host 临时目录。
 
+2026-06-02 继续收口：新增 VSCode `check:semantic-parity`，用同一组 current-draft / cross-file fixture 通过 VSCode provider 层验证 diagnostics、completion、definition、references、hover、outline。该检查直接消费真实 `LanguageServer` 会话结果，同时守住 VSCode 宿主层必须把临时 override 路径和 workspace-relative sourcePath 还原成作者打开的工作区文件路径。
+
 ### 4. Preview source sync 模式
 
 VSCode 有 `inscape.preview.sourceSyncMode = off|click|selection|debug`。
@@ -187,7 +189,7 @@ VSCode 是专业编辑器，不需要一致视觉。但两边语义能力要一�
 ## 建议实施顺序
 
 1. 先跑并修 SelfHostedEditor 回归：`check:syntax`、`check:structure`、`check:model`、`check:localization-review-http`、`check:localization-update-http`、`check:runtime-http`。
-2. 已补 SelfHostedEditor 语义 parity HTTP smoke：`check:semantic-parity-http` 覆盖 diagnostics、node completion、definition、references、hover、outline 的 dev-host transport 与 workspace-relative sourcePath。后续如需更强两端对照，再把同一 fixture 接入 VSCode client 侧 contract。
+2. 已补 SelfHostedEditor 与 VSCode 语义 parity smoke：SelfHostedEditor `check:semantic-parity-http` 覆盖 diagnostics、node completion、definition、references、hover、outline 的 dev-host transport 与 workspace-relative sourcePath；VSCode `check:semantic-parity` 用同一 fixture 走 provider 层与真实 LanguageServer 会话，覆盖 current draft、跨文件节点、缺失目标诊断和路径还原。
 3. 已补 SelfHostedEditor Host Schema 作者提示第一版：query、event 的 completion / hover；继续守 `check:host-schema` 与 `check:host-schema-http`。
 4. 已补共享 Host Binding capability，并完成 SelfHostedEditor speaker、timeline binding 的 completion / hover / navigation；继续守 `check:host-binding` 与 `check:host-binding-http`。
 5. 已补 SelfHostedEditor speaker / timeline navigation，让 Ctrl+Click / definition / references 消费同一 Host Binding capability。

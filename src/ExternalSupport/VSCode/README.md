@@ -18,6 +18,7 @@ The package is also a future split-repo candidate, so non-source extension asset
 - Keeps metadata and query interpolations on comment-like scopes so themes can visually soften them while prose remains readable.
 - Refreshes diagnostics through a persistent `Inscape.LanguageServer` session first, then falls back to the configured CLI `diagnose-project` invocation if the session is unavailable.
 - Provides node completions in jump target positions through the same persistent `Inscape.LanguageServer` session, including cross-file nodes and unsaved editor content.
+- Guards the LanguageServer-backed authoring surface with `check:semantic-parity`, which exercises diagnostics, node completion, definition, references, hover, and document symbols through VSCode providers against the same current-draft and cross-file fixture used by the SelfHostedEditor parity smoke.
 - Provides `Inscape: Insert Node Title`; if the requested title already exists, the command inserts the next `_01`-style title and, when the file belongs to a workspace, silently refreshes the stable node map through `update-node-map-project`.
 - Provides `Inscape: Update Stable Node Map`; it runs `update-node-map-project` for the selected workspace, forwards the active unsaved `.inscape` file through `--override`, and surfaces a review hint when the update report contains manual review or conflict items.
 - Provides `Inscape: Review Stable Node Map Changes`; it runs the same update flow with `--report`, then opens a JSON review report for rename/manual-review/conflict/missing inspection.
@@ -91,6 +92,7 @@ node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js
 npm --prefix src\ExternalSupport\VSCode run check:diagnostics-fallback
 npm --prefix src\ExternalSupport\VSCode run check:preview-navigation
 npm --prefix src\ExternalSupport\VSCode run check:preview-source-sync
+npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
 npm --prefix src\ExternalSupport\VSCode run check:structure
 node -e "JSON.parse(require('fs').readFileSync('src/ExternalSupport/VSCode/package.json','utf8')); JSON.parse(require('fs').readFileSync('src/ExternalSupport/VSCode/Resources/Language/language-configuration.json','utf8')); JSON.parse(require('fs').readFileSync('src/ExternalSupport/VSCode/Resources/Syntaxes/inscape.tmLanguage.json','utf8')); JSON.parse(require('fs').readFileSync('src/ExternalSupport/VSCode/Resources/Snippets/inscape.code-snippets','utf8')); JSON.parse(require('fs').readFileSync('src/ExternalSupport/VSCode/Resources/Schemas/host-schema.schema.json','utf8')); console.log('json ok')"
 ```

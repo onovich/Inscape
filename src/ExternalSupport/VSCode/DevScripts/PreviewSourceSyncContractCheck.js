@@ -1,7 +1,7 @@
 "use strict";
 
 const path = require("path");
-const { PreviewRevealBridge } = require(path.join("..", "Preview", "Bridges", "PreviewRevealBridge"));
+const { PreviewRevealBridge } = require(path.join("..", "Scripts", "Preview", "Bridges", "PreviewRevealBridge"));
 
 function assert(condition, message) {
     if (!condition) {

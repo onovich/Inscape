@@ -73,6 +73,7 @@ class DslScriptReferenceProvider {
                 return [];
             }
 
+            this.normalizeLanguageServerLocations(payload, tempPath, document.uri.fsPath);
             const locations = payload.references
                 .filter((reference) => reference && reference.location)
                 .map((reference) => this.createLocation(reference.location));
@@ -104,6 +105,7 @@ class DslScriptReferenceProvider {
                 return undefined;
             }
 
+            this.normalizeLanguageServerLocations(payload, tempPath, document.uri.fsPath);
             const location = this.createLocation(payload.definition.location);
             this.languageServerDefinitionsByDocumentVersion.set(cacheKey, location);
             return location;
@@ -166,6 +168,24 @@ class DslScriptReferenceProvider {
     createCacheKey(document, kind, target) {
         const version = typeof document.version === "number" ? document.version : document.getText();
         return document.uri.toString() + ":" + version + ":" + kind + ":" + target;
+    }
+
+    normalizeLanguageServerLocations(payload, tempPath, documentPath) {
+        this.normalizeLocation(payload && payload.definition ? payload.definition.location : undefined, tempPath, documentPath);
+        const references = payload && Array.isArray(payload.references) ? payload.references : [];
+        for (const reference of references) {
+            this.normalizeLocation(reference ? reference.location : undefined, tempPath, documentPath);
+        }
+    }
+
+    normalizeLocation(location, tempPath, documentPath) {
+        if (location && this.samePath(location.sourcePath, tempPath)) {
+            location.sourcePath = documentPath;
+        }
+    }
+
+    samePath(left, right) {
+        return String(left || "").toLowerCase() === String(right || "").toLowerCase();
     }
 
 }

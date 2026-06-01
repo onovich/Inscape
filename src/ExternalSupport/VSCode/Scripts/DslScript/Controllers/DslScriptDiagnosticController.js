@@ -163,7 +163,24 @@ class DslScriptDiagnosticController {
             return true;
         }
 
-        return this.normalizePath(diagnostic.sourcePath) === this.normalizePath(document.uri.fsPath);
+        return this.normalizePath(this.resolveDiagnosticSourcePath(diagnostic.sourcePath, document)) === this.normalizePath(document.uri.fsPath);
+    }
+
+    resolveDiagnosticSourcePath(sourcePath, document) {
+        if (this.path.isAbsolute(sourcePath)) {
+            return sourcePath;
+        }
+
+        const folder = this.vscode.workspace.getWorkspaceFolder(document.uri);
+        if (folder) {
+            return this.path.resolve(folder.uri.fsPath, sourcePath);
+        }
+
+        if (this.vscode.workspace.workspaceFolders && this.vscode.workspace.workspaceFolders.length > 0) {
+            return this.path.resolve(this.vscode.workspace.workspaceFolders[0].uri.fsPath, sourcePath);
+        }
+
+        return sourcePath;
     }
 
     mapSeverity(severity) {

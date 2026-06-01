@@ -99,6 +99,7 @@ class DslScriptDefinitionProvider {
                 return undefined;
             }
 
+            this.normalizeLanguageServerLocations(payload, tempPath, document.uri.fsPath);
             const location = this.createLocation(payload.definition.location);
             this.languageServerDefinitionsByDocumentVersion.set(cacheKey, location);
             return location;
@@ -149,6 +150,20 @@ class DslScriptDefinitionProvider {
     createCacheKey(document, target) {
         const version = typeof document.version === "number" ? document.version : document.getText();
         return document.uri.toString() + ":" + version + ":" + target;
+    }
+
+    normalizeLanguageServerLocations(payload, tempPath, documentPath) {
+        this.normalizeLocation(payload && payload.definition ? payload.definition.location : undefined, tempPath, documentPath);
+    }
+
+    normalizeLocation(location, tempPath, documentPath) {
+        if (location && this.samePath(location.sourcePath, tempPath)) {
+            location.sourcePath = documentPath;
+        }
+    }
+
+    samePath(left, right) {
+        return String(left || "").toLowerCase() === String(right || "").toLowerCase();
     }
 
 }

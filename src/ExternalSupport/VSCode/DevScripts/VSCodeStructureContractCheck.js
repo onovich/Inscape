@@ -5,6 +5,9 @@ const path = require("path");
 
 const root = path.resolve(__dirname, "..");
 const scriptsRoot = path.join(root, "Scripts");
+const requiredPaths = [
+    "DevScripts/VSCodeSemanticParityContractCheck.js",
+];
 const allowedBusinessDirectories = new Set([
     "DslScript",
     "EditorAuthoring",
@@ -145,12 +148,23 @@ function checkLocalRequires(filePath, text) {
 }
 
 checkTopLevelEntries();
+for (const requiredPath of requiredPaths) {
+    const fullPath = path.join(root, requiredPath);
+    if (!fs.existsSync(fullPath)) {
+        report(fullPath, "required VSCode package contract file is missing");
+    }
+}
 for (const filePath of walk(scriptsRoot).filter((file) => file.endsWith(".js"))) {
     const text = fs.readFileSync(filePath, "utf8");
     checkDirectoryRoles(filePath);
     checkFileName(filePath);
     checkClassNames(filePath, text);
     checkLocalRequires(filePath, text);
+}
+
+const packageJson = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
+if (!packageJson.scripts["check:semantic-parity"]) {
+    report(path.join(root, "package.json"), "package.json must expose check:semantic-parity");
 }
 
 if (findings.length > 0) {

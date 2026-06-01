@@ -12,34 +12,37 @@ if "%COMMIT_MESSAGE%"=="" (
 
 cd /d "%REPO_ROOT%" || exit /b 1
 
-echo [1/10] Repository status
+echo [1/11] Repository status
 git -c safe.directory=%SAFE_REPO% status --short --branch || exit /b 1
 
-echo [2/10] SelfHostedEditor syntax
+echo [2/11] SelfHostedEditor syntax
 cmd /c npm.cmd --prefix src\ExternalSupport\SelfHostedEditor run check:syntax || exit /b 1
 
-echo [3/10] SelfHostedEditor structure
+echo [3/11] SelfHostedEditor structure
 cmd /c npm.cmd --prefix src\ExternalSupport\SelfHostedEditor run check:structure || exit /b 1
 
-echo [4/10] SelfHostedEditor model contracts
+echo [4/11] SelfHostedEditor model contracts
 cmd /c npm.cmd --prefix src\ExternalSupport\SelfHostedEditor run check:model || exit /b 1
 
-echo [5/10] .NET build
+echo [5/11] .NET build
 dotnet build Inscape.slnx --no-restore || exit /b 1
 
-echo [6/10] Internal tests
+echo [6/11] Internal tests
 dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build || exit /b 1
 
-echo [7/10] VSCode manifest syntax
+echo [7/11] VSCode manifest syntax
 node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js || exit /b 1
 
-echo [8/10] VSCode structure
+echo [8/11] VSCode semantic parity
+cmd /c npm.cmd --prefix src\ExternalSupport\VSCode run check:semantic-parity || exit /b 1
+
+echo [9/11] VSCode structure
 cmd /c npm.cmd --prefix src\ExternalSupport\VSCode run check:structure || exit /b 1
 
-echo [9/10] Diff whitespace check
+echo [10/11] Diff whitespace check
 git -c safe.directory=%SAFE_REPO% diff --check || exit /b 1
 
-echo [10/10] Commit and push
+echo [11/11] Commit and push
 git -c safe.directory=%SAFE_REPO% add . || exit /b 1
 git -c safe.directory=%SAFE_REPO% diff --cached --quiet
 if %ERRORLEVEL%==0 (
