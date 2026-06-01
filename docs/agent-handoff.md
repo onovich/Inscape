@@ -2,7 +2,7 @@
 
 状态：基线
 
-最后更新：2026-06-01
+最后更新：2026-06-02
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
@@ -26,6 +26,7 @@
 - SelfHostedEditor 已新增 `/api/node-map-review` 与顶栏 `Node Map` 入口：开发宿主运行共享 CLI `update-node-map-project --report`，返回 compact `inscape.self-hosted-editor.node-map-review`，前端展示 shared report 摘要和 item / candidate source jump，并可下载生成的 `inscape.node-map.json`。新增 `check:node-map` 与 `check:node-map-http` 守住直连 helper 和真实 HTTP；candidate apply / revert 没有复制 VSCode 宿主 mutation，若两边都需要应先下沉为 Tooling 共享动作。
 - SelfHostedEditor L10N 表格已消费 Tooling presenter 的 review actions：`/api/localization-review` compact payload 保留 `open-current` / `open-candidate` / `show-candidate-diff`，前端行内提供 Current / Candidate / Diff 动作，分别跳当前行、跳候选来源和展开候选 diff。这里仍只做宿主 UI 与 source reveal，不重算 alignment、候选评分或 CSV 语义；`check:model`、`check:localization-review`、`check:localization-review-http` 已覆盖 actions 传输与交互。
 - SelfHostedEditor 已新增 `Host` 视图作为 VSCode `Show Host Schema Capabilities` 的业务等价入口：它同时消费 Host Schema 与 Host Binding shared capability catalog，展示 query / event / speaker / timeline binding，并可跳到 schema、bridge 或脚本来源。前端只调用既有 bridge，不解析 Host Schema / Host Bridge JSON；`check:model`、`check:structure`、`check:host-schema-http`、`check:host-binding-http` 已覆盖入口与 transport。
+- 2026-06-02 最新：SelfHostedEditor refs overlay 已完成 VSCode CodeLens / References Peek 的业务等价验证第一刀。`/api/references` 继续调用 `LanguageServer --references-project`，但现在会把 dev-host 临时目录 sourcePath 转回 workspace 相对路径；新增 `check:references` 与 `check:references-http`，覆盖跨文件引用、当前未保存 draft 参与、引用数量和真实 HTTP transport。UI 不复制 CodeLens，守同一组引用结果和 source jump。
 
 2026-05-26 本会话交接状态：
 

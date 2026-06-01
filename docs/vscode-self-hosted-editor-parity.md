@@ -110,6 +110,8 @@ SelfHostedEditor 已有标题旁 refs 浮层，但不是同一套 CodeLens 心�
 
 建议下一步：把 refs overlay 作为 SelfHostedEditor 的等价入口，不强行实现 CodeLens 样式；重点验证跨文件与未保存内容。
 
+2026-06-02 已收口：SelfHostedEditor refs overlay 继续作为 VSCode CodeLens / References Peek 的业务等价入口。`/api/references` 仍调用 `LanguageServer --references-project`，并把 dev-host 临时目录 `sourcePath` 还原为 workspace 相对路径；新增 `check:references` 与 `check:references-http` 覆盖跨文件引用、当前未保存 draft 内容参与引用查询、引用数量以及返回路径不泄漏临时目录。UI 不复制 CodeLens，守的是作者能看到同一组引用并跳到同一批源码位置。
+
 ### 4. Preview source sync 模式
 
 VSCode 有 `inscape.preview.sourceSyncMode = off|click|selection|debug`。
@@ -168,7 +170,7 @@ VSCode 是专业编辑器，不需要一致视觉。但两边语义能力要一�
 | Definition / References: `@timeline` | 支持 Host Bridge / workspace hook | 已通过 Host Binding capability 对齐 | 已对齐，守回归 |
 | Hover: metadata | VSCode 有 authoring hint | SelfHostedEditor 主要走 LS node/jump hover | 中 |
 | Outline | LanguageServer | LanguageServer bridge | 高，保持 |
-| CodeLens / refs count | 有 CodeLens | 有 refs overlay，不同 UI | 中，确认等价 |
+| CodeLens / refs count | 有 CodeLens | 有 refs overlay，不同 UI；refs direct/HTTP smoke 已覆盖跨文件、未保存 draft 与相对 sourcePath | 已确认等价，守回归 |
 | Stable node map update/review | 有命令与 review UI，含 apply/revert | 已有 Node Map 入口、共享 report、source jump、sidecar 下载；apply/revert 未对齐 | 中，下一步先评估 shared apply 契约 |
 | Localization export/update | 有命令 | 有表格 + update/export/replace | 高，保持 |
 | Localization alignment review | Quick Pick review | 表格 review/filter | 高，确认状态语义一致 |
@@ -183,7 +185,7 @@ VSCode 是专业编辑器，不需要一致视觉。但两边语义能力要一�
 ## 建议实施顺序
 
 1. 先跑并修 SelfHostedEditor 回归：`check:syntax`、`check:structure`、`check:model`、`check:localization-review-http`、`check:localization-update-http`、`check:runtime-http`。
-2. 做 VSCode / SelfHostedEditor 语义 parity smoke：用同一组脚本验证 diagnostics、node completion、definition、references、hover、outline 在两边结果一致。
+2. 做 VSCode / SelfHostedEditor 语义 parity smoke：用同一组脚本验证 diagnostics、node completion、definition、references、hover、outline 在两边结果一致。References 第一刀已完成 SelfHostedEditor direct / HTTP smoke，后续继续补到更完整的两端语义 parity smoke。
 3. 已补 SelfHostedEditor Host Schema 作者提示第一版：query、event 的 completion / hover；继续守 `check:host-schema` 与 `check:host-schema-http`。
 4. 已补共享 Host Binding capability，并完成 SelfHostedEditor speaker、timeline binding 的 completion / hover / navigation；继续守 `check:host-binding` 与 `check:host-binding-http`。
 5. 已补 SelfHostedEditor speaker / timeline navigation，让 Ctrl+Click / definition / references 消费同一 Host Binding capability。

@@ -319,6 +319,34 @@ const references = LanguageServerReferenceModelMapper.mapReferences({
 });
 assertEqual(references.length, 1, "references mapper count");
 assertEqual(references[0].location.character, 3, "references mapper character");
+const referenceOverlayPreview = Object.create(EditorReferenceOverlayController.prototype);
+referenceOverlayPreview.workspaceContextProvider = () => ({
+  currentFilePath: "story/opening.inscape",
+  documents: [
+    {
+      relativePath: "story/opening.inscape",
+      text: "# Opening\n- Review evidence -> Evidence",
+    },
+    {
+      relativePath: "story/branch.inscape",
+      text: "# Branch\n-> Evidence",
+    },
+  ],
+});
+const crossFileReferencePreview = referenceOverlayPreview.buildReferencePreviewModel({
+  location: {
+    line: 1,
+    sourcePath: "C:/tmp/inscape-self-hosted-editor-123/story/branch.inscape",
+  },
+}, {
+  kind: "node",
+  name: "Evidence",
+});
+assertEqual(crossFileReferencePreview.summary, "Jump -> Evidence", "reference overlay cross-file summary");
+assertIncludesText(
+  crossFileReferencePreview.contextLines.map((line) => line.text).join("\n"),
+  "-> Evidence"
+);
 const storyGraph = LanguageServerStoryGraphModelMapper.mapProjectGraph({
   documents: [
     {

@@ -10,6 +10,8 @@ const requiredPaths = [
   "package.json",
   "DevScripts",
   "DevScripts/SelfHostedEditorModelContractCheck.js",
+  "DevScripts/SelfHostedEditorReferencesHttpSmoke.js",
+  "DevScripts/SelfHostedEditorReferencesSmoke.js",
   "Resources/Workbench/SelfHostedEditorWorkbenchDocument.html",
   "Resources/Styles/SelfHostedEditorWorkbench.css",
   "Scripts/Entries/SelfHostedEditorAppEntry.js",
@@ -113,8 +115,8 @@ if (!html.includes('data-view="host"') || !html.includes("host-capability-panel"
 }
 
 const packageJson = JSON.parse(fs.readFileSync(path.join(moduleRoot, "package.json"), "utf8"));
-if (!packageJson.scripts["check:model"] || !packageJson.scripts["check:structure"] || !packageJson.scripts["check:syntax"] || !packageJson.scripts["check:node-map"] || !packageJson.scripts["check:node-map-http"]) {
-  console.error("SelfHostedEditor package.json must expose check:model, check:structure, check:syntax, check:node-map, and check:node-map-http.");
+if (!packageJson.scripts["check:model"] || !packageJson.scripts["check:structure"] || !packageJson.scripts["check:syntax"] || !packageJson.scripts["check:node-map"] || !packageJson.scripts["check:node-map-http"] || !packageJson.scripts["check:references"] || !packageJson.scripts["check:references-http"]) {
+  console.error("SelfHostedEditor package.json must expose check:model, check:structure, check:syntax, check:node-map, check:node-map-http, check:references, and check:references-http.");
   failed = true;
 }
 

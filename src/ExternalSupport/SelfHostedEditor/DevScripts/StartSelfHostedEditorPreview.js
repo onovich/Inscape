@@ -600,14 +600,14 @@ async function getHoverForScriptText(scriptText, hoverKind, hoverName, workspace
 async function getDefinitionForScriptText(scriptText, definitionName, workspace) {
   return withTemporaryWorkspace(workspace, scriptText, async ({ tempRoot }) => {
     const result = await runLanguageServerProjectDefinition(tempRoot, definitionName);
-    return JSON.parse(result.stdout);
+    return relativizeLanguageServerNavigationPaths(JSON.parse(result.stdout), tempRoot);
   });
 }
 
-async function getReferencesForScriptText(scriptText, referenceName, workspace) {
+export async function getReferencesForScriptText(scriptText, referenceName, workspace) {
   return withTemporaryWorkspace(workspace, scriptText, async ({ tempRoot }) => {
     const result = await runLanguageServerProjectReferences(tempRoot, referenceName);
-    return JSON.parse(result.stdout);
+    return relativizeLanguageServerNavigationPaths(JSON.parse(result.stdout), tempRoot);
   });
 }
 
@@ -1103,6 +1103,23 @@ function relativizeHostBindingCapabilityPaths(payload, tempRoot) {
 
   if (typeof payload?.hostBridge?.configuredPath === "string") {
     payload.hostBridge.configuredPath = relativizeSourcePath(payload.hostBridge.configuredPath, tempRoot);
+  }
+
+  return payload;
+}
+
+function relativizeLanguageServerNavigationPaths(payload, tempRoot) {
+  const normalizeLocation = (location) => {
+    if (!location || typeof location.sourcePath !== "string") {
+      return;
+    }
+
+    location.sourcePath = relativizeSourcePath(location.sourcePath, tempRoot);
+  };
+
+  normalizeLocation(payload?.definition?.location);
+  for (const reference of Array.isArray(payload?.references) ? payload.references : []) {
+    normalizeLocation(reference?.location);
   }
 
   return payload;

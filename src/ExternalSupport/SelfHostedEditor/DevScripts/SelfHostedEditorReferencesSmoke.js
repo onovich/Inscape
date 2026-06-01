@@ -1,0 +1,69 @@
+import {
+  getReferencesForScriptText,
+} from "./StartSelfHostedEditorPreview.js";
+
+const openingText = `# Opening
+- Review evidence -> Evidence
+-> Evidence`;
+
+const workspace = {
+  currentFilePath: "story/opening.inscape",
+  documents: [
+    {
+      relativePath: "story/opening.inscape",
+      text: openingText,
+    },
+    {
+      relativePath: "story/branch.inscape",
+      text: `# Branch
+-> Evidence`,
+    },
+    {
+      relativePath: "story/evidence.inscape",
+      text: `# Evidence
+Narrator: The evidence is ready.`,
+    },
+  ],
+};
+
+async function main() {
+  const payload = await getReferencesForScriptText(openingText, "Evidence", workspace);
+  assertEqual(payload.format, "inscape.language-server-project-references", "references format");
+  assertEqual(payload.references?.length, 3, "references count");
+  assertIncludesReference(payload.references, "story/opening.inscape", 1, "current draft choice reference");
+  assertIncludesReference(payload.references, "story/opening.inscape", 2, "current draft jump reference");
+  assertIncludesReference(payload.references, "story/branch.inscape", 1, "cross-file jump reference");
+  assertNoTempSourcePaths(payload.references);
+
+  console.log("SelfHostedEditor references smoke ok");
+}
+
+function assertIncludesReference(references, sourcePath, line, label) {
+  const found = references.some((reference) =>
+    reference?.location?.sourcePath === sourcePath
+    && reference.location.line === line
+  );
+  if (!found) {
+    throw new Error(`Missing ${label}: ${sourcePath}:${line + 1}`);
+  }
+}
+
+function assertNoTempSourcePaths(references) {
+  const tempPath = references.find((reference) =>
+    String(reference?.location?.sourcePath || "").includes("inscape-self-hosted-editor-")
+  );
+  if (tempPath) {
+    throw new Error(`References should expose workspace-relative source paths, got ${tempPath.location.sourcePath}`);
+  }
+}
+
+function assertEqual(actual, expected, label) {
+  if (actual !== expected) {
+    throw new Error(`${label}: expected ${expected}, got ${actual}`);
+  }
+}
+
+main().catch((error) => {
+  console.error(error instanceof Error ? error.stack || error.message : String(error));
+  process.exitCode = 1;
+});
