@@ -15,6 +15,16 @@ export class EditorHoverTargetModelBuilder {
       return hostEventTarget;
     }
 
+    const hostBindingTarget = this.tryBuildHostBindingTarget(lineContent, position);
+    if (hostBindingTarget) {
+      return hostBindingTarget;
+    }
+
+    const speakerTarget = this.tryBuildSpeakerTarget(lineContent, position);
+    if (speakerTarget) {
+      return speakerTarget;
+    }
+
     const nodeTarget = this.tryBuildNodeTarget(lineContent, position);
     if (nodeTarget) {
       return nodeTarget;
@@ -59,6 +69,53 @@ export class EditorHoverTargetModelBuilder {
     return {
       kind: "host-event",
       name: match[2],
+      startColumn,
+      endColumn,
+    };
+  }
+
+  static tryBuildHostBindingTarget(lineContent, position) {
+    const match = /^(\s*@timeline(?:\.(?:talking|node)\.(?:enter|exit))?(?::|\s+)\s*)([^\s\]]+)/.exec(lineContent);
+    if (!match) {
+      return null;
+    }
+
+    const startColumn = match[1].length + 1;
+    const endColumn = startColumn + match[2].length;
+    if (position.column < startColumn || position.column > endColumn) {
+      return null;
+    }
+
+    return {
+      bindingKind: "timeline",
+      kind: "host-binding",
+      name: match[2],
+      startColumn,
+      endColumn,
+    };
+  }
+
+  static tryBuildSpeakerTarget(lineContent, position) {
+    const match = /^(\s*)([^#@\-\?\[\]\s][^:：]{0,80}?)[ \t]*[:：]/.exec(lineContent);
+    if (!match) {
+      return null;
+    }
+
+    const name = match[2].trim();
+    if (!name) {
+      return null;
+    }
+
+    const trimOffset = match[2].indexOf(name);
+    const startColumn = match[1].length + trimOffset + 1;
+    const endColumn = startColumn + name.length;
+    if (position.column < startColumn || position.column > endColumn) {
+      return null;
+    }
+
+    return {
+      kind: "speaker",
+      name,
       startColumn,
       endColumn,
     };

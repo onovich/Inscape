@@ -91,6 +91,7 @@ Internal/
     DslScript/
     StoryGraph/
     HostSchema/
+    HostBinding/
 
   Runtime/
     StoryRuntime/
@@ -199,6 +200,7 @@ LanguageServer 是 C# 语义服务层。它长期承担：
 - 引用查找
 - 补全
 - source map 相关语义计算
+- HostSchema / HostBinding 作者能力清单
 
 VSCode 长期方向是“薄扩展前端 + C# LanguageServer”，减少对 Cli 进程桥接的依赖。
 

@@ -85,6 +85,7 @@ namespace Inscape.LanguageServer {
                     "inscape/documentSymbolsFile" => HandleDocumentSymbolsFile(parameters),
                     "inscape/hoverProject" => HandleHoverProject(parameters),
                     "inscape/hostSchemaCapabilitiesProject" => HandleHostSchemaCapabilitiesProject(parameters),
+                    "inscape/hostBindingCapabilitiesProject" => HandleHostBindingCapabilitiesProject(parameters),
                     _ => throw new InvalidOperationException("Unknown LanguageServer session method: " + method)
                 };
 
@@ -177,6 +178,15 @@ namespace Inscape.LanguageServer {
             HostSchemaCapabilityProvider provider = new HostSchemaCapabilityProvider();
             return provider.GetCapabilities(rootPath,
                                             ReadOptionalString(parameters, "configPath"),
+                                            CreateJsonOptions());
+        }
+
+        object HandleHostBindingCapabilitiesProject(JsonElement? parameters) {
+            string rootPath = ReadRequiredString(parameters, "rootPath");
+            HostBindingCapabilityProvider provider = new HostBindingCapabilityProvider();
+            return provider.GetCapabilities(rootPath,
+                                            ReadOptionalString(parameters, "configPath"),
+                                            ReadSourceOverride(parameters),
                                             CreateJsonOptions());
         }
 

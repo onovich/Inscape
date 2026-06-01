@@ -51,6 +51,7 @@ The current shell is intentionally small, but it now includes a first Monaco-bac
 - Ctrl/Cmd-click definition navigation explicitly reveals the resolved source line in the editor and updates the preview block, instead of relying only on Monaco same-model goto behavior.
 - Dev-hosted completion bridge: jump targets now try `Inscape.LanguageServer --completion-file` so the Monaco surface can suggest node names while writing `-> target`.
 - Dev-hosted Host Schema bridge: `[query]` interpolation and `@emit` event authoring now request `Inscape.LanguageServer --host-schema-capabilities-project` through `/api/host-schema-capabilities`, so completion and hover hints stay aligned with the shared Host Schema catalog instead of browser-side guesses.
+- Dev-hosted Host Binding bridge: speaker names and `@timeline` authoring now request `Inscape.LanguageServer --host-binding-capabilities-project` through `/api/host-binding-capabilities`, so completion and hover hints come from shared Host Bridge data plus compiled workspace occurrences instead of VSCode-specific JSON parsing.
 - Dev-hosted outline bridge: the sidebar outline now tries `Inscape.LanguageServer --document-symbols-file` and supports click-to-reveal navigation.
 - Monaco rename bridge: node titles and jump targets now support the editor rename flow, then apply a controlled whole-document patch that updates `# title` lines and matching `-> title` references.
 - Dev-hosted story graph bridge: the Graph view now requests compact project graph data from the preview server, which runs the existing CLI `compile-project` flow and returns real Compiler nodes and edges. Choice and default jump ports are built from that graph output; dragging an output port still patches the source `-> target` text.
@@ -95,7 +96,7 @@ Most recent user-facing work focused on replacing fragile prototype behavior wit
 Known prototype layers that should be replaced next:
 
 - `ScriptDocumentModelBuilder` is still a UI-only extraction model. Do not expand it into parser truth; replace narrow consumers with `Tooling` / `LanguageServer` / `Runtime` outputs.
-- Host Schema `[query]` and `@emit` hints now come from LanguageServer capabilities. Speaker and `@timeline` authoring still need a shared Host Bridge capability endpoint before SelfHostedEditor should expose equivalent hints; do not copy VSCode's `.host.bridge.json` parsing into the browser.
+- Host Schema `[query]` / `@emit` and Host Binding speaker / `@timeline` hints now come from LanguageServer capabilities. Speaker definition and references navigation remain open; keep them on the same shared Host Binding capability path instead of copying VSCode's `.host.bridge.json` parsing into the browser.
 - Graph has started that replacement path: it still uses draft extraction only as an offline fallback, while the served prototype consumes Compiler project graph output.
 - The line-map bridge is a dev-host HTTP + CLI bridge. It is semantically correct because it reuses Tooling, but the desktop client should eventually route this through a real editor backend or long-lived Tooling session.
 - Graph positions are session memory only. They need a layout sidecar before becoming persistent product behavior.
@@ -112,6 +113,8 @@ Run static checks:
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:structure
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:host-binding
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:host-binding-http
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:host-schema
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:host-schema-http
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:localization-review
@@ -123,6 +126,8 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:runtime-http
 ```
 
 `check:localization-review` exercises the full localization-review dev-host path for `samples/court-loop.inscape` without requiring the local HTTP server to be started first.
+`check:host-binding` exercises the Host Binding capability helper without requiring the local HTTP server to be started first.
+`check:host-binding-http` starts the preview dev server in-process and performs a real HTTP request to `/api/host-binding-capabilities`.
 `check:host-schema` exercises the Host Schema capability helper without requiring the local HTTP server to be started first.
 `check:host-schema-http` starts the preview dev server in-process and performs a real HTTP request to `/api/host-schema-capabilities`.
 `check:localization-review-http` starts the preview dev server in-process and performs a real HTTP request to `/api/localization-review`.

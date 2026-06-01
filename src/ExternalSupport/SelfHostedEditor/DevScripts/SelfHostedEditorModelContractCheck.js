@@ -16,6 +16,7 @@ import { LanguageServerDiagnosticModelMapper } from "../Scripts/LanguageServer/M
 import { LanguageServerReferenceModelMapper } from "../Scripts/LanguageServer/Models/LanguageServerReferenceModelMapper.js";
 import { LanguageServerDocumentSymbolModelMapper } from "../Scripts/LanguageServer/Models/LanguageServerDocumentSymbolModelMapper.js";
 import { LanguageServerStoryGraphModelMapper } from "../Scripts/LanguageServer/Models/LanguageServerStoryGraphModelMapper.js";
+import { HostBindingCapabilityModelMapper } from "../Scripts/HostBinding/Models/HostBindingCapabilityModelMapper.js";
 import { HostSchemaCapabilityModelMapper } from "../Scripts/HostSchema/Models/HostSchemaCapabilityModelMapper.js";
 import { PreviewPanelController } from "../Scripts/Preview/Controllers/PreviewPanelController.js";
 import { StoryGraphPreviewController } from "../Scripts/StoryGraph/Controllers/StoryGraphPreviewController.js";
@@ -129,12 +130,26 @@ assertEqual(queryCompletionTarget?.typedPrefix, "player.g", "query completion ta
 const eventCompletionTarget = EditorCompletionTargetModelBuilder.build(createHoverModel("@emit quest."), { lineNumber: 1, column: 13 });
 assertEqual(eventCompletionTarget?.kind, "host-event", "host event completion target kind");
 assertEqual(eventCompletionTarget?.typedPrefix, "quest.", "host event completion target prefix");
+const timelineCompletionTarget = EditorCompletionTargetModelBuilder.build(createHoverModel("@timeline court"), { lineNumber: 1, column: 16 });
+assertEqual(timelineCompletionTarget?.kind, "host-binding", "timeline completion target kind");
+assertEqual(timelineCompletionTarget?.bindingKind, "timeline", "timeline completion binding kind");
+assertEqual(timelineCompletionTarget?.typedPrefix, "court", "timeline completion target prefix");
+const speakerCompletionTarget = EditorCompletionTargetModelBuilder.build(createHoverModel("Narr"), { lineNumber: 1, column: 5 });
+assertEqual(speakerCompletionTarget?.kind, "speaker", "speaker completion target kind");
+assertEqual(speakerCompletionTarget?.typedPrefix, "Narr", "speaker completion target prefix");
 const queryHoverTarget = EditorHoverTargetModelBuilder.build(createHoverModel("Narrator: Gold [player.gold]"), { lineNumber: 1, column: 18 });
 assertEqual(queryHoverTarget?.kind, "query", "query hover target kind");
 assertEqual(queryHoverTarget?.name, "player.gold", "query hover target name");
 const eventHoverTarget = EditorHoverTargetModelBuilder.build(createHoverModel("@emit quest.accepted"), { lineNumber: 1, column: 10 });
 assertEqual(eventHoverTarget?.kind, "host-event", "host event hover target kind");
 assertEqual(eventHoverTarget?.name, "quest.accepted", "host event hover target name");
+const timelineHoverTarget = EditorHoverTargetModelBuilder.build(createHoverModel("@timeline court_intro"), { lineNumber: 1, column: 12 });
+assertEqual(timelineHoverTarget?.kind, "host-binding", "timeline hover target kind");
+assertEqual(timelineHoverTarget?.bindingKind, "timeline", "timeline hover binding kind");
+assertEqual(timelineHoverTarget?.name, "court_intro", "timeline hover target name");
+const speakerHoverTarget = EditorHoverTargetModelBuilder.build(createHoverModel("Narrator: Hello"), { lineNumber: 1, column: 3 });
+assertEqual(speakerHoverTarget?.kind, "speaker", "speaker hover target kind");
+assertEqual(speakerHoverTarget?.name, "Narrator", "speaker hover target name");
 const completionMapper = LanguageServerCompletionModelMapper.mapCompletions({
   completions: [
     {
@@ -169,6 +184,29 @@ const hostSchemaCatalog = HostSchemaCapabilityModelMapper.mapCatalog({
 assertEqual(hostSchemaCatalog.hostSchema.loaded, true, "host schema mapper loaded");
 assertEqual(hostSchemaCatalog.queries[0].name, "player.gold", "host schema mapper query");
 assertEqual(hostSchemaCatalog.events[0].name, "quest.accepted", "host schema mapper event");
+const hostBindingCatalog = HostBindingCapabilityModelMapper.mapCatalog({
+  bindings: [
+    {
+      assetId: "2001",
+      kind: "timeline",
+      name: "court_intro",
+    },
+  ],
+  format: "inscape.host-binding.capabilities",
+  formatVersion: 1,
+  hostBridge: {
+    loaded: true,
+  },
+  speakers: [
+    {
+      name: "Narrator",
+      roleId: "1001",
+    },
+  ],
+});
+assertEqual(hostBindingCatalog.hostBridge.loaded, true, "host binding mapper loaded");
+assertEqual(hostBindingCatalog.speakers[0].name, "Narrator", "host binding mapper speaker");
+assertEqual(hostBindingCatalog.bindings[0].name, "court_intro", "host binding mapper binding");
 const diagnosticMapper = LanguageServerDiagnosticModelMapper.mapDiagnostics({
   diagnostics: [
     {

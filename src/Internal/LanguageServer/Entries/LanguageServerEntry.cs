@@ -208,7 +208,18 @@ namespace Inscape.LanguageServer {
                 return 0;
             }
 
-            Console.WriteLine("Inscape.LanguageServer baseline. Use --stdio, --capabilities, --diagnose-file <path>, --diagnose-project <root> [--entry title] [--override source.inscape temp.inscape], --definition-file <path> <title>, --definition-project <root> <title> [--override source.inscape temp.inscape], --references-file <path> <title>, --references-project <root> <title> [--override source.inscape temp.inscape], --completion-file <path>, --completion-project <root> [--override source.inscape temp.inscape], --document-symbols-file <path>, --hover-file <path> <node|jump> <title>, --hover-project <root> <node|jump> <title> [--override source.inscape temp.inscape], or --host-schema-capabilities-project <root> [--config path].");
+            if (args.Length > 1 && args[0] == "--host-binding-capabilities-project") {
+                string rootPath = Path.GetFullPath(args[1]);
+                HostBindingCapabilityProvider provider = new HostBindingCapabilityProvider();
+                Console.WriteLine(JsonSerializer.Serialize(provider.GetCapabilities(rootPath,
+                                                                                      ReadOption(args, "--config"),
+                                                                                      ReadSourceOverride(args),
+                                                                                      CreateJsonOptions()),
+                                                           CreateJsonOptions()));
+                return 0;
+            }
+
+            Console.WriteLine("Inscape.LanguageServer baseline. Use --stdio, --capabilities, --diagnose-file <path>, --diagnose-project <root> [--entry title] [--override source.inscape temp.inscape], --definition-file <path> <title>, --definition-project <root> <title> [--override source.inscape temp.inscape], --references-file <path> <title>, --references-project <root> <title> [--override source.inscape temp.inscape], --completion-file <path>, --completion-project <root> [--override source.inscape temp.inscape], --document-symbols-file <path>, --hover-file <path> <node|jump> <title>, --hover-project <root> <node|jump> <title> [--override source.inscape temp.inscape], --host-schema-capabilities-project <root> [--config path], or --host-binding-capabilities-project <root> [--config path] [--override source.inscape temp.inscape].");
             return 0;
         }
 
@@ -241,6 +252,7 @@ namespace Inscape.LanguageServer {
             model.Capabilities.Add("hover");
             model.Capabilities.Add("documentSymbol");
             model.Capabilities.Add("hostSchemaCapabilities");
+            model.Capabilities.Add("hostBindingCapabilities");
             model.Capabilities.Add("sourceReveal");
             return model;
         }

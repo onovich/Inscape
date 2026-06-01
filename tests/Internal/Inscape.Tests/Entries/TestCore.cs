@@ -31,6 +31,7 @@ namespace Inscape.Tests {
                 ("language server project completions use project graph and override", LanguageServerProjectCompletionsUseProjectGraphAndOverride),
                 ("language server project hover uses project graph and override", LanguageServerProjectHoverUsesProjectGraphAndOverride),
                 ("language server host schema capabilities use tooling contract", LanguageServerHostSchemaCapabilitiesUseToolingContract),
+                ("language server host binding capabilities use tooling contract", LanguageServerHostBindingCapabilitiesUseToolingContract),
                 ("language server stdio session serves project requests", LanguageServerStdioSessionServesProjectRequests),
                 ("narrative runtime consumes compiler graph", NarrativeRuntimeConsumesCompilerGraph),
                 ("cli runtime-project emits runtime state", CliRuntimeProjectEmitsRuntimeState),

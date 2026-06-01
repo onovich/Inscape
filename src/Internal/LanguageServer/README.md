@@ -14,6 +14,7 @@ Current baseline:
 - `Entries/LanguageServerEntry.cs` exposes `--definition-project <root> <nodeName> [--override source.inscape temp.inscape]`, `--references-project <root> <nodeName> [--override source.inscape temp.inscape]`, and `--hover-project <root> <node|jump> <nodeName> [--override source.inscape temp.inscape]` for project-level node navigation and hover. These probes reuse `DslScriptSourcesLoaderDomain` and `StoryGraphCompilerDomain` instead of VSCode workspace scanning.
 - `Entries/LanguageServerEntry.cs` exposes `--document-symbols-file <path>` and `--hover-file <path> <node|jump> <name>` as temporary single-file probes for outline and hover data.
 - `Entries/LanguageServerEntry.cs` exposes `--host-schema-capabilities-project <root> [--config path]` as the LanguageServer-facing Host Schema capability probe. It reuses Internal Tooling `ToolConfigReaderDomain` and `HostSchemaCapabilityCatalogDomain`, emits the same `inscape.host-schema.capabilities` payload as the CLI endpoint, and does not parse Host Schema JSON inside VSCode.
+- `Entries/LanguageServerEntry.cs` exposes `--host-binding-capabilities-project <root> [--config path] [--override source.inscape temp.inscape]` as the LanguageServer-facing Host Bridge capability probe. It reuses Internal Tooling `HostBindingCapabilityCatalogDomain` for configured speakers, timeline bindings, and workspace occurrences instead of editor-host JSON parsing.
 - `Models/EditorLocationModel.cs` follows `docs/source-location-contracts.md`: editor positions use 0-based `line` / `character` / `length`.
 - `DslScript/Domains/DslScriptDiagnosticProvider.cs` converts Compiler diagnostics from 1-based `line` / `column` into editor locations.
 - `DslScript/Domains/DslScriptProjectDiagnosticProvider.cs` loads project `.inscape` sources through `Inscape.Tooling`, applies optional unsaved override content, and converts project diagnostics into editor locations.
@@ -25,6 +26,6 @@ VSCode client migration order and fallback boundaries are tracked in `docs/vscod
 
 Temporary probes are covered by internal parity tests. If you add or rename a probe, update `tests/Internal/Inscape.Tests/LanguageServer/TestLanguageServerBaseline.cs` in the same node.
 
-Allowed business areas: `Entries`, `Models`, `DslScript`, `StoryGraph`, and `HostSchema`.
+Allowed business areas: `Entries`, `Models`, `DslScript`, `StoryGraph`, `HostSchema`, and `HostBinding`.
 
 Do not create a broad project service here before narrower Compiler and Tooling contracts are stable.

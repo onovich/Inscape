@@ -389,6 +389,74 @@ Narrator: unsaved node
             }
         }
 
+        static void LanguageServerHostBindingCapabilitiesUseToolingContract() {
+            string directory = Path.Combine(Path.GetTempPath(), "inscape-language-server-host-binding-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory);
+            string configPath = Path.Combine(directory, "inscape.config.json");
+            string bridgePath = Path.Combine(directory, "inscape.host.bridge.json");
+            string scriptPath = Path.Combine(directory, "opening.inscape");
+
+            File.WriteAllText(configPath, """
+{
+  "hostBridge": "inscape.host.bridge.json"
+}
+""");
+
+            File.WriteAllText(bridgePath, """
+{
+  "format": "inscape.host-bridge",
+  "formatVersion": 1,
+  "ids": [
+    {
+      "kind": "speaker",
+      "name": "Narrator",
+      "displayName": "Narrator",
+      "host": {
+        "roleId": 1001
+      }
+    },
+    {
+      "kind": "timeline",
+      "name": "court_intro",
+      "host": {
+        "assetId": 2001,
+        "addressableKey": "timeline/court_intro"
+      }
+    }
+  ]
+}
+""");
+
+            File.WriteAllText(scriptPath, """
+# opening
+Witness: I saw it.
+@timeline camera_push
+""");
+
+            try {
+                JsonElement catalog = RunLanguageServerForJson(new[] { "--host-binding-capabilities-project", directory });
+                AssertEqual("inscape.host-binding.capabilities", catalog.GetProperty("format").GetString(), "Host binding capability format");
+                AssertEqual(1, catalog.GetProperty("formatVersion").GetInt32(), "Host binding capability format version");
+                AssertEqual(directory, catalog.GetProperty("workspace").GetString(), "Host binding capability workspace");
+                AssertTrue(catalog.GetProperty("hostBridge").GetProperty("loaded").GetBoolean(), "Host bridge should be loaded");
+                AssertEqual(2, catalog.GetProperty("speakers").GetArrayLength(), "Host binding speaker count should include configured and script speakers");
+                AssertEqual("Narrator", catalog.GetProperty("speakers")[0].GetProperty("name").GetString(), "Configured speaker should sort first");
+                AssertEqual("1001", catalog.GetProperty("speakers")[0].GetProperty("roleId").GetString(), "Configured speaker role id");
+                AssertEqual("Witness", catalog.GetProperty("speakers")[1].GetProperty("name").GetString(), "Script speaker should be included");
+                AssertEqual("script", catalog.GetProperty("speakers")[1].GetProperty("sourceKind").GetString(), "Script speaker source kind");
+                AssertEqual(2, catalog.GetProperty("bindings").GetArrayLength(), "Host binding resource count should include configured and script timeline bindings");
+                AssertEqual("timeline", catalog.GetProperty("bindings")[0].GetProperty("kind").GetString(), "Configured binding kind");
+                AssertEqual("court_intro", catalog.GetProperty("bindings")[0].GetProperty("name").GetString(), "Configured binding name");
+                AssertEqual("2001", catalog.GetProperty("bindings")[0].GetProperty("assetId").GetString(), "Configured binding asset id");
+                AssertEqual("camera_push", catalog.GetProperty("bindings")[1].GetProperty("name").GetString(), "Script timeline binding should be included");
+                AssertEqual("script", catalog.GetProperty("bindings")[1].GetProperty("sourceKind").GetString(), "Script timeline source kind");
+            } finally {
+                if (Directory.Exists(directory)) {
+                    Directory.Delete(directory, true);
+                }
+            }
+        }
+
         static void LanguageServerStdioSessionServesProjectRequests() {
             string directory = Path.Combine(Path.GetTempPath(), "inscape-language-server-session-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(directory);

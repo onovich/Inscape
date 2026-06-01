@@ -23,6 +23,8 @@ const requiredPaths = [
   "Scripts/EditorAuthoring/Controllers/EditorSurfaceController.js",
   "Scripts/EditorAuthoring/Models/EditorCompletionTargetModelBuilder.js",
   "Scripts/EditorAuthoring/Models/EditorHoverTargetModelBuilder.js",
+  "Scripts/HostBinding/Bridges/SelfHostedEditorHostBindingBridge.js",
+  "Scripts/HostBinding/Models/HostBindingCapabilityModelMapper.js",
   "Scripts/HostSchema/Bridges/SelfHostedEditorHostSchemaBridge.js",
   "Scripts/HostSchema/Models/HostSchemaCapabilityModelMapper.js",
   "Scripts/LanguageServer/Bridges/SelfHostedEditorCompletionBridge.js",

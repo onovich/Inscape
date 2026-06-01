@@ -61,11 +61,11 @@ SelfHostedEditor regression invariant: Preview choice clicks must advance the re
 	1. 先巩固最近 SelfHostedEditor 回归边界：Preview 不得静默丢 `previewLines`，UTF-8 桥接不得再产生中文乱码，Flow 的 typewriter / wheel / `@` 标签行为和 loading 状态都要由 `check:model` / `check:structure` 继续守住。
 	2. 第一实施节点继续留在 L10N 视图，但目标改为“保存状态之后的下一刀”：补一层批量审校动作，不要把真实 CSV 语义搬回浏览器。
 	3. 第二实施节点再推进 Preview Runtime Player：Runtime smoke 现在已经守住 `/api/runtime-state` / `/api/runtime-action` 的 compact payload，以及 `advance-flow` / `rewind-flow` / `choose` / `continue` / `rewind` 契约；下一刀更适合继续缩小 Runtime 不可用时的本地 fallback，或开始整理长生命周期 Runtime 会话边界，而不是重新扩展前端 presenter 状态机。
-	4. 第三实施节点对齐 VSCode 与 SelfHostedEditor 的作者功能：先按 [VSCode / SelfHostedEditor 功能对齐盘点](vscode-self-hosted-editor-parity.md) 确认 diagnostics、completion、definition、references、hover、outline、本地化 review、stable node map、Host Schema / Host Bridge 提示等能力差异，再补 SelfHostedEditor 缺少的高频作者入口。2026-06-01 已先补 SelfHostedEditor `[query]` 与 `@emit` 的 Host Schema completion / hover；speaker / timeline 等 Host Bridge 提示等共享 capability 后再做。
+	4. 第三实施节点对齐 VSCode 与 SelfHostedEditor 的作者功能：先按 [VSCode / SelfHostedEditor 功能对齐盘点](vscode-self-hosted-editor-parity.md) 确认 diagnostics、completion、definition、references、hover、outline、本地化 review、stable node map、Host Schema / Host Bridge 提示等能力差异，再补 SelfHostedEditor 缺少的高频作者入口。2026-06-01 已补 SelfHostedEditor `[query]` / `@emit` 的 Host Schema completion / hover，以及 speaker / `@timeline` 的 Host Binding completion / hover；speaker / timeline navigation 仍待同一 capability 继续补。
 	5. 第四实施节点整理 Editor Backend 会话边界：把 line-map、Runtime、LanguageServer、localization update 这些开发服务器 + CLI 临时 workspace 桥逐步收成更接近桌面客户端的会话模型；短期可保留 HTTP dev bridge，但前端不得新增语义真相。
 	6. Graph 视图设计优化暂时降级：现有端口连线、retarget、reference projection、缩放 / 平移和 Compiler graph 来源只守回归，不再把 graph layout sidecar 或交互设计作为近期主线。
 	7. Unity / Bird 支持继续低优先级：只保留 importer 提交策略、真实 Timeline 绑定 Dry Run、Bird L10N 格式决策等准备项，不抢 SelfHostedEditor / VSCode parity 主线。
-- 验证入口：`npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax`、`check:structure`、`check:model`、`check:host-schema`、`check:host-schema-http`，以及 `dotnet build Inscape.slnx --no-restore`。最近一轮这些验证均已通过。
+- 验证入口：`npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax`、`check:structure`、`check:model`、`check:host-schema`、`check:host-schema-http`、`check:host-binding`、`check:host-binding-http`，以及 `dotnet build Inscape.slnx --no-restore`。最近一轮这些验证均已通过。
 
 ## 2026-05-19 最新收口
 

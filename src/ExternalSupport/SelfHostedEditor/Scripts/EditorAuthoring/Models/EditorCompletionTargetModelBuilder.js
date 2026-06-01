@@ -12,7 +12,17 @@ export class EditorCompletionTargetModelBuilder {
       return hostEventTarget;
     }
 
-    return this.tryBuildJumpTarget(beforeCursor, position);
+    const hostBindingTarget = this.tryBuildHostBindingTarget(beforeCursor, position);
+    if (hostBindingTarget) {
+      return hostBindingTarget;
+    }
+
+    const jumpTarget = this.tryBuildJumpTarget(beforeCursor, position);
+    if (jumpTarget) {
+      return jumpTarget;
+    }
+
+    return this.tryBuildSpeakerTarget(beforeCursor, position);
   }
 
   static tryBuildJumpTarget(beforeCursor, position) {
@@ -73,6 +83,48 @@ export class EditorCompletionTargetModelBuilder {
     return {
       kind: "host-event",
       typedPrefix: match[2] || "",
+      wordRange: {
+        startColumn: match[1].length + 1,
+        endColumn: position.column,
+      },
+    };
+  }
+
+  static tryBuildHostBindingTarget(beforeCursor, position) {
+    const match = /^(\s*@timeline(?:\.(?:talking|node)\.(?:enter|exit))?(?::|\s+)\s*)([^\s\]]*)$/.exec(beforeCursor);
+    if (!match) {
+      return null;
+    }
+
+    return {
+      bindingKind: "timeline",
+      kind: "host-binding",
+      typedPrefix: match[2] || "",
+      wordRange: {
+        startColumn: match[1].length + 1,
+        endColumn: position.column,
+      },
+    };
+  }
+
+  static tryBuildSpeakerTarget(beforeCursor, position) {
+    if (beforeCursor.includes(":") || beforeCursor.includes("：") || beforeCursor.includes("->")) {
+      return null;
+    }
+
+    const match = /^(\s*)([^#@\-\?\[\]\s][^:：]{0,80})$/.exec(beforeCursor);
+    if (!match) {
+      return null;
+    }
+
+    const typedPrefix = match[2].trimStart();
+    if (!typedPrefix) {
+      return null;
+    }
+
+    return {
+      kind: "speaker",
+      typedPrefix,
       wordRange: {
         startColumn: match[1].length + 1,
         endColumn: position.column,

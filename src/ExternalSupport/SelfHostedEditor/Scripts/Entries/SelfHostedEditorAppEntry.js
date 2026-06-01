@@ -6,6 +6,7 @@ import { EditorReferenceOverlayController } from "../EditorAuthoring/Controllers
 import { EditorRenameController } from "../EditorAuthoring/Controllers/EditorRenameController.js";
 import { EditorStatusController } from "../EditorAuthoring/Controllers/EditorStatusController.js";
 import { EditorSurfaceController } from "../EditorAuthoring/Controllers/EditorSurfaceController.js";
+import { SelfHostedEditorHostBindingBridge } from "../HostBinding/Bridges/SelfHostedEditorHostBindingBridge.js";
 import { SelfHostedEditorHostSchemaBridge } from "../HostSchema/Bridges/SelfHostedEditorHostSchemaBridge.js";
 import { SelfHostedEditorCompletionBridge } from "../LanguageServer/Bridges/SelfHostedEditorCompletionBridge.js";
 import { SelfHostedEditorDefinitionBridge } from "../LanguageServer/Bridges/SelfHostedEditorDefinitionBridge.js";
@@ -126,6 +127,7 @@ async function main() {
   const definitionBridge = new SelfHostedEditorDefinitionBridge();
   const diagnosticsBridge = new SelfHostedEditorDiagnosticsBridge();
   const hoverBridge = new SelfHostedEditorHoverBridge();
+  const hostBindingBridge = new SelfHostedEditorHostBindingBridge();
   const hostSchemaBridge = new SelfHostedEditorHostSchemaBridge();
   const lineMapBridge = new SelfHostedEditorLineMapBridge();
   const referencesBridge = new SelfHostedEditorReferencesBridge();
@@ -136,6 +138,7 @@ async function main() {
   definitionBridge.setWorkspaceContextProvider(workspaceContextProvider);
   diagnosticsBridge.setWorkspaceContextProvider(workspaceContextProvider);
   hoverBridge.setWorkspaceContextProvider(workspaceContextProvider);
+  hostBindingBridge.setWorkspaceContextProvider(workspaceContextProvider);
   hostSchemaBridge.setWorkspaceContextProvider(workspaceContextProvider);
   lineMapBridge.setWorkspaceContextProvider(workspaceContextProvider);
   localizationReviewBridge.setWorkspaceContextProvider(workspaceContextProvider);
@@ -146,13 +149,15 @@ async function main() {
   const editorCompletionController = new EditorCompletionController(
     editorController.getMonaco(),
     completionBridge,
-    hostSchemaBridge
+    hostSchemaBridge,
+    hostBindingBridge
   );
   const editorHoverController = new EditorHoverController(
     editorController.getMonaco(),
     editorController.getEditor(),
     hoverBridge,
-    hostSchemaBridge
+    hostSchemaBridge,
+    hostBindingBridge
   );
   const editorDefinitionController = new EditorDefinitionController(
     editorController.getMonaco(),

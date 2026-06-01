@@ -2,7 +2,7 @@
 
 状态：基线
 
-最后更新：2026-05-28
+最后更新：2026-06-01
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
@@ -15,7 +15,14 @@
 1. 先读 `docs/self-hosted-editor-architecture-plan.md` 与 `src/ExternalSupport/SelfHostedEditor/README.md`。
 2. 重点看 `src/ExternalSupport/SelfHostedEditor/Scripts/Entries/SelfHostedEditorAppEntry.js`、`StoryGraph/Controllers/StoryGraphPreviewController.js`、`EditorAuthoring/Controllers/EditorSurfaceController.js`、`LanguageServer/Bridges/SelfHostedEditorLineMapBridge.js`、`ProjectWorkspace/Models/ScriptLineIdentityModelBuilder.js`。
 3. 本地预览服务当前为 `http://127.0.0.1:5178/`，若未运行则用 `npm --prefix src\ExternalSupport\SelfHostedEditor run start`。
-4. 最近验证已通过：`npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax`、`check:structure`、`check:model`、`dotnet build Inscape.slnx --no-restore`。
+4. 最近验证已通过：`npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax`、`check:structure`、`check:model`、`check:host-schema-http`、`check:host-binding-http`、`dotnet build Inscape.slnx --no-restore`。
+
+2026-06-01 最新接手状态：
+
+- VSCode / SelfHostedEditor parity 盘点已落到 `docs/vscode-self-hosted-editor-parity.md`。Graph 设计优化与 Unity / Bird 继续低优先级，VSCode 与 SelfHostedEditor 重点按作者功能 parity 补齐。
+- SelfHostedEditor 已通过开发宿主复用 `LanguageServer --host-schema-capabilities-project`，补齐 `[query]` 与 `@emit` 的 completion / hover；新增 `check:host-schema` 与 `check:host-schema-http` 守住直连 helper 和真实 HTTP。
+- Host Bridge 作者提示已从 VSCode 私有 JSON 解析上提到共享能力：`LanguageServer --host-binding-capabilities-project` 现在输出 `inscape.host-binding.capabilities`，Tooling 汇总 Host Bridge 配置行与 workspace 编译出的 speaker / `@timeline` 出现位置。
+- SelfHostedEditor 已消费 `/api/host-binding-capabilities`，补齐 speaker 与 `@timeline` 的 completion / hover；新增 `check:host-binding` 与 `check:host-binding-http`。speaker definition / references 与 `@timeline` Ctrl+Click navigation 仍待继续接同一 capability。
 
 2026-05-26 本会话交接状态：
 

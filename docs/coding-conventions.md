@@ -235,7 +235,7 @@
 
 ### LanguageServer
 
-- 允许主语：`DslScript`、`StoryGraph`、`HostSchema`
+- 允许主语：`DslScript`、`StoryGraph`、`HostSchema`、`HostBinding`
 - 允许后缀：`Entry`、`Controller`、`Provider`、`Model`
 - 它直接调用 `Compiler` / `Tooling`，而不是借道 `Cli`
 
