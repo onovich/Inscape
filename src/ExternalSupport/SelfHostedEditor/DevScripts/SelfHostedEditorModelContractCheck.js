@@ -780,6 +780,7 @@ const localizationSessionStatus = new FakeElement("span");
 const localizationOpenButton = new FakeElement("button");
 const localizationCsvInput = new FakeElement("input");
 const localizationSourceStatus = new FakeElement("span");
+let selectedLocalizationSource = null;
 const localizationController = new LocalizationEditorController({
   panelElement: localizationPanel,
   draftStore,
@@ -801,6 +802,30 @@ const localizationController = new LocalizationEditorController({
           presenter: {
             items: [
               {
+                actions: [
+                  {
+                    actionKey: "open-current",
+                    detail: "Compiler sourced row",
+                    line: 3,
+                    sourcePath: "samples/court-loop.inscape",
+                    summary: "samples/court-loop.inscape:3:1",
+                  },
+                  {
+                    actionIndex: 0,
+                    actionKey: "open-candidate",
+                    actionStatus: "similarity 0.950",
+                    detail: "samples/previous.inscape:12:1 | Previous text",
+                    line: 12,
+                    sourcePath: "samples/previous.inscape",
+                    summary: "Previous translation",
+                  },
+                  {
+                    actionIndex: 0,
+                    actionKey: "show-candidate-diff",
+                    detail: "current: Compiler sourced row | previous: Previous text | translation: Previous translation",
+                    summary: "current -> previous",
+                  },
+                ],
                 detail: "samples/court-loop.inscape:3:1 <line line_DIALOGUE available> | Compiler sourced row",
                 item: {
                   anchor: "line_anchor_1",
@@ -845,13 +870,23 @@ const localizationController = new LocalizationEditorController({
     },
   },
 });
+localizationController.onSourceLineSelected((selection) => {
+  selectedLocalizationSource = selection;
+});
 await localizationController.render("# Opening\nDraft fallback row");
 assertIncludesText(getTextContent(localizationPanel), "Compiler sourced row");
 assertIncludesText(getTextContent(localizationPanel), "Previous translation");
 assertIncludesText(getTextContent(localizationPanel), "changed");
+assertIncludesText(getTextContent(localizationPanel), "Candidate 1");
+assertIncludesText(getTextContent(localizationPanel), "Diff 1");
 assertIncludesText(getTextContent(localizationPanel), "Already aligned row");
 assertIncludesText(getTextContent(localizationPanel), "kept");
 assertNotIncludesText(getTextContent(localizationPanel), "Draft fallback row");
+findElementByClass(localizationPanel, "localization-review-action-candidate")?.click();
+assertEqual(selectedLocalizationSource?.sourcePath, "samples/previous.inscape", "localization candidate action should preserve candidate source path");
+assertEqual(selectedLocalizationSource?.lineNumber, 12, "localization candidate action should jump to candidate source line");
+findElementByClass(localizationPanel, "localization-review-action-diff")?.click();
+assertIncludesText(getTextContent(localizationPanel), "current: Compiler sourced row | previous: Previous text", "localization diff action should reveal shared presenter diff text");
 assertEqual(localizationSourceStatus.textContent, "Review baseline: current extract", "localization review should show default review baseline");
 assertEqual(localizationFilterSummary.textContent, "Showing 2 of 2 rows", "localization review should show all rows by default");
 assertEqual(localizationSessionStatus.textContent, "0 overrides in session | Updated export needs previous CSV | Replace needs linked baseline", "localization session status should explain missing baseline");

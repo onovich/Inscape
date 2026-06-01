@@ -339,8 +339,14 @@ async function main() {
     renderWorkspaceSession();
   });
 
-  localizationController.onSourceLineSelected((lineNumber) => {
-    editorController.focusLine(lineNumber);
+  localizationController.onSourceLineSelected((selection) => {
+    if (typeof selection === "number") {
+      editorController.focusLine(selection);
+      layoutController.ensureEditorVisible();
+      return;
+    }
+
+    focusSourceSelection(selection);
     layoutController.ensureEditorVisible();
   });
 

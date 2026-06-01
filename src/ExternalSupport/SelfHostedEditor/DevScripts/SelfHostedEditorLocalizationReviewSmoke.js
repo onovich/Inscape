@@ -5,7 +5,7 @@ import { getLocalizationReviewForScriptText } from "./StartSelfHostedEditorPrevi
 
 const moduleRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const samplePath = path.join(moduleRoot, "..", "..", "..", "samples", "court-loop.inscape");
-const maximumReviewPayloadBytes = 200000;
+const maximumReviewPayloadBytes = 240000;
 
 async function main() {
   const scriptText = await fs.readFile(samplePath, "utf8");
@@ -25,6 +25,18 @@ async function main() {
 
   if (presenterItems.length === 0) {
     throw new Error("Expected localization review presenter items for court-loop sample.");
+  }
+
+  if (!presenterItems.some((item) => Array.isArray(item.actions) && item.actions.some((action) => action.actionKey === "open-current"))) {
+    throw new Error("Expected localization review presenter actions to include open-current source jumps.");
+  }
+
+  if (!presenterItems.some((item) => Array.isArray(item.actions) && item.actions.some((action) => action.actionKey === "open-candidate"))) {
+    throw new Error("Expected localization review presenter actions to include candidate source jumps.");
+  }
+
+  if (!presenterItems.some((item) => Array.isArray(item.actions) && item.actions.some((action) => action.actionKey === "show-candidate-diff" && action.detail))) {
+    throw new Error("Expected localization review presenter actions to include candidate diff details.");
   }
 
   if (Object.prototype.hasOwnProperty.call(review, "report")) {

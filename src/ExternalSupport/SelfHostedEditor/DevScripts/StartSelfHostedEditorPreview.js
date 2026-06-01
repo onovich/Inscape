@@ -963,6 +963,7 @@ function compactLocalizationReviewItems(items) {
   return items.map((presenterItem) => {
     const item = presenterItem?.item || {};
     return {
+      actions: compactLocalizationReviewActions(presenterItem?.actions || presenterItem?.Actions),
       detail: presenterItem?.detail || "",
       item: {
         anchor: item.anchor || "",
@@ -979,6 +980,28 @@ function compactLocalizationReviewItems(items) {
       sourcePath: presenterItem?.sourcePath || item.sourcePath || "",
       summary: presenterItem?.summary || "",
       title: presenterItem?.title || "",
+    };
+  });
+}
+
+function compactLocalizationReviewActions(actions) {
+  if (!Array.isArray(actions)) {
+    return [];
+  }
+
+  return actions.map((action) => {
+    const actionKey = action?.actionKey || action?.ActionKey || "";
+    return {
+      actionIndex: Number(action?.actionIndex ?? action?.ActionIndex ?? 0),
+      actionKey,
+      actionStatus: "",
+      column: Number(action?.column ?? action?.Column ?? 0),
+      detail: actionKey === "show-candidate-diff" ? action?.detail || action?.Detail || "" : "",
+      length: Number(action?.length ?? action?.Length ?? 0),
+      line: Number(action?.line ?? action?.Line ?? 0),
+      sourcePath: action?.sourcePath || action?.SourcePath || "",
+      summary: "",
+      title: action?.title || action?.Title || "",
     };
   });
 }

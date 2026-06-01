@@ -136,17 +136,13 @@ export class LocalizationEditorController {
   createRow(item) {
     const row = document.createElement("tr");
     row.dataset.sourceLine = String(item.sourceLine);
+    row.dataset.sourcePath = item.sourcePath || "";
     this.updateRowStatusState(row, item);
 
     const status = document.createElement("td");
     status.append(this.createStatusPill(item));
 
-    const review = document.createElement("td");
-    review.className = "localization-review-summary";
-    review.textContent = item.reviewSummary || item.review || "draft";
-    if (item.reviewDetail) {
-      review.title = item.reviewDetail;
-    }
+    const review = this.createReviewCell(item);
 
     const node = document.createElement("td");
     node.textContent = item.nodeTitle;
@@ -166,6 +162,93 @@ export class LocalizationEditorController {
 
     row.append(status, review, node, line, kind, text, translation);
     return row;
+  }
+
+  createReviewCell(item) {
+    const review = document.createElement("td");
+    review.className = "localization-review-summary";
+
+    const summary = document.createElement("div");
+    summary.className = "localization-review-text";
+    summary.textContent = item.reviewSummary || item.review || "draft";
+    if (item.reviewDetail) {
+      summary.title = item.reviewDetail;
+    }
+    review.append(summary);
+
+    if (Array.isArray(item.actions) && item.actions.length > 0) {
+      const actions = document.createElement("div");
+      actions.className = "localization-review-actions";
+      const detail = document.createElement("div");
+      detail.className = "localization-review-action-detail is-hidden";
+
+      for (const action of item.actions) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = `localization-review-action localization-review-action-${this.getReviewActionClass(action)}`;
+        button.textContent = this.createReviewActionLabel(action);
+        button.title = action.detail || action.summary || button.textContent;
+        button.addEventListener("click", (event) => {
+          event.stopPropagation();
+          this.handleReviewAction(action, item, detail);
+        });
+        actions.append(button);
+      }
+
+      review.append(actions, detail);
+    }
+
+    return review;
+  }
+
+  getReviewActionClass(action) {
+    switch (action.actionKey) {
+      case "open-current":
+        return "current";
+      case "open-candidate":
+        return "candidate";
+      case "show-candidate-diff":
+        return "diff";
+      default:
+        return "generic";
+    }
+  }
+
+  createReviewActionLabel(action) {
+    if (action.title) {
+      return action.title;
+    }
+
+    if (action.actionKey === "open-current") {
+      return "Current";
+    }
+
+    if (action.actionKey === "open-candidate") {
+      return `Candidate ${Number(action.actionIndex || 0) + 1}`;
+    }
+
+    if (action.actionKey === "show-candidate-diff") {
+      return `Diff ${Number(action.actionIndex || 0) + 1}`;
+    }
+
+    return "Review";
+  }
+
+  handleReviewAction(action, item, detailElement) {
+    if (action.actionKey === "show-candidate-diff") {
+      const text = action.detail || action.summary || "No candidate diff available.";
+      const isSameVisibleText = !detailElement.className.includes("is-hidden") && detailElement.textContent === text;
+      detailElement.textContent = text;
+      detailElement.classList.toggle("is-hidden", isSameVisibleText);
+      return;
+    }
+
+    this.notifySourceSelection({
+      column: Number(action.column || 1),
+      length: Number(action.length || 0),
+      lineNumber: Number(action.lineNumber || action.line || item.sourceLine || 1),
+      sourcePath: action.sourcePath || item.sourcePath || "",
+    });
   }
 
   createStatusPill(item) {
@@ -220,8 +303,15 @@ export class LocalizationEditorController {
   }
 
   notifySourceLineSelected(lineNumber) {
+    this.notifySourceSelection({
+      lineNumber,
+      sourcePath: "",
+    });
+  }
+
+  notifySourceSelection(selection) {
     for (const handler of this.sourceLineSelectedHandlers) {
-      handler(lineNumber);
+      handler(selection);
     }
   }
 
@@ -252,18 +342,39 @@ export class LocalizationEditorController {
       const status = item.status || "review";
       return {
         anchor: item.anchor || "",
+        actions: this.normalizeReviewActions(presenterItem.actions || presenterItem.Actions),
         kind: this.normalizeKind(item.kind),
         nodeTitle: item.nodeTitle || "",
         review: item.review || "",
         reviewDetail: presenterItem.detail || "",
         reviewStatus: status,
         reviewSummary: presenterItem.summary || "",
+        sourcePath: presenterItem.sourcePath || item.sourcePath || "",
         sourceLine: Number(item.line || presenterItem.line || 1),
         speaker: item.speaker || "",
         text: item.text || "",
         translation: item.translation || "",
       };
     });
+  }
+
+  normalizeReviewActions(actions) {
+    if (!Array.isArray(actions)) {
+      return [];
+    }
+
+    return actions.map((action) => ({
+      actionIndex: Number(action.actionIndex ?? action.ActionIndex ?? 0),
+      actionKey: action.actionKey || action.ActionKey || "",
+      actionStatus: action.actionStatus || action.ActionStatus || "",
+      column: Number(action.column ?? action.Column ?? 0),
+      detail: action.detail || action.Detail || "",
+      length: Number(action.length ?? action.Length ?? 0),
+      line: Number(action.line ?? action.Line ?? 0),
+      sourcePath: action.sourcePath || action.SourcePath || "",
+      summary: action.summary || action.Summary || "",
+      title: action.title || action.Title || "",
+    }));
   }
 
   normalizeKind(kind) {
