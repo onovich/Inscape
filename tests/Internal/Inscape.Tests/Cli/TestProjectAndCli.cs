@@ -72,6 +72,7 @@ Narrator: Start.
             AssertTrue(text.Contains("audit-query-interpolation-project"), "Commands should list query interpolation audit command.");
             AssertTrue(text.Contains("inspect-host-schema-project"), "Commands should list host schema inspection command.");
             AssertTrue(text.Contains("update-node-map-project"), "Commands should list node map update command.");
+            AssertTrue(text.Contains("apply-node-map-candidate-project"), "Commands should list node map candidate apply command.");
             AssertFalse(text.Contains("export-unity-sample-role-template"), "Internal CLI should not list UnitySample role template command.");
             AssertTrue(text.Contains("Run `inscape help <command>`"), "Commands should explain command help.");
         }
@@ -314,6 +315,101 @@ Narrator: Same line.
             }
         }
 
+        static void CliApplyNodeMapCandidateProjectWritesSharedReviewDecision() {
+            string directory = Path.Combine(Path.GetTempPath(), "inscape-cli-node-map-apply-" + Guid.NewGuid().ToString("N"));
+            string configDirectory = Path.Combine(directory, "config");
+            Directory.CreateDirectory(configDirectory);
+            try {
+                string nodeMapPath = Path.Combine(configDirectory, "inscape.node-map.json");
+                string previewPath = Path.Combine(configDirectory, "inscape.node-map-preview.json");
+                File.WriteAllText(Path.Combine(directory, "inscape.config.json"), """
+{
+  "nodeMap": "config/inscape.node-map.json"
+}
+""", Encoding.UTF8);
+
+                File.WriteAllText(nodeMapPath, """
+{
+  "format": "inscape.node-map",
+  "formatVersion": 1,
+  "nodes": [
+    {
+      "id": "node_CURRENT",
+      "title": "courtroom.intro",
+      "previousTitles": [],
+      "sourcePath": "story.inscape",
+      "sourceLine": 1,
+      "sourceCharacter": 0,
+      "firstContentFingerprint": "sha256:current",
+      "neighborFingerprint": "sha256:neighbor",
+      "lineAnchorSamples": [],
+      "status": "active",
+      "createdAt": "2026-05-19T01:00:00Z",
+      "updatedAt": "2026-05-19T02:00:00Z"
+    },
+    {
+      "id": "node_OLD",
+      "title": "intro",
+      "previousTitles": ["legacy.intro"],
+      "sourcePath": "story.inscape",
+      "sourceLine": 1,
+      "sourceCharacter": 0,
+      "firstContentFingerprint": "sha256:old",
+      "neighborFingerprint": "sha256:neighbor",
+      "lineAnchorSamples": [],
+      "status": "missing",
+      "createdAt": "2026-05-18T01:00:00Z",
+      "updatedAt": "2026-05-18T02:00:00Z"
+    }
+  ],
+  "tombstones": []
+}
+""", Encoding.UTF8);
+
+                string dryRunOutput = RunCliForOutput(new[] {
+                    "apply-node-map-candidate-project",
+                    directory,
+                    "--current-id",
+                    "node_CURRENT",
+                    "--current-title",
+                    "courtroom.intro",
+                    "--candidate-id",
+                    "node_OLD",
+                    "--dry-run",
+                    previewPath,
+                });
+
+                AssertEqual(Path.GetFullPath(previewPath), dryRunOutput.Trim(), "Dry run should print preview path.");
+                AssertTrue(File.Exists(previewPath), "Dry run preview should be written.");
+                AssertEqual("node_CURRENT", ReadNodeMapNodeId(nodeMapPath, "courtroom.intro"), "Dry run should not mutate original node map.");
+
+                string applyOutput = RunCliForOutput(new[] {
+                    "apply-node-map-candidate-project",
+                    directory,
+                    "--current-id",
+                    "node_CURRENT",
+                    "--current-title",
+                    "courtroom.intro",
+                    "--candidate-id",
+                    "node_OLD",
+                });
+
+                AssertEqual(Path.GetFullPath(nodeMapPath), applyOutput.Trim(), "Apply should print node map path.");
+                AssertEqual("node_OLD", ReadNodeMapNodeId(nodeMapPath, "courtroom.intro"), "Apply should reuse candidate stable id.");
+                AssertFalse(NodeMapContainsTitle(nodeMapPath, "intro"), "Apply should remove candidate duplicate entry.");
+
+                using JsonDocument document = JsonDocument.Parse(File.ReadAllText(nodeMapPath, Encoding.UTF8));
+                JsonElement node = FindNodeMapJsonNode(document.RootElement, "courtroom.intro");
+                AssertEqual(2, node.GetProperty("previousTitles").GetArrayLength(), "Apply should preserve and append previous titles.");
+                AssertEqual("legacy.intro", node.GetProperty("previousTitles")[0].GetString(), "Apply should preserve candidate previous title.");
+                AssertEqual("intro", node.GetProperty("previousTitles")[1].GetString(), "Apply should append candidate title.");
+            } finally {
+                if (Directory.Exists(directory)) {
+                    Directory.Delete(directory, true);
+                }
+            }
+        }
+
         static void StoryGraphCompilerDomainResolvesCrossFileTargets() {
             StoryGraphCompilerDomain compiler = new StoryGraphCompilerDomain();
             StoryGraphCompilationResultModel result = compiler.Compile(new List<DslScriptSourceModel> {
@@ -540,6 +636,34 @@ Narrator: No explicit entry.
 
             AssertFalse(result.HasErrors, "Fallback entry should not be an error.");
             AssertTrue(ContainsAnyCode(result, "INS032"), "Expected INS032 fallback entry diagnostic.");
+        }
+
+        static string ReadNodeMapNodeId(string nodeMapPath, string title) {
+            using JsonDocument document = JsonDocument.Parse(File.ReadAllText(nodeMapPath, Encoding.UTF8));
+            return FindNodeMapJsonNode(document.RootElement, title).GetProperty("id").GetString() ?? string.Empty;
+        }
+
+        static bool NodeMapContainsTitle(string nodeMapPath, string title) {
+            using JsonDocument document = JsonDocument.Parse(File.ReadAllText(nodeMapPath, Encoding.UTF8));
+            JsonElement nodes = document.RootElement.GetProperty("nodes");
+            for (int i = 0; i < nodes.GetArrayLength(); i += 1) {
+                if (nodes[i].GetProperty("title").GetString() == title) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        static JsonElement FindNodeMapJsonNode(JsonElement root, string title) {
+            JsonElement nodes = root.GetProperty("nodes");
+            for (int i = 0; i < nodes.GetArrayLength(); i += 1) {
+                if (nodes[i].GetProperty("title").GetString() == title) {
+                    return nodes[i];
+                }
+            }
+
+            throw new InvalidOperationException("Could not find node map JSON title: " + title);
         }
     }
 }

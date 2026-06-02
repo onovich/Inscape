@@ -83,6 +83,7 @@ dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- update-l
 | 命令 | 用途 | 常用输出 |
 | --- | --- | --- |
 | `update-node-map-project` | 创建或更新项目 `inscape.node-map.json` sidecar，可选写出 rename / conflict / missing 审查报告 | sidecar 文件路径 |
+| `apply-node-map-candidate-project` | 应用人工审查候选 stable id，可 dry-run 预览或写回 node map | sidecar / preview 文件路径 |
 | `check-project` | 检查整个项目 | stderr 诊断 |
 | `diagnose-project` | 编译项目并输出 Project IR + 诊断 JSON | JSON |
 | `compile-project` | 编译项目并输出 Project IR JSON | JSON |
@@ -101,6 +102,7 @@ dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- update-l
 ```powershell
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- update-node-map-project samples
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- update-node-map-project samples --report artifacts\node-map-review.json
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- apply-node-map-candidate-project samples --current-id node_NEW --current-title courtroom.intro --candidate-id node_OLD --dry-run artifacts\node-map-preview.json
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- check-project samples
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- diagnose-project samples -o artifacts\samples.diagnostics.json
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- compile-project samples -o artifacts\samples-project.json
@@ -114,6 +116,8 @@ dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- audit-l1
 ```
 
 `update-node-map-project` 会先按项目编译结果扫描当前 `# 标题` 节点，再创建或更新 `inscape.node-map.json`。当前实现已经包含保守自动重命名识别：当 `sourcePath`、content fingerprint、neighbor fingerprint、line anchor overlap 与行号距离能形成唯一候选时，会复用旧 stable node id，并把旧标题写入 `previousTitles`。如需人工审查，可加 `--report report.json` 输出 `inscape.node-map-update-report`，列出 `renamed`、`new`、`missing`、`conflict` 与 `manual-review` 项。
+
+`apply-node-map-candidate-project` 只执行显式人工审查决定：给定当前临时 stable id、当前标题和候选旧 stable id 后，把候选 id 应用到当前标题，保留候选 `previousTitles`，把候选标题追加为历史标题，并移除重复的候选条目。加 `--dry-run preview.json` 时只写预览文件，不修改原 node map；不加 dry-run 时写回 resolved node map。该命令供 VSCode / SelfHostedEditor 复用同一 Tooling 语义，宿主侧不要自行改写 sidecar JSON。
 
 `audit-l10n-alignment-project` 会读取当前项目、旧 CSV 和 stable node map，输出 `inscape.localization-alignment` 审查报告。`--format json` 适合机器消费；`--format text` 会输出人工审查友好的摘要，列出 `kept`、`new`、`changed`、`removed`、`conflict`、`stale` 项及候选译文原因。VSCode 当前已接上最小入口：`Inscape: Review Localization Alignment` 会提示选择旧 CSV、输出格式和目标文件，然后直接打开生成的报告；如果选择 json，还可以直接弹出审查项列表并跳回源位置。
 

@@ -94,7 +94,7 @@ SelfHostedEditor regression invariant: Preview choice clicks must advance the re
 1. **再推进 Stable Node ID 主线。**
 	- 已完成：ADR 0013、stable node id / title map 契约、`update-node-map-project` sidecar 闭环、保守自动重命名识别、VSCode 显式 `Update Stable Node Map` 入口、插入标题后的自动同步、`inscape.node-map-update-report` 审查报告、CLI `--report`、VSCode `Review Stable Node Map Changes` 入口。
 	- 下一步建议顺序：
-		- 已推进：标题重命名审查已有 review item 列表、candidate 跳转、node map / raw report 入口，以及 manual-review 项的显式 `Apply candidate stable id`；当前还会保存 `.review-backup.json` 并支持 `Revert last applied stable id`，也已支持 `Preview candidate stable id` 生成 dry-run `.review-preview.json`。下一步可再评估是否需要 multi-apply。
+		- 已推进：标题重命名审查已有 review item 列表、candidate 跳转、node map / raw report 入口，以及 manual-review 项的显式 `Apply candidate stable id`；candidate apply 语义已下沉到 Tooling / CLI `apply-node-map-candidate-project`，VSCode 只做 Quick Pick、dry-run 调用、`.review-backup.json` 与 `Revert last applied stable id` 文件恢复。下一步可再评估 SelfHostedEditor apply UI 或 multi-apply。
 		- 已完成：G10.3 本地化 alignment / audit report。
 		- 已完成：G10.4 相似文本只作人工候选，不静默继承旧译文。
 2. **把本地化迁移闭环做实。**

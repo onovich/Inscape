@@ -414,7 +414,9 @@ storyNodeMapReviewController = new StoryNodeMapReviewController({
     fs,
     path,
     ...locationServices,
-    openFile: openFileInEditor
+    openFile: openFileInEditor,
+    applyCandidateStableIdToNodeMap: (options) => editorAuthoringCommand.applyNodeMapReviewCandidate(options),
+    previewCandidateStableIdToNodeMap: (options) => editorAuthoringCommand.previewNodeMapReviewCandidate(options)
 });
 
 editorAuthoringCommand = new EditorAuthoringCommand({

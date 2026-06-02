@@ -23,6 +23,10 @@ namespace Inscape.Cli {
                 return RunStoryNodeMapUpdate(rootPath, args, outputPath, jsonOptions);
             }
 
+            if (command == "apply-node-map-candidate-project") {
+                return RunStoryNodeMapCandidateApply(rootPath, args, outputPath, jsonOptions);
+            }
+
             if (command == "audit-l10n-alignment-project") {
                 return RunLocalizationAlignmentAudit(rootPath, args, outputPath, jsonOptions);
             }
@@ -351,6 +355,62 @@ namespace Inscape.Cli {
             if (!string.IsNullOrWhiteSpace(reportPath)) {
                 CliCore.WriteOrPrint(reportPath, JsonSerializer.Serialize(update.Report, jsonOptions));
             }
+            Console.WriteLine(nodeMapPath);
+            return 0;
+        }
+
+        static int RunStoryNodeMapCandidateApply(string rootPath, string[] args, string? outputPath, JsonSerializerOptions jsonOptions) {
+            if (!Directory.Exists(rootPath)) {
+                Console.Error.WriteLine("Project root not found: " + rootPath);
+                return 3;
+            }
+
+            string? currentStableId = CliCore.ReadOption(args, "--current-id");
+            string? currentTitle = CliCore.ReadOption(args, "--current-title");
+            string? candidateStableId = CliCore.ReadOption(args, "--candidate-id");
+            if (string.IsNullOrWhiteSpace(currentStableId)
+                || string.IsNullOrWhiteSpace(currentTitle)
+                || string.IsNullOrWhiteSpace(candidateStableId)) {
+                Console.Error.WriteLine("apply-node-map-candidate-project requires --current-id, --current-title, and --candidate-id.");
+                return 2;
+            }
+
+            string? configuredPath = CliCore.ReadOption(args, "--config");
+            if (!ToolConfigReaderDomain.TryReadProjectConfig(rootPath,
+                                                             configuredPath,
+                                                             jsonOptions,
+                                                             out ToolConfigModel config,
+                                                             out string? configError)) {
+                Console.Error.WriteLine(configError);
+                return 3;
+            }
+
+            string nodeMapPath = string.IsNullOrWhiteSpace(outputPath)
+                ? StoryNodeMapPathResolverDomain.Resolve(rootPath, configuredPath, config.NodeMap)
+                : Path.GetFullPath(outputPath);
+            if (!StoryNodeMapReaderDomain.TryRead(nodeMapPath, jsonOptions, out StoryNodeMapModel existingMap, out string? readError)) {
+                Console.Error.WriteLine(readError);
+                return 3;
+            }
+
+            if (!StoryNodeMapReviewActionDomain.TryApplyCandidateStableId(existingMap,
+                                                                           currentStableId,
+                                                                           currentTitle,
+                                                                           candidateStableId,
+                                                                           out StoryNodeMapReviewCandidateApplyResultModel apply,
+                                                                           out string? applyError)) {
+                Console.Error.WriteLine(applyError);
+                return 3;
+            }
+
+            string? dryRunPath = CliCore.ReadOption(args, "--dry-run");
+            if (!string.IsNullOrWhiteSpace(dryRunPath)) {
+                StoryNodeMapWriterDomain.Write(dryRunPath, apply.NodeMap, jsonOptions);
+                Console.WriteLine(Path.GetFullPath(dryRunPath));
+                return 0;
+            }
+
+            StoryNodeMapWriterDomain.Write(nodeMapPath, apply.NodeMap, jsonOptions);
             Console.WriteLine(nodeMapPath);
             return 0;
         }

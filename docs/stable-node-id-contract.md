@@ -10,6 +10,8 @@ Goal 0 后，`:: node.name` 不再是当前 parser / editor 主路径。本文�
 
 2026-05-19 补充：Goal 10 的第一刀已经落地 `update-node-map-project`。当前实现会创建/读取/更新 `inscape.node-map.json`，按当前标题精确命中复用 stable node id，把消失节点标成 `missing`，并把 sidecar 内重复 `id` / `title` 标成 `conflict`。source/content/neighbor 指纹已开始落盘；同日又补了第一版“保守自动重命名识别”：当 `sourcePath` 稳定，且 content / neighbor / line anchors 能形成唯一候选时，会复用旧 id 并把旧标题写入 `previousTitles`。VSCode 当前也已新增显式 `Inscape: Update Stable Node Map` 入口，并会把活动未保存 `.inscape` 文档通过 `--override` 传给 CLI。Goal 10.2.3 现已落地：`update-node-map-project --report` 会输出 `inscape.node-map-update-report`，列出 `renamed`、`new`、`missing`、`conflict` 与 `manual-review` 项；VSCode 也提供显式 `Inscape: Review Stable Node Map Changes` 入口。
 
+2026-06-02 补充：manual-review 候选应用语义已落地为 Tooling 共享动作与 CLI `apply-node-map-candidate-project`。该动作只执行作者明确选择的候选：把候选 stable id 应用到当前标题，继承候选历史标题，追加候选旧标题，并移除重复候选条目。VSCode 已改为调用该共享命令；SelfHostedEditor 后续若需要 apply UI，也应复用该命令或同一 Tooling action。
+
 ## 目标
 
 Inscape 块语法使用 `# 标题`。标题是作者界面的主身份，适合写作、跳转、补全、大纲和预览；stable node id 是系统身份，适合本地化锚点迁移、外部引用、Runtime 存档和 Host Bridge 输出。
@@ -178,9 +180,9 @@ node map 是可版本控制文件。合并策略：
 
 - Compiler：解析标题、诊断重复标题、在输入提供 node map 时把标题解析为 stable node id；不负责扫描文件系统寻找 sidecar。
 - Tooling：读取 / 更新 `inscape.node-map.json`，执行项目扫描、迁移识别和冲突报告。
-- CLI：提供显式命令，例如 `update-node-map-project`，负责 sidecar 输出和 `inscape.node-map-update-report` 审查报告；如后续需要离线迁移器，再单独增加 `migrate-node-titles-project`。
+- CLI：提供显式命令，例如 `update-node-map-project` 与 `apply-node-map-candidate-project`，负责 sidecar 输出、`inscape.node-map-update-report` 审查报告和人工候选应用写回；如后续需要离线迁移器，再单独增加 `migrate-node-titles-project`。
 - LanguageServer：消费 Tooling 契约，提供编辑器 diagnostics、rename candidates 和 quick fix。
-- VSCode：提供创建标题 `_01` 自动编号、显式 stable node map 更新命令、显式 `Review Stable Node Map Changes` 审查入口、跳转和预览体验。
+- VSCode：提供创建标题 `_01` 自动编号、显式 stable node map 更新命令、显式 `Review Stable Node Map Changes` 审查入口、跳转、预览、backup / revert 等宿主体验；candidate apply 语义调用共享 CLI，不在扩展 JS 内改写 node map。
 - Runtime：只消费编译结果中的 stable node id 和 display title，不读取源码或 sidecar。
 
 ## Goal 1 自检

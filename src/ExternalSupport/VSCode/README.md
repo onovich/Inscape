@@ -21,7 +21,7 @@ The package is also a future split-repo candidate, so non-source extension asset
 - Guards the LanguageServer-backed authoring surface with `check:semantic-parity`, which exercises diagnostics, node completion, definition, references, hover, and document symbols through VSCode providers against the same current-draft and cross-file fixture used by the SelfHostedEditor parity smoke.
 - Provides `Inscape: Insert Node Title`; if the requested title already exists, the command inserts the next `_01`-style title and, when the file belongs to a workspace, silently refreshes the stable node map through `update-node-map-project`.
 - Provides `Inscape: Update Stable Node Map`; it runs `update-node-map-project` for the selected workspace, forwards the active unsaved `.inscape` file through `--override`, and surfaces a review hint when the update report contains manual review or conflict items.
-- Provides `Inscape: Review Stable Node Map Changes`; it runs the same update flow with `--report`, then opens a JSON review report for rename/manual-review/conflict/missing inspection.
+- Provides `Inscape: Review Stable Node Map Changes`; it runs the same update flow with `--report`, then opens a JSON review report for rename/manual-review/conflict/missing inspection. Manual-review candidate apply and dry-run preview call shared CLI `apply-node-map-candidate-project`; VSCode only owns Quick Pick flow plus `.review-backup.json` / revert file handling.
 - Provides dialogue speaker completions from `inscape.config.json` `hostBridge`, with workspace speaker fallback.
 - Provides host event / timing hook completions from `inscape.config.json` `hostBridge`, with workspace `@timeline...` fallback.
 - Provides `[]` query interpolation completions and Hover from configured Host Schema zero-parameter simple queries such as `[player.gold]`; unknown queries are authoring hints only, not compiler errors. The provider prefers the persistent LanguageServer Host Schema capability session path, falls back to CLI `inspect-host-schema-project`, and does not parse Host Schema JSON directly in JS.
@@ -157,6 +157,14 @@ dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- update-n
 ```
 
 The current review report is a JSON audit artifact. It lists conservative auto-renames, brand-new ids, missing nodes, sidecar conflicts, and manual-review rename candidates. VSCode does not rename titles for the author yet; this step only gives the author a narrow inspection entry before Goal 10.3 localization alignment work.
+
+Manual-review candidate apply uses the shared Tooling-backed CLI action rather than a VSCode-side JSON mutation:
+
+```powershell
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- apply-node-map-candidate-project <workspace> --current-id node_NEW --current-title <current-title> --candidate-id node_OLD [-o inscape.node-map.json] [--dry-run preview.json]
+```
+
+The command reuses the selected candidate stable id, preserves previous title history, and removes the temporary duplicate node map entry. VSCode writes `.review-backup.json` before apply so the local revert action can restore the previous file snapshot.
 
 Speaker completion reads `inscape.config.json` from the workspace root. It prefers `hostBridge` ids with `kind: "speaker"`. When no Host Bridge row exists, the extension still scans open and workspace `.inscape` files for existing dialogue speakers.
 

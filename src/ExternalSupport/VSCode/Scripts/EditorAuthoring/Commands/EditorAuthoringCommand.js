@@ -145,6 +145,7 @@ class EditorAuthoringCommand {
                 reviewItemsAction,
                 openReviewAction,
                 openNodeMapAction,
+                context,
                 result
             });
         } catch (error) {
@@ -182,6 +183,7 @@ class EditorAuthoringCommand {
                 reviewItemsAction,
                 openReviewAction: openReportAction,
                 openNodeMapAction,
+                context,
                 result
             });
         } catch (error) {
@@ -193,7 +195,9 @@ class EditorAuthoringCommand {
         if (selection === options.reviewItemsAction && options.result.report) {
             await this.storyNodeMapReviewController.reviewNodeMapReport(options.result.report,
                                                                         options.result.nodeMapPath,
-                                                                        options.result.reportPath);
+                                                                        options.result.reportPath,
+                                                                        options.result.workspaceFolder,
+                                                                        options.context);
             return;
         }
 
@@ -337,7 +341,8 @@ class EditorAuthoringCommand {
             return {
                 nodeMapPath,
                 reportPath: reportPath && this.fs.existsSync(reportPath) ? reportPath : undefined,
-                report: reportPath && this.fs.existsSync(reportPath) ? await this.readNodeMapReport(reportPath) : undefined
+                report: reportPath && this.fs.existsSync(reportPath) ? await this.readNodeMapReport(reportPath) : undefined,
+                workspaceFolder
             };
         } finally {
             if (tempPath) {
@@ -382,6 +387,66 @@ class EditorAuthoringCommand {
 
         if (reportPath) {
             args.push("--report", reportPath);
+        }
+
+        return {
+            command,
+            args,
+            cwd: workspaceFolder.uri.fsPath
+        };
+    }
+
+    async applyNodeMapReviewCandidate(options) {
+        const invocation = this.createNodeMapCandidateApplyInvocation(options);
+        await this.vscode.window.withProgress({
+            location: this.vscode.ProgressLocation.Notification,
+            title: "Applying Inscape stable node map candidate",
+            cancellable: false
+        }, () => this.execFile(invocation));
+    }
+
+    async previewNodeMapReviewCandidate(options) {
+        const previewPath = options.nodeMapPath + ".review-preview.json";
+        const invocation = this.createNodeMapCandidateApplyInvocation({
+            ...options,
+            dryRunPath: previewPath
+        });
+        const output = await this.vscode.window.withProgress({
+            location: this.vscode.ProgressLocation.Notification,
+            title: "Previewing Inscape stable node map candidate",
+            cancellable: false
+        }, () => this.execFile(invocation));
+        return this.normalizeNodeMapPath(output) || previewPath;
+    }
+
+    createNodeMapCandidateApplyInvocation(options) {
+        const workspaceFolder = options.workspaceFolder;
+        if (!workspaceFolder) {
+            throw new Error("Stable node map candidate apply requires a workspace folder.");
+        }
+
+        const configuration = this.vscode.workspace.getConfiguration("inscape", workspaceFolder.uri);
+        const command = configuration.get("compiler.command", "dotnet");
+        const cliProject = this.resolveCliProjectPath(options.context, workspaceFolder.uri.fsPath);
+        const args = [
+            "run",
+            "--project",
+            cliProject,
+            "--",
+            "apply-node-map-candidate-project",
+            workspaceFolder.uri.fsPath,
+            "--current-id",
+            String(options.item && options.item.stableId || ""),
+            "--current-title",
+            String(options.item && options.item.title || ""),
+            "--candidate-id",
+            String(options.candidate && options.candidate.stableId || ""),
+            "-o",
+            options.nodeMapPath
+        ];
+
+        if (options.dryRunPath) {
+            args.push("--dry-run", options.dryRunPath);
         }
 
         return {

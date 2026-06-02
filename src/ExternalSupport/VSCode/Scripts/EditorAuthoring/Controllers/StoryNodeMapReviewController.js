@@ -9,9 +9,11 @@ class StoryNodeMapReviewController {
         this.openLocation = dependencies.openLocation;
         this.locationFromPayload = dependencies.locationFromPayload;
         this.openFile = dependencies.openFile;
+        this.applyCandidateStableIdToNodeMap = dependencies.applyCandidateStableIdToNodeMap;
+        this.previewCandidateStableIdToNodeMap = dependencies.previewCandidateStableIdToNodeMap;
     }
 
-    async reviewNodeMapReport(report, nodeMapPath, reportPath) {
+    async reviewNodeMapReport(report, nodeMapPath, reportPath, workspaceFolder, context) {
         const items = report && Array.isArray(report.items) ? report.items : [];
         if (items.length === 0) {
             this.vscode.window.showInformationMessage("Stable node map review report has no items.");
@@ -39,12 +41,12 @@ class StoryNodeMapReviewController {
         }
 
         if (typeof action.applyCandidateIndex === "number" && nodeMapPath) {
-            await this.applyCandidateStableId(nodeMapPath, selected.item, selected.item.candidates[action.applyCandidateIndex]);
+            await this.applyCandidateStableId(context, workspaceFolder, nodeMapPath, selected.item, selected.item.candidates[action.applyCandidateIndex]);
             return;
         }
 
         if (typeof action.previewCandidateIndex === "number" && nodeMapPath) {
-            await this.previewCandidateStableId(nodeMapPath, selected.item, selected.item.candidates[action.previewCandidateIndex]);
+            await this.previewCandidateStableId(context, workspaceFolder, nodeMapPath, selected.item, selected.item.candidates[action.previewCandidateIndex]);
             return;
         }
 
@@ -150,11 +152,20 @@ class StoryNodeMapReviewController {
         return actions;
     }
 
-    async applyCandidateStableId(nodeMapPath, item, candidate) {
+    async applyCandidateStableId(context, workspaceFolder, nodeMapPath, item, candidate) {
+        if (typeof this.applyCandidateStableIdToNodeMap !== "function") {
+            throw new Error("Stable node map candidate apply action is unavailable.");
+        }
+
         const text = await this.fs.promises.readFile(nodeMapPath, "utf8");
         await this.fs.promises.writeFile(this.reviewBackupPath(nodeMapPath), text, "utf8");
-        const nodeMap = this.applyCandidateStableIdToNodeMap(JSON.parse(text), item, candidate);
-        await this.fs.promises.writeFile(nodeMapPath, JSON.stringify(nodeMap, null, 2), "utf8");
+        await this.applyCandidateStableIdToNodeMap({
+            context,
+            workspaceFolder,
+            nodeMapPath,
+            item,
+            candidate
+        });
         const selection = await this.vscode.window.showInformationMessage("Applied candidate stable id to node map: " + candidate.stableId, "Open Node Map", "Revert Last Apply");
         if (selection === "Open Node Map") {
             await this.openFile(nodeMapPath);
@@ -164,43 +175,22 @@ class StoryNodeMapReviewController {
         }
     }
 
-    async previewCandidateStableId(nodeMapPath, item, candidate) {
-        const text = await this.fs.promises.readFile(nodeMapPath, "utf8");
-        const nodeMap = this.applyCandidateStableIdToNodeMap(JSON.parse(text), item, candidate);
-        const previewPath = nodeMapPath + ".review-preview.json";
-        await this.fs.promises.writeFile(previewPath, JSON.stringify(nodeMap, null, 2), "utf8");
+    async previewCandidateStableId(context, workspaceFolder, nodeMapPath, item, candidate) {
+        if (typeof this.previewCandidateStableIdToNodeMap !== "function") {
+            throw new Error("Stable node map candidate preview action is unavailable.");
+        }
+
+        const previewPath = await this.previewCandidateStableIdToNodeMap({
+            context,
+            workspaceFolder,
+            nodeMapPath,
+            item,
+            candidate
+        });
         const selection = await this.vscode.window.showInformationMessage("Wrote stable node map dry-run preview for candidate: " + candidate.stableId, "Open Preview");
         if (selection === "Open Preview") {
             await this.openFile(previewPath);
         }
-    }
-
-    applyCandidateStableIdToNodeMap(nodeMap, item, candidate) {
-        const nodes = Array.isArray(nodeMap && nodeMap.nodes) ? nodeMap.nodes : [];
-        const currentIndex = nodes.findIndex((node) => node && node.id === item.stableId && node.title === item.title);
-        const candidateIndex = nodes.findIndex((node) => node && node.id === candidate.stableId);
-
-        if (currentIndex < 0 || candidateIndex < 0) {
-            throw new Error("Could not find the selected stable node map entries to apply candidate review.");
-        }
-
-        const currentNode = nodes[currentIndex];
-        const candidateNode = nodes[candidateIndex];
-        const previousTitles = Array.isArray(candidateNode.previousTitles) ? candidateNode.previousTitles.slice() : [];
-        if (candidateNode.title && candidateNode.title !== currentNode.title && !previousTitles.includes(candidateNode.title)) {
-            previousTitles.push(candidateNode.title);
-        }
-
-        currentNode.id = candidateNode.id;
-        currentNode.previousTitles = previousTitles;
-        currentNode.createdAt = candidateNode.createdAt || currentNode.createdAt;
-
-        if (candidateIndex !== currentIndex) {
-            nodes.splice(candidateIndex, 1);
-        }
-
-        nodeMap.nodes = nodes;
-        return nodeMap;
     }
 
     async revertLastAppliedStableId(nodeMapPath) {

@@ -264,6 +264,85 @@ Narrator: Second line.
             AssertEqual("intro", renamedItem.PreviousTitle, "Renamed report item should include previous title.");
         }
 
+        static void StoryNodeMapReviewActionAppliesCandidateStableId() {
+            StoryNodeMapModel nodeMap = new StoryNodeMapModel {
+                Nodes = new List<StoryNodeMapEntryModel> {
+                    new StoryNodeMapEntryModel {
+                        Id = "node_CURRENT",
+                        Title = "庭审序幕",
+                        SourcePath = "story/court.inscape",
+                        SourceLine = 1,
+                        Status = "active",
+                        CreatedAt = "2026-05-19T01:00:00Z",
+                        UpdatedAt = "2026-05-19T02:00:00Z",
+                    },
+                    new StoryNodeMapEntryModel {
+                        Id = "node_OLD",
+                        Title = "法庭开场",
+                        PreviousTitles = new List<string> {
+                            "court_intro",
+                        },
+                        SourcePath = "story/court.inscape",
+                        SourceLine = 1,
+                        Status = "missing",
+                        CreatedAt = "2026-05-18T01:00:00Z",
+                        UpdatedAt = "2026-05-18T02:00:00Z",
+                    },
+                },
+            };
+
+            bool applied = StoryNodeMapReviewActionDomain.TryApplyCandidateStableId(nodeMap,
+                                                                                    "node_CURRENT",
+                                                                                    "庭审序幕",
+                                                                                    "node_OLD",
+                                                                                    out StoryNodeMapReviewCandidateApplyResultModel result,
+                                                                                    out string? errorMessage);
+
+            AssertTrue(applied, errorMessage ?? "Candidate should apply.");
+            AssertEqual("node_OLD", result.AppliedStableId, "Applied result stable id");
+            AssertEqual("node_CURRENT", result.RemovedStableId, "Applied result removed temporary id");
+            AssertEqual(1, result.NodeMap.Nodes.Count, "Candidate duplicate entry should be removed.");
+
+            StoryNodeMapEntryModel updated = FindNode(result.NodeMap, "庭审序幕");
+            AssertEqual("node_OLD", updated.Id, "Current title should reuse candidate stable id.");
+            AssertTrue(updated.PreviousTitles.Contains("court_intro"), "Candidate previous titles should be preserved.");
+            AssertTrue(updated.PreviousTitles.Contains("法庭开场"), "Candidate title should become a previous title.");
+            AssertEqual("2026-05-18T01:00:00Z", updated.CreatedAt, "Current title should inherit candidate createdAt.");
+            AssertEqual("active", updated.Status, "Current node status should stay active.");
+            AssertEqual("story/court.inscape", updated.SourcePath, "Current source path should stay on the current title.");
+        }
+
+        static void StoryNodeMapReviewActionRejectsMissingEntries() {
+            StoryNodeMapModel nodeMap = new StoryNodeMapModel {
+                Nodes = new List<StoryNodeMapEntryModel> {
+                    new StoryNodeMapEntryModel {
+                        Id = "node_CURRENT",
+                        Title = "庭审序幕",
+                        Status = "active",
+                    },
+                },
+            };
+
+            bool missingCandidateApplied = StoryNodeMapReviewActionDomain.TryApplyCandidateStableId(nodeMap,
+                                                                                                    "node_CURRENT",
+                                                                                                    "庭审序幕",
+                                                                                                    "node_MISSING",
+                                                                                                    out _,
+                                                                                                    out string? missingCandidateError);
+            bool missingCurrentApplied = StoryNodeMapReviewActionDomain.TryApplyCandidateStableId(nodeMap,
+                                                                                                  "node_MISSING",
+                                                                                                  "庭审序幕",
+                                                                                                  "node_CURRENT",
+                                                                                                  out _,
+                                                                                                  out string? missingCurrentError);
+
+            AssertFalse(missingCandidateApplied, "Missing candidate should be rejected.");
+            AssertTrue((missingCandidateError ?? "").Contains("candidate", StringComparison.OrdinalIgnoreCase), "Missing candidate error should explain the candidate.");
+            AssertFalse(missingCurrentApplied, "Missing current entry should be rejected.");
+            AssertTrue((missingCurrentError ?? "").Contains("current", StringComparison.OrdinalIgnoreCase), "Missing current error should explain the current entry.");
+            AssertEqual("node_CURRENT", FindNode(nodeMap, "庭审序幕").Id, "Rejected apply should not mutate the input map.");
+        }
+
         static StoryNodeMapUpdateReportItemModel FindReportItem(StoryNodeMapUpdateReportModel report, string kind, string title) {
             for (int i = 0; i < report.Items.Count; i += 1) {
                 StoryNodeMapUpdateReportItemModel item = report.Items[i];
