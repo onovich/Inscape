@@ -131,6 +131,11 @@ export function createSelfHostedEditorPreviewServer(serverPort = port) {
       return;
     }
 
+    if (request.method === "POST" && requestUrl.pathname === "/api/node-map-apply") {
+      await handleNodeMapApplyRequest(request, response);
+      return;
+    }
+
     if (request.method === "POST" && requestUrl.pathname === "/api/localization-review") {
       await handleLocalizationReviewRequest(request, response);
       return;
@@ -504,6 +509,39 @@ async function handleNodeMapReviewRequest(request, response) {
   }
 }
 
+async function handleNodeMapApplyRequest(request, response) {
+  try {
+    const body = await readRequestBody(request);
+    const payload = parseJsonRequestBody(body);
+    const scriptText = typeof payload.scriptText === "string"
+      ? payload.scriptText
+      : "";
+    const workspace = normalizeWorkspacePayload(payload.workspace);
+    const item = payload.item && typeof payload.item === "object" ? payload.item : {};
+    const candidate = payload.candidate && typeof payload.candidate === "object" ? payload.candidate : {};
+    const nodeMapPath = typeof payload.nodeMapPath === "string" ? payload.nodeMapPath : "";
+    const applyPayload = await getStoryNodeMapCandidateApplyForScriptText(
+      scriptText,
+      workspace,
+      item,
+      candidate,
+      Boolean(payload.dryRun),
+      nodeMapPath
+    );
+    response.writeHead(200, {
+      "Content-Type": "application/json; charset=utf-8",
+    });
+    response.end(JSON.stringify(applyPayload));
+  } catch (error) {
+    response.writeHead(500, {
+      "Content-Type": "application/json; charset=utf-8",
+    });
+    response.end(JSON.stringify({
+      error: error instanceof Error ? error.message : String(error),
+    }));
+  }
+}
+
 async function handleLocalizationReviewRequest(request, response) {
   try {
     const body = await readRequestBody(request);
@@ -719,6 +757,39 @@ export async function getStoryNodeMapReviewForScriptText(scriptText, workspace) 
   });
 }
 
+export async function getStoryNodeMapCandidateApplyForScriptText(scriptText, workspace, item, candidate, dryRun = false, requestedNodeMapPath = "") {
+  return withTemporaryWorkspace(workspace, scriptText, async ({ tempRoot }) => {
+    const nodeMapPath = path.join(tempRoot, sanitizeRelativePath(requestedNodeMapPath) || "inscape.node-map.json");
+    const outputPath = dryRun
+      ? path.join(path.dirname(nodeMapPath), "inscape.node-map-candidate-preview.json")
+      : nodeMapPath;
+    const result = await runCliCommand([
+      "apply-node-map-candidate-project",
+      tempRoot,
+      "--current-id",
+      String(item?.stableId || ""),
+      "--current-title",
+      String(item?.title || ""),
+      "--candidate-id",
+      String(candidate?.stableId || ""),
+      "-o",
+      nodeMapPath,
+      ...(dryRun ? ["--dry-run", outputPath] : []),
+    ], "CLI stable node map candidate apply");
+    const writtenPath = String(result.stdout || "").trim().split(/\r?\n/).filter(Boolean).at(-1) || outputPath;
+    const nodeMapText = await fsp.readFile(writtenPath, "utf8");
+    return compactStoryNodeMapApplyPayload({
+      candidateStableId: candidate?.stableId || "",
+      dryRun,
+      itemStableId: item?.stableId || "",
+      nodeMap: parseJsonFileText(nodeMapText),
+      nodeMapPath: writtenPath,
+      nodeMapText,
+      tempRoot,
+    });
+  });
+}
+
 export async function getLocalizationReviewForScriptText(scriptText, workspace, previousCsv) {
   return withTemporaryWorkspace(workspace, scriptText, async ({ tempRoot }) => {
     await runCliCommand([
@@ -929,6 +1000,19 @@ function compactStoryNodeMapReviewPayload({ nodeMap, nodeMapPath, nodeMapText, r
       summary: report?.summary || null,
       workspace: "",
     },
+  };
+}
+
+function compactStoryNodeMapApplyPayload({ candidateStableId, dryRun, itemStableId, nodeMap, nodeMapPath, nodeMapText, tempRoot }) {
+  return {
+    candidateStableId,
+    dryRun: Boolean(dryRun),
+    format: "inscape.self-hosted-editor.node-map-apply",
+    formatVersion: 1,
+    itemStableId,
+    nodeMap,
+    nodeMapPath: relativizeSourcePath(nodeMapPath, tempRoot),
+    nodeMapText,
   };
 }
 

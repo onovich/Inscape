@@ -669,12 +669,15 @@ class FakeElement {
   }
 
   click() {
+    const results = [];
     for (const handler of this.eventHandlers.get("click") || []) {
-      handler({
+      results.push(handler({
         stopPropagation: () => {},
         target: this,
-      });
+      }));
     }
+
+    return Promise.all(results.filter((result) => result && typeof result.then === "function"));
   }
 
   closest(selector) {
@@ -708,6 +711,10 @@ class FakeElement {
     const results = [];
     collectMatchingElements(this, selector, results);
     return results;
+  }
+
+  querySelector(selector) {
+    return this.querySelectorAll(selector)[0] || null;
   }
 }
 
@@ -993,6 +1000,7 @@ assertEqual(localizationSourceStatus.textContent, "Review baseline: baseline.csv
 assertEqual(localizationSessionStatus.textContent, "0 overrides in session | Updated export ready | Linked clean", "localization replace should clear session drafts after writing");
 assertEqual(localizationReplaceButton.disabled, true, "localization replace should disable once linked baseline is clean");
 const nodeMapButton = new FakeElement("button");
+let appliedNodeMapPath = "";
 let selectedNodeMapLine = 0;
 const nodeMapReviewController = new StoryNodeMapReviewController({
   reviewBridge: {
@@ -1035,6 +1043,28 @@ const nodeMapReviewController = new StoryNodeMapReviewController({
         },
       };
     },
+    async applyCandidate(_scriptText, item, candidate, dryRun, nodeMapPath) {
+      appliedNodeMapPath = nodeMapPath;
+      return {
+        apply: {
+          candidateStableId: candidate.stableId,
+          dryRun,
+          itemStableId: item.stableId,
+          nodeMap: {
+            entries: [
+              {
+                stableId: candidate.stableId,
+                title: item.title,
+              },
+            ],
+            format: "inscape.node-map",
+          },
+          nodeMapPath,
+          nodeMapText: "{\n  \"format\": \"inscape.node-map\",\n  \"applied\": true\n}",
+        },
+        provider: "node-map-apply",
+      };
+    },
   },
   reviewButtonElement: nodeMapButton,
 });
@@ -1047,9 +1077,15 @@ assertIncludesText(getTextContent(document.body), "Stable Node Map");
 assertIncludesText(getTextContent(document.body), "Court Opening");
 assertIncludesText(getTextContent(document.body), "manual-review");
 assertIncludesText(getTextContent(document.body), "Opening · score 23");
+assertIncludesText(getTextContent(document.body), "Preview Apply");
+assertIncludesText(getTextContent(document.body), "Apply");
 const nodeMapReviewItemButton = findElementByClass(document.body, "node-map-review-item-main");
 nodeMapReviewItemButton?.click();
 assertEqual(selectedNodeMapLine, 12, "stable node map review item should jump to its current source line");
+await findElementByClass(document.body, "node-map-review-candidate-apply")?.click();
+assertEqual(appliedNodeMapPath, "inscape.node-map.json", "stable node map apply should preserve the review node map path");
+assertIncludesText(nodeMapReviewController.currentReviewPayload.nodeMapText, "\"applied\": true", "stable node map apply should update the downloadable node map text");
+assertIncludesText(getTextContent(document.body), "Applied node_OLD to downloadable node map");
 const previewElement = new FakeElement("main");
 const previewController = new PreviewPanelController(previewElement);
 let previewSelectedLine = 0;

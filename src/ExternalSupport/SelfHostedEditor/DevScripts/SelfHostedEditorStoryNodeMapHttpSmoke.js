@@ -4,6 +4,16 @@ const scriptText = `# Opening
 @entry
 Narrator: Review the evidence.
 `;
+const manualInitialScript = `# node.a
+Narrator: Same line.
+# node.b
+Narrator: Same line.
+`;
+const manualRenamedScript = `# node.renamed
+Narrator: Same line.
+# node.b
+Narrator: Same line.
+`;
 
 async function main() {
   const server = createSelfHostedEditorPreviewServer(0);
@@ -40,10 +50,80 @@ async function main() {
       throw new Error("Stable node map HTTP smoke should return a relative node map path.");
     }
 
+    const manualInitialReview = await postJson(address.port, "/api/node-map-review", {
+      scriptText: manualInitialScript,
+    });
+    const manualReview = await postJson(address.port, "/api/node-map-review", {
+      scriptText: manualRenamedScript,
+      workspace: {
+        currentFilePath: "draft.inscape",
+        documents: [
+          {
+            relativePath: "draft.inscape",
+            text: manualRenamedScript,
+          },
+          {
+            relativePath: "inscape.node-map.json",
+            text: manualInitialReview.nodeMapText,
+          },
+        ],
+      },
+    });
+    const manualItem = manualReview.report.items.find((item) => item.kind === "manual-review");
+    const manualCandidate = manualItem?.candidates?.[0];
+    if (!manualItem || !manualCandidate) {
+      throw new Error("Stable node map HTTP smoke should expose a manual candidate.");
+    }
+
+    const apply = await postJson(address.port, "/api/node-map-apply", {
+      candidate: manualCandidate,
+      dryRun: false,
+      item: manualItem,
+      nodeMapPath: manualReview.nodeMapPath,
+      scriptText: manualRenamedScript,
+      workspace: {
+        currentFilePath: "draft.inscape",
+        documents: [
+          {
+            relativePath: "draft.inscape",
+            text: manualRenamedScript,
+          },
+          {
+            relativePath: "inscape.node-map.json",
+            text: manualReview.nodeMapText,
+          },
+        ],
+      },
+    });
+    if (apply?.format !== "inscape.self-hosted-editor.node-map-apply") {
+      throw new Error("Stable node map HTTP smoke should expose candidate apply payload.");
+    }
+
+    if (apply?.candidateStableId !== manualCandidate.stableId || apply?.nodeMap?.format !== "inscape.node-map") {
+      throw new Error("Stable node map HTTP smoke should apply the selected shared candidate.");
+    }
+
     console.log("SelfHostedEditor stable node map HTTP smoke ok");
   } finally {
     await close(server);
   }
+}
+
+async function postJson(port, pathname, payload) {
+  const response = await fetch(`http://127.0.0.1:${port}${pathname}`, {
+    body: JSON.stringify(payload),
+    headers: {
+      "Content-Type": "application/json",
+    },
+    method: "POST",
+  });
+  const payloadText = await response.text();
+  const json = JSON.parse(payloadText);
+  if (!response.ok) {
+    throw new Error(`POST ${pathname} failed with HTTP ${response.status}: ${payloadText}`);
+  }
+
+  return json;
 }
 
 function listen(server) {

@@ -36,4 +36,42 @@ export class SelfHostedEditorStoryNodeMapBridge {
       };
     }
   }
+
+  async previewCandidateApply(scriptText, item, candidate, nodeMapPath = "") {
+    return this.applyCandidate(scriptText, item, candidate, true, nodeMapPath);
+  }
+
+  async applyCandidate(scriptText, item, candidate, dryRun = false, nodeMapPath = "") {
+    try {
+      const response = await fetch("/api/node-map-apply", {
+        body: JSON.stringify({
+          candidate,
+          dryRun,
+          item,
+          nodeMapPath,
+          scriptText,
+          workspace: this.workspaceContextProvider ? this.workspaceContextProvider() : null,
+        }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        throw new Error(`Stable node map apply bridge failed with HTTP ${response.status}`);
+      }
+
+      return {
+        apply: await response.json(),
+        provider: "node-map-apply",
+      };
+    } catch (error) {
+      return {
+        apply: null,
+        error: error instanceof Error ? error.message : String(error),
+        provider: "node-map-apply-error",
+      };
+    }
+  }
 }

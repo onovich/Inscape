@@ -2408,10 +2408,16 @@ button[aria-pressed="true"],
 
 .node-map-review-candidates {
   border-top: 1px solid rgba(39, 36, 31, 0.04);
+  display: grid;
+  gap: 6px;
+  padding: 8px 12px 10px;
+}
+
+.node-map-review-candidate-row {
+  align-items: center;
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  padding: 8px 12px 10px;
 }
 
 .node-map-review-candidate {
@@ -2420,6 +2426,26 @@ button[aria-pressed="true"],
   color: rgba(65, 84, 98, 0.74);
   font-size: 10px;
   min-height: 24px;
+}
+
+.node-map-review-candidate-action {
+  background: rgba(255, 255, 255, 0.78);
+  border-color: rgba(39, 36, 31, 0.08);
+  color: var(--muted-strong);
+  font-size: 10px;
+  min-height: 24px;
+}
+
+.node-map-review-candidate-apply {
+  background: rgba(106, 109, 87, 0.08);
+  border-color: rgba(106, 109, 87, 0.14);
+  color: rgba(69, 70, 56, 0.82);
+}
+
+.node-map-review-candidate-status {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.35;
 }
 
 .graph-viewport {

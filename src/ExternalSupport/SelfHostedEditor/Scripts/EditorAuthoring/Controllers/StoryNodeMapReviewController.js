@@ -2,6 +2,8 @@ export class StoryNodeMapReviewController {
   constructor(options) {
     this.reviewBridge = options.reviewBridge;
     this.reviewButtonElement = options.reviewButtonElement;
+    this.currentReviewPayload = null;
+    this.currentScriptText = "";
     this.sourceSelectionHandler = null;
     this.statusTimeout = null;
   }
@@ -23,6 +25,8 @@ export class StoryNodeMapReviewController {
       return;
     }
 
+    this.currentReviewPayload = snapshot.review;
+    this.currentScriptText = scriptText;
     this.showButtonStatus(this.createSummaryLabel(snapshot.review.report?.summary));
     this.openReviewDialog(snapshot.review);
   }
@@ -74,7 +78,7 @@ export class StoryNodeMapReviewController {
       itemList.append(empty);
     } else {
       for (const item of items) {
-        itemList.append(this.createReviewItemElement(item));
+        itemList.append(this.createReviewItemElement(item, reviewPayload));
       }
     }
 
@@ -83,7 +87,7 @@ export class StoryNodeMapReviewController {
     document.body.append(overlay);
   }
 
-  createReviewItemElement(item) {
+  createReviewItemElement(item, reviewPayload) {
     const wrapper = document.createElement("article");
     wrapper.className = `node-map-review-item node-map-review-item-${item.kind || "unknown"}`;
 
@@ -118,6 +122,9 @@ export class StoryNodeMapReviewController {
       const candidates = document.createElement("div");
       candidates.className = "node-map-review-candidates";
       for (const candidate of item.candidates) {
+        const candidateRow = document.createElement("div");
+        candidateRow.className = "node-map-review-candidate-row";
+
         const candidateButton = document.createElement("button");
         candidateButton.type = "button";
         candidateButton.className = "node-map-review-candidate";
@@ -126,12 +133,114 @@ export class StoryNodeMapReviewController {
         candidateButton.addEventListener("click", () => {
           this.selectSourceLine(candidate);
         });
-        candidates.append(candidateButton);
+        candidateRow.append(candidateButton);
+
+        if (item.kind === "manual-review") {
+          const previewButton = document.createElement("button");
+          previewButton.type = "button";
+          previewButton.className = "node-map-review-candidate-action node-map-review-candidate-preview";
+          previewButton.textContent = "Preview Apply";
+          previewButton.addEventListener("click", (event) => {
+            event.stopPropagation();
+            void this.previewCandidateApply(item, candidate, candidateRow);
+          });
+
+          const applyButton = document.createElement("button");
+          applyButton.type = "button";
+          applyButton.className = "node-map-review-candidate-action node-map-review-candidate-apply";
+          applyButton.textContent = "Apply";
+          applyButton.addEventListener("click", (event) => {
+            event.stopPropagation();
+            void this.applyCandidate(item, candidate, reviewPayload, candidateRow);
+          });
+
+          candidateRow.append(previewButton, applyButton);
+        }
+
+        candidates.append(candidateRow);
       }
       wrapper.append(candidates);
     }
 
     return wrapper;
+  }
+
+  async previewCandidateApply(item, candidate, container) {
+    if (!this.reviewBridge || typeof this.reviewBridge.previewCandidateApply !== "function") {
+      this.setCandidateStatus(container, "Candidate preview unavailable");
+      return;
+    }
+
+    this.setCandidateBusy(container, true);
+    const snapshot = await this.reviewBridge.previewCandidateApply(
+      this.currentScriptText,
+      item,
+      candidate,
+      this.currentReviewPayload?.nodeMapPath || ""
+    );
+    this.setCandidateBusy(container, false);
+    if (snapshot.provider !== "node-map-apply" || !snapshot.apply) {
+      this.setCandidateStatus(container, snapshot.error || "Candidate preview failed");
+      return;
+    }
+
+    this.setCandidateStatus(container, `Dry-run ready for ${snapshot.apply.candidateStableId || candidate.stableId || "candidate"}`);
+    this.downloadNodeMapText(
+      snapshot.apply.nodeMapText,
+      `preview-${this.fileNameFromPath(snapshot.apply.nodeMapPath || "inscape.node-map.json")}`
+    );
+  }
+
+  async applyCandidate(item, candidate, reviewPayload, container) {
+    if (!this.reviewBridge || typeof this.reviewBridge.applyCandidate !== "function") {
+      this.setCandidateStatus(container, "Candidate apply unavailable");
+      return;
+    }
+
+    this.setCandidateBusy(container, true);
+    const snapshot = await this.reviewBridge.applyCandidate(
+      this.currentScriptText,
+      item,
+      candidate,
+      false,
+      reviewPayload.nodeMapPath || ""
+    );
+    this.setCandidateBusy(container, false);
+    if (snapshot.provider !== "node-map-apply" || !snapshot.apply) {
+      this.setCandidateStatus(container, snapshot.error || "Candidate apply failed");
+      return;
+    }
+
+    reviewPayload.nodeMap = snapshot.apply.nodeMap;
+    reviewPayload.nodeMapPath = snapshot.apply.nodeMapPath || reviewPayload.nodeMapPath;
+    reviewPayload.nodeMapText = snapshot.apply.nodeMapText || reviewPayload.nodeMapText;
+    this.currentReviewPayload = reviewPayload;
+    this.setCandidateStatus(container, `Applied ${snapshot.apply.candidateStableId || candidate.stableId || "candidate"} to downloadable node map`);
+  }
+
+  setCandidateBusy(container, isBusy) {
+    if (!container) {
+      return;
+    }
+
+    for (const button of container.querySelectorAll("button")) {
+      button.disabled = isBusy;
+    }
+  }
+
+  setCandidateStatus(container, message) {
+    if (!container) {
+      return;
+    }
+
+    let status = container.querySelector(".node-map-review-candidate-status");
+    if (!status) {
+      status = document.createElement("small");
+      status.className = "node-map-review-candidate-status";
+      container.append(status);
+    }
+
+    status.textContent = message;
   }
 
   selectSourceLine(item) {
@@ -150,13 +259,21 @@ export class StoryNodeMapReviewController {
       return;
     }
 
-    const blob = new Blob([reviewPayload.nodeMapText], {
+    this.downloadNodeMapText(reviewPayload.nodeMapText, this.fileNameFromPath(reviewPayload.nodeMapPath || "inscape.node-map.json"));
+  }
+
+  downloadNodeMapText(nodeMapText, fileName) {
+    if (!nodeMapText || typeof Blob === "undefined" || typeof URL === "undefined") {
+      return;
+    }
+
+    const blob = new Blob([nodeMapText], {
       type: "application/json;charset=utf-8",
     });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = this.fileNameFromPath(reviewPayload.nodeMapPath || "inscape.node-map.json");
+    link.download = fileName || "inscape.node-map.json";
     document.body.append(link);
     link.click();
     link.remove();
