@@ -7,6 +7,7 @@ Narrator: Hello.`;
 async function main() {
   const server = createSelfHostedEditorPreviewServer(0);
   const address = await listen(server);
+  const sessionId = "localization-update-http-smoke";
 
   try {
     const reviewResponse = await fetch(`http://127.0.0.1:${address.port}/api/localization-review`, {
@@ -31,13 +32,52 @@ async function main() {
       `${anchor},Opening,Dialogue,Narrator,Hello.,Old translation,draft.inscape,3,1`,
       "",
     ].join("\n");
-    const updateResponse = await fetch(`http://127.0.0.1:${address.port}/api/localization-update`, {
+    const baselineResponse = await fetch(`http://127.0.0.1:${address.port}/api/localization-review`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
         previousCsv,
+        scriptText,
+        sessionId,
+      }),
+    });
+    const baselineReview = await baselineResponse.json();
+    if (!baselineResponse.ok) {
+      throw new Error(`Localization baseline HTTP smoke failed with HTTP ${baselineResponse.status}`);
+    }
+
+    if (baselineReview?.baseline?.source !== "request") {
+      throw new Error(`Localization baseline HTTP smoke should seed baseline from request, got ${String(baselineReview?.baseline?.source || "")}.`);
+    }
+
+    const sessionReviewResponse = await fetch(`http://127.0.0.1:${address.port}/api/localization-review`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        scriptText,
+        sessionId,
+      }),
+    });
+    const sessionReview = await sessionReviewResponse.json();
+    if (!sessionReviewResponse.ok) {
+      throw new Error(`Localization session review HTTP smoke failed with HTTP ${sessionReviewResponse.status}`);
+    }
+
+    if (sessionReview?.baseline?.source !== "session") {
+      throw new Error(`Localization session review HTTP smoke should reuse baseline from session, got ${String(sessionReview?.baseline?.source || "")}.`);
+    }
+
+    const updateResponse = await fetch(`http://127.0.0.1:${address.port}/api/localization-update`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        sessionId,
         scriptText,
         translationOverrides: [{
           anchor,
@@ -57,6 +97,10 @@ async function main() {
 
     if (update?.formatVersion !== 1) {
       throw new Error(`Unexpected localization update HTTP formatVersion: ${String(update?.formatVersion || "")}`);
+    }
+
+    if (update?.baseline?.source !== "session") {
+      throw new Error(`Localization update HTTP smoke should reuse baseline from session, got ${String(update?.baseline?.source || "")}.`);
     }
 
     if (!String(update.csv || "").includes("Edited translation,current")) {

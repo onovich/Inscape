@@ -33,6 +33,7 @@
 - 2026-06-02 最新：VSCode 本地化 review -> update 核心闭环已补齐。`Review Localization Alignment` 写出报告后的成功动作现在提供 `Update CSV`，复用本次 review 已选择的旧 CSV，再调用共享 `update-l10n-project` 生成 updated CSV；VSCode 仍只做命令式宿主 glue，不接管 CSV 合并、alignment 或候选评分语义。
 - 2026-06-02 最新：Editor Backend 会话边界第一刀已落在 Runtime dev-host。`/api/runtime-state` 会按 `sessionId` 记住最新 compact Runtime snapshot，`/api/runtime-action` 可只带 `sessionId + action` 推进服务端会话；显式 `runtimeState` 仍保留为兼容 fallback。前端 Runtime bridge 不再默认每次 action 都上传整份 state，`check:runtime-http` 已覆盖真实 HTTP session 推进。这仍只是宿主会话状态，不改变共享 `Runtime` / CLI 剧情推进语义，也还不是正式桌面长驻 Runtime 进程。
 - 2026-06-02 最新：Editor Backend 会话边界第二刀已落在 line-map dev-host。`/api/line-map-refresh` 会按 `sessionId` 记住最新 Tooling line sidecar，前端 `SelfHostedEditorLineMapBridge` 默认只传 `sessionId + script/workspace`，显式 `existingLineMap` 保留为兼容 fallback；新增 `check:line-map` 与 `check:line-map-http` 覆盖直连和真实 HTTP session 继承。这仍只是宿主缓存上一轮 sidecar，不改变共享 `refresh-l10n-line-map-project` 的稳定行身份迁移语义。
+- 2026-06-02 最新：Editor Backend 会话边界第三刀已落在 localization baseline/update dev-host。`/api/localization-review` 会按 `sessionId` 记住作者本次选过的 previous CSV，后续 `/api/localization-review` 与 `/api/localization-update` 可只带 session 复用这份旧表；前端 `SelfHostedEditorLocalizationReviewBridge` 默认只在旧 CSV 新增或变化时重传，失败时仍会用显式 `previousCsv` 兜底。`check:localization-update` 与 `check:localization-update-http` 已覆盖 request seeding、session review reuse 和 session update reuse。这仍只是宿主会话记忆，不改变 Tooling / CLI 的 alignment、candidate scoring、override application 或 CSV 生成语义。
 
 2026-05-26 本会话交接状态：
 

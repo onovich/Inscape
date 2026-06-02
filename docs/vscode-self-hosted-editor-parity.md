@@ -24,6 +24,8 @@ SelfHostedEditor 近期主线继续优先，但 VSCode 不应退化成历史入�
 
 2026-06-02 已收口第八项：VSCode 的本地化 alignment review 现在可以在报告生成成功后直接选择 `Update CSV`，复用本次 review 已选择的旧 CSV，并调用共享 CLI `update-l10n-project` 生成 updated CSV。VSCode 仍保持命令式入口，不复制 SelfHostedEditor 的表格编辑体验，也不在宿主侧实现 CSV 合并或 alignment 语义。
 
+2026-06-02 已继续收口 Editor Backend 会话边界第三项：SelfHostedEditor 的本地化 review / update 现在会按 `sessionId` 记住本次选择的 previous CSV。业务上这表示作者选过一次旧表后，后续审查和导出 updated CSV 不需要前端反复上传整份旧 CSV；宿主只记住“这次会话的旧表文本”，alignment、候选评分、translation override 应用和 CSV 生成仍由共享 Tooling / CLI 完成。
+
 2026-06-01 已收口第五项：SelfHostedEditor L10N 表格现在保留 Tooling presenter 里的 review actions，并在每行提供 `Current` / `Candidate` / `Diff` 轻量动作。作者可以从表格跳当前行、跳候选旧文本来源，并展开候选 diff；前端只展示和导航，不重算 alignment、candidate scoring 或 CSV 语义。`/api/localization-review` 继续裁掉完整 audit report，只保留 compact presenter payload。
 
 2026-06-01 已收口第六项：SelfHostedEditor 现在新增 `Host` 视图，展示同源 Host Schema / Host Binding capability catalog。作者可以看到 query、event、speaker、timeline binding 清单，并从条目来源按钮跳到 schema、bridge 或脚本出现位置；前端不解析 Host Schema / Host Bridge JSON，只消费既有 `/api/host-schema-capabilities` 与 `/api/host-binding-capabilities`。
@@ -184,8 +186,8 @@ VSCode 是专业编辑器，不需要一致视觉。但两边语义能力要一�
 | Outline | LanguageServer | LanguageServer bridge | 高，保持 |
 | CodeLens / refs count | 有 CodeLens | 有 refs overlay，不同 UI；refs direct/HTTP smoke 已覆盖跨文件、未保存 draft 与相对 sourcePath | 已确认等价，守回归 |
 | Stable node map update/review | 有命令与 review UI，apply/dry-run 经由共享 CLI，revert 是宿主备份恢复 | 已有 Node Map 入口、共享 report、source jump、sidecar 下载；manual-review apply/dry-run 经由共享 CLI，浏览器只更新可下载 payload；未复制本地 revert 文件体验 | 已对齐核心闭环，桌面写盘/revert 后续再评估 |
-| Localization export/update | 有命令；review 成功后可直接复用同一 previous CSV 继续 `Update CSV` | 有表格 + update/export/replace | 已对齐核心闭环，守回归 |
-| Localization alignment review | Quick Pick review + source jump + candidate diff + update continuation | 表格 review/filter | 已对齐核心闭环，UI 不强行一致 |
+| Localization export/update | 有命令；review 成功后可直接复用同一 previous CSV 继续 `Update CSV` | 有表格 + update/export/replace；dev-host 可按 `sessionId` 复用 previous CSV baseline | 已对齐核心闭环，守回归 |
+| Localization alignment review | Quick Pick review + source jump + candidate diff + update continuation | 表格 review/filter；选过 previous CSV 后可按 session 复用 baseline | 已对齐核心闭环，UI 不强行一致 |
 | Localization candidate diff/actions | VSCode 有 candidate 二级动作 | SelfHostedEditor 已消费 Tooling presenter actions，支持 current/candidate source jump 与 diff 展开 | 已对齐，守回归 |
 | Line identity debug | VSCode debug hover | SelfHostedEditor hint rail 显示真实 line id | 中 |
 | Preview static reading | 有 HTML preview | 有 workbench preview | 高，保持 |
@@ -206,5 +208,5 @@ VSCode 是专业编辑器，不需要一致视觉。但两边语义能力要一�
 8. 已补 Host Schema / Host Binding capability 查看入口：SelfHostedEditor `Host` 视图消费共享 capability catalog，不复制 VSCode Quick Pick UI 或 JSON 解析。
 9. 已下沉 Stable Node Map candidate apply 为共享 Tooling / CLI 动作；VSCode 与 SelfHostedEditor 都已改为调用共享命令。SelfHostedEditor 当前浏览器阶段只更新可下载 node map payload，不复制 VSCode 的文件备份/revert 体验。
 10. 已补 VSCode 本地化 review 后的 update continuation：报告成功动作可直接复用已选择的 previous CSV 调用共享 `update-l10n-project`，补齐命令式核心闭环。
-11. 继续整理 Editor Backend 会话边界：Runtime 与 line-map 已有第一层 `sessionId` 状态边界；继续把 workspace、LanguageServer、localization baseline/update 从“一次请求一套临时上下文”收向“打开项目后持续存在的会话”。
+11. 继续整理 Editor Backend 会话边界：Runtime、line-map、localization baseline/update 已有第一层 `sessionId` 状态边界；继续把 workspace 与 LanguageServer 从“一次请求一套临时上下文”收向“打开项目后持续存在的会话”。
 12. Graph 与 Unity / Bird 暂不进入近期主线，只保留回归不倒退。

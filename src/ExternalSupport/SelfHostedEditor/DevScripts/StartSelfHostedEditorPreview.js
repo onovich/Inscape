@@ -49,8 +49,10 @@ const languageServerExecutablePath = path.join(languageServerBuildRoot, "Inscape
 const languageServerAssemblyPath = path.join(languageServerBuildRoot, "Inscape.LanguageServer.dll");
 const port = Number(process.env.PORT || 5178);
 const bridgeCommandTimeoutMilliseconds = 30000;
+const defaultLocalizationSessionId = "default";
 const defaultLineMapSessionId = "default";
 const defaultRuntimeSessionId = "default";
+const localizationBaselineStates = new Map();
 const lineMapSessionStates = new Map();
 const runtimeSessionStates = new Map();
 
@@ -557,11 +559,12 @@ async function handleLocalizationReviewRequest(request, response) {
       ? payload.scriptText
       : "";
     const workspace = normalizeWorkspacePayload(payload.workspace);
+    const sessionId = normalizeLocalizationSessionId(payload.sessionId);
     const previousCsv = typeof payload.previousCsv === "string"
       ? payload.previousCsv
       : "";
 
-    const reviewPayload = await getLocalizationReviewForScriptText(scriptText, workspace, previousCsv);
+    const reviewPayload = await getLocalizationReviewForScriptText(scriptText, workspace, previousCsv, sessionId);
     response.writeHead(200, {
       "Content-Type": "application/json; charset=utf-8",
     });
@@ -584,6 +587,7 @@ async function handleLocalizationUpdateRequest(request, response) {
       ? payload.scriptText
       : "";
     const workspace = normalizeWorkspacePayload(payload.workspace);
+    const sessionId = normalizeLocalizationSessionId(payload.sessionId);
     const previousCsv = typeof payload.previousCsv === "string"
       ? payload.previousCsv
       : "";
@@ -595,7 +599,8 @@ async function handleLocalizationUpdateRequest(request, response) {
       scriptText,
       workspace,
       previousCsv,
-      translationOverrides
+      translationOverrides,
+      sessionId
     );
     response.writeHead(200, {
       "Content-Type": "application/json; charset=utf-8",
@@ -803,21 +808,21 @@ export async function getStoryNodeMapCandidateApplyForScriptText(scriptText, wor
   });
 }
 
-export async function getLocalizationReviewForScriptText(scriptText, workspace, previousCsv) {
+export async function getLocalizationReviewForScriptText(scriptText, workspace, previousCsv, sessionId = "") {
   return withTemporaryWorkspace(workspace, scriptText, async ({ tempRoot }) => {
     await runCliCommand([
       "update-node-map-project",
       tempRoot,
     ], "CLI stable node map refresh");
 
-    const previousCsvText = previousCsv.trim()
-      ? previousCsv
-      : (await runCliCommand([
+    const baseline = await resolveLocalizationBaseline(previousCsv, sessionId, async () =>
+      (await runCliCommand([
         "extract-l10n-project",
         tempRoot,
-      ], "CLI localization project extract")).stdout;
+      ], "CLI localization project extract")).stdout
+    );
     const previousCsvPath = path.join(tempRoot, "inscape.localization.previous.csv");
-    await fsp.writeFile(previousCsvPath, previousCsvText, "utf8");
+    await fsp.writeFile(previousCsvPath, baseline.csv, "utf8");
 
     const result = await runCliCommand([
       "audit-l10n-alignment-project",
@@ -826,19 +831,20 @@ export async function getLocalizationReviewForScriptText(scriptText, workspace, 
       previousCsvPath,
     ], "CLI localization alignment audit");
     const report = relativizeLocalizationReviewPaths(parseJsonFileText(result.stdout), tempRoot);
-    return compactLocalizationReviewPayload(report);
+    return compactLocalizationReviewPayload(report, baseline);
   });
 }
 
-export async function getUpdatedLocalizationCsvForScriptText(scriptText, workspace, previousCsv, translationOverrides = []) {
+export async function getUpdatedLocalizationCsvForScriptText(scriptText, workspace, previousCsv, translationOverrides = [], sessionId = "") {
   return withTemporaryWorkspace(workspace, scriptText, async ({ tempRoot }) => {
-    if (!String(previousCsv || "").trim()) {
-      throw new Error("Localization update requires previousCsv text.");
+    const baseline = resolveExistingLocalizationBaseline(previousCsv, sessionId);
+    if (!baseline.csv.trim()) {
+      throw new Error("Localization update requires previousCsv text or an existing localization baseline session.");
     }
 
     const previousCsvPath = path.join(tempRoot, "inscape.localization.previous.csv");
     const overridesPath = path.join(tempRoot, "inscape.localization.overrides.json");
-    await fsp.writeFile(previousCsvPath, previousCsv, "utf8");
+    await fsp.writeFile(previousCsvPath, baseline.csv, "utf8");
     const cliArgs = [
       "update-l10n-project",
       tempRoot,
@@ -852,6 +858,7 @@ export async function getUpdatedLocalizationCsvForScriptText(scriptText, workspa
 
     const result = await runCliCommand(cliArgs, "CLI localization project update");
     return {
+      baseline: baseline.metadata,
       csv: result.stdout,
       format: "inscape.self-hosted-editor.localization-updated-csv",
       formatVersion: 1,
@@ -1011,6 +1018,80 @@ function normalizeRuntimeSessionId(sessionId) {
   return safe || defaultRuntimeSessionId;
 }
 
+async function resolveLocalizationBaseline(previousCsv, sessionId, extractCurrentCsv) {
+  const explicitCsv = String(previousCsv || "");
+  const normalizedSessionId = normalizeLocalizationSessionId(sessionId);
+  if (explicitCsv.trim()) {
+    rememberLocalizationBaseline(explicitCsv, normalizedSessionId);
+    return {
+      csv: explicitCsv,
+      metadata: createLocalizationBaselineMetadata("request", normalizedSessionId, explicitCsv),
+    };
+  }
+
+  const sessionCsv = getLocalizationBaseline(normalizedSessionId);
+  if (sessionCsv) {
+    return {
+      csv: sessionCsv,
+      metadata: createLocalizationBaselineMetadata("session", normalizedSessionId, sessionCsv),
+    };
+  }
+
+  const currentCsv = await extractCurrentCsv();
+  return {
+    csv: currentCsv,
+    metadata: createLocalizationBaselineMetadata("current-extract", normalizedSessionId, currentCsv),
+  };
+}
+
+function resolveExistingLocalizationBaseline(previousCsv, sessionId) {
+  const explicitCsv = String(previousCsv || "");
+  const normalizedSessionId = normalizeLocalizationSessionId(sessionId);
+  if (explicitCsv.trim()) {
+    rememberLocalizationBaseline(explicitCsv, normalizedSessionId);
+    return {
+      csv: explicitCsv,
+      metadata: createLocalizationBaselineMetadata("request", normalizedSessionId, explicitCsv),
+    };
+  }
+
+  const sessionCsv = getLocalizationBaseline(normalizedSessionId);
+  return {
+    csv: sessionCsv || "",
+    metadata: createLocalizationBaselineMetadata(sessionCsv ? "session" : "missing", normalizedSessionId, sessionCsv || ""),
+  };
+}
+
+function rememberLocalizationBaseline(previousCsv, sessionId) {
+  const normalizedSessionId = normalizeLocalizationSessionId(sessionId);
+  const csv = String(previousCsv || "");
+  if (csv.trim()) {
+    localizationBaselineStates.set(normalizedSessionId, csv);
+  }
+}
+
+function getLocalizationBaseline(sessionId) {
+  return localizationBaselineStates.get(normalizeLocalizationSessionId(sessionId)) || "";
+}
+
+function createLocalizationBaselineMetadata(source, sessionId, csv) {
+  return {
+    byteLength: Buffer.byteLength(String(csv || ""), "utf8"),
+    sessionId: normalizeLocalizationSessionId(sessionId),
+    source,
+  };
+}
+
+function normalizeLocalizationSessionId(sessionId) {
+  const normalized = String(sessionId || defaultLocalizationSessionId).trim();
+  if (!normalized) {
+    return defaultLocalizationSessionId;
+  }
+
+  const safe = normalized.replace(/[^A-Za-z0-9._:-]/g, "-").slice(0, 120);
+  return safe || defaultLocalizationSessionId;
+}
+
 function getLineMapSessionState(sessionId) {
   return lineMapSessionStates.get(normalizeLineMapSessionId(sessionId)) || null;
 }
@@ -1034,8 +1115,9 @@ function normalizeLineMapSessionId(sessionId) {
   return safe || defaultLineMapSessionId;
 }
 
-function compactLocalizationReviewPayload(report) {
+function compactLocalizationReviewPayload(report, baseline = null) {
   return {
+    baseline: baseline?.metadata || null,
     format: "inscape.self-hosted-editor.localization-review",
     formatVersion: 2,
     lineIdentity: report?.lineIdentity || null,
