@@ -24,6 +24,7 @@ const maximumRuntimePayloadBytes = 10000;
 async function main() {
   const server = createSelfHostedEditorPreviewServer(0);
   const address = await listen(server);
+  const sessionId = "runtime-http-smoke";
 
   try {
     const startedAt = Date.now();
@@ -32,7 +33,10 @@ async function main() {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ scriptText: runtimeScript }),
+      body: JSON.stringify({
+        scriptText: runtimeScript,
+        sessionId,
+      }),
     });
     const openingPayloadText = await openingResponse.text();
     const openingSnapshot = JSON.parse(openingPayloadText);
@@ -41,6 +45,7 @@ async function main() {
     }
 
     assertRuntimeSnapshot(openingSnapshot, "Opening");
+    assertEqual(openingSnapshot.sessionId, sessionId, "opening runtime session id");
     assertEqual(openingSnapshot.readingProgress?.contentStepCount, 1, "opening content step count");
     assertEqual(openingSnapshot.readingProgress?.visibleStepCount, 0, "opening visible step count");
     assertPayloadSize(openingPayloadText, "opening runtime HTTP payload");
@@ -54,7 +59,7 @@ async function main() {
         action: {
           type: "advance-flow",
         },
-        runtimeState: openingSnapshot,
+        sessionId,
         scriptText: runtimeScript,
       }),
     });
@@ -65,6 +70,7 @@ async function main() {
     }
 
     assertRuntimeSnapshot(openingAdvanceSnapshot, "Opening");
+    assertEqual(openingAdvanceSnapshot.sessionId, sessionId, "advance runtime session id");
     assertEqual(openingAdvanceSnapshot.state?.visibleStepCount, 1, "opening visible step count after first flow advance");
     assertEqual(openingAdvanceSnapshot.readingProgress?.isChoiceStageVisible, false, "opening choices should stay hidden after first flow advance");
 
@@ -79,7 +85,7 @@ async function main() {
           optionIndex: 1,
           type: "choose",
         },
-        runtimeState: openingSnapshot,
+        sessionId,
         scriptText: runtimeScript,
       }),
     });
@@ -90,6 +96,7 @@ async function main() {
     }
 
     assertRuntimeSnapshot(staySnapshot, "Stay");
+    assertEqual(staySnapshot.sessionId, sessionId, "choose runtime session id");
     assertEqual(staySnapshot.state?.path?.length, 2, "stay path length");
     assertEqual(staySnapshot.state?.visibleStepCount, 0, "stay visible step count");
     assertEqual(staySnapshot.currentNode?.defaultNext, "End", "stay default next");
@@ -104,7 +111,7 @@ async function main() {
         action: {
           type: "advance-flow",
         },
-        runtimeState: staySnapshot,
+        sessionId,
         scriptText: runtimeScript,
       }),
     });
@@ -115,6 +122,7 @@ async function main() {
     }
 
     assertRuntimeSnapshot(stayAdvanceSnapshot, "Stay");
+    assertEqual(stayAdvanceSnapshot.sessionId, sessionId, "stay advance runtime session id");
     assertEqual(stayAdvanceSnapshot.state?.visibleStepCount, 1, "stay visible step count after first flow advance");
 
     const rewindResponse = await fetch(`http://127.0.0.1:${address.port}/api/runtime-action`, {
@@ -126,7 +134,7 @@ async function main() {
         action: {
           type: "rewind",
         },
-        runtimeState: staySnapshot,
+        sessionId,
         scriptText: runtimeScript,
       }),
     });
@@ -137,6 +145,7 @@ async function main() {
     }
 
     assertRuntimeSnapshot(rewindSnapshot, "Opening");
+    assertEqual(rewindSnapshot.sessionId, sessionId, "rewind runtime session id");
     assertEqual(rewindSnapshot.state?.path?.length, 1, "rewind path length");
     assertEqual(rewindSnapshot.state?.visibleStepCount, 2, "rewind visible step count");
     assertPayloadSize(rewindPayloadText, "rewind runtime HTTP payload");
@@ -151,6 +160,7 @@ async function main() {
           type: "continue",
         },
         runtimeState: staySnapshot,
+        sessionId,
         scriptText: runtimeScript,
       }),
     });
@@ -162,6 +172,7 @@ async function main() {
     }
 
     assertRuntimeSnapshot(endSnapshot, "End");
+    assertEqual(endSnapshot.sessionId, sessionId, "continue runtime session id");
     assertEqual(endSnapshot.state?.path?.length, 3, "end path length");
     assertEqual(endSnapshot.currentNode?.lines?.[0]?.text, "Done", "end dialogue text");
     assertPayloadSize(endPayloadText, "end runtime HTTP payload");

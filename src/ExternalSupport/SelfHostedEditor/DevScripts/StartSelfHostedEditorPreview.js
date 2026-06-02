@@ -49,6 +49,8 @@ const languageServerExecutablePath = path.join(languageServerBuildRoot, "Inscape
 const languageServerAssemblyPath = path.join(languageServerBuildRoot, "Inscape.LanguageServer.dll");
 const port = Number(process.env.PORT || 5178);
 const bridgeCommandTimeoutMilliseconds = 30000;
+const defaultRuntimeSessionId = "default";
+const runtimeSessionStates = new Map();
 
 const mimeTypes = new Map([
   [".css", "text/css; charset=utf-8"],
@@ -412,8 +414,9 @@ async function handleRuntimeStateRequest(request, response) {
       ? payload.scriptText
       : "";
     const workspace = normalizeWorkspacePayload(payload.workspace);
+    const sessionId = normalizeRuntimeSessionId(payload.sessionId);
 
-    const runtimePayload = await getRuntimeStateForScriptText(scriptText, workspace);
+    const runtimePayload = await getRuntimeStateForScriptText(scriptText, workspace, sessionId);
     response.writeHead(200, {
       "Content-Type": "application/json; charset=utf-8",
     });
@@ -436,14 +439,15 @@ async function handleRuntimeActionRequest(request, response) {
       ? payload.scriptText
       : "";
     const workspace = normalizeWorkspacePayload(payload.workspace);
+    const sessionId = normalizeRuntimeSessionId(payload.sessionId);
     const runtimeState = payload.runtimeState && typeof payload.runtimeState === "object"
       ? payload.runtimeState
-      : null;
+      : getRuntimeSessionState(sessionId);
     const action = payload.action && typeof payload.action === "object"
       ? payload.action
       : {};
 
-    const runtimePayload = await stepRuntimeStateForScriptText(scriptText, workspace, runtimeState, action);
+    const runtimePayload = await stepRuntimeStateForScriptText(scriptText, workspace, runtimeState, action, sessionId);
     response.writeHead(200, {
       "Content-Type": "application/json; charset=utf-8",
     });
@@ -688,17 +692,20 @@ async function getStoryGraphForScriptText(scriptText, workspace) {
   });
 }
 
-export async function getRuntimeStateForScriptText(scriptText, workspace) {
+export async function getRuntimeStateForScriptText(scriptText, workspace, sessionId = "") {
   return withTemporaryWorkspace(workspace, scriptText, async ({ tempRoot }) => {
     const result = await runCliCommand([
       "runtime-project",
       tempRoot,
     ], "CLI runtime project snapshot");
-    return compactRuntimeStatePayload(relativizeProjectSourcePaths(JSON.parse(result.stdout), tempRoot));
+    return rememberRuntimeSessionState(
+      compactRuntimeStatePayload(relativizeProjectSourcePaths(JSON.parse(result.stdout), tempRoot), sessionId),
+      sessionId
+    );
   });
 }
 
-export async function stepRuntimeStateForScriptText(scriptText, workspace, runtimeState, action) {
+export async function stepRuntimeStateForScriptText(scriptText, workspace, runtimeState, action, sessionId = "") {
   return withTemporaryWorkspace(workspace, scriptText, async ({ tempRoot }) => {
     const statePath = path.join(tempRoot, "inscape.runtime-state.json");
     const cliArgs = [
@@ -730,7 +737,10 @@ export async function stepRuntimeStateForScriptText(scriptText, workspace, runti
     }
 
     const result = await runCliCommand(cliArgs, "CLI runtime project action");
-    return compactRuntimeStatePayload(relativizeProjectSourcePaths(JSON.parse(result.stdout), tempRoot));
+    return rememberRuntimeSessionState(
+      compactRuntimeStatePayload(relativizeProjectSourcePaths(JSON.parse(result.stdout), tempRoot), sessionId),
+      sessionId
+    );
   });
 }
 
@@ -928,7 +938,7 @@ function relativizeLocalizationReviewPaths(payload, tempRoot) {
   return payload;
 }
 
-function compactRuntimeStatePayload(payload) {
+function compactRuntimeStatePayload(payload, sessionId = "") {
   const currentNode = payload?.currentNode || null;
   return {
     currentNode: currentNode
@@ -966,12 +976,36 @@ function compactRuntimeStatePayload(payload) {
       maxVisibleStepCount: Number(payload?.readingProgress?.maxVisibleStepCount || 0),
       visibleStepCount: Number(payload?.readingProgress?.visibleStepCount || 0),
     },
+    sessionId: normalizeRuntimeSessionId(sessionId),
     state: {
       currentNodeName: payload?.state?.currentNodeName || "",
       path: Array.isArray(payload?.state?.path) ? payload.state.path : [],
       visibleStepCount: Number(payload?.state?.visibleStepCount || 0),
     },
   };
+}
+
+function getRuntimeSessionState(sessionId) {
+  return runtimeSessionStates.get(normalizeRuntimeSessionId(sessionId)) || null;
+}
+
+function rememberRuntimeSessionState(snapshot, sessionId) {
+  const normalizedSessionId = normalizeRuntimeSessionId(sessionId);
+  if (snapshot) {
+    runtimeSessionStates.set(normalizedSessionId, snapshot);
+  }
+
+  return snapshot;
+}
+
+function normalizeRuntimeSessionId(sessionId) {
+  const normalized = String(sessionId || defaultRuntimeSessionId).trim();
+  if (!normalized) {
+    return defaultRuntimeSessionId;
+  }
+
+  const safe = normalized.replace(/[^A-Za-z0-9._:-]/g, "-").slice(0, 120);
+  return safe || defaultRuntimeSessionId;
 }
 
 function compactLocalizationReviewPayload(report) {

@@ -31,6 +31,7 @@
 - 2026-06-02 最新：VSCode 新增 `check:semantic-parity`，复用同一组 current-draft / cross-file fixture，经由 VSCode diagnostics、completion、definition、references、hover、outline provider 层消费真实 `LanguageServer` 会话结果。VSCode 侧同步补了临时 override sourcePath 与 workspace-relative sourcePath 的路径还原；这仍只是宿主路径适配，不在 VSCode 里重写语义。
 - 2026-06-02 最新：Stable Node Map manual-review candidate apply 已从 VSCode 私有 JS mutation 下沉到 `Internal/Tooling`，并通过 CLI `apply-node-map-candidate-project` 暴露 dry-run / 写回。VSCode review UI 现在只负责 Quick Pick、调用共享命令、`.review-backup.json` 与 revert 文件恢复；SelfHostedEditor 已接同一命令，`Preview Apply` / `Apply` 都通过 `/api/node-map-apply` 调用共享 CLI，浏览器阶段只更新可下载 sidecar payload，不在前端改写真实项目文件。
 - 2026-06-02 最新：VSCode 本地化 review -> update 核心闭环已补齐。`Review Localization Alignment` 写出报告后的成功动作现在提供 `Update CSV`，复用本次 review 已选择的旧 CSV，再调用共享 `update-l10n-project` 生成 updated CSV；VSCode 仍只做命令式宿主 glue，不接管 CSV 合并、alignment 或候选评分语义。
+- 2026-06-02 最新：Editor Backend 会话边界第一刀已落在 Runtime dev-host。`/api/runtime-state` 会按 `sessionId` 记住最新 compact Runtime snapshot，`/api/runtime-action` 可只带 `sessionId + action` 推进服务端会话；显式 `runtimeState` 仍保留为兼容 fallback。前端 Runtime bridge 不再默认每次 action 都上传整份 state，`check:runtime-http` 已覆盖真实 HTTP session 推进。这仍只是宿主会话状态，不改变共享 `Runtime` / CLI 剧情推进语义，也还不是正式桌面长驻 Runtime 进程。
 
 2026-05-26 本会话交接状态：
 
@@ -99,8 +100,8 @@
 - Graph 节点位置仍是会话内 `savedPositions`，尚未写入 graph layout sidecar；画布缩放/平移、连接合法性反馈、端口命中高亮仍可继续细化。
 - line-map bridge 当前走开发预览服务器 + CLI 临时 workspace，是正确复用 Tooling 语义的第一步，但未来桌面客户端应改为正式 Editor Backend / Tooling 会话桥，而不是每轮通过 HTTP dev server 启动 CLI。
 - L10N 视图已接入真实 alignment review presenter，并已补上真实旧 CSV 选择、宿主侧 review 筛选、更清楚的 CSV 会话状态、linked baseline 的 clean / unsaved 宿主状态，以及真实 updated CSV 导出 / native file handle 直写：`/api/localization-review` 负责 review presenter，`/api/localization-update` 负责把旧 CSV 与 draft overrides 交回 CLI 产出 updated CSV，宿主层只在可用时负责把结果写回已链接文件。当前仍未完成的是批量审校动作。
-- Preview 内容已来自 Compiler project graph；当 Runtime 可用时，节点内 Static / Flow 进度也开始消费 Runtime 阅读状态。当前仍未落地的是桌面端长生命周期 Runtime 会话，以及 Runtime 不可用时如何继续缩小本地 fallback 面积。
-- `runtime-project` / `/api/runtime-state` / `/api/runtime-action` 现已覆盖 Start、恢复 state 后 `advance-flow` / `rewind-flow` / `continue` / `rewind` / `choose` 的最小 stateless action 契约；Preview 的节点内 Flow 进度在 Runtime 可用时已受 Runtime state 驱动，但桌面端长生命周期 Runtime 会话仍未落地。
+- Preview 内容已来自 Compiler project graph；当 Runtime 可用时，节点内 Static / Flow 进度也开始消费 Runtime 阅读状态。当前 Runtime dev-host 已有第一层 `sessionId` 状态边界；仍未落地的是桌面端真正长生命周期 Runtime 进程，以及 Runtime 不可用时如何继续缩小本地 fallback 面积。
+- `runtime-project` / `/api/runtime-state` / `/api/runtime-action` 现已覆盖 Start、`advance-flow` / `rewind-flow` / `continue` / `rewind` / `choose` 的最小 action 契约；HTTP dev-host 可以按 `sessionId` 记住最新 compact snapshot，Preview 的节点内 Flow 进度在 Runtime 可用时已受 Runtime state 驱动，但正式桌面端 Runtime 会话仍未落地。
 
 当前工作树提示：最近一次复查时 `git -c safe.directory=D:/LabProjects/Inscape status --short --branch` 为干净状态。新 Agent 仍应在提交前重新执行 status，确认没有用户未提交改动；若出现未跟踪或未提交文件，只能按任务边界处理，不要回滚用户已有文档和样例改动。
 
