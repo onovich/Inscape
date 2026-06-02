@@ -145,9 +145,11 @@ class LocalizationCommand {
             format: formatPick.format,
             progressTitle: "Reviewing Inscape localization alignment",
             successMessage: "Inscape localization alignment report written to " + outputUri.fsPath,
+            context,
+            workspaceFolder,
             successActions: formatPick.format === "json"
-                ? ["Review Items", "Open Report"]
-                : ["Open Report"]
+                ? ["Review Items", "Update CSV", "Open Report"]
+                : ["Update CSV", "Open Report"]
         });
     }
 
@@ -225,6 +227,10 @@ class LocalizationCommand {
             await this.openFile(options.outputPath);
         }
 
+        if (selection === "Update CSV") {
+            await this.updateLocalizationFromReview(options.context, options);
+        }
+
         if (selection === "Show Summary" && options.reportPath) {
             await this.showLineRefreshSummary(options.reportPath);
         }
@@ -236,6 +242,32 @@ class LocalizationCommand {
         if (selection === "Restore Backup") {
             await this.restoreLineMapBackup(options, options.workspaceFolderPath);
         }
+    }
+
+    async updateLocalizationFromReview(context, options) {
+        if (!context || !options || !options.workspaceFolder || !options.previousPath) {
+            this.vscode.window.showWarningMessage("Localization review context is no longer available for CSV update.");
+            return;
+        }
+
+        const outputUri = await this.vscode.window.showSaveDialog({
+            defaultUri: this.vscode.Uri.file(this.path.join(options.workspaceFolder.uri.fsPath, "artifacts", "l10n.updated.csv")),
+            filters: {
+                "CSV": ["csv"]
+            },
+            saveLabel: "Update Localization"
+        });
+
+        if (!outputUri) {
+            return;
+        }
+
+        await this.run(context, options.workspaceFolder, {
+            commandName: "update-l10n-project",
+            previousPath: options.previousPath,
+            outputPath: outputUri.fsPath,
+            progressTitle: "Updating Inscape localization CSV"
+        });
     }
 
     async showLineRefreshSummary(reportPath) {

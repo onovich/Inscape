@@ -1451,11 +1451,16 @@ Narrator: Beta.
             AssertTrue(commandSource.Contains("this.localizationReviewController.reviewAlignmentReport(options.outputPath)"), "Localization command should delegate report review UI to a narrower controller.");
             AssertTrue(commandSource.Contains("async handleSuccessSelection(selection, options)"), "Localization command should isolate post-success selection dispatch from CLI invocation flow.");
             AssertTrue(commandSource.Contains("Review Items"), "Localization command should offer quick review action for json report.");
+            AssertTrue(commandSource.Contains("Update CSV"), "Localization command should offer a CSV update action after alignment review.");
+            AssertTrue(commandSource.Contains("async updateLocalizationFromReview(context, options)"), "Localization command should keep review-to-update glue in an explicit helper.");
+            AssertTrue(commandSource.Contains("previousPath: options.previousPath"), "Localization review update action should reuse the already selected previous CSV.");
+            AssertTrue(commandSource.Contains("commandName: \"update-l10n-project\""), "Localization review update action should invoke the shared update CLI.");
             AssertTrue(reviewControllerSource.Contains("async reviewAlignmentReport(reportPath)"), "Localization review controller should expose interactive report review entrypoint.");
             AssertTrue(reviewControllerSource.Contains("const presenter = this.buildPresenter(report);"), "Localization review controller should consume presenter model from report payload.");
             AssertTrue(reviewControllerSource.Contains("this.localizationReviewQuickPickAdapter.createQuickPickItems(presenter.Items)"), "Localization review controller should keep QuickPick adaptation local to VSCode UI.");
             AssertTrue(reviewControllerSource.Contains("this.localizationReviewQuickPickAdapter.createQuickPickItems(itemModel.Actions)"), "Localization review controller should adapt presenter actions through the QuickPick adapter.");
             AssertTrue(reviewControllerSource.Contains("show-candidate-diff"), "Localization review controller should expose presenter-provided candidate diff actions.");
+            AssertFalse(reviewControllerSource.Contains("update-l10n-project"), "Localization review controller should not own CSV update command invocation.");
             AssertTrue(toolingPresenterBuilderSource.Contains("public static LocalizationReviewPresenterModel Build"), "Localization review presenter model builder should now live in Tooling.");
             AssertTrue(toolingPresenterBuilderSource.Contains("ActionKey = \"open-current\""), "Tooling presenter model builder should encode action identity without VSCode-facing labels.");
             AssertTrue(toolingPresenterBuilderSource.Contains("ActionKey = \"open-candidate\""), "Tooling presenter model builder should encode candidate action identity without VSCode-facing labels.");

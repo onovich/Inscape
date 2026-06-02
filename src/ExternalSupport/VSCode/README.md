@@ -41,6 +41,8 @@ The package is also a future split-repo candidate, so non-source extension asset
   - `Inscape: Review Stable Node Map Changes`
   - `Inscape: Export Localization CSV`
   - `Inscape: Update Localization CSV From Previous Table`
+  - `Inscape: Review Localization Alignment`
+  - `Inscape: Refresh Localization Line State`
 - Exposes command palette action for host schema inspection:
   - `Inscape: Show Host Schema Capabilities`
 - Adds an editor-title icon button for `Inscape: Toggle Preview`, plus an `Inscape` drop-down menu with entries for editor style, preview style, and the quick syntax guide.
@@ -138,9 +140,12 @@ Localization commands invoke:
 ```powershell
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- extract-l10n-project <workspace> -o <csv>
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- update-l10n-project <workspace> --from <old-csv> -o <csv>
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- audit-l10n-alignment-project <workspace> --from <old-csv> --format json -o <report.json>
 ```
 
 If the active `.inscape` document is unsaved and belongs to the selected workspace, the extension passes it to the CLI with `--override` so the generated CSV reflects editor contents.
+
+After `Inscape: Review Localization Alignment` writes a report, the success action can continue directly to `Update CSV`. That action reuses the previously selected CSV and calls the same shared `update-l10n-project` flow; VSCode only owns the file dialogs and command dispatch.
 
 Stable node map command invokes:
 

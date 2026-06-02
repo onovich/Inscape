@@ -30,6 +30,7 @@
 - 2026-06-02 最新：SelfHostedEditor 新增 `check:semantic-parity-http`，用真实 HTTP 请求一次性守 diagnostics、completion、definition、references、hover、outline 六个 LanguageServer-backed 作者能力入口。该 smoke 覆盖当前 draft、跨文件节点、缺失目标诊断和 workspace-relative sourcePath；宿主层只做 payload 路径归一化与 transport，不新增语义真相。
 - 2026-06-02 最新：VSCode 新增 `check:semantic-parity`，复用同一组 current-draft / cross-file fixture，经由 VSCode diagnostics、completion、definition、references、hover、outline provider 层消费真实 `LanguageServer` 会话结果。VSCode 侧同步补了临时 override sourcePath 与 workspace-relative sourcePath 的路径还原；这仍只是宿主路径适配，不在 VSCode 里重写语义。
 - 2026-06-02 最新：Stable Node Map manual-review candidate apply 已从 VSCode 私有 JS mutation 下沉到 `Internal/Tooling`，并通过 CLI `apply-node-map-candidate-project` 暴露 dry-run / 写回。VSCode review UI 现在只负责 Quick Pick、调用共享命令、`.review-backup.json` 与 revert 文件恢复；SelfHostedEditor 后续可接同一命令，不需要在浏览器端改写 sidecar。
+- 2026-06-02 最新：VSCode 本地化 review -> update 核心闭环已补齐。`Review Localization Alignment` 写出报告后的成功动作现在提供 `Update CSV`，复用本次 review 已选择的旧 CSV，再调用共享 `update-l10n-project` 生成 updated CSV；VSCode 仍只做命令式宿主 glue，不接管 CSV 合并、alignment 或候选评分语义。
 
 2026-05-26 本会话交接状态：
 
