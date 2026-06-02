@@ -49,7 +49,9 @@ const languageServerExecutablePath = path.join(languageServerBuildRoot, "Inscape
 const languageServerAssemblyPath = path.join(languageServerBuildRoot, "Inscape.LanguageServer.dll");
 const port = Number(process.env.PORT || 5178);
 const bridgeCommandTimeoutMilliseconds = 30000;
+const defaultLineMapSessionId = "default";
 const defaultRuntimeSessionId = "default";
+const lineMapSessionStates = new Map();
 const runtimeSessionStates = new Map();
 
 const mimeTypes = new Map([
@@ -470,11 +472,12 @@ async function handleLineMapRefreshRequest(request, response) {
       ? payload.scriptText
       : "";
     const workspace = normalizeWorkspacePayload(payload.workspace);
+    const sessionId = normalizeLineMapSessionId(payload.sessionId);
     const existingLineMap = payload.existingLineMap && typeof payload.existingLineMap === "object"
       ? payload.existingLineMap
-      : null;
+      : getLineMapSessionState(sessionId);
 
-    const lineMapPayload = await refreshLineMapForScriptText(scriptText, workspace, existingLineMap);
+    const lineMapPayload = await refreshLineMapForScriptText(scriptText, workspace, existingLineMap, sessionId);
     response.writeHead(200, {
       "Content-Type": "application/json; charset=utf-8",
     });
@@ -1008,6 +1011,29 @@ function normalizeRuntimeSessionId(sessionId) {
   return safe || defaultRuntimeSessionId;
 }
 
+function getLineMapSessionState(sessionId) {
+  return lineMapSessionStates.get(normalizeLineMapSessionId(sessionId)) || null;
+}
+
+function rememberLineMapSessionState(payload, sessionId) {
+  const normalizedSessionId = normalizeLineMapSessionId(sessionId);
+  if (payload?.lineMap) {
+    lineMapSessionStates.set(normalizedSessionId, payload.lineMap);
+  }
+
+  return payload;
+}
+
+function normalizeLineMapSessionId(sessionId) {
+  const normalized = String(sessionId || defaultLineMapSessionId).trim();
+  if (!normalized) {
+    return defaultLineMapSessionId;
+  }
+
+  const safe = normalized.replace(/[^A-Za-z0-9._:-]/g, "-").slice(0, 120);
+  return safe || defaultLineMapSessionId;
+}
+
 function compactLocalizationReviewPayload(report) {
   return {
     format: "inscape.self-hosted-editor.localization-review",
@@ -1262,12 +1288,13 @@ function relativizeSourcePath(sourcePath, tempRoot) {
   return relativePath.replace(/\\/g, "/");
 }
 
-async function refreshLineMapForScriptText(scriptText, workspace, existingLineMap = null) {
+export async function refreshLineMapForScriptText(scriptText, workspace, existingLineMap = null, sessionId = "") {
+  const sessionLineMap = existingLineMap || getLineMapSessionState(sessionId);
   return withTemporaryWorkspace(workspace, scriptText, async ({ tempRoot }) => {
     const lineMapPath = path.join(tempRoot, "inscape.line-map.json");
     const reportPath = path.join(tempRoot, "inscape.line-map-refresh.json");
-    if (existingLineMap) {
-      await fsp.writeFile(lineMapPath, JSON.stringify(existingLineMap, null, 2), "utf8");
+    if (sessionLineMap) {
+      await fsp.writeFile(lineMapPath, JSON.stringify(sessionLineMap, null, 2), "utf8");
     }
 
     await runCliCommand([
@@ -1280,10 +1307,13 @@ async function refreshLineMapForScriptText(scriptText, workspace, existingLineMa
     ], "CLI localization line map refresh");
     const lineMapText = await fsp.readFile(lineMapPath, "utf8");
     const reportText = await fsp.readFile(reportPath, "utf8");
-    return {
+    return rememberLineMapSessionState({
+      format: "inscape.self-hosted-editor.line-map-refresh",
+      formatVersion: 1,
       lineMap: parseJsonFileText(lineMapText),
       refresh: parseJsonFileText(reportText),
-    };
+      sessionId: normalizeLineMapSessionId(sessionId),
+    }, sessionId);
   });
 }
 

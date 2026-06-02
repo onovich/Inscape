@@ -32,6 +32,7 @@
 - 2026-06-02 最新：Stable Node Map manual-review candidate apply 已从 VSCode 私有 JS mutation 下沉到 `Internal/Tooling`，并通过 CLI `apply-node-map-candidate-project` 暴露 dry-run / 写回。VSCode review UI 现在只负责 Quick Pick、调用共享命令、`.review-backup.json` 与 revert 文件恢复；SelfHostedEditor 已接同一命令，`Preview Apply` / `Apply` 都通过 `/api/node-map-apply` 调用共享 CLI，浏览器阶段只更新可下载 sidecar payload，不在前端改写真实项目文件。
 - 2026-06-02 最新：VSCode 本地化 review -> update 核心闭环已补齐。`Review Localization Alignment` 写出报告后的成功动作现在提供 `Update CSV`，复用本次 review 已选择的旧 CSV，再调用共享 `update-l10n-project` 生成 updated CSV；VSCode 仍只做命令式宿主 glue，不接管 CSV 合并、alignment 或候选评分语义。
 - 2026-06-02 最新：Editor Backend 会话边界第一刀已落在 Runtime dev-host。`/api/runtime-state` 会按 `sessionId` 记住最新 compact Runtime snapshot，`/api/runtime-action` 可只带 `sessionId + action` 推进服务端会话；显式 `runtimeState` 仍保留为兼容 fallback。前端 Runtime bridge 不再默认每次 action 都上传整份 state，`check:runtime-http` 已覆盖真实 HTTP session 推进。这仍只是宿主会话状态，不改变共享 `Runtime` / CLI 剧情推进语义，也还不是正式桌面长驻 Runtime 进程。
+- 2026-06-02 最新：Editor Backend 会话边界第二刀已落在 line-map dev-host。`/api/line-map-refresh` 会按 `sessionId` 记住最新 Tooling line sidecar，前端 `SelfHostedEditorLineMapBridge` 默认只传 `sessionId + script/workspace`，显式 `existingLineMap` 保留为兼容 fallback；新增 `check:line-map` 与 `check:line-map-http` 覆盖直连和真实 HTTP session 继承。这仍只是宿主缓存上一轮 sidecar，不改变共享 `refresh-l10n-line-map-project` 的稳定行身份迁移语义。
 
 2026-05-26 本会话交接状态：
 
@@ -90,7 +91,7 @@
 - Files 面板当前使用和 Outline 一致的紧凑列表布局，内容不足时保持顶部小块列表；不要让 grid item 拉伸成填满面板的大卡片。
 - 左下角 workspace/session 信息现在在所有视图下保持常态可读，不再依赖侧栏 hover 才显形；后续不要把 `.sidebar-meta` 重新降成极低 opacity，否则不同视图下会因鼠标落点不同出现文字清晰度不一致。
 - Script `Syntax` 开关已从“状态切换但视觉不明显”修成真实表现：按钮有 pressed/off 状态，Monaco decorations 改为 inline text style + overlay background，标题、对白、旁白、prompt、choice 与当前 block 会得到安静的语义样式。
-- 行级稳定身份不再是纯前端占位：新增 `SelfHostedEditorLineMapBridge`，开发宿主暴露 `/api/line-map-refresh`，通过现有 Internal CLI/Tooling `refresh-l10n-line-map-project` 在临时 workspace 中生成真实 line-map；前端会把上一轮 line-map 作为下一轮 existing sidecar 传回，让 Tooling 负责迁移稳定 `line_...`。对白、prompt、choice 等本地化身份行显示真实 `line_...`，跳转等非本地化身份行不显示身份文本，不要伪造稳定 id。
+- 行级稳定身份不再是纯前端占位：新增 `SelfHostedEditorLineMapBridge`，开发宿主暴露 `/api/line-map-refresh`，通过现有 Internal CLI/Tooling `refresh-l10n-line-map-project` 在临时 workspace 中生成真实 line-map；开发宿主现在按 `sessionId` 记住上一轮 line-map，前端默认不再每轮上传整份 sidecar，但仍可用显式 `existingLineMap` 兜底，让 Tooling 负责迁移稳定 `line_...`。对白、prompt、choice 等本地化身份行显示真实 `line_...`，跳转等非本地化身份行不显示身份文本，不要伪造稳定 id。
 - 行号 hover 的稳定身份文本现在只在 status 为 `available` 时显示；`@`、跳转、旁白等未追踪行直接省略身份文本，不显示 `not tracked` / `line id not loaded` 占位。`ScriptLineIdentityModelBuilder` 已兼容 camelCase / PascalCase line-map JSON 字段。开发宿主读取 Tooling 生成的 `inscape.line-map.json` / refresh report 时必须剥离 UTF-8 BOM；否则 Node 端 `JSON.parse` 会失败，前端会静默回到 `provider: unavailable`，表现为 hover 行号永远只显示块内行号。
 
 仍是临时或下一步应替换的部分：
@@ -98,7 +99,7 @@
 - `ScriptDocumentModelBuilder` 仍是前端 UI-only 草模，用于离线 fallback、本地化草表和部分提示层；Graph 与 Preview 的正常服务路径已消费 Compiler project graph。长期应继续用 `Tooling` / `LanguageServer` / `Runtime` 输出替换，而不是扩写 parser 语义。
 - 诊断虽已优先走 LanguageServer project probe，但当前仍只把 diagnostics marker 贴回活动文件；真正的多文件 Problems、跨文件 rename、长期会话缓存和桌面后端进程仍待补。
 - Graph 节点位置仍是会话内 `savedPositions`，尚未写入 graph layout sidecar；画布缩放/平移、连接合法性反馈、端口命中高亮仍可继续细化。
-- line-map bridge 当前走开发预览服务器 + CLI 临时 workspace，是正确复用 Tooling 语义的第一步，但未来桌面客户端应改为正式 Editor Backend / Tooling 会话桥，而不是每轮通过 HTTP dev server 启动 CLI。
+- line-map bridge 当前仍走开发预览服务器 + CLI 临时 workspace，是正确复用 Tooling 语义的第一步；现在已经有第一层 `sessionId` sidecar 记忆，但未来桌面客户端仍应改为正式 Editor Backend / Tooling 会话桥，而不是每轮通过 HTTP dev server 启动 CLI。
 - L10N 视图已接入真实 alignment review presenter，并已补上真实旧 CSV 选择、宿主侧 review 筛选、更清楚的 CSV 会话状态、linked baseline 的 clean / unsaved 宿主状态，以及真实 updated CSV 导出 / native file handle 直写：`/api/localization-review` 负责 review presenter，`/api/localization-update` 负责把旧 CSV 与 draft overrides 交回 CLI 产出 updated CSV，宿主层只在可用时负责把结果写回已链接文件。当前仍未完成的是批量审校动作。
 - Preview 内容已来自 Compiler project graph；当 Runtime 可用时，节点内 Static / Flow 进度也开始消费 Runtime 阅读状态。当前 Runtime dev-host 已有第一层 `sessionId` 状态边界；仍未落地的是桌面端真正长生命周期 Runtime 进程，以及 Runtime 不可用时如何继续缩小本地 fallback 面积。
 - `runtime-project` / `/api/runtime-state` / `/api/runtime-action` 现已覆盖 Start、`advance-flow` / `rewind-flow` / `continue` / `rewind` / `choose` 的最小 action 契约；HTTP dev-host 可以按 `sessionId` 记住最新 compact snapshot，Preview 的节点内 Flow 进度在 Runtime 可用时已受 Runtime state 驱动，但正式桌面端 Runtime 会话仍未落地。

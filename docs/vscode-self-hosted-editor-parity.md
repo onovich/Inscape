@@ -206,5 +206,5 @@ VSCode 是专业编辑器，不需要一致视觉。但两边语义能力要一�
 8. 已补 Host Schema / Host Binding capability 查看入口：SelfHostedEditor `Host` 视图消费共享 capability catalog，不复制 VSCode Quick Pick UI 或 JSON 解析。
 9. 已下沉 Stable Node Map candidate apply 为共享 Tooling / CLI 动作；VSCode 与 SelfHostedEditor 都已改为调用共享命令。SelfHostedEditor 当前浏览器阶段只更新可下载 node map payload，不复制 VSCode 的文件备份/revert 体验。
 10. 已补 VSCode 本地化 review 后的 update continuation：报告成功动作可直接复用已选择的 previous CSV 调用共享 `update-l10n-project`，补齐命令式核心闭环。
-11. 继续整理 Editor Backend 会话边界：把 workspace、runtime、line-map、localization baseline 从“一次请求一套临时上下文”收向“打开项目后持续存在的会话”。
+11. 继续整理 Editor Backend 会话边界：Runtime 与 line-map 已有第一层 `sessionId` 状态边界；继续把 workspace、LanguageServer、localization baseline/update 从“一次请求一套临时上下文”收向“打开项目后持续存在的会话”。
 12. Graph 与 Unity / Bird 暂不进入近期主线，只保留回归不倒退。
