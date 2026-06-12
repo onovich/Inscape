@@ -23,12 +23,29 @@ export function writeJsonResponse(response, payload) {
 
 export function writeJsonErrorResponse(response, error) {
   const statusCode = getErrorStatusCode(error);
+  const payload = {
+    error: getErrorMessage(error),
+  };
+  if (error?.details && typeof error.details === "object") {
+    payload.details = error.details;
+  }
+
   response.writeHead(statusCode, {
     "Content-Type": jsonContentType,
   });
-  response.end(JSON.stringify({
-    error: error instanceof Error ? error.message : String(error),
-  }));
+  response.end(JSON.stringify(payload));
+}
+
+function getErrorMessage(error) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (typeof error?.message === "string") {
+    return error.message;
+  }
+
+  return String(error);
 }
 
 function readRequestBody(request, options = {}) {

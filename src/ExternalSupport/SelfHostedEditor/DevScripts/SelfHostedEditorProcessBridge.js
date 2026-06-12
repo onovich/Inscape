@@ -44,7 +44,26 @@ const languageServerBuildRoot = path.join(
 );
 const languageServerExecutablePath = path.join(languageServerBuildRoot, "Inscape.LanguageServer.exe");
 const languageServerAssemblyPath = path.join(languageServerBuildRoot, "Inscape.LanguageServer.dll");
-const bridgeCommandTimeoutMilliseconds = 30000;
+export const defaultProcessCommandTimeoutMilliseconds = 30000;
+export const defaultProcessErrorOutputPreviewCharacterLimit = 4000;
+
+export class SelfHostedEditorProcessCommandError extends Error {
+  constructor(label, outcome) {
+    super(createProcessErrorMessage(label, outcome));
+    this.name = "SelfHostedEditorProcessCommandError";
+    this.details = {
+      durationMilliseconds: outcome.durationMilliseconds,
+      exitCode: outcome.exitCode,
+      format: "inscape.self-hosted-editor.process-error",
+      formatVersion: 1,
+      label,
+      signal: outcome.signal,
+      stderr: outcome.stderrPreview,
+      stdout: outcome.stdoutPreview,
+      timedOut: outcome.timedOut,
+    };
+  }
+}
 
 export function runLanguageServerProjectDiagnostics(rootPath) {
   return runLanguageServerCommand([
@@ -114,10 +133,19 @@ function runLanguageServerCommand(languageServerArgs, label) {
   return runProcessCommand(resolveLanguageServerInvocation(languageServerArgs), label);
 }
 
-function runProcessCommand(invocation, label) {
+export function runProcessCommand(invocation, label, options = {}) {
+  const timeoutMilliseconds = normalizePositiveInteger(
+    options.timeoutMilliseconds,
+    defaultProcessCommandTimeoutMilliseconds
+  );
+  const outputPreviewCharacterLimit = normalizePositiveInteger(
+    options.outputPreviewCharacterLimit,
+    defaultProcessErrorOutputPreviewCharacterLimit
+  );
   return new Promise((resolve, reject) => {
     let settled = false;
-    const process = childProcess.spawn(invocation.command, invocation.args, {
+    const startedAt = Date.now();
+    const child = childProcess.spawn(invocation.command, invocation.args, {
       cwd: repoRoot,
       windowsHide: true,
     });
@@ -127,31 +155,47 @@ function runProcessCommand(invocation, label) {
       }
 
       settled = true;
-      process.kill();
-      reject(new Error(`${label} timed out after ${bridgeCommandTimeoutMilliseconds}ms.`));
-    }, bridgeCommandTimeoutMilliseconds);
+      child.kill();
+      reject(createProcessCommandError(label, {
+        durationMilliseconds: Date.now() - startedAt,
+        exitCode: null,
+        outputPreviewCharacterLimit,
+        signal: null,
+        stderr: decodeProcessOutput(stderrChunks),
+        stdout: decodeProcessOutput(stdoutChunks),
+        timedOut: true,
+      }));
+    }, timeoutMilliseconds);
 
     const stdoutChunks = [];
     const stderrChunks = [];
 
-    process.stdout.on("data", (chunk) => {
+    child.stdout.on("data", (chunk) => {
       stdoutChunks.push(Buffer.from(chunk));
     });
 
-    process.stderr.on("data", (chunk) => {
+    child.stderr.on("data", (chunk) => {
       stderrChunks.push(Buffer.from(chunk));
     });
 
-    process.on("error", (error) => {
+    child.on("error", (error) => {
       if (settled) {
         return;
       }
 
       settled = true;
       clearTimeout(timeout);
-      reject(error);
+      reject(createProcessCommandError(label, {
+        durationMilliseconds: Date.now() - startedAt,
+        exitCode: null,
+        outputPreviewCharacterLimit,
+        signal: null,
+        stderr: error instanceof Error ? error.message : String(error),
+        stdout: decodeProcessOutput(stdoutChunks),
+        timedOut: false,
+      }));
     });
-    process.on("exit", (code) => {
+    child.on("exit", (code, signal) => {
       if (settled) {
         return;
       }
@@ -161,7 +205,15 @@ function runProcessCommand(invocation, label) {
       const stdout = decodeProcessOutput(stdoutChunks);
       const stderr = decodeProcessOutput(stderrChunks);
       if (code !== 0) {
-        reject(new Error(stderr.trim() || `${label} exited with code ${code}.`));
+        reject(createProcessCommandError(label, {
+          durationMilliseconds: Date.now() - startedAt,
+          exitCode: code,
+          outputPreviewCharacterLimit,
+          signal,
+          stderr,
+          stdout,
+          timedOut: false,
+        }));
         return;
       }
 
@@ -173,8 +225,53 @@ function runProcessCommand(invocation, label) {
   });
 }
 
+function createProcessCommandError(label, outcome) {
+  return new SelfHostedEditorProcessCommandError(label, {
+    ...outcome,
+    stderrPreview: createProcessOutputPreview(outcome.stderr, outcome.outputPreviewCharacterLimit),
+    stdoutPreview: createProcessOutputPreview(outcome.stdout, outcome.outputPreviewCharacterLimit),
+  });
+}
+
+function createProcessErrorMessage(label, outcome) {
+  const statusText = outcome.timedOut
+    ? `timed out after ${outcome.durationMilliseconds}ms`
+    : `failed with exit code ${outcome.exitCode ?? "unknown"}${outcome.signal ? ` and signal ${outcome.signal}` : ""}`;
+  const stderrText = outcome.stderrPreview.text
+    ? ` stderr: ${outcome.stderrPreview.text}`
+    : "";
+  const stdoutText = outcome.stdoutPreview.text
+    ? ` stdout: ${outcome.stdoutPreview.text}`
+    : "";
+  return `${label} ${statusText}.${stderrText}${stdoutText}`.trim();
+}
+
+function createProcessOutputPreview(output, characterLimit) {
+  const text = String(output || "").trim();
+  if (text.length <= characterLimit) {
+    return {
+      text,
+      truncated: false,
+    };
+  }
+
+  return {
+    text: `${text.slice(0, characterLimit)}... [truncated ${text.length - characterLimit} characters]`,
+    truncated: true,
+  };
+}
+
 function decodeProcessOutput(chunks) {
   return Buffer.concat(chunks).toString("utf8");
+}
+
+function normalizePositiveInteger(value, fallback) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric <= 0) {
+    return fallback;
+  }
+
+  return Math.floor(numeric);
 }
 
 function resolveCliInvocation(cliArgs) {

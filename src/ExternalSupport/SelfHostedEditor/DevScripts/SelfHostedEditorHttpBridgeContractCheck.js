@@ -28,6 +28,20 @@ writeJsonErrorResponse(response, rejectedError);
 assertEqual(response.statusCode, 413, "oversized JSON error writes 413 response");
 assertIncludes(response.body, "byte limit", "oversized JSON error response explains limit");
 
+const detailedResponse = createResponse();
+writeJsonErrorResponse(detailedResponse, {
+  details: {
+    format: "inscape.self-hosted-editor.process-error",
+    timedOut: true,
+  },
+  message: "process failed",
+  statusCode: 500,
+});
+const detailedBody = JSON.parse(detailedResponse.body);
+assertEqual(detailedBody.error, "process failed", "detailed JSON error preserves error message");
+assertEqual(detailedBody.details.format, "inscape.self-hosted-editor.process-error", "detailed JSON error exposes structured details");
+assertEqual(detailedBody.details.timedOut, true, "detailed JSON error exposes timeout state");
+
 console.log("SelfHostedEditor HTTP bridge contract ok");
 
 function createRequest(body) {

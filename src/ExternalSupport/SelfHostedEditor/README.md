@@ -71,7 +71,7 @@ The current shell is intentionally small, but it now includes a first Monaco-bac
 - Preview Flow now also prefers shared Runtime reading progress when a Runtime snapshot is available. Node-internal reading steps are driven by `readingProgress` and `state.visibleStepCount`, and the browser only relays `advance-flow` / `rewind-flow` instead of inventing a second flow-step truth locally. Existing `continue` / `choose` semantics stay unchanged.
 - Runtime dev-host smoke now covers both direct bridge logic and real HTTP transport. `check:runtime` asserts the compact Runtime payload and the `choose` -> `continue` transition chain without starting a server first, while `check:runtime-http` starts the preview dev server in-process and exercises `/api/runtime-state` plus `/api/runtime-action` end to end, including server-side `sessionId` state progression without resending the full Runtime state on every action.
 - Line-map dev-host smoke now covers both direct bridge logic and real HTTP transport. `check:line-map` and `check:line-map-http` assert that a second refresh can preserve an existing stable line id through `sessionId` alone, without resending `existingLineMap`.
-- Dev-host process output is treated as UTF-8 end to end: CLI / LanguageServer entries set UTF-8 stdout, and the SelfHostedEditor dev server collects child-process stdout/stderr buffers before decoding. Do not decode child-process chunks one-by-one, because split multibyte text can corrupt Chinese preview/runtime content.
+- Dev-host process output is treated as UTF-8 end to end: CLI / LanguageServer entries set UTF-8 stdout, and the SelfHostedEditor dev server collects child-process stdout/stderr buffers before decoding. Failed commands report bounded process diagnostics with exit code or timeout state plus truncated stdout/stderr previews; do not decode child-process chunks one-by-one, and do not return unbounded process output in HTTP errors.
 
 The draft extraction model is UI-only. It exists to make the shell useful while the real `Tooling` / `LanguageServer` / `Runtime` contracts are wired in.
 
@@ -140,6 +140,7 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:references
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:references-http
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:node-map
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:node-map-http
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:process-bridge
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:session-cache
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:session-cache-http
 ```
@@ -161,6 +162,7 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:session-cache-http
 `check:references-http` starts the preview dev server in-process and performs a real HTTP request to `/api/references`, including workspace-relative source path normalization.
 `check:node-map` exercises the stable node map review and candidate apply helpers without requiring the local HTTP server to be started first, including a title rename over an existing generated sidecar and a manual-review candidate dry-run/apply.
 `check:node-map-http` starts the preview dev server in-process and performs real HTTP requests to `/api/node-map-review` and `/api/node-map-apply`.
+`check:process-bridge` verifies successful process output, nonzero exit diagnostics, truncated stdout/stderr previews, and timeout state without starting a server.
 `check:session-cache` verifies the dev-host session cache TTL, per-cache capacity limit, eviction counters, and non-content status shape without starting a server.
 `check:session-cache-http` starts the preview dev server in-process, seeds Runtime, line-map, and localization baseline session caches through real HTTP APIs, then requests `/api/session-cache-status`.
 
