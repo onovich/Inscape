@@ -166,6 +166,8 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:session-cache-http
 `check:session-cache` verifies the dev-host session cache TTL, per-cache capacity limit, eviction counters, and non-content status shape without starting a server.
 `check:session-cache-http` starts the preview dev server in-process, seeds Runtime, line-map, and localization baseline session caches through real HTTP APIs, then requests `/api/session-cache-status`.
 
+`check:model` keeps the historical entry point, but its assertions now live under `DevScripts/ModelContracts/` by ownership: model shape, Host capability, StoryGraph, localization, node-map, Preview / Runtime, and the shared fake DOM harness.
+
 Serve the prototype locally:
 
 ```powershell

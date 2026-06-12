@@ -1,0 +1,92 @@
+import { StoryNodeMapReviewController } from "../../Scripts/EditorAuthoring/Controllers/StoryNodeMapReviewController.js";
+import { assertEqual, assertIncludesText, FakeElement, findElementByClass, getTextContent, installFakeDomEnvironment } from "./SelfHostedEditorModelContractHarness.js";
+
+installFakeDomEnvironment();
+
+const nodeMapButton = new FakeElement("button");
+let appliedNodeMapPath = "";
+let selectedNodeMapLine = 0;
+const nodeMapReviewController = new StoryNodeMapReviewController({
+  reviewBridge: {
+    async reviewNodeMap() {
+      return {
+        provider: "node-map-review",
+        review: {
+          nodeMapPath: "inscape.node-map.json",
+          nodeMapText: "{\n  \"format\": \"inscape.node-map\"\n}",
+          report: {
+            items: [
+              {
+                candidates: [
+                  {
+                    score: 23,
+                    sourceLine: 4,
+                    sourcePath: "story.inscape",
+                    stableId: "node_OLD",
+                    title: "Opening",
+                  },
+                ],
+                kind: "manual-review",
+                message: "Multiple rename candidates matched this title.",
+                previousTitle: "",
+                sourceLine: 12,
+                sourcePath: "story.inscape",
+                stableId: "node_NEW",
+                status: "active",
+                title: "Court Opening",
+              },
+            ],
+            summary: {
+              conflictNodeCount: 0,
+              manualReviewCount: 1,
+              missingNodeCount: 0,
+              newNodeCount: 1,
+              renamedNodeCount: 0,
+            },
+          },
+        },
+      };
+    },
+    async applyCandidate(_scriptText, item, candidate, dryRun, nodeMapPath) {
+      appliedNodeMapPath = nodeMapPath;
+      return {
+        apply: {
+          candidateStableId: candidate.stableId,
+          dryRun,
+          itemStableId: item.stableId,
+          nodeMap: {
+            entries: [
+              {
+                stableId: candidate.stableId,
+                title: item.title,
+              },
+            ],
+            format: "inscape.node-map",
+          },
+          nodeMapPath,
+          nodeMapText: "{\n  \"format\": \"inscape.node-map\",\n  \"applied\": true\n}",
+        },
+        provider: "node-map-apply",
+      };
+    },
+  },
+  reviewButtonElement: nodeMapButton,
+});
+nodeMapReviewController.onSourceLineSelected((selection) => {
+  selectedNodeMapLine = selection.lineNumber;
+});
+await nodeMapReviewController.review("# Court Opening\nNarrator: Hello");
+assertEqual(nodeMapButton.textContent, "Node Map", "stable node map review button should reset after summary status");
+assertIncludesText(getTextContent(document.body), "Stable Node Map");
+assertIncludesText(getTextContent(document.body), "Court Opening");
+assertIncludesText(getTextContent(document.body), "manual-review");
+assertIncludesText(getTextContent(document.body), "Opening · score 23");
+assertIncludesText(getTextContent(document.body), "Preview Apply");
+assertIncludesText(getTextContent(document.body), "Apply");
+const nodeMapReviewItemButton = findElementByClass(document.body, "node-map-review-item-main");
+nodeMapReviewItemButton?.click();
+assertEqual(selectedNodeMapLine, 12, "stable node map review item should jump to its current source line");
+await findElementByClass(document.body, "node-map-review-candidate-apply")?.click();
+assertEqual(appliedNodeMapPath, "inscape.node-map.json", "stable node map apply should preserve the review node map path");
+assertIncludesText(nodeMapReviewController.currentReviewPayload.nodeMapText, "\"applied\": true", "stable node map apply should update the downloadable node map text");
+assertIncludesText(getTextContent(document.body), "Applied node_OLD to downloadable node map");
