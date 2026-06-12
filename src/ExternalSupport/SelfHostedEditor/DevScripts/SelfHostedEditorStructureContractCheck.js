@@ -9,11 +9,27 @@ const requiredPaths = [
   "README.md",
   "package.json",
   "DevScripts",
+  "DevScripts/SelfHostedEditorHttpBridge.js",
   "DevScripts/SelfHostedEditorModelContractCheck.js",
+  "DevScripts/SelfHostedEditorProcessBridge.js",
+  "DevScripts/SelfHostedEditorRouteBridge.js",
+  "DevScripts/SelfHostedEditorSessionBridge.js",
+  "DevScripts/SelfHostedEditorStaticAssetBridge.js",
+  "DevScripts/SelfHostedEditorWorkspaceBridge.js",
   "DevScripts/SelfHostedEditorReferencesHttpSmoke.js",
   "DevScripts/SelfHostedEditorReferencesSmoke.js",
   "DevScripts/SelfHostedEditorSemanticParityHttpSmoke.js",
   "Resources/Workbench/SelfHostedEditorWorkbenchDocument.html",
+  "Resources/Styles/SelfHostedEditorBase.css",
+  "Resources/Styles/SelfHostedEditorDiagnosticsStatus.css",
+  "Resources/Styles/SelfHostedEditorEditorAuthoring.css",
+  "Resources/Styles/SelfHostedEditorHostCapability.css",
+  "Resources/Styles/SelfHostedEditorLocalization.css",
+  "Resources/Styles/SelfHostedEditorLoadingState.css",
+  "Resources/Styles/SelfHostedEditorNodeMapReview.css",
+  "Resources/Styles/SelfHostedEditorPreview.css",
+  "Resources/Styles/SelfHostedEditorStoryGraph.css",
+  "Resources/Styles/SelfHostedEditorWorkspaceLayout.css",
   "Resources/Styles/SelfHostedEditorWorkbench.css",
   "Scripts/Entries/SelfHostedEditorAppEntry.js",
   "Scripts/EditorAuthoring/Bridges/MonacoEditorBridge.js",
@@ -115,16 +131,456 @@ if (!html.includes('data-view="host"') || !html.includes("host-capability-panel"
   failed = true;
 }
 
+const workbenchCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorWorkbench.css");
+const workbenchBaseCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorBase.css");
+const workbenchDiagnosticsStatusCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorDiagnosticsStatus.css");
+const workbenchEditorAuthoringCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorEditorAuthoring.css");
+const workbenchHostCapabilityCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorHostCapability.css");
+const workbenchLocalizationCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorLocalization.css");
+const workbenchLoadingStateCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorLoadingState.css");
+const workbenchNodeMapReviewCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorNodeMapReview.css");
+const workbenchPreviewCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorPreview.css");
+const workbenchStoryGraphCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorStoryGraph.css");
+const workbenchWorkspaceLayoutCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorWorkspaceLayout.css");
+const workbenchCss = fs.readFileSync(workbenchCssPath, "utf8");
+const workbenchBaseCss = fs.readFileSync(workbenchBaseCssPath, "utf8");
+const workbenchDiagnosticsStatusCss = fs.readFileSync(workbenchDiagnosticsStatusCssPath, "utf8");
+const workbenchEditorAuthoringCss = fs.readFileSync(workbenchEditorAuthoringCssPath, "utf8");
+const workbenchHostCapabilityCss = fs.readFileSync(workbenchHostCapabilityCssPath, "utf8");
+const workbenchLocalizationCss = fs.readFileSync(workbenchLocalizationCssPath, "utf8");
+const workbenchLoadingStateCss = fs.readFileSync(workbenchLoadingStateCssPath, "utf8");
+const workbenchNodeMapReviewCss = fs.readFileSync(workbenchNodeMapReviewCssPath, "utf8");
+const workbenchPreviewCss = fs.readFileSync(workbenchPreviewCssPath, "utf8");
+const workbenchStoryGraphCss = fs.readFileSync(workbenchStoryGraphCssPath, "utf8");
+const workbenchWorkspaceLayoutCss = fs.readFileSync(workbenchWorkspaceLayoutCssPath, "utf8");
+const normalizedWorkbenchCss = workbenchCss.replace(/\r\n/g, "\n");
+const expectedWorkbenchCssImports = [
+  '@import url("./SelfHostedEditorBase.css");',
+  '@import url("./SelfHostedEditorWorkspaceLayout.css");',
+  '@import url("./SelfHostedEditorLoadingState.css");',
+  '@import url("./SelfHostedEditorDiagnosticsStatus.css");',
+  '@import url("./SelfHostedEditorEditorAuthoring.css");',
+  '@import url("./SelfHostedEditorPreview.css");',
+  '@import url("./SelfHostedEditorLocalization.css");',
+  '@import url("./SelfHostedEditorHostCapability.css");',
+  '@import url("./SelfHostedEditorNodeMapReview.css");',
+  '@import url("./SelfHostedEditorStoryGraph.css");',
+].join("\n");
+if (!normalizedWorkbenchCss.startsWith(expectedWorkbenchCssImports)) {
+  console.error("SelfHostedEditor workbench CSS must import the split CSS modules in the expected order.");
+  failed = true;
+}
+const workbenchCssBody = normalizedWorkbenchCss.slice(expectedWorkbenchCssImports.length).trim();
+if (workbenchCssBody.length > 0) {
+  console.error("SelfHostedEditor workbench CSS must only compose split CSS modules through imports.");
+  failed = true;
+}
+if (workbenchCss.includes(":root {") || /^body\s*{/m.test(workbenchCss)) {
+  console.error("SelfHostedEditor global design tokens and body reset must live in SelfHostedEditorBase.css.");
+  failed = true;
+}
+if (
+  !workbenchBaseCss.includes(":root {")
+  || !workbenchBaseCss.includes("--editor-width: 700px;")
+  || !workbenchBaseCss.includes("--preview-width: 560px;")
+  || !workbenchBaseCss.includes("box-sizing: border-box;")
+  || !workbenchBaseCss.includes("overflow: hidden;")
+) {
+  console.error("SelfHostedEditorBase.css must retain the workbench global tokens and reset rules.");
+  failed = true;
+}
+if (
+  /@keyframes\s+loading-breath/.test(workbenchCss)
+  || /^\[data-loading-state\]\s*{/m.test(workbenchCss)
+  || /^\.app-shell\s*{/m.test(workbenchCss)
+  || /^\.app-sidebar\b/m.test(workbenchCss)
+  || /^\.top-bar\s*{/m.test(workbenchCss)
+  || /^\.workbench-body\s*{/m.test(workbenchCss)
+  || /^\.diagnostics-dock\s*{/m.test(workbenchCss)
+  || /^\.workspace-summary\s*{/m.test(workbenchCss)
+  || /^\.placeholder-panel\s*{/m.test(workbenchCss)
+  || /^\.status-bar\s*{/m.test(workbenchCss)
+  || /^\.editor-frame\s*{/m.test(workbenchCss)
+  || /^\.hint-rail\s*{/m.test(workbenchCss)
+  || /^\.script-editor\b/m.test(workbenchCss)
+  || /@keyframes\s+story-speaker-enter/.test(workbenchCss)
+  || /^\.preview-mode-switcher\s*{/m.test(workbenchCss)
+  || /^\.story-preview\s*{/m.test(workbenchCss)
+  || /^\.story-line\s*{/m.test(workbenchCss)
+  || /^\.choice-button\s*{/m.test(workbenchCss)
+  || /^\.localization-toolbar\s*{/m.test(workbenchCss)
+  || /^\.localization-table\s*{/m.test(workbenchCss)
+  || /^\.localization-review-action\s*{/m.test(workbenchCss)
+  || /^\.localization-translation-input\s*{/m.test(workbenchCss)
+  || /^\.status-pill\s*{/m.test(workbenchCss)
+  || /^\.host-capability-panel\s*{/m.test(workbenchCss)
+  || /^\.host-capability-summary\s*{/m.test(workbenchCss)
+  || /^\.host-capability-item\s*{/m.test(workbenchCss)
+  || /^\.host-capability-source\s*{/m.test(workbenchCss)
+  || /^\.node-map-review-overlay\s*{/m.test(workbenchCss)
+  || /^\.node-map-review-item\s*{/m.test(workbenchCss)
+  || /^\.node-map-review-candidate-action\s*{/m.test(workbenchCss)
+  || /^\.graph-viewport\s*{/m.test(workbenchCss)
+  || /^\.graph-node\s*{/m.test(workbenchCss)
+  || /^\.graph-port-row\s*{/m.test(workbenchCss)
+  || /^\.graph-edge-path\s*{/m.test(workbenchCss)
+  || /@media\s+\(max-width:/.test(workbenchCss)
+) {
+  console.error("SelfHostedEditor workbench CSS must leave loading, workspace shell, diagnostics/status, editor authoring, preview, localization, host capability, node-map review, and story graph styles in their split CSS modules.");
+  failed = true;
+}
+if (
+  !/^\.diagnostics-dock\s*{/m.test(workbenchDiagnosticsStatusCss)
+  || !/^\.diagnostics-filter-button\s*{/m.test(workbenchDiagnosticsStatusCss)
+  || !/\.diagnostic-item\s*{/.test(workbenchDiagnosticsStatusCss)
+  || !/^\.placeholder-panel\s*{/m.test(workbenchDiagnosticsStatusCss)
+  || !/^\.status-bar\s*{/m.test(workbenchDiagnosticsStatusCss)
+  || !/^\.status-bar-nav-button\s*{/m.test(workbenchDiagnosticsStatusCss)
+) {
+  console.error("SelfHostedEditorDiagnosticsStatus.css must retain diagnostics dock, placeholder, and status bar rules.");
+  failed = true;
+}
+if (
+  /^\.app-shell\s*{/m.test(workbenchDiagnosticsStatusCss)
+  || /^\.workspace\s*{/m.test(workbenchDiagnosticsStatusCss)
+  || /^\.editor-frame\s*{/m.test(workbenchDiagnosticsStatusCss)
+  || /^\.story-preview\s*{/m.test(workbenchDiagnosticsStatusCss)
+  || /^\.localization-toolbar\s*{/m.test(workbenchDiagnosticsStatusCss)
+  || /^\.host-capability-panel\s*{/m.test(workbenchDiagnosticsStatusCss)
+  || /^\.node-map-review-overlay\s*{/m.test(workbenchDiagnosticsStatusCss)
+  || /^\.graph-viewport\s*{/m.test(workbenchDiagnosticsStatusCss)
+) {
+  console.error("SelfHostedEditorDiagnosticsStatus.css must not absorb workspace layout, editor authoring, preview, localization, host capability, node-map review, or graph rules.");
+  failed = true;
+}
+if (
+  !/^\.editor-frame\s*{/m.test(workbenchEditorAuthoringCss)
+  || !/^\.hint-rail\s*{/m.test(workbenchEditorAuthoringCss)
+  || !/^\.script-editor\s*{/m.test(workbenchEditorAuthoringCss)
+  || !/\.script-editor\s+\.monaco-editor\s+\.suggest-widget/.test(workbenchEditorAuthoringCss)
+  || !/\.script-editor\s+\.monaco-editor\s+\.inscape-node-title-text/.test(workbenchEditorAuthoringCss)
+) {
+  console.error("SelfHostedEditorEditorAuthoring.css must retain the Monaco surface, hint rail, and editor semantic decoration rules.");
+  failed = true;
+}
+if (/^\.story-preview\s*{/m.test(workbenchEditorAuthoringCss) || /^\.localization-toolbar\s*{/m.test(workbenchEditorAuthoringCss) || /^\.graph-viewport\s*{/m.test(workbenchEditorAuthoringCss)) {
+  console.error("SelfHostedEditorEditorAuthoring.css must not absorb preview, localization, or graph rules.");
+  failed = true;
+}
+if (
+  !/@keyframes\s+story-speaker-enter/.test(workbenchPreviewCss)
+  || !/@keyframes\s+story-typewriter-caret/.test(workbenchPreviewCss)
+  || !/^\.preview-mode-switcher\s*{/m.test(workbenchPreviewCss)
+  || !/^\.story-preview\s*{/m.test(workbenchPreviewCss)
+  || !/^\.story-runtime-history\s*{/m.test(workbenchPreviewCss)
+  || !/^\.story-line\s*{/m.test(workbenchPreviewCss)
+  || !/^\.choice-button\s*{/m.test(workbenchPreviewCss)
+) {
+  console.error("SelfHostedEditorPreview.css must retain the preview mode switcher, reading surface, Runtime path, story line, and choice rules.");
+  failed = true;
+}
+if (/^\.localization-toolbar\s*{/m.test(workbenchPreviewCss) || /^\.diagnostics-dock\s*{/m.test(workbenchPreviewCss) || /^\.graph-viewport\s*{/m.test(workbenchPreviewCss) || /^\.editor-frame\s*{/m.test(workbenchPreviewCss)) {
+  console.error("SelfHostedEditorPreview.css must not absorb localization, diagnostics, graph, or editor authoring rules.");
+  failed = true;
+}
+if (
+  !/^\.localization-toolbar\s*{/m.test(workbenchLocalizationCss)
+  || !/^\.localization-filter-select\s*{/m.test(workbenchLocalizationCss)
+  || !/^\.localization-table\s*{/m.test(workbenchLocalizationCss)
+  || !/^\.status-pill\s*{/m.test(workbenchLocalizationCss)
+  || !/^\.localization-review-actions\s*{/m.test(workbenchLocalizationCss)
+  || !/^\.localization-translation-input\s*{/m.test(workbenchLocalizationCss)
+) {
+  console.error("SelfHostedEditorLocalization.css must retain localization toolbar, table, status, review action, and translation input rules.");
+  failed = true;
+}
+if (/^\.diagnostics-dock\s*{/m.test(workbenchLocalizationCss) || /^\.host-capability-panel\s*{/m.test(workbenchLocalizationCss) || /^\.graph-viewport\s*{/m.test(workbenchLocalizationCss) || /^\.story-preview\s*{/m.test(workbenchLocalizationCss) || /^\.editor-frame\s*{/m.test(workbenchLocalizationCss)) {
+  console.error("SelfHostedEditorLocalization.css must not absorb diagnostics, host capability, graph, preview, or editor authoring rules.");
+  failed = true;
+}
+if (
+  !/^\.host-capability-panel\s*{/m.test(workbenchHostCapabilityCss)
+  || !/^\.host-capability-summary\s*{/m.test(workbenchHostCapabilityCss)
+  || !/^\.host-capability-section-header\s*{/m.test(workbenchHostCapabilityCss)
+  || !/^\.host-capability-list\s*{/m.test(workbenchHostCapabilityCss)
+  || !/^\.host-capability-item-main\s*{/m.test(workbenchHostCapabilityCss)
+  || !/^\.host-capability-source\s*{/m.test(workbenchHostCapabilityCss)
+) {
+  console.error("SelfHostedEditorHostCapability.css must retain Host capability panel, summary, section, item, and source-jump rules.");
+  failed = true;
+}
+if (/^\.diagnostics-dock\s*{/m.test(workbenchHostCapabilityCss) || /^\.localization-toolbar\s*{/m.test(workbenchHostCapabilityCss) || /^\.node-map-review-overlay\s*{/m.test(workbenchHostCapabilityCss) || /^\.graph-viewport\s*{/m.test(workbenchHostCapabilityCss) || /^\.story-preview\s*{/m.test(workbenchHostCapabilityCss) || /^\.editor-frame\s*{/m.test(workbenchHostCapabilityCss)) {
+  console.error("SelfHostedEditorHostCapability.css must not absorb diagnostics, localization, node-map review, graph, preview, or editor authoring rules.");
+  failed = true;
+}
+if (
+  !/^\.node-map-review-overlay\s*{/m.test(workbenchNodeMapReviewCss)
+  || !/^\.node-map-review-dialog\s*{/m.test(workbenchNodeMapReviewCss)
+  || !/^\.node-map-review-item-main\s*{/m.test(workbenchNodeMapReviewCss)
+  || !/^\.node-map-review-kind\s*{/m.test(workbenchNodeMapReviewCss)
+  || !/^\.node-map-review-candidate-action\s*{/m.test(workbenchNodeMapReviewCss)
+  || !/^\.node-map-review-candidate-apply\s*{/m.test(workbenchNodeMapReviewCss)
+) {
+  console.error("SelfHostedEditorNodeMapReview.css must retain node-map review overlay, dialog, item, kind, and candidate action rules.");
+  failed = true;
+}
+if (/^\.diagnostics-dock\s*{/m.test(workbenchNodeMapReviewCss) || /^\.localization-toolbar\s*{/m.test(workbenchNodeMapReviewCss) || /^\.host-capability-panel\s*{/m.test(workbenchNodeMapReviewCss) || /^\.graph-viewport\s*{/m.test(workbenchNodeMapReviewCss) || /^\.story-preview\s*{/m.test(workbenchNodeMapReviewCss) || /^\.editor-frame\s*{/m.test(workbenchNodeMapReviewCss)) {
+  console.error("SelfHostedEditorNodeMapReview.css must not absorb diagnostics, localization, host capability, graph, preview, or editor authoring rules.");
+  failed = true;
+}
+if (
+  !/^\.graph-viewport\s*{/m.test(workbenchStoryGraphCss)
+  || !/^\.app-shell\[data-view="graph"\]\s+\.graph-viewport\s*{/m.test(workbenchStoryGraphCss)
+  || !/^\.graph-board\s*{/m.test(workbenchStoryGraphCss)
+  || !/^\.graph-node\s*{/m.test(workbenchStoryGraphCss)
+  || !/^\.graph-port-row\s*{/m.test(workbenchStoryGraphCss)
+  || !/^\.graph-edge-path\s*{/m.test(workbenchStoryGraphCss)
+  || !/^\.graph-edge-preview-path\s*{/m.test(workbenchStoryGraphCss)
+) {
+  console.error("SelfHostedEditorStoryGraph.css must retain StoryGraph viewport, board, node, port, and edge rules.");
+  failed = true;
+}
+if (/^\.diagnostics-dock\s*{/m.test(workbenchStoryGraphCss) || /^\.localization-toolbar\s*{/m.test(workbenchStoryGraphCss) || /^\.host-capability-panel\s*{/m.test(workbenchStoryGraphCss) || /^\.node-map-review-overlay\s*{/m.test(workbenchStoryGraphCss) || /^\.story-preview\s*{/m.test(workbenchStoryGraphCss) || /^\.editor-frame\s*{/m.test(workbenchStoryGraphCss)) {
+  console.error("SelfHostedEditorStoryGraph.css must not absorb diagnostics, localization, host capability, node-map review, preview, or editor authoring rules.");
+  failed = true;
+}
+if (
+  !/@keyframes\s+loading-breath/.test(workbenchLoadingStateCss)
+  || !/^\[data-loading-state\]\s*{/m.test(workbenchLoadingStateCss)
+  || !/\.app-shell\[data-loading-state="loading"\]\s+\.app-main::before/.test(workbenchLoadingStateCss)
+) {
+  console.error("SelfHostedEditorLoadingState.css must retain loading animations and loading-state chrome.");
+  failed = true;
+}
+if (/^\.top-bar\s*{/m.test(workbenchLoadingStateCss) || /^\.workspace\s*{/m.test(workbenchLoadingStateCss)) {
+  console.error("SelfHostedEditorLoadingState.css must not absorb workspace layout rules.");
+  failed = true;
+}
+if (
+  !/^button,\s*\n\.file-open-button\s*{/m.test(workbenchWorkspaceLayoutCss.replace(/\r\n/g, "\n"))
+  || !/^\.app-shell\s*{/m.test(workbenchWorkspaceLayoutCss)
+  || !/^\.app-sidebar\s*{/m.test(workbenchWorkspaceLayoutCss)
+  || !/^\.top-bar\s*{/m.test(workbenchWorkspaceLayoutCss)
+  || !/^\.workbench-body\s*{/m.test(workbenchWorkspaceLayoutCss)
+  || !/^\.workspace\s*{/m.test(workbenchWorkspaceLayoutCss)
+  || !/^\.workspace-summary\s*{/m.test(workbenchWorkspaceLayoutCss)
+  || !/^\.localization-panel,\s*\n\.host-capability-panel,\s*\n\.graph-panel\s*{/m.test(workbenchWorkspaceLayoutCss.replace(/\r\n/g, "\n"))
+  || !/^\.pane-title\s*{/m.test(workbenchWorkspaceLayoutCss)
+  || !/@media\s+\(max-width: 1180px\)/.test(workbenchWorkspaceLayoutCss)
+  || !/@media\s+\(max-width: 900px\)/.test(workbenchWorkspaceLayoutCss)
+) {
+  console.error("SelfHostedEditorWorkspaceLayout.css must retain the shared shell, sidebar, top bar, workspace, shared panel shell, responsive layout, and pane title rules.");
+  failed = true;
+}
+if (/data-loading-state/.test(workbenchWorkspaceLayoutCss) || /^\s*\.diagnostics-dock\s*{/m.test(workbenchWorkspaceLayoutCss) || /^\s*\.placeholder-panel\s*{/m.test(workbenchWorkspaceLayoutCss) || /^\s*\.status-bar\s*{/m.test(workbenchWorkspaceLayoutCss) || /^\s*\.story-preview\s*{/m.test(workbenchWorkspaceLayoutCss) || /^\.localization-toolbar\s*{/m.test(workbenchWorkspaceLayoutCss) || /^\s*\.editor-frame\s*{/m.test(workbenchWorkspaceLayoutCss)) {
+  console.error("SelfHostedEditorWorkspaceLayout.css must not absorb loading, diagnostics/status, localization, preview content, or editor-surface rules.");
+  failed = true;
+}
+
 const packageJson = JSON.parse(fs.readFileSync(path.join(moduleRoot, "package.json"), "utf8"));
 if (!packageJson.scripts["check:model"] || !packageJson.scripts["check:structure"] || !packageJson.scripts["check:syntax"] || !packageJson.scripts["check:node-map"] || !packageJson.scripts["check:node-map-http"] || !packageJson.scripts["check:references"] || !packageJson.scripts["check:references-http"] || !packageJson.scripts["check:semantic-parity-http"]) {
   console.error("SelfHostedEditor package.json must expose check:model, check:structure, check:syntax, check:node-map, check:node-map-http, check:references, check:references-http, and check:semantic-parity-http.");
   failed = true;
 }
 
+const childProcessTextPaths = [
+  "DevScripts/StartSelfHostedEditorPreview.js",
+  "DevScripts/SelfHostedEditorProcessBridge.js",
+];
+for (const relativePath of childProcessTextPaths) {
+  const text = fs.readFileSync(path.join(moduleRoot, relativePath), "utf8");
+  if (/std(?:out|err)\s*\+=\s*String\(chunk\)/.test(text)) {
+    console.error(`SelfHostedEditor child-process bridge must not decode chunks one-by-one: ${relativePath}.`);
+    failed = true;
+  }
+}
+
 const devServerPath = path.join(moduleRoot, "DevScripts/StartSelfHostedEditorPreview.js");
 const devServerText = fs.readFileSync(devServerPath, "utf8");
-if (/std(?:out|err)\s*\+=\s*String\(chunk\)/.test(devServerText)) {
-  console.error("SelfHostedEditor dev server must not decode child-process chunks one-by-one; collect buffers and decode once.");
+if (devServerText.includes("os.tmpdir()") || /function\s+sanitizeRelativePath\s*\(/.test(devServerText)) {
+  console.error("SelfHostedEditor dev server must route temporary workspace paths through SelfHostedEditorWorkspaceBridge.");
+  failed = true;
+}
+if (/Cache-Control/.test(devServerText) || /\bmimeTypes\b/.test(devServerText) || /fs\.readFile\s*\(/.test(devServerText)) {
+  console.error("SelfHostedEditor dev server must route static asset responses through SelfHostedEditorStaticAssetBridge.");
+  failed = true;
+}
+if (/requestUrl\.pathname\s*===\s*"\/api\//.test(devServerText)) {
+  console.error("SelfHostedEditor dev server must route API requests through SelfHostedEditorRouteBridge.");
+  failed = true;
+}
+if (
+  /const\s+default(?:Localization|LineMap|Runtime)SessionId/.test(devServerText)
+  || /(?:localizationBaselineStates|lineMapSessionStates|runtimeSessionStates)\s*=\s*new Map\s*\(/.test(devServerText)
+  || /function\s+(?:getRuntimeSessionState|rememberRuntimeSessionState|normalizeRuntimeSessionId|resolveLocalizationBaseline|resolveExistingLocalizationBaseline|rememberLocalizationBaseline|getLocalizationBaseline|createLocalizationBaselineMetadata|normalizeLocalizationSessionId|getLineMapSessionState|rememberLineMapSessionState|normalizeLineMapSessionId)\s*\(/.test(devServerText)
+) {
+  console.error("SelfHostedEditor dev server must route session state through SelfHostedEditorSessionBridge.");
+  failed = true;
+}
+
+const {
+  resolveTemporaryWorkspacePath,
+  sanitizeRelativePath,
+} = await import("./SelfHostedEditorWorkspaceBridge.js");
+const workspacePathContractRoot = path.join(moduleRoot, ".workspace-path-contract-root");
+try {
+  const validPath = resolveTemporaryWorkspacePath(workspacePathContractRoot, "nested/file.inscape");
+  const validRelativePath = path.relative(workspacePathContractRoot, validPath).replace(/\\/g, "/");
+  if (validRelativePath !== "nested/file.inscape") {
+    console.error("SelfHostedEditor workspace path guard must preserve safe relative paths.");
+    failed = true;
+  }
+} catch (error) {
+  console.error(`SelfHostedEditor workspace path guard rejected a safe path: ${error instanceof Error ? error.message : String(error)}`);
+  failed = true;
+}
+
+for (const unsafePath of ["../escape.inscape", "C:/escape.inscape", "/escape.inscape"]) {
+  if (sanitizeRelativePath(unsafePath)) {
+    console.error(`SelfHostedEditor workspace path sanitizer must reject unsafe path: ${unsafePath}`);
+    failed = true;
+  }
+
+  try {
+    resolveTemporaryWorkspacePath(workspacePathContractRoot, unsafePath);
+    console.error(`SelfHostedEditor workspace path guard must reject unsafe path: ${unsafePath}`);
+    failed = true;
+  } catch {
+    // Expected: unsafe input must not resolve to a writable path.
+  }
+}
+
+const {
+  resolveSelfHostedEditorStaticAssetTarget,
+} = await import("./SelfHostedEditorStaticAssetBridge.js");
+const workbenchAsset = resolveSelfHostedEditorStaticAssetTarget("/", {
+  moduleRoot,
+  repoRoot,
+});
+const workbenchRelativePath = path.relative(moduleRoot, workbenchAsset.filePath || "").replace(/\\/g, "/");
+if (
+  workbenchAsset.statusCode !== 200
+  || workbenchAsset.fileRoot !== moduleRoot
+  || workbenchRelativePath !== "Resources/Workbench/SelfHostedEditorWorkbenchDocument.html"
+) {
+  console.error("SelfHostedEditor static asset bridge must serve the workbench document from module resources.");
+  failed = true;
+}
+
+const sampleAsset = resolveSelfHostedEditorStaticAssetTarget("/samples/court-loop.inscape", {
+  moduleRoot,
+  repoRoot,
+});
+const sampleRelativePath = path.relative(repoRoot, sampleAsset.filePath || "").replace(/\\/g, "/");
+if (
+  sampleAsset.statusCode !== 200
+  || sampleAsset.fileRoot !== repoRoot
+  || sampleRelativePath !== "samples/court-loop.inscape"
+) {
+  console.error("SelfHostedEditor static asset bridge must serve sample files from the repository root.");
+  failed = true;
+}
+
+for (const unsafeAssetPath of ["/../AGENTS.md", "/samples/../AGENTS.md", "/C:/escape.inscape"]) {
+  const target = resolveSelfHostedEditorStaticAssetTarget(unsafeAssetPath, {
+    moduleRoot,
+    repoRoot,
+  });
+  if (target.statusCode !== 403) {
+    console.error(`SelfHostedEditor static asset bridge must reject unsafe asset path: ${unsafeAssetPath}`);
+    failed = true;
+  }
+}
+
+const {
+  createSelfHostedEditorApiRoutes,
+  listSelfHostedEditorApiRoutePaths,
+  resolveSelfHostedEditorApiRoute,
+} = await import("./SelfHostedEditorRouteBridge.js");
+const apiRoutePaths = listSelfHostedEditorApiRoutePaths();
+for (const expectedRoutePath of [
+  "/api/diagnostics",
+  "/api/hover",
+  "/api/definition",
+  "/api/references",
+  "/api/completions",
+  "/api/document-symbols",
+  "/api/host-schema-capabilities",
+  "/api/host-binding-capabilities",
+  "/api/story-graph",
+  "/api/runtime-state",
+  "/api/runtime-action",
+  "/api/line-map-refresh",
+  "/api/node-map-review",
+  "/api/node-map-apply",
+  "/api/localization-review",
+  "/api/localization-update",
+]) {
+  if (!apiRoutePaths.includes(expectedRoutePath)) {
+    console.error(`SelfHostedEditor API route bridge is missing ${expectedRoutePath}.`);
+    failed = true;
+  }
+}
+
+const routeContractHandler = () => {};
+const routeContractRoutes = createSelfHostedEditorApiRoutes({
+  diagnostics: routeContractHandler,
+});
+if (
+  resolveSelfHostedEditorApiRoute("POST", "/api/diagnostics", routeContractRoutes) !== routeContractHandler
+  || resolveSelfHostedEditorApiRoute("GET", "/api/diagnostics", routeContractRoutes) !== null
+  || resolveSelfHostedEditorApiRoute("POST", "/api/missing", routeContractRoutes) !== null
+) {
+  console.error("SelfHostedEditor API route bridge must route only known POST API requests.");
+  failed = true;
+}
+
+const {
+  getLineMapSessionState,
+  getRuntimeSessionState,
+  normalizeLineMapSessionId,
+  normalizeLocalizationSessionId,
+  normalizeRuntimeSessionId,
+  rememberLineMapSessionState,
+  rememberRuntimeSessionState,
+  resolveExistingLocalizationBaseline,
+} = await import("./SelfHostedEditorSessionBridge.js");
+if (
+  normalizeRuntimeSessionId(" runtime session!? ") !== "runtime-session--"
+  || normalizeLineMapSessionId(" line map session!? ") !== "line-map-session--"
+  || normalizeLocalizationSessionId(" localization session!? ") !== "localization-session--"
+) {
+  console.error("SelfHostedEditor session bridge must normalize unsafe session ids consistently.");
+  failed = true;
+}
+
+const runtimeSnapshot = rememberRuntimeSessionState({ state: { currentNodeName: "Start" } }, "contract runtime");
+if (
+  runtimeSnapshot?.state?.currentNodeName !== "Start"
+  || getRuntimeSessionState("contract runtime")?.state?.currentNodeName !== "Start"
+) {
+  console.error("SelfHostedEditor session bridge must remember runtime snapshots by session id.");
+  failed = true;
+}
+
+const lineMapPayload = rememberLineMapSessionState({ lineMap: { format: "inscape.line-map" } }, "contract line-map");
+if (
+  lineMapPayload?.lineMap?.format !== "inscape.line-map"
+  || getLineMapSessionState("contract line-map")?.format !== "inscape.line-map"
+) {
+  console.error("SelfHostedEditor session bridge must remember line-map payloads by session id.");
+  failed = true;
+}
+
+const explicitBaseline = resolveExistingLocalizationBaseline("anchor,text\n", "contract localization");
+const sessionBaseline = resolveExistingLocalizationBaseline("", "contract localization");
+if (
+  explicitBaseline.metadata.source !== "request"
+  || sessionBaseline.metadata.source !== "session"
+  || sessionBaseline.csv !== "anchor,text\n"
+  || sessionBaseline.metadata.byteLength !== Buffer.byteLength("anchor,text\n", "utf8")
+) {
+  console.error("SelfHostedEditor session bridge must remember localization baselines by session id.");
   failed = true;
 }
 

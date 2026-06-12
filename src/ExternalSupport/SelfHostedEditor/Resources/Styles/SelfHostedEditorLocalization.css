@@ -1,0 +1,218 @@
+.localization-toolbar {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-left: auto;
+  min-width: 0;
+  justify-content: flex-end;
+}
+
+.pane-title .localization-toolbar button {
+  margin-left: 0;
+}
+
+.localization-csv-input {
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  width: 1px;
+}
+
+.localization-source-status {
+  color: var(--muted);
+  font-size: 8px;
+  max-width: 220px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.localization-filter-select {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(39, 36, 31, 0.08);
+  border-radius: 999px;
+  color: var(--muted-strong);
+  font: inherit;
+  font-size: 10px;
+  min-height: 28px;
+  outline: none;
+  padding: 0 10px;
+}
+
+.localization-filter-select:focus {
+  border-color: rgba(106, 109, 87, 0.3);
+  box-shadow: 0 0 0 3px rgba(106, 109, 87, 0.08);
+}
+
+.localization-filter-summary {
+  color: var(--muted);
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+.localization-session-status {
+  color: var(--muted);
+  font-size: 9px;
+  max-width: 320px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.localization-table {
+  border-collapse: collapse;
+  font-size: 12px;
+  width: 100%;
+}
+
+.localization-filter-empty {
+  color: var(--muted);
+  font-size: 12px;
+  padding: 16px;
+}
+
+.localization-filter-empty.is-hidden {
+  display: none;
+}
+
+.localization-table th,
+.localization-table td {
+  border-bottom: 1px solid rgba(39, 36, 31, 0.04);
+  padding: 10px 8px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.localization-table th {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 650;
+  text-transform: uppercase;
+}
+
+.localization-table tr {
+  cursor: pointer;
+}
+
+.localization-table tbody tr:hover {
+  background: rgba(39, 36, 31, 0.03);
+}
+
+.localization-source-text {
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.status-pill {
+  background: rgba(106, 109, 87, 0.12);
+  border-radius: 999px;
+  color: var(--accent);
+  display: inline-block;
+  font-size: 10px;
+  line-height: 1;
+  padding: 4px 7px;
+}
+
+.status-pill-empty {
+  background: rgba(39, 36, 31, 0.05);
+  color: var(--muted);
+}
+
+.status-pill-kept {
+  background: rgba(106, 109, 87, 0.1);
+  color: var(--accent);
+}
+
+.status-pill-new,
+.status-pill-changed {
+  background: rgba(144, 116, 74, 0.12);
+  color: #8a6230;
+}
+
+.status-pill-conflict,
+.status-pill-stale,
+.status-pill-removed {
+  background: rgba(139, 74, 60, 0.12);
+  color: #8c4b3e;
+}
+
+.localization-review-summary {
+  color: var(--muted-strong);
+  font-size: 11px;
+  line-height: 1.5;
+  max-width: 220px;
+}
+
+.localization-review-text {
+  margin-bottom: 7px;
+}
+
+.localization-review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.localization-review-action {
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(39, 36, 31, 0.08);
+  border-radius: 6px;
+  color: var(--muted-strong);
+  cursor: pointer;
+  font: inherit;
+  font-size: 10px;
+  line-height: 1;
+  min-height: 24px;
+  padding: 5px 7px;
+}
+
+.localization-review-action:hover {
+  background: rgba(106, 109, 87, 0.08);
+  color: var(--text);
+}
+
+.localization-review-action-diff {
+  border-color: rgba(144, 116, 74, 0.18);
+  color: #8a6230;
+}
+
+.localization-review-action-detail {
+  background: rgba(39, 36, 31, 0.035);
+  border-radius: 6px;
+  color: var(--text);
+  margin-top: 7px;
+  padding: 7px;
+}
+
+.localization-review-action-detail.is-hidden {
+  display: none;
+}
+
+.localization-translation-input {
+  background: #fff;
+  border: 1px solid rgba(39, 36, 31, 0.06);
+  border-radius: 7px;
+  color: var(--text);
+  font: inherit;
+  min-height: 34px;
+  outline: none;
+  padding: 6px 8px;
+  width: 100%;
+}
+
+.localization-translation-input:focus {
+  border-color: rgba(106, 109, 87, 0.3);
+  box-shadow: 0 0 0 3px rgba(106, 109, 87, 0.08);
+}
+
+.localization-export-updated-button:disabled,
+.localization-export-button:disabled,
+.localization-clear-drafts-button:disabled {
+  cursor: default;
+  opacity: 0.4;
+}

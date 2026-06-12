@@ -1,215 +1,103 @@
-import childProcess from "node:child_process";
-import fs from "node:fs";
 import fsp from "node:fs/promises";
 import http from "node:http";
-import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  readJsonRequestBody,
+  writeJsonErrorResponse,
+  writeJsonResponse,
+} from "./SelfHostedEditorHttpBridge.js";
+import {
+  runCliCommand,
+  runLanguageServerDocumentSymbols,
+  runLanguageServerHostBindingCapabilities,
+  runLanguageServerHostSchemaCapabilities,
+  runLanguageServerProjectCompletions,
+  runLanguageServerProjectDefinition,
+  runLanguageServerProjectDiagnostics,
+  runLanguageServerProjectHover,
+  runLanguageServerProjectReferences,
+} from "./SelfHostedEditorProcessBridge.js";
+import {
+  getLineMapSessionState,
+  getRuntimeSessionState,
+  normalizeLineMapSessionId,
+  normalizeLocalizationSessionId,
+  normalizeRuntimeSessionId,
+  rememberLineMapSessionState,
+  rememberRuntimeSessionState,
+  resolveExistingLocalizationBaseline,
+  resolveLocalizationBaseline,
+} from "./SelfHostedEditorSessionBridge.js";
+import {
+  createSelfHostedEditorApiRoutes,
+  routeSelfHostedEditorApiRequest,
+} from "./SelfHostedEditorRouteBridge.js";
+import {
+  serveSelfHostedEditorStaticAsset,
+} from "./SelfHostedEditorStaticAssetBridge.js";
+import {
+  normalizeWorkspacePayload,
+  resolveTemporaryWorkspacePath,
+  withTemporaryWorkspace,
+} from "./SelfHostedEditorWorkspaceBridge.js";
 
 const currentModulePath = fileURLToPath(import.meta.url);
 const moduleRoot = path.resolve(path.dirname(currentModulePath), "..");
 const repoRoot = path.resolve(moduleRoot, "..", "..", "..");
-const languageServerProjectPath = path.join(
-  repoRoot,
-  "src",
-  "Internal",
-  "LanguageServer",
-  "Inscape.LanguageServer.csproj"
-);
-const cliProjectPath = path.join(
-  repoRoot,
-  "src",
-  "Internal",
-  "Cli",
-  "Inscape.Cli",
-  "Inscape.Cli.csproj"
-);
-const cliBuildRoot = path.join(
-  repoRoot,
-  "src",
-  "Internal",
-  "Cli",
-  "Inscape.Cli",
-  "bin",
-  "Debug",
-  "net10.0"
-);
-const cliExecutablePath = path.join(cliBuildRoot, "Inscape.Cli.exe");
-const cliAssemblyPath = path.join(cliBuildRoot, "Inscape.Cli.dll");
-const languageServerBuildRoot = path.join(
-  repoRoot,
-  "src",
-  "Internal",
-  "LanguageServer",
-  "bin",
-  "Debug",
-  "net10.0"
-);
-const languageServerExecutablePath = path.join(languageServerBuildRoot, "Inscape.LanguageServer.exe");
-const languageServerAssemblyPath = path.join(languageServerBuildRoot, "Inscape.LanguageServer.dll");
 const port = Number(process.env.PORT || 5178);
-const bridgeCommandTimeoutMilliseconds = 30000;
-const defaultLocalizationSessionId = "default";
-const defaultLineMapSessionId = "default";
-const defaultRuntimeSessionId = "default";
-const localizationBaselineStates = new Map();
-const lineMapSessionStates = new Map();
-const runtimeSessionStates = new Map();
-
-const mimeTypes = new Map([
-  [".css", "text/css; charset=utf-8"],
-  [".html", "text/html; charset=utf-8"],
-  [".inscape", "text/plain; charset=utf-8"],
-  [".js", "text/javascript; charset=utf-8"],
-  [".json", "application/json; charset=utf-8"],
-  [".svg", "image/svg+xml"],
-  [".ttf", "font/ttf"],
-  [".woff", "font/woff"],
-  [".woff2", "font/woff2"],
-]);
+const apiRoutes = createSelfHostedEditorApiRoutes({
+  completions: handleCompletionsRequest,
+  definition: handleDefinitionRequest,
+  diagnostics: handleDiagnosticsRequest,
+  documentSymbols: handleDocumentSymbolsRequest,
+  hostBindingCapabilities: handleHostBindingCapabilitiesRequest,
+  hostSchemaCapabilities: handleHostSchemaCapabilitiesRequest,
+  hover: handleHoverRequest,
+  lineMapRefresh: handleLineMapRefreshRequest,
+  localizationReview: handleLocalizationReviewRequest,
+  localizationUpdate: handleLocalizationUpdateRequest,
+  nodeMapApply: handleNodeMapApplyRequest,
+  nodeMapReview: handleNodeMapReviewRequest,
+  references: handleReferencesRequest,
+  runtimeAction: handleRuntimeActionRequest,
+  runtimeState: handleRuntimeStateRequest,
+  storyGraph: handleStoryGraphRequest,
+});
 
 export function createSelfHostedEditorPreviewServer(serverPort = port) {
   return http.createServer(async (request, response) => {
     const requestUrl = new URL(request.url || "/", `http://localhost:${serverPort}`);
 
-    if (request.method === "POST" && requestUrl.pathname === "/api/diagnostics") {
-      await handleDiagnosticsRequest(request, response);
+    if (await routeSelfHostedEditorApiRequest(request, response, requestUrl, apiRoutes)) {
       return;
     }
 
-    if (request.method === "POST" && requestUrl.pathname === "/api/hover") {
-      await handleHoverRequest(request, response);
-      return;
-    }
-
-    if (request.method === "POST" && requestUrl.pathname === "/api/definition") {
-      await handleDefinitionRequest(request, response);
-      return;
-    }
-
-    if (request.method === "POST" && requestUrl.pathname === "/api/references") {
-      await handleReferencesRequest(request, response);
-      return;
-    }
-
-    if (request.method === "POST" && requestUrl.pathname === "/api/completions") {
-      await handleCompletionsRequest(request, response);
-      return;
-    }
-
-    if (request.method === "POST" && requestUrl.pathname === "/api/document-symbols") {
-      await handleDocumentSymbolsRequest(request, response);
-      return;
-    }
-
-    if (request.method === "POST" && requestUrl.pathname === "/api/host-schema-capabilities") {
-      await handleHostSchemaCapabilitiesRequest(request, response);
-      return;
-    }
-
-    if (request.method === "POST" && requestUrl.pathname === "/api/host-binding-capabilities") {
-      await handleHostBindingCapabilitiesRequest(request, response);
-      return;
-    }
-
-    if (request.method === "POST" && requestUrl.pathname === "/api/story-graph") {
-      await handleStoryGraphRequest(request, response);
-      return;
-    }
-
-    if (request.method === "POST" && requestUrl.pathname === "/api/runtime-state") {
-      await handleRuntimeStateRequest(request, response);
-      return;
-    }
-
-    if (request.method === "POST" && requestUrl.pathname === "/api/runtime-action") {
-      await handleRuntimeActionRequest(request, response);
-      return;
-    }
-
-    if (request.method === "POST" && requestUrl.pathname === "/api/line-map-refresh") {
-      await handleLineMapRefreshRequest(request, response);
-      return;
-    }
-
-    if (request.method === "POST" && requestUrl.pathname === "/api/node-map-review") {
-      await handleNodeMapReviewRequest(request, response);
-      return;
-    }
-
-    if (request.method === "POST" && requestUrl.pathname === "/api/node-map-apply") {
-      await handleNodeMapApplyRequest(request, response);
-      return;
-    }
-
-    if (request.method === "POST" && requestUrl.pathname === "/api/localization-review") {
-      await handleLocalizationReviewRequest(request, response);
-      return;
-    }
-
-    if (request.method === "POST" && requestUrl.pathname === "/api/localization-update") {
-      await handleLocalizationUpdateRequest(request, response);
-      return;
-    }
-
-    const relativePath = requestUrl.pathname === "/"
-      ? "Resources/Workbench/SelfHostedEditorWorkbenchDocument.html"
-      : requestUrl.pathname.replace(/^\/+/, "");
-    const fileRoot = relativePath.startsWith("samples/")
-      ? repoRoot
-      : moduleRoot;
-    const filePath = path.resolve(fileRoot, relativePath);
-
-    if (!filePath.startsWith(fileRoot)) {
-      response.writeHead(403);
-      response.end("Forbidden");
-      return;
-    }
-
-    fs.readFile(filePath, (error, body) => {
-      if (error) {
-        response.writeHead(404);
-        response.end("Not found");
-        return;
-      }
-
-      response.writeHead(200, {
-        "Cache-Control": "no-store, max-age=0",
-        "Content-Type": mimeTypes.get(path.extname(filePath)) || "application/octet-stream",
-      });
-      response.end(body);
+    await serveSelfHostedEditorStaticAsset(requestUrl, response, {
+      moduleRoot,
+      repoRoot,
     });
   });
 }
 
 async function handleDiagnosticsRequest(request, response) {
   try {
-    const body = await readRequestBody(request);
-    const payload = parseJsonRequestBody(body);
+    const payload = await readJsonRequestBody(request);
     const scriptText = typeof payload.scriptText === "string"
       ? payload.scriptText
       : "";
     const workspace = normalizeWorkspacePayload(payload.workspace);
 
     const diagnosticsPayload = await diagnoseScriptText(scriptText, workspace);
-    response.writeHead(200, {
-      "Content-Type": "application/json; charset=utf-8",
-    });
-    response.end(JSON.stringify(diagnosticsPayload));
+    writeJsonResponse(response, diagnosticsPayload);
   } catch (error) {
-    response.writeHead(500, {
-      "Content-Type": "application/json; charset=utf-8",
-    });
-    response.end(JSON.stringify({
-      error: error instanceof Error ? error.message : String(error),
-    }));
+    writeJsonErrorResponse(response, error);
   }
 }
 
 async function handleHoverRequest(request, response) {
   try {
-    const body = await readRequestBody(request);
-    const payload = parseJsonRequestBody(body);
+    const payload = await readJsonRequestBody(request);
     const scriptText = typeof payload.scriptText === "string"
       ? payload.scriptText
       : "";
@@ -222,24 +110,15 @@ async function handleHoverRequest(request, response) {
     const workspace = normalizeWorkspacePayload(payload.workspace);
 
     const hoverPayload = await getHoverForScriptText(scriptText, hoverKind, hoverName, workspace);
-    response.writeHead(200, {
-      "Content-Type": "application/json; charset=utf-8",
-    });
-    response.end(JSON.stringify(hoverPayload));
+    writeJsonResponse(response, hoverPayload);
   } catch (error) {
-    response.writeHead(500, {
-      "Content-Type": "application/json; charset=utf-8",
-    });
-    response.end(JSON.stringify({
-      error: error instanceof Error ? error.message : String(error),
-    }));
+    writeJsonErrorResponse(response, error);
   }
 }
 
 async function handleDefinitionRequest(request, response) {
   try {
-    const body = await readRequestBody(request);
-    const payload = parseJsonRequestBody(body);
+    const payload = await readJsonRequestBody(request);
     const scriptText = typeof payload.scriptText === "string"
       ? payload.scriptText
       : "";
@@ -249,24 +128,15 @@ async function handleDefinitionRequest(request, response) {
     const workspace = normalizeWorkspacePayload(payload.workspace);
 
     const definitionPayload = await getDefinitionForScriptText(scriptText, definitionName, workspace);
-    response.writeHead(200, {
-      "Content-Type": "application/json; charset=utf-8",
-    });
-    response.end(JSON.stringify(definitionPayload));
+    writeJsonResponse(response, definitionPayload);
   } catch (error) {
-    response.writeHead(500, {
-      "Content-Type": "application/json; charset=utf-8",
-    });
-    response.end(JSON.stringify({
-      error: error instanceof Error ? error.message : String(error),
-    }));
+    writeJsonErrorResponse(response, error);
   }
 }
 
 async function handleReferencesRequest(request, response) {
   try {
-    const body = await readRequestBody(request);
-    const payload = parseJsonRequestBody(body);
+    const payload = await readJsonRequestBody(request);
     const scriptText = typeof payload.scriptText === "string"
       ? payload.scriptText
       : "";
@@ -276,144 +146,90 @@ async function handleReferencesRequest(request, response) {
     const workspace = normalizeWorkspacePayload(payload.workspace);
 
     const referencesPayload = await getReferencesForScriptText(scriptText, referenceName, workspace);
-    response.writeHead(200, {
-      "Content-Type": "application/json; charset=utf-8",
-    });
-    response.end(JSON.stringify(referencesPayload));
+    writeJsonResponse(response, referencesPayload);
   } catch (error) {
-    response.writeHead(500, {
-      "Content-Type": "application/json; charset=utf-8",
-    });
-    response.end(JSON.stringify({
-      error: error instanceof Error ? error.message : String(error),
-    }));
+    writeJsonErrorResponse(response, error);
   }
 }
 
 async function handleCompletionsRequest(request, response) {
   try {
-    const body = await readRequestBody(request);
-    const payload = parseJsonRequestBody(body);
+    const payload = await readJsonRequestBody(request);
     const scriptText = typeof payload.scriptText === "string"
       ? payload.scriptText
       : "";
     const workspace = normalizeWorkspacePayload(payload.workspace);
 
     const completionsPayload = await getCompletionsForScriptText(scriptText, workspace);
-    response.writeHead(200, {
-      "Content-Type": "application/json; charset=utf-8",
-    });
-    response.end(JSON.stringify(completionsPayload));
+    writeJsonResponse(response, completionsPayload);
   } catch (error) {
-    response.writeHead(500, {
-      "Content-Type": "application/json; charset=utf-8",
-    });
-    response.end(JSON.stringify({
-      error: error instanceof Error ? error.message : String(error),
-    }));
+    writeJsonErrorResponse(response, error);
   }
 }
 
 async function handleDocumentSymbolsRequest(request, response) {
   try {
-    const body = await readRequestBody(request);
-    const payload = parseJsonRequestBody(body);
+    const payload = await readJsonRequestBody(request);
     const scriptText = typeof payload.scriptText === "string"
       ? payload.scriptText
       : "";
     const workspace = normalizeWorkspacePayload(payload.workspace);
 
     const documentSymbolsPayload = await getDocumentSymbolsForScriptText(scriptText, workspace);
-    response.writeHead(200, {
-      "Content-Type": "application/json; charset=utf-8",
-    });
-    response.end(JSON.stringify(documentSymbolsPayload));
+    writeJsonResponse(response, documentSymbolsPayload);
   } catch (error) {
-    response.writeHead(500, {
-      "Content-Type": "application/json; charset=utf-8",
-    });
-    response.end(JSON.stringify({
-      error: error instanceof Error ? error.message : String(error),
-    }));
+    writeJsonErrorResponse(response, error);
   }
 }
 
 async function handleHostSchemaCapabilitiesRequest(request, response) {
   try {
-    const body = await readRequestBody(request);
-    const payload = parseJsonRequestBody(body);
+    const payload = await readJsonRequestBody(request);
     const scriptText = typeof payload.scriptText === "string"
       ? payload.scriptText
       : "";
     const workspace = normalizeWorkspacePayload(payload.workspace);
 
     const capabilitiesPayload = await getHostSchemaCapabilitiesForScriptText(scriptText, workspace);
-    response.writeHead(200, {
-      "Content-Type": "application/json; charset=utf-8",
-    });
-    response.end(JSON.stringify(capabilitiesPayload));
+    writeJsonResponse(response, capabilitiesPayload);
   } catch (error) {
-    response.writeHead(500, {
-      "Content-Type": "application/json; charset=utf-8",
-    });
-    response.end(JSON.stringify({
-      error: error instanceof Error ? error.message : String(error),
-    }));
+    writeJsonErrorResponse(response, error);
   }
 }
 
 async function handleHostBindingCapabilitiesRequest(request, response) {
   try {
-    const body = await readRequestBody(request);
-    const payload = parseJsonRequestBody(body);
+    const payload = await readJsonRequestBody(request);
     const scriptText = typeof payload.scriptText === "string"
       ? payload.scriptText
       : "";
     const workspace = normalizeWorkspacePayload(payload.workspace);
 
     const capabilitiesPayload = await getHostBindingCapabilitiesForScriptText(scriptText, workspace);
-    response.writeHead(200, {
-      "Content-Type": "application/json; charset=utf-8",
-    });
-    response.end(JSON.stringify(capabilitiesPayload));
+    writeJsonResponse(response, capabilitiesPayload);
   } catch (error) {
-    response.writeHead(500, {
-      "Content-Type": "application/json; charset=utf-8",
-    });
-    response.end(JSON.stringify({
-      error: error instanceof Error ? error.message : String(error),
-    }));
+    writeJsonErrorResponse(response, error);
   }
 }
 
 async function handleStoryGraphRequest(request, response) {
   try {
-    const body = await readRequestBody(request);
-    const payload = parseJsonRequestBody(body);
+    const payload = await readJsonRequestBody(request);
     const scriptText = typeof payload.scriptText === "string"
       ? payload.scriptText
       : "";
     const workspace = normalizeWorkspacePayload(payload.workspace);
 
     const graphPayload = await getStoryGraphForScriptText(scriptText, workspace);
-    response.writeHead(200, {
-      "Content-Type": "application/json; charset=utf-8",
-    });
-    response.end(JSON.stringify(graphPayload));
+    writeJsonResponse(response, graphPayload);
   } catch (error) {
-    response.writeHead(500, {
-      "Content-Type": "application/json; charset=utf-8",
-    });
-    response.end(JSON.stringify({
-      error: error instanceof Error ? error.message : String(error),
-    }));
+    writeJsonErrorResponse(response, error);
   }
 }
 
 async function handleRuntimeStateRequest(request, response) {
   try {
-    const body = await readRequestBody(request);
-    const payload = parseJsonRequestBody(body);
+    const payload = await readJsonRequestBody(request);
     const scriptText = typeof payload.scriptText === "string"
       ? payload.scriptText
       : "";
@@ -421,24 +237,15 @@ async function handleRuntimeStateRequest(request, response) {
     const sessionId = normalizeRuntimeSessionId(payload.sessionId);
 
     const runtimePayload = await getRuntimeStateForScriptText(scriptText, workspace, sessionId);
-    response.writeHead(200, {
-      "Content-Type": "application/json; charset=utf-8",
-    });
-    response.end(JSON.stringify(runtimePayload));
+    writeJsonResponse(response, runtimePayload);
   } catch (error) {
-    response.writeHead(500, {
-      "Content-Type": "application/json; charset=utf-8",
-    });
-    response.end(JSON.stringify({
-      error: error instanceof Error ? error.message : String(error),
-    }));
+    writeJsonErrorResponse(response, error);
   }
 }
 
 async function handleRuntimeActionRequest(request, response) {
   try {
-    const body = await readRequestBody(request);
-    const payload = parseJsonRequestBody(body);
+    const payload = await readJsonRequestBody(request);
     const scriptText = typeof payload.scriptText === "string"
       ? payload.scriptText
       : "";
@@ -452,24 +259,15 @@ async function handleRuntimeActionRequest(request, response) {
       : {};
 
     const runtimePayload = await stepRuntimeStateForScriptText(scriptText, workspace, runtimeState, action, sessionId);
-    response.writeHead(200, {
-      "Content-Type": "application/json; charset=utf-8",
-    });
-    response.end(JSON.stringify(runtimePayload));
+    writeJsonResponse(response, runtimePayload);
   } catch (error) {
-    response.writeHead(500, {
-      "Content-Type": "application/json; charset=utf-8",
-    });
-    response.end(JSON.stringify({
-      error: error instanceof Error ? error.message : String(error),
-    }));
+    writeJsonErrorResponse(response, error);
   }
 }
 
 async function handleLineMapRefreshRequest(request, response) {
   try {
-    const body = await readRequestBody(request);
-    const payload = parseJsonRequestBody(body);
+    const payload = await readJsonRequestBody(request);
     const scriptText = typeof payload.scriptText === "string"
       ? payload.scriptText
       : "";
@@ -480,48 +278,30 @@ async function handleLineMapRefreshRequest(request, response) {
       : getLineMapSessionState(sessionId);
 
     const lineMapPayload = await refreshLineMapForScriptText(scriptText, workspace, existingLineMap, sessionId);
-    response.writeHead(200, {
-      "Content-Type": "application/json; charset=utf-8",
-    });
-    response.end(JSON.stringify(lineMapPayload));
+    writeJsonResponse(response, lineMapPayload);
   } catch (error) {
-    response.writeHead(500, {
-      "Content-Type": "application/json; charset=utf-8",
-    });
-    response.end(JSON.stringify({
-      error: error instanceof Error ? error.message : String(error),
-    }));
+    writeJsonErrorResponse(response, error);
   }
 }
 
 async function handleNodeMapReviewRequest(request, response) {
   try {
-    const body = await readRequestBody(request);
-    const payload = parseJsonRequestBody(body);
+    const payload = await readJsonRequestBody(request);
     const scriptText = typeof payload.scriptText === "string"
       ? payload.scriptText
       : "";
     const workspace = normalizeWorkspacePayload(payload.workspace);
 
     const reviewPayload = await getStoryNodeMapReviewForScriptText(scriptText, workspace);
-    response.writeHead(200, {
-      "Content-Type": "application/json; charset=utf-8",
-    });
-    response.end(JSON.stringify(reviewPayload));
+    writeJsonResponse(response, reviewPayload);
   } catch (error) {
-    response.writeHead(500, {
-      "Content-Type": "application/json; charset=utf-8",
-    });
-    response.end(JSON.stringify({
-      error: error instanceof Error ? error.message : String(error),
-    }));
+    writeJsonErrorResponse(response, error);
   }
 }
 
 async function handleNodeMapApplyRequest(request, response) {
   try {
-    const body = await readRequestBody(request);
-    const payload = parseJsonRequestBody(body);
+    const payload = await readJsonRequestBody(request);
     const scriptText = typeof payload.scriptText === "string"
       ? payload.scriptText
       : "";
@@ -537,24 +317,15 @@ async function handleNodeMapApplyRequest(request, response) {
       Boolean(payload.dryRun),
       nodeMapPath
     );
-    response.writeHead(200, {
-      "Content-Type": "application/json; charset=utf-8",
-    });
-    response.end(JSON.stringify(applyPayload));
+    writeJsonResponse(response, applyPayload);
   } catch (error) {
-    response.writeHead(500, {
-      "Content-Type": "application/json; charset=utf-8",
-    });
-    response.end(JSON.stringify({
-      error: error instanceof Error ? error.message : String(error),
-    }));
+    writeJsonErrorResponse(response, error);
   }
 }
 
 async function handleLocalizationReviewRequest(request, response) {
   try {
-    const body = await readRequestBody(request);
-    const payload = parseJsonRequestBody(body);
+    const payload = await readJsonRequestBody(request);
     const scriptText = typeof payload.scriptText === "string"
       ? payload.scriptText
       : "";
@@ -565,24 +336,15 @@ async function handleLocalizationReviewRequest(request, response) {
       : "";
 
     const reviewPayload = await getLocalizationReviewForScriptText(scriptText, workspace, previousCsv, sessionId);
-    response.writeHead(200, {
-      "Content-Type": "application/json; charset=utf-8",
-    });
-    response.end(JSON.stringify(reviewPayload));
+    writeJsonResponse(response, reviewPayload);
   } catch (error) {
-    response.writeHead(500, {
-      "Content-Type": "application/json; charset=utf-8",
-    });
-    response.end(JSON.stringify({
-      error: error instanceof Error ? error.message : String(error),
-    }));
+    writeJsonErrorResponse(response, error);
   }
 }
 
 async function handleLocalizationUpdateRequest(request, response) {
   try {
-    const body = await readRequestBody(request);
-    const payload = parseJsonRequestBody(body);
+    const payload = await readJsonRequestBody(request);
     const scriptText = typeof payload.scriptText === "string"
       ? payload.scriptText
       : "";
@@ -602,35 +364,10 @@ async function handleLocalizationUpdateRequest(request, response) {
       translationOverrides,
       sessionId
     );
-    response.writeHead(200, {
-      "Content-Type": "application/json; charset=utf-8",
-    });
-    response.end(JSON.stringify(updatePayload));
+    writeJsonResponse(response, updatePayload);
   } catch (error) {
-    response.writeHead(500, {
-      "Content-Type": "application/json; charset=utf-8",
-    });
-    response.end(JSON.stringify({
-      error: error instanceof Error ? error.message : String(error),
-    }));
+    writeJsonErrorResponse(response, error);
   }
-}
-
-function readRequestBody(request) {
-  return new Promise((resolve, reject) => {
-    const chunks = [];
-    request.on("data", (chunk) => {
-      chunks.push(Buffer.from(chunk));
-    });
-    request.on("end", () => {
-      resolve(Buffer.concat(chunks).toString("utf8"));
-    });
-    request.on("error", reject);
-  });
-}
-
-function parseJsonRequestBody(body) {
-  return JSON.parse(String(body || "{}").replace(/^\uFEFF/, ""));
 }
 
 async function diagnoseScriptText(scriptText, workspace) {
@@ -777,7 +514,7 @@ export async function getStoryNodeMapReviewForScriptText(scriptText, workspace) 
 
 export async function getStoryNodeMapCandidateApplyForScriptText(scriptText, workspace, item, candidate, dryRun = false, requestedNodeMapPath = "") {
   return withTemporaryWorkspace(workspace, scriptText, async ({ tempRoot }) => {
-    const nodeMapPath = path.join(tempRoot, sanitizeRelativePath(requestedNodeMapPath) || "inscape.node-map.json");
+    const nodeMapPath = resolveTemporaryWorkspacePath(tempRoot, requestedNodeMapPath, "inscape.node-map.json");
     const outputPath = dryRun
       ? path.join(path.dirname(nodeMapPath), "inscape.node-map-candidate-preview.json")
       : nodeMapPath;
@@ -993,126 +730,6 @@ function compactRuntimeStatePayload(payload, sessionId = "") {
       visibleStepCount: Number(payload?.state?.visibleStepCount || 0),
     },
   };
-}
-
-function getRuntimeSessionState(sessionId) {
-  return runtimeSessionStates.get(normalizeRuntimeSessionId(sessionId)) || null;
-}
-
-function rememberRuntimeSessionState(snapshot, sessionId) {
-  const normalizedSessionId = normalizeRuntimeSessionId(sessionId);
-  if (snapshot) {
-    runtimeSessionStates.set(normalizedSessionId, snapshot);
-  }
-
-  return snapshot;
-}
-
-function normalizeRuntimeSessionId(sessionId) {
-  const normalized = String(sessionId || defaultRuntimeSessionId).trim();
-  if (!normalized) {
-    return defaultRuntimeSessionId;
-  }
-
-  const safe = normalized.replace(/[^A-Za-z0-9._:-]/g, "-").slice(0, 120);
-  return safe || defaultRuntimeSessionId;
-}
-
-async function resolveLocalizationBaseline(previousCsv, sessionId, extractCurrentCsv) {
-  const explicitCsv = String(previousCsv || "");
-  const normalizedSessionId = normalizeLocalizationSessionId(sessionId);
-  if (explicitCsv.trim()) {
-    rememberLocalizationBaseline(explicitCsv, normalizedSessionId);
-    return {
-      csv: explicitCsv,
-      metadata: createLocalizationBaselineMetadata("request", normalizedSessionId, explicitCsv),
-    };
-  }
-
-  const sessionCsv = getLocalizationBaseline(normalizedSessionId);
-  if (sessionCsv) {
-    return {
-      csv: sessionCsv,
-      metadata: createLocalizationBaselineMetadata("session", normalizedSessionId, sessionCsv),
-    };
-  }
-
-  const currentCsv = await extractCurrentCsv();
-  return {
-    csv: currentCsv,
-    metadata: createLocalizationBaselineMetadata("current-extract", normalizedSessionId, currentCsv),
-  };
-}
-
-function resolveExistingLocalizationBaseline(previousCsv, sessionId) {
-  const explicitCsv = String(previousCsv || "");
-  const normalizedSessionId = normalizeLocalizationSessionId(sessionId);
-  if (explicitCsv.trim()) {
-    rememberLocalizationBaseline(explicitCsv, normalizedSessionId);
-    return {
-      csv: explicitCsv,
-      metadata: createLocalizationBaselineMetadata("request", normalizedSessionId, explicitCsv),
-    };
-  }
-
-  const sessionCsv = getLocalizationBaseline(normalizedSessionId);
-  return {
-    csv: sessionCsv || "",
-    metadata: createLocalizationBaselineMetadata(sessionCsv ? "session" : "missing", normalizedSessionId, sessionCsv || ""),
-  };
-}
-
-function rememberLocalizationBaseline(previousCsv, sessionId) {
-  const normalizedSessionId = normalizeLocalizationSessionId(sessionId);
-  const csv = String(previousCsv || "");
-  if (csv.trim()) {
-    localizationBaselineStates.set(normalizedSessionId, csv);
-  }
-}
-
-function getLocalizationBaseline(sessionId) {
-  return localizationBaselineStates.get(normalizeLocalizationSessionId(sessionId)) || "";
-}
-
-function createLocalizationBaselineMetadata(source, sessionId, csv) {
-  return {
-    byteLength: Buffer.byteLength(String(csv || ""), "utf8"),
-    sessionId: normalizeLocalizationSessionId(sessionId),
-    source,
-  };
-}
-
-function normalizeLocalizationSessionId(sessionId) {
-  const normalized = String(sessionId || defaultLocalizationSessionId).trim();
-  if (!normalized) {
-    return defaultLocalizationSessionId;
-  }
-
-  const safe = normalized.replace(/[^A-Za-z0-9._:-]/g, "-").slice(0, 120);
-  return safe || defaultLocalizationSessionId;
-}
-
-function getLineMapSessionState(sessionId) {
-  return lineMapSessionStates.get(normalizeLineMapSessionId(sessionId)) || null;
-}
-
-function rememberLineMapSessionState(payload, sessionId) {
-  const normalizedSessionId = normalizeLineMapSessionId(sessionId);
-  if (payload?.lineMap) {
-    lineMapSessionStates.set(normalizedSessionId, payload.lineMap);
-  }
-
-  return payload;
-}
-
-function normalizeLineMapSessionId(sessionId) {
-  const normalized = String(sessionId || defaultLineMapSessionId).trim();
-  if (!normalized) {
-    return defaultLineMapSessionId;
-  }
-
-  const safe = normalized.replace(/[^A-Za-z0-9._:-]/g, "-").slice(0, 120);
-  return safe || defaultLineMapSessionId;
 }
 
 function compactLocalizationReviewPayload(report, baseline = null) {
@@ -1403,72 +1020,6 @@ function parseJsonFileText(text) {
   return JSON.parse(String(text || "").replace(/^\uFEFF/, ""));
 }
 
-function normalizeWorkspacePayload(workspace) {
-  if (!workspace || !Array.isArray(workspace.documents)) {
-    return null;
-  }
-
-  const documents = workspace.documents
-    .filter((document) => typeof document?.relativePath === "string" && typeof document?.text === "string")
-    .map((document) => ({
-      relativePath: sanitizeRelativePath(document.relativePath),
-      text: document.text,
-    }))
-    .filter((document) => document.relativePath);
-
-  if (documents.length === 0) {
-    return null;
-  }
-
-  return {
-    currentFilePath: sanitizeRelativePath(workspace.currentFilePath || documents[0].relativePath) || documents[0].relativePath,
-    documents,
-  };
-}
-
-async function withTemporaryWorkspace(workspace, fallbackScriptText, callback) {
-  const tempRoot = await fsp.mkdtemp(path.join(os.tmpdir(), "inscape-self-hosted-editor-"));
-  const normalizedWorkspace = workspace || {
-    currentFilePath: "draft.inscape",
-    documents: [{
-      relativePath: "draft.inscape",
-      text: fallbackScriptText,
-    }],
-  };
-
-  try {
-    for (const document of normalizedWorkspace.documents) {
-      const fullPath = path.join(tempRoot, document.relativePath);
-      await fsp.mkdir(path.dirname(fullPath), {
-        recursive: true,
-      });
-      await fsp.writeFile(fullPath, document.text, "utf8");
-    }
-
-    const activeRelativePath = normalizedWorkspace.currentFilePath || normalizedWorkspace.documents[0].relativePath;
-    const activeFilePath = path.join(tempRoot, activeRelativePath);
-    return await callback({
-      tempRoot,
-      activeFilePath,
-      activeRelativePath,
-    });
-  } finally {
-    await fsp.rm(tempRoot, {
-      force: true,
-      recursive: true,
-    });
-  }
-}
-
-function sanitizeRelativePath(relativePath) {
-  const normalized = String(relativePath || "").replace(/\\/g, "/").replace(/^\/+/, "");
-  if (!normalized || normalized.split("/").includes("..")) {
-    return "";
-  }
-
-  return normalized;
-}
-
 function filterProjectDiagnostics(payload, activeRelativePath) {
   if (!Array.isArray(payload?.diagnostics)) {
     return payload;
@@ -1480,302 +1031,5 @@ function filterProjectDiagnostics(payload, activeRelativePath) {
       const sourcePath = diagnostic?.location?.sourcePath || "";
       return !sourcePath || sourcePath === activeRelativePath;
     }),
-  };
-}
-
-function runLanguageServerProjectDiagnostics(rootPath) {
-  return runLanguageServerCommand([
-    "--diagnose-project",
-    rootPath,
-  ], "LanguageServer project diagnostics");
-}
-
-function runLanguageServerDiagnostics(tempPath) {
-  return new Promise((resolve, reject) => {
-    const invocation = resolveLanguageServerInvocation([
-      "--diagnose-file",
-      tempPath,
-    ]);
-    const diagnosticsProcess = childProcess.spawn(invocation.command, invocation.args, {
-      cwd: repoRoot,
-      windowsHide: true,
-    });
-
-    const stdoutChunks = [];
-    const stderrChunks = [];
-
-    diagnosticsProcess.stdout.on("data", (chunk) => {
-      stdoutChunks.push(Buffer.from(chunk));
-    });
-
-    diagnosticsProcess.stderr.on("data", (chunk) => {
-      stderrChunks.push(Buffer.from(chunk));
-    });
-
-    diagnosticsProcess.on("error", reject);
-    diagnosticsProcess.on("exit", (code) => {
-      const stdout = decodeProcessOutput(stdoutChunks);
-      const stderr = decodeProcessOutput(stderrChunks);
-      if (code !== 0) {
-        reject(new Error(stderr.trim() || `LanguageServer exited with code ${code}.`));
-        return;
-      }
-
-      resolve({
-        stderr,
-        stdout,
-      });
-    });
-  });
-}
-
-function runLanguageServerHover(tempPath, hoverKind, hoverName) {
-  return runLanguageServerCommand([
-    "--hover-file",
-    tempPath,
-    hoverKind,
-    hoverName,
-  ], "LanguageServer hover");
-}
-
-function runLanguageServerDefinition(tempPath, definitionName) {
-  return runLanguageServerCommand([
-    "--definition-file",
-    tempPath,
-    definitionName,
-  ], "LanguageServer definition");
-}
-
-function runLanguageServerReferences(tempPath, referenceName) {
-  return runLanguageServerCommand([
-    "--references-file",
-    tempPath,
-    referenceName,
-  ], "LanguageServer references");
-}
-
-function runLanguageServerCompletions(tempPath) {
-  return runLanguageServerCommand([
-    "--completion-file",
-    tempPath,
-  ], "LanguageServer completions");
-}
-
-function runLanguageServerDocumentSymbols(tempPath) {
-  return runLanguageServerCommand([
-    "--document-symbols-file",
-    tempPath,
-  ], "LanguageServer document symbols");
-}
-
-function runLanguageServerProjectHover(rootPath, hoverKind, hoverName) {
-  return runLanguageServerCommand([
-    "--hover-project",
-    rootPath,
-    hoverKind,
-    hoverName,
-  ], "LanguageServer project hover");
-}
-
-function runLanguageServerProjectDefinition(rootPath, definitionName) {
-  return runLanguageServerCommand([
-    "--definition-project",
-    rootPath,
-    definitionName,
-  ], "LanguageServer project definition");
-}
-
-function runLanguageServerProjectReferences(rootPath, referenceName) {
-  return runLanguageServerCommand([
-    "--references-project",
-    rootPath,
-    referenceName,
-  ], "LanguageServer project references");
-}
-
-function runLanguageServerProjectCompletions(rootPath) {
-  return runLanguageServerCommand([
-    "--completion-project",
-    rootPath,
-  ], "LanguageServer project completions");
-}
-
-function runLanguageServerHostSchemaCapabilities(rootPath) {
-  return runLanguageServerCommand([
-    "--host-schema-capabilities-project",
-    rootPath,
-  ], "LanguageServer host schema capabilities");
-}
-
-function runLanguageServerHostBindingCapabilities(rootPath) {
-  return runLanguageServerCommand([
-    "--host-binding-capabilities-project",
-    rootPath,
-  ], "LanguageServer host binding capabilities");
-}
-
-function runLanguageServerCommand(languageServerArgs, label) {
-  return new Promise((resolve, reject) => {
-    const invocation = resolveLanguageServerInvocation(languageServerArgs);
-    let settled = false;
-    const process = childProcess.spawn(invocation.command, invocation.args, {
-      cwd: repoRoot,
-      windowsHide: true,
-    });
-    const timeout = setTimeout(() => {
-      if (settled) {
-        return;
-      }
-
-      settled = true;
-      process.kill();
-      reject(new Error(`${label} timed out after ${bridgeCommandTimeoutMilliseconds}ms.`));
-    }, bridgeCommandTimeoutMilliseconds);
-
-    const stdoutChunks = [];
-    const stderrChunks = [];
-
-    process.stdout.on("data", (chunk) => {
-      stdoutChunks.push(Buffer.from(chunk));
-    });
-
-    process.stderr.on("data", (chunk) => {
-      stderrChunks.push(Buffer.from(chunk));
-    });
-
-    process.on("error", (error) => {
-      if (settled) {
-        return;
-      }
-
-      settled = true;
-      clearTimeout(timeout);
-      reject(error);
-    });
-    process.on("exit", (code) => {
-      if (settled) {
-        return;
-      }
-
-      settled = true;
-      clearTimeout(timeout);
-      const stdout = decodeProcessOutput(stdoutChunks);
-      const stderr = decodeProcessOutput(stderrChunks);
-      if (code !== 0) {
-        reject(new Error(stderr.trim() || `${label} exited with code ${code}.`));
-        return;
-      }
-
-      resolve({
-        stderr,
-        stdout,
-      });
-    });
-  });
-}
-
-function runCliCommand(cliArgs, label) {
-  return new Promise((resolve, reject) => {
-    let settled = false;
-    const invocation = resolveCliInvocation(cliArgs);
-    const process = childProcess.spawn(invocation.command, invocation.args, {
-      cwd: repoRoot,
-      windowsHide: true,
-    });
-    const timeout = setTimeout(() => {
-      if (settled) {
-        return;
-      }
-
-      settled = true;
-      process.kill();
-      reject(new Error(`${label} timed out after ${bridgeCommandTimeoutMilliseconds}ms.`));
-    }, bridgeCommandTimeoutMilliseconds);
-
-    const stdoutChunks = [];
-    const stderrChunks = [];
-
-    process.stdout.on("data", (chunk) => {
-      stdoutChunks.push(Buffer.from(chunk));
-    });
-
-    process.stderr.on("data", (chunk) => {
-      stderrChunks.push(Buffer.from(chunk));
-    });
-
-    process.on("error", (error) => {
-      if (settled) {
-        return;
-      }
-
-      settled = true;
-      clearTimeout(timeout);
-      reject(error);
-    });
-    process.on("exit", (code) => {
-      if (settled) {
-        return;
-      }
-
-      settled = true;
-      clearTimeout(timeout);
-      const stdout = decodeProcessOutput(stdoutChunks);
-      const stderr = decodeProcessOutput(stderrChunks);
-      if (code !== 0) {
-        reject(new Error(stderr.trim() || `${label} exited with code ${code}.`));
-        return;
-      }
-
-      resolve({
-        stderr,
-        stdout,
-      });
-    });
-  });
-}
-
-function decodeProcessOutput(chunks) {
-  return Buffer.concat(chunks).toString("utf8");
-}
-
-function resolveCliInvocation(cliArgs) {
-  if (fs.existsSync(cliExecutablePath)) {
-    return {
-      command: cliExecutablePath,
-      args: cliArgs,
-    };
-  }
-
-  if (fs.existsSync(cliAssemblyPath)) {
-    return {
-      command: "dotnet",
-      args: ["exec", cliAssemblyPath, ...cliArgs],
-    };
-  }
-
-  return {
-    command: "dotnet",
-    args: ["run", "--project", cliProjectPath, "--no-restore", "--", ...cliArgs],
-  };
-}
-
-function resolveLanguageServerInvocation(languageServerArgs) {
-  if (fs.existsSync(languageServerExecutablePath)) {
-    return {
-      command: languageServerExecutablePath,
-      args: languageServerArgs,
-    };
-  }
-
-  if (fs.existsSync(languageServerAssemblyPath)) {
-    return {
-      command: "dotnet",
-      args: ["exec", languageServerAssemblyPath, ...languageServerArgs],
-    };
-  }
-
-  return {
-    command: "dotnet",
-    args: ["run", "--project", languageServerProjectPath, "--", ...languageServerArgs],
   };
 }

@@ -1,0 +1,35 @@
+:root {
+  color-scheme: light;
+  --page: #fbfbfa;
+  --sidebar: #f6f6f4;
+  --surface: #ffffff;
+  --surface-soft: #fbfbf9;
+  --surface-muted: #f0f0ec;
+  --text: #27241f;
+  --muted: #938b7d;
+  --muted-strong: #655f54;
+  --line-soft: rgba(39, 36, 31, 0.03);
+  --accent: #6a6d57;
+  --danger: #a55e52;
+  --warning: #98753b;
+  --editor-width: 700px;
+  --preview-width: 560px;
+  font-family: "Inter", "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--text);
+  overflow: hidden;
+}
