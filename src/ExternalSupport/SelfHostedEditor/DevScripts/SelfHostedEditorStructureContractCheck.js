@@ -13,6 +13,8 @@ const requiredPaths = [
   "DevScripts/SelfHostedEditorHttpBridge.js",
   "DevScripts/SelfHostedEditorHttpBridgeContractCheck.js",
   "DevScripts/SelfHostedEditorModelContractSuite.js",
+  "DevScripts/SelfHostedEditorPayloadBridge.js",
+  "DevScripts/SelfHostedEditorPayloadBridgeContractCheck.js",
   "DevScripts/ModelContracts",
   "DevScripts/ModelContracts/SelfHostedEditorHostCapabilityContractCheck.js",
   "DevScripts/ModelContracts/SelfHostedEditorLocalizationContractCheck.js",
@@ -395,8 +397,8 @@ if (/data-loading-state/.test(workbenchWorkspaceLayoutCss) || /^\s*\.diagnostics
 }
 
 const packageJson = JSON.parse(fs.readFileSync(path.join(moduleRoot, "package.json"), "utf8"));
-if (!packageJson.scripts["check:model"] || !packageJson.scripts["check:structure"] || !packageJson.scripts["check:syntax"] || !packageJson.scripts["check:static-assets"] || !packageJson.scripts["check:static-assets-http"] || !packageJson.scripts["check:node-map"] || !packageJson.scripts["check:node-map-http"] || !packageJson.scripts["check:references"] || !packageJson.scripts["check:references-http"] || !packageJson.scripts["check:semantic-parity-http"] || !packageJson.scripts["check:process-bridge"] || !packageJson.scripts["check:session-cache"] || !packageJson.scripts["check:session-cache-http"]) {
-  console.error("SelfHostedEditor package.json must expose check:model, check:structure, check:syntax, check:static-assets, check:static-assets-http, check:node-map, check:node-map-http, check:references, check:references-http, check:semantic-parity-http, check:process-bridge, check:session-cache, and check:session-cache-http.");
+if (!packageJson.scripts["check:model"] || !packageJson.scripts["check:structure"] || !packageJson.scripts["check:syntax"] || !packageJson.scripts["check:payload-bridge"] || !packageJson.scripts["check:static-assets"] || !packageJson.scripts["check:static-assets-http"] || !packageJson.scripts["check:node-map"] || !packageJson.scripts["check:node-map-http"] || !packageJson.scripts["check:references"] || !packageJson.scripts["check:references-http"] || !packageJson.scripts["check:semantic-parity-http"] || !packageJson.scripts["check:process-bridge"] || !packageJson.scripts["check:session-cache"] || !packageJson.scripts["check:session-cache-http"]) {
+  console.error("SelfHostedEditor package.json must expose check:model, check:structure, check:syntax, check:payload-bridge, check:static-assets, check:static-assets-http, check:node-map, check:node-map-http, check:references, check:references-http, check:semantic-parity-http, check:process-bridge, check:session-cache, and check:session-cache-http.");
   failed = true;
 }
 if (packageJson.scripts["check:model"] !== "node DevScripts/SelfHostedEditorModelContractSuite.js") {
@@ -405,6 +407,10 @@ if (packageJson.scripts["check:model"] !== "node DevScripts/SelfHostedEditorMode
 }
 if (packageJson.scripts["check:syntax"] !== "node DevScripts/SelfHostedEditorSyntaxContractCheck.js") {
   console.error("SelfHostedEditor check:syntax must delegate to SelfHostedEditorSyntaxContractCheck.js.");
+  failed = true;
+}
+if (packageJson.scripts["check:payload-bridge"] !== "node DevScripts/SelfHostedEditorPayloadBridgeContractCheck.js") {
+  console.error("SelfHostedEditor check:payload-bridge must delegate to SelfHostedEditorPayloadBridgeContractCheck.js.");
   failed = true;
 }
 if (packageJson.scripts["check:static-assets"] !== "node DevScripts/SelfHostedEditorStaticAssetBridgeContractCheck.js") {
@@ -448,6 +454,13 @@ if (
   || /function\s+(?:getRuntimeSessionState|rememberRuntimeSessionState|normalizeRuntimeSessionId|resolveLocalizationBaseline|resolveExistingLocalizationBaseline|rememberLocalizationBaseline|getLocalizationBaseline|createLocalizationBaselineMetadata|normalizeLocalizationSessionId|getLineMapSessionState|rememberLineMapSessionState|normalizeLineMapSessionId)\s*\(/.test(devServerText)
 ) {
   console.error("SelfHostedEditor dev server must route session state through SelfHostedEditorSessionBridge.");
+  failed = true;
+}
+if (
+  /function\s+compact(?:ProjectGraph|RuntimeState|LocalizationReview|StoryNodeMap)/.test(devServerText)
+  || /function\s+relativize(?:ProjectSourcePaths|LocalizationReviewPaths|StoryNodeMapReviewPaths|HostBindingCapabilityPaths|LanguageServerSemanticPaths|SourcePath)/.test(devServerText)
+) {
+  console.error("SelfHostedEditor dev server must route compact payloads and source-path normalization through SelfHostedEditorPayloadBridge.");
   failed = true;
 }
 
