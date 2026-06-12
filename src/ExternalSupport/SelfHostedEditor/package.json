@@ -9,6 +9,8 @@
     "check:model": "node DevScripts/SelfHostedEditorModelContractSuite.js",
     "check:http-bridge": "node DevScripts/SelfHostedEditorHttpBridgeContractCheck.js",
     "check:process-bridge": "node DevScripts/SelfHostedEditorProcessBridgeContractCheck.js",
+    "check:static-assets": "node DevScripts/SelfHostedEditorStaticAssetBridgeContractCheck.js",
+    "check:static-assets-http": "node DevScripts/SelfHostedEditorStaticAssetHttpSmoke.js",
     "check:session-cache": "node DevScripts/SelfHostedEditorSessionCacheContractCheck.js",
     "check:session-cache-http": "node DevScripts/SelfHostedEditorSessionCacheHttpSmoke.js",
     "check:host-binding-http": "node DevScripts/SelfHostedEditorHostBindingHttpSmoke.js",

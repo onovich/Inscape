@@ -304,6 +304,7 @@ src/ExternalSupport/SelfHostedEditor/
 - 2026-06-13 当前状态：SelfHostedEditor dev-host process bridge 已补失败可观测性。CLI / LanguageServer 子进程成功时仍返回完整 stdout/stderr 供现有 JSON 解析；失败、spawn error 或 timeout 时统一变成 structured process error，只带 exit code / signal / timedOut / duration 与截断后的 stdout/stderr preview，避免 HTTP 错误返回无界子进程输出。
 - 2026-06-13 当前状态：SelfHostedEditor model contract check 已从单个大文件拆成 `DevScripts/ModelContracts/` 下的能力分组，`check:model` 仍是统一入口。后续新增断言应优先放进对应分组，而不是重新塞回组合入口。
 - 2026-06-13 当前状态：SelfHostedEditor package scripts 已把过长的 `check:syntax` 与 `check:model` 命令沉到 `DevScripts/SelfHostedEditorSyntaxContractCheck.js` 与 `DevScripts/SelfHostedEditorModelContractSuite.js`。npm 命令名保持不变，syntax 入口递归覆盖 `Scripts/` 与 `DevScripts/` 下的 JavaScript 文件，避免 package.json 重新成为维护瓶颈。
+- 2026-06-13 当前状态：SelfHostedEditor static asset bridge 已收紧为允许前缀模型，只暴露 `Resources/`、`Scripts/`、Monaco loader subtree 与 `samples/`；`DevScripts/`、`package.json` 和未知扩展不会作为静态资源返回。Workbench HTML 响应补上 no-store、nosniff、same-origin CORP 与 CSP，并由 `check:static-assets` / `check:static-assets-http` 覆盖直连与真实 HTTP 路径。
 - Script 编辑器左侧行号 / line id 提示轨道应保持在 Monaco 内容坐标系里：提示轨道本身不加独立上下 padding，行提示按 Monaco 运行时 line height 建立高度，并通过 `getTopForLineNumber()` 定位。这样长行折行后，下一条逻辑行的行号仍跟随该行首字，而不是紧贴上一条视觉行。
 - Script 行号轨道已继续收口：写作表面关闭 Monaco 顶部滚动阴影，行号轨道不暴露横向滚动条；hover 整条 hint line 只显示块内行号，只有 hover 行号数字区域才会以稳定 id 替换块内行号显示。稳定 id 展示时去掉 `line_` 前缀，并提供小复制按钮复制完整去前缀后的 id；未追踪行继续保持安静。
 - Script 写作表面关闭 Monaco sticky scroll；节点标题、prompt / choice 标题等结构行不应置顶，而应像普通文本一样自然滚出视口，避免顶部重影与层级错乱。

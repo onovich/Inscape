@@ -95,7 +95,7 @@ Most recent user-facing work focused on replacing fragile prototype behavior wit
 - Script Ctrl/Cmd-click definition navigation routes through the workbench source selection flow, so the editor cursor and preview block both reveal the resolved target.
 - The editor and preview panes use independent scroll containers. The outer workbench body is not a shared scroll surface, so scrolling Monaco should not move the preview pane.
 - Monaco sticky scroll is disabled in the writing surface. Node titles and choice / prompt lines should scroll out like normal prose instead of pinning at the top and creating overlay artifacts.
-- The preview server sends static assets with `Cache-Control: no-store`, so reloads should not keep stale entry scripts or the removed sample fallback alive during local iteration.
+- The preview server only serves static files from `Resources/`, `Scripts/`, the Monaco loader subtree, and `samples/`; responses use `Cache-Control: no-store`, `X-Content-Type-Options: nosniff`, and a document CSP for the workbench page.
 - Reference overlay positioning now receives the clicked refs button rect from `EditorSurfaceController` and repositions inside the editor frame while scrolling.
 - Script semantic styling is controlled by the `Syntax` toggle and uses Monaco inline decorations for text style plus overlay decorations for the active block.
 - Stable line hints use `SelfHostedEditorLineMapBridge` and `ScriptLineIdentityModelBuilder`. The bridge calls `/api/line-map-refresh`, which runs the existing CLI/Tooling `refresh-l10n-line-map-project` in a temporary workspace. The dev host now remembers the previous line-map by session, with explicit previous sidecar upload kept as fallback, so Tooling can preserve `line_...` ids across edits without the browser always resending the full sidecar.
@@ -141,6 +141,8 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:references-http
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:node-map
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:node-map-http
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:process-bridge
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:static-assets
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:static-assets-http
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:session-cache
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:session-cache-http
 ```
@@ -163,6 +165,8 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:session-cache-http
 `check:node-map` exercises the stable node map review and candidate apply helpers without requiring the local HTTP server to be started first, including a title rename over an existing generated sidecar and a manual-review candidate dry-run/apply.
 `check:node-map-http` starts the preview dev server in-process and performs real HTTP requests to `/api/node-map-review` and `/api/node-map-apply`.
 `check:process-bridge` verifies successful process output, nonzero exit diagnostics, truncated stdout/stderr previews, and timeout state without starting a server.
+`check:static-assets` verifies static asset allowed prefixes, MIME mapping, no-store cache policy, nosniff, CORP, and workbench CSP headers without starting a server.
+`check:static-assets-http` starts the preview dev server in-process and verifies the same static asset boundaries through real HTTP responses.
 `check:session-cache` verifies the dev-host session cache TTL, per-cache capacity limit, eviction counters, and non-content status shape without starting a server.
 `check:session-cache-http` starts the preview dev server in-process, seeds Runtime, line-map, and localization baseline session caches through real HTTP APIs, then requests `/api/session-cache-status`.
 

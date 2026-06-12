@@ -19,7 +19,7 @@ SelfHostedEditor regression invariant: Preview choice clicks must advance the re
 - [x] 第 5 轮：拆分 `SelfHostedEditorModelContractCheck.js`，按 model shape、preview、story graph、runtime、localization、host capability 分组。入口文件现在只顺序加载 `DevScripts/ModelContracts/*ContractCheck.js`，断言分到 model shape、host capability、story graph、localization、node-map、preview/runtime 和 shared harness；`check:model` 入口保持不变，`check:syntax` / `check:structure` 已纳入新目录。
 - [x] 第 6 轮：拆分超大的本地化 / preview C# 测试文件，保持测试入口不变。`TestPreviewLocalization.cs` 现已按 Preview contract、Localization CLI、Localization alignment、Localization line-map、VSCode localization contract 和 shared assertions 分成多个 partial `TestCore` 文件；`tests/Internal/Inscape.Tests/Entries/TestCore.cs` 的测试注册入口不变。
 - [x] 第 7 轮：把过长的 SelfHostedEditor package 检查命令沉到独立 DevScripts 入口，避免 package script 成为维护瓶颈。`check:syntax` 现在委托 `SelfHostedEditorSyntaxContractCheck.js` 递归检查 `Scripts/` / `DevScripts/` 下的 JS 文件；`check:model` 委托 `SelfHostedEditorModelContractSuite.js` 串起既有 model / HTTP / process / session-cache contract。
-- [ ] 第 8 轮：复查 static asset / MIME / cache policy / CSP 边界，只做宿主安全硬化。
+- [x] 第 8 轮：复查 static asset / MIME / cache policy / CSP 边界，只做宿主安全硬化。`SelfHostedEditorStaticAssetBridge` 现在只允许 `Resources/`、`Scripts/`、Monaco loader subtree 与 `samples/`，拒绝 `DevScripts/`、`package.json` 和未知扩展；Workbench HTML 响应带 no-store、nosniff、same-origin CORP 与 CSP。新增 `check:static-assets` 与 `check:static-assets-http`。
 - [ ] 第 9 轮：VSCode / SelfHostedEditor 宿主层语义回流巡检，修正仍在宿主层重复组织 shared presenter / payload truth 的点。
 - [ ] 第 10 轮：总体验收，跑完整验证、整理剩余风险、更新 handoff / TODO / refactoring standard。
 
