@@ -13,7 +13,7 @@ SelfHostedEditor regression invariant: Preview choice clicks must advance the re
 ## 2026-06-13 10 轮重构执行状态
 
 - [x] 第 1 轮：SelfHostedEditor dev-host HTTP JSON body size limit。`SelfHostedEditorHttpBridge` 默认限制请求体为 4 MB，超限返回 413 JSON error；新增 `check:http-bridge` 并接入 `check:model` / `check:syntax`。本轮只加固宿主 transport 边界，不改变 shared LanguageServer / Tooling / Runtime / CLI 成功 payload。
-- [ ] 第 2 轮：继续把 SelfHostedEditor dev host 的 API handler 从组合根拆到更窄的业务 bridge / controller，优先选不改变 payload shape 的路由组。
+- [x] 第 2 轮：继续把 SelfHostedEditor dev host 的 API handler 从组合根拆到更窄的业务 bridge / controller。`StartSelfHostedEditorPreview.js` 现在只装配 API handler services，request parsing / response writing / session payload normalization 迁入 `SelfHostedEditorApiHandlerBridge.js`；HTTP smoke 覆盖 semantic parity、Runtime、line-map、localization update、node-map 与 Host Binding。
 - [ ] 第 3 轮：为 session cache 补 TTL / 容量上限 / 可观测状态，覆盖 Runtime、line-map、localization baseline 三类会话记忆。
 - [ ] 第 4 轮：补 process bridge 的错误输出截断、状态表达和超时可观测性复查。
 - [ ] 第 5 轮：拆分 `SelfHostedEditorModelContractCheck.js`，按 model shape、preview、story graph、runtime、localization、host capability 分组。

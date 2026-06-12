@@ -3,10 +3,8 @@ import http from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  readJsonRequestBody,
-  writeJsonErrorResponse,
-  writeJsonResponse,
-} from "./SelfHostedEditorHttpBridge.js";
+  createSelfHostedEditorApiHandlers,
+} from "./SelfHostedEditorApiHandlerBridge.js";
 import {
   runCliCommand,
   runLanguageServerDocumentSymbols,
@@ -20,9 +18,7 @@ import {
 } from "./SelfHostedEditorProcessBridge.js";
 import {
   getLineMapSessionState,
-  getRuntimeSessionState,
   normalizeLineMapSessionId,
-  normalizeLocalizationSessionId,
   normalizeRuntimeSessionId,
   rememberLineMapSessionState,
   rememberRuntimeSessionState,
@@ -37,7 +33,6 @@ import {
   serveSelfHostedEditorStaticAsset,
 } from "./SelfHostedEditorStaticAssetBridge.js";
 import {
-  normalizeWorkspacePayload,
   resolveTemporaryWorkspacePath,
   withTemporaryWorkspace,
 } from "./SelfHostedEditorWorkspaceBridge.js";
@@ -46,24 +41,24 @@ const currentModulePath = fileURLToPath(import.meta.url);
 const moduleRoot = path.resolve(path.dirname(currentModulePath), "..");
 const repoRoot = path.resolve(moduleRoot, "..", "..", "..");
 const port = Number(process.env.PORT || 5178);
-const apiRoutes = createSelfHostedEditorApiRoutes({
-  completions: handleCompletionsRequest,
-  definition: handleDefinitionRequest,
-  diagnostics: handleDiagnosticsRequest,
-  documentSymbols: handleDocumentSymbolsRequest,
-  hostBindingCapabilities: handleHostBindingCapabilitiesRequest,
-  hostSchemaCapabilities: handleHostSchemaCapabilitiesRequest,
-  hover: handleHoverRequest,
-  lineMapRefresh: handleLineMapRefreshRequest,
-  localizationReview: handleLocalizationReviewRequest,
-  localizationUpdate: handleLocalizationUpdateRequest,
-  nodeMapApply: handleNodeMapApplyRequest,
-  nodeMapReview: handleNodeMapReviewRequest,
-  references: handleReferencesRequest,
-  runtimeAction: handleRuntimeActionRequest,
-  runtimeState: handleRuntimeStateRequest,
-  storyGraph: handleStoryGraphRequest,
-});
+const apiRoutes = createSelfHostedEditorApiRoutes(createSelfHostedEditorApiHandlers({
+  diagnoseScriptText,
+  getCompletionsForScriptText,
+  getDefinitionForScriptText,
+  getDocumentSymbolsForScriptText,
+  getHostBindingCapabilitiesForScriptText,
+  getHostSchemaCapabilitiesForScriptText,
+  getHoverForScriptText,
+  getLocalizationReviewForScriptText,
+  getReferencesForScriptText,
+  getRuntimeStateForScriptText,
+  getStoryGraphForScriptText,
+  getStoryNodeMapCandidateApplyForScriptText,
+  getStoryNodeMapReviewForScriptText,
+  getUpdatedLocalizationCsvForScriptText,
+  refreshLineMapForScriptText,
+  stepRuntimeStateForScriptText,
+}));
 
 export function createSelfHostedEditorPreviewServer(serverPort = port) {
   return http.createServer(async (request, response) => {
@@ -78,296 +73,6 @@ export function createSelfHostedEditorPreviewServer(serverPort = port) {
       repoRoot,
     });
   });
-}
-
-async function handleDiagnosticsRequest(request, response) {
-  try {
-    const payload = await readJsonRequestBody(request);
-    const scriptText = typeof payload.scriptText === "string"
-      ? payload.scriptText
-      : "";
-    const workspace = normalizeWorkspacePayload(payload.workspace);
-
-    const diagnosticsPayload = await diagnoseScriptText(scriptText, workspace);
-    writeJsonResponse(response, diagnosticsPayload);
-  } catch (error) {
-    writeJsonErrorResponse(response, error);
-  }
-}
-
-async function handleHoverRequest(request, response) {
-  try {
-    const payload = await readJsonRequestBody(request);
-    const scriptText = typeof payload.scriptText === "string"
-      ? payload.scriptText
-      : "";
-    const hoverKind = typeof payload.hoverKind === "string"
-      ? payload.hoverKind
-      : "";
-    const hoverName = typeof payload.hoverName === "string"
-      ? payload.hoverName
-      : "";
-    const workspace = normalizeWorkspacePayload(payload.workspace);
-
-    const hoverPayload = await getHoverForScriptText(scriptText, hoverKind, hoverName, workspace);
-    writeJsonResponse(response, hoverPayload);
-  } catch (error) {
-    writeJsonErrorResponse(response, error);
-  }
-}
-
-async function handleDefinitionRequest(request, response) {
-  try {
-    const payload = await readJsonRequestBody(request);
-    const scriptText = typeof payload.scriptText === "string"
-      ? payload.scriptText
-      : "";
-    const definitionName = typeof payload.definitionName === "string"
-      ? payload.definitionName
-      : "";
-    const workspace = normalizeWorkspacePayload(payload.workspace);
-
-    const definitionPayload = await getDefinitionForScriptText(scriptText, definitionName, workspace);
-    writeJsonResponse(response, definitionPayload);
-  } catch (error) {
-    writeJsonErrorResponse(response, error);
-  }
-}
-
-async function handleReferencesRequest(request, response) {
-  try {
-    const payload = await readJsonRequestBody(request);
-    const scriptText = typeof payload.scriptText === "string"
-      ? payload.scriptText
-      : "";
-    const referenceName = typeof payload.referenceName === "string"
-      ? payload.referenceName
-      : "";
-    const workspace = normalizeWorkspacePayload(payload.workspace);
-
-    const referencesPayload = await getReferencesForScriptText(scriptText, referenceName, workspace);
-    writeJsonResponse(response, referencesPayload);
-  } catch (error) {
-    writeJsonErrorResponse(response, error);
-  }
-}
-
-async function handleCompletionsRequest(request, response) {
-  try {
-    const payload = await readJsonRequestBody(request);
-    const scriptText = typeof payload.scriptText === "string"
-      ? payload.scriptText
-      : "";
-    const workspace = normalizeWorkspacePayload(payload.workspace);
-
-    const completionsPayload = await getCompletionsForScriptText(scriptText, workspace);
-    writeJsonResponse(response, completionsPayload);
-  } catch (error) {
-    writeJsonErrorResponse(response, error);
-  }
-}
-
-async function handleDocumentSymbolsRequest(request, response) {
-  try {
-    const payload = await readJsonRequestBody(request);
-    const scriptText = typeof payload.scriptText === "string"
-      ? payload.scriptText
-      : "";
-    const workspace = normalizeWorkspacePayload(payload.workspace);
-
-    const documentSymbolsPayload = await getDocumentSymbolsForScriptText(scriptText, workspace);
-    writeJsonResponse(response, documentSymbolsPayload);
-  } catch (error) {
-    writeJsonErrorResponse(response, error);
-  }
-}
-
-async function handleHostSchemaCapabilitiesRequest(request, response) {
-  try {
-    const payload = await readJsonRequestBody(request);
-    const scriptText = typeof payload.scriptText === "string"
-      ? payload.scriptText
-      : "";
-    const workspace = normalizeWorkspacePayload(payload.workspace);
-
-    const capabilitiesPayload = await getHostSchemaCapabilitiesForScriptText(scriptText, workspace);
-    writeJsonResponse(response, capabilitiesPayload);
-  } catch (error) {
-    writeJsonErrorResponse(response, error);
-  }
-}
-
-async function handleHostBindingCapabilitiesRequest(request, response) {
-  try {
-    const payload = await readJsonRequestBody(request);
-    const scriptText = typeof payload.scriptText === "string"
-      ? payload.scriptText
-      : "";
-    const workspace = normalizeWorkspacePayload(payload.workspace);
-
-    const capabilitiesPayload = await getHostBindingCapabilitiesForScriptText(scriptText, workspace);
-    writeJsonResponse(response, capabilitiesPayload);
-  } catch (error) {
-    writeJsonErrorResponse(response, error);
-  }
-}
-
-async function handleStoryGraphRequest(request, response) {
-  try {
-    const payload = await readJsonRequestBody(request);
-    const scriptText = typeof payload.scriptText === "string"
-      ? payload.scriptText
-      : "";
-    const workspace = normalizeWorkspacePayload(payload.workspace);
-
-    const graphPayload = await getStoryGraphForScriptText(scriptText, workspace);
-    writeJsonResponse(response, graphPayload);
-  } catch (error) {
-    writeJsonErrorResponse(response, error);
-  }
-}
-
-async function handleRuntimeStateRequest(request, response) {
-  try {
-    const payload = await readJsonRequestBody(request);
-    const scriptText = typeof payload.scriptText === "string"
-      ? payload.scriptText
-      : "";
-    const workspace = normalizeWorkspacePayload(payload.workspace);
-    const sessionId = normalizeRuntimeSessionId(payload.sessionId);
-
-    const runtimePayload = await getRuntimeStateForScriptText(scriptText, workspace, sessionId);
-    writeJsonResponse(response, runtimePayload);
-  } catch (error) {
-    writeJsonErrorResponse(response, error);
-  }
-}
-
-async function handleRuntimeActionRequest(request, response) {
-  try {
-    const payload = await readJsonRequestBody(request);
-    const scriptText = typeof payload.scriptText === "string"
-      ? payload.scriptText
-      : "";
-    const workspace = normalizeWorkspacePayload(payload.workspace);
-    const sessionId = normalizeRuntimeSessionId(payload.sessionId);
-    const runtimeState = payload.runtimeState && typeof payload.runtimeState === "object"
-      ? payload.runtimeState
-      : getRuntimeSessionState(sessionId);
-    const action = payload.action && typeof payload.action === "object"
-      ? payload.action
-      : {};
-
-    const runtimePayload = await stepRuntimeStateForScriptText(scriptText, workspace, runtimeState, action, sessionId);
-    writeJsonResponse(response, runtimePayload);
-  } catch (error) {
-    writeJsonErrorResponse(response, error);
-  }
-}
-
-async function handleLineMapRefreshRequest(request, response) {
-  try {
-    const payload = await readJsonRequestBody(request);
-    const scriptText = typeof payload.scriptText === "string"
-      ? payload.scriptText
-      : "";
-    const workspace = normalizeWorkspacePayload(payload.workspace);
-    const sessionId = normalizeLineMapSessionId(payload.sessionId);
-    const existingLineMap = payload.existingLineMap && typeof payload.existingLineMap === "object"
-      ? payload.existingLineMap
-      : getLineMapSessionState(sessionId);
-
-    const lineMapPayload = await refreshLineMapForScriptText(scriptText, workspace, existingLineMap, sessionId);
-    writeJsonResponse(response, lineMapPayload);
-  } catch (error) {
-    writeJsonErrorResponse(response, error);
-  }
-}
-
-async function handleNodeMapReviewRequest(request, response) {
-  try {
-    const payload = await readJsonRequestBody(request);
-    const scriptText = typeof payload.scriptText === "string"
-      ? payload.scriptText
-      : "";
-    const workspace = normalizeWorkspacePayload(payload.workspace);
-
-    const reviewPayload = await getStoryNodeMapReviewForScriptText(scriptText, workspace);
-    writeJsonResponse(response, reviewPayload);
-  } catch (error) {
-    writeJsonErrorResponse(response, error);
-  }
-}
-
-async function handleNodeMapApplyRequest(request, response) {
-  try {
-    const payload = await readJsonRequestBody(request);
-    const scriptText = typeof payload.scriptText === "string"
-      ? payload.scriptText
-      : "";
-    const workspace = normalizeWorkspacePayload(payload.workspace);
-    const item = payload.item && typeof payload.item === "object" ? payload.item : {};
-    const candidate = payload.candidate && typeof payload.candidate === "object" ? payload.candidate : {};
-    const nodeMapPath = typeof payload.nodeMapPath === "string" ? payload.nodeMapPath : "";
-    const applyPayload = await getStoryNodeMapCandidateApplyForScriptText(
-      scriptText,
-      workspace,
-      item,
-      candidate,
-      Boolean(payload.dryRun),
-      nodeMapPath
-    );
-    writeJsonResponse(response, applyPayload);
-  } catch (error) {
-    writeJsonErrorResponse(response, error);
-  }
-}
-
-async function handleLocalizationReviewRequest(request, response) {
-  try {
-    const payload = await readJsonRequestBody(request);
-    const scriptText = typeof payload.scriptText === "string"
-      ? payload.scriptText
-      : "";
-    const workspace = normalizeWorkspacePayload(payload.workspace);
-    const sessionId = normalizeLocalizationSessionId(payload.sessionId);
-    const previousCsv = typeof payload.previousCsv === "string"
-      ? payload.previousCsv
-      : "";
-
-    const reviewPayload = await getLocalizationReviewForScriptText(scriptText, workspace, previousCsv, sessionId);
-    writeJsonResponse(response, reviewPayload);
-  } catch (error) {
-    writeJsonErrorResponse(response, error);
-  }
-}
-
-async function handleLocalizationUpdateRequest(request, response) {
-  try {
-    const payload = await readJsonRequestBody(request);
-    const scriptText = typeof payload.scriptText === "string"
-      ? payload.scriptText
-      : "";
-    const workspace = normalizeWorkspacePayload(payload.workspace);
-    const sessionId = normalizeLocalizationSessionId(payload.sessionId);
-    const previousCsv = typeof payload.previousCsv === "string"
-      ? payload.previousCsv
-      : "";
-    const translationOverrides = Array.isArray(payload.translationOverrides)
-      ? payload.translationOverrides
-      : [];
-
-    const updatePayload = await getUpdatedLocalizationCsvForScriptText(
-      scriptText,
-      workspace,
-      previousCsv,
-      translationOverrides,
-      sessionId
-    );
-    writeJsonResponse(response, updatePayload);
-  } catch (error) {
-    writeJsonErrorResponse(response, error);
-  }
 }
 
 async function diagnoseScriptText(scriptText, workspace) {
