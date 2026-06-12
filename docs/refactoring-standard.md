@@ -263,14 +263,38 @@ dotnet run --project tests\ExternalSupport\UnityPlugin\Inscape.UnitySample.Tests
 - ...
 ```
 
+## 2026-06-13 10 轮执行验收
+
+本轮按本文标准完成了一次 10 轮小步重构，范围集中在 SelfHostedEditor dev-host、contract checks、测试组织和宿主语义边界：
+
+- 已完成：HTTP body 上限、API handler 收口、session cache TTL / 容量 / 状态、process bridge 错误截断与 timeout、model contract 拆分、Preview/Localization C# 测试拆分、package check 入口收口、static asset / CSP 边界、payload bridge 语义回流守卫、整体验收。
+- 保持不变：Compiler / Tooling / Runtime / LanguageServer 的语义 truth、CLI 成功 payload、VSCode / SelfHostedEditor 既有 model contract、HTTP API 成功 shape。
+- 验收已覆盖：SelfHostedEditor `check:syntax`、`check:structure`、`check:model`、关键 HTTP smoke；`.NET build`、Internal tests、VSCode semantic parity / structure、manifest syntax、diff whitespace。
+
+阶段评分复盘：
+
+| 区域 | 当前判断 |
+|---|---|
+| SelfHostedEditor dev-host 安全 / transport 边界 | 已达到 8.5 左右，主要无界 body、session、process output、static asset 与 payload drift 风险已有 guard |
+| SelfHostedEditor 宿主层可维护性 | 约 8.3 到 8.5，组合根明显变薄，但真实 desktop backend / 长会话边界尚未落地 |
+| 测试和回归体系 | 约 8.8，contract check 与 HTTP smoke 覆盖更可定位，但仍需随新端点继续补 direct + HTTP 双层 smoke |
+| 全仓库综合水平 | 维持 8.4 到 8.6 判断，尚不建议为了追求 9 分继续抽象宿主 UI 层 |
+
+剩余风险应作为后续功能路线处理，而不是继续在同一轮里硬拆：
+
+- `ScriptDocumentModelBuilder` 仍是 UI-only fallback；不要继续扩张它的 parser / graph 语义。
+- dev-host 仍通过临时 workspace 驱动若干长链路；真正桌面端需要 editor backend 或长生命周期 Tooling / Runtime session。
+- Workbench CSP 仍因 Monaco / 当前资源方式保留受控 `unsafe-eval` / `unsafe-inline`，后续可以在真实打包方案稳定后继续收紧。
+- Graph positions 仍是 session 记忆；成为产品能力前需要 layout sidecar 或明确持久化契约。
+
 ## 当前最有价值的方向
 
 结合当前架构状态，优先级最高的方向是：
 
-1. 继续把 SelfHostedEditor dev host 的 API handlers 从组合根拆出。
-2. 为 HTTP request body、session cache、临时 workspace 写入补齐上限和生命周期。
-3. 拆分超大的 model contract check 和 localization 测试。
-4. 把 package script 中过长的检查命令沉到独立脚本。
-5. 继续压住 VSCode / SelfHostedEditor 重新吸收语义逻辑的趋势。
+1. 继续用小步功能节点替换 UI-only fallback，优先让 SelfHostedEditor 窄消费者接 `Tooling` / `LanguageServer` / `Runtime` 契约。
+2. 为未来 desktop backend / 长生命周期 Runtime session 设计边界，避免 dev-host 临时 workspace 模式变成产品 truth。
+3. 新增任何 SelfHostedEditor endpoint 时，默认同时补 direct smoke、HTTP smoke、payload shape 断言和结构守卫。
+4. 继续压住 VSCode / SelfHostedEditor 重新吸收语义逻辑的趋势，尤其是 localization presenter、node-map report、host capability 和 runtime state。
+5. 暂缓继续“纯拆文件”式重构；只有当改动能降低跨层重复、增强失败可见性或加固安全边界时再开新轮。
 
 判断是否值得做的标准很简单：如果重构能降低未来功能改动的风险、减少跨层重复、增强失败可见性或加固安全边界，就值得；如果只是让文件看起来更小，但 ownership 变模糊，就不值得。
