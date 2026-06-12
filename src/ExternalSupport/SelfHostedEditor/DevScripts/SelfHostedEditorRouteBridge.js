@@ -11,6 +11,7 @@ const selfHostedEditorApiRouteDefinitions = [
   ["runtimeState", "/api/runtime-state"],
   ["runtimeAction", "/api/runtime-action"],
   ["lineMapRefresh", "/api/line-map-refresh"],
+  ["sessionCacheStatus", "/api/session-cache-status"],
   ["nodeMapReview", "/api/node-map-review"],
   ["nodeMapApply", "/api/node-map-apply"],
   ["localizationReview", "/api/localization-review"],

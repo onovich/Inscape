@@ -6,6 +6,7 @@ import {
 import {
   getLineMapSessionState,
   getRuntimeSessionState,
+  getSelfHostedEditorSessionCacheStatus,
   normalizeLineMapSessionId,
   normalizeLocalizationSessionId,
   normalizeRuntimeSessionId,
@@ -142,6 +143,9 @@ export function createSelfHostedEditorApiHandlers(services) {
       const sessionId = normalizeRuntimeSessionId(payload.sessionId);
       return services.getRuntimeStateForScriptText(scriptText, workspace, sessionId);
     }),
+    sessionCacheStatus: createJsonApiHandler(async () =>
+      getSelfHostedEditorSessionCacheStatus()
+    ),
     storyGraph: createJsonApiHandler(async (payload) => {
       const scriptText = readScriptText(payload);
       const workspace = normalizeWorkspacePayload(payload.workspace);

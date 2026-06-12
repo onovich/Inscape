@@ -63,6 +63,7 @@ The current shell is intentionally small, but it now includes a first Monaco-bac
 - Dev-hosted runtime bridge: the workbench now requests a Runtime snapshot from `/api/runtime-state`, which runs the existing CLI `runtime-project` flow over the temporary workspace and reports the entry node in the session state. The dev host keeps the latest compact Runtime snapshot by `sessionId`, so `/api/runtime-action` can step that server-side session through `continue`, `advance-flow`, `rewind`, `rewind-flow`, or `choose` via the same CLI contract; explicit `runtimeState` payloads remain as a fallback.
 - Dev-hosted line-map bridge: `/api/line-map-refresh` now keeps the latest Tooling line sidecar by `sessionId`, so follow-up refreshes do not have to upload the full previous line-map. The host only remembers the sidecar payload; line identity migration continues to be computed by shared `refresh-l10n-line-map-project`.
 - Dev-hosted localization baseline bridge: `/api/localization-review` records an explicitly selected previous CSV by `sessionId`, and `/api/localization-review` / `/api/localization-update` can reuse that baseline on later requests. The host only remembers the previous CSV text; alignment review, candidate scoring, override application, and updated CSV generation still run through shared Tooling / CLI commands.
+- Dev-hosted session cache state is bounded and observable. Runtime snapshots, line-map sidecars, and localization baselines share a two-hour idle TTL plus a 64-entry per-cache capacity limit; `/api/session-cache-status` reports counts, byte sizes, eviction counters, and session ids without exposing cached script, line-map, or CSV payload content.
 - Preview choice clicks now try the Runtime action bridge first when the reading pane is already showing the same node as the latest Runtime snapshot. Successful `choose` / `continue` steps replace the reading pane with the returned Runtime node and reveal that node in the editor; source-only navigation remains the fallback when Runtime is unavailable or out of sync with the current preview node.
 - Preview also prefers the latest Runtime current node during normal re-render when the active source line is still inside that same node. That keeps the reading pane on Runtime truth through ordinary refreshes instead of snapping back to the compiler-graph presenter state after every render pass.
 - Preview now also uses the Runtime current node as the first player node when a new document opens at the top and the workbench has not established a presenter node yet. That lets the initial reading pane start from Runtime entry truth instead of assuming the first visible script node is the right player start.
@@ -139,6 +140,8 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:references
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:references-http
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:node-map
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:node-map-http
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:session-cache
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:session-cache-http
 ```
 
 `check:localization-review` exercises the full localization-review dev-host path for `samples/court-loop.inscape` without requiring the local HTTP server to be started first.
@@ -158,6 +161,8 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:node-map-http
 `check:references-http` starts the preview dev server in-process and performs a real HTTP request to `/api/references`, including workspace-relative source path normalization.
 `check:node-map` exercises the stable node map review and candidate apply helpers without requiring the local HTTP server to be started first, including a title rename over an existing generated sidecar and a manual-review candidate dry-run/apply.
 `check:node-map-http` starts the preview dev server in-process and performs real HTTP requests to `/api/node-map-review` and `/api/node-map-apply`.
+`check:session-cache` verifies the dev-host session cache TTL, per-cache capacity limit, eviction counters, and non-content status shape without starting a server.
+`check:session-cache-http` starts the preview dev server in-process, seeds Runtime, line-map, and localization baseline session caches through real HTTP APIs, then requests `/api/session-cache-status`.
 
 Serve the prototype locally:
 

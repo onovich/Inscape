@@ -15,6 +15,8 @@ const requiredPaths = [
   "DevScripts/SelfHostedEditorModelContractCheck.js",
   "DevScripts/SelfHostedEditorProcessBridge.js",
   "DevScripts/SelfHostedEditorRouteBridge.js",
+  "DevScripts/SelfHostedEditorSessionCacheContractCheck.js",
+  "DevScripts/SelfHostedEditorSessionCacheHttpSmoke.js",
   "DevScripts/SelfHostedEditorSessionBridge.js",
   "DevScripts/SelfHostedEditorStaticAssetBridge.js",
   "DevScripts/SelfHostedEditorWorkspaceBridge.js",
@@ -380,8 +382,8 @@ if (/data-loading-state/.test(workbenchWorkspaceLayoutCss) || /^\s*\.diagnostics
 }
 
 const packageJson = JSON.parse(fs.readFileSync(path.join(moduleRoot, "package.json"), "utf8"));
-if (!packageJson.scripts["check:model"] || !packageJson.scripts["check:structure"] || !packageJson.scripts["check:syntax"] || !packageJson.scripts["check:node-map"] || !packageJson.scripts["check:node-map-http"] || !packageJson.scripts["check:references"] || !packageJson.scripts["check:references-http"] || !packageJson.scripts["check:semantic-parity-http"]) {
-  console.error("SelfHostedEditor package.json must expose check:model, check:structure, check:syntax, check:node-map, check:node-map-http, check:references, check:references-http, and check:semantic-parity-http.");
+if (!packageJson.scripts["check:model"] || !packageJson.scripts["check:structure"] || !packageJson.scripts["check:syntax"] || !packageJson.scripts["check:node-map"] || !packageJson.scripts["check:node-map-http"] || !packageJson.scripts["check:references"] || !packageJson.scripts["check:references-http"] || !packageJson.scripts["check:semantic-parity-http"] || !packageJson.scripts["check:session-cache"] || !packageJson.scripts["check:session-cache-http"]) {
+  console.error("SelfHostedEditor package.json must expose check:model, check:structure, check:syntax, check:node-map, check:node-map-http, check:references, check:references-http, check:semantic-parity-http, check:session-cache, and check:session-cache-http.");
   failed = true;
 }
 
@@ -513,6 +515,7 @@ for (const expectedRoutePath of [
   "/api/runtime-state",
   "/api/runtime-action",
   "/api/line-map-refresh",
+  "/api/session-cache-status",
   "/api/node-map-review",
   "/api/node-map-apply",
   "/api/localization-review",
@@ -540,6 +543,7 @@ if (
 const {
   getLineMapSessionState,
   getRuntimeSessionState,
+  getSelfHostedEditorSessionCacheStatus,
   normalizeLineMapSessionId,
   normalizeLocalizationSessionId,
   normalizeRuntimeSessionId,
@@ -583,6 +587,18 @@ if (
   || sessionBaseline.metadata.byteLength !== Buffer.byteLength("anchor,text\n", "utf8")
 ) {
   console.error("SelfHostedEditor session bridge must remember localization baselines by session id.");
+  failed = true;
+}
+const sessionCacheStatus = getSelfHostedEditorSessionCacheStatus();
+if (
+  sessionCacheStatus?.format !== "inscape.self-hosted-editor.session-cache-status"
+  || sessionCacheStatus?.formatVersion !== 1
+  || sessionCacheStatus?.caches?.runtime?.kind !== "runtime"
+  || sessionCacheStatus?.caches?.lineMap?.kind !== "line-map"
+  || sessionCacheStatus?.caches?.localizationBaseline?.kind !== "localization-baseline"
+  || sessionCacheStatus?.caches?.runtime?.maximumEntries < sessionCacheStatus?.caches?.runtime?.entryCount
+) {
+  console.error("SelfHostedEditor session bridge must expose bounded session cache status for runtime, line-map, and localization baseline caches.");
   failed = true;
 }
 
