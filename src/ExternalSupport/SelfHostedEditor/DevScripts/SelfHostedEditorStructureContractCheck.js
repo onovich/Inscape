@@ -12,6 +12,7 @@ const requiredPaths = [
   "DevScripts/SelfHostedEditorApiHandlerBridge.js",
   "DevScripts/SelfHostedEditorHttpBridge.js",
   "DevScripts/SelfHostedEditorHttpBridgeContractCheck.js",
+  "DevScripts/SelfHostedEditorModelContractSuite.js",
   "DevScripts/ModelContracts",
   "DevScripts/ModelContracts/SelfHostedEditorHostCapabilityContractCheck.js",
   "DevScripts/ModelContracts/SelfHostedEditorLocalizationContractCheck.js",
@@ -28,6 +29,7 @@ const requiredPaths = [
   "DevScripts/SelfHostedEditorSessionCacheHttpSmoke.js",
   "DevScripts/SelfHostedEditorSessionBridge.js",
   "DevScripts/SelfHostedEditorStaticAssetBridge.js",
+  "DevScripts/SelfHostedEditorSyntaxContractCheck.js",
   "DevScripts/SelfHostedEditorWorkspaceBridge.js",
   "DevScripts/SelfHostedEditorReferencesHttpSmoke.js",
   "DevScripts/SelfHostedEditorReferencesSmoke.js",
@@ -393,6 +395,14 @@ if (/data-loading-state/.test(workbenchWorkspaceLayoutCss) || /^\s*\.diagnostics
 const packageJson = JSON.parse(fs.readFileSync(path.join(moduleRoot, "package.json"), "utf8"));
 if (!packageJson.scripts["check:model"] || !packageJson.scripts["check:structure"] || !packageJson.scripts["check:syntax"] || !packageJson.scripts["check:node-map"] || !packageJson.scripts["check:node-map-http"] || !packageJson.scripts["check:references"] || !packageJson.scripts["check:references-http"] || !packageJson.scripts["check:semantic-parity-http"] || !packageJson.scripts["check:process-bridge"] || !packageJson.scripts["check:session-cache"] || !packageJson.scripts["check:session-cache-http"]) {
   console.error("SelfHostedEditor package.json must expose check:model, check:structure, check:syntax, check:node-map, check:node-map-http, check:references, check:references-http, check:semantic-parity-http, check:process-bridge, check:session-cache, and check:session-cache-http.");
+  failed = true;
+}
+if (packageJson.scripts["check:model"] !== "node DevScripts/SelfHostedEditorModelContractSuite.js") {
+  console.error("SelfHostedEditor check:model must delegate to SelfHostedEditorModelContractSuite.js.");
+  failed = true;
+}
+if (packageJson.scripts["check:syntax"] !== "node DevScripts/SelfHostedEditorSyntaxContractCheck.js") {
+  console.error("SelfHostedEditor check:syntax must delegate to SelfHostedEditorSyntaxContractCheck.js.");
   failed = true;
 }
 
