@@ -2,7 +2,7 @@
 
 状态：基线
 
-最后更新：2026-06-02
+最后更新：2026-06-13
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
@@ -34,6 +34,7 @@
 - 2026-06-02 最新：Editor Backend 会话边界第一刀已落在 Runtime dev-host。`/api/runtime-state` 会按 `sessionId` 记住最新 compact Runtime snapshot，`/api/runtime-action` 可只带 `sessionId + action` 推进服务端会话；显式 `runtimeState` 仍保留为兼容 fallback。前端 Runtime bridge 不再默认每次 action 都上传整份 state，`check:runtime-http` 已覆盖真实 HTTP session 推进。这仍只是宿主会话状态，不改变共享 `Runtime` / CLI 剧情推进语义，也还不是正式桌面长驻 Runtime 进程。
 - 2026-06-02 最新：Editor Backend 会话边界第二刀已落在 line-map dev-host。`/api/line-map-refresh` 会按 `sessionId` 记住最新 Tooling line sidecar，前端 `SelfHostedEditorLineMapBridge` 默认只传 `sessionId + script/workspace`，显式 `existingLineMap` 保留为兼容 fallback；新增 `check:line-map` 与 `check:line-map-http` 覆盖直连和真实 HTTP session 继承。这仍只是宿主缓存上一轮 sidecar，不改变共享 `refresh-l10n-line-map-project` 的稳定行身份迁移语义。
 - 2026-06-02 最新：Editor Backend 会话边界第三刀已落在 localization baseline/update dev-host。`/api/localization-review` 会按 `sessionId` 记住作者本次选过的 previous CSV，后续 `/api/localization-review` 与 `/api/localization-update` 可只带 session 复用这份旧表；前端 `SelfHostedEditorLocalizationReviewBridge` 默认只在旧 CSV 新增或变化时重传，失败时仍会用显式 `previousCsv` 兜底。`check:localization-update` 与 `check:localization-update-http` 已覆盖 request seeding、session review reuse 和 session update reuse。这仍只是宿主会话记忆，不改变 Tooling / CLI 的 alignment、candidate scoring、override application 或 CSV 生成语义。
+- 2026-06-13 最新：10 轮重构第 1 轮完成 SelfHostedEditor dev-host HTTP body 边界硬化。`SelfHostedEditorHttpBridge` 现在对 JSON request body 使用 4 MB 默认上限，超限会返回 413 JSON error，而不是继续累积无界请求体；新增 `check:http-bridge`，并接入 `check:model` 与 `check:syntax`。这只加固宿主 transport，不改变 LanguageServer / Tooling / Runtime / CLI 的成功 payload 或语义契约。
 
 2026-05-26 本会话交接状态：
 

@@ -10,6 +10,19 @@ SelfHostedEditor regression invariant: Preview choice clicks must advance the re
 
 当前目录迁移与不符合项总蓝图见 [目录优先重构蓝图](directory-first-reframe-plan.md)。当前后续执行面板见 [/goal 后续目标计划](goal-plan.md)。
 
+## 2026-06-13 10 轮重构执行状态
+
+- [x] 第 1 轮：SelfHostedEditor dev-host HTTP JSON body size limit。`SelfHostedEditorHttpBridge` 默认限制请求体为 4 MB，超限返回 413 JSON error；新增 `check:http-bridge` 并接入 `check:model` / `check:syntax`。本轮只加固宿主 transport 边界，不改变 shared LanguageServer / Tooling / Runtime / CLI 成功 payload。
+- [ ] 第 2 轮：继续把 SelfHostedEditor dev host 的 API handler 从组合根拆到更窄的业务 bridge / controller，优先选不改变 payload shape 的路由组。
+- [ ] 第 3 轮：为 session cache 补 TTL / 容量上限 / 可观测状态，覆盖 Runtime、line-map、localization baseline 三类会话记忆。
+- [ ] 第 4 轮：补 process bridge 的错误输出截断、状态表达和超时可观测性复查。
+- [ ] 第 5 轮：拆分 `SelfHostedEditorModelContractCheck.js`，按 model shape、preview、story graph、runtime、localization、host capability 分组。
+- [ ] 第 6 轮：拆分超大的本地化 / preview C# 测试文件，保持测试入口不变。
+- [ ] 第 7 轮：把过长的 SelfHostedEditor package 检查命令沉到独立 DevScripts 入口，避免 package script 成为维护瓶颈。
+- [ ] 第 8 轮：复查 static asset / MIME / cache policy / CSP 边界，只做宿主安全硬化。
+- [ ] 第 9 轮：VSCode / SelfHostedEditor 宿主层语义回流巡检，修正仍在宿主层重复组织 shared presenter / payload truth 的点。
+- [ ] 第 10 轮：总体验收，跑完整验证、整理剩余风险、更新 handoff / TODO / refactoring standard。
+
 ## 2026-05-24 SelfHostedEditor 接力优先事项
 
 - 当前用户主线：继续推进自研编辑器体验，并用真实 `LanguageServer` / `Tooling` / `Runtime` 契约替换 UI-only 临时层。接手时优先读 `docs/self-hosted-editor-architecture-plan.md` 与 `src/ExternalSupport/SelfHostedEditor/README.md`。
@@ -67,6 +80,7 @@ SelfHostedEditor regression invariant: Preview choice clicks must advance the re
 - 2026-06-02 已完成：Editor Backend 会话边界第一刀落在 Runtime dev-host。`/api/runtime-state` 现在按 `sessionId` 记住最新 compact Runtime snapshot，`/api/runtime-action` 可只带 `sessionId + action` 推进服务端会话，显式 `runtimeState` 仍作为兼容 fallback。前端 Runtime bridge 不再默认每次 action 都上传整份 Runtime state；`check:runtime-http` 已覆盖不带 `runtimeState` 的真实 HTTP session 推进。这仍只是宿主会话状态，不改变 `Runtime` / CLI 的剧情推进语义。
 - 2026-06-02 已完成：Editor Backend 会话边界第二刀落在 line-map dev-host。`/api/line-map-refresh` 现在按 `sessionId` 记住最新 Tooling line sidecar，前端默认只传 `sessionId + script/workspace`，不再每轮上传整份 `existingLineMap`；显式 `existingLineMap` 仍作为兼容 fallback。新增 `check:line-map` 与 `check:line-map-http` 覆盖直连和真实 HTTP 的 session 继承，证明第二次刷新不带 `existingLineMap` 也能保住已有稳定 line id。这仍只是宿主会话缓存，不改变 `refresh-l10n-line-map-project` 的行身份迁移语义。
 - 2026-06-02 已完成：Editor Backend 会话边界第三刀落在 localization baseline/update dev-host。`/api/localization-review` 会按 `sessionId` 记住作者本次选过的 previous CSV，后续 review / update 可只传 `sessionId + script/workspace + overrides` 复用这份旧表；显式 `previousCsv` 仍作为兼容 fallback 和重新选择旧表的入口。新增的 `check:localization-update` 与 `check:localization-update-http` 已覆盖 request seeding、session review reuse 和 session update reuse。这仍只是宿主记住“这次会话选的是哪份旧 CSV”，不改变 `audit-l10n-alignment-project` 或 `update-l10n-project` 的 alignment、候选评分、覆盖应用与 CSV 生成语义。
+- 2026-06-13 已完成：SelfHostedEditor dev-host HTTP request body 第一轮硬化。`readJsonRequestBody()` 现在默认限制 JSON request body 为 4 MB，超限返回 413 JSON error；`check:http-bridge` 覆盖 BOM 剥离、超限 typed error 和 HTTP error status，并已接入 `check:model`。
 - 当前执行顺序（2026-06-01）：
 	1. 先巩固最近 SelfHostedEditor 回归边界：Preview 不得静默丢 `previewLines`，UTF-8 桥接不得再产生中文乱码，Flow 的 typewriter / wheel / `@` 标签行为和 loading 状态都要由 `check:model` / `check:structure` 继续守住。
 	2. 第一实施节点继续留在 L10N 视图：review actions parity 已完成；下一刀若继续本线，应评估批量审校动作，但仍不要把真实 CSV 语义搬回浏览器。
