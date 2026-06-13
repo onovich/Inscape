@@ -1,7 +1,9 @@
 import { HostSchemaCapabilityModelMapper } from "../Models/HostSchemaCapabilityModelMapper.js";
+import { EditorBackendClient } from "../../Backend/Clients/EditorBackendClient.js";
 
 export class SelfHostedEditorHostSchemaBridge {
-  constructor() {
+  constructor(options = {}) {
+    this.backendClient = options.backendClient || new EditorBackendClient();
     this.cachedCatalog = null;
     this.cachedRequestKey = "";
     this.workspaceContextProvider = null;
@@ -24,22 +26,11 @@ export class SelfHostedEditorHostSchemaBridge {
     }
 
     try {
-      const response = await fetch("/api/host-schema-capabilities", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          scriptText,
-          workspace,
-        }),
+      const payload = await this.backendClient.hostCapabilities.schemaCapabilities({
+        scriptText,
+        workspace,
       });
 
-      if (!response.ok) {
-        throw new Error(`Host Schema capabilities request failed with ${response.status}.`);
-      }
-
-      const payload = await response.json();
       const catalog = HostSchemaCapabilityModelMapper.mapCatalog(payload);
       this.cachedCatalog = catalog;
       this.cachedRequestKey = requestKey;

@@ -96,13 +96,13 @@ export async function createSelfHostedEditorFeatures(bindings, callbacks = {}) {
   const definitionBridge = new SelfHostedEditorDefinitionBridge({ backendClient });
   const diagnosticsBridge = new SelfHostedEditorDiagnosticsBridge({ backendClient });
   const hoverBridge = new SelfHostedEditorHoverBridge({ backendClient });
-  const hostBindingBridge = new SelfHostedEditorHostBindingBridge();
-  const hostSchemaBridge = new SelfHostedEditorHostSchemaBridge();
+  const hostBindingBridge = new SelfHostedEditorHostBindingBridge({ backendClient });
+  const hostSchemaBridge = new SelfHostedEditorHostSchemaBridge({ backendClient });
   const lineMapBridge = new SelfHostedEditorLineMapBridge({ backendClient });
-  const nodeMapBridge = new SelfHostedEditorStoryNodeMapBridge();
+  const nodeMapBridge = new SelfHostedEditorStoryNodeMapBridge({ backendClient });
   const referencesBridge = new SelfHostedEditorReferencesBridge({ backendClient });
   const runtimeBridge = new SelfHostedEditorRuntimeBridge({ backendClient });
-  const storyGraphBridge = new SelfHostedEditorStoryGraphBridge();
+  const storyGraphBridge = new SelfHostedEditorStoryGraphBridge({ backendClient });
   const workspaceController = new ProjectWorkspaceController({
     fileInputElement: bindings.scriptFileInputElement,
     scriptSourceLabelElement: bindings.scriptSourceLabelElement,

@@ -1,5 +1,8 @@
+import { EditorBackendClient } from "../../Backend/Clients/EditorBackendClient.js";
+
 export class SelfHostedEditorStoryNodeMapBridge {
-  constructor() {
+  constructor(options = {}) {
+    this.backendClient = options.backendClient || new EditorBackendClient();
     this.workspaceContextProvider = null;
   }
 
@@ -9,24 +12,14 @@ export class SelfHostedEditorStoryNodeMapBridge {
 
   async reviewNodeMap(scriptText) {
     try {
-      const response = await fetch("/api/node-map-review", {
-        body: JSON.stringify({
-          scriptText,
-          workspace: this.workspaceContextProvider ? this.workspaceContextProvider() : null,
-        }),
-        headers: {
-          "Content-Type": "application/json",
-        },
-        method: "POST",
+      const review = await this.backendClient.stableNodeMap.review({
+        scriptText,
+        workspace: this.workspaceContextProvider ? this.workspaceContextProvider() : null,
       });
-
-      if (!response.ok) {
-        throw new Error(`Stable node map bridge failed with HTTP ${response.status}`);
-      }
 
       return {
         provider: "node-map-review",
-        review: await response.json(),
+        review,
       };
     } catch (error) {
       return {
@@ -43,27 +36,17 @@ export class SelfHostedEditorStoryNodeMapBridge {
 
   async applyCandidate(scriptText, item, candidate, dryRun = false, nodeMapPath = "") {
     try {
-      const response = await fetch("/api/node-map-apply", {
-        body: JSON.stringify({
-          candidate,
-          dryRun,
-          item,
-          nodeMapPath,
-          scriptText,
-          workspace: this.workspaceContextProvider ? this.workspaceContextProvider() : null,
-        }),
-        headers: {
-          "Content-Type": "application/json",
-        },
-        method: "POST",
+      const apply = await this.backendClient.stableNodeMap.applyCandidate({
+        candidate,
+        dryRun,
+        item,
+        nodeMapPath,
+        scriptText,
+        workspace: this.workspaceContextProvider ? this.workspaceContextProvider() : null,
       });
 
-      if (!response.ok) {
-        throw new Error(`Stable node map apply bridge failed with HTTP ${response.status}`);
-      }
-
       return {
-        apply: await response.json(),
+        apply,
         provider: "node-map-apply",
       };
     } catch (error) {

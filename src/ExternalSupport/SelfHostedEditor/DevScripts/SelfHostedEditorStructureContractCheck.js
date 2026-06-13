@@ -166,11 +166,16 @@ if (fs.existsSync(scriptsRoot)) {
 
   for (const scriptPath of getJavaScriptFiles(scriptsRoot)) {
     const relativeScriptPath = path.relative(moduleRoot, scriptPath).replace(/\\/g, "/");
+    const scriptText = fs.readFileSync(scriptPath, "utf8");
+    if (/fetch\s*\(\s*["']\/api\//.test(scriptText)) {
+      console.error(`SelfHostedEditor UI code must route dev-host API calls through EditorBackendClient: ${relativeScriptPath}`);
+      failed = true;
+    }
+
     if (
       relativeScriptPath !== "Scripts/ProjectWorkspace/Models/ScriptDocumentFallbackPolicy.js"
       && relativeScriptPath !== "Scripts/ProjectWorkspace/Models/ScriptDocumentModelBuilder.js"
     ) {
-      const scriptText = fs.readFileSync(scriptPath, "utf8");
       if (scriptText.includes("ScriptDocumentModelBuilder")) {
         console.error(`SelfHostedEditor draft document fallback must go through ScriptDocumentFallbackPolicy: ${relativeScriptPath}`);
         failed = true;
@@ -478,25 +483,6 @@ if (packageJson.scripts["check:static-assets"] !== "node DevScripts/SelfHostedEd
 if (packageJson.scripts["check:static-assets-http"] !== "node DevScripts/SelfHostedEditorStaticAssetHttpSmoke.js") {
   console.error("SelfHostedEditor check:static-assets-http must delegate to SelfHostedEditorStaticAssetHttpSmoke.js.");
   failed = true;
-}
-
-const backendClientBridgePaths = [
-  "Scripts/LanguageServer/Bridges/SelfHostedEditorCompletionBridge.js",
-  "Scripts/LanguageServer/Bridges/SelfHostedEditorDefinitionBridge.js",
-  "Scripts/LanguageServer/Bridges/SelfHostedEditorDiagnosticsBridge.js",
-  "Scripts/LanguageServer/Bridges/SelfHostedEditorDocumentSymbolBridge.js",
-  "Scripts/LanguageServer/Bridges/SelfHostedEditorHoverBridge.js",
-  "Scripts/LanguageServer/Bridges/SelfHostedEditorLineMapBridge.js",
-  "Scripts/LanguageServer/Bridges/SelfHostedEditorReferencesBridge.js",
-  "Scripts/Localization/Bridges/SelfHostedEditorLocalizationReviewBridge.js",
-  "Scripts/Runtime/Bridges/SelfHostedEditorRuntimeBridge.js",
-];
-for (const relativePath of backendClientBridgePaths) {
-  const text = fs.readFileSync(path.join(moduleRoot, relativePath), "utf8");
-  if (/fetch\s*\(\s*["']\/api\//.test(text)) {
-    console.error(`SelfHostedEditor session bridge must route dev-host API calls through EditorBackendClient: ${relativePath}.`);
-    failed = true;
-  }
 }
 
 const childProcessTextPaths = [
