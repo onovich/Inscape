@@ -480,6 +480,19 @@ if (packageJson.scripts["check:static-assets-http"] !== "node DevScripts/SelfHos
   failed = true;
 }
 
+const backendClientBridgePaths = [
+  "Scripts/Runtime/Bridges/SelfHostedEditorRuntimeBridge.js",
+  "Scripts/LanguageServer/Bridges/SelfHostedEditorLineMapBridge.js",
+  "Scripts/Localization/Bridges/SelfHostedEditorLocalizationReviewBridge.js",
+];
+for (const relativePath of backendClientBridgePaths) {
+  const text = fs.readFileSync(path.join(moduleRoot, relativePath), "utf8");
+  if (/fetch\s*\(\s*["']\/api\//.test(text)) {
+    console.error(`SelfHostedEditor session bridge must route dev-host API calls through EditorBackendClient: ${relativePath}.`);
+    failed = true;
+  }
+}
+
 const childProcessTextPaths = [
   "DevScripts/StartSelfHostedEditorPreview.js",
   "DevScripts/SelfHostedEditorProcessBridge.js",

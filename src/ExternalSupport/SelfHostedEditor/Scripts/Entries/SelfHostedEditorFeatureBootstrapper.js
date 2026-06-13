@@ -1,3 +1,4 @@
+import { EditorBackendClient } from "../Backend/Clients/EditorBackendClient.js";
 import { SelfHostedEditorStoryNodeMapBridge } from "../EditorAuthoring/Bridges/SelfHostedEditorStoryNodeMapBridge.js";
 import { EditorCompletionController } from "../EditorAuthoring/Controllers/EditorCompletionController.js";
 import { EditorDefinitionController } from "../EditorAuthoring/Controllers/EditorDefinitionController.js";
@@ -63,8 +64,9 @@ export async function createSelfHostedEditorFeatures(bindings, callbacks = {}) {
   });
   const diagnosticsController = new EditorDiagnosticsController(bindings.diagnosticsElement);
   const editorStatusController = new EditorStatusController(bindings.statusBarElement);
+  const backendClient = new EditorBackendClient();
   const localizationDraftStore = new LocalizationDraftStore();
-  const localizationReviewBridge = new SelfHostedEditorLocalizationReviewBridge();
+  const localizationReviewBridge = new SelfHostedEditorLocalizationReviewBridge({ backendClient });
   const localizationController = new LocalizationEditorController({
     panelElement: bindings.localizationPanelElement,
     draftStore: localizationDraftStore,
@@ -96,10 +98,10 @@ export async function createSelfHostedEditorFeatures(bindings, callbacks = {}) {
   const hoverBridge = new SelfHostedEditorHoverBridge();
   const hostBindingBridge = new SelfHostedEditorHostBindingBridge();
   const hostSchemaBridge = new SelfHostedEditorHostSchemaBridge();
-  const lineMapBridge = new SelfHostedEditorLineMapBridge();
+  const lineMapBridge = new SelfHostedEditorLineMapBridge({ backendClient });
   const nodeMapBridge = new SelfHostedEditorStoryNodeMapBridge();
   const referencesBridge = new SelfHostedEditorReferencesBridge();
-  const runtimeBridge = new SelfHostedEditorRuntimeBridge();
+  const runtimeBridge = new SelfHostedEditorRuntimeBridge({ backendClient });
   const storyGraphBridge = new SelfHostedEditorStoryGraphBridge();
   const workspaceController = new ProjectWorkspaceController({
     fileInputElement: bindings.scriptFileInputElement,

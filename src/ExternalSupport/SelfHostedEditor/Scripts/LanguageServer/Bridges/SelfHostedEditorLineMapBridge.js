@@ -1,5 +1,8 @@
+import { EditorBackendClient } from "../../Backend/Clients/EditorBackendClient.js";
+
 export class SelfHostedEditorLineMapBridge {
-  constructor() {
+  constructor(options = {}) {
+    this.backendClient = options.backendClient || new EditorBackendClient();
     this.currentLineMap = null;
     this.sessionId = "self-hosted-editor-line-map";
     this.workspaceContextProvider = null;
@@ -52,18 +55,6 @@ export class SelfHostedEditorLineMapBridge {
       requestPayload.existingLineMap = this.currentLineMap;
     }
 
-    const response = await fetch("/api/line-map-refresh", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(requestPayload),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Line map bridge returned HTTP ${response.status}.`);
-    }
-
-    return response.json();
+    return await this.backendClient.lineIdentitySession.refresh(requestPayload);
   }
 }

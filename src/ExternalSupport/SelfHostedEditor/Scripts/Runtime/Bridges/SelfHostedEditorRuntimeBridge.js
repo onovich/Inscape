@@ -1,5 +1,8 @@
+import { EditorBackendClient } from "../../Backend/Clients/EditorBackendClient.js";
+
 export class SelfHostedEditorRuntimeBridge {
-  constructor() {
+  constructor(options = {}) {
+    this.backendClient = options.backendClient || new EditorBackendClient();
     this.sessionId = this.createSessionId();
     this.workspaceContextProvider = null;
   }
@@ -11,25 +14,15 @@ export class SelfHostedEditorRuntimeBridge {
   async getRuntimeSnapshot(scriptText) {
     try {
       const workspace = this.workspaceContextProvider?.() || null;
-      const response = await fetch("/api/runtime-state", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          sessionId: this.sessionId,
-          scriptText,
-          workspace,
-        }),
+      const snapshot = await this.backendClient.runtimeSession.startOrObserve({
+        sessionId: this.sessionId,
+        scriptText,
+        workspace,
       });
-
-      if (!response.ok) {
-        throw new Error(`Runtime bridge returned HTTP ${response.status}.`);
-      }
 
       return {
         provider: "runtime-project",
-        snapshot: await response.json(),
+        snapshot,
       };
     } catch (error) {
       return {
@@ -43,42 +36,31 @@ export class SelfHostedEditorRuntimeBridge {
   async stepRuntimeSnapshot(scriptText, runtimeState, action) {
     try {
       const workspace = this.workspaceContextProvider?.() || null;
-      let response = await fetch("/api/runtime-action", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+      let snapshot;
+      try {
+        snapshot = await this.backendClient.runtimeSession.step({
           action,
           sessionId: this.sessionId,
           scriptText,
           workspace,
-        }),
-      });
-
-      if (!response.ok && runtimeState) {
-        response = await fetch("/api/runtime-action", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            action,
-            runtimeState,
-            sessionId: this.sessionId,
-            scriptText,
-            workspace,
-          }),
         });
-      }
+      } catch (error) {
+        if (!runtimeState) {
+          throw error;
+        }
 
-      if (!response.ok) {
-        throw new Error(`Runtime action bridge returned HTTP ${response.status}.`);
+        snapshot = await this.backendClient.runtimeSession.step({
+          action,
+          runtimeState,
+          sessionId: this.sessionId,
+          scriptText,
+          workspace,
+        });
       }
 
       return {
         provider: "runtime-project",
-        snapshot: await response.json(),
+        snapshot,
       };
     } catch (error) {
       return {

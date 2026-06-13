@@ -1,5 +1,8 @@
+import { EditorBackendClient } from "../../Backend/Clients/EditorBackendClient.js";
+
 export class SelfHostedEditorLocalizationReviewBridge {
-  constructor() {
+  constructor(options = {}) {
+    this.backendClient = options.backendClient || new EditorBackendClient();
     this.lastSentPreviousCsv = "";
     this.sessionId = "self-hosted-editor-localization";
     this.workspaceContextProvider = null;
@@ -84,38 +87,16 @@ export class SelfHostedEditorLocalizationReviewBridge {
   }
 
   async postLocalizationReview(scriptText, previousCsv, includePreviousCsv) {
-    const response = await fetch("/api/localization-review", {
-      body: JSON.stringify(this.createRequestPayload(scriptText, previousCsv, includePreviousCsv)),
-      headers: {
-        "Content-Type": "application/json",
-      },
-      method: "POST",
-    });
-
-    if (!response.ok) {
-      throw new Error(`Localization review bridge failed with HTTP ${response.status}`);
-    }
-
-    return response.json();
+    return await this.backendClient.localizationSession.review(
+      this.createRequestPayload(scriptText, previousCsv, includePreviousCsv)
+    );
   }
 
   async postLocalizationUpdate(scriptText, previousCsv, translationOverrides, includePreviousCsv) {
     const requestPayload = this.createRequestPayload(scriptText, previousCsv, includePreviousCsv);
     requestPayload.translationOverrides = translationOverrides;
 
-    const response = await fetch("/api/localization-update", {
-      body: JSON.stringify(requestPayload),
-      headers: {
-        "Content-Type": "application/json",
-      },
-      method: "POST",
-    });
-
-    if (!response.ok) {
-      throw new Error(`Localization update bridge failed with HTTP ${response.status}`);
-    }
-
-    return response.json();
+    return await this.backendClient.localizationSession.updateCsv(requestPayload);
   }
 
   createRequestPayload(scriptText, previousCsv, includePreviousCsv) {
