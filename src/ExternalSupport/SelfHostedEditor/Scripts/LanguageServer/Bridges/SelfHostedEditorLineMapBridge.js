@@ -4,7 +4,7 @@ export class SelfHostedEditorLineMapBridge {
   constructor(options = {}) {
     this.backendClient = options.backendClient || new EditorBackendClient();
     this.currentLineMap = null;
-    this.sessionId = "self-hosted-editor-line-map";
+    this.sessionId = options.sessionId || this.backendClient.sessionId || "self-hosted-editor-line-map";
     this.workspaceContextProvider = null;
   }
 

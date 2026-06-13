@@ -8,6 +8,20 @@
 
 ## 当前项目快照
 
+### 2026-06-13 SelfHostedEditor long-lived backend / fallback 收口快照
+
+本轮 `docs/self-hosted-editor-long-lived-backend-plan.md` 已用 10 轮完成：
+
+- Workspace Summary 正常路径已改为 hosted/shared summary；draft summary 只作为 hosted inputs 不完整时的 fallback。
+- Outline、Preview、StoryGraph、Localization 都已把正常 hosted 路径和 draft/offline fallback 明确分开；malformed shared payload 不再被草模掩盖。
+- Localization hosted review 只消费 Tooling `presenter.items`，空 hosted presenter 保持空 hosted 状态；review-unavailable 才进入 draft table fallback，draft fallback 下禁用真实 updated CSV export / replace。
+- `EditorBackendClient.projectSession.status()` 现在投影 `inscape.self-hosted-editor.project-session`，明确 `mode: "dev-host"`、共享 project session id、workspace request snapshot 计数 / active path / revision，以及 LanguageServer `process-per-request`、Runtime / line-map / localization `bounded-cache` 子 session。
+- `EditorBackendClient.languageSession.*` 已统一包 `inscape.self-hosted-editor.language-session-request`，再展开成当前 dev-host `/api/*` 兼容 payload；底层默认仍是 process-per-request。
+- 可选 spike：设置 `SELF_HOSTED_EDITOR_LANGUAGE_SESSION=stdio` 后，dev host 会对 diagnostics / documentSymbols 尝试复用 `Inscape.LanguageServer --stdio`，失败回退到原 helper，默认路径不变。
+- 第 9/10 轮只做跨阶段验收、文档收口和最终审计；SelfHostedEditor / VSCode / Internal 验证矩阵已通过，未发现需要继续扩大 backend scope 的阻塞问题。
+
+继续接手时优先不要把 dev host 改成正式 desktop backend；若要推进产品化 backend，应从正式 project session / workspace buffer / long-lived LanguageServer ownership 重新开独立计划。
+
 ### 2026-05-24 SelfHostedEditor 接手快照
 
 当前用户主线是继续推进自研编辑器体验，并逐步用真实 Internal 契约替换前端临时方案。下一位 Agent 最快接手路径：

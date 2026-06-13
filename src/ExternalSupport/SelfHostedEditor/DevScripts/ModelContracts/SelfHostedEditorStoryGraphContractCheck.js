@@ -1,7 +1,11 @@
 import { EditorReferenceOverlayController } from "../../Scripts/EditorAuthoring/Controllers/EditorReferenceOverlayController.js";
 import { LanguageServerStoryGraphModelMapper } from "../../Scripts/LanguageServer/Models/LanguageServerStoryGraphModelMapper.js";
 import { StoryGraphPreviewController } from "../../Scripts/StoryGraph/Controllers/StoryGraphPreviewController.js";
-import { assertEqual } from "./SelfHostedEditorModelContractHarness.js";
+import { assertEqual, assertIncludesText, assertNotIncludesText, FakeElement, getTextContent, installFakeDomEnvironment } from "./SelfHostedEditorModelContractHarness.js";
+
+installFakeDomEnvironment();
+globalThis.requestAnimationFrame = () => 1;
+globalThis.cancelAnimationFrame = () => {};
 
 export const storyGraph = LanguageServerStoryGraphModelMapper.mapProjectGraph({
   documents: [
@@ -149,6 +153,43 @@ assertEqual(
   "Witness",
   "graph row hover should read outgoing target title"
 );
+const compilerGraphPanel = new FakeElement("section");
+const compilerGraphController = new StoryGraphPreviewController(compilerGraphPanel);
+compilerGraphController.render(storyGraph);
+assertEqual(compilerGraphPanel.dataset.graphProvider, "compiler-project", "story graph should mark compiler provider");
+assertIncludesText(getTextContent(compilerGraphPanel), "Compiler graph");
+assertIncludesText(getTextContent(compilerGraphPanel), "Opening");
+const offlineGraphPanel = new FakeElement("section");
+const offlineGraphController = new StoryGraphPreviewController(offlineGraphPanel);
+offlineGraphController.render(null, `# Offline
+Narrator: Offline graph body.`);
+assertEqual(offlineGraphPanel.dataset.graphProvider, "offline-draft", "story graph should mark offline draft provider");
+assertIncludesText(getTextContent(offlineGraphPanel), "Offline draft graph");
+assertIncludesText(getTextContent(offlineGraphPanel), "Offline");
+const malformedGraphPanel = new FakeElement("section");
+const malformedGraphController = new StoryGraphPreviewController(malformedGraphPanel);
+const originalConsoleError = console.error;
+console.error = () => {};
+try {
+  malformedGraphController.render({
+    edges: [],
+    nodes: [
+      {
+        sourceLine: 1,
+        title: "Broken",
+      },
+    ],
+    provider: "compiler-project",
+  }, `# Offline
+Narrator: Should not appear.`);
+} finally {
+  console.error = originalConsoleError;
+}
+assertEqual(malformedGraphPanel.dataset.graphProvider, "contract-error", "malformed story graph should mark contract error");
+assertIncludesText(getTextContent(malformedGraphPanel), "Graph data error");
+assertIncludesText(getTextContent(malformedGraphPanel), "choices and jumps");
+assertNotIncludesText(getTextContent(malformedGraphPanel), "Offline draft graph");
+assertNotIncludesText(getTextContent(malformedGraphPanel), "Should not appear");
 const cycleProjection = storyGraphController.projectGraphForDisplay(
   [
     { title: "Alpha", choices: [], jumps: [], lineCount: 1, lines: [], sourceLine: 1 },

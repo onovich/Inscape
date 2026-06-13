@@ -295,7 +295,7 @@ function resolveCliInvocation(cliArgs) {
   };
 }
 
-function resolveLanguageServerInvocation(languageServerArgs) {
+export function resolveLanguageServerInvocation(languageServerArgs) {
   if (fs.existsSync(languageServerExecutablePath)) {
     return {
       command: languageServerExecutablePath,

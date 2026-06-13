@@ -23,6 +23,13 @@ export class ProjectWorkspaceSummaryController {
     item.textContent = `${value} ${label}`;
     if (label === "summary" && summaryModel?.fallback) {
       item.title = `${summaryModel.fallback.category}: ${summaryModel.fallback.migrationTarget}`;
+    } else if (label === "summary" && summaryModel?.sources) {
+      item.title = [
+        `graph: ${summaryModel.sources.storyGraphProvider}`,
+        `localization: ${summaryModel.sources.localizationProvider}`,
+        `diagnostics: ${summaryModel.sources.diagnosticsProvider}`,
+        `runtime: ${summaryModel.sources.runtimeProvider}`,
+      ].join(" | ");
     }
     return item;
   }

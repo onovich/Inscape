@@ -29,6 +29,11 @@ import {
   runLanguageServerProjectReferences,
 } from "./SelfHostedEditorProcessBridge.js";
 import {
+  disposeSharedSelfHostedEditorLanguageSessionBridge,
+  getSharedSelfHostedEditorLanguageSessionBridge,
+  isSelfHostedEditorLanguageSessionEnabled,
+} from "./SelfHostedEditorLanguageSessionBridge.js";
+import {
   getLineMapSessionState,
   normalizeLineMapSessionId,
   rememberLineMapSessionState,
@@ -72,7 +77,7 @@ const apiRoutes = createSelfHostedEditorApiRoutes(createSelfHostedEditorApiHandl
 }));
 
 export function createSelfHostedEditorPreviewServer(serverPort = port) {
-  return http.createServer(async (request, response) => {
+  const server = http.createServer(async (request, response) => {
     const requestUrl = new URL(request.url || "/", `http://localhost:${serverPort}`);
 
     if (await routeSelfHostedEditorApiRequest(request, response, requestUrl, apiRoutes)) {
@@ -84,12 +89,18 @@ export function createSelfHostedEditorPreviewServer(serverPort = port) {
       repoRoot,
     });
   });
+  server.on("close", () => {
+    void disposeSharedSelfHostedEditorLanguageSessionBridge();
+  });
+  return server;
 }
 
 async function diagnoseScriptText(scriptText, workspace) {
   return withTemporaryWorkspace(workspace, scriptText, async ({ tempRoot, activeRelativePath }) => {
-    const result = await runLanguageServerProjectDiagnostics(tempRoot);
-    const payload = relativizeLanguageServerSemanticPaths(JSON.parse(result.stdout), tempRoot);
+    const payload = relativizeLanguageServerSemanticPaths(
+      await getProjectDiagnosticsPayload(tempRoot),
+      tempRoot
+    );
     return filterProjectDiagnostics(payload, activeRelativePath);
   });
 }
@@ -124,9 +135,37 @@ async function getCompletionsForScriptText(scriptText, workspace) {
 
 async function getDocumentSymbolsForScriptText(scriptText, workspace) {
   return withTemporaryWorkspace(workspace, scriptText, async ({ activeFilePath, tempRoot }) => {
-    const result = await runLanguageServerDocumentSymbols(activeFilePath);
-    return relativizeLanguageServerSemanticPaths(JSON.parse(result.stdout), tempRoot);
+    return relativizeLanguageServerSemanticPaths(
+      await getDocumentSymbolsPayload(activeFilePath),
+      tempRoot
+    );
   });
+}
+
+async function getProjectDiagnosticsPayload(tempRoot) {
+  if (isSelfHostedEditorLanguageSessionEnabled()) {
+    try {
+      return await getSharedSelfHostedEditorLanguageSessionBridge().diagnoseProject(tempRoot);
+    } catch (error) {
+      console.warn("SelfHostedEditor LanguageServer session diagnostics fallback:", error);
+    }
+  }
+
+  const result = await runLanguageServerProjectDiagnostics(tempRoot);
+  return JSON.parse(result.stdout);
+}
+
+async function getDocumentSymbolsPayload(activeFilePath) {
+  if (isSelfHostedEditorLanguageSessionEnabled()) {
+    try {
+      return await getSharedSelfHostedEditorLanguageSessionBridge().documentSymbolsFile(activeFilePath);
+    } catch (error) {
+      console.warn("SelfHostedEditor LanguageServer session document-symbols fallback:", error);
+    }
+  }
+
+  const result = await runLanguageServerDocumentSymbols(activeFilePath);
+  return JSON.parse(result.stdout);
 }
 
 export async function getHostSchemaCapabilitiesForScriptText(scriptText, workspace) {

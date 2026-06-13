@@ -113,6 +113,7 @@ export class PreviewRuntimePreferenceModelBuilder {
       choices,
       lines,
       nodeTitle,
+      provider: "runtime",
       runtimeState: {
         currentNodeName: runtimeSnapshot?.state?.currentNodeName || nodeTitle,
         path: Array.isArray(runtimeSnapshot?.state?.path) ? runtimeSnapshot.state.path : [],

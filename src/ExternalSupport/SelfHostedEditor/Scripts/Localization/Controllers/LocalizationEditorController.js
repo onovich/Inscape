@@ -106,8 +106,10 @@ export class LocalizationEditorController {
     const reviewSnapshot = this.reviewBridge
       ? await this.reviewBridge.getLocalizationReview(scriptText, this.csvFileController.previousCsvText)
       : null;
-    const rows = this.mapReviewRows(reviewSnapshot) || documentModel.translatableLines;
-    this.lastReviewProvider = reviewSnapshot?.provider || "draft-fallback";
+    const reviewRows = this.mapReviewRows(reviewSnapshot);
+    const hasHostedReviewRows = Array.isArray(reviewRows);
+    const rows = hasHostedReviewRows ? reviewRows : documentModel.translatableLines;
+    this.lastReviewProvider = hasHostedReviewRows ? "localization-review" : "draft-fallback";
     this.rows = rows;
     this.exportDraftButtonElement.disabled = rows.length === 0;
     this.syncUpdatedExportAvailability();
@@ -200,6 +202,13 @@ export class LocalizationEditorController {
     return LocalizationVisibleRowsModelBuilder.getVisibleRows(this.rows, this.filterMode, this.draftStore);
   }
 
+  getSummarySnapshot() {
+    return {
+      provider: this.lastReviewProvider,
+      rows: this.rows,
+    };
+  }
+
   mapReviewRows(reviewSnapshot) {
     return LocalizationReviewRowsModelBuilder.build(reviewSnapshot);
   }
@@ -246,8 +255,9 @@ export class LocalizationEditorController {
     const hasAnchorRows = this.rows.some((row) => row.anchor);
     const hasPreviousCsv = Boolean(this.csvFileController.previousCsvText.trim());
     const hasReviewBridge = Boolean(this.reviewBridge);
+    const hasHostedReview = this.lastReviewProvider === "localization-review";
     const readiness = this.getUpdatedExportReadiness();
-    this.exportUpdatedButtonElement.disabled = !(hasAnchorRows && hasPreviousCsv && hasReviewBridge);
+    this.exportUpdatedButtonElement.disabled = !(hasAnchorRows && hasPreviousCsv && hasReviewBridge && hasHostedReview);
     this.exportUpdatedButtonElement.title = readiness;
   }
 
@@ -399,6 +409,7 @@ export class LocalizationEditorController {
     return LocalizationExportReadinessModelBuilder.getUpdatedExportReadiness({
       previousCsvText: this.csvFileController.previousCsvText,
       reviewBridge: this.reviewBridge,
+      reviewProvider: this.lastReviewProvider,
       rows: this.rows,
     });
   }
@@ -409,6 +420,7 @@ export class LocalizationEditorController {
       previousCsvFileHandle: this.csvFileController.previousCsvFileHandle,
       previousCsvText: this.csvFileController.previousCsvText,
       reviewBridge: this.reviewBridge,
+      reviewProvider: this.lastReviewProvider,
       rows: this.rows,
     });
   }

@@ -94,6 +94,10 @@ export class FakeDocument {
     return new FakeElement(tagName);
   }
 
+  createElementNS(_namespace, tagName) {
+    return new FakeElement(tagName);
+  }
+
   createTextNode(text) {
     return new FakeTextNode(text);
   }
@@ -105,7 +109,11 @@ export class FakeElement {
     this.children = [];
     this.className = "";
     this.dataset = {};
-    this.style = {};
+    this.style = {
+      setProperty(name, value) {
+        this[name] = value;
+      },
+    };
     this.textContent = "";
     this.type = "";
     this.scrollTop = 0;

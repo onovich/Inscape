@@ -11,6 +11,7 @@ export class ProjectWorkspaceController {
     this.workspaceFiles = [];
     this.workspaceDocuments = [];
     this.isDirty = false;
+    this.revision = 1;
 
     this.fileInputElement.addEventListener("change", () => {
       this.loadSelectedWorkspace();
@@ -27,6 +28,7 @@ export class ProjectWorkspaceController {
       text: scriptText,
     }];
     this.isDirty = false;
+    this.revision = 1;
     this.renderStatus();
   }
 
@@ -43,6 +45,7 @@ export class ProjectWorkspaceController {
       fileName: this.currentFileName,
       filePath: this.currentFilePath,
       isDirty: this.isDirty,
+      revision: this.revision,
       workspaceFileCount: this.workspaceFiles.length,
       workspaceFiles: this.workspaceFiles.slice(),
       workspaceName: this.currentWorkspaceName,
@@ -55,6 +58,7 @@ export class ProjectWorkspaceController {
   getWorkspaceContext() {
     return {
       currentFilePath: this.currentFilePath,
+      revision: this.revision,
       workspaceName: this.currentWorkspaceName,
       documents: this.workspaceDocuments.map((document) => ({
         relativePath: document.relativePath,
@@ -75,6 +79,9 @@ export class ProjectWorkspaceController {
   updateCurrentDraft(text) {
     const currentDocument = this.workspaceDocuments.find((document) => document.relativePath === this.currentFilePath);
     if (currentDocument) {
+      if (currentDocument.text !== text) {
+        this.revision += 1;
+      }
       currentDocument.text = text;
       return;
     }
@@ -87,6 +94,7 @@ export class ProjectWorkspaceController {
       relativePath: this.currentFilePath,
       text,
     });
+    this.revision += 1;
   }
 
   async loadSelectedWorkspace() {
@@ -116,6 +124,7 @@ export class ProjectWorkspaceController {
       }))
     );
     this.isDirty = false;
+    this.revision = 1;
     this.renderStatus();
     this.notifyScriptLoaded({
       fileName: activeFile.file.name,

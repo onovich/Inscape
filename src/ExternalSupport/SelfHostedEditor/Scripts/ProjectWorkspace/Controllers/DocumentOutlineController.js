@@ -19,10 +19,15 @@ export class DocumentOutlineController {
 
   render(symbolSnapshot, documentModel = null) {
     const symbols = symbolSnapshot?.symbols || [];
-    const providerStatus = this.createProviderStatus(symbolSnapshot?.provider || "unavailable");
+    const providerStatus = this.createProviderStatus(symbolSnapshot);
     this.referenceCountsByLine = new Map(
       (documentModel?.nodes || []).map((node) => [node.sourceLine, node.incomingReferenceCount || 0])
     );
+
+    if (symbolSnapshot?.provider === "language-server-error") {
+      this.panelElement.replaceChildren(providerStatus, this.createErrorState(symbolSnapshot.error));
+      return;
+    }
 
     if (symbols.length === 0) {
       const empty = document.createElement("div");
@@ -62,14 +67,36 @@ export class DocumentOutlineController {
     return item;
   }
 
-  createProviderStatus(provider) {
+  createErrorState(error) {
+    const panel = document.createElement("div");
+    panel.className = "document-outline-empty";
+    panel.textContent = error || "LanguageServer returned malformed document symbols.";
+    return panel;
+  }
+
+  createProviderStatus(symbolSnapshot) {
+    const provider = symbolSnapshot?.provider || "unavailable";
     const status = document.createElement("div");
     status.className = "document-outline-provider";
     status.dataset.provider = provider;
-    status.textContent = provider === "language-server"
-      ? "LanguageServer outline"
-      : "Draft outline";
+    status.textContent = this.getProviderLabel(provider);
     return status;
+  }
+
+  getProviderLabel(provider) {
+    if (provider === "language-server") {
+      return "LanguageServer outline";
+    }
+
+    if (provider === "language-server-error") {
+      return "LanguageServer outline error";
+    }
+
+    if (provider === "draft-fallback") {
+      return "Draft outline";
+    }
+
+    return "Outline unavailable";
   }
 
   notifySourceLineSelected(lineNumber) {

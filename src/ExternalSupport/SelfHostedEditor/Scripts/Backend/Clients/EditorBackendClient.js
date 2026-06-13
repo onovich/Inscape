@@ -1,3 +1,4 @@
+import { EditorBackendLanguageSessionRequestModel } from "../Models/EditorBackendLanguageSessionRequestModel.js";
 import { EditorBackendSessionStatusModel } from "../Models/EditorBackendSessionStatusModel.js";
 import { SelfHostedEditorHttpBackendTransport } from "./SelfHostedEditorHttpBackendTransport.js";
 
@@ -10,18 +11,19 @@ export class EditorBackendClient {
       throw new Error("EditorBackendClient requires a transport with postJson(path, payload).");
     }
 
+    this.sessionId = options.sessionId || this.#createSessionId();
     this.languageSession = Object.freeze({
-      completions: (request) => this.#post("/api/completions", request),
-      definition: (request) => this.#post("/api/definition", request),
-      diagnose: (request) => this.#post("/api/diagnostics", request),
-      documentSymbols: (request) => this.#post("/api/document-symbols", request),
-      hover: (request) => this.#post("/api/hover", request),
-      references: (request) => this.#post("/api/references", request),
+      completions: (request) => this.#postLanguageSession("/api/completions", "completions", request),
+      definition: (request) => this.#postLanguageSession("/api/definition", "definition", request),
+      diagnose: (request) => this.#postLanguageSession("/api/diagnostics", "diagnostics", request),
+      documentSymbols: (request) => this.#postLanguageSession("/api/document-symbols", "document-symbols", request),
+      hover: (request) => this.#postLanguageSession("/api/hover", "hover", request),
+      references: (request) => this.#postLanguageSession("/api/references", "references", request),
     });
     this.hostCapabilities = Object.freeze({
       bindingCapabilities: (request) => this.#post("/api/host-binding-capabilities", request),
-      schemaCapabilities: (request) => this.#post("/api/host-schema-capabilities", request),
-    });
+        schemaCapabilities: (request) => this.#post("/api/host-schema-capabilities", request),
+      });
     this.storyGraph = Object.freeze({
       compileProjectGraph: (request) => this.#post("/api/story-graph", request),
     });
@@ -40,8 +42,17 @@ export class EditorBackendClient {
       applyCandidate: (request) => this.#post("/api/node-map-apply", request),
       review: (request) => this.#post("/api/node-map-review", request),
     });
+    this.projectSession = Object.freeze({
+      status: async (request = {}) => EditorBackendSessionStatusModel.buildDevHostStatus(
+        await this.#post("/api/session-cache-status", {}),
+        {
+          sessionId: request.sessionId || this.sessionId,
+          workspace: request.workspace || null,
+        }
+      ),
+    });
     this.diagnostics = Object.freeze({
-      sessionStatus: async () => EditorBackendSessionStatusModel.buildDevHostStatus(await this.#post("/api/session-cache-status", {})),
+      sessionStatus: (request = {}) => this.projectSession.status(request),
     });
 
     Object.freeze(this);
@@ -49,5 +60,19 @@ export class EditorBackendClient {
 
   async #post(path, request = {}) {
     return await this.#transport.postJson(path, request || {});
+  }
+
+  async #postLanguageSession(path, kind, request = {}) {
+    const languageRequest = EditorBackendLanguageSessionRequestModel.build({
+      kind,
+      request,
+      sessionId: this.sessionId,
+    });
+    return await this.#post(path, EditorBackendLanguageSessionRequestModel.toDevHostPayload(languageRequest));
+  }
+
+  #createSessionId() {
+    const randomPart = Math.random().toString(36).slice(2);
+    return `project-${Date.now().toString(36)}-${randomPart}`;
   }
 }

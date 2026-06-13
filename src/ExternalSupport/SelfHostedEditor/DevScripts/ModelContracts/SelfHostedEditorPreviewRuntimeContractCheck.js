@@ -14,6 +14,8 @@ previewController.onSourceLineSelected((lineNumber) => {
   previewSelectedLine = lineNumber;
 });
 previewController.render("", 2, storyGraph);
+assertEqual(previewElement.dataset.previewProvider, "compiler-project", "preview should mark compiler provider");
+assertIncludesText(getTextContent(previewElement), "Compiler preview");
 assertEqual(previewController.documentModel.nodes[0].lines[1].speaker, "Narrator", "preview should consume compiler story graph lines");
 assertEqual(previewController.documentModel.nodes[0].choices[0].prompt, "Choose action", "preview should consume compiler story graph choices");
 assertEqual(findElementByClass(previewElement, "story-metadata-tag")?.textContent, "scene court", "preview should render compiler metadata tags");
@@ -24,6 +26,13 @@ await previewController.selectChoice(previewChoice);
 assertEqual(findElementByClass(previewElement, "story-title")?.textContent, "Witness", "preview choice click should navigate the reading pane to the target node");
 assertIncludesText(getTextContent(previewElement), "I saw the clock stop.");
 assertEqual(previewSelectedLine, 8, "preview choice click should still reveal the target source line in the editor");
+const offlinePreviewElement = new FakeElement("main");
+const offlinePreviewController = new PreviewPanelController(offlinePreviewElement);
+offlinePreviewController.render(`# Offline
+Narrator: Offline body.`, 1, null);
+assertEqual(offlinePreviewElement.dataset.previewProvider, "offline-draft", "preview should mark offline draft provider");
+assertIncludesText(getTextContent(offlinePreviewElement), "Offline draft preview");
+assertIncludesText(getTextContent(offlinePreviewElement), "Offline body.");
 const runtimePreviewElement = new FakeElement("main");
 const runtimePreviewController = new PreviewPanelController(runtimePreviewElement);
 const runtimeOpeningSnapshot = {
@@ -185,6 +194,8 @@ runtimePreviewController.onChoiceSelected(async (choice) => {
   return true;
 });
 runtimePreviewController.render("", 2, storyGraph, runtimeOpeningSnapshot);
+assertEqual(runtimePreviewElement.dataset.previewProvider, "runtime", "preview should mark runtime provider");
+assertIncludesText(getTextContent(runtimePreviewElement), "Runtime preview");
 const runtimeChoice = {
   ...runtimePreviewController.normalizeChoiceGroups(runtimePreviewController.latestStoryModel.choices)[0].options[0],
   nodeTitle: "Opening",
@@ -345,6 +356,7 @@ assertIncludesText(getTextContent(previewElement), "Compiler story graph contrac
 assertIncludesText(getTextContent(previewElement), "previewLines");
 assertIncludesText(getTextContent(previewElement), "Opening");
 assertNotIncludesText(getTextContent(previewElement), "Fallback body.");
+assertEqual(previewElement.dataset.previewProvider, "contract-error", "preview contract errors should mark provider state");
 assertIncludesText(previewContractErrors.join("\n"), "SelfHostedEditor preview contract error");
 const editorSurfaceController = new EditorSurfaceController(new FakeElement("div"), hintRailElement, createFakeMonaco(identityDocumentModel));
 editorSurfaceController.renderAuthoringState(`# Start

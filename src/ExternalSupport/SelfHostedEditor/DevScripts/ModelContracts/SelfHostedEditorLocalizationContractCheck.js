@@ -194,3 +194,102 @@ assertIncludesText(linkedPreviousCsvWrites[0], "Fresh draft");
 assertEqual(localizationSourceStatus.textContent, "Review baseline: baseline.csv | linked clean", "localization replace should reset linked baseline state after writing");
 assertEqual(localizationSessionStatus.textContent, "0 overrides in session | Updated export ready | Linked clean", "localization replace should clear session drafts after writing");
 assertEqual(localizationReplaceButton.disabled, true, "localization replace should disable once linked baseline is clean");
+
+const hostedEmptyPanel = new FakeElement("section");
+const hostedEmptyExportButton = new FakeElement("button");
+const hostedEmptyExportUpdatedButton = new FakeElement("button");
+const hostedEmptyController = new LocalizationEditorController({
+  panelElement: hostedEmptyPanel,
+  draftStore: new LocalizationDraftStore(),
+  exportDraftButtonElement: hostedEmptyExportButton,
+  exportUpdatedButtonElement: hostedEmptyExportUpdatedButton,
+  reviewBridge: {
+    async getLocalizationReview() {
+      return {
+        provider: "localization-review",
+        review: {
+          presenter: {
+            items: [],
+          },
+        },
+      };
+    },
+  },
+});
+await hostedEmptyController.render("# Opening\nNarrator: Draft fallback row");
+assertEqual(hostedEmptyController.getSummarySnapshot().provider, "localization-review", "empty hosted localization review should keep hosted provider");
+assertEqual(hostedEmptyController.rows.length, 0, "empty hosted localization review should render zero rows");
+assertNotIncludesText(getTextContent(hostedEmptyPanel), "Draft fallback row", "empty hosted localization review should not fall back to draft rows");
+assertEqual(hostedEmptyExportButton.disabled, true, "empty hosted localization review should disable draft export");
+assertEqual(hostedEmptyExportUpdatedButton.disabled, true, "empty hosted localization review should disable updated export");
+assertEqual(hostedEmptyExportUpdatedButton.title, "Updated export needs localization rows", "empty hosted localization review should explain missing hosted rows");
+
+const draftFallbackWrites = [];
+let draftFallbackUpdateCalls = 0;
+const draftFallbackPanel = new FakeElement("section");
+const draftFallbackExportButton = new FakeElement("button");
+const draftFallbackExportUpdatedButton = new FakeElement("button");
+const draftFallbackReplaceButton = new FakeElement("button");
+const draftFallbackSessionStatus = new FakeElement("span");
+const draftFallbackController = new LocalizationEditorController({
+  panelElement: draftFallbackPanel,
+  draftStore: new LocalizationDraftStore(),
+  exportDraftButtonElement: draftFallbackExportButton,
+  exportUpdatedButtonElement: draftFallbackExportUpdatedButton,
+  replacePreviousCsvButtonElement: draftFallbackReplaceButton,
+  sessionStatusElement: draftFallbackSessionStatus,
+  reviewBridge: {
+    async getLocalizationReview() {
+      return {
+        provider: "localization-review-unavailable",
+      };
+    },
+    async exportUpdatedLocalizationCsv() {
+      draftFallbackUpdateCalls += 1;
+      return {
+        csv: "should-not-write",
+        provider: "localization-update",
+      };
+    },
+  },
+});
+await draftFallbackController.render("# Opening\nNarrator: Draft fallback row");
+assertEqual(draftFallbackController.getSummarySnapshot().provider, "draft-fallback", "unavailable localization review should use draft fallback provider");
+assertIncludesText(getTextContent(draftFallbackPanel), "Draft fallback row", "unavailable localization review should show draft rows");
+await draftFallbackController.applyPreviousCsvSelection(
+  {
+    name: "fallback-baseline.csv",
+    async text() {
+      return "anchor,text,translation\nline_anchor_1,Draft fallback row,Previous";
+    },
+  },
+  {
+    async createWritable() {
+      return {
+        async close() {},
+        async write(text) {
+          draftFallbackWrites.push(String(text));
+        },
+      };
+    },
+  }
+);
+assertEqual(draftFallbackExportUpdatedButton.disabled, true, "draft fallback should keep updated export disabled with a linked baseline");
+assertEqual(draftFallbackExportUpdatedButton.title, "Updated export unavailable in draft fallback mode", "draft fallback should explain why updated export is disabled");
+assertEqual(draftFallbackReplaceButton.disabled, true, "draft fallback should keep direct replace disabled with a linked baseline");
+assertEqual(draftFallbackReplaceButton.title, "Updated export unavailable in draft fallback mode", "draft fallback should explain why direct replace is disabled");
+assertIncludesText(draftFallbackSessionStatus.textContent, "Updated export unavailable in draft fallback mode");
+const originalConsoleError = console.error;
+const draftFallbackErrors = [];
+console.error = (...args) => {
+  draftFallbackErrors.push(args.join(" "));
+};
+try {
+  await draftFallbackController.exportUpdatedCsv();
+  await draftFallbackController.replacePreviousCsv();
+} finally {
+  console.error = originalConsoleError;
+}
+assertIncludesText(draftFallbackErrors.join("\n"), "Updated export unavailable in draft fallback mode");
+assertEqual(draftFallbackUpdateCalls, 0, "draft fallback should not call localization update bridge");
+assertEqual(draftFallbackWrites.length, 0, "draft fallback should not write linked previous CSV");

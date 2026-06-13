@@ -32,6 +32,8 @@
 - Monaco 光标、临时 overlay、filter mode、当前可见行。
 - 未写回前的用户输入草稿可以先在 UI store 中存在，但真实 CSV merge、alignment、line identity 和 Runtime 进度仍属于 `Tooling` / `LanguageServer` / `Runtime` 或未来 project session。
 
+2026-06-13 现状补充：前端已有 `inscape.self-hosted-editor.project-session` 状态投影和 `inscape.self-hosted-editor.language-session-request` 请求 envelope，但它们仍是 dev-host mode 的迁移词汇。`EditorBackendClient.projectSession.status()` 只投影 `/api/session-cache-status` 的非内容计数与 workspace request snapshot 元数据；`EditorBackendClient.languageSession.*` 只把当前请求包成 session-aware shape，再展开到既有 `/api/*`。可选 `SELF_HOSTED_EDITOR_LANGUAGE_SESSION=stdio` 只作为 diagnostics / documentSymbols 的可回退 spike，不代表正式 backend 已完成。
+
 ## 状态分类
 
 | 分类 | 当前例子 | 未来归属 | 规则 |
@@ -169,6 +171,7 @@ EditorBackendClient
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:structure
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:language-session
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:runtime-http
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:line-map-http

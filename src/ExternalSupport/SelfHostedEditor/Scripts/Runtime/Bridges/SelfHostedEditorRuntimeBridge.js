@@ -3,7 +3,7 @@ import { EditorBackendClient } from "../../Backend/Clients/EditorBackendClient.j
 export class SelfHostedEditorRuntimeBridge {
   constructor(options = {}) {
     this.backendClient = options.backendClient || new EditorBackendClient();
-    this.sessionId = this.createSessionId();
+    this.sessionId = options.sessionId || this.backendClient.sessionId || this.createSessionId();
     this.workspaceContextProvider = null;
   }
 

@@ -14,6 +14,7 @@
     "check:static-assets-http": "node DevScripts/SelfHostedEditorStaticAssetHttpSmoke.js",
     "check:session-cache": "node DevScripts/SelfHostedEditorSessionCacheContractCheck.js",
     "check:session-cache-http": "node DevScripts/SelfHostedEditorSessionCacheHttpSmoke.js",
+    "check:language-session": "node DevScripts/SelfHostedEditorLanguageSessionBridgeContractCheck.js",
     "check:host-binding-http": "node DevScripts/SelfHostedEditorHostBindingHttpSmoke.js",
     "check:host-binding": "node DevScripts/SelfHostedEditorHostBindingSmoke.js",
     "check:host-schema-http": "node DevScripts/SelfHostedEditorHostSchemaHttpSmoke.js",

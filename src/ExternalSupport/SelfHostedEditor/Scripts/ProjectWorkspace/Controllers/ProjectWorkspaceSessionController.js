@@ -15,6 +15,8 @@ export class ProjectWorkspaceSessionController {
     const runtimeItems = [
       this.createStateItem("View", sessionState.viewLabel || "editor"),
       this.createStateItem("Layout", sessionState.layoutLabel || "split"),
+      this.createStateItem("Backend", sessionState.backendModeLabel || "dev-host"),
+      this.createStateItem("Session", sessionState.backendSessionLabel || "default"),
       this.createStateItem("Diagnostics", sessionState.diagnosticsLabel || "fallback"),
       this.createStateItem("Runtime", sessionState.runtimeLabel || "unavailable"),
     ];

@@ -112,10 +112,11 @@ export class LocalizationCsvFileController {
 
   async getUpdatedCsvPayload() {
     const lastScriptText = this.getLastScriptText();
-    if (!this.reviewBridge || !this.previousCsvText.trim() || !lastScriptText) {
+    const readiness = this.getUpdatedExportReadiness();
+    if (readiness !== "Updated export ready" || !lastScriptText) {
       return {
         csv: "",
-        error: this.getUpdatedExportReadiness(),
+        error: lastScriptText ? readiness : "Updated export needs script text",
         provider: "localization-update-unavailable",
       };
     }

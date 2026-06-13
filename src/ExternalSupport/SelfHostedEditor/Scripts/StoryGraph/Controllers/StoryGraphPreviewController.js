@@ -66,11 +66,29 @@ export class StoryGraphPreviewController {
   }
 
   render(graphModel, fallbackScriptText = "") {
-    const documentModel = graphModel || ScriptDocumentFallbackPolicy.buildDocumentModel(fallbackScriptText, {
-      reason: ScriptDocumentFallbackReason.StoryGraphCompilerGraphUnavailable,
-    });
+    let graphDocument;
+    try {
+      graphDocument = this.buildGraphDocumentModel(graphModel, fallbackScriptText);
+    } catch (error) {
+      this.activeGraph = null;
+      this.panelElement.dataset.graphProvider = "contract-error";
+      this.panelElement.replaceChildren(
+        this.createGraphProviderStatus("contract-error"),
+        this.createGraphContractError(error)
+      );
+      console.error("SelfHostedEditor story graph contract error:", error);
+      return;
+    }
+
+    const documentModel = graphDocument.documentModel;
+    const graphProvider = graphDocument.provider;
     if ((documentModel.nodes || []).length === 0) {
-      this.panelElement.replaceChildren(this.createEmptyState());
+      this.activeGraph = null;
+      this.panelElement.dataset.graphProvider = graphProvider;
+      this.panelElement.replaceChildren(
+        this.createGraphProviderStatus(graphProvider),
+        this.createEmptyState()
+      );
       return;
     }
 
@@ -99,8 +117,55 @@ export class StoryGraphPreviewController {
     }
 
     this.viewportController.applyTransform();
-    this.panelElement.replaceChildren(viewport);
+    this.panelElement.dataset.graphProvider = graphProvider;
+    this.panelElement.replaceChildren(this.createGraphProviderStatus(graphProvider), viewport);
     this.scheduleEdgeRefresh();
+  }
+
+  buildGraphDocumentModel(graphModel, fallbackScriptText) {
+    if (graphModel?.provider === "compiler-project") {
+      this.assertCompilerGraphModel(graphModel);
+      return {
+        documentModel: graphModel,
+        provider: "compiler-project",
+      };
+    }
+
+    return {
+      documentModel: ScriptDocumentFallbackPolicy.buildDocumentModel(fallbackScriptText, {
+        reason: ScriptDocumentFallbackReason.StoryGraphCompilerGraphUnavailable,
+      }),
+      provider: "offline-draft",
+    };
+  }
+
+  assertCompilerGraphModel(graphModel) {
+    if (!Array.isArray(graphModel.nodes)) {
+      throw new Error("Compiler story graph contract violation: compiler-project graph must expose a nodes array.");
+    }
+
+    if (!Array.isArray(graphModel.edges)) {
+      throw new Error("Compiler story graph contract violation: compiler-project graph must expose an edges array.");
+    }
+
+    graphModel.nodes.forEach((node, index) => {
+      const title = node?.title || `graph index ${index}`;
+      if (!node || typeof node !== "object") {
+        throw new Error(`Compiler story graph contract violation: node at graph index ${index} must be an object.`);
+      }
+
+      if (!String(node.title || "").trim()) {
+        throw new Error(`Compiler story graph contract violation: node at graph index ${index} has no title.`);
+      }
+
+      if (!Number.isFinite(Number(node.sourceLine)) || Number(node.sourceLine) <= 0) {
+        throw new Error(`Compiler story graph contract violation: node "${title}" has no valid sourceLine.`);
+      }
+
+      if (!Array.isArray(node.choices) || !Array.isArray(node.jumps)) {
+        throw new Error(`Compiler story graph contract violation: node "${title}" must expose choices and jumps arrays.`);
+      }
+    });
   }
 
   scheduleEdgeRefresh() {
@@ -448,6 +513,41 @@ export class StoryGraphPreviewController {
     panel.className = "placeholder-panel";
     panel.innerHTML = "<h1>No nodes yet</h1><p>Add a # title to create the first graph node.</p>";
     return panel;
+  }
+
+  createGraphContractError(error) {
+    const panel = document.createElement("div");
+    panel.className = "placeholder-panel";
+    const title = document.createElement("h1");
+    title.textContent = "Graph data error";
+    const message = document.createElement("p");
+    message.textContent = error instanceof Error ? error.message : String(error);
+    panel.append(title, message);
+    return panel;
+  }
+
+  createGraphProviderStatus(provider) {
+    const status = document.createElement("div");
+    status.className = "graph-provider-status";
+    status.dataset.provider = provider;
+    status.textContent = this.getGraphProviderLabel(provider);
+    return status;
+  }
+
+  getGraphProviderLabel(provider) {
+    if (provider === "compiler-project") {
+      return "Compiler graph";
+    }
+
+    if (provider === "offline-draft") {
+      return "Offline draft graph";
+    }
+
+    if (provider === "contract-error") {
+      return "Graph data error";
+    }
+
+    return "Graph unavailable";
   }
 
   notifySourceLineSelected(lineNumber, sourcePath = "") {

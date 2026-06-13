@@ -66,6 +66,18 @@
   max-width: var(--preview-width);
 }
 
+.story-preview-provider {
+  color: var(--muted);
+  font-family: "Inter", "Segoe UI", sans-serif;
+  font-size: 9px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  margin-bottom: 24px;
+  opacity: 0.62;
+  text-transform: uppercase;
+}
+
 .story-title {
   color: var(--text);
   font-size: 34px;

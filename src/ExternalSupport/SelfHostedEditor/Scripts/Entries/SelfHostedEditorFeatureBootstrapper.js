@@ -191,6 +191,7 @@ export async function createSelfHostedEditorFeatures(bindings, callbacks = {}) {
   );
 
   return {
+    backendClient,
     diagnosticsBridge,
     diagnosticsController,
     documentOutlineController,

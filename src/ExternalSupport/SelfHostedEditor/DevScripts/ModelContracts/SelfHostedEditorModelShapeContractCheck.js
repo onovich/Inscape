@@ -9,7 +9,9 @@ import {
 import { ScriptDocumentModelBuilder } from "../../Scripts/ProjectWorkspace/Models/ScriptDocumentModelBuilder.js";
 import { ScriptLineIdentityModelBuilder } from "../../Scripts/ProjectWorkspace/Models/ScriptLineIdentityModelBuilder.js";
 import { ScriptNodeRenamePatchBuilder } from "../../Scripts/ProjectWorkspace/Models/ScriptNodeRenamePatchBuilder.js";
+import { ProjectWorkspaceDraftSummaryModelBuilder } from "../../Scripts/ProjectWorkspace/Models/ProjectWorkspaceDraftSummaryModelBuilder.js";
 import { ProjectWorkspaceSummaryModelBuilder } from "../../Scripts/ProjectWorkspace/Models/ProjectWorkspaceSummaryModelBuilder.js";
+import { WorkspaceSummaryHostedModelBuilder } from "../../Scripts/ProjectWorkspace/Models/WorkspaceSummaryHostedModelBuilder.js";
 import { DocumentOutlineController } from "../../Scripts/ProjectWorkspace/Controllers/DocumentOutlineController.js";
 import { ProjectWorkspaceSummaryController } from "../../Scripts/ProjectWorkspace/Controllers/ProjectWorkspaceSummaryController.js";
 import { LocalizationDraftCsvBuilder } from "../../Scripts/Localization/Models/LocalizationDraftCsvBuilder.js";
@@ -17,12 +19,13 @@ import { LocalizationDraftStore } from "../../Scripts/Localization/Models/Locali
 import { EditorHoverTargetModelBuilder } from "../../Scripts/EditorAuthoring/Models/EditorHoverTargetModelBuilder.js";
 import { EditorCompletionTargetModelBuilder } from "../../Scripts/EditorAuthoring/Models/EditorCompletionTargetModelBuilder.js";
 import { EditorReferenceOverlayController } from "../../Scripts/EditorAuthoring/Controllers/EditorReferenceOverlayController.js";
+import { SelfHostedEditorDocumentSymbolBridge } from "../../Scripts/LanguageServer/Bridges/SelfHostedEditorDocumentSymbolBridge.js";
 import { LanguageServerCompletionModelMapper } from "../../Scripts/LanguageServer/Models/LanguageServerCompletionModelMapper.js";
 import { LanguageServerDefinitionModelMapper } from "../../Scripts/LanguageServer/Models/LanguageServerDefinitionModelMapper.js";
 import { LanguageServerDiagnosticModelMapper } from "../../Scripts/LanguageServer/Models/LanguageServerDiagnosticModelMapper.js";
 import { LanguageServerDocumentSymbolModelMapper } from "../../Scripts/LanguageServer/Models/LanguageServerDocumentSymbolModelMapper.js";
 import { LanguageServerReferenceModelMapper } from "../../Scripts/LanguageServer/Models/LanguageServerReferenceModelMapper.js";
-import { assertEqual, assertIncludes, assertIncludesText, createHoverModel, getTextContent, installFakeDomEnvironment } from "./SelfHostedEditorModelContractHarness.js";
+import { assertEqual, assertIncludes, assertIncludesText, assertNotIncludesText, createHoverModel, getTextContent, installFakeDomEnvironment } from "./SelfHostedEditorModelContractHarness.js";
 
 const sample = `# Start
 旁白：Hello
@@ -206,7 +209,8 @@ assertEqual(draftStore.getTranslation(documentModel.translatableLines[0]), "Hell
 const csv = LocalizationDraftCsvBuilder.build(documentModel.translatableLines, draftStore);
 assertIncludesText(csv, "translationDraft");
 assertIncludesText(csv, "Hello translated");
-const summary = ProjectWorkspaceSummaryModelBuilder.build(sample, draftStore);
+const summary = ProjectWorkspaceDraftSummaryModelBuilder.build(sample, draftStore);
+const summaryCompatibility = ProjectWorkspaceSummaryModelBuilder.build(sample, draftStore);
 assertEqual(summary.nodeCount, 2, "summary node count");
 assertEqual(summary.localizationLineCount, 2, "summary localization count");
 assertEqual(summary.draftTranslationCount, 1, "summary draft count");
@@ -214,11 +218,73 @@ assertEqual(summary.diagnosticCount, 4, "summary diagnostic count");
 assertEqual(summary.provider, "draft-fallback", "summary provider");
 assertEqual(summary.fallback.reason, ScriptDocumentFallbackReason.WorkspaceSummaryStatus, "summary fallback reason");
 assertEqual(summary.fallback.category, ScriptDocumentFallbackCategory.MigrationTarget, "summary fallback category");
+assertEqual(summaryCompatibility.provider, "draft-fallback", "summary compatibility provider");
+const hostedSummaryRows = [
+  {
+    anchor: "hosted-anchor-1",
+    kind: "dialogue",
+    nodeTitle: "Start",
+    sourceLine: 2,
+    text: "Hello",
+  },
+];
+draftStore.setTranslation(hostedSummaryRows[0], "Hosted translated");
+const hostedSummary = WorkspaceSummaryHostedModelBuilder.build({
+  diagnosticSnapshot: {
+    diagnostics: [
+      {
+        message: "Hosted problem",
+      },
+    ],
+    provider: "language-server",
+  },
+  localizationDraftStore: draftStore,
+  localizationSummary: {
+    provider: "localization-review",
+    rows: hostedSummaryRows,
+  },
+  runtimeSnapshot: {
+    provider: "runtime-project",
+  },
+  storyGraphModel: {
+    nodes: [
+      {
+        isInActiveDocument: true,
+        title: "Start",
+      },
+      {
+        isInActiveDocument: false,
+        title: "Other",
+      },
+    ],
+    provider: "compiler-project",
+  },
+});
+assertEqual(hostedSummary.nodeCount, 1, "hosted summary active node count");
+assertEqual(hostedSummary.localizationLineCount, 1, "hosted summary localization count");
+assertEqual(hostedSummary.draftTranslationCount, 1, "hosted summary draft count");
+assertEqual(hostedSummary.diagnosticCount, 1, "hosted summary diagnostic count");
+assertEqual(hostedSummary.provider, "shared", "hosted summary provider");
+assertEqual(hostedSummary.sources.storyGraphProvider, "compiler-project", "hosted summary graph source");
+assertEqual(
+  WorkspaceSummaryHostedModelBuilder.build({
+    localizationDraftStore: draftStore,
+    localizationSummary: {
+      provider: "localization-review",
+      rows: hostedSummaryRows,
+    },
+    storyGraphModel: null,
+  }),
+  null,
+  "hosted summary unavailable without compiler graph"
+);
 const { document: fakeDocument } = installFakeDomEnvironment();
 const summaryPanel = fakeDocument.createElement("div");
 const summaryController = new ProjectWorkspaceSummaryController(summaryPanel);
 summaryController.render(summary);
 assertIncludesText(getTextContent(summaryPanel), "draft summary");
+summaryController.render(hostedSummary);
+assertIncludesText(getTextContent(summaryPanel), "shared summary");
 const outlinePanel = fakeDocument.createElement("div");
 const outlineController = new DocumentOutlineController(outlinePanel);
 outlineController.render({
@@ -243,6 +309,14 @@ outlineController.render({
   ],
 }, documentModel);
 assertIncludesText(getTextContent(outlinePanel), "Draft outline");
+outlineController.render({
+  error: "LanguageServer document symbols contract violation: symbol 0 is missing location.",
+  provider: "language-server-error",
+  symbols: [],
+}, documentModel);
+assertIncludesText(getTextContent(outlinePanel), "LanguageServer outline error");
+assertIncludesText(getTextContent(outlinePanel), "missing location");
+assertNotIncludesText(getTextContent(outlinePanel), "Draft outline");
 
 const hoverModel = createHoverModel("# Opening\r\n- Review -> Witness\r\n-> Evidence");
 const nodeHoverTarget = EditorHoverTargetModelBuilder.build(hoverModel, { lineNumber: 1, column: 4 });
@@ -321,6 +395,58 @@ const symbolMapper = LanguageServerDocumentSymbolModelMapper.mapSymbols({
 });
 assertEqual(symbolMapper.length, 1, "symbol mapper count");
 assertEqual(symbolMapper[0].sourceLine, 4, "symbol mapper line");
+let malformedSymbolsFailed = false;
+try {
+  LanguageServerDocumentSymbolModelMapper.mapSymbols({
+    symbols: [
+      {
+        name: "Broken",
+      },
+    ],
+  });
+} catch (error) {
+  malformedSymbolsFailed = true;
+  assertIncludesText(error instanceof Error ? error.message : String(error), "missing location");
+}
+assertEqual(malformedSymbolsFailed, true, "symbol mapper rejects malformed payload");
+const unavailableDocumentSymbolsBridge = new SelfHostedEditorDocumentSymbolBridge({
+  backendClient: {
+    languageSession: {
+      async documentSymbols() {
+        throw new Error("LanguageServer unavailable");
+      },
+    },
+  },
+});
+const originalConsoleWarn = console.warn;
+console.warn = () => {};
+let unavailableDocumentSymbols;
+try {
+  unavailableDocumentSymbols = await unavailableDocumentSymbolsBridge.getDocumentSymbols(sample);
+} finally {
+  console.warn = originalConsoleWarn;
+}
+assertEqual(unavailableDocumentSymbols.provider, "draft-fallback", "unavailable document symbols use draft fallback");
+assertEqual(unavailableDocumentSymbols.symbols.length, 2, "unavailable document symbols draft count");
+const malformedDocumentSymbolsBridge = new SelfHostedEditorDocumentSymbolBridge({
+  backendClient: {
+    languageSession: {
+      async documentSymbols() {
+        return {
+          symbols: [
+            {
+              name: "Broken",
+            },
+          ],
+        };
+      },
+    },
+  },
+});
+const malformedDocumentSymbols = await malformedDocumentSymbolsBridge.getDocumentSymbols(sample);
+assertEqual(malformedDocumentSymbols.provider, "language-server-error", "malformed document symbols stay error");
+assertEqual(malformedDocumentSymbols.symbols.length, 0, "malformed document symbols do not use draft rows");
+assertIncludesText(malformedDocumentSymbols.error, "missing location");
 const definition = LanguageServerDefinitionModelMapper.mapDefinition({
   definition: {
     name: "Opening",

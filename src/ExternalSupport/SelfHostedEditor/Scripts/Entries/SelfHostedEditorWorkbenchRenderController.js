@@ -1,8 +1,10 @@
-import { ProjectWorkspaceSummaryModelBuilder } from "../ProjectWorkspace/Models/ProjectWorkspaceSummaryModelBuilder.js";
+import { ProjectWorkspaceDraftSummaryModelBuilder } from "../ProjectWorkspace/Models/ProjectWorkspaceDraftSummaryModelBuilder.js";
 import { ScriptLineIdentityModelBuilder } from "../ProjectWorkspace/Models/ScriptLineIdentityModelBuilder.js";
+import { WorkspaceSummaryHostedModelBuilder } from "../ProjectWorkspace/Models/WorkspaceSummaryHostedModelBuilder.js";
 
 export class SelfHostedEditorWorkbenchRenderController {
   constructor({
+    backendClient,
     diagnosticsBridge,
     diagnosticsController,
     documentOutlineController,
@@ -24,6 +26,7 @@ export class SelfHostedEditorWorkbenchRenderController {
     workspaceSessionController,
     workspaceSummaryController,
   }) {
+    this.backendClient = backendClient;
     this.diagnosticsBridge = diagnosticsBridge;
     this.diagnosticsController = diagnosticsController;
     this.documentOutlineController = documentOutlineController;
@@ -50,9 +53,24 @@ export class SelfHostedEditorWorkbenchRenderController {
       provider: "draft-fallback",
     };
     this.latestLineIdentityProvider = null;
+    this.latestLocalizationSummary = {
+      provider: "unavailable",
+      rows: [],
+    };
     this.latestRuntimeSnapshot = {
       provider: "unavailable",
       snapshot: null,
+    };
+    this.latestStoryGraphModel = null;
+    this.latestBackendSessionStatus = {
+      mode: "dev-host",
+      sessionId: this.backendClient?.sessionId || "default",
+      workspace: {
+        activeRelativePath: "",
+        documentCount: 0,
+        revision: 1,
+        source: "temporary-workspace",
+      },
     };
   }
 
@@ -93,6 +111,11 @@ export class SelfHostedEditorWorkbenchRenderController {
     const documentModel = this.editorController.renderAuthoringState(scriptText, this.latestLineIdentityProvider);
     this.loadingController.setIdle("editor");
     await this.localizationController.render(scriptText);
+    if (renderVersion !== this.diagnosticsRenderVersion) {
+      return;
+    }
+
+    this.latestLocalizationSummary = this.localizationController.getSummarySnapshot();
     this.loadingController.setIdle("localization");
     await this.hostCapabilityCatalogController.render(scriptText);
     this.loadingController.setIdle("host");
@@ -101,10 +124,13 @@ export class SelfHostedEditorWorkbenchRenderController {
       return;
     }
 
-    this.latestRuntimeSnapshot = await this.runtimeBridge.getRuntimeSnapshot(scriptText);
+    const storyGraphModel = storyGraphSnapshot.graph;
+    const runtimeSnapshot = await this.runtimeBridge.getRuntimeSnapshot(scriptText);
     if (renderVersion !== this.diagnosticsRenderVersion) {
       return;
     }
+    this.latestStoryGraphModel = storyGraphModel;
+    this.latestRuntimeSnapshot = runtimeSnapshot;
     this.loadingController.setIdle("runtime");
 
     this.previewController.render(
@@ -132,16 +158,57 @@ export class SelfHostedEditorWorkbenchRenderController {
     this.editorStatusController.renderDiagnosticSnapshot(diagnosticSnapshot);
     this.documentOutlineController.render(symbolSnapshot, documentModel);
     this.documentOutlineController.setActiveLine(activeLineNumber);
-    this.renderWorkspaceSummary(scriptText, diagnosticSnapshot.diagnostics.length);
+    this.renderWorkspaceSummary(scriptText, diagnosticSnapshot);
     this.loadingController.setIdle("summary");
+    await this.refreshBackendSessionStatus();
+    if (renderVersion !== this.diagnosticsRenderVersion) {
+      return;
+    }
     this.loadingController.setIdle("status");
     this.renderWorkspaceSession();
   }
 
-  renderWorkspaceSummary(scriptText, diagnosticsCount) {
-    this.workspaceSummaryController.render(
-      ProjectWorkspaceSummaryModelBuilder.build(scriptText, this.localizationDraftStore, diagnosticsCount)
+  async refreshBackendSessionStatus() {
+    if (typeof this.backendClient?.projectSession?.status !== "function") {
+      return;
+    }
+
+    try {
+      this.latestBackendSessionStatus = await this.backendClient.projectSession.status({
+        workspace: this.workspaceController.getWorkspaceContext(),
+      });
+    } catch (error) {
+      const workspace = this.workspaceController.getWorkspaceContext();
+      this.latestBackendSessionStatus = {
+        error: error instanceof Error ? error.message : String(error),
+        mode: "dev-host",
+        sessionId: this.backendClient.sessionId || "default",
+        workspace: {
+          activeRelativePath: workspace.currentFilePath || "",
+          documentCount: Array.isArray(workspace.documents) ? workspace.documents.length : 0,
+          revision: workspace.revision || 1,
+          source: "request-snapshot",
+        },
+      };
+    }
+  }
+
+  renderWorkspaceSummary(scriptText, diagnosticSnapshot = null) {
+    const nextDiagnosticSnapshot = diagnosticSnapshot || this.latestDiagnosticSnapshot;
+    const hostedSummary = WorkspaceSummaryHostedModelBuilder.build({
+      diagnosticSnapshot: nextDiagnosticSnapshot,
+      localizationDraftStore: this.localizationDraftStore,
+      localizationSummary: this.latestLocalizationSummary,
+      runtimeSnapshot: this.latestRuntimeSnapshot,
+      storyGraphModel: this.latestStoryGraphModel,
+    });
+    const summary = hostedSummary || ProjectWorkspaceDraftSummaryModelBuilder.build(
+      scriptText,
+      this.localizationDraftStore,
+      Array.isArray(nextDiagnosticSnapshot?.diagnostics) ? nextDiagnosticSnapshot.diagnostics.length : null
     );
+
+    this.workspaceSummaryController.render(summary);
   }
 
   renderWorkspaceSession() {
@@ -153,10 +220,17 @@ export class SelfHostedEditorWorkbenchRenderController {
       diagnosticsLabel: this.latestDiagnosticSnapshot.provider === "language-server"
         ? "LanguageServer"
         : "Draft fallback",
+      backendModeLabel: this.latestBackendSessionStatus.mode || "dev-host",
+      backendSessionLabel: this.formatSessionLabel(this.latestBackendSessionStatus.sessionId),
       runtimeLabel: this.latestRuntimeSnapshot.provider === "runtime-project"
         ? (this.latestRuntimeSnapshot.snapshot?.state?.currentNodeName || "started")
         : "unavailable",
     });
+  }
+
+  formatSessionLabel(sessionId) {
+    const text = String(sessionId || "default");
+    return text.length > 24 ? `${text.slice(0, 21)}...` : text;
   }
 
   renderWorkspaceFiles() {

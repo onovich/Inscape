@@ -1,8 +1,12 @@
 export class LocalizationReviewRowsModelBuilder {
   static build(reviewSnapshot) {
-    const presenterItems = reviewSnapshot?.review?.presenter?.items;
-    if (!Array.isArray(presenterItems) || presenterItems.length === 0) {
+    if (reviewSnapshot?.provider !== "localization-review") {
       return null;
+    }
+
+    const presenterItems = reviewSnapshot?.review?.presenter?.items;
+    if (!Array.isArray(presenterItems)) {
+      return [];
     }
 
     return presenterItems.map((presenterItem) => {

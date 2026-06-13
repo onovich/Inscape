@@ -4,7 +4,7 @@ export class SelfHostedEditorLocalizationReviewBridge {
   constructor(options = {}) {
     this.backendClient = options.backendClient || new EditorBackendClient();
     this.lastSentPreviousCsv = "";
-    this.sessionId = "self-hosted-editor-localization";
+    this.sessionId = options.sessionId || this.backendClient.sessionId || "self-hosted-editor-localization";
     this.workspaceContextProvider = null;
   }
 

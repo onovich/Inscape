@@ -20,6 +20,7 @@ export class PreviewPanelController {
     this.mode = "static";
     this.currentNodeTitle = "";
     this.documentModel = null;
+    this.documentProvider = "unavailable";
     this.latestStoryModel = null;
     this.storyGraphModel = null;
     this.scriptText = "";
@@ -60,13 +61,13 @@ export class PreviewPanelController {
     this.scriptText = scriptText;
     this.activeLineNumber = activeLineNumber;
     this.storyGraphModel = storyGraphModel;
-    const draftDocumentModel = ScriptDocumentFallbackPolicy.buildDocumentModel(scriptText, {
-      reason: ScriptDocumentFallbackReason.PreviewCompilerGraphUnavailable,
-    });
     try {
-      this.documentModel = this.compilerGraphContractGuard.buildDocumentModelFromStoryGraph(storyGraphModel) || draftDocumentModel;
+      const previewDocument = this.buildPreviewDocumentModel(scriptText, storyGraphModel);
+      this.documentModel = previewDocument.documentModel;
+      this.documentProvider = previewDocument.provider;
     } catch (error) {
       this.documentModel = null;
+      this.documentProvider = "contract-error";
       this.latestStoryModel = null;
       this.currentNodeTitle = "";
       this.renderContractError(error);
@@ -94,6 +95,23 @@ export class PreviewPanelController {
       fallbackStoryModel: this.buildPreviewModel(activeLineNumber),
       runtimeSnapshot,
     });
+  }
+
+  buildPreviewDocumentModel(scriptText, storyGraphModel) {
+    const compilerDocumentModel = this.compilerGraphContractGuard.buildDocumentModelFromStoryGraph(storyGraphModel);
+    if (compilerDocumentModel) {
+      return {
+        documentModel: compilerDocumentModel,
+        provider: "compiler-project",
+      };
+    }
+
+    return {
+      documentModel: ScriptDocumentFallbackPolicy.buildDocumentModel(scriptText, {
+        reason: ScriptDocumentFallbackReason.PreviewCompilerGraphUnavailable,
+      }),
+      provider: "offline-draft",
+    };
   }
 
   renderRuntimeSnapshot(runtimeSnapshot) {
@@ -131,11 +149,13 @@ export class PreviewPanelController {
         })),
       ];
     this.previewElement.replaceChildren(
+      this.createPreviewProviderStatus(storyModel),
       ...(historyElement ? [historyElement] : []),
       ...storyElements,
       this.choiceRenderer.createChoicesElement(shouldShowChoices ? storyModel.choices : [])
     );
     this.previewElement.dataset.previewMode = this.mode;
+    this.previewElement.dataset.previewProvider = storyModel.provider || this.documentProvider;
     delete this.previewElement.dataset.previewState;
   }
 
@@ -155,7 +175,37 @@ export class PreviewPanelController {
     errorElement.append(title, message);
     this.previewElement.replaceChildren(errorElement);
     this.previewElement.dataset.previewMode = this.mode;
+    this.previewElement.dataset.previewProvider = "contract-error";
     this.previewElement.dataset.previewState = "error";
+  }
+
+  createPreviewProviderStatus(storyModel) {
+    const provider = storyModel.provider || this.documentProvider;
+    const status = document.createElement("div");
+    status.className = "story-preview-provider";
+    status.dataset.provider = provider;
+    status.textContent = this.getPreviewProviderLabel(provider);
+    return status;
+  }
+
+  getPreviewProviderLabel(provider) {
+    if (provider === "runtime") {
+      return "Runtime preview";
+    }
+
+    if (provider === "compiler-project") {
+      return "Compiler preview";
+    }
+
+    if (provider === "offline-draft") {
+      return "Offline draft preview";
+    }
+
+    if (provider === "contract-error") {
+      return "Preview data error";
+    }
+
+    return "Preview unavailable";
   }
 
   highlightSourceLine(lineNumber, options = {}) {
@@ -364,6 +414,7 @@ export class PreviewPanelController {
       choices: previewNode?.choices || [],
       lines: previewNode?.lines || [],
       nodeTitle: previewNode?.title || "",
+      provider: this.documentProvider,
       runtimeState: null,
       sourceLine: Number(previewNode?.sourceLine || 0),
       title: previewNode?.title || this.documentModel?.title || "Untitled Node",

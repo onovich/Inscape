@@ -16,29 +16,42 @@ export class SelfHostedEditorDocumentSymbolBridge {
   }
 
   async getDocumentSymbols(scriptText) {
+    let payload;
     try {
-      const payload = await this.backendClient.languageSession.documentSymbols({
+      payload = await this.backendClient.languageSession.documentSymbols({
         scriptText,
         workspace: this.workspaceContextProvider?.() || null,
       });
+    } catch (error) {
+      console.warn("SelfHostedEditor document symbols fallback:", error);
+      return this.buildDraftFallback(scriptText);
+    }
 
+    try {
       return {
         provider: "language-server",
         symbols: LanguageServerDocumentSymbolModelMapper.mapSymbols(payload),
       };
     } catch (error) {
-      console.warn("SelfHostedEditor document symbols fallback:", error);
-      const documentModel = ScriptDocumentFallbackPolicy.buildDocumentModel(scriptText, {
-        reason: ScriptDocumentFallbackReason.DocumentSymbolsLanguageServerUnavailable,
-      });
       return {
-        provider: "draft-fallback",
-        symbols: documentModel.nodes.map((node) => ({
-          kind: "node",
-          name: node.title,
-          sourceLine: node.sourceLine,
-        })),
+        error: error instanceof Error ? error.message : String(error),
+        provider: "language-server-error",
+        symbols: [],
       };
     }
+  }
+
+  buildDraftFallback(scriptText) {
+    const documentModel = ScriptDocumentFallbackPolicy.buildDocumentModel(scriptText, {
+      reason: ScriptDocumentFallbackReason.DocumentSymbolsLanguageServerUnavailable,
+    });
+    return {
+      provider: "draft-fallback",
+      symbols: documentModel.nodes.map((node) => ({
+        kind: "node",
+        name: node.title,
+        sourceLine: node.sourceLine,
+      })),
+    };
   }
 }

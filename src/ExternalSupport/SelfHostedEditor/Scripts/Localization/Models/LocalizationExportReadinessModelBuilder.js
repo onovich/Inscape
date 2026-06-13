@@ -2,9 +2,10 @@ export class LocalizationExportReadinessModelBuilder {
   static getUpdatedExportReadiness({
     previousCsvText = "",
     reviewBridge = null,
+    reviewProvider = "draft-fallback",
     rows = [],
   }) {
-    if (!reviewBridge) {
+    if (!reviewBridge || reviewProvider !== "localization-review") {
       return "Updated export unavailable in draft fallback mode";
     }
 
@@ -28,6 +29,7 @@ export class LocalizationExportReadinessModelBuilder {
     previousCsvFileHandle = null,
     previousCsvText = "",
     reviewBridge = null,
+    reviewProvider = "draft-fallback",
     rows = [],
   }) {
     if (!previousCsvFileHandle) {
@@ -37,6 +39,7 @@ export class LocalizationExportReadinessModelBuilder {
     const updatedReadiness = this.getUpdatedExportReadiness({
       previousCsvText,
       reviewBridge,
+      reviewProvider,
       rows,
     });
     if (updatedReadiness !== "Updated export ready") {
