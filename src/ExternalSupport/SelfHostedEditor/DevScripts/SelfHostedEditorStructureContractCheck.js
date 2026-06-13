@@ -49,6 +49,8 @@ const requiredPaths = [
   "Resources/Styles/SelfHostedEditorNodeMapReview.css",
   "Resources/Styles/SelfHostedEditorPreview.css",
   "Resources/Styles/SelfHostedEditorStoryGraph.css",
+  "Resources/Styles/SelfHostedEditorSidebar.css",
+  "Resources/Styles/SelfHostedEditorTopbar.css",
   "Resources/Styles/SelfHostedEditorWorkspaceLayout.css",
   "Resources/Styles/SelfHostedEditorWorkbench.css",
   "Scripts/Backend/Clients/EditorBackendClient.js",
@@ -224,6 +226,8 @@ const workbenchLoadingStateCssPath = path.join(moduleRoot, "Resources/Styles/Sel
 const workbenchNodeMapReviewCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorNodeMapReview.css");
 const workbenchPreviewCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorPreview.css");
 const workbenchStoryGraphCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorStoryGraph.css");
+const workbenchSidebarCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorSidebar.css");
+const workbenchTopbarCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorTopbar.css");
 const workbenchWorkspaceLayoutCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorWorkspaceLayout.css");
 const workbenchCss = fs.readFileSync(workbenchCssPath, "utf8");
 const workbenchBaseCss = fs.readFileSync(workbenchBaseCssPath, "utf8");
@@ -235,11 +239,15 @@ const workbenchLoadingStateCss = fs.readFileSync(workbenchLoadingStateCssPath, "
 const workbenchNodeMapReviewCss = fs.readFileSync(workbenchNodeMapReviewCssPath, "utf8");
 const workbenchPreviewCss = fs.readFileSync(workbenchPreviewCssPath, "utf8");
 const workbenchStoryGraphCss = fs.readFileSync(workbenchStoryGraphCssPath, "utf8");
+const workbenchSidebarCss = fs.readFileSync(workbenchSidebarCssPath, "utf8");
+const workbenchTopbarCss = fs.readFileSync(workbenchTopbarCssPath, "utf8");
 const workbenchWorkspaceLayoutCss = fs.readFileSync(workbenchWorkspaceLayoutCssPath, "utf8");
 const normalizedWorkbenchCss = workbenchCss.replace(/\r\n/g, "\n");
 const expectedWorkbenchCssImports = [
   '@import url("./SelfHostedEditorBase.css");',
   '@import url("./SelfHostedEditorWorkspaceLayout.css");',
+  '@import url("./SelfHostedEditorSidebar.css");',
+  '@import url("./SelfHostedEditorTopbar.css");',
   '@import url("./SelfHostedEditorLoadingState.css");',
   '@import url("./SelfHostedEditorDiagnosticsStatus.css");',
   '@import url("./SelfHostedEditorEditorAuthoring.css");',
@@ -440,10 +448,39 @@ if (/^\.top-bar\s*{/m.test(workbenchLoadingStateCss) || /^\.workspace\s*{/m.test
   failed = true;
 }
 if (
+  !/^\.app-sidebar\s*{/m.test(workbenchSidebarCss)
+  || !/^\.sidebar-brand\s*{/m.test(workbenchSidebarCss)
+  || !/^\.view-tabs\s*{/m.test(workbenchSidebarCss)
+  || !/^\.workspace-files-shell,\s*\n\.document-outline-shell\s*{/m.test(workbenchSidebarCss.replace(/\r\n/g, "\n"))
+  || !/^\.workspace-session-panel,\s*\n\.workspace-runtime-panel\s*{/m.test(workbenchSidebarCss.replace(/\r\n/g, "\n"))
+  || !/@media\s+\(max-width: 900px\)/.test(workbenchSidebarCss)
+) {
+  console.error("SelfHostedEditorSidebar.css must retain sidebar shell, navigation, file/outline, session panel, and responsive sidebar rules.");
+  failed = true;
+}
+if (/^\.top-bar\s*{/m.test(workbenchSidebarCss) || /^\.workbench-body\s*{/m.test(workbenchSidebarCss) || /^\.editor-frame\s*{/m.test(workbenchSidebarCss)) {
+  console.error("SelfHostedEditorSidebar.css must not absorb top bar, workspace shell, or editor-surface rules.");
+  failed = true;
+}
+if (
+  !/^\.top-bar\s*{/m.test(workbenchTopbarCss)
+  || !/^\.top-bar-copy\s*{/m.test(workbenchTopbarCss)
+  || !/^\.layout-switcher\s*{/m.test(workbenchTopbarCss)
+  || !/^\.syntax-toggle\s*{/m.test(workbenchTopbarCss)
+  || !/^\.node-map-review-button\s*{/m.test(workbenchTopbarCss)
+  || !/@media\s+\(max-width: 900px\)/.test(workbenchTopbarCss)
+) {
+  console.error("SelfHostedEditorTopbar.css must retain top bar, layout switcher, syntax toggle, node-map action, and responsive top bar rules.");
+  failed = true;
+}
+if (/^\.app-sidebar\s*{/m.test(workbenchTopbarCss) || /^\.workbench-body\s*{/m.test(workbenchTopbarCss) || /^\.editor-frame\s*{/m.test(workbenchTopbarCss)) {
+  console.error("SelfHostedEditorTopbar.css must not absorb sidebar, workspace shell, or editor-surface rules.");
+  failed = true;
+}
+if (
   !/^button,\s*\n\.file-open-button\s*{/m.test(workbenchWorkspaceLayoutCss.replace(/\r\n/g, "\n"))
   || !/^\.app-shell\s*{/m.test(workbenchWorkspaceLayoutCss)
-  || !/^\.app-sidebar\s*{/m.test(workbenchWorkspaceLayoutCss)
-  || !/^\.top-bar\s*{/m.test(workbenchWorkspaceLayoutCss)
+  || !/^\.app-main\s*{/m.test(workbenchWorkspaceLayoutCss)
   || !/^\.workbench-body\s*{/m.test(workbenchWorkspaceLayoutCss)
   || !/^\.workspace\s*{/m.test(workbenchWorkspaceLayoutCss)
   || !/^\.workspace-summary\s*{/m.test(workbenchWorkspaceLayoutCss)
@@ -452,11 +489,11 @@ if (
   || !/@media\s+\(max-width: 1180px\)/.test(workbenchWorkspaceLayoutCss)
   || !/@media\s+\(max-width: 900px\)/.test(workbenchWorkspaceLayoutCss)
 ) {
-  console.error("SelfHostedEditorWorkspaceLayout.css must retain the shared shell, sidebar, top bar, workspace, shared panel shell, responsive layout, and pane title rules.");
+  console.error("SelfHostedEditorWorkspaceLayout.css must retain the shared shell, app main, workspace, shared panel shell, responsive layout, and pane title rules.");
   failed = true;
 }
-if (/data-loading-state/.test(workbenchWorkspaceLayoutCss) || /^\s*\.diagnostics-dock\s*{/m.test(workbenchWorkspaceLayoutCss) || /^\s*\.placeholder-panel\s*{/m.test(workbenchWorkspaceLayoutCss) || /^\s*\.status-bar\s*{/m.test(workbenchWorkspaceLayoutCss) || /^\s*\.story-preview\s*{/m.test(workbenchWorkspaceLayoutCss) || /^\.localization-toolbar\s*{/m.test(workbenchWorkspaceLayoutCss) || /^\s*\.editor-frame\s*{/m.test(workbenchWorkspaceLayoutCss)) {
-  console.error("SelfHostedEditorWorkspaceLayout.css must not absorb loading, diagnostics/status, localization, preview content, or editor-surface rules.");
+if (/data-loading-state/.test(workbenchWorkspaceLayoutCss) || /^\s*\.app-sidebar\s*{/m.test(workbenchWorkspaceLayoutCss) || /^\s*\.top-bar\s*{/m.test(workbenchWorkspaceLayoutCss) || /^\s*\.diagnostics-dock\s*{/m.test(workbenchWorkspaceLayoutCss) || /^\s*\.placeholder-panel\s*{/m.test(workbenchWorkspaceLayoutCss) || /^\s*\.status-bar\s*{/m.test(workbenchWorkspaceLayoutCss) || /^\s*\.story-preview\s*{/m.test(workbenchWorkspaceLayoutCss) || /^\.localization-toolbar\s*{/m.test(workbenchWorkspaceLayoutCss) || /^\s*\.editor-frame\s*{/m.test(workbenchWorkspaceLayoutCss)) {
+  console.error("SelfHostedEditorWorkspaceLayout.css must not absorb sidebar, top bar, loading, diagnostics/status, localization, preview content, or editor-surface rules.");
   failed = true;
 }
 

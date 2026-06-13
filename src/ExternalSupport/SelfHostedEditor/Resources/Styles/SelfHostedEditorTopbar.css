@@ -1,0 +1,126 @@
+.top-bar {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.82);
+  border-bottom: 1px solid rgba(39, 36, 31, 0.026);
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  min-height: 40px;
+  padding: 0 22px;
+}
+
+.top-bar-copy {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  min-width: 0;
+  opacity: 0.62;
+  transition: opacity 140ms ease;
+}
+
+.top-bar:hover .top-bar-copy {
+  opacity: 0.88;
+}
+
+.script-source-label {
+  color: var(--muted);
+  font-size: 8px;
+  opacity: 0.28;
+  transition: opacity 140ms ease;
+}
+
+.top-bar:hover .script-source-label {
+  opacity: 0.72;
+}
+
+.active-view-label {
+  color: var(--text);
+  font-size: 8px;
+  font-weight: 620;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.layout-switcher {
+  background: rgba(39, 36, 31, 0.025);
+  border: 1px solid rgba(39, 36, 31, 0.035);
+  border-radius: 999px;
+  display: inline-flex;
+  gap: 2px;
+  opacity: 0.54;
+  padding: 2px;
+  transition: opacity 140ms ease, background-color 140ms ease;
+}
+
+.top-bar:hover .layout-switcher {
+  opacity: 1;
+}
+
+.layout-switcher button {
+  border-radius: 999px;
+  font-size: 8px;
+  min-height: 16px;
+  padding-inline: 6px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.syntax-toggle {
+  border-radius: 999px;
+  color: rgba(101, 95, 84, 0.54);
+  font-size: 8px;
+  letter-spacing: 0.05em;
+  min-height: 22px;
+  opacity: 0.48;
+  padding-inline: 8px;
+  text-transform: uppercase;
+}
+
+.top-bar:hover .syntax-toggle {
+  opacity: 0.88;
+}
+
+.syntax-toggle[aria-pressed="true"] {
+  background: rgba(106, 109, 87, 0.1);
+  border-color: rgba(106, 109, 87, 0.18);
+  color: rgba(77, 84, 61, 0.86);
+}
+
+.syntax-toggle[aria-pressed="false"] {
+  background: transparent;
+  border-color: rgba(39, 36, 31, 0.045);
+  color: rgba(101, 95, 84, 0.42);
+}
+
+.node-map-review-button {
+  border-radius: 999px;
+  color: rgba(101, 95, 84, 0.54);
+  font-size: 8px;
+  letter-spacing: 0.05em;
+  min-height: 22px;
+  opacity: 0.48;
+  padding-inline: 8px;
+  text-transform: uppercase;
+}
+
+.top-bar:hover .node-map-review-button {
+  opacity: 0.88;
+}
+
+.node-map-review-button[data-node-map-state="loading"] {
+  background: rgba(123, 143, 158, 0.09);
+  border-color: rgba(123, 143, 158, 0.18);
+  color: rgba(65, 84, 98, 0.74);
+}
+
+.node-map-review-button:disabled {
+  cursor: default;
+}
+
+@media (max-width: 900px) {
+  .top-bar {
+    grid-template-columns: 1fr;
+    padding: 12px 16px;
+  }
+}

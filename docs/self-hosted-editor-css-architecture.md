@@ -12,29 +12,30 @@
 - `SelfHostedEditorBase.css` 持有全局 reset、设计 token 和基础变量。
 - feature CSS 只消费 token，不新增全局 reset。
 - layout CSS 不继续吸收 feature-specific 视觉规则。
-- 当前两个 legacy owner 允许短期高于目标行数，但不得继续增长：`SelfHostedEditorWorkspaceLayout.css` 与 `SelfHostedEditorEditorAuthoring.css`。
+- 当前唯一 legacy owner 允许短期高于目标行数，但不得继续增长：`SelfHostedEditorEditorAuthoring.css`。
 
 ## Inventory
 
 | File | Lines | Owner | Current limit | Target |
 |---|---:|---|---:|---:|
-| `SelfHostedEditorBase.css` | 32 | base tokens and reset | 200 | 200 |
-| `SelfHostedEditorDiagnosticsStatus.css` | 160 | diagnostics and status | 220 | 220 |
+| `SelfHostedEditorBase.css` | 36 | base tokens and reset | 200 | 200 |
+| `SelfHostedEditorDiagnosticsStatus.css` | 187 | diagnostics and status | 220 | 220 |
 | `SelfHostedEditorEditorAuthoring.css` | 659 | editor surface legacy owner | 659 | 450 |
-| `SelfHostedEditorHostCapability.css` | 113 | host capability | 200 | 220 |
-| `SelfHostedEditorLoadingState.css` | 128 | loading state | 200 | 200 |
-| `SelfHostedEditorLocalization.css` | 187 | localization | 260 | 400 |
-| `SelfHostedEditorNodeMapReview.css` | 161 | node-map review | 220 | 220 |
-| `SelfHostedEditorPreview.css` | 261 | preview | 400 | 400 |
-| `SelfHostedEditorStoryGraph.css` | 328 | story graph | 400 | 400 |
-| `SelfHostedEditorWorkbench.css` | 10 | style import composition | 20 | 20 |
-| `SelfHostedEditorWorkspaceLayout.css` | 722 | workspace layout legacy owner | 722 | 450 |
+| `SelfHostedEditorHostCapability.css` | 135 | host capability | 200 | 220 |
+| `SelfHostedEditorLoadingState.css` | 143 | loading state | 200 | 200 |
+| `SelfHostedEditorLocalization.css` | 219 | localization | 260 | 400 |
+| `SelfHostedEditorNodeMapReview.css` | 185 | node-map review | 220 | 220 |
+| `SelfHostedEditorPreview.css` | 303 | preview | 400 | 400 |
+| `SelfHostedEditorSidebar.css` | 366 | workspace sidebar | 380 | 380 |
+| `SelfHostedEditorStoryGraph.css` | 375 | story graph | 400 | 400 |
+| `SelfHostedEditorTopbar.css` | 127 | workspace top bar | 150 | 150 |
+| `SelfHostedEditorWorkbench.css` | 13 | style import composition | 20 | 20 |
+| `SelfHostedEditorWorkspaceLayout.css` | 233 | workspace shell layout | 260 | 450 |
 
 ## Next split order
 
-1. Split workspace shell/sidebar/topbar/status ownership from `SelfHostedEditorWorkspaceLayout.css`.
-2. Split editor frame, Monaco shell, hint rail, semantic decorations, and references overlay from `SelfHostedEditorEditorAuthoring.css`.
-3. Tighten the legacy owner limits to the target limits after both files are below 450 lines.
+1. Split editor frame, Monaco shell, hint rail, semantic decorations, and references overlay from `SelfHostedEditorEditorAuthoring.css`.
+2. Tighten the remaining legacy owner limit after the file is below 450 lines.
 
 ## Validation
 

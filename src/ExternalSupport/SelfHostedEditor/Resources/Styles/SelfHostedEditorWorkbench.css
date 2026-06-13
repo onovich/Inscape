@@ -1,5 +1,7 @@
 @import url("./SelfHostedEditorBase.css");
 @import url("./SelfHostedEditorWorkspaceLayout.css");
+@import url("./SelfHostedEditorSidebar.css");
+@import url("./SelfHostedEditorTopbar.css");
 @import url("./SelfHostedEditorLoadingState.css");
 @import url("./SelfHostedEditorDiagnosticsStatus.css");
 @import url("./SelfHostedEditorEditorAuthoring.css");

@@ -8,6 +8,8 @@ const stylesRoot = path.join(moduleRoot, "Resources", "Styles");
 const expectedImports = [
   "SelfHostedEditorBase.css",
   "SelfHostedEditorWorkspaceLayout.css",
+  "SelfHostedEditorSidebar.css",
+  "SelfHostedEditorTopbar.css",
   "SelfHostedEditorLoadingState.css",
   "SelfHostedEditorDiagnosticsStatus.css",
   "SelfHostedEditorEditorAuthoring.css",
@@ -28,8 +30,10 @@ const filePolicies = new Map([
   ["SelfHostedEditorNodeMapReview.css", { currentMaximum: 220, owner: "node-map review", targetMaximum: 220 }],
   ["SelfHostedEditorPreview.css", { currentMaximum: 400, owner: "preview", targetMaximum: 400 }],
   ["SelfHostedEditorStoryGraph.css", { currentMaximum: 400, owner: "story graph", targetMaximum: 400 }],
+  ["SelfHostedEditorSidebar.css", { currentMaximum: 380, owner: "workspace sidebar", targetMaximum: 380 }],
+  ["SelfHostedEditorTopbar.css", { currentMaximum: 150, owner: "workspace top bar", targetMaximum: 150 }],
   ["SelfHostedEditorWorkbench.css", { currentMaximum: 20, owner: "style import composition", targetMaximum: 20 }],
-  ["SelfHostedEditorWorkspaceLayout.css", { currentMaximum: 722, owner: "workspace layout legacy owner", targetMaximum: 450 }],
+  ["SelfHostedEditorWorkspaceLayout.css", { currentMaximum: 260, owner: "workspace shell layout", targetMaximum: 450 }],
 ]);
 
 let failed = false;
