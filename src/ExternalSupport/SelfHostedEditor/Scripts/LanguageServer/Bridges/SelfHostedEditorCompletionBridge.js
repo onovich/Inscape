@@ -1,7 +1,9 @@
 import { LanguageServerCompletionModelMapper } from "../Models/LanguageServerCompletionModelMapper.js";
+import { EditorBackendClient } from "../../Backend/Clients/EditorBackendClient.js";
 
 export class SelfHostedEditorCompletionBridge {
-  constructor() {
+  constructor(options = {}) {
+    this.backendClient = options.backendClient || new EditorBackendClient();
     this.workspaceContextProvider = null;
   }
 
@@ -11,22 +13,11 @@ export class SelfHostedEditorCompletionBridge {
 
   async getCompletions(scriptText) {
     try {
-      const response = await fetch("/api/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          scriptText,
-          workspace: this.workspaceContextProvider?.() || null,
-        }),
+      const payload = await this.backendClient.languageSession.completions({
+        scriptText,
+        workspace: this.workspaceContextProvider?.() || null,
       });
 
-      if (!response.ok) {
-        throw new Error(`Completions request failed with ${response.status}.`);
-      }
-
-      const payload = await response.json();
       return LanguageServerCompletionModelMapper.mapCompletions(payload);
     } catch (error) {
       console.warn("SelfHostedEditor completions fallback:", error);

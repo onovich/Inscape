@@ -91,16 +91,16 @@ export async function createSelfHostedEditorFeatures(bindings, callbacks = {}) {
   const editorController = await EditorSurfaceController.create(bindings.editorElement, bindings.hintRailElement);
   editorController.setSemanticHighlightEnabled(bindings.syntaxToggleElement?.getAttribute("aria-pressed") !== "false");
 
-  const documentSymbolBridge = new SelfHostedEditorDocumentSymbolBridge();
-  const completionBridge = new SelfHostedEditorCompletionBridge();
-  const definitionBridge = new SelfHostedEditorDefinitionBridge();
-  const diagnosticsBridge = new SelfHostedEditorDiagnosticsBridge();
-  const hoverBridge = new SelfHostedEditorHoverBridge();
+  const documentSymbolBridge = new SelfHostedEditorDocumentSymbolBridge({ backendClient });
+  const completionBridge = new SelfHostedEditorCompletionBridge({ backendClient });
+  const definitionBridge = new SelfHostedEditorDefinitionBridge({ backendClient });
+  const diagnosticsBridge = new SelfHostedEditorDiagnosticsBridge({ backendClient });
+  const hoverBridge = new SelfHostedEditorHoverBridge({ backendClient });
   const hostBindingBridge = new SelfHostedEditorHostBindingBridge();
   const hostSchemaBridge = new SelfHostedEditorHostSchemaBridge();
   const lineMapBridge = new SelfHostedEditorLineMapBridge({ backendClient });
   const nodeMapBridge = new SelfHostedEditorStoryNodeMapBridge();
-  const referencesBridge = new SelfHostedEditorReferencesBridge();
+  const referencesBridge = new SelfHostedEditorReferencesBridge({ backendClient });
   const runtimeBridge = new SelfHostedEditorRuntimeBridge({ backendClient });
   const storyGraphBridge = new SelfHostedEditorStoryGraphBridge();
   const workspaceController = new ProjectWorkspaceController({

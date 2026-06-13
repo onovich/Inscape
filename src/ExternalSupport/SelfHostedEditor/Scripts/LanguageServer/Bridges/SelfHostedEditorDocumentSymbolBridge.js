@@ -2,10 +2,12 @@ import {
   ScriptDocumentFallbackPolicy,
   ScriptDocumentFallbackReason,
 } from "../../ProjectWorkspace/Models/ScriptDocumentFallbackPolicy.js";
+import { EditorBackendClient } from "../../Backend/Clients/EditorBackendClient.js";
 import { LanguageServerDocumentSymbolModelMapper } from "../Models/LanguageServerDocumentSymbolModelMapper.js";
 
 export class SelfHostedEditorDocumentSymbolBridge {
-  constructor() {
+  constructor(options = {}) {
+    this.backendClient = options.backendClient || new EditorBackendClient();
     this.workspaceContextProvider = null;
   }
 
@@ -15,22 +17,11 @@ export class SelfHostedEditorDocumentSymbolBridge {
 
   async getDocumentSymbols(scriptText) {
     try {
-      const response = await fetch("/api/document-symbols", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          scriptText,
-          workspace: this.workspaceContextProvider?.() || null,
-        }),
+      const payload = await this.backendClient.languageSession.documentSymbols({
+        scriptText,
+        workspace: this.workspaceContextProvider?.() || null,
       });
 
-      if (!response.ok) {
-        throw new Error(`Document symbols request failed with ${response.status}.`);
-      }
-
-      const payload = await response.json();
       return {
         provider: "language-server",
         symbols: LanguageServerDocumentSymbolModelMapper.mapSymbols(payload),

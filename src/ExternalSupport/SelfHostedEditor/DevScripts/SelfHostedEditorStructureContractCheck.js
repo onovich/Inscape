@@ -481,9 +481,15 @@ if (packageJson.scripts["check:static-assets-http"] !== "node DevScripts/SelfHos
 }
 
 const backendClientBridgePaths = [
-  "Scripts/Runtime/Bridges/SelfHostedEditorRuntimeBridge.js",
+  "Scripts/LanguageServer/Bridges/SelfHostedEditorCompletionBridge.js",
+  "Scripts/LanguageServer/Bridges/SelfHostedEditorDefinitionBridge.js",
+  "Scripts/LanguageServer/Bridges/SelfHostedEditorDiagnosticsBridge.js",
+  "Scripts/LanguageServer/Bridges/SelfHostedEditorDocumentSymbolBridge.js",
+  "Scripts/LanguageServer/Bridges/SelfHostedEditorHoverBridge.js",
   "Scripts/LanguageServer/Bridges/SelfHostedEditorLineMapBridge.js",
+  "Scripts/LanguageServer/Bridges/SelfHostedEditorReferencesBridge.js",
   "Scripts/Localization/Bridges/SelfHostedEditorLocalizationReviewBridge.js",
+  "Scripts/Runtime/Bridges/SelfHostedEditorRuntimeBridge.js",
 ];
 for (const relativePath of backendClientBridgePaths) {
   const text = fs.readFileSync(path.join(moduleRoot, relativePath), "utf8");

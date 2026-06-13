@@ -1,8 +1,10 @@
 import { LanguageServerDiagnosticModelMapper } from "../Models/LanguageServerDiagnosticModelMapper.js";
+import { EditorBackendClient } from "../../Backend/Clients/EditorBackendClient.js";
 import { ScriptDiagnosticsModelBuilder } from "../../ProjectWorkspace/Models/ScriptDiagnosticsModelBuilder.js";
 
 export class SelfHostedEditorDiagnosticsBridge {
-  constructor() {
+  constructor(options = {}) {
+    this.backendClient = options.backendClient || new EditorBackendClient();
     this.workspaceContextProvider = null;
   }
 
@@ -12,22 +14,11 @@ export class SelfHostedEditorDiagnosticsBridge {
 
   async getDiagnostics(scriptText) {
     try {
-      const response = await fetch("/api/diagnostics", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          scriptText,
-          workspace: this.workspaceContextProvider?.() || null,
-        }),
+      const payload = await this.backendClient.languageSession.diagnose({
+        scriptText,
+        workspace: this.workspaceContextProvider?.() || null,
       });
 
-      if (!response.ok) {
-        throw new Error(`Diagnostics request failed with ${response.status}.`);
-      }
-
-      const payload = await response.json();
       return {
         diagnostics: LanguageServerDiagnosticModelMapper.mapDiagnostics(payload),
         provider: "language-server",

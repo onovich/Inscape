@@ -1,7 +1,9 @@
 import { LanguageServerDefinitionModelMapper } from "../Models/LanguageServerDefinitionModelMapper.js";
+import { EditorBackendClient } from "../../Backend/Clients/EditorBackendClient.js";
 
 export class SelfHostedEditorDefinitionBridge {
-  constructor() {
+  constructor(options = {}) {
+    this.backendClient = options.backendClient || new EditorBackendClient();
     this.workspaceContextProvider = null;
   }
 
@@ -11,23 +13,12 @@ export class SelfHostedEditorDefinitionBridge {
 
   async getDefinition(scriptText, hoverTarget) {
     try {
-      const response = await fetch("/api/definition", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          definitionName: hoverTarget.name,
-          scriptText,
-          workspace: this.workspaceContextProvider?.() || null,
-        }),
+      const payload = await this.backendClient.languageSession.definition({
+        definitionName: hoverTarget.name,
+        scriptText,
+        workspace: this.workspaceContextProvider?.() || null,
       });
 
-      if (!response.ok) {
-        throw new Error(`Definition request failed with ${response.status}.`);
-      }
-
-      const payload = await response.json();
       return LanguageServerDefinitionModelMapper.mapDefinition(payload);
     } catch (error) {
       console.warn("SelfHostedEditor definition fallback:", error);
