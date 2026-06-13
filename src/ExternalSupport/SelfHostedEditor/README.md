@@ -73,6 +73,7 @@ The current shell is intentionally small, but it now includes a first Monaco-bac
 - Line-map dev-host smoke now covers both direct bridge logic and real HTTP transport. `check:line-map` and `check:line-map-http` assert that a second refresh can preserve an existing stable line id through `sessionId` alone, without resending `existingLineMap`.
 - Dev-host process output is treated as UTF-8 end to end: CLI / LanguageServer entries set UTF-8 stdout, and the SelfHostedEditor dev server collects child-process stdout/stderr buffers before decoding. Failed commands report bounded process diagnostics with exit code or timeout state plus truncated stdout/stderr previews; do not decode child-process chunks one-by-one, and do not return unbounded process output in HTTP errors.
 - Dev-host payload trimming lives in `SelfHostedEditorPayloadBridge`. The bridge keeps shared shapes such as localization `presenter.items` and node-map `report.items`, trims host-unneeded fields for transport, and normalizes source paths without making the dev server a second presenter or report truth.
+- Current backend preparation is still a boundary adapter plan. The next `EditorBackendClient` should initially call the existing dev-host `/api/*` routes through business-named methods; it must not claim that the dev host is a formal project session or turn endpoint names into a generic RPC surface.
 
 The draft extraction model is UI-only. It exists to make the shell useful while the real `Tooling` / `LanguageServer` / `Runtime` contracts are wired in.
 

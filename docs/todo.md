@@ -10,6 +10,11 @@ SelfHostedEditor regression invariant: Preview choice clicks must advance the re
 
 当前目录迁移与不符合项总蓝图见 [目录优先重构蓝图](directory-first-reframe-plan.md)。当前后续执行面板见 [/goal 后续目标计划](goal-plan.md)。
 
+## 2026-06-13 SelfHostedEditor 下一阶段 10 轮执行状态
+
+- [x] 第 1 轮：收口并推送当前 SelfHostedEditor controller / fallback / backend 边界基线。该轮把已有未提交改动先验证并推送，避免下一阶段 backend client / CSS / fallback 工作继续叠在脏工作树上。额外通过 SelfHostedEditor HTTP smoke：semantic parity、Runtime、Localization review/update、Node Map、static assets、session cache、line-map、Host Schema、Host Binding、references；随后通过 `tools\CommitAndPushInscape.cmd "refactor: split self hosted editor controllers"` 完成提交前验证、提交和推送。
+- [x] 第 2 轮：冻结 backend 迁移实施 checklist。`docs/self-hosted-editor-backend-migration-map.md` 的 17 个 `/api/*` endpoint 已增加 `implementationPhase`，并明确这些 phase 只是下一阶段施工顺序；`src/ExternalSupport/SelfHostedEditor/README.md` 已补充 `EditorBackendClient` 第一版仍只调用现有 dev-host `/api/*`，不能被误读为正式 backend 或通用 RPC。
+
 ## 2026-06-13 SelfHostedEditor UI controller 重构执行状态
 
 - [x] 第 1 轮：StoryGraph rendering 边界拆分。新增 `Scripts/StoryGraph/Renderers/StoryGraphNodeRenderer.js` 与 `Scripts/StoryGraph/Renderers/StoryGraphEdgeRenderer.js`，把节点卡片 / 输出行 DOM 和 SVG edge layer / path 创建从 `StoryGraphPreviewController.js` 移出；controller 从 1025 行降到 824 行。`StoryGraphPreviewController` 仍保留 layout、reference projection、viewport、drag / retarget、hover 高亮编排，下一轮继续拆 `StoryGraphInteractionController` / `StoryGraphViewportController` 或 geometry model。已跑基线全套 SelfHostedEditor HTTP smoke，并在改动后通过 `check:syntax`、`check:structure`、`check:model`、`check:node-map-http`、`check:semantic-parity-http`。

@@ -43,25 +43,27 @@
 
 ## Endpoint migration table
 
-| Endpoint | 当前 dev-host 行为 | 未来 backend service | 状态分类 | 迁移要求 |
-|---|---|---|---|---|
-| `/api/diagnostics` | 用当前 script/workspace 调 LanguageServer diagnostics | `LanguageSessionClient.diagnose` | Backend project session | 走常驻 LanguageServer；保持 diagnostics payload shape。 |
-| `/api/hover` | 用 hover kind/name 调 LanguageServer hover | `LanguageSessionClient.hover` | Backend project session | 只传定位/target，不在前端重算 hover 文案。 |
-| `/api/definition` | 用 definitionName 调 LanguageServer definition | `LanguageSessionClient.definition` | Backend project session | sourcePath 继续 workspace-relative。 |
-| `/api/references` | 用 referenceName 调 LanguageServer references | `LanguageSessionClient.references` | Backend project session | 保留 current draft 参与和跨文件结果。 |
-| `/api/completions` | 用 current draft 调 LanguageServer completions | `LanguageSessionClient.completions` | Backend project session | 常驻会话可增量优化，但 payload 不改名。 |
-| `/api/document-symbols` | 用 current draft 调 LanguageServer document symbols | `LanguageSessionClient.documentSymbols` | Backend project session | Outline 只消费 shared symbols。 |
-| `/api/host-schema-capabilities` | 调共享 HostSchema capability 流程 | `HostCapabilityClient.schemaCapabilities` | Backend project session / cache | 可缓存 catalog，但 schema 真相仍来自 Tooling / LanguageServer。 |
-| `/api/host-binding-capabilities` | 调共享 HostBinding capability 流程 | `HostCapabilityClient.bindingCapabilities` | Backend project session / cache | 不解析 Host Bridge JSON 到前端私有模型。 |
-| `/api/story-graph` | 调 CLI `compile-project` 并 compact graph payload | `StoryGraphClient.compileProjectGraph` | Backend project session | Compiler graph 仍是图真相；UI graph layout 另做 view state。 |
-| `/api/runtime-state` | 调 `runtime-project` 启动 snapshot 并记入 bounded cache | `RuntimeSessionClient.startOrObserve` | Backend project session | 迁到 long-lived Runtime project session；dev cache 不再是正式状态。 |
-| `/api/runtime-action` | 用 request state 或 cached state 调 `runtime-project` action | `RuntimeSessionClient.step` | Backend project session | action 只透传，浏览器不模拟 Runtime。 |
-| `/api/line-map-refresh` | 调 line-map refresh，使用 request sidecar 或 cache sidecar | `LineIdentitySessionClient.refresh` | Backend project session | sidecar 应绑定 workspace / document identity / mtime。 |
-| `/api/session-cache-status` | 暴露 dev-host bounded cache 状态 | `BackendDiagnosticsClient.sessionStatus` | Dev-host diagnostic | 产品 backend 可保留观测接口，但不能暴露 Runtime / CSV / line-map 内容本体。 |
-| `/api/node-map-review` | 调 `update-node-map-project --report` 并 compact report | `StableNodeMapClient.review` | Backend project session | 继续消费 Tooling report；前端不做 candidate scoring。 |
-| `/api/node-map-apply` | 调 shared candidate apply，返回 dry-run / sidecar payload | `StableNodeMapClient.applyCandidate` | Backend project session | 写回必须由 Tooling / CLI command 执行或预览，不在浏览器私改 sidecar。 |
-| `/api/localization-review` | 调 localization extract/audit，session 记住 previous CSV | `LocalizationSessionClient.review` | Backend project session | baseline 应绑定文件身份；Presenter shape 保持 `presenter.items`。 |
-| `/api/localization-update` | 调 shared CSV update，应用 anchor overrides | `LocalizationSessionClient.updateCsv` | Backend project session | CSV merge 仍由 Tooling / CLI 执行；前端只提供 overrides 和保存意图。 |
+`implementationPhase` 是当前下一阶段施工顺序，不代表正式 backend 已经实现。所有 phase 默认先通过 frontend-facing `EditorBackendClient` 调用现有 `/api/*`，再逐步替换底层 transport。
+
+| Endpoint | 当前 dev-host 行为 | 未来 backend service | 状态分类 | implementationPhase | 迁移要求 |
+|---|---|---|---|---|---|
+| `/api/diagnostics` | 用当前 script/workspace 调 LanguageServer diagnostics | `LanguageSessionClient.diagnose` | Backend project session | A3 language-session request model | 走常驻 LanguageServer；保持 diagnostics payload shape。 |
+| `/api/hover` | 用 hover kind/name 调 LanguageServer hover | `LanguageSessionClient.hover` | Backend project session | A3 language-session request model | 只传定位/target，不在前端重算 hover 文案。 |
+| `/api/definition` | 用 definitionName 调 LanguageServer definition | `LanguageSessionClient.definition` | Backend project session | A3 language-session request model | sourcePath 继续 workspace-relative。 |
+| `/api/references` | 用 referenceName 调 LanguageServer references | `LanguageSessionClient.references` | Backend project session | A3 language-session request model | 保留 current draft 参与和跨文件结果。 |
+| `/api/completions` | 用 current draft 调 LanguageServer completions | `LanguageSessionClient.completions` | Backend project session | A3 language-session request model | 常驻会话可增量优化，但 payload 不改名。 |
+| `/api/document-symbols` | 用 current draft 调 LanguageServer document symbols | `LanguageSessionClient.documentSymbols` | Backend project session | A3 language-session request model | Outline 只消费 shared symbols。 |
+| `/api/host-schema-capabilities` | 调共享 HostSchema capability 流程 | `HostCapabilityClient.schemaCapabilities` | Backend project session / cache | A1 backend client adapter | 可缓存 catalog，但 schema 真相仍来自 Tooling / LanguageServer。 |
+| `/api/host-binding-capabilities` | 调共享 HostBinding capability 流程 | `HostCapabilityClient.bindingCapabilities` | Backend project session / cache | A1 backend client adapter | 不解析 Host Bridge JSON 到前端私有模型。 |
+| `/api/story-graph` | 调 CLI `compile-project` 并 compact graph payload | `StoryGraphClient.compileProjectGraph` | Backend project session | A1 backend client adapter | Compiler graph 仍是图真相；UI graph layout 另做 view state。 |
+| `/api/runtime-state` | 调 `runtime-project` 启动 snapshot 并记入 bounded cache | `RuntimeSessionClient.startOrObserve` | Backend project session | A4 runtime session interface | 迁到 long-lived Runtime project session；dev cache 不再是正式状态。 |
+| `/api/runtime-action` | 用 request state 或 cached state 调 `runtime-project` action | `RuntimeSessionClient.step` | Backend project session | A4 runtime session interface | action 只透传，浏览器不模拟 Runtime。 |
+| `/api/line-map-refresh` | 调 line-map refresh，使用 request sidecar 或 cache sidecar | `LineIdentitySessionClient.refresh` | Backend project session | A4 line-identity session interface | sidecar 应绑定 workspace / document identity / mtime。 |
+| `/api/session-cache-status` | 暴露 dev-host bounded cache 状态 | `BackendDiagnosticsClient.sessionStatus` | Dev-host diagnostic | A2 backend session status contract | 产品 backend 可保留观测接口，但不能暴露 Runtime / CSV / line-map 内容本体。 |
+| `/api/node-map-review` | 调 `update-node-map-project --report` 并 compact report | `StableNodeMapClient.review` | Backend project session | A1 backend client adapter | 继续消费 Tooling report；前端不做 candidate scoring。 |
+| `/api/node-map-apply` | 调 shared candidate apply，返回 dry-run / sidecar payload | `StableNodeMapClient.applyCandidate` | Backend project session | A1 backend client adapter | 写回必须由 Tooling / CLI command 执行或预览，不在浏览器私改 sidecar。 |
+| `/api/localization-review` | 调 localization extract/audit，session 记住 previous CSV | `LocalizationSessionClient.review` | Backend project session | A4 localization session interface | baseline 应绑定文件身份；Presenter shape 保持 `presenter.items`。 |
+| `/api/localization-update` | 调 shared CSV update，应用 anchor overrides | `LocalizationSessionClient.updateCsv` | Backend project session | A4 localization session interface | CSV merge 仍由 Tooling / CLI 执行；前端只提供 overrides 和保存意图。 |
 
 ## Backend-facing client shape
 
