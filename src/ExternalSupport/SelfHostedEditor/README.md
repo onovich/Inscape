@@ -77,7 +77,7 @@ The current shell is intentionally small, but it now includes a first Monaco-bac
 
 The draft extraction model is UI-only. It exists to make the shell useful while the real `Tooling` / `LanguageServer` / `Runtime` contracts are wired in.
 
-Production code must reach it through `ScriptDocumentFallbackPolicy`, not by importing `ScriptDocumentModelBuilder` directly. Registered fallback reasons currently cover editor authoring surface state and workspace summary status as offline-only UI convenience, plus Preview / Graph compiler bridge unavailability, localization review unavailability, diagnostics LanguageServer unavailability, and document-symbols LanguageServer unavailability as hosted-bridge fallbacks. Malformed shared payloads must stay explicit errors; they must not be hidden by draft extraction.
+Production code must reach it through `ScriptDocumentFallbackPolicy`, not by importing `ScriptDocumentModelBuilder` directly. Registered fallback reasons are classified as `offline-only`, `temporary-hosted-fallback`, or `migration-target`, and every reason records an owner plus migration direction. Editor authoring surface state is the retained offline-only category; Preview / Graph compiler bridge unavailability, localization review unavailability, diagnostics LanguageServer unavailability, and document-symbols LanguageServer unavailability are temporary hosted fallbacks; workspace summary status is the current migration target for a shared project-summary model. Malformed shared payloads must stay explicit errors; they must not be hidden by draft extraction.
 
 ## Handoff Notes
 

@@ -19,6 +19,7 @@ export class DocumentOutlineController {
 
   render(symbolSnapshot, documentModel = null) {
     const symbols = symbolSnapshot?.symbols || [];
+    const providerStatus = this.createProviderStatus(symbolSnapshot?.provider || "unavailable");
     this.referenceCountsByLine = new Map(
       (documentModel?.nodes || []).map((node) => [node.sourceLine, node.incomingReferenceCount || 0])
     );
@@ -27,11 +28,12 @@ export class DocumentOutlineController {
       const empty = document.createElement("div");
       empty.className = "document-outline-empty";
       empty.textContent = "No symbols yet.";
-      this.panelElement.replaceChildren(empty);
+      this.panelElement.replaceChildren(providerStatus, empty);
       return;
     }
 
     this.panelElement.replaceChildren(
+      providerStatus,
       ...symbols.map((symbol) => this.createSymbolItem(symbol))
     );
     this.setActiveLine(this.activeLineNumber);
@@ -58,6 +60,16 @@ export class DocumentOutlineController {
 
     item.append(title, meta);
     return item;
+  }
+
+  createProviderStatus(provider) {
+    const status = document.createElement("div");
+    status.className = "document-outline-provider";
+    status.dataset.provider = provider;
+    status.textContent = provider === "language-server"
+      ? "LanguageServer outline"
+      : "Draft outline";
+    return status;
   }
 
   notifySourceLineSelected(lineNumber) {

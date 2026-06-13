@@ -29,7 +29,7 @@
 | `SelfHostedEditorNodeMapReview.css` | 185 | node-map review | 220 | 220 |
 | `SelfHostedEditorPreview.css` | 303 | preview | 400 | 400 |
 | `SelfHostedEditorReferenceOverlay.css` | 120 | editor references overlay | 140 | 160 |
-| `SelfHostedEditorSidebar.css` | 366 | workspace sidebar | 380 | 380 |
+| `SelfHostedEditorSidebar.css` | 379 | workspace sidebar | 380 | 380 |
 | `SelfHostedEditorStoryGraph.css` | 375 | story graph | 400 | 400 |
 | `SelfHostedEditorTopbar.css` | 127 | workspace top bar | 150 | 150 |
 | `SelfHostedEditorWorkbench.css` | 16 | style import composition | 20 | 20 |

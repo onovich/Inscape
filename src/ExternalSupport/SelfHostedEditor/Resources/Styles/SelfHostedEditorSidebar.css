@@ -264,6 +264,19 @@
   padding-right: 2px;
 }
 
+.document-outline-provider {
+  color: var(--muted);
+  font-size: 7px;
+  opacity: 0;
+  padding: 0 7px 2px;
+  transition: opacity 140ms ease;
+}
+
+.document-outline-shell:hover .document-outline-provider,
+.document-outline-shell:focus-within .document-outline-provider {
+  opacity: 0.62;
+}
+
 .document-outline-item {
   align-items: start;
   border-radius: 10px;

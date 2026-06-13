@@ -10,6 +10,8 @@ import { ScriptDocumentModelBuilder } from "../../Scripts/ProjectWorkspace/Model
 import { ScriptLineIdentityModelBuilder } from "../../Scripts/ProjectWorkspace/Models/ScriptLineIdentityModelBuilder.js";
 import { ScriptNodeRenamePatchBuilder } from "../../Scripts/ProjectWorkspace/Models/ScriptNodeRenamePatchBuilder.js";
 import { ProjectWorkspaceSummaryModelBuilder } from "../../Scripts/ProjectWorkspace/Models/ProjectWorkspaceSummaryModelBuilder.js";
+import { DocumentOutlineController } from "../../Scripts/ProjectWorkspace/Controllers/DocumentOutlineController.js";
+import { ProjectWorkspaceSummaryController } from "../../Scripts/ProjectWorkspace/Controllers/ProjectWorkspaceSummaryController.js";
 import { LocalizationDraftCsvBuilder } from "../../Scripts/Localization/Models/LocalizationDraftCsvBuilder.js";
 import { LocalizationDraftStore } from "../../Scripts/Localization/Models/LocalizationDraftStore.js";
 import { EditorHoverTargetModelBuilder } from "../../Scripts/EditorAuthoring/Models/EditorHoverTargetModelBuilder.js";
@@ -20,7 +22,7 @@ import { LanguageServerDefinitionModelMapper } from "../../Scripts/LanguageServe
 import { LanguageServerDiagnosticModelMapper } from "../../Scripts/LanguageServer/Models/LanguageServerDiagnosticModelMapper.js";
 import { LanguageServerDocumentSymbolModelMapper } from "../../Scripts/LanguageServer/Models/LanguageServerDocumentSymbolModelMapper.js";
 import { LanguageServerReferenceModelMapper } from "../../Scripts/LanguageServer/Models/LanguageServerReferenceModelMapper.js";
-import { assertEqual, assertIncludes, assertIncludesText, createHoverModel } from "./SelfHostedEditorModelContractHarness.js";
+import { assertEqual, assertIncludes, assertIncludesText, createHoverModel, getTextContent, installFakeDomEnvironment } from "./SelfHostedEditorModelContractHarness.js";
 
 const sample = `# Start
 旁白：Hello
@@ -42,18 +44,47 @@ assertEqual(documentModel.lineHints[2].stableIdentity.status, "untracked", "jump
 assertEqual(documentModel.lineHints[5].kind, "title", "second title hint kind");
 assertEqual(documentModel.lineHints[6].blockLineNumber, 1, "second node content line resets block-local number");
 const fallbackReasonCatalog = ScriptDocumentFallbackPolicy.getReasonCatalog();
+const fallbackCategories = new Set(Object.values(ScriptDocumentFallbackCategory));
 for (const reason of Object.values(ScriptDocumentFallbackReason)) {
   assertEqual(Boolean(fallbackReasonCatalog[reason]), true, `fallback reason registered: ${reason}`);
+  assertEqual(fallbackCategories.has(fallbackReasonCatalog[reason].category), true, `fallback category is known: ${reason}`);
+  assertEqual(Boolean(fallbackReasonCatalog[reason].owner), true, `fallback owner registered: ${reason}`);
+  assertEqual(Boolean(fallbackReasonCatalog[reason].migrationTarget), true, `fallback migration target registered: ${reason}`);
 }
 assertEqual(
   fallbackReasonCatalog[ScriptDocumentFallbackReason.PreviewCompilerGraphUnavailable].category,
-  ScriptDocumentFallbackCategory.HostedBridgeUnavailable,
+  ScriptDocumentFallbackCategory.TemporaryHostedFallback,
   "preview fallback category"
 );
 assertEqual(
+  fallbackReasonCatalog[ScriptDocumentFallbackReason.StoryGraphCompilerGraphUnavailable].category,
+  ScriptDocumentFallbackCategory.TemporaryHostedFallback,
+  "story graph fallback category"
+);
+assertEqual(
+  fallbackReasonCatalog[ScriptDocumentFallbackReason.LocalizationReviewUnavailable].category,
+  ScriptDocumentFallbackCategory.TemporaryHostedFallback,
+  "localization fallback category"
+);
+assertEqual(
+  fallbackReasonCatalog[ScriptDocumentFallbackReason.DiagnosticsLanguageServerUnavailable].category,
+  ScriptDocumentFallbackCategory.TemporaryHostedFallback,
+  "diagnostics fallback category"
+);
+assertEqual(
+  fallbackReasonCatalog[ScriptDocumentFallbackReason.DocumentSymbolsLanguageServerUnavailable].category,
+  ScriptDocumentFallbackCategory.TemporaryHostedFallback,
+  "document symbols fallback category"
+);
+assertEqual(
   fallbackReasonCatalog[ScriptDocumentFallbackReason.EditorAuthoringSurface].category,
-  ScriptDocumentFallbackCategory.OfflineOnlyUi,
+  ScriptDocumentFallbackCategory.OfflineOnly,
   "editor authoring fallback category"
+);
+assertEqual(
+  fallbackReasonCatalog[ScriptDocumentFallbackReason.WorkspaceSummaryStatus].category,
+  ScriptDocumentFallbackCategory.MigrationTarget,
+  "workspace summary fallback category"
 );
 let missingFallbackReasonFailed = false;
 try {
@@ -180,6 +211,38 @@ assertEqual(summary.nodeCount, 2, "summary node count");
 assertEqual(summary.localizationLineCount, 2, "summary localization count");
 assertEqual(summary.draftTranslationCount, 1, "summary draft count");
 assertEqual(summary.diagnosticCount, 4, "summary diagnostic count");
+assertEqual(summary.provider, "draft-fallback", "summary provider");
+assertEqual(summary.fallback.reason, ScriptDocumentFallbackReason.WorkspaceSummaryStatus, "summary fallback reason");
+assertEqual(summary.fallback.category, ScriptDocumentFallbackCategory.MigrationTarget, "summary fallback category");
+const { document: fakeDocument } = installFakeDomEnvironment();
+const summaryPanel = fakeDocument.createElement("div");
+const summaryController = new ProjectWorkspaceSummaryController(summaryPanel);
+summaryController.render(summary);
+assertIncludesText(getTextContent(summaryPanel), "draft summary");
+const outlinePanel = fakeDocument.createElement("div");
+const outlineController = new DocumentOutlineController(outlinePanel);
+outlineController.render({
+  provider: "language-server",
+  symbols: [
+    {
+      kind: "node",
+      name: "Start",
+      sourceLine: 1,
+    },
+  ],
+}, documentModel);
+assertIncludesText(getTextContent(outlinePanel), "LanguageServer outline");
+outlineController.render({
+  provider: "draft-fallback",
+  symbols: [
+    {
+      kind: "node",
+      name: "Start",
+      sourceLine: 1,
+    },
+  ],
+}, documentModel);
+assertIncludesText(getTextContent(outlinePanel), "Draft outline");
 
 const hoverModel = createHoverModel("# Opening\r\n- Review -> Witness\r\n-> Evidence");
 const nodeHoverTarget = EditorHoverTargetModelBuilder.build(hoverModel, { lineNumber: 1, column: 4 });

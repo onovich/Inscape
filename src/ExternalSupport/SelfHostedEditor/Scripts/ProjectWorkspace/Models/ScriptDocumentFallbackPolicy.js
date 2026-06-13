@@ -1,8 +1,9 @@
 import { ScriptDocumentModelBuilder } from "./ScriptDocumentModelBuilder.js";
 
 export const ScriptDocumentFallbackCategory = Object.freeze({
-  HostedBridgeUnavailable: "hosted bridge unavailable fallback",
-  OfflineOnlyUi: "offline-only UI convenience",
+  MigrationTarget: "migration-target",
+  OfflineOnly: "offline-only",
+  TemporaryHostedFallback: "temporary-hosted-fallback",
 });
 
 export const ScriptDocumentFallbackReason = Object.freeze({
@@ -17,31 +18,38 @@ export const ScriptDocumentFallbackReason = Object.freeze({
 
 const reasonCatalog = Object.freeze({
   [ScriptDocumentFallbackReason.DiagnosticsLanguageServerUnavailable]: Object.freeze({
-    category: ScriptDocumentFallbackCategory.HostedBridgeUnavailable,
+    category: ScriptDocumentFallbackCategory.TemporaryHostedFallback,
+    migrationTarget: "Keep draft diagnostics visible only when the LanguageServer diagnostics bridge is unavailable.",
     owner: "LanguageServer diagnostics bridge",
   }),
   [ScriptDocumentFallbackReason.DocumentSymbolsLanguageServerUnavailable]: Object.freeze({
-    category: ScriptDocumentFallbackCategory.HostedBridgeUnavailable,
+    category: ScriptDocumentFallbackCategory.TemporaryHostedFallback,
+    migrationTarget: "Prefer LanguageServer document symbols and show draft outline only as an unavailable-state fallback.",
     owner: "LanguageServer document symbols bridge",
   }),
   [ScriptDocumentFallbackReason.EditorAuthoringSurface]: Object.freeze({
-    category: ScriptDocumentFallbackCategory.OfflineOnlyUi,
+    category: ScriptDocumentFallbackCategory.OfflineOnly,
+    migrationTarget: "Retain for browser-only editor geometry, line hints, and offline authoring surface state.",
     owner: "Editor authoring surface",
   }),
   [ScriptDocumentFallbackReason.LocalizationReviewUnavailable]: Object.freeze({
-    category: ScriptDocumentFallbackCategory.HostedBridgeUnavailable,
+    category: ScriptDocumentFallbackCategory.TemporaryHostedFallback,
+    migrationTarget: "Prefer the Tooling localization presenter and keep draft rows separate when review is unavailable.",
     owner: "Localization review table",
   }),
   [ScriptDocumentFallbackReason.PreviewCompilerGraphUnavailable]: Object.freeze({
-    category: ScriptDocumentFallbackCategory.HostedBridgeUnavailable,
+    category: ScriptDocumentFallbackCategory.TemporaryHostedFallback,
+    migrationTarget: "Prefer Compiler graph and Runtime-backed preview; malformed shared payloads remain explicit errors.",
     owner: "Preview panel",
   }),
   [ScriptDocumentFallbackReason.StoryGraphCompilerGraphUnavailable]: Object.freeze({
-    category: ScriptDocumentFallbackCategory.HostedBridgeUnavailable,
+    category: ScriptDocumentFallbackCategory.TemporaryHostedFallback,
+    migrationTarget: "Prefer Compiler project graph and keep draft graph rendering as offline graph preview only.",
     owner: "Story graph panel",
   }),
   [ScriptDocumentFallbackReason.WorkspaceSummaryStatus]: Object.freeze({
-    category: ScriptDocumentFallbackCategory.OfflineOnlyUi,
+    category: ScriptDocumentFallbackCategory.MigrationTarget,
+    migrationTarget: "Move summary counts to a shared project summary model built from hosted payloads and backend session status.",
     owner: "Workspace summary status",
   }),
 });
