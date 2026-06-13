@@ -1,253 +1,70 @@
-import { EditorCompletionController } from "../EditorAuthoring/Controllers/EditorCompletionController.js";
-import { EditorDefinitionController } from "../EditorAuthoring/Controllers/EditorDefinitionController.js";
-import { EditorDiagnosticsController } from "../EditorAuthoring/Controllers/EditorDiagnosticsController.js";
-import { EditorHoverController } from "../EditorAuthoring/Controllers/EditorHoverController.js";
-import { EditorReferenceOverlayController } from "../EditorAuthoring/Controllers/EditorReferenceOverlayController.js";
-import { EditorRenameController } from "../EditorAuthoring/Controllers/EditorRenameController.js";
-import { EditorStatusController } from "../EditorAuthoring/Controllers/EditorStatusController.js";
-import { EditorSurfaceController } from "../EditorAuthoring/Controllers/EditorSurfaceController.js";
-import { SelfHostedEditorStoryNodeMapBridge } from "../EditorAuthoring/Bridges/SelfHostedEditorStoryNodeMapBridge.js";
-import { StoryNodeMapReviewController } from "../EditorAuthoring/Controllers/StoryNodeMapReviewController.js";
-import { SelfHostedEditorHostBindingBridge } from "../HostBinding/Bridges/SelfHostedEditorHostBindingBridge.js";
-import { SelfHostedEditorHostSchemaBridge } from "../HostSchema/Bridges/SelfHostedEditorHostSchemaBridge.js";
-import { HostCapabilityCatalogController } from "../HostSchema/Controllers/HostCapabilityCatalogController.js";
-import { SelfHostedEditorCompletionBridge } from "../LanguageServer/Bridges/SelfHostedEditorCompletionBridge.js";
-import { SelfHostedEditorDefinitionBridge } from "../LanguageServer/Bridges/SelfHostedEditorDefinitionBridge.js";
-import { SelfHostedEditorDiagnosticsBridge } from "../LanguageServer/Bridges/SelfHostedEditorDiagnosticsBridge.js";
-import { SelfHostedEditorHoverBridge } from "../LanguageServer/Bridges/SelfHostedEditorHoverBridge.js";
-import { SelfHostedEditorLineMapBridge } from "../LanguageServer/Bridges/SelfHostedEditorLineMapBridge.js";
-import { SelfHostedEditorReferencesBridge } from "../LanguageServer/Bridges/SelfHostedEditorReferencesBridge.js";
-import { SelfHostedEditorStoryGraphBridge } from "../LanguageServer/Bridges/SelfHostedEditorStoryGraphBridge.js";
-import { SelfHostedEditorLocalizationReviewBridge } from "../Localization/Bridges/SelfHostedEditorLocalizationReviewBridge.js";
-import { LocalizationEditorController } from "../Localization/Controllers/LocalizationEditorController.js";
-import { LocalizationDraftStore } from "../Localization/Models/LocalizationDraftStore.js";
-import { PreviewPanelController } from "../Preview/Controllers/PreviewPanelController.js";
-import { DocumentOutlineController } from "../ProjectWorkspace/Controllers/DocumentOutlineController.js";
-import { ProjectWorkspaceController } from "../ProjectWorkspace/Controllers/ProjectWorkspaceController.js";
-import { ProjectWorkspaceFileListController } from "../ProjectWorkspace/Controllers/ProjectWorkspaceFileListController.js";
-import { ProjectWorkspaceSessionController } from "../ProjectWorkspace/Controllers/ProjectWorkspaceSessionController.js";
-import { ProjectWorkspaceSummaryController } from "../ProjectWorkspace/Controllers/ProjectWorkspaceSummaryController.js";
-import { ProjectWorkspaceSummaryModelBuilder } from "../ProjectWorkspace/Models/ProjectWorkspaceSummaryModelBuilder.js";
-import { ScriptLineIdentityModelBuilder } from "../ProjectWorkspace/Models/ScriptLineIdentityModelBuilder.js";
+import { ScriptBlockEditPatchBuilder } from "../ProjectWorkspace/Models/ScriptBlockEditPatchBuilder.js";
 import { ScriptNodeRenamePatchBuilder } from "../ProjectWorkspace/Models/ScriptNodeRenamePatchBuilder.js";
-import { SelfHostedEditorRuntimeBridge } from "../Runtime/Bridges/SelfHostedEditorRuntimeBridge.js";
-import { SelfHostedEditorDocumentSymbolBridge } from "../LanguageServer/Bridges/SelfHostedEditorDocumentSymbolBridge.js";
-import { StoryGraphPreviewController } from "../StoryGraph/Controllers/StoryGraphPreviewController.js";
-import { WorkspaceLoadingStateController } from "../WorkspaceLayout/Controllers/WorkspaceLoadingStateController.js";
-import { WorkspaceLayoutController } from "../WorkspaceLayout/Controllers/WorkspaceLayoutController.js";
+import {
+  createSelfHostedEditorDomBindings,
+  renderSelfHostedEditorStartupError,
+  setupSidebarPanelToggles,
+} from "./SelfHostedEditorDomBindings.js";
+import { createSelfHostedEditorFeatures } from "./SelfHostedEditorFeatureBootstrapper.js";
+import { requestSelfHostedEditorNodeRename } from "./SelfHostedEditorNodeRenameDialog.js";
+import { SelfHostedEditorWorkbenchRenderController } from "./SelfHostedEditorWorkbenchRenderController.js";
 
 const defaultSamplePath = "samples/court-loop.inscape";
 
 async function main() {
-  const shell = document.querySelector(".app-shell");
-  const sidebarElement = document.querySelector(".app-sidebar");
-  const editorElement = document.querySelector(".script-editor");
-  const diagnosticsElement = document.querySelector(".diagnostics-dock");
-  const editorFrameElement = document.querySelector(".editor-frame");
-  const exportLocalizationButtonElement = document.querySelector(".localization-export-button");
-  const clearLocalizationDraftsButtonElement = document.querySelector(".localization-clear-drafts-button");
-  const replacePreviousLocalizationCsvButtonElement = document.querySelector(".localization-replace-button");
-  const exportUpdatedLocalizationButtonElement = document.querySelector(".localization-export-updated-button");
-  const hintRailElement = document.querySelector(".hint-rail");
-  const graphPanelElement = document.querySelector(".graph-panel");
-  const hostCapabilityPanelElement = document.querySelector(".host-capability-panel");
-  const localizationPanelElement = document.querySelector(".localization-panel");
-  const localizationFilterModeElement = document.querySelector(".localization-filter-select");
-  const localizationFilterSummaryElement = document.querySelector(".localization-filter-summary");
-  const localizationSessionStatusElement = document.querySelector(".localization-session-status");
-  const localizationPreviousCsvInputElement = document.querySelector(".localization-csv-input");
-  const localizationPreviousCsvButtonElement = document.querySelector(".localization-open-button");
-  const localizationPreviousCsvStatusElement = document.querySelector(".localization-source-status");
-  const outlinePanelElement = document.querySelector(".document-outline-panel");
-  const workspaceFilePanelElement = document.querySelector(".workspace-file-panel");
-  const scriptFileInputElement = document.querySelector(".script-file-input");
-  const scriptSourceLabelElement = document.querySelector(".script-source-label");
-  const previewElement = document.querySelector(".story-preview");
-  const previewModeButtonElements = document.querySelectorAll("[data-preview-mode]");
-  const previewModeLabelElement = document.querySelector("[data-preview-mode-label]");
-  const runtimePanelElement = document.querySelector(".workspace-runtime-panel");
-  const statusBarElement = document.querySelector(".status-bar");
-  const sessionPanelElement = document.querySelector(".workspace-session-panel");
-  const nodeMapReviewButtonElement = document.querySelector(".node-map-review-button");
-  const syntaxToggleElement = document.querySelector("[data-syntax-toggle]");
-  const workspaceSummaryElement = document.querySelector(".workspace-summary");
-  const workspaceStatusElement = document.querySelector(".workspace-status");
-
-  const layoutController = new WorkspaceLayoutController(shell);
-  const loadingController = new WorkspaceLoadingStateController({
-    diagnostics: diagnosticsElement,
-    editor: editorFrameElement,
-    graph: graphPanelElement,
-    host: hostCapabilityPanelElement,
-    localization: localizationPanelElement,
-    outline: outlinePanelElement,
-    preview: previewElement,
-    runtime: runtimePanelElement,
-    shell,
-    status: workspaceStatusElement,
-    summary: workspaceSummaryElement,
-  });
-  loadingController.setManyLoading({
-    diagnostics: "Listening for problems",
-    editor: "Opening editor",
-    graph: "Preparing map",
-    host: "Preparing host catalog",
-    localization: "Preparing table",
-    outline: "Preparing outline",
-    preview: "Preparing reading pane",
-    runtime: "Preparing runtime",
-    shell: "Opening workspace",
-    status: "Loading sample",
-    summary: "Preparing summary",
-  });
-  setupSidebarPanelToggles(sidebarElement);
-  const diagnosticsController = new EditorDiagnosticsController(diagnosticsElement);
-  const editorStatusController = new EditorStatusController(statusBarElement);
-  const localizationDraftStore = new LocalizationDraftStore();
-  const localizationReviewBridge = new SelfHostedEditorLocalizationReviewBridge();
-  const localizationController = new LocalizationEditorController({
-    panelElement: localizationPanelElement,
-    draftStore: localizationDraftStore,
-    clearVisibleDraftsButtonElement: clearLocalizationDraftsButtonElement,
-    exportDraftButtonElement: exportLocalizationButtonElement,
-    exportUpdatedButtonElement: exportUpdatedLocalizationButtonElement,
-    filterModeElement: localizationFilterModeElement,
-    filterSummaryElement: localizationFilterSummaryElement,
-    openPreviousCsvButtonElement: localizationPreviousCsvButtonElement,
-    previousCsvInputElement: localizationPreviousCsvInputElement,
-    previousCsvStatusElement: localizationPreviousCsvStatusElement,
-    replacePreviousCsvButtonElement: replacePreviousLocalizationCsvButtonElement,
-    sessionStatusElement: localizationSessionStatusElement,
-    reviewBridge: localizationReviewBridge,
-  });
-  const previewController = new PreviewPanelController(
-    previewElement,
-    previewModeButtonElements,
-    previewModeLabelElement
-  );
-  const storyGraphController = new StoryGraphPreviewController(graphPanelElement);
-  const editorController = await EditorSurfaceController.create(editorElement, hintRailElement);
-  loadingController.setIdle("editor");
-  editorController.setSemanticHighlightEnabled(syntaxToggleElement?.getAttribute("aria-pressed") !== "false");
-  const documentSymbolBridge = new SelfHostedEditorDocumentSymbolBridge();
-  const completionBridge = new SelfHostedEditorCompletionBridge();
-  const definitionBridge = new SelfHostedEditorDefinitionBridge();
-  const diagnosticsBridge = new SelfHostedEditorDiagnosticsBridge();
-  const hoverBridge = new SelfHostedEditorHoverBridge();
-  const hostBindingBridge = new SelfHostedEditorHostBindingBridge();
-  const hostSchemaBridge = new SelfHostedEditorHostSchemaBridge();
-  const lineMapBridge = new SelfHostedEditorLineMapBridge();
-  const nodeMapBridge = new SelfHostedEditorStoryNodeMapBridge();
-  const referencesBridge = new SelfHostedEditorReferencesBridge();
-  const runtimeBridge = new SelfHostedEditorRuntimeBridge();
-  const storyGraphBridge = new SelfHostedEditorStoryGraphBridge();
-  const workspaceContextProvider = () => workspaceController.getWorkspaceContext();
-  completionBridge.setWorkspaceContextProvider(workspaceContextProvider);
-  definitionBridge.setWorkspaceContextProvider(workspaceContextProvider);
-  diagnosticsBridge.setWorkspaceContextProvider(workspaceContextProvider);
-  hoverBridge.setWorkspaceContextProvider(workspaceContextProvider);
-  hostBindingBridge.setWorkspaceContextProvider(workspaceContextProvider);
-  hostSchemaBridge.setWorkspaceContextProvider(workspaceContextProvider);
-  lineMapBridge.setWorkspaceContextProvider(workspaceContextProvider);
-  nodeMapBridge.setWorkspaceContextProvider(workspaceContextProvider);
-  localizationReviewBridge.setWorkspaceContextProvider(workspaceContextProvider);
-  referencesBridge.setWorkspaceContextProvider(workspaceContextProvider);
-  runtimeBridge.setWorkspaceContextProvider(workspaceContextProvider);
-  storyGraphBridge.setWorkspaceContextProvider(workspaceContextProvider);
-  documentSymbolBridge.setWorkspaceContextProvider(workspaceContextProvider);
-  const editorCompletionController = new EditorCompletionController(
-    editorController.getMonaco(),
-    completionBridge,
-    hostSchemaBridge,
-    hostBindingBridge
-  );
-  const editorHoverController = new EditorHoverController(
-    editorController.getMonaco(),
-    editorController.getEditor(),
-    hoverBridge,
-    hostSchemaBridge,
-    hostBindingBridge
-  );
-  const editorDefinitionController = new EditorDefinitionController(
-    editorController.getMonaco(),
-    editorController.getEditor(),
-    definitionBridge,
-    referencesBridge,
-    async (hoverTarget) => {
-      const documentModel = editorController.getDocumentModel();
-      const node = (documentModel?.nodes || []).find((candidate) => candidate.title === hoverTarget.name);
-      if (node) {
-        await editorReferenceOverlayController.openForNode(node);
-        return;
-      }
-
-      if (hoverTarget.kind === "speaker" || hoverTarget.kind === "host-binding") {
-        await editorReferenceOverlayController.openForTarget(hoverTarget);
-      }
-    },
-    (selection) => {
+  const bindings = createSelfHostedEditorDomBindings();
+  setupSidebarPanelToggles(bindings.sidebarElement);
+  const features = await createSelfHostedEditorFeatures(bindings, {
+    onDefinitionSourceSelection: (selection) => {
       focusSourceSelection(selection);
     },
-    hostBindingBridge
-  );
-  const editorRenameController = new EditorRenameController(
-    editorController.getMonaco()
-  );
-  const storyNodeMapReviewController = new StoryNodeMapReviewController({
-    reviewBridge: nodeMapBridge,
-    reviewButtonElement: nodeMapReviewButtonElement,
   });
-  const hostCapabilityCatalogController = new HostCapabilityCatalogController({
-    hostBindingBridge,
-    hostSchemaBridge,
-    panelElement: hostCapabilityPanelElement,
-  });
-  const editorReferenceOverlayController = new EditorReferenceOverlayController(
-    editorFrameElement,
+  const {
+    diagnosticsController,
+    documentOutlineController,
+    editorCompletionController,
     editorController,
-    referencesBridge,
-    workspaceContextProvider,
-    hostBindingBridge
-  );
-  const documentOutlineController = new DocumentOutlineController(outlinePanelElement);
-  const workspaceFileListController = new ProjectWorkspaceFileListController(workspaceFilePanelElement);
-  const workspaceSummaryController = new ProjectWorkspaceSummaryController(workspaceSummaryElement);
-  const workspaceSessionController = new ProjectWorkspaceSessionController(
-    sessionPanelElement,
-    runtimePanelElement
-  );
-  const workspaceController = new ProjectWorkspaceController({
-    fileInputElement: scriptFileInputElement,
-    scriptSourceLabelElement,
-    workspaceStatusElement,
-  });
-  let diagnosticsRenderVersion = 0;
-  let latestDiagnosticSnapshot = {
-    diagnostics: [],
-    provider: "draft-fallback",
-  };
-  let latestLineIdentityProvider = null;
-  let latestRuntimeSnapshot = {
-    provider: "unavailable",
-    snapshot: null,
-  };
+    editorDefinitionController,
+    editorHoverController,
+    editorReferenceOverlayController,
+    editorRenameController,
+    editorStatusController,
+    hostCapabilityCatalogController,
+    layoutController,
+    loadingController,
+    localizationController,
+    previewController,
+    runtimeBridge,
+    storyGraphController,
+    storyNodeMapReviewController,
+    workspaceController,
+    workspaceFileListController,
+    workspaceSessionController,
+  } = features;
+  const {
+    nodeMapReviewButtonElement,
+    syntaxToggleElement,
+  } = bindings;
+  loadingController.setIdle("editor");
+  const workbenchRenderController = new SelfHostedEditorWorkbenchRenderController(features);
 
   const defaultSample = await loadDefaultSampleScript();
   editorController.setText(defaultSample.text);
   workspaceController.setSampleWorkspace(defaultSample.text, defaultSample.relativePath);
-  await renderWorkbench(editorController.getText(), editorController.getActiveLineNumber());
+  await workbenchRenderController.renderWorkbench(editorController.getText(), editorController.getActiveLineNumber());
   loadingController.setManyIdle(["shell", "status"]);
-  renderWorkspaceFiles();
-  renderWorkspaceSession();
+  workbenchRenderController.renderWorkspaceFiles();
+  workbenchRenderController.renderWorkspaceSession();
 
   editorController.onTextChanged(async (text) => {
     workspaceController.updateCurrentDraft(text);
-    await renderWorkbench(text, editorController.getActiveLineNumber());
+    await workbenchRenderController.renderWorkbench(text, editorController.getActiveLineNumber());
     workspaceController.markDirty();
-    renderWorkspaceSession();
+    workbenchRenderController.renderWorkspaceSession();
   });
 
   editorController.onLineChanged((lineNumber) => {
+    const latestDiagnosticSnapshot = workbenchRenderController.getLatestDiagnosticSnapshot();
     previewController.highlightSourceLine(lineNumber);
     diagnosticsController.setActiveLine(lineNumber);
     diagnosticsController.render(latestDiagnosticSnapshot);
@@ -256,12 +73,12 @@ async function main() {
   });
 
   workspaceController.onStateChanged(() => {
-    renderWorkspaceFiles();
-    renderWorkspaceSession();
+    workbenchRenderController.renderWorkspaceFiles();
+    workbenchRenderController.renderWorkspaceSession();
   });
 
   layoutController.onStateChanged(() => {
-    renderWorkspaceSession();
+    workbenchRenderController.renderWorkspaceSession();
     storyGraphController.scheduleEdgeRefresh();
   });
 
@@ -271,6 +88,7 @@ async function main() {
   });
 
   previewController.onChoiceSelected(async (choice) => {
+    const latestRuntimeSnapshot = workbenchRenderController.getLatestRuntimeSnapshot();
     if (latestRuntimeSnapshot.provider !== "runtime-project" || !latestRuntimeSnapshot.snapshot?.currentNode) {
       return false;
     }
@@ -293,7 +111,7 @@ async function main() {
     }
 
     const previousRuntimeNodeName = latestRuntimeSnapshot.snapshot.currentNode?.name || "";
-    latestRuntimeSnapshot = steppedRuntimeSnapshot;
+    workbenchRenderController.setLatestRuntimeSnapshot(steppedRuntimeSnapshot);
     previewController.renderRuntimeSnapshot(steppedRuntimeSnapshot.snapshot);
     const nextRuntimeNodeName = steppedRuntimeSnapshot.snapshot.currentNode?.name || "";
     if (nextRuntimeNodeName !== previousRuntimeNodeName) {
@@ -308,7 +126,7 @@ async function main() {
       }
     }
 
-    renderWorkspaceSession();
+    workbenchRenderController.renderWorkspaceSession();
     return true;
   });
 
@@ -345,12 +163,12 @@ async function main() {
     }
 
     editorController.setText(targetDocument.text);
-    await renderWorkbench(targetDocument.text, 1);
+    await workbenchRenderController.renderWorkbench(targetDocument.text, 1);
     editorController.focusLine(1);
     layoutController.setView("editor");
     layoutController.ensureEditorVisible();
-    renderWorkspaceFiles();
-    renderWorkspaceSession();
+    workbenchRenderController.renderWorkspaceFiles();
+    workbenchRenderController.renderWorkspaceSession();
   });
 
   localizationController.onSourceLineSelected((selection) => {
@@ -365,22 +183,26 @@ async function main() {
   });
 
   editorController.onAddBlockRequested(async (node) => {
-    const nextText = insertNodeBelow(editorController.getText(), node);
+    const nextText = ScriptBlockEditPatchBuilder.insertNodeBelow(
+      editorController.getText(),
+      node,
+      editorController.getDocumentModel()?.nodes || []
+    );
     editorController.applyUserTextEdit(nextText);
-    await renderWorkbench(nextText, node.endLine + 2);
+    await workbenchRenderController.renderWorkbench(nextText, node.endLine + 2);
     editorController.focusLine(node.endLine + 2);
     workspaceController.markDirty();
     layoutController.ensureEditorVisible();
   });
 
   editorController.onBlockReorderRequested(async ({ sourceNode, targetNode }) => {
-    const patch = moveNodeBefore(editorController.getText(), sourceNode, targetNode);
+    const patch = ScriptBlockEditPatchBuilder.moveNodeBefore(editorController.getText(), sourceNode, targetNode);
     if (!patch.changed) {
       return;
     }
 
     editorController.applyUserTextEdit(patch.text);
-    await renderWorkbench(patch.text, patch.focusLineNumber);
+    await workbenchRenderController.renderWorkbench(patch.text, patch.focusLineNumber);
     editorController.focusLine(patch.focusLineNumber);
     workspaceController.markDirty();
     layoutController.ensureEditorVisible();
@@ -395,7 +217,7 @@ async function main() {
   });
 
   localizationController.onTranslationChanged(() => {
-    renderWorkspaceSummary(editorController.getText());
+    workbenchRenderController.renderWorkspaceSummary(editorController.getText());
     workspaceController.markDirty();
   });
 
@@ -412,13 +234,13 @@ async function main() {
       }
     }
 
-    const patch = retargetGraphEdge(editorController.getText(), sourceLine, targetTitle);
+    const patch = ScriptBlockEditPatchBuilder.retargetGraphEdge(editorController.getText(), sourceLine, targetTitle);
     if (!patch.changed) {
       return;
     }
 
     editorController.applyUserTextEdit(patch.text);
-    await renderWorkbench(patch.text, sourceLine);
+    await workbenchRenderController.renderWorkbench(patch.text, sourceLine);
     editorController.focusLine(sourceLine);
     workspaceController.markDirty();
   });
@@ -442,7 +264,7 @@ async function main() {
       const targetDocument = workspaceController.openWorkspaceFile(selection.sourcePath);
       if (targetDocument) {
         editorController.setText(targetDocument.text);
-        void renderWorkbench(targetDocument.text, selection.lineNumber);
+        void workbenchRenderController.renderWorkbench(targetDocument.text, selection.lineNumber);
       }
     }
 
@@ -454,7 +276,7 @@ async function main() {
   });
 
   async function renameNode(node) {
-    const nextTitle = await requestNodeRename(node.title);
+    const nextTitle = await requestSelfHostedEditorNodeRename(node.title);
     if (!nextTitle) {
       return;
     }
@@ -465,268 +287,19 @@ async function main() {
     }
 
     editorController.applyUserTextEdit(patch.text);
-    await renderWorkbench(patch.text, node.sourceLine);
+    await workbenchRenderController.renderWorkbench(patch.text, node.sourceLine);
     editorController.focusLine(node.sourceLine);
     workspaceController.markDirty();
   }
 
-  function requestNodeRename(currentTitle) {
-    return new Promise((resolve) => {
-      const overlay = document.createElement("div");
-      overlay.className = "rename-dialog-overlay";
-
-      const dialog = document.createElement("form");
-      dialog.className = "rename-dialog";
-      dialog.setAttribute("aria-label", "Rename node");
-
-      const heading = document.createElement("div");
-      heading.className = "rename-dialog-heading";
-      heading.textContent = "Rename node";
-
-      const input = document.createElement("input");
-      input.className = "rename-dialog-input";
-      input.type = "text";
-      input.value = currentTitle;
-      input.autocomplete = "off";
-      input.spellcheck = false;
-
-      const actions = document.createElement("div");
-      actions.className = "rename-dialog-actions";
-
-      const cancelButton = document.createElement("button");
-      cancelButton.className = "rename-dialog-button";
-      cancelButton.type = "button";
-      cancelButton.textContent = "Cancel";
-
-      const confirmButton = document.createElement("button");
-      confirmButton.className = "rename-dialog-button rename-dialog-confirm";
-      confirmButton.type = "submit";
-      confirmButton.textContent = "Rename";
-
-      const close = (value) => {
-        overlay.remove();
-        resolve(value);
-      };
-
-      cancelButton.addEventListener("click", () => close(""));
-      overlay.addEventListener("mousedown", (event) => {
-        if (event.target === overlay) {
-          close("");
-        }
-      });
-      dialog.addEventListener("submit", (event) => {
-        event.preventDefault();
-        close(input.value.trim());
-      });
-      dialog.addEventListener("keydown", (event) => {
-        if (event.key === "Escape") {
-          event.preventDefault();
-          close("");
-        }
-      });
-
-      actions.append(cancelButton, confirmButton);
-      dialog.append(heading, input, actions);
-      overlay.append(dialog);
-      document.body.append(overlay);
-      input.focus();
-      input.select();
-    });
-  }
-
   workspaceController.onScriptLoaded(async (script) => {
     editorController.setText(script.text);
-    await renderWorkbench(script.text);
+    await workbenchRenderController.renderWorkbench(script.text);
     layoutController.setView("editor");
     layoutController.setLayout("write-preview");
-    renderWorkspaceFiles();
-    renderWorkspaceSession();
+    workbenchRenderController.renderWorkspaceFiles();
+    workbenchRenderController.renderWorkspaceSession();
   });
-
-  async function renderWorkbench(scriptText, activeLineNumber = 1) {
-    const renderVersion = ++diagnosticsRenderVersion;
-    loadingController.setManyLoading({
-      diagnostics: "Checking problems",
-      editor: "Syncing line ids",
-      graph: "Mapping story",
-      host: "Reading host catalog",
-      localization: "Gathering lines",
-      outline: "Reading outline",
-      preview: "Reading compiler graph",
-      runtime: "Starting runtime",
-      status: "Refreshing workspace",
-      summary: "Counting quietly",
-    });
-    const lineIdentitySnapshot = await lineMapBridge.refreshLineMap(scriptText);
-    if (renderVersion !== diagnosticsRenderVersion) {
-      return;
-    }
-
-    latestLineIdentityProvider = lineIdentitySnapshot.lineMap
-      ? ScriptLineIdentityModelBuilder.build(lineIdentitySnapshot.lineMap, workspaceController.getState().filePath)
-      : null;
-    const documentModel = editorController.renderAuthoringState(scriptText, latestLineIdentityProvider);
-    loadingController.setIdle("editor");
-    await localizationController.render(scriptText);
-    loadingController.setIdle("localization");
-    await hostCapabilityCatalogController.render(scriptText);
-    loadingController.setIdle("host");
-    const storyGraphSnapshot = await storyGraphBridge.getStoryGraph(scriptText);
-    if (renderVersion !== diagnosticsRenderVersion) {
-      return;
-    }
-
-    latestRuntimeSnapshot = await runtimeBridge.getRuntimeSnapshot(scriptText);
-    if (renderVersion !== diagnosticsRenderVersion) {
-      return;
-    }
-    loadingController.setIdle("runtime");
-
-    previewController.render(
-      scriptText,
-      activeLineNumber,
-      storyGraphSnapshot.graph,
-      latestRuntimeSnapshot.provider === "runtime-project"
-        ? latestRuntimeSnapshot.snapshot
-        : null
-    );
-    storyGraphController.render(storyGraphSnapshot.graph, scriptText);
-    loadingController.setManyIdle(["preview", "graph"]);
-    const diagnosticSnapshot = await diagnosticsBridge.getDiagnostics(scriptText);
-    latestDiagnosticSnapshot = diagnosticSnapshot;
-    loadingController.setIdle("diagnostics");
-    const symbolSnapshot = await documentSymbolBridge.getDocumentSymbols(scriptText);
-    if (renderVersion !== diagnosticsRenderVersion) {
-      return;
-    }
-    loadingController.setIdle("outline");
-
-    diagnosticsController.render(diagnosticSnapshot);
-    editorController.renderDiagnostics(diagnosticSnapshot);
-    editorStatusController.setActiveLine(activeLineNumber);
-    editorStatusController.renderDiagnosticSnapshot(diagnosticSnapshot);
-    documentOutlineController.render(symbolSnapshot, documentModel);
-    documentOutlineController.setActiveLine(activeLineNumber);
-    renderWorkspaceSummary(scriptText, diagnosticSnapshot.diagnostics.length);
-    loadingController.setIdle("summary");
-    loadingController.setIdle("status");
-    renderWorkspaceSession();
-  }
-
-  function insertNodeBelow(scriptText, node) {
-    const lines = scriptText.split(/\r?\n/);
-    const insertIndex = Math.min(lines.length, node.endLine);
-    const nextTitle = createNextUntitledTitle(editorController.getDocumentModel()?.nodes || []);
-    const blockLines = ["", `# ${nextTitle}`, ""];
-    lines.splice(insertIndex, 0, ...blockLines);
-    return lines.join("\n");
-  }
-
-  function moveNodeBefore(scriptText, sourceNode, targetNode) {
-    if (!sourceNode || !targetNode || sourceNode.sourceLine === targetNode.sourceLine) {
-      return {
-        changed: false,
-        focusLineNumber: sourceNode?.sourceLine || 1,
-        text: scriptText,
-      };
-    }
-
-    const lines = scriptText.split(/\r?\n/);
-    const sourceStartIndex = sourceNode.sourceLine - 1;
-    const sourceEndIndex = sourceNode.endLine;
-    const targetStartIndex = targetNode.sourceLine - 1;
-    if (sourceStartIndex < 0 || sourceStartIndex >= lines.length || targetStartIndex < 0 || targetStartIndex >= lines.length) {
-      return {
-        changed: false,
-        focusLineNumber: sourceNode.sourceLine,
-        text: scriptText,
-      };
-    }
-
-    const sourceBlock = lines.slice(sourceStartIndex, sourceEndIndex);
-    const remainingLines = [
-      ...lines.slice(0, sourceStartIndex),
-      ...lines.slice(sourceEndIndex),
-    ];
-    const adjustedTargetIndex = sourceStartIndex < targetStartIndex
-      ? Math.max(0, targetStartIndex - sourceBlock.length)
-      : targetStartIndex;
-    remainingLines.splice(adjustedTargetIndex, 0, ...sourceBlock);
-
-    return {
-      changed: true,
-      focusLineNumber: adjustedTargetIndex + 1,
-      text: remainingLines.join("\n"),
-    };
-  }
-
-  function retargetGraphEdge(scriptText, sourceLine, targetTitle) {
-    const lines = scriptText.split(/\r?\n/);
-    const lineIndex = sourceLine - 1;
-    const line = lines[lineIndex] || "";
-    if (!line.includes("->")) {
-      return {
-        changed: false,
-        text: scriptText,
-      };
-    }
-
-    const [beforeArrow] = line.split("->");
-    const nextLine = targetTitle
-      ? `${beforeArrow.trimEnd()} -> ${targetTitle}`
-      : beforeArrow.trimEnd();
-    if (nextLine === line) {
-      return {
-        changed: false,
-        text: scriptText,
-      };
-    }
-
-    lines[lineIndex] = nextLine;
-    return {
-      changed: true,
-      text: lines.join("\n"),
-    };
-  }
-
-  function createNextUntitledTitle(nodes) {
-    const existingTitles = new Set(nodes.map((node) => node.title));
-    if (!existingTitles.has("Untitled")) {
-      return "Untitled";
-    }
-
-    let suffix = 2;
-    while (existingTitles.has(`Untitled ${suffix}`)) {
-      suffix += 1;
-    }
-
-    return `Untitled ${suffix}`;
-  }
-
-  function renderWorkspaceSummary(scriptText, diagnosticsCount) {
-    workspaceSummaryController.render(
-      ProjectWorkspaceSummaryModelBuilder.build(scriptText, localizationDraftStore, diagnosticsCount)
-    );
-  }
-
-  function renderWorkspaceSession() {
-    const workspaceState = workspaceController.getState();
-    const layoutState = layoutController.getState();
-    workspaceSessionController.render({
-      ...workspaceState,
-      ...layoutState,
-      diagnosticsLabel: latestDiagnosticSnapshot.provider === "language-server"
-        ? "LanguageServer"
-        : "Draft fallback",
-      runtimeLabel: latestRuntimeSnapshot.provider === "runtime-project"
-        ? (latestRuntimeSnapshot.snapshot?.state?.currentNodeName || "started")
-        : "unavailable",
-    });
-  }
-
-  function renderWorkspaceFiles() {
-    workspaceFileListController.render(workspaceController.getState());
-  }
 
   async function loadDefaultSampleScript() {
     const response = await fetch(`/${defaultSamplePath}`);
@@ -754,40 +327,5 @@ async function main() {
 
 main().catch((error) => {
   console.error(error);
-  const workspaceStatusElement = document.querySelector(".workspace-status");
-  const editorElement = document.querySelector(".script-editor");
-  if (workspaceStatusElement) {
-    workspaceStatusElement.textContent = "Default .inscape sample failed to load";
-    workspaceStatusElement.dataset.loadingState = "error";
-    workspaceStatusElement.dataset.loadingLabel = "Sample failed";
-  }
-
-  if (editorElement) {
-    editorElement.textContent = error instanceof Error ? error.message : String(error);
-    editorElement.dataset.loadingState = "error";
-    editorElement.dataset.loadingLabel = "Could not open workspace";
-  }
+  renderSelfHostedEditorStartupError(error);
 });
-
-function setupSidebarPanelToggles(sidebarElement) {
-  if (!sidebarElement) {
-    return;
-  }
-
-  for (const button of sidebarElement.querySelectorAll("[data-sidebar-toggle]")) {
-    const panelName = button.dataset.sidebarToggle;
-    const panelElement = button.closest("section");
-    button.addEventListener("click", () => {
-      const isCollapsed = !panelElement.classList.contains("is-collapsed");
-      panelElement.classList.toggle("is-collapsed", isCollapsed);
-      button.setAttribute("aria-expanded", String(!isCollapsed));
-      if (panelName === "files") {
-        sidebarElement.dataset.filesCollapsed = String(isCollapsed);
-      }
-
-      if (panelName === "outline") {
-        sidebarElement.dataset.outlineCollapsed = String(isCollapsed);
-      }
-    });
-  }
-}

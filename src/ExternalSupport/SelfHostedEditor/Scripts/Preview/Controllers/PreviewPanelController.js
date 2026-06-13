@@ -1,4 +1,12 @@
-import { ScriptDocumentModelBuilder } from "../../ProjectWorkspace/Models/ScriptDocumentModelBuilder.js";
+import {
+  ScriptDocumentFallbackPolicy,
+  ScriptDocumentFallbackReason,
+} from "../../ProjectWorkspace/Models/ScriptDocumentFallbackPolicy.js";
+import { PreviewCompilerGraphContractGuard } from "../Models/PreviewCompilerGraphContractGuard.js";
+import { PreviewFlowStatePresenter } from "../Models/PreviewFlowStatePresenter.js";
+import { PreviewRuntimePreferenceModelBuilder } from "../Models/PreviewRuntimePreferenceModelBuilder.js";
+import { PreviewBlockRenderer } from "../Renderers/PreviewBlockRenderer.js";
+import { PreviewChoiceRenderer } from "../Renderers/PreviewChoiceRenderer.js";
 
 export class PreviewPanelController {
   constructor(previewElement, modeButtonElements = [], modeLabelElement = null) {
@@ -16,10 +24,20 @@ export class PreviewPanelController {
     this.storyGraphModel = null;
     this.scriptText = "";
     this.pendingFlowAnimationLineIndex = -1;
-    this.typewriterTimer = null;
     this.flowWheelAccumulator = 0;
     this.flowWheelLastDirection = 0;
     this.flowWheelThreshold = 160;
+    this.compilerGraphContractGuard = new PreviewCompilerGraphContractGuard();
+    this.flowStatePresenter = new PreviewFlowStatePresenter();
+    this.runtimePreferenceModelBuilder = new PreviewRuntimePreferenceModelBuilder();
+    this.blockRenderer = new PreviewBlockRenderer({
+      onSourceLineSelected: (lineNumber) => this.notifySourceLineSelected(lineNumber),
+    });
+    this.choiceRenderer = new PreviewChoiceRenderer({
+      getCurrentNodeTitle: () => this.currentNodeTitle,
+      onChoiceSelected: (choice, event) => this.selectChoice(choice, event),
+      onSourceLineSelected: (lineNumber) => this.notifySourceLineSelected(lineNumber),
+    });
     this.bindModeControls();
     this.previewElement.addEventListener("click", (event) => {
       void this.handlePreviewClick(event);
@@ -42,9 +60,11 @@ export class PreviewPanelController {
     this.scriptText = scriptText;
     this.activeLineNumber = activeLineNumber;
     this.storyGraphModel = storyGraphModel;
-    const draftDocumentModel = ScriptDocumentModelBuilder.build(scriptText);
+    const draftDocumentModel = ScriptDocumentFallbackPolicy.buildDocumentModel(scriptText, {
+      reason: ScriptDocumentFallbackReason.PreviewCompilerGraphUnavailable,
+    });
     try {
-      this.documentModel = this.buildDocumentModelFromStoryGraph(storyGraphModel) || draftDocumentModel;
+      this.documentModel = this.compilerGraphContractGuard.buildDocumentModelFromStoryGraph(storyGraphModel) || draftDocumentModel;
     } catch (error) {
       this.documentModel = null;
       this.latestStoryModel = null;
@@ -55,10 +75,10 @@ export class PreviewPanelController {
     }
 
     const storyModel = this.buildPreferredPreviewModel(activeLineNumber, runtimeSnapshot);
-    if (storyModel.nodeTitle !== this.currentNodeTitle && !this.hasRuntimeReadingProgress(storyModel)) {
+    if (storyModel.nodeTitle !== this.currentNodeTitle && !this.flowStatePresenter.hasRuntimeReadingProgress(storyModel)) {
       this.flowVisibleLineCount = 0;
     }
-    this.syncFlowVisibleLineCount(storyModel);
+    this.flowVisibleLineCount = this.flowStatePresenter.syncVisibleLineCount(storyModel, this.flowVisibleLineCount);
 
     this.currentNodeTitle = storyModel.nodeTitle;
     this.latestStoryModel = storyModel;
@@ -67,38 +87,17 @@ export class PreviewPanelController {
   }
 
   buildPreferredPreviewModel(activeLineNumber, runtimeSnapshot) {
-    const runtimeStoryModel = this.buildPreviewModelFromRuntimeSnapshot(runtimeSnapshot);
-    if (runtimeStoryModel && this.shouldPreferRuntimeInitialSelection(activeLineNumber)) {
-      return runtimeStoryModel;
-    }
-
-    if (runtimeStoryModel && this.isRuntimeStoryModelAlignedWithActiveLine(runtimeStoryModel, activeLineNumber)) {
-      return runtimeStoryModel;
-    }
-
-    return this.buildPreviewModel(activeLineNumber);
-  }
-
-  shouldPreferRuntimeInitialSelection(activeLineNumber) {
-    if (this.findNodeByTitle(this.currentNodeTitle)) {
-      return false;
-    }
-
-    const firstNodeSourceLine = Number(this.documentModel?.nodes?.[0]?.sourceLine || 1);
-    return activeLineNumber <= Math.max(1, firstNodeSourceLine);
-  }
-
-  isRuntimeStoryModelAlignedWithActiveLine(runtimeStoryModel, activeLineNumber) {
-    const activeNode = this.findNodeForLine(activeLineNumber);
-    if (!activeNode) {
-      return false;
-    }
-
-    return activeNode.title === runtimeStoryModel.nodeTitle;
+    return this.runtimePreferenceModelBuilder.buildPreferredPreviewModel({
+      activeLineNumber,
+      currentNodeTitle: this.currentNodeTitle,
+      documentModel: this.documentModel,
+      fallbackStoryModel: this.buildPreviewModel(activeLineNumber),
+      runtimeSnapshot,
+    });
   }
 
   renderRuntimeSnapshot(runtimeSnapshot) {
-    const storyModel = this.buildPreviewModelFromRuntimeSnapshot(runtimeSnapshot);
+    const storyModel = this.runtimePreferenceModelBuilder.buildPreviewModelFromRuntimeSnapshot(runtimeSnapshot);
     if (!storyModel) {
       return false;
     }
@@ -106,7 +105,7 @@ export class PreviewPanelController {
     if (storyModel.nodeTitle !== this.currentNodeTitle) {
       this.flowVisibleLineCount = 0;
     }
-    this.syncFlowVisibleLineCount(storyModel);
+    this.flowVisibleLineCount = this.flowStatePresenter.syncVisibleLineCount(storyModel, this.flowVisibleLineCount);
     this.pendingFlowAnimationLineIndex = -1;
 
     this.currentNodeTitle = storyModel.nodeTitle;
@@ -117,24 +116,24 @@ export class PreviewPanelController {
   }
 
   renderStoryModel(storyModel) {
-    this.clearTypewriterTimer();
-    const visibleLines = this.getVisibleLines(storyModel);
-    const shouldShowChoices = this.shouldShowChoices(storyModel);
+    this.blockRenderer.clearTypewriterTimer();
+    const visibleLines = this.flowStatePresenter.getVisibleLines(storyModel, this.mode, this.flowVisibleLineCount);
+    const shouldShowChoices = this.flowStatePresenter.shouldShowChoices(storyModel, this.mode, this.flowVisibleLineCount);
     const animatedLineIndex = this.pendingFlowAnimationLineIndex;
     this.pendingFlowAnimationLineIndex = -1;
     const historyElement = this.createRuntimeHistoryElement(storyModel);
     const storyElements = this.mode === "flow"
-      ? this.createFlowStoryElements(storyModel, visibleLines, animatedLineIndex)
+      ? this.blockRenderer.createFlowStoryElements(storyModel, visibleLines, animatedLineIndex)
       : [
-        this.createTitleElement(storyModel),
-        ...visibleLines.map((line, index) => this.createLineElement(line, {
+        this.blockRenderer.createTitleElement(storyModel),
+        ...visibleLines.map((line, index) => this.blockRenderer.createLineElement(line, {
           animateBody: index === animatedLineIndex,
         })),
       ];
     this.previewElement.replaceChildren(
       ...(historyElement ? [historyElement] : []),
       ...storyElements,
-      this.createChoicesElement(shouldShowChoices ? storyModel.choices : [])
+      this.choiceRenderer.createChoicesElement(shouldShowChoices ? storyModel.choices : [])
     );
     this.previewElement.dataset.previewMode = this.mode;
     delete this.previewElement.dataset.previewState;
@@ -192,7 +191,7 @@ export class PreviewPanelController {
     this.flowVisibleLineCount = mode === "flow" ? 0 : Number.MAX_SAFE_INTEGER;
     this.updateModeControls();
     if (this.latestStoryModel) {
-      this.syncFlowVisibleLineCount(this.latestStoryModel);
+      this.flowVisibleLineCount = this.flowStatePresenter.syncVisibleLineCount(this.latestStoryModel, this.flowVisibleLineCount);
       this.renderStoryModel(this.latestStoryModel);
       this.highlightSourceLine(this.activeLineNumber);
     }
@@ -233,8 +232,10 @@ export class PreviewPanelController {
 
     const direction = deltaY > 0 ? 1 : -1;
     const atBoundary = direction < 0 ? this.isPreviewScrolledToTop() : this.isPreviewScrolledToBottom();
-    const canAdvance = direction > 0 && !this.areFlowChoicesVisible();
-    const canRewind = direction < 0 && this.getFlowVisibleLineCount(this.latestStoryModel) > 0;
+    const canAdvance = direction > 0
+      && !this.flowStatePresenter.areChoicesVisible(this.latestStoryModel, this.mode, this.flowVisibleLineCount);
+    const canRewind = direction < 0
+      && this.flowStatePresenter.getVisibleLineCount(this.latestStoryModel, this.flowVisibleLineCount) > 0;
     if (!atBoundary || (direction > 0 && !canAdvance) || (direction < 0 && !canRewind)) {
       this.resetFlowWheelAccumulator();
       return;
@@ -258,7 +259,7 @@ export class PreviewPanelController {
       return false;
     }
 
-    if (this.hasRuntimeReadingProgress(this.latestStoryModel)) {
+    if (this.flowStatePresenter.hasRuntimeReadingProgress(this.latestStoryModel)) {
       return this.notifyChoiceSelected({
         nodeTitle: this.latestStoryModel.nodeTitle,
         runtimeAction: {
@@ -267,7 +268,7 @@ export class PreviewPanelController {
       });
     }
 
-    const flowStepCount = this.getFlowStepCount(this.latestStoryModel);
+    const flowStepCount = this.flowStatePresenter.getStepCount(this.latestStoryModel);
     const nextVisibleLineCount = Math.min(
       flowStepCount + 1,
       this.flowVisibleLineCount + 1
@@ -276,7 +277,7 @@ export class PreviewPanelController {
       return false;
     }
 
-    this.pendingFlowAnimationLineIndex = this.getFlowAnimationLineIndex(this.latestStoryModel, nextVisibleLineCount);
+    this.pendingFlowAnimationLineIndex = this.flowStatePresenter.getAnimationLineIndex(this.latestStoryModel, nextVisibleLineCount);
     this.flowVisibleLineCount = nextVisibleLineCount;
     this.renderStoryModel(this.latestStoryModel);
     this.highlightSourceLine(this.activeLineNumber);
@@ -288,7 +289,7 @@ export class PreviewPanelController {
       return false;
     }
 
-    if (this.hasRuntimeReadingProgress(this.latestStoryModel)) {
+    if (this.flowStatePresenter.hasRuntimeReadingProgress(this.latestStoryModel)) {
       return this.notifyChoiceSelected({
         nodeTitle: this.latestStoryModel.nodeTitle,
         runtimeAction: {
@@ -351,110 +352,6 @@ export class PreviewPanelController {
     return scrollTop + clientHeight >= scrollHeight - 1;
   }
 
-  areFlowChoicesVisible() {
-    return Boolean(this.latestStoryModel)
-      && this.mode === "flow"
-      && this.getFlowVisibleLineCount(this.latestStoryModel) > this.getFlowStepCount(this.latestStoryModel);
-  }
-
-  getVisibleLines(storyModel) {
-    if (this.mode !== "flow") {
-      return storyModel.lines;
-    }
-
-    return storyModel.lines.filter((line) => this.isLineVisibleInFlow(line, storyModel));
-  }
-
-  shouldShowChoices(storyModel) {
-    return this.mode !== "flow" || this.getFlowVisibleLineCount(storyModel) > this.getFlowStepCount(storyModel);
-  }
-
-  isLineVisibleInFlow(targetLine, storyModel) {
-    return this.isLineVisibleInFlowForCount(targetLine, storyModel, this.getFlowVisibleLineCount(storyModel));
-  }
-
-  getFlowStepCount(storyModel) {
-    const runtimeStepCount = Number(storyModel?.runtimeState?.readingProgress?.contentStepCount);
-    if (Number.isFinite(runtimeStepCount) && runtimeStepCount >= 0) {
-      return runtimeStepCount;
-    }
-
-    return storyModel.lines.filter((line) => line.kind !== "metadata").length;
-  }
-
-  getFlowAnimationLineIndex(storyModel, visibleLineCount) {
-    if (visibleLineCount <= 0 || visibleLineCount > this.getFlowStepCount(storyModel)) {
-      return -1;
-    }
-
-    const visibleLines = storyModel.lines.filter((line) => this.isLineVisibleInFlowForCount(line, storyModel, visibleLineCount));
-    let contentCount = 0;
-    for (const line of visibleLines) {
-      if (line.kind === "metadata") {
-        continue;
-      }
-
-      contentCount += 1;
-      if (contentCount === visibleLineCount) {
-        return visibleLines.indexOf(line);
-      }
-    }
-
-    return -1;
-  }
-
-  isLineVisibleInFlowForCount(targetLine, storyModel, visibleLineCount) {
-    let visibleContentCount = 0;
-    for (const line of storyModel.lines) {
-      if (line.kind !== "metadata") {
-        visibleContentCount += 1;
-      }
-
-      if (line === targetLine) {
-        return visibleContentCount <= visibleLineCount;
-      }
-    }
-
-    return false;
-  }
-
-  createFlowStoryElements(storyModel, visibleLines, animatedLineIndex) {
-    const groupedLines = this.groupFlowLines(visibleLines);
-    return [
-      this.createTitleElement(storyModel, groupedLines.leadingMetadata),
-      ...groupedLines.contentRows.map((row) => this.createLineElement(row.line, {
-        animateBody: visibleLines.indexOf(row.line) === animatedLineIndex,
-        attachedMetadataLines: row.metadataLines,
-      })),
-    ];
-  }
-
-  groupFlowLines(visibleLines) {
-    const leadingMetadata = [];
-    const contentRows = [];
-    for (const line of visibleLines) {
-      if (line.kind === "metadata") {
-        const target = contentRows[contentRows.length - 1];
-        if (target) {
-          target.metadataLines.push(line);
-        } else {
-          leadingMetadata.push(line);
-        }
-        continue;
-      }
-
-      contentRows.push({
-        line,
-        metadataLines: [],
-      });
-    }
-
-    return {
-      contentRows,
-      leadingMetadata,
-    };
-  }
-
   buildPreviewModel(activeLineNumber = 1) {
     const activeNode = this.findNodeForLine(activeLineNumber);
     const firstNode = this.documentModel?.nodes?.[0];
@@ -473,92 +370,16 @@ export class PreviewPanelController {
     };
   }
 
-  buildPreviewModelFromRuntimeSnapshot(runtimeSnapshot) {
-    const currentNode = runtimeSnapshot?.currentNode || null;
-    if (!currentNode) {
-      return null;
-    }
+  normalizeChoiceGroups(choices) {
+    return this.choiceRenderer.normalizeChoiceGroups(choices);
+  }
 
-    const nodeTitle = currentNode.name || "Untitled Node";
-    const sourceLine = Number(currentNode?.source?.line || currentNode?.lines?.[0]?.source?.line || 0);
-    const lines = (Array.isArray(currentNode.lines) ? currentNode.lines : [])
-      .map((line) => ({
-        anchor: line?.anchor || "",
-        kind: String(line?.kind || "narration").toLowerCase(),
-        nodeTitle,
-        raw: line?.raw || "",
-        sourceLine: Number(line?.source?.line || 0),
-        sourcePath: line?.source?.sourcePath || "",
-        speaker: line?.speaker || "",
-        text: line?.text || "",
-      }))
-      .filter((line) => line.sourceLine > 0);
-    const choices = (Array.isArray(currentNode.choices) ? currentNode.choices : [])
-      .map((group, groupIndex) => {
-        const options = (Array.isArray(group?.options) ? group.options : [])
-          .map((option, optionIndex) => ({
-            anchor: option?.anchor || "",
-            kind: "choice",
-            nodeTitle,
-            runtimeAction: {
-              groupIndex,
-              optionIndex,
-              type: "choose",
-            },
-            sourceLine: Number(option?.source?.line || 0),
-            sourcePath: option?.source?.sourcePath || "",
-            target: option?.target || "",
-            text: option?.text || "",
-          }))
-          .filter((option) => option.sourceLine > 0);
-        if (options.length === 0) {
-          return null;
-        }
+  getVisibleLines(storyModel) {
+    return this.flowStatePresenter.getVisibleLines(storyModel, this.mode, this.flowVisibleLineCount);
+  }
 
-        return {
-          kind: "choiceGroup",
-          nodeTitle,
-          options,
-          prompt: group?.prompt || "",
-          sourceLine: Number(group?.source?.line || 0),
-          sourcePath: group?.source?.sourcePath || "",
-        };
-      })
-      .filter(Boolean);
-    if (currentNode.defaultNext) {
-      choices.push({
-        kind: "jumpGroup",
-        nodeTitle,
-        options: [{
-          kind: "jump",
-          nodeTitle,
-          runtimeAction: {
-            type: "continue",
-          },
-          sourceLine: 0,
-          sourcePath: "",
-          target: currentNode.defaultNext,
-          text: "continue",
-        }],
-        prompt: "",
-        sourceLine: 0,
-        sourcePath: "",
-      });
-    }
-
-    return {
-      choices,
-      lines,
-      nodeTitle,
-      runtimeState: {
-        currentNodeName: runtimeSnapshot?.state?.currentNodeName || nodeTitle,
-        path: Array.isArray(runtimeSnapshot?.state?.path) ? runtimeSnapshot.state.path : [],
-        readingProgress: runtimeSnapshot?.readingProgress || null,
-        visibleStepCount: Number(runtimeSnapshot?.state?.visibleStepCount || 0),
-      },
-      sourceLine,
-      title: nodeTitle,
-    };
+  clearTypewriterTimer() {
+    this.blockRenderer.clearTypewriterTimer();
   }
 
   findNodeForLine(lineNumber) {
@@ -569,100 +390,6 @@ export class PreviewPanelController {
 
   findNodeByTitle(title) {
     return (this.documentModel?.nodes || []).find((node) => node.title === title) || null;
-  }
-
-  buildDocumentModelFromStoryGraph(storyGraphModel) {
-    if (storyGraphModel?.provider !== "compiler-project" || !Array.isArray(storyGraphModel.nodes)) {
-      return null;
-    }
-
-    const activeNodes = storyGraphModel.nodes.filter((node) => node.isInActiveDocument);
-    const sourceNodes = activeNodes.length > 0 ? activeNodes : storyGraphModel.nodes;
-    const nodes = sourceNodes
-      .map((node, index) => {
-        const title = node.title || "Untitled Node";
-        const previewLines = this.requireCompilerPreviewLines(node, index, title);
-        const sourceLine = Number(node.sourceLine || 0);
-        if (!Number.isFinite(sourceLine) || sourceLine <= 0) {
-          throw new Error(
-            `Compiler story graph contract violation: node "${title}" at graph index ${index} has no valid sourceLine.`
-          );
-        }
-
-        return {
-          choices: Array.isArray(node.previewChoices) ? node.previewChoices : [],
-          endLine: this.getCompilerNodeEndLine(node, previewLines),
-          lines: previewLines,
-          sourceLine,
-          sourcePath: node.sourcePath || "",
-          title,
-        };
-      });
-
-    if (nodes.length === 0) {
-      throw new Error("Compiler story graph contract violation: compiler-project provider returned no preview nodes for the active document.");
-    }
-
-    return {
-      lineCount: 0,
-      nodes,
-      title: nodes[0]?.title || "Untitled Node",
-    };
-  }
-
-  requireCompilerPreviewLines(node, index, title) {
-    if (!Array.isArray(node.previewLines)) {
-      throw new Error(
-        `Compiler story graph contract violation: node "${title}" at graph index ${index} is missing the previewLines array.`
-      );
-    }
-
-    const compilerLineCount = Array.isArray(node.lines) ? node.lines.length : 0;
-    if (compilerLineCount > 0 && node.previewLines.length !== compilerLineCount) {
-      throw new Error(
-        `Compiler story graph contract violation: node "${title}" has ${compilerLineCount} compiler line(s) but ${node.previewLines.length} previewLines. Preview refuses to render draft fallback content because that would hide lost compiler data.`
-      );
-    }
-
-    for (const [lineIndex, line] of node.previewLines.entries()) {
-      if (Number(line?.sourceLine || 0) <= 0) {
-        throw new Error(
-          `Compiler story graph contract violation: node "${title}" previewLines[${lineIndex}] has no valid sourceLine.`
-        );
-      }
-    }
-
-    return node.previewLines;
-  }
-
-  getCompilerNodeEndLine(node, previewLines) {
-    const lineNumbers = [
-      Number(node.endLine || 0),
-      Number(node.sourceLine || 0),
-      ...previewLines.map((line) => Number(line?.sourceLine || 0)),
-      ...this.getCompilerChoiceLineNumbers(node.previewChoices),
-    ].filter((lineNumber) => Number.isFinite(lineNumber) && lineNumber > 0);
-    return Math.max(...lineNumbers, 1);
-  }
-
-  getCompilerChoiceLineNumbers(previewChoices) {
-    const lineNumbers = [];
-    for (const group of Array.isArray(previewChoices) ? previewChoices : []) {
-      lineNumbers.push(Number(group?.sourceLine || 0));
-      for (const option of Array.isArray(group?.options) ? group.options : []) {
-        lineNumbers.push(Number(option?.sourceLine || 0));
-      }
-    }
-
-    return lineNumbers;
-  }
-
-  createTitleElement(storyModel, attachedMetadataLines = []) {
-    const title = document.createElement("h1");
-    title.className = "story-title";
-    title.textContent = storyModel.title;
-    this.appendMetadataTags(title, attachedMetadataLines);
-    return title;
   }
 
   createRuntimeHistoryElement(storyModel) {
@@ -715,252 +442,6 @@ export class PreviewPanelController {
     });
     history.append(pathElement);
     return history;
-  }
-
-  hasRuntimeReadingProgress(storyModel) {
-    return Number.isFinite(Number(storyModel?.runtimeState?.readingProgress?.visibleStepCount));
-  }
-
-  syncFlowVisibleLineCount(storyModel) {
-    if (!this.hasRuntimeReadingProgress(storyModel)) {
-      return;
-    }
-
-    this.flowVisibleLineCount = this.getFlowVisibleLineCount(storyModel);
-  }
-
-  getFlowVisibleLineCount(storyModel) {
-    const runtimeVisibleLineCount = Number(storyModel?.runtimeState?.readingProgress?.visibleStepCount);
-    if (Number.isFinite(runtimeVisibleLineCount) && runtimeVisibleLineCount >= 0) {
-      return runtimeVisibleLineCount;
-    }
-
-    return this.flowVisibleLineCount;
-  }
-
-  createLineElement(line, options = {}) {
-    const paragraph = document.createElement("p");
-    paragraph.className = "story-line";
-    paragraph.dataset.sourceLine = String(line.sourceLine);
-    if (line.kind === "metadata") {
-      paragraph.classList.add("story-line-metadata");
-      paragraph.removeAttribute("data-source-line");
-      paragraph.append(this.createMetadataTagElement(line));
-      return paragraph;
-    }
-
-    if (line.sourceLine > 0) {
-      paragraph.addEventListener("click", () => this.notifySourceLineSelected(line.sourceLine));
-    }
-
-    if (line.speaker) {
-      const speakerName = document.createElement("strong");
-      speakerName.className = options.animateBody
-        ? "story-speaker-name story-speaker-name-enter"
-        : "story-speaker-name";
-      speakerName.textContent = `${line.speaker}：`;
-      paragraph.append(speakerName, document.createTextNode(" "));
-    }
-
-    const attachedMetadataLines = Array.isArray(options.attachedMetadataLines)
-      ? options.attachedMetadataLines
-      : [];
-    if (options.animateBody) {
-      paragraph.classList.add("story-line-typewriter");
-      paragraph.append(this.createTypewriterBodyElement(line.text, attachedMetadataLines));
-    } else {
-      paragraph.append(...this.createTextFragments(line.text));
-      this.appendMetadataTags(paragraph, attachedMetadataLines);
-    }
-
-    return paragraph;
-  }
-
-  createTypewriterBodyElement(text, attachedMetadataLines = []) {
-    const body = document.createElement("span");
-    body.className = "story-typewriter-body";
-    const fullText = String(text || "");
-    if (this.shouldReduceMotion() || fullText.length === 0) {
-      body.classList.add("is-complete");
-      body.append(...this.createTextFragments(fullText));
-      this.appendMetadataTags(body, attachedMetadataLines);
-      return body;
-    }
-
-    let cursor = 0;
-    const step = () => {
-      cursor += this.getTypewriterStepSize(fullText, cursor);
-      if (cursor >= fullText.length) {
-        body.classList.add("is-complete");
-        body.replaceChildren(...this.createTextFragments(fullText));
-        this.appendMetadataTags(body, attachedMetadataLines);
-        this.clearTypewriterTimer();
-        return;
-      }
-
-      body.textContent = fullText.slice(0, cursor);
-      this.typewriterTimer = setTimeout(step, this.getTypewriterDelay(fullText[cursor - 1]));
-    };
-
-    this.typewriterTimer = setTimeout(step, 80);
-    return body;
-  }
-
-  appendMetadataTags(parent, metadataLines) {
-    for (const line of metadataLines) {
-      parent.append(document.createTextNode(" "), this.createMetadataTagElement(line));
-    }
-  }
-
-  shouldReduceMotion() {
-    return typeof window !== "undefined"
-      && typeof window.matchMedia === "function"
-      && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  }
-
-  getTypewriterStepSize(text, cursor) {
-    const char = text[cursor] || "";
-    if (/[\s，。！？、,.!?;；:：]/.test(char)) {
-      return 1;
-    }
-
-    return /[\u4e00-\u9fff]/.test(char) ? 1 : 2;
-  }
-
-  getTypewriterDelay(char) {
-    if (/[。！？.!?]/.test(char || "")) {
-      return 72;
-    }
-
-    if (/[，、,;；:：]/.test(char || "")) {
-      return 46;
-    }
-
-    return 22;
-  }
-
-  clearTypewriterTimer() {
-    if (this.typewriterTimer !== null) {
-      clearTimeout(this.typewriterTimer);
-      this.typewriterTimer = null;
-    }
-  }
-
-  createMetadataTagElement(line) {
-    const tag = document.createElement("span");
-    tag.className = "story-metadata-tag";
-    tag.textContent = String(line.text || "").replace(/^@+/, "").trim();
-    return tag;
-  }
-
-  createTextFragments(text) {
-    const fragments = [];
-    const queryPattern = /\[[^\]\r\n]+\]/g;
-    let cursor = 0;
-    for (const match of String(text || "").matchAll(queryPattern)) {
-      if (match.index > cursor) {
-        fragments.push(document.createTextNode(text.slice(cursor, match.index)));
-      }
-
-      const queryToken = document.createElement("span");
-      queryToken.className = "story-query-token";
-      queryToken.textContent = match[0];
-      fragments.push(queryToken);
-      cursor = match.index + match[0].length;
-    }
-
-    if (cursor < String(text || "").length) {
-      fragments.push(document.createTextNode(String(text || "").slice(cursor)));
-    }
-
-    return fragments.length > 0 ? fragments : [document.createTextNode(text || "")];
-  }
-
-  createChoicesElement(choices) {
-    const list = document.createElement("div");
-    list.className = "choice-list";
-    const groups = this.normalizeChoiceGroups(choices);
-    if (groups.length === 0) {
-      list.classList.add("is-empty");
-      return list;
-    }
-
-    for (const [groupIndex, group] of groups.entries()) {
-      if (group.prompt) {
-        const prompt = document.createElement("div");
-        prompt.className = "choice-prompt";
-        if (group.sourceLine > 0) {
-          prompt.dataset.sourceLine = String(group.sourceLine);
-          prompt.addEventListener("click", () => this.notifySourceLineSelected(group.sourceLine));
-        }
-
-        prompt.textContent = group.prompt;
-        list.append(prompt);
-      }
-
-      for (const [optionIndex, choice] of group.options.entries()) {
-        const button = document.createElement("button");
-        button.className = "choice-button";
-        button.type = "button";
-        button.dataset.sourceLine = String(choice.sourceLine);
-        button.addEventListener("click", (event) => {
-          void this.selectChoice({
-            ...choice,
-            nodeTitle: choice.nodeTitle || group.nodeTitle || this.currentNodeTitle,
-            runtimeAction: choice.runtimeAction || (
-              group.kind === "jumpGroup"
-                ? { type: "continue" }
-                : {
-                  groupIndex,
-                  optionIndex,
-                  type: "choose",
-                }
-            ),
-          }, event);
-        });
-
-        const text = document.createElement("span");
-        text.className = "choice-text";
-        text.textContent = choice.text || "Continue";
-        button.append(text);
-
-        if (choice.target) {
-          const target = document.createElement("small");
-          target.className = "choice-target";
-          target.textContent = choice.target;
-          button.append(target);
-        }
-
-        list.append(button);
-      }
-    }
-
-    return list;
-  }
-
-  normalizeChoiceGroups(choices) {
-    if (!Array.isArray(choices) || choices.length === 0) {
-      return [];
-    }
-
-    const compilerGroups = choices.filter((choice) => Array.isArray(choice.options));
-    if (compilerGroups.length > 0) {
-      return compilerGroups
-        .map((group) => ({
-          options: group.options || [],
-          prompt: group.prompt || "",
-          sourceLine: Number(group.sourceLine || 0),
-        }))
-        .filter((group) => group.options.length > 0);
-    }
-
-    return [
-      {
-        options: choices,
-        prompt: "",
-        sourceLine: 0,
-      },
-    ];
   }
 
   async selectChoice(choice, event = null) {

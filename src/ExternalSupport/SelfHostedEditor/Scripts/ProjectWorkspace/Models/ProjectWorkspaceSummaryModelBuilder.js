@@ -1,9 +1,14 @@
 import { ScriptDiagnosticsModelBuilder } from "./ScriptDiagnosticsModelBuilder.js";
-import { ScriptDocumentModelBuilder } from "./ScriptDocumentModelBuilder.js";
+import {
+  ScriptDocumentFallbackPolicy,
+  ScriptDocumentFallbackReason,
+} from "./ScriptDocumentFallbackPolicy.js";
 
 export class ProjectWorkspaceSummaryModelBuilder {
   static build(scriptText, localizationDraftStore, diagnosticsCount = null) {
-    const documentModel = ScriptDocumentModelBuilder.build(scriptText);
+    const documentModel = ScriptDocumentFallbackPolicy.buildDocumentModel(scriptText, {
+      reason: ScriptDocumentFallbackReason.WorkspaceSummaryStatus,
+    });
     const draftTranslationCount = localizationDraftStore.countDraftsForRows(documentModel.translatableLines);
     const nextDiagnosticsCount = diagnosticsCount ?? ScriptDiagnosticsModelBuilder.build(scriptText).length;
 

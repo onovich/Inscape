@@ -76,6 +76,8 @@ The current shell is intentionally small, but it now includes a first Monaco-bac
 
 The draft extraction model is UI-only. It exists to make the shell useful while the real `Tooling` / `LanguageServer` / `Runtime` contracts are wired in.
 
+Production code must reach it through `ScriptDocumentFallbackPolicy`, not by importing `ScriptDocumentModelBuilder` directly. Registered fallback reasons currently cover editor authoring surface state and workspace summary status as offline-only UI convenience, plus Preview / Graph compiler bridge unavailability, localization review unavailability, diagnostics LanguageServer unavailability, and document-symbols LanguageServer unavailability as hosted-bridge fallbacks. Malformed shared payloads must stay explicit errors; they must not be hidden by draft extraction.
+
 ## Handoff Notes
 
 Most recent user-facing work focused on replacing fragile prototype behavior with real shared contracts:

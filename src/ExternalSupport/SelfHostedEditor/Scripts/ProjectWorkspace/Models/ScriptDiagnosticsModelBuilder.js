@@ -1,8 +1,13 @@
-import { ScriptDocumentModelBuilder } from "./ScriptDocumentModelBuilder.js";
+import {
+  ScriptDocumentFallbackPolicy,
+  ScriptDocumentFallbackReason,
+} from "./ScriptDocumentFallbackPolicy.js";
 
 export class ScriptDiagnosticsModelBuilder {
   static build(scriptText) {
-    const documentModel = ScriptDocumentModelBuilder.build(scriptText);
+    const documentModel = ScriptDocumentFallbackPolicy.buildDocumentModel(scriptText, {
+      reason: ScriptDocumentFallbackReason.DiagnosticsLanguageServerUnavailable,
+    });
     const diagnostics = [];
     const lines = scriptText.split(/\r?\n/);
     const nodeTitles = new Map();

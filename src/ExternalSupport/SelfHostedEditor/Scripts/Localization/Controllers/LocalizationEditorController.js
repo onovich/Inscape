@@ -1,5 +1,13 @@
-import { ScriptDocumentModelBuilder } from "../../ProjectWorkspace/Models/ScriptDocumentModelBuilder.js";
+import {
+  ScriptDocumentFallbackPolicy,
+  ScriptDocumentFallbackReason,
+} from "../../ProjectWorkspace/Models/ScriptDocumentFallbackPolicy.js";
+import { LocalizationCsvFileController } from "./LocalizationCsvFileController.js";
 import { LocalizationDraftCsvBuilder } from "../Models/LocalizationDraftCsvBuilder.js";
+import { LocalizationExportReadinessModelBuilder } from "../Models/LocalizationExportReadinessModelBuilder.js";
+import { LocalizationReviewRowsModelBuilder } from "../Models/LocalizationReviewRowsModelBuilder.js";
+import { LocalizationVisibleRowsModelBuilder } from "../Models/LocalizationVisibleRowsModelBuilder.js";
+import { LocalizationTableRenderer } from "../Renderers/LocalizationTableRenderer.js";
 
 export class LocalizationEditorController {
   constructor({
@@ -36,11 +44,27 @@ export class LocalizationEditorController {
     this.filterEmptyStateElement = null;
     this.lastReviewProvider = "draft-fallback";
     this.lastScriptText = "";
-    this.previousCsvFileHandle = null;
-    this.previousCsvName = "";
-    this.previousCsvText = "";
     this.translationChangedHandlers = [];
     this.sourceLineSelectedHandlers = [];
+    this.tableRenderer = new LocalizationTableRenderer({
+      draftStore: this.draftStore,
+      getRowKey: (item) => this.getRowKey(item),
+      getRowStatus: (item) => this.getRowStatus(item),
+      onReviewAction: (action, item, detailElement) => this.handleReviewAction(action, item, detailElement),
+      onSourceLineSelected: (lineNumber) => this.notifySourceLineSelected(lineNumber),
+      onTranslationInput: (item, nextTranslation, rowElement) =>
+        this.handleTranslationInput(item, nextTranslation, rowElement),
+    });
+    this.csvFileController = new LocalizationCsvFileController({
+      draftStore: this.draftStore,
+      getLastScriptText: () => this.lastScriptText,
+      getRows: () => this.rows,
+      getUpdatedExportReadiness: () => this.getUpdatedExportReadiness(),
+      onLinkedCsvReplaced: () => this.handleLinkedCsvReplaced(),
+      onPreviousCsvChanged: () => this.handlePreviousCsvChanged(),
+      previousCsvInputElement: this.previousCsvInputElement,
+      reviewBridge: this.reviewBridge,
+    });
 
     this.exportDraftButtonElement.addEventListener("click", () => this.exportDraftCsv());
     this.exportUpdatedButtonElement?.addEventListener("click", () => {
@@ -76,9 +100,11 @@ export class LocalizationEditorController {
 
   async render(scriptText) {
     this.lastScriptText = scriptText;
-    const documentModel = ScriptDocumentModelBuilder.build(scriptText);
+    const documentModel = ScriptDocumentFallbackPolicy.buildDocumentModel(scriptText, {
+      reason: ScriptDocumentFallbackReason.LocalizationReviewUnavailable,
+    });
     const reviewSnapshot = this.reviewBridge
-      ? await this.reviewBridge.getLocalizationReview(scriptText, this.previousCsvText)
+      ? await this.reviewBridge.getLocalizationReview(scriptText, this.csvFileController.previousCsvText)
       : null;
     const rows = this.mapReviewRows(reviewSnapshot) || documentModel.translatableLines;
     this.lastReviewProvider = reviewSnapshot?.provider || "draft-fallback";
@@ -99,139 +125,11 @@ export class LocalizationEditorController {
       return;
     }
 
-    const shell = document.createElement("div");
-    shell.className = "localization-table-shell";
-    const table = document.createElement("table");
-    table.className = "localization-table";
-    table.append(this.createHeader());
-    const body = document.createElement("tbody");
-
-    for (const row of rows) {
-      body.append(this.createRow(row));
-    }
-
-    table.append(body);
-    const filterEmptyState = document.createElement("div");
-    filterEmptyState.className = "localization-filter-empty is-hidden";
-    filterEmptyState.textContent = "No rows match the current filter.";
-    shell.append(table, filterEmptyState);
-    this.panelElement.replaceChildren(shell);
-    this.tableBodyElement = body;
-    this.filterEmptyStateElement = filterEmptyState;
+    const tableView = this.tableRenderer.render(rows);
+    this.panelElement.replaceChildren(tableView.shell);
+    this.tableBodyElement = tableView.tableBodyElement;
+    this.filterEmptyStateElement = tableView.filterEmptyStateElement;
     this.applyRowFilters();
-  }
-
-  createHeader() {
-    const head = document.createElement("thead");
-    const row = document.createElement("tr");
-    for (const label of ["Status", "Review", "Node", "Line", "Kind", "Source text", "Translation draft"]) {
-      const cell = document.createElement("th");
-      cell.textContent = label;
-      row.append(cell);
-    }
-    head.append(row);
-    return head;
-  }
-
-  createRow(item) {
-    const row = document.createElement("tr");
-    row.dataset.sourceLine = String(item.sourceLine);
-    row.dataset.sourcePath = item.sourcePath || "";
-    this.updateRowStatusState(row, item);
-
-    const status = document.createElement("td");
-    status.append(this.createStatusPill(item));
-
-    const review = this.createReviewCell(item);
-
-    const node = document.createElement("td");
-    node.textContent = item.nodeTitle;
-
-    const line = document.createElement("td");
-    line.textContent = String(item.sourceLine);
-
-    const kind = document.createElement("td");
-    kind.textContent = item.kind;
-
-    const text = document.createElement("td");
-    text.className = "localization-source-text";
-    text.textContent = item.speaker ? `${item.speaker}：${item.text}` : item.text;
-
-    const translation = document.createElement("td");
-    translation.append(this.createTranslationInput(item));
-
-    row.append(status, review, node, line, kind, text, translation);
-    return row;
-  }
-
-  createReviewCell(item) {
-    const review = document.createElement("td");
-    review.className = "localization-review-summary";
-
-    const summary = document.createElement("div");
-    summary.className = "localization-review-text";
-    summary.textContent = item.reviewSummary || item.review || "draft";
-    if (item.reviewDetail) {
-      summary.title = item.reviewDetail;
-    }
-    review.append(summary);
-
-    if (Array.isArray(item.actions) && item.actions.length > 0) {
-      const actions = document.createElement("div");
-      actions.className = "localization-review-actions";
-      const detail = document.createElement("div");
-      detail.className = "localization-review-action-detail is-hidden";
-
-      for (const action of item.actions) {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = `localization-review-action localization-review-action-${this.getReviewActionClass(action)}`;
-        button.textContent = this.createReviewActionLabel(action);
-        button.title = action.detail || action.summary || button.textContent;
-        button.addEventListener("click", (event) => {
-          event.stopPropagation();
-          this.handleReviewAction(action, item, detail);
-        });
-        actions.append(button);
-      }
-
-      review.append(actions, detail);
-    }
-
-    return review;
-  }
-
-  getReviewActionClass(action) {
-    switch (action.actionKey) {
-      case "open-current":
-        return "current";
-      case "open-candidate":
-        return "candidate";
-      case "show-candidate-diff":
-        return "diff";
-      default:
-        return "generic";
-    }
-  }
-
-  createReviewActionLabel(action) {
-    if (action.title) {
-      return action.title;
-    }
-
-    if (action.actionKey === "open-current") {
-      return "Current";
-    }
-
-    if (action.actionKey === "open-candidate") {
-      return `Candidate ${Number(action.actionIndex || 0) + 1}`;
-    }
-
-    if (action.actionKey === "show-candidate-diff") {
-      return `Diff ${Number(action.actionIndex || 0) + 1}`;
-    }
-
-    return "Review";
   }
 
   handleReviewAction(action, item, detailElement) {
@@ -251,48 +149,19 @@ export class LocalizationEditorController {
     });
   }
 
-  createStatusPill(item) {
-    const pill = document.createElement("span");
-    const status = this.getRowStatus(item);
-    pill.className = `status-pill status-pill-${status}`;
-    pill.textContent = status;
-    return pill;
-  }
+  handleTranslationInput(item, nextTranslation, rowElement) {
+    const baseTranslation = item.translation || "";
+    if (nextTranslation === baseTranslation) {
+      this.draftStore.clearTranslation(item);
+    } else {
+      this.draftStore.setTranslation(item, nextTranslation);
+    }
 
-  createTranslationInput(item) {
-    const input = document.createElement("input");
-    input.className = "localization-translation-input";
-    input.placeholder = "Translation draft";
-    input.type = "text";
-    input.value = this.draftStore.hasDraft(item)
-      ? this.draftStore.getTranslation(item)
-      : (item.translation || "");
-
-    input.addEventListener("input", () => {
-      const nextTranslation = input.value.trim();
-      const baseTranslation = item.translation || "";
-      if (nextTranslation === baseTranslation) {
-        this.draftStore.clearTranslation(item);
-      } else {
-        this.draftStore.setTranslation(item, nextTranslation);
-      }
-
-      const row = input.closest("tr");
-      const statusCell = row?.children?.[0] || null;
-      if (statusCell) {
-        statusCell.replaceChildren(this.createStatusPill(item));
-      }
-      if (row) {
-        this.updateRowStatusState(row, item);
-      }
-      this.applyRowFilters();
-      this.syncUpdatedExportAvailability();
-      this.renderPreviousCsvStatus();
-      this.notifyTranslationChanged();
-    });
-
-    input.addEventListener("focus", () => this.notifySourceLineSelected(item.sourceLine));
-    return input;
+    this.tableRenderer.updateRowStatusCell(rowElement, item);
+    this.applyRowFilters();
+    this.syncUpdatedExportAvailability();
+    this.renderPreviousCsvStatus();
+    this.notifyTranslationChanged();
   }
 
   createEmptyState() {
@@ -328,81 +197,27 @@ export class LocalizationEditorController {
   }
 
   getVisibleRows() {
-    return this.rows.filter((row) => this.matchesFilter(row));
+    return LocalizationVisibleRowsModelBuilder.getVisibleRows(this.rows, this.filterMode, this.draftStore);
   }
 
   mapReviewRows(reviewSnapshot) {
-    const presenterItems = reviewSnapshot?.review?.presenter?.items;
-    if (!Array.isArray(presenterItems) || presenterItems.length === 0) {
-      return null;
-    }
-
-    return presenterItems.map((presenterItem) => {
-      const item = presenterItem.item || {};
-      const status = item.status || "review";
-      return {
-        anchor: item.anchor || "",
-        actions: this.normalizeReviewActions(presenterItem.actions || presenterItem.Actions),
-        kind: this.normalizeKind(item.kind),
-        nodeTitle: item.nodeTitle || "",
-        review: item.review || "",
-        reviewDetail: presenterItem.detail || "",
-        reviewStatus: status,
-        reviewSummary: presenterItem.summary || "",
-        sourcePath: presenterItem.sourcePath || item.sourcePath || "",
-        sourceLine: Number(item.line || presenterItem.line || 1),
-        speaker: item.speaker || "",
-        text: item.text || "",
-        translation: item.translation || "",
-      };
-    });
-  }
-
-  normalizeReviewActions(actions) {
-    if (!Array.isArray(actions)) {
-      return [];
-    }
-
-    return actions.map((action) => ({
-      actionIndex: Number(action.actionIndex ?? action.ActionIndex ?? 0),
-      actionKey: action.actionKey || action.ActionKey || "",
-      actionStatus: action.actionStatus || action.ActionStatus || "",
-      column: Number(action.column ?? action.Column ?? 0),
-      detail: action.detail || action.Detail || "",
-      length: Number(action.length ?? action.Length ?? 0),
-      line: Number(action.line ?? action.Line ?? 0),
-      sourcePath: action.sourcePath || action.SourcePath || "",
-      summary: action.summary || action.Summary || "",
-      title: action.title || action.Title || "",
-    }));
-  }
-
-  normalizeKind(kind) {
-    const text = String(kind || "");
-    if (!text) {
-      return "";
-    }
-
-    return text.charAt(0).toLowerCase() + text.slice(1).replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase();
+    return LocalizationReviewRowsModelBuilder.build(reviewSnapshot);
   }
 
   exportDraftCsv() {
     const csv = LocalizationDraftCsvBuilder.build(this.rows, this.draftStore);
-    this.downloadCsv(csv, "inscape-localization-draft.csv");
-  }
-
-  async handlePreviousCsvSelection(file) {
-    await this.applyPreviousCsvSelection(file, null);
+    this.csvFileController.downloadCsv(csv, "inscape-localization-draft.csv");
   }
 
   async applyPreviousCsvSelection(file, fileHandle = null) {
-    if (!file) {
-      return;
-    }
+    await this.csvFileController.applyPreviousCsvSelection(file, fileHandle);
+  }
 
-    this.previousCsvName = file.name || "previous.csv";
-    this.previousCsvText = await file.text();
-    this.previousCsvFileHandle = fileHandle;
+  async openPreviousCsv() {
+    await this.csvFileController.openPreviousCsv();
+  }
+
+  async handlePreviousCsvChanged() {
     this.renderPreviousCsvStatus();
     this.syncUpdatedExportAvailability();
     this.syncReplacePreviousCsvAvailability();
@@ -412,34 +227,15 @@ export class LocalizationEditorController {
     }
   }
 
-  async openPreviousCsv() {
-    if (this.supportsNativeFileHandles()) {
-      try {
-        const handles = await globalThis.window.showOpenFilePicker({
-          excludeAcceptAllOption: true,
-          multiple: false,
-          types: [
-            {
-              accept: {
-                "text/csv": [".csv"],
-              },
-              description: "CSV files",
-            },
-          ],
-        });
-        const fileHandle = Array.isArray(handles) ? handles[0] : null;
-        const file = fileHandle ? await fileHandle.getFile() : null;
-        await this.applyPreviousCsvSelection(file, fileHandle);
-        return;
-      } catch (error) {
-        if (error?.name === "AbortError") {
-          return;
-        }
-        console.error("SelfHostedEditor previous CSV picker failed:", error);
-      }
+  async handleLinkedCsvReplaced() {
+    this.syncUpdatedExportAvailability();
+    this.syncReplacePreviousCsvAvailability();
+    this.renderPreviousCsvStatus();
+    this.renderSessionStatus();
+    if (this.lastScriptText) {
+      await this.render(this.lastScriptText);
     }
-
-    this.previousCsvInputElement?.click();
+    this.notifyTranslationChanged();
   }
 
   syncUpdatedExportAvailability() {
@@ -448,7 +244,7 @@ export class LocalizationEditorController {
     }
 
     const hasAnchorRows = this.rows.some((row) => row.anchor);
-    const hasPreviousCsv = Boolean(this.previousCsvText.trim());
+    const hasPreviousCsv = Boolean(this.csvFileController.previousCsvText.trim());
     const hasReviewBridge = Boolean(this.reviewBridge);
     const readiness = this.getUpdatedExportReadiness();
     this.exportUpdatedButtonElement.disabled = !(hasAnchorRows && hasPreviousCsv && hasReviewBridge);
@@ -460,11 +256,11 @@ export class LocalizationEditorController {
       return;
     }
 
-    if (this.previousCsvName) {
+    if (this.csvFileController.previousCsvName) {
       const linkSummary = this.getLinkedPreviousCsvSummary();
       const handleSuffix = linkSummary ? ` | ${linkSummary}` : "";
-      this.previousCsvStatusElement.textContent = `Review baseline: ${this.previousCsvName}${handleSuffix}`;
-      this.previousCsvStatusElement.title = `${this.previousCsvName}${handleSuffix}`;
+      this.previousCsvStatusElement.textContent = `Review baseline: ${this.csvFileController.previousCsvName}${handleSuffix}`;
+      this.previousCsvStatusElement.title = `${this.csvFileController.previousCsvName}${handleSuffix}`;
       return;
     }
 
@@ -473,12 +269,7 @@ export class LocalizationEditorController {
   }
 
   collectTranslationOverrides() {
-    return this.rows
-      .filter((row) => row.anchor && this.draftStore.hasDraft(row))
-      .map((row) => ({
-        anchor: row.anchor,
-        translation: this.draftStore.getTranslation(row),
-      }));
+    return this.csvFileController.collectTranslationOverrides();
   }
 
   async clearVisibleDrafts() {
@@ -500,109 +291,19 @@ export class LocalizationEditorController {
   }
 
   async exportUpdatedCsv() {
-    const payload = await this.getUpdatedCsvPayload();
-    if (payload.provider !== "localization-update" || !payload.csv) {
-      console.error("SelfHostedEditor localization update failed:", payload.error || "updated CSV unavailable");
-      return;
-    }
-
-    this.downloadCsv(payload.csv, this.buildUpdatedCsvFilename());
+    await this.csvFileController.exportUpdatedCsv();
   }
 
   async replacePreviousCsv() {
-    if (!this.previousCsvFileHandle) {
-      return;
-    }
-
-    const payload = await this.getUpdatedCsvPayload();
-    if (payload.provider !== "localization-update" || !payload.csv) {
-      console.error("SelfHostedEditor localization replace failed:", payload.error || "updated CSV unavailable");
-      return;
-    }
-
-    try {
-      const writable = await this.previousCsvFileHandle.createWritable();
-      await writable.write(payload.csv);
-      await writable.close();
-      this.previousCsvText = payload.csv;
-      this.draftStore.clearDraftsForRows(this.rows.filter((row) => row.anchor && this.draftStore.hasDraft(row)));
-      this.syncUpdatedExportAvailability();
-      this.syncReplacePreviousCsvAvailability();
-      this.renderPreviousCsvStatus();
-      this.renderSessionStatus();
-      if (this.lastScriptText) {
-        await this.render(this.lastScriptText);
-      }
-      this.notifyTranslationChanged();
-    } catch (error) {
-      console.error("SelfHostedEditor previous CSV replace failed:", error);
-    }
-  }
-
-  async getUpdatedCsvPayload() {
-    if (!this.reviewBridge || !this.previousCsvText.trim() || !this.lastScriptText) {
-      return {
-        csv: "",
-        error: this.getUpdatedExportReadiness(),
-        provider: "localization-update-unavailable",
-      };
-    }
-
-    return this.reviewBridge.exportUpdatedLocalizationCsv(
-      this.lastScriptText,
-      this.previousCsvText,
-      this.collectTranslationOverrides()
-    );
-  }
-
-  buildUpdatedCsvFilename() {
-    if (!this.previousCsvName) {
-      return "inscape-localization-updated.csv";
-    }
-
-    return this.previousCsvName.replace(/(?:\.csv)?$/i, ".updated.csv");
-  }
-
-  downloadCsv(csv, filename) {
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = filename;
-    document.body.append(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
+    await this.csvFileController.replacePreviousCsv();
   }
 
   getRowStatus(item) {
-    if (this.draftStore.hasDraft(item)) {
-      return "draft";
-    }
-
-    if (item.reviewStatus) {
-      return item.reviewStatus;
-    }
-
-    return item.translation ? "review" : "empty";
+    return LocalizationVisibleRowsModelBuilder.getRowStatus(item, this.draftStore);
   }
 
   normalizeFilterMode(filterMode) {
-    const value = String(filterMode || "").trim().toLowerCase();
-    const allowedValues = new Set([
-      "all",
-      "actionable",
-      "draft",
-      "empty",
-      "review",
-      "kept",
-      "new",
-      "changed",
-      "conflict",
-      "stale",
-      "removed",
-    ]);
-    return allowedValues.has(value) ? value : "all";
+    return LocalizationVisibleRowsModelBuilder.normalizeFilterMode(filterMode);
   }
 
   updateFilterControl() {
@@ -661,60 +362,15 @@ export class LocalizationEditorController {
   }
 
   buildFilterLabel() {
-    switch (this.filterMode) {
-      case "actionable":
-        return "Needs action";
-      case "draft":
-        return "Drafts";
-      case "empty":
-        return "Empty";
-      case "review":
-        return "Review";
-      case "kept":
-        return "Kept";
-      case "new":
-        return "New";
-      case "changed":
-        return "Changed";
-      case "conflict":
-        return "Conflict";
-      case "stale":
-        return "Stale";
-      case "removed":
-        return "Removed";
-      default:
-        return "All rows";
-    }
-  }
-
-  matchesFilter(item) {
-    const status = this.getRowStatus(item);
-    switch (this.filterMode) {
-      case "actionable":
-        return ["draft", "empty", "new", "changed", "conflict", "stale", "removed"].includes(status);
-      case "all":
-        return true;
-      default:
-        return status === this.filterMode;
-    }
-  }
-
-  updateRowStatusState(rowElement, item) {
-    const status = this.getRowStatus(item);
-    rowElement.dataset.rowKey = this.getRowKey(item);
-    rowElement.dataset.status = status;
+    return LocalizationVisibleRowsModelBuilder.buildFilterLabel(this.filterMode);
   }
 
   getRowKey(item) {
-    if (item.anchor) {
-      return `anchor:${item.anchor}`;
-    }
-
-    return `${item.nodeTitle}:${item.sourceLine}:${item.kind}:${item.text}`;
+    return LocalizationVisibleRowsModelBuilder.getRowKey(item);
   }
 
   getVisibleDraftRows() {
-    return this.getVisibleRows().filter((row) => this.draftStore.hasDraft(row));
+    return LocalizationVisibleRowsModelBuilder.getVisibleDraftRows(this.rows, this.filterMode, this.draftStore);
   }
 
   syncClearVisibleDraftsAvailability() {
@@ -740,79 +396,37 @@ export class LocalizationEditorController {
   }
 
   getUpdatedExportReadiness() {
-    if (!this.reviewBridge) {
-      return "Updated export unavailable in draft fallback mode";
-    }
-
-    if (this.rows.length === 0) {
-      return "Updated export needs localization rows";
-    }
-
-    if (!this.rows.some((row) => row.anchor)) {
-      return "Updated export needs anchored review rows";
-    }
-
-    if (!this.previousCsvText.trim()) {
-      return "Updated export needs previous CSV";
-    }
-
-    return "Updated export ready";
+    return LocalizationExportReadinessModelBuilder.getUpdatedExportReadiness({
+      previousCsvText: this.csvFileController.previousCsvText,
+      reviewBridge: this.reviewBridge,
+      rows: this.rows,
+    });
   }
 
   getDirectReplaceReadiness() {
-    if (!this.previousCsvFileHandle) {
-      return "Replace previous CSV needs a linked previous CSV";
-    }
-
-    if (this.getUpdatedExportReadiness() !== "Updated export ready") {
-      return this.getUpdatedExportReadiness();
-    }
-
-    if (this.countPersistableDraftOverrides() === 0) {
-      return "Replace previous CSV has no unsaved drafts";
-    }
-
-    return "Replace previous CSV ready";
+    return LocalizationExportReadinessModelBuilder.getDirectReplaceReadiness({
+      draftStore: this.draftStore,
+      previousCsvFileHandle: this.csvFileController.previousCsvFileHandle,
+      previousCsvText: this.csvFileController.previousCsvText,
+      reviewBridge: this.reviewBridge,
+      rows: this.rows,
+    });
   }
 
   getLinkedPreviousCsvSummary() {
-    if (!this.previousCsvFileHandle) {
-      return "";
-    }
-
-    const unsavedDraftCount = this.countPersistableDraftOverrides();
-    if (unsavedDraftCount === 0) {
-      return "linked clean";
-    }
-
-    return `linked ${unsavedDraftCount} unsaved`;
+    return LocalizationExportReadinessModelBuilder.getLinkedPreviousCsvSummary({
+      draftStore: this.draftStore,
+      previousCsvFileHandle: this.csvFileController.previousCsvFileHandle,
+      rows: this.rows,
+    });
   }
 
   getReplaceSessionSummary() {
-    if (!this.previousCsvFileHandle) {
-      return "Replace needs linked baseline";
-    }
-
-    const unsavedDraftCount = this.countPersistableDraftOverrides();
-    if (unsavedDraftCount === 0) {
-      return "Linked clean";
-    }
-
-    return `Linked ${unsavedDraftCount} unsaved`;
+    return LocalizationExportReadinessModelBuilder.getReplaceSessionSummary({
+      draftStore: this.draftStore,
+      previousCsvFileHandle: this.csvFileController.previousCsvFileHandle,
+      rows: this.rows,
+    });
   }
 
-  countPersistableDraftOverrides() {
-    let count = 0;
-    for (const row of this.rows) {
-      if (row.anchor && this.draftStore.hasDraft(row)) {
-        count += 1;
-      }
-    }
-
-    return count;
-  }
-
-  supportsNativeFileHandles() {
-    return typeof globalThis.window?.showOpenFilePicker === "function";
-  }
 }

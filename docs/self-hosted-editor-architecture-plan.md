@@ -120,6 +120,18 @@ Runtime
 - 写作与阅读体验对标 Notion：正文排版应克制、留白稳定、段落层次清楚；辅助控件和元信息默认退到背景，只有当用户聚焦、悬停或执行操作时才显现更强 affordance。
 - 只保留宿主适配逻辑和 UI 交互逻辑。任何可被 VSCode 或未来 Web editor 复用的 report model、view-model、query contract，应优先下沉到 `Tooling` 或 `LanguageServer`。
 
+### Backend / session 边界
+
+当前 `DevScripts` 预览服务器仍是开发宿主，而不是正式 editor backend。它可以提供静态资源、JSON API transport、真实 CLI / LanguageServer / Runtime smoke，以及 bounded runtime / line-map / localization baseline cache；这些 cache 不应被解释为长期 project session。
+
+未来产品化 backend 应按业务窄接口暴露能力，而不是把当前 `/api/*` 机械升级成通用 RPC。三类状态必须分开：
+
+- Editor UI state：active view、layout、hover、filter、overlay、scroll 等，由前端持有。
+- Dev-host transport cache：当前 bounded runtime / line-map / localization baseline cache，只服务本地开发和 smoke。
+- Backend project session：workspace、document buffers、LanguageServer 会话、Runtime session、line-map sidecar、localization baseline 文件身份和写回状态。
+
+具体 endpoint 迁移表和 session 要求见 [SelfHostedEditor backend migration map](self-hosted-editor-backend-migration-map.md)，长期决策见 [ADR 0018](adr/0018-self-hosted-editor-backend-session-boundary.md)。
+
 `VSCode`：
 
 - 继续作为专业编辑入口和回归验证入口。

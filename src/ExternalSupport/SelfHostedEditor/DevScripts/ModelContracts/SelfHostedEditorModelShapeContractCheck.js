@@ -1,4 +1,9 @@
 import { ScriptDiagnosticsModelBuilder } from "../../Scripts/ProjectWorkspace/Models/ScriptDiagnosticsModelBuilder.js";
+import {
+  ScriptDocumentFallbackCategory,
+  ScriptDocumentFallbackPolicy,
+  ScriptDocumentFallbackReason,
+} from "../../Scripts/ProjectWorkspace/Models/ScriptDocumentFallbackPolicy.js";
 import { ScriptDocumentModelBuilder } from "../../Scripts/ProjectWorkspace/Models/ScriptDocumentModelBuilder.js";
 import { ScriptLineIdentityModelBuilder } from "../../Scripts/ProjectWorkspace/Models/ScriptLineIdentityModelBuilder.js";
 import { ScriptNodeRenamePatchBuilder } from "../../Scripts/ProjectWorkspace/Models/ScriptNodeRenamePatchBuilder.js";
@@ -34,6 +39,27 @@ assertEqual(documentModel.lineHints[2].blockLineNumber, 2, "second content line 
 assertEqual(documentModel.lineHints[2].stableIdentity.status, "untracked", "jump lines should not expose pending line identity");
 assertEqual(documentModel.lineHints[5].kind, "title", "second title hint kind");
 assertEqual(documentModel.lineHints[6].blockLineNumber, 1, "second node content line resets block-local number");
+const fallbackReasonCatalog = ScriptDocumentFallbackPolicy.getReasonCatalog();
+for (const reason of Object.values(ScriptDocumentFallbackReason)) {
+  assertEqual(Boolean(fallbackReasonCatalog[reason]), true, `fallback reason registered: ${reason}`);
+}
+assertEqual(
+  fallbackReasonCatalog[ScriptDocumentFallbackReason.PreviewCompilerGraphUnavailable].category,
+  ScriptDocumentFallbackCategory.HostedBridgeUnavailable,
+  "preview fallback category"
+);
+assertEqual(
+  fallbackReasonCatalog[ScriptDocumentFallbackReason.EditorAuthoringSurface].category,
+  ScriptDocumentFallbackCategory.OfflineOnlyUi,
+  "editor authoring fallback category"
+);
+let missingFallbackReasonFailed = false;
+try {
+  ScriptDocumentFallbackPolicy.buildDocumentModel(sample);
+} catch {
+  missingFallbackReasonFailed = true;
+}
+assertEqual(missingFallbackReasonFailed, true, "draft document fallback requires registered reason");
 
 export const lineIdentityProvider = ScriptLineIdentityModelBuilder.build({
   Documents: [

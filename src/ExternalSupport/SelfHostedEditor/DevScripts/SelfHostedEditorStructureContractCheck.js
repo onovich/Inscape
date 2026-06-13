@@ -51,13 +51,19 @@ const requiredPaths = [
   "Resources/Styles/SelfHostedEditorWorkspaceLayout.css",
   "Resources/Styles/SelfHostedEditorWorkbench.css",
   "Scripts/Entries/SelfHostedEditorAppEntry.js",
+  "Scripts/Entries/SelfHostedEditorDomBindings.js",
+  "Scripts/Entries/SelfHostedEditorFeatureBootstrapper.js",
+  "Scripts/Entries/SelfHostedEditorNodeRenameDialog.js",
+  "Scripts/Entries/SelfHostedEditorWorkbenchRenderController.js",
   "Scripts/EditorAuthoring/Bridges/MonacoEditorBridge.js",
   "Scripts/EditorAuthoring/Bridges/SelfHostedEditorStoryNodeMapBridge.js",
   "Scripts/EditorAuthoring/Controllers/EditorCompletionController.js",
   "Scripts/EditorAuthoring/Controllers/EditorDefinitionController.js",
   "Scripts/EditorAuthoring/Controllers/EditorDiagnosticsController.js",
   "Scripts/EditorAuthoring/Controllers/EditorHoverController.js",
+  "Scripts/EditorAuthoring/Controllers/EditorLineHintController.js",
   "Scripts/EditorAuthoring/Controllers/EditorRenameController.js",
+  "Scripts/EditorAuthoring/Controllers/EditorSemanticDecorationController.js",
   "Scripts/EditorAuthoring/Controllers/EditorStatusController.js",
   "Scripts/EditorAuthoring/Controllers/EditorSurfaceController.js",
   "Scripts/EditorAuthoring/Controllers/StoryNodeMapReviewController.js",
@@ -84,22 +90,39 @@ const requiredPaths = [
   "Scripts/LanguageServer/Models/LanguageServerReferenceModelMapper.js",
   "Scripts/LanguageServer/Models/LanguageServerStoryGraphModelMapper.js",
   "Scripts/Localization/Bridges/SelfHostedEditorLocalizationReviewBridge.js",
+  "Scripts/Localization/Controllers/LocalizationCsvFileController.js",
   "Scripts/Localization/Controllers/LocalizationEditorController.js",
   "Scripts/Localization/Models/LocalizationDraftCsvBuilder.js",
   "Scripts/Localization/Models/LocalizationDraftStore.js",
+  "Scripts/Localization/Models/LocalizationExportReadinessModelBuilder.js",
+  "Scripts/Localization/Models/LocalizationReviewRowsModelBuilder.js",
+  "Scripts/Localization/Models/LocalizationVisibleRowsModelBuilder.js",
+  "Scripts/Localization/Renderers/LocalizationTableRenderer.js",
   "Scripts/Preview/Controllers/PreviewPanelController.js",
+  "Scripts/Preview/Models/PreviewCompilerGraphContractGuard.js",
+  "Scripts/Preview/Models/PreviewFlowStatePresenter.js",
+  "Scripts/Preview/Models/PreviewRuntimePreferenceModelBuilder.js",
+  "Scripts/Preview/Renderers/PreviewBlockRenderer.js",
+  "Scripts/Preview/Renderers/PreviewChoiceRenderer.js",
   "Scripts/ProjectWorkspace/Controllers/ProjectWorkspaceController.js",
   "Scripts/ProjectWorkspace/Controllers/DocumentOutlineController.js",
   "Scripts/ProjectWorkspace/Controllers/ProjectWorkspaceFileListController.js",
   "Scripts/ProjectWorkspace/Controllers/ProjectWorkspaceSummaryController.js",
   "Scripts/ProjectWorkspace/Controllers/ProjectWorkspaceSessionController.js",
   "Scripts/ProjectWorkspace/Models/ProjectWorkspaceSummaryModelBuilder.js",
+  "Scripts/ProjectWorkspace/Models/ScriptBlockEditPatchBuilder.js",
   "Scripts/ProjectWorkspace/Models/ScriptDiagnosticsModelBuilder.js",
+  "Scripts/ProjectWorkspace/Models/ScriptDocumentFallbackPolicy.js",
   "Scripts/ProjectWorkspace/Models/ScriptDocumentModelBuilder.js",
   "Scripts/ProjectWorkspace/Models/ScriptLineIdentityModelBuilder.js",
   "Scripts/ProjectWorkspace/Models/ScriptNodeRenamePatchBuilder.js",
   "Scripts/Runtime/Bridges/SelfHostedEditorRuntimeBridge.js",
+  "Scripts/StoryGraph/Controllers/StoryGraphInteractionController.js",
   "Scripts/StoryGraph/Controllers/StoryGraphPreviewController.js",
+  "Scripts/StoryGraph/Controllers/StoryGraphViewportController.js",
+  "Scripts/StoryGraph/Models/StoryGraphPortGeometryModelBuilder.js",
+  "Scripts/StoryGraph/Renderers/StoryGraphEdgeRenderer.js",
+  "Scripts/StoryGraph/Renderers/StoryGraphNodeRenderer.js",
   "Scripts/WorkspaceLayout/Controllers/WorkspaceLoadingStateController.js",
   "Scripts/WorkspaceLayout/Controllers/WorkspaceLayoutController.js",
 ];
@@ -136,6 +159,37 @@ if (fs.existsSync(scriptsRoot)) {
       failed = true;
     }
   }
+
+  for (const scriptPath of getJavaScriptFiles(scriptsRoot)) {
+    const relativeScriptPath = path.relative(moduleRoot, scriptPath).replace(/\\/g, "/");
+    if (
+      relativeScriptPath !== "Scripts/ProjectWorkspace/Models/ScriptDocumentFallbackPolicy.js"
+      && relativeScriptPath !== "Scripts/ProjectWorkspace/Models/ScriptDocumentModelBuilder.js"
+    ) {
+      const scriptText = fs.readFileSync(scriptPath, "utf8");
+      if (scriptText.includes("ScriptDocumentModelBuilder")) {
+        console.error(`SelfHostedEditor draft document fallback must go through ScriptDocumentFallbackPolicy: ${relativeScriptPath}`);
+        failed = true;
+      }
+    }
+  }
+}
+
+function getJavaScriptFiles(rootPath) {
+  const files = [];
+  for (const entry of fs.readdirSync(rootPath, { withFileTypes: true })) {
+    const fullPath = path.join(rootPath, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...getJavaScriptFiles(fullPath));
+      continue;
+    }
+
+    if (entry.isFile() && entry.name.endsWith(".js")) {
+      files.push(fullPath);
+    }
+  }
+
+  return files;
 }
 
 const htmlPath = path.join(moduleRoot, "Resources/Workbench/SelfHostedEditorWorkbenchDocument.html");

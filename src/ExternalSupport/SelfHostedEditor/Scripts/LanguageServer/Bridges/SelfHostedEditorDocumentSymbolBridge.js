@@ -1,4 +1,7 @@
-import { ScriptDocumentModelBuilder } from "../../ProjectWorkspace/Models/ScriptDocumentModelBuilder.js";
+import {
+  ScriptDocumentFallbackPolicy,
+  ScriptDocumentFallbackReason,
+} from "../../ProjectWorkspace/Models/ScriptDocumentFallbackPolicy.js";
 import { LanguageServerDocumentSymbolModelMapper } from "../Models/LanguageServerDocumentSymbolModelMapper.js";
 
 export class SelfHostedEditorDocumentSymbolBridge {
@@ -34,7 +37,9 @@ export class SelfHostedEditorDocumentSymbolBridge {
       };
     } catch (error) {
       console.warn("SelfHostedEditor document symbols fallback:", error);
-      const documentModel = ScriptDocumentModelBuilder.build(scriptText);
+      const documentModel = ScriptDocumentFallbackPolicy.buildDocumentModel(scriptText, {
+        reason: ScriptDocumentFallbackReason.DocumentSymbolsLanguageServerUnavailable,
+      });
       return {
         provider: "draft-fallback",
         symbols: documentModel.nodes.map((node) => ({
