@@ -33,6 +33,7 @@ const requiredPaths = [
   "DevScripts/SelfHostedEditorStaticAssetBridge.js",
   "DevScripts/SelfHostedEditorStaticAssetBridgeContractCheck.js",
   "DevScripts/SelfHostedEditorStaticAssetHttpSmoke.js",
+  "DevScripts/SelfHostedEditorStyleStructureContractCheck.js",
   "DevScripts/SelfHostedEditorSyntaxContractCheck.js",
   "DevScripts/SelfHostedEditorWorkspaceBridge.js",
   "DevScripts/SelfHostedEditorReferencesHttpSmoke.js",
@@ -460,8 +461,8 @@ if (/data-loading-state/.test(workbenchWorkspaceLayoutCss) || /^\s*\.diagnostics
 }
 
 const packageJson = JSON.parse(fs.readFileSync(path.join(moduleRoot, "package.json"), "utf8"));
-if (!packageJson.scripts["check:model"] || !packageJson.scripts["check:structure"] || !packageJson.scripts["check:syntax"] || !packageJson.scripts["check:payload-bridge"] || !packageJson.scripts["check:static-assets"] || !packageJson.scripts["check:static-assets-http"] || !packageJson.scripts["check:node-map"] || !packageJson.scripts["check:node-map-http"] || !packageJson.scripts["check:references"] || !packageJson.scripts["check:references-http"] || !packageJson.scripts["check:semantic-parity-http"] || !packageJson.scripts["check:process-bridge"] || !packageJson.scripts["check:session-cache"] || !packageJson.scripts["check:session-cache-http"]) {
-  console.error("SelfHostedEditor package.json must expose check:model, check:structure, check:syntax, check:payload-bridge, check:static-assets, check:static-assets-http, check:node-map, check:node-map-http, check:references, check:references-http, check:semantic-parity-http, check:process-bridge, check:session-cache, and check:session-cache-http.");
+if (!packageJson.scripts["check:model"] || !packageJson.scripts["check:structure"] || !packageJson.scripts["check:style-structure"] || !packageJson.scripts["check:syntax"] || !packageJson.scripts["check:payload-bridge"] || !packageJson.scripts["check:static-assets"] || !packageJson.scripts["check:static-assets-http"] || !packageJson.scripts["check:node-map"] || !packageJson.scripts["check:node-map-http"] || !packageJson.scripts["check:references"] || !packageJson.scripts["check:references-http"] || !packageJson.scripts["check:semantic-parity-http"] || !packageJson.scripts["check:process-bridge"] || !packageJson.scripts["check:session-cache"] || !packageJson.scripts["check:session-cache-http"]) {
+  console.error("SelfHostedEditor package.json must expose check:model, check:structure, check:style-structure, check:syntax, check:payload-bridge, check:static-assets, check:static-assets-http, check:node-map, check:node-map-http, check:references, check:references-http, check:semantic-parity-http, check:process-bridge, check:session-cache, and check:session-cache-http.");
   failed = true;
 }
 if (packageJson.scripts["check:model"] !== "node DevScripts/SelfHostedEditorModelContractSuite.js") {
@@ -482,6 +483,14 @@ if (packageJson.scripts["check:static-assets"] !== "node DevScripts/SelfHostedEd
 }
 if (packageJson.scripts["check:static-assets-http"] !== "node DevScripts/SelfHostedEditorStaticAssetHttpSmoke.js") {
   console.error("SelfHostedEditor check:static-assets-http must delegate to SelfHostedEditorStaticAssetHttpSmoke.js.");
+  failed = true;
+}
+if (packageJson.scripts["check:style-structure"] !== "node DevScripts/SelfHostedEditorStyleStructureContractCheck.js") {
+  console.error("SelfHostedEditor check:style-structure must delegate to SelfHostedEditorStyleStructureContractCheck.js.");
+  failed = true;
+}
+if (!packageJson.scripts["check:structure"].includes("SelfHostedEditorStyleStructureContractCheck.js")) {
+  console.error("SelfHostedEditor check:structure must include the style structure contract.");
   failed = true;
 }
 

@@ -126,6 +126,7 @@ Run static checks:
 
 ```powershell
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:structure
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:style-structure
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:payload-bridge

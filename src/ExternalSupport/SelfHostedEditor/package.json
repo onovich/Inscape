@@ -31,7 +31,8 @@
     "check:references": "node DevScripts/SelfHostedEditorReferencesSmoke.js",
     "check:node-map-http": "node DevScripts/SelfHostedEditorStoryNodeMapHttpSmoke.js",
     "check:node-map": "node DevScripts/SelfHostedEditorStoryNodeMapSmoke.js",
-    "check:structure": "node DevScripts/SelfHostedEditorStructureContractCheck.js",
+    "check:style-structure": "node DevScripts/SelfHostedEditorStyleStructureContractCheck.js",
+    "check:structure": "node DevScripts/SelfHostedEditorStructureContractCheck.js && node DevScripts/SelfHostedEditorStyleStructureContractCheck.js",
     "check:syntax": "node DevScripts/SelfHostedEditorSyntaxContractCheck.js",
     "start": "node DevScripts/StartSelfHostedEditorPreview.js"
   },
