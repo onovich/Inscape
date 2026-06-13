@@ -14,6 +14,7 @@ SelfHostedEditor regression invariant: Preview choice clicks must advance the re
 
 - [x] 第 1 轮：收口并推送当前 SelfHostedEditor controller / fallback / backend 边界基线。该轮把已有未提交改动先验证并推送，避免下一阶段 backend client / CSS / fallback 工作继续叠在脏工作树上。额外通过 SelfHostedEditor HTTP smoke：semantic parity、Runtime、Localization review/update、Node Map、static assets、session cache、line-map、Host Schema、Host Binding、references；随后通过 `tools\CommitAndPushInscape.cmd "refactor: split self hosted editor controllers"` 完成提交前验证、提交和推送。
 - [x] 第 2 轮：冻结 backend 迁移实施 checklist。`docs/self-hosted-editor-backend-migration-map.md` 的 17 个 `/api/*` endpoint 已增加 `implementationPhase`，并明确这些 phase 只是下一阶段施工顺序；`src/ExternalSupport/SelfHostedEditor/README.md` 已补充 `EditorBackendClient` 第一版仍只调用现有 dev-host `/api/*`，不能被误读为正式 backend 或通用 RPC。
+- [x] 第 3 轮：新增 frontend-facing backend client adapter 骨架。新增 `Scripts/Backend/Clients/EditorBackendClient.js`、`SelfHostedEditorHttpBackendTransport.js` 与 `Scripts/Backend/Models/EditorBackendSessionStatusModel.js`；client 只暴露 `languageSession`、`hostCapabilities`、`storyGraph`、`runtimeSession`、`lineIdentitySession`、`localizationSession`、`stableNodeMap`、`diagnostics.sessionStatus()` 等业务窄入口，不暴露 public generic request。`check:structure` 已把 `Backend` 目录纳入允许业务目录，`check:model` 覆盖 route mapping 与 dev-host session status 投影。
 
 ## 2026-06-13 SelfHostedEditor UI controller 重构执行状态
 

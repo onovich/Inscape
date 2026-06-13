@@ -50,6 +50,9 @@ const requiredPaths = [
   "Resources/Styles/SelfHostedEditorStoryGraph.css",
   "Resources/Styles/SelfHostedEditorWorkspaceLayout.css",
   "Resources/Styles/SelfHostedEditorWorkbench.css",
+  "Scripts/Backend/Clients/EditorBackendClient.js",
+  "Scripts/Backend/Clients/SelfHostedEditorHttpBackendTransport.js",
+  "Scripts/Backend/Models/EditorBackendSessionStatusModel.js",
   "Scripts/Entries/SelfHostedEditorAppEntry.js",
   "Scripts/Entries/SelfHostedEditorDomBindings.js",
   "Scripts/Entries/SelfHostedEditorFeatureBootstrapper.js",
@@ -128,6 +131,7 @@ const requiredPaths = [
 ];
 
 const allowedScriptBusinesses = new Set([
+  "Backend",
   "EditorAuthoring",
   "Entries",
   "HostBinding",

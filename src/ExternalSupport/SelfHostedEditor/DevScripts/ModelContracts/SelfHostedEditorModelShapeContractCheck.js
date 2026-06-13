@@ -1,4 +1,6 @@
 import { ScriptDiagnosticsModelBuilder } from "../../Scripts/ProjectWorkspace/Models/ScriptDiagnosticsModelBuilder.js";
+import { EditorBackendClient } from "../../Scripts/Backend/Clients/EditorBackendClient.js";
+import { EditorBackendSessionStatusFormat } from "../../Scripts/Backend/Models/EditorBackendSessionStatusModel.js";
 import {
   ScriptDocumentFallbackCategory,
   ScriptDocumentFallbackPolicy,
@@ -60,6 +62,52 @@ try {
   missingFallbackReasonFailed = true;
 }
 assertEqual(missingFallbackReasonFailed, true, "draft document fallback requires registered reason");
+
+const backendCalls = [];
+const backendClient = new EditorBackendClient({
+  transport: {
+    async postJson(path, payload) {
+      backendCalls.push({
+        path,
+        payload,
+      });
+      if (path === "/api/session-cache-status") {
+        return {
+          caches: {
+            lineMap: {
+              entryCount: 2,
+            },
+            localizationBaseline: {
+              entryCount: 1,
+            },
+            runtime: {
+              entryCount: 3,
+            },
+          },
+        };
+      }
+
+      return {
+        path,
+        payload,
+      };
+    },
+  },
+});
+const backendDiagnostics = await backendClient.languageSession.diagnose({ scriptText: "# Start" });
+assertEqual(backendDiagnostics.path, "/api/diagnostics", "backend client diagnostics route");
+assertEqual(backendCalls[0].payload.scriptText, "# Start", "backend client forwards diagnostics payload");
+const backendRuntimeAction = await backendClient.runtimeSession.step({ action: "continue", sessionId: "session-a" });
+assertEqual(backendRuntimeAction.path, "/api/runtime-action", "backend client runtime action route");
+const backendStatus = await backendClient.diagnostics.sessionStatus();
+assertEqual(backendStatus.format, EditorBackendSessionStatusFormat, "backend session status format");
+assertEqual(backendStatus.mode, "dev-host", "backend session status mode");
+assertEqual(backendStatus.languageSession.kind, "process-per-request", "backend language session status kind");
+assertEqual(backendStatus.runtimeSession.entryCount, 3, "backend runtime cache entry count");
+assertEqual(backendStatus.lineIdentitySession.entryCount, 2, "backend line-map cache entry count");
+assertEqual(backendStatus.localizationSession.entryCount, 1, "backend localization cache entry count");
+assertEqual(typeof backendClient.request, "undefined", "backend client must not expose generic request");
+assertEqual(typeof backendClient.languageSession.request, "undefined", "language session client must not expose generic request");
 
 export const lineIdentityProvider = ScriptLineIdentityModelBuilder.build({
   Documents: [
