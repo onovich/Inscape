@@ -5,6 +5,9 @@
 @import url("./SelfHostedEditorLoadingState.css");
 @import url("./SelfHostedEditorDiagnosticsStatus.css");
 @import url("./SelfHostedEditorEditorAuthoring.css");
+@import url("./SelfHostedEditorLineHintRail.css");
+@import url("./SelfHostedEditorReferenceOverlay.css");
+@import url("./SelfHostedEditorAuthoringDecorations.css");
 @import url("./SelfHostedEditorPreview.css");
 @import url("./SelfHostedEditorLocalization.css");
 @import url("./SelfHostedEditorHostCapability.css");

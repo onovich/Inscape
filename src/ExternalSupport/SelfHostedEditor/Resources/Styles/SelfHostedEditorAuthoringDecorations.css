@@ -1,0 +1,52 @@
+.script-editor .monaco-editor .view-overlays .inscape-node-block-active {
+  background: rgba(106, 109, 87, 0.035);
+  border-radius: 8px;
+}
+
+.script-editor .monaco-editor .view-overlays .inscape-node-block-background {
+  background: rgba(106, 109, 87, 0.014);
+  border-radius: 8px;
+  margin-bottom: 2px;
+  margin-top: 2px;
+}
+
+.script-editor .monaco-editor .view-overlays .inscape-node-title-active {
+  background: rgba(106, 109, 87, 0.046);
+  border-radius: 8px;
+}
+
+.script-editor .monaco-editor .inscape-node-title-text {
+  color: #241f18;
+  font-weight: 720;
+}
+
+.script-editor .monaco-editor .inscape-dialogue-text {
+  color: rgba(39, 36, 31, 0.92);
+  font-weight: 440;
+}
+
+.script-editor .monaco-editor .inscape-narration-text {
+  color: rgba(39, 36, 31, 0.68);
+  font-style: normal;
+}
+
+.script-editor .monaco-editor .inscape-prompt-text,
+.script-editor .monaco-editor .inscape-choice-text {
+  color: rgba(80, 76, 68, 0.84);
+  font-style: normal;
+  font-weight: 480;
+}
+
+.script-editor .monaco-editor .inscape-metadata-line-text,
+.script-editor .monaco-editor .inscape-metadata-token-text {
+  color: rgba(101, 95, 84, 0.42);
+  font-size: 0.93em;
+  font-weight: 420;
+}
+
+.script-editor .monaco-editor .inscape-query-token-text {
+  background: rgba(123, 143, 158, 0.09);
+  border-radius: 5px;
+  color: rgba(74, 92, 104, 0.72);
+  font-weight: 520;
+}

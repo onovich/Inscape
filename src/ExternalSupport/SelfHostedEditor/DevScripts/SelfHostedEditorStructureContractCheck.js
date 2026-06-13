@@ -41,13 +41,16 @@ const requiredPaths = [
   "DevScripts/SelfHostedEditorSemanticParityHttpSmoke.js",
   "Resources/Workbench/SelfHostedEditorWorkbenchDocument.html",
   "Resources/Styles/SelfHostedEditorBase.css",
+  "Resources/Styles/SelfHostedEditorAuthoringDecorations.css",
   "Resources/Styles/SelfHostedEditorDiagnosticsStatus.css",
   "Resources/Styles/SelfHostedEditorEditorAuthoring.css",
   "Resources/Styles/SelfHostedEditorHostCapability.css",
+  "Resources/Styles/SelfHostedEditorLineHintRail.css",
   "Resources/Styles/SelfHostedEditorLocalization.css",
   "Resources/Styles/SelfHostedEditorLoadingState.css",
   "Resources/Styles/SelfHostedEditorNodeMapReview.css",
   "Resources/Styles/SelfHostedEditorPreview.css",
+  "Resources/Styles/SelfHostedEditorReferenceOverlay.css",
   "Resources/Styles/SelfHostedEditorStoryGraph.css",
   "Resources/Styles/SelfHostedEditorSidebar.css",
   "Resources/Styles/SelfHostedEditorTopbar.css",
@@ -218,26 +221,32 @@ if (!html.includes('data-view="host"') || !html.includes("host-capability-panel"
 
 const workbenchCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorWorkbench.css");
 const workbenchBaseCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorBase.css");
+const workbenchAuthoringDecorationsCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorAuthoringDecorations.css");
 const workbenchDiagnosticsStatusCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorDiagnosticsStatus.css");
 const workbenchEditorAuthoringCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorEditorAuthoring.css");
 const workbenchHostCapabilityCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorHostCapability.css");
+const workbenchLineHintRailCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorLineHintRail.css");
 const workbenchLocalizationCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorLocalization.css");
 const workbenchLoadingStateCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorLoadingState.css");
 const workbenchNodeMapReviewCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorNodeMapReview.css");
 const workbenchPreviewCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorPreview.css");
+const workbenchReferenceOverlayCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorReferenceOverlay.css");
 const workbenchStoryGraphCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorStoryGraph.css");
 const workbenchSidebarCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorSidebar.css");
 const workbenchTopbarCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorTopbar.css");
 const workbenchWorkspaceLayoutCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorWorkspaceLayout.css");
 const workbenchCss = fs.readFileSync(workbenchCssPath, "utf8");
 const workbenchBaseCss = fs.readFileSync(workbenchBaseCssPath, "utf8");
+const workbenchAuthoringDecorationsCss = fs.readFileSync(workbenchAuthoringDecorationsCssPath, "utf8");
 const workbenchDiagnosticsStatusCss = fs.readFileSync(workbenchDiagnosticsStatusCssPath, "utf8");
 const workbenchEditorAuthoringCss = fs.readFileSync(workbenchEditorAuthoringCssPath, "utf8");
 const workbenchHostCapabilityCss = fs.readFileSync(workbenchHostCapabilityCssPath, "utf8");
+const workbenchLineHintRailCss = fs.readFileSync(workbenchLineHintRailCssPath, "utf8");
 const workbenchLocalizationCss = fs.readFileSync(workbenchLocalizationCssPath, "utf8");
 const workbenchLoadingStateCss = fs.readFileSync(workbenchLoadingStateCssPath, "utf8");
 const workbenchNodeMapReviewCss = fs.readFileSync(workbenchNodeMapReviewCssPath, "utf8");
 const workbenchPreviewCss = fs.readFileSync(workbenchPreviewCssPath, "utf8");
+const workbenchReferenceOverlayCss = fs.readFileSync(workbenchReferenceOverlayCssPath, "utf8");
 const workbenchStoryGraphCss = fs.readFileSync(workbenchStoryGraphCssPath, "utf8");
 const workbenchSidebarCss = fs.readFileSync(workbenchSidebarCssPath, "utf8");
 const workbenchTopbarCss = fs.readFileSync(workbenchTopbarCssPath, "utf8");
@@ -251,6 +260,9 @@ const expectedWorkbenchCssImports = [
   '@import url("./SelfHostedEditorLoadingState.css");',
   '@import url("./SelfHostedEditorDiagnosticsStatus.css");',
   '@import url("./SelfHostedEditorEditorAuthoring.css");',
+  '@import url("./SelfHostedEditorLineHintRail.css");',
+  '@import url("./SelfHostedEditorReferenceOverlay.css");',
+  '@import url("./SelfHostedEditorAuthoringDecorations.css");',
   '@import url("./SelfHostedEditorPreview.css");',
   '@import url("./SelfHostedEditorLocalization.css");',
   '@import url("./SelfHostedEditorHostCapability.css");',
@@ -346,16 +358,63 @@ if (
 }
 if (
   !/^\.editor-frame\s*{/m.test(workbenchEditorAuthoringCss)
-  || !/^\.hint-rail\s*{/m.test(workbenchEditorAuthoringCss)
   || !/^\.script-editor\s*{/m.test(workbenchEditorAuthoringCss)
+  || !/^\.rename-dialog-overlay\s*{/m.test(workbenchEditorAuthoringCss)
+  || !/\.script-editor\s+\.monaco-editor\s+\.monaco-hover/.test(workbenchEditorAuthoringCss)
   || !/\.script-editor\s+\.monaco-editor\s+\.suggest-widget/.test(workbenchEditorAuthoringCss)
-  || !/\.script-editor\s+\.monaco-editor\s+\.inscape-node-title-text/.test(workbenchEditorAuthoringCss)
 ) {
-  console.error("SelfHostedEditorEditorAuthoring.css must retain the Monaco surface, hint rail, and editor semantic decoration rules.");
+  console.error("SelfHostedEditorEditorAuthoring.css must retain the editor frame, rename dialog, Monaco hover, and suggest widget shell rules.");
   failed = true;
 }
-if (/^\.story-preview\s*{/m.test(workbenchEditorAuthoringCss) || /^\.localization-toolbar\s*{/m.test(workbenchEditorAuthoringCss) || /^\.graph-viewport\s*{/m.test(workbenchEditorAuthoringCss)) {
-  console.error("SelfHostedEditorEditorAuthoring.css must not absorb preview, localization, or graph rules.");
+if (
+  /^\.hint-rail\s*{/m.test(workbenchEditorAuthoringCss)
+  || /^\.editor-reference-overlay\s*{/m.test(workbenchEditorAuthoringCss)
+  || /\.script-editor\s+\.monaco-editor\s+\.inscape-node-title-text/.test(workbenchEditorAuthoringCss)
+  || /^\.story-preview\s*{/m.test(workbenchEditorAuthoringCss)
+  || /^\.localization-toolbar\s*{/m.test(workbenchEditorAuthoringCss)
+  || /^\.graph-viewport\s*{/m.test(workbenchEditorAuthoringCss)
+) {
+  console.error("SelfHostedEditorEditorAuthoring.css must not absorb hint rail, references overlay, semantic decorations, preview, localization, or graph rules.");
+  failed = true;
+}
+if (
+  !/^\.hint-rail\s*{/m.test(workbenchLineHintRailCss)
+  || !/^\.hint-line\s*{/m.test(workbenchLineHintRailCss)
+  || !/^\.hint-stable-id\s*{/m.test(workbenchLineHintRailCss)
+  || !/^\.hint-line-reference-button\s*{/m.test(workbenchLineHintRailCss)
+  || !/^\.hint-line-grip\s*{/m.test(workbenchLineHintRailCss)
+) {
+  console.error("SelfHostedEditorLineHintRail.css must retain hint rail, stable id, reference action, and drag grip rules.");
+  failed = true;
+}
+if (/^\.editor-frame\s*{/m.test(workbenchLineHintRailCss) || /^\.script-editor\s*{/m.test(workbenchLineHintRailCss) || /^\.editor-reference-overlay\s*{/m.test(workbenchLineHintRailCss) || /\.inscape-node-title-text/.test(workbenchLineHintRailCss)) {
+  console.error("SelfHostedEditorLineHintRail.css must not absorb editor shell, references overlay, or semantic decoration rules.");
+  failed = true;
+}
+if (
+  !/^\.editor-reference-overlay\s*{/m.test(workbenchReferenceOverlayCss)
+  || !/^\.editor-reference-overlay-list\s*{/m.test(workbenchReferenceOverlayCss)
+  || !/\.editor-reference-overlay-item\s*{/.test(workbenchReferenceOverlayCss)
+  || !/^\.editor-reference-overlay-context-line\s*{/m.test(workbenchReferenceOverlayCss)
+) {
+  console.error("SelfHostedEditorReferenceOverlay.css must retain references overlay shell, list, item, and context line rules.");
+  failed = true;
+}
+if (/^\.hint-rail\s*{/m.test(workbenchReferenceOverlayCss) || /^\.script-editor\s*{/m.test(workbenchReferenceOverlayCss) || /\.inscape-node-title-text/.test(workbenchReferenceOverlayCss)) {
+  console.error("SelfHostedEditorReferenceOverlay.css must not absorb hint rail, editor shell, or semantic decoration rules.");
+  failed = true;
+}
+if (
+  !/\.script-editor\s+\.monaco-editor\s+\.view-overlays\s+\.inscape-node-block-active/.test(workbenchAuthoringDecorationsCss)
+  || !/\.script-editor\s+\.monaco-editor\s+\.inscape-node-title-text/.test(workbenchAuthoringDecorationsCss)
+  || !/\.script-editor\s+\.monaco-editor\s+\.inscape-dialogue-text/.test(workbenchAuthoringDecorationsCss)
+  || !/\.script-editor\s+\.monaco-editor\s+\.inscape-query-token-text/.test(workbenchAuthoringDecorationsCss)
+) {
+  console.error("SelfHostedEditorAuthoringDecorations.css must retain editor semantic decoration rules.");
+  failed = true;
+}
+if (/^\.editor-frame\s*{/m.test(workbenchAuthoringDecorationsCss) || /^\.hint-rail\s*{/m.test(workbenchAuthoringDecorationsCss) || /^\.editor-reference-overlay\s*{/m.test(workbenchAuthoringDecorationsCss) || /^\.story-preview\s*{/m.test(workbenchAuthoringDecorationsCss) || /^\.localization-toolbar\s*{/m.test(workbenchAuthoringDecorationsCss) || /^\.graph-viewport\s*{/m.test(workbenchAuthoringDecorationsCss)) {
+  console.error("SelfHostedEditorAuthoringDecorations.css must not absorb editor shell, hint rail, references overlay, preview, localization, or graph rules.");
   failed = true;
 }
 if (

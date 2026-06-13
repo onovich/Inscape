@@ -1,0 +1,119 @@
+.editor-reference-overlay {
+  background: rgba(255, 253, 249, 0.98);
+  border: 1px solid rgba(39, 36, 31, 0.06);
+  border-radius: 16px;
+  box-shadow:
+    0 18px 42px rgba(39, 36, 31, 0.08),
+    0 2px 8px rgba(39, 36, 31, 0.05);
+  display: grid;
+  gap: 10px;
+  max-height: min(520px, calc(100vh - 96px));
+  max-width: min(640px, calc(100% - 24px));
+  min-width: min(480px, calc(100% - 24px));
+  padding: 12px;
+  position: absolute;
+  z-index: 8;
+}
+
+.editor-reference-overlay.is-hidden {
+  display: none;
+}
+
+.editor-reference-overlay-header {
+  align-items: center;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.editor-reference-overlay-header strong {
+  color: var(--muted-strong);
+  font-size: 10px;
+  font-weight: 620;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.editor-reference-overlay-close {
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 10px;
+  min-height: 18px;
+  min-width: 18px;
+  padding: 0;
+}
+
+.editor-reference-overlay-list {
+  display: grid;
+  gap: 8px;
+  overflow: auto;
+}
+
+.editor-reference-overlay-empty,
+.editor-reference-overlay-item {
+  align-items: stretch;
+  background: rgba(39, 36, 31, 0.014);
+  border: 1px solid transparent;
+  border-radius: 12px;
+  color: var(--muted-strong);
+  display: grid;
+  gap: 7px;
+  font-size: 11px;
+  justify-content: stretch;
+  min-height: 52px;
+  padding: 9px 10px;
+  text-align: left;
+  width: 100%;
+}
+
+.editor-reference-overlay-summary {
+  color: rgba(39, 36, 31, 0.84);
+  font-size: 12px;
+  font-weight: 560;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.editor-reference-overlay-context {
+  background: rgba(255, 255, 255, 0.52);
+  border-left: 1px solid rgba(106, 109, 87, 0.1);
+  display: grid;
+  gap: 1px;
+  padding-left: 8px;
+}
+
+.editor-reference-overlay-context-line {
+  border-radius: 6px;
+  color: rgba(101, 95, 84, 0.72);
+  display: block;
+  font-size: 10px;
+  overflow: hidden;
+  padding: 2px 5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.editor-reference-overlay-context-line.is-hit {
+  background: rgba(106, 109, 87, 0.075);
+  color: rgba(39, 36, 31, 0.88);
+}
+
+.editor-reference-overlay-context-line mark {
+  background: rgba(151, 133, 76, 0.2);
+  border-radius: 4px;
+  color: rgba(39, 36, 31, 0.92);
+  padding: 0 2px;
+}
+
+.editor-reference-overlay-item:hover,
+.editor-reference-overlay-item:focus-visible {
+  background: rgba(39, 36, 31, 0.032);
+  border-color: rgba(106, 109, 87, 0.08);
+}
+
+.editor-reference-overlay-empty {
+  color: var(--muted);
+}
