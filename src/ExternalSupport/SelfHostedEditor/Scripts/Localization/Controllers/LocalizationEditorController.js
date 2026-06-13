@@ -100,15 +100,16 @@ export class LocalizationEditorController {
 
   async render(scriptText) {
     this.lastScriptText = scriptText;
-    const documentModel = ScriptDocumentFallbackPolicy.buildDocumentModel(scriptText, {
-      reason: ScriptDocumentFallbackReason.LocalizationReviewUnavailable,
-    });
     const reviewSnapshot = this.reviewBridge
       ? await this.reviewBridge.getLocalizationReview(scriptText, this.csvFileController.previousCsvText)
       : null;
     const reviewRows = this.mapReviewRows(reviewSnapshot);
     const hasHostedReviewRows = Array.isArray(reviewRows);
-    const rows = hasHostedReviewRows ? reviewRows : documentModel.translatableLines;
+    const rows = hasHostedReviewRows
+      ? reviewRows
+      : ScriptDocumentFallbackPolicy.buildDocumentModel(scriptText, {
+        reason: ScriptDocumentFallbackReason.LocalizationReviewUnavailable,
+      }).translatableLines;
     this.lastReviewProvider = hasHostedReviewRows ? "localization-review" : "draft-fallback";
     this.rows = rows;
     this.exportDraftButtonElement.disabled = rows.length === 0;

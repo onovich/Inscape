@@ -157,6 +157,9 @@ src/ExternalSupport/SelfHostedEditor/
   Scripts/
     Entries/
       SelfHostedEditorAppEntry.*
+    Backend/
+      Clients/
+      Models/
     ProjectWorkspace/
       Controllers/
       Models/

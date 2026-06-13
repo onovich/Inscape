@@ -1,6 +1,8 @@
 import { SelfHostedEditorLanguageSessionBridge } from "./SelfHostedEditorLanguageSessionBridge.js";
 import { withTemporaryWorkspace } from "./SelfHostedEditorWorkspaceBridge.js";
 
+await assertMalformedStdioFrameRejectsPendingRequest();
+
 const openingText = `# Opening
 Narrator: Start.
 -> Evidence
@@ -47,6 +49,37 @@ try {
 }
 
 console.log("SelfHostedEditor LanguageServer session bridge contract ok");
+
+async function assertMalformedStdioFrameRejectsPendingRequest() {
+  const bridge = new SelfHostedEditorLanguageSessionBridge({
+    requestTimeoutMilliseconds: 60000,
+  });
+  let killed = false;
+  const timeout = setTimeout(() => {}, 60000);
+  const rejection = new Promise((resolve) => {
+    bridge.pendingRequests.set(1, {
+      method: "malformed-test",
+      reject: resolve,
+      resolve: () => {
+        throw new Error("Malformed stdio frame should not resolve a pending request.");
+      },
+      timeout,
+    });
+  });
+  bridge.child = {
+    kill() {
+      killed = true;
+    },
+  };
+  bridge.stdoutBuffer = Buffer.from("Content-Length: 4\r\n\r\nnope", "utf8");
+  bridge.consumeStdoutMessages();
+  const error = await rejection;
+  clearTimeout(timeout);
+  assertEqual(error instanceof Error, true, "malformed stdio frame should reject with Error");
+  assertEqual(killed, true, "malformed stdio frame should kill session child");
+  assertEqual(bridge.child, null, "malformed stdio frame should clear child");
+  assertEqual(bridge.pendingRequests.size, 0, "malformed stdio frame should clear pending requests");
+}
 
 function assertIncludesDiagnostic(diagnostics, code, sourcePath) {
   const found = Array.isArray(diagnostics) && diagnostics.some((diagnostic) =>

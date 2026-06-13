@@ -227,8 +227,8 @@
 
 ### SelfHostedEditor
 
-- 允许主语：`ProjectWorkspace`、`WorkspaceLayout`、`LanguageServer`、`EditorAuthoring`、`Preview`、`Localization`、`StoryGraph`、`Runtime`、`HostSchema`、`HostBinding`
-- 允许后缀：`Entry`、`Controller`、`Bridge`、`Model`、`ViewModel`
+- 允许主语：`ProjectWorkspace`、`WorkspaceLayout`、`Backend`、`LanguageServer`、`EditorAuthoring`、`Preview`、`Localization`、`StoryGraph`、`Runtime`、`HostSchema`、`HostBinding`
+- 允许后缀：`Entry`、`Controller`、`Bridge`、`Client`、`Model`、`ViewModel`
 - 不允许在前端或桌面壳内重新实现 DSL parser、StoryGraph compiler 或 localization alignment scoring。
 - 同时被 VSCode 与 SelfHostedEditor 需要的 presenter model、report model、query contract 或定位契约，应优先下沉到 `Tooling` 或 `LanguageServer`。
 - 如果采用 `Resources / Scripts`，必须位于 `src/ExternalSupport/SelfHostedEditor` 模块根内；开发脚本使用 `DevScripts`。

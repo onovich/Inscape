@@ -105,6 +105,7 @@ ExternalSupport/
     Scripts/
       Entries/
       ProjectWorkspace/
+      Backend/
       LanguageServer/
       EditorAuthoring/
       Preview/

@@ -104,8 +104,7 @@ export class SelfHostedEditorLanguageSessionBridge {
       const headerText = this.stdoutBuffer.slice(0, headerEnd).toString("ascii");
       const lengthMatch = /Content-Length:\s*(\d+)/i.exec(headerText);
       if (!lengthMatch) {
-        this.rejectPending(new Error("LanguageServer session response is missing Content-Length."));
-        this.stdoutBuffer = Buffer.alloc(0);
+        this.failSession(new Error("LanguageServer session response is missing Content-Length."));
         return;
       }
 
@@ -118,7 +117,14 @@ export class SelfHostedEditorLanguageSessionBridge {
 
       const bodyText = this.stdoutBuffer.slice(bodyStart, messageEnd).toString("utf8");
       this.stdoutBuffer = this.stdoutBuffer.slice(messageEnd);
-      this.handleResponseMessage(JSON.parse(bodyText));
+      try {
+        this.handleResponseMessage(JSON.parse(bodyText));
+      } catch (error) {
+        this.failSession(error instanceof Error
+          ? error
+          : new Error(String(error)));
+        return;
+      }
     }
   }
 
@@ -151,6 +157,15 @@ export class SelfHostedEditorLanguageSessionBridge {
     }
 
     this.pendingRequests.clear();
+  }
+
+  failSession(error) {
+    this.rejectPending(error);
+    this.stdoutBuffer = Buffer.alloc(0);
+    if (this.child) {
+      this.child.kill();
+      this.child = null;
+    }
   }
 
   getStderrPreview() {
