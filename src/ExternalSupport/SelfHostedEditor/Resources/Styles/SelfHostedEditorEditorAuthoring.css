@@ -1,5 +1,5 @@
 .editor-frame {
-  background: linear-gradient(180deg, rgba(255, 253, 250, 0.96) 0%, #fffdfb 100%);
+  background: linear-gradient(180deg, var(--paper-soft-a-960) 0%, var(--surface-warm) 100%);
   display: grid;
   grid-template-columns: 132px minmax(0, 1fr);
   height: 100%;
@@ -24,7 +24,7 @@
 
 .rename-dialog-overlay {
   align-items: start;
-  background: rgba(39, 36, 31, 0.24);
+  background: var(--ink-a-240);
   display: grid;
   inset: 0;
   justify-items: center;
@@ -34,12 +34,12 @@
 }
 
 .rename-dialog {
-  background: rgba(255, 253, 249, 0.98);
-  border: 1px solid rgba(39, 36, 31, 0.07);
+  background: var(--paper-a-980);
+  border: 1px solid var(--ink-a-070);
   border-radius: 16px;
   box-shadow:
-    0 24px 58px rgba(39, 36, 31, 0.13),
-    0 3px 10px rgba(39, 36, 31, 0.06);
+    0 24px 58px var(--ink-a-130),
+    0 3px 10px var(--ink-a-060);
   display: grid;
   gap: 12px;
   min-width: min(430px, calc(100vw - 48px));
@@ -47,15 +47,15 @@
 }
 
 .rename-dialog-heading {
-  color: rgba(39, 36, 31, 0.76);
+  color: var(--ink-a-760);
   font-size: 11px;
   font-weight: 640;
   text-transform: uppercase;
 }
 
 .rename-dialog-input {
-  background: #fff;
-  border: 1px solid rgba(39, 36, 31, 0.08);
+  background: var(--surface);
+  border: 1px solid var(--ink-a-080);
   border-radius: 9px;
   color: var(--text);
   font: 15px/1.4 "Inter", "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
@@ -64,8 +64,8 @@
 }
 
 .rename-dialog-input:focus {
-  border-color: rgba(106, 109, 87, 0.34);
-  box-shadow: 0 0 0 3px rgba(106, 109, 87, 0.09);
+  border-color: var(--accent-a-340);
+  box-shadow: 0 0 0 3px var(--accent-a-090);
 }
 
 .rename-dialog-actions {
@@ -76,30 +76,30 @@
 
 .rename-dialog-button {
   background: transparent;
-  border-color: rgba(39, 36, 31, 0.06);
-  color: rgba(82, 76, 67, 0.76);
+  border-color: var(--ink-a-060);
+  color: var(--button-muted-a-760);
   min-height: 30px;
   padding: 0 12px;
 }
 
 .rename-dialog-button:hover,
 .rename-dialog-button:focus-visible {
-  background: rgba(39, 36, 31, 0.045);
+  background: var(--ink-a-045);
 }
 
 .rename-dialog-confirm {
-  background: rgba(106, 109, 87, 0.92);
-  border-color: rgba(106, 109, 87, 0.08);
-  color: #fff;
+  background: var(--accent-a-920);
+  border-color: var(--accent-a-080);
+  color: var(--surface);
 }
 
 .rename-dialog-confirm:hover,
 .rename-dialog-confirm:focus-visible {
-  background: rgba(87, 92, 70, 0.96);
+  background: var(--accent-hover-a-960);
 }
 
 .script-editor {
-  background: #fff;
+  background: var(--surface);
   height: 100%;
   min-height: 0;
   overscroll-behavior: contain;
@@ -123,18 +123,18 @@
 .script-editor .monaco-editor .view-overlays .selectionHighlight,
 .script-editor .monaco-editor .view-overlays .wordHighlight,
 .script-editor .monaco-editor .view-overlays .wordHighlightStrong {
-  background: rgba(106, 109, 87, 0.055) !important;
+  background: var(--accent-a-055) !important;
   border: 0 !important;
   border-radius: 5px;
   box-shadow: none !important;
 }
 
 .script-editor .monaco-editor .view-overlays .rangeHighlight {
-  background: rgba(106, 109, 87, 0.038) !important;
+  background: var(--accent-a-038) !important;
 }
 
 .script-editor .monaco-editor .lines-content .cslr {
-  border-left-color: rgba(39, 36, 31, 0.7) !important;
+  border-left-color: var(--ink-a-700) !important;
 }
 
 .script-editor .monaco-editor .view-lines {
@@ -165,12 +165,12 @@
 }
 
 .script-editor .monaco-editor .monaco-hover {
-  background: rgba(255, 255, 255, 0.98) !important;
-  border: 1px solid rgba(39, 36, 31, 0.075) !important;
+  background: var(--surface-a-980) !important;
+  border: 1px solid var(--ink-a-075) !important;
   border-radius: 8px !important;
   box-shadow:
-    0 16px 38px rgba(39, 36, 31, 0.08),
-    0 2px 8px rgba(39, 36, 31, 0.045) !important;
+    0 16px 38px var(--ink-a-080),
+    0 2px 8px var(--ink-a-045) !important;
   color: var(--text) !important;
   overflow: hidden !important;
 }
@@ -181,42 +181,42 @@
 }
 
 .script-editor .monaco-editor .monaco-hover code {
-  background: rgba(39, 36, 31, 0.055) !important;
+  background: var(--ink-a-055) !important;
   border-radius: 5px !important;
-  color: rgba(39, 36, 31, 0.74) !important;
+  color: var(--ink-a-740) !important;
   font-family: "Inter", "Segoe UI", sans-serif !important;
   padding: 2px 5px !important;
 }
 
 .script-editor .monaco-editor .suggest-widget {
-  background: rgba(255, 255, 255, 0.98) !important;
-  border: 1px solid rgba(39, 36, 31, 0.08) !important;
+  background: var(--surface-a-980) !important;
+  border: 1px solid var(--ink-a-080) !important;
   border-radius: 8px !important;
   box-shadow:
-    0 18px 42px rgba(39, 36, 31, 0.09),
-    0 2px 8px rgba(39, 36, 31, 0.045) !important;
+    0 18px 42px var(--ink-a-090),
+    0 2px 8px var(--ink-a-045) !important;
   overflow: hidden !important;
 }
 
 .script-editor .monaco-editor .suggest-widget .monaco-list-row {
-  color: rgba(39, 36, 31, 0.76) !important;
+  color: var(--ink-a-760) !important;
 }
 
 .script-editor .monaco-editor .suggest-widget .monaco-list-row.focused,
 .script-editor .monaco-editor .suggest-widget .monaco-list-row:hover {
-  background: rgba(39, 36, 31, 0.055) !important;
+  background: var(--ink-a-055) !important;
   color: var(--text) !important;
 }
 
 .script-editor .monaco-editor .suggest-widget .monaco-highlighted-label .highlight {
-  color: rgba(106, 109, 87, 0.95) !important;
+  color: var(--accent-a-950) !important;
   font-weight: 650 !important;
 }
 
 .script-editor .monaco-editor .detected-link,
 .script-editor .monaco-editor .monaco-hover a {
-  color: rgba(79, 86, 66, 0.88) !important;
-  text-decoration-color: rgba(106, 109, 87, 0.28) !important;
+  color: var(--link-a-880) !important;
+  text-decoration-color: var(--accent-a-280) !important;
   text-decoration-thickness: 1px !important;
   text-underline-offset: 3px !important;
 }

@@ -28,3 +28,5 @@ ADR 用于记录影响项目长期方向的决定。每条 ADR 应说明背景�
 - [0016：VSCode 语言能力使用常驻 LanguageServer 会话](0016-vscode-language-server-daemon-session.md)
 - [0017：自研编辑器归属 ExternalSupport 并复用 Internal 契约](0017-self-hosted-editor-external-support-boundary.md)
 - [0018：SelfHostedEditor backend 使用业务窄接口并区分 session 状态](0018-self-hosted-editor-backend-session-boundary.md)
+- [0019：SelfHostedEditor desktop backend v0 采用嵌入式 EditorBackend](0019-self-hosted-editor-embedded-backend-v0.md)
+- [0020：SelfHostedEditor v0 采用 Electron、目录 workspace 与分层保存恢复策略](0020-self-hosted-editor-electron-workspace-and-save-strategy.md)

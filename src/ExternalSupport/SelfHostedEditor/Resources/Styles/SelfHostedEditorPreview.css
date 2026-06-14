@@ -32,7 +32,7 @@
   background: transparent;
   border: 0;
   border-radius: 999px;
-  color: rgba(98, 92, 82, 0.36);
+  color: var(--muted-a-360);
   font-size: 8px;
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -43,18 +43,18 @@
 }
 
 .preview-mode-switcher button[aria-pressed="true"] {
-  background: rgba(106, 109, 87, 0.06);
-  color: rgba(69, 70, 56, 0.76);
+  background: var(--accent-a-060);
+  color: var(--olive-text-a-760);
 }
 
 .preview-mode-switcher button:hover,
 .preview-mode-switcher button:focus-visible {
-  background: rgba(106, 109, 87, 0.08);
-  color: rgba(69, 70, 56, 0.82);
+  background: var(--accent-a-080);
+  color: var(--olive-text-a-820);
 }
 
 .story-preview {
-  background: #fff;
+  background: var(--surface);
   overflow: auto;
   padding: 116px 0 150px;
   overscroll-behavior: contain;
@@ -90,7 +90,7 @@
 
 .story-runtime-history {
   align-items: center;
-  color: rgba(98, 92, 82, 0.54);
+  color: var(--muted-a-540);
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
@@ -100,17 +100,17 @@
 
 .story-runtime-back-button {
   background: transparent;
-  border: 1px solid rgba(39, 36, 31, 0.07);
+  border: 1px solid var(--ink-a-070);
   border-radius: 999px;
-  color: rgba(54, 50, 43, 0.68);
+  color: var(--text-warm-a-680);
   font-size: 10px;
   line-height: 1;
   padding: 5px 9px;
 }
 
 .story-runtime-back-button:hover {
-  background: rgba(39, 36, 31, 0.02);
-  border-color: rgba(39, 36, 31, 0.11);
+  background: var(--ink-a-020);
+  border-color: var(--ink-a-110);
 }
 
 .story-runtime-path {
@@ -126,7 +126,7 @@
 }
 
 .story-runtime-path-segment.is-current {
-  color: rgba(54, 50, 43, 0.78);
+  color: var(--text-warm-a-780);
 }
 
 .story-line {
@@ -143,7 +143,7 @@
 
 .story-line:hover,
 .story-line.is-active {
-  background: rgba(106, 109, 87, 0.022);
+  background: var(--accent-a-022);
 }
 
 .story-line-metadata {
@@ -160,9 +160,9 @@
 }
 
 .story-metadata-tag {
-  background: rgba(123, 143, 158, 0.105);
+  background: var(--blue-gray-a-105);
   border-radius: 999px;
-  color: rgba(76, 92, 103, 0.62);
+  color: var(--slate-a-620);
   display: inline-flex;
   font-size: 11px;
   font-weight: 540;
@@ -174,14 +174,14 @@
 }
 
 .story-query-token {
-  background: rgba(123, 143, 158, 0.08);
+  background: var(--blue-gray-a-080);
   border-radius: 5px;
-  color: rgba(65, 84, 98, 0.76);
+  color: var(--query-text-a-760);
   padding: 0 3px;
 }
 
 .story-speaker {
-  color: rgba(98, 92, 82, 0.66);
+  color: var(--muted-a-660);
   display: block;
   font-family: "Inter", "Segoe UI", sans-serif;
   font-size: 8px;
@@ -193,7 +193,7 @@
 }
 
 .story-speaker-name {
-  color: #7c6540;
+  color: var(--story-speaker-accent);
   font-family: "Inter", "Segoe UI", sans-serif;
   font-size: 0.7em;
   font-weight: 650;
@@ -214,7 +214,7 @@
 
 .story-typewriter-body::after {
   animation: story-typewriter-caret 900ms ease-in-out infinite;
-  background: rgba(106, 109, 87, 0.48);
+  background: var(--accent-a-480);
   border-radius: 999px;
   content: "";
   display: inline-block;
@@ -245,7 +245,7 @@
 }
 
 .choice-prompt {
-  color: rgba(54, 50, 43, 0.58);
+  color: var(--text-warm-a-580);
   font-family: "Inter", "Segoe UI", sans-serif;
   font-size: 11px;
   font-weight: 560;
@@ -256,7 +256,7 @@
 .choice-button {
   align-items: start;
   background: transparent;
-  border: 1px solid rgba(39, 36, 31, 0.055);
+  border: 1px solid var(--ink-a-055);
   border-radius: 8px;
   counter-increment: story-choice;
   color: var(--text);
@@ -271,12 +271,12 @@
 }
 
 .choice-button:hover {
-  background: rgba(39, 36, 31, 0.018);
-  border-color: rgba(39, 36, 31, 0.085);
+  background: var(--ink-a-018);
+  border-color: var(--ink-a-085);
 }
 
 .choice-button::before {
-  color: rgba(98, 92, 82, 0.22);
+  color: var(--muted-a-220);
   content: counter(story-choice, decimal-leading-zero);
   font-size: 8px;
   font-weight: 540;
@@ -292,7 +292,7 @@
 }
 
 .choice-target {
-  color: rgba(98, 92, 82, 0.42);
+  color: var(--muted-a-420);
   font-size: 9px;
   opacity: 0;
   transition: opacity 140ms ease;

@@ -1,7 +1,6 @@
 import { ScriptDocumentModelBuilder } from "./ScriptDocumentModelBuilder.js";
 
 export const ScriptDocumentFallbackCategory = Object.freeze({
-  MigrationTarget: "migration-target",
   OfflineOnly: "offline-only",
   TemporaryHostedFallback: "temporary-hosted-fallback",
 });
@@ -48,9 +47,9 @@ const reasonCatalog = Object.freeze({
     owner: "Story graph panel",
   }),
   [ScriptDocumentFallbackReason.WorkspaceSummaryStatus]: Object.freeze({
-    category: ScriptDocumentFallbackCategory.MigrationTarget,
-    migrationTarget: "Move summary counts to a shared project summary model built from hosted payloads and backend session status.",
-    owner: "Workspace summary status",
+    category: ScriptDocumentFallbackCategory.TemporaryHostedFallback,
+    migrationTarget: "Use hosted summary when Compiler graph and localization presenter inputs are available; draft summary is only for hosted summary inputs unavailable.",
+    owner: "Workspace summary hosted aggregation",
   }),
 });
 

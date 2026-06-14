@@ -10,6 +10,136 @@ SelfHostedEditor regression invariant: Preview choice clicks must advance the re
 
 当前目录迁移与不符合项总蓝图见 [目录优先重构蓝图](directory-first-reframe-plan.md)。当前后续执行面板见 [/goal 后续目标计划](goal-plan.md)。
 
+## 2026-06-15 接下来项目 TODO（整合版）
+
+本节整合近期对 `docs/todo.md`、`docs/open-questions.md`、SelfHostedEditor 架构评估、backend migration readiness 与 desktop backend v0 决策的判断。外部合作交流不纳入本节主线。
+
+当前主线已经完成进入 desktop backend v0 前的 current-stage 100% 收口，下一步按顺序进入：
+
+```text
+SelfHostedEditor desktop backend v0
+  -> backend 管理的 workspace-scoped long-lived LanguageServer
+  -> 再回到本地化 / stable identity / Host Bridge / Unity-Bird 等较低优先级工作
+```
+
+### P0：进入 desktop backend v0 前的 current-stage 100% 收口
+
+目标：把当前 dev-host / backend-client / fallback / session vocabulary 阶段内已经能做决定的部分全部收口，不把含混状态带进正式 desktop backend 实现。
+
+- [x] CSS / style structure warning 清零：hard-coded feature colors 已迁到 `SelfHostedEditorBase.css` tokens，`check:style-structure` 不再输出当前可消除 warning。
+- [x] 关闭 Workspace Summary 的 `migration-target` 含混状态：当前 hosted aggregation summary 是 current-stage normal path，只有 hosted inputs 不完整时才允许 draft fallback。
+- [x] 再硬化 Preview / StoryGraph / Localization / Outline fallback contract：malformed shared payload 必须显示显式错误，不能被 UI-only draft model 掩盖。
+- [x] 收口 `project-session` status 的真实性：明确显示 dev-host mode、session id、workspace request snapshot、language mode、Runtime / line-map / localization bounded-cache 状态，并继续禁止暴露文档正文、CSV、line-map、Runtime snapshot 本体。
+- [x] 收口 `SELF_HOSTED_EDITOR_LANGUAGE_SESSION=stdio` spike 支持范围：当前阶段只支持 diagnostics / documentSymbols；status、README 与 smoke 都保持同一口径，未覆盖的四个 authoring endpoint 继续走 process-per-request fallback。
+- [x] 补一层 Workbench 集成 contract：默认 sample、hosted summary、Preview provider、Graph provider、Localization 空 hosted review、Outline error、Preview choice click invariant 已进入 model/static smoke 覆盖。
+- [x] 文档化当前不做的正式 backend 范围：当前阶段不做持久化 `DocumentBufferStore`、正式 desktop backend、默认 full long-lived LanguageServer、跨重启 session restore、多窗口 session ownership。
+- [x] 完成 current-stage 全量验证并准备提交：SelfHostedEditor `check:*`、VSCode `check:structure` / `check:semantic-parity`、`.NET build` 与 Internal tests 是 P0 收口验证门。
+
+细化执行以 [SelfHostedEditor 当前阶段 100% 收口推进计划](self-hosted-editor-current-stage-100-plan.md) 为准。
+
+### P1：SelfHostedEditor desktop backend v0 实现
+
+目标：把 SelfHostedEditor 从 dev-host request-driven prototype 推进到 editor session-driven desktop product shell。v0 采用 Electron + embedded EditorBackend，不采用 sidecar daemon。
+
+- [ ] 定义嵌入式 `EditorBackend` contract：`ProjectSessionService`、`DocumentBufferStore`、`LanguageSessionClient`、`RuntimeSessionClient`、`LocalizationWorkflowClient` 等窄接口，不暴露 generic RPC 给 feature controller。
+- [ ] 建立 Electron preload 白名单边界：renderer 不直接访问 Node / fs / shell / arbitrary IPC；preload 只暴露受控 editor command。
+- [ ] 实现 workspace 文件系统边界：只接受 workspace-relative path，拒绝绝对路径、`..` 越界、workspace 外路径和未列入白名单的写回目标。
+- [ ] 实现 `ProjectSession v0`：一个窗口一个 active workspace folder，一个 active project session；不支持正式单文件打开。
+- [ ] 实现 `DocumentBufferStore v0`：backend 持有 dirty buffers、revision、active document，LanguageServer / Runtime / Tooling 请求从 backend buffer 组 workspace snapshot。
+- [ ] 落地 `.inscape-workspace/` 与 `assets/` 目录策略：recovery / backups / cache 放 `.inscape-workspace/`，外部资源默认复制进 workspace `assets/`。
+- [ ] 实现 autosave / manual Save / recovery：默认 autosave，手动 Save 立即 flush，崩溃恢复依赖磁盘 recovery snapshot。
+- [ ] 实现 CSV / node-map / line-map 写前 backup：默认启用，可由设置项调整或关闭。
+- [ ] 落地 settings 分层：全局偏好与 workspace / project 行为分开；即使设置页后置，配置 schema 也先稳定。
+- [ ] 打通 v0 最小可用闭环：打开目录 -> 文件列表 -> 编辑 `.inscape` -> autosave / 手动 Save -> recovery -> 基础诊断 / 补全 -> Preview。
+- [ ] 做 Windows internal package v0 smoke：能启动、打开 workspace、编辑保存、恢复提示、跑基础 LanguageServer authoring 能力。
+
+细化执行以 [SelfHostedEditor desktop backend v0 实施计划](self-hosted-editor-desktop-backend-v0-plan.md)、[ADR 0019](adr/0019-self-hosted-editor-embedded-backend-v0.md) 与 [ADR 0020](adr/0020-self-hosted-editor-electron-workspace-and-save-strategy.md) 为准。
+
+### P1.5：backend 管理的 workspace-scoped long-lived LanguageServer
+
+目标：在 desktop backend v0 基础稳定后，把 LanguageServer 从 request-driven / process-per-request 迁到 backend 管理的 workspace-scoped long-lived session。用户已确认这是 v0 后关键下一步，不应降级为普通性能优化。
+
+- [ ] backend 打开 workspace 时启动或复用对应 LanguageServer session。
+- [ ] `DocumentBufferStore` revision 更新后同步文档变化到 LanguageServer。
+- [ ] diagnostics / completions / definition / references / hover / documentSymbols 从同一份 workspace state 读取。
+- [ ] LanguageServer 崩溃、超时或协议错误时，backend 显示健康状态、last error summary、document revision lag，并支持重启或降级到 `process-per-request`。
+- [ ] 切换 workspace / 关闭窗口时，backend 停止 LanguageServer 并清理 session。
+- [ ] 保持与 VSCode authoring endpoint 的 semantic parity：SelfHostedEditor 与 VSCode 都消费同一组 shared payload shape。
+
+验收入口应至少覆盖：
+
+```powershell
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:language-session
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:references-http
+npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
+```
+
+### P2：稳定身份与本地化 review 主线
+
+目标：在编辑器和 backend 基线稳定后，继续提高 stable node / line identity 与 localization review 的产品可用性。
+
+- [ ] 继续细化 localization candidate scoring 与 review 展示：保持相似文本只作为人工候选，不静默复用旧译文。
+- [ ] 评估批量审查 / multi-apply 是否必要；优先做可审计、可撤销的小闭环，不扩大自动继承范围。
+- [ ] 继续强化 line identity 迁移契约：围绕 line id、fingerprint、local context、rank penalty 与 diff detail 做 review UI 可读性收口。
+- [ ] 完成 stable node map review / apply 的产品化体验：人工确认、冲突报告、dry-run / apply、备份与恢复路径清晰。
+- [ ] 本地化 CSV 与宿主配置 CSV 继续保持界面模型分离，不把 localization review 做成通用表格编辑器。
+
+### P2.5：Host Schema / Host Bridge 与 Unity-Bird 适配收口
+
+目标：保持 Inscape engine-agnostic 的 Host Schema / Host Bridge 边界，同时只对 Bird / Unity 做低风险验证和决策，不把 Bird 变成通用模型真相。
+
+- [ ] 决定 Bird 项目新增 importer 与 `InscapeGenerated` 资源提交策略。
+- [ ] 用带真实 Timeline 绑定的样例再次执行 Bird Import Dry Run，确认 `talking.exit` 的 `TalkingEffectTM.PlayTimeline` 落地与其他 phase warning。
+- [ ] 低优先级评估 Bird `L10N` 真实格式是否需要影响 Inscape CSV 字段和列顺序；默认不要为 Bird 改动通用 CSV contract。
+- [ ] 继续推进 Host Bridge 作为 Inscape 可读 ID 到宿主 ID / 资源 / handler / query implementation 的映射层；Host Schema 只描述能力清单，不承担资源映射。
+- [ ] Unity 支持层仍作为 ExternalSupport / 独立插件方向评估，不让 UnityEngine / UnityEditor 依赖进入 `Internal`。
+
+### P3：第二版语法 / Runtime / 扩展能力的后续调研
+
+目标：这些仍属中长期设计，不应抢在 SelfHostedEditor backend 与 long-lived LanguageServer 前面。
+
+- [ ] 条件表达式与 Host Query 语法继续保持设计态；第一版不把变量、条件和自定义指令提前塞入 DSL 主路径。
+- [ ] 查询默认无副作用，事件和状态变化继续归 `@` / Runtime Host；不让 `[]` 查询插值触发动作。
+- [ ] Runtime 存档、Action 日志、随机数、异步加载、Time Travel、热重载 Patch 等继续保持开放问题，等 RuntimeSession / backend session 基础稳定后再定。
+- [ ] Timeline 继续作为外部资源引用 / 宿主事件示例；长期是否演化为 Presentation IR 后置讨论。
+
+### 暂停 / 明确后置
+
+- [ ] 外部合作线不进入当前研发 TODO；当前研发仍以 SelfHostedEditor current-stage readiness、desktop backend v0 与 long-lived LanguageServer 为主。
+- [ ] 不做 sidecar daemon，除非出现 ADR 0019 中列出的多宿主复用、多窗口共享、后台 daemon、崩溃隔离、跨重启 session restore 等触发条件。
+- [ ] 不做正式单文件工作模式；只提供打开目录 / workspace。
+- [ ] 不做首发 macOS、签名、自动更新和完整安装器体验；v0 只要求 Windows 内部可用包。
+- [ ] 不把 Git 作为 autosave / recovery / backup 基础机制；Git 只作为可选增强。
+
+## 2026-06-14 / 2026-06-15 SelfHostedEditor desktop backend v0 决策状态
+
+- [x] 决定 desktop backend v0 采用嵌入式 EditorBackend，而不是独立 sidecar daemon；详见 [ADR 0019](adr/0019-self-hosted-editor-embedded-backend-v0.md)。
+- [x] 明确 backend 是 SelfHostedEditor 编辑器应用后端 / 宿主编排层，不拥有 Compiler / LanguageServer / Tooling / Runtime 语义真相。
+- [x] 明确 v0 范围：一个 SelfHostedEditor 桌面窗口、一个 active project session、ProjectSession / DocumentBufferStore / file IO / process orchestration；不做多窗口共享、后台 daemon、跨重启 session restore、VSCode 复用同一 backend 进程或 localhost 产品 API。
+- [x] 输出 [SelfHostedEditor desktop backend v0 实施计划](self-hosted-editor-desktop-backend-v0-plan.md)，并保留 [当前阶段 100% 收口推进计划](self-hosted-editor-current-stage-100-plan.md) 作为进入 v0 实现前的前置工作。
+- [x] 决定 desktop shell v0 采用 Electron；Tauri 后续可重新评估，WebView2 / Avalonia 暂不进入 v0；详见 [ADR 0020](adr/0020-self-hosted-editor-electron-workspace-and-save-strategy.md)。
+- [x] 决定 workspace 入口：一个窗口一个 workspace folder，只打开目录，不提供正式打开单文件功能；workspace 支持多个 `.inscape` 文件。
+- [x] 决定保存与恢复策略：默认自动保存，UI 与 embedded backend 都持有未保存内容，backend 是 session truth，崩溃恢复依赖磁盘 recovery snapshot。
+- [x] 决定 Electron renderer 只通过 preload 白名单 editor command 访问 backend，不直接访问 Node / 文件系统 / shell。
+- [x] 决定文件读写由 backend 统一执行 workspace 文件系统边界检查，拒绝 workspace 外路径和未列入白名单的写回目标。
+- [x] 决定 autosave 采用 debounce：UI 合并文本同步，backend 合并磁盘写入，并在手动保存 / 关闭窗口 / 切换 workspace 时 flush 最新 buffer。
+- [x] 决定 localization CSV、node-map sidecar、line-map sidecar 写回前默认自动备份；Git 仅作为可选增强。
+- [x] 决定 v0 先做单窗口；后续多窗口时每个窗口独立 backend / ProjectSession，不共享 session。
+- [x] 决定外部资源默认复制进 workspace，不长期引用 workspace 外路径。
+- [x] 决定 recovery / backup / cache 使用 workspace 内部目录 `.inscape-workspace/`。
+- [x] 决定 `.inscape-workspace/` 默认不进 Git；若未来存放项目级可复现配置，必须拆出明确可提交部分。
+- [x] 决定保留手动 Save 作为立即 flush，UI 显示保存状态；autosave 默认开启，可设置关闭。
+- [x] 决定 v0 最小可用闭环：打开目录、文件列表、编辑、autosave、手动 Save、recovery、基础诊断 / 补全和 Preview。
+- [x] 决定外部资源默认进入 `assets/`，后续可细分 `assets/images/`、`assets/audio/`。
+- [x] 决定 recovery UI 列出可恢复文件，并提供恢复、丢弃、稍后处理。
+- [x] 决定 v0 可以先提供最小设置页；若设置页暂缓，也必须先保留稳定配置结构，避免默认值散落硬编码。
+- [x] 决定 v0 首发 Windows 内部可用版；签名、自动更新、安装器体验和 macOS 后置。
+- [x] 决定设置分层：UI 主题、autosave、backup 保留偏全局；项目入口、资源路径、导出配置、Git/checkpoint 策略偏 workspace / project。
+- [x] 用户已显式确认上述 v0 架构判断；其中 LanguageServer long-lived 虽不作为 v0 阻塞项，但必须作为 v0 之后的关键下一步，不降级为普通优化。
+- [x] 进入 v0 实现前，先完成当前阶段 100% 收口：CSS warning 清零、Summary fallback 分类关闭、fallback contract 再硬化、project-session status 真实性、LanguageSession stdio spike 支持范围决策。
+- [ ] desktop backend v0 基础稳定后，推进 backend 管理的 workspace-scoped long-lived LanguageServer：统一 workspace state、增量文档同步、崩溃重启 / 回退、状态可观测和 semantic parity 验收。
+
 ## 2026-06-13 SelfHostedEditor long-lived backend / fallback 10 轮执行状态
 
 - [x] 第 1 轮：完成 F1 Workspace Summary 迁出草模第一刀。新增 `WorkspaceSummaryHostedModelBuilder`，正常路径从 Compiler project graph、Tooling localization presenter rows、diagnostics snapshot 与 Runtime provider status 聚合 `provider: "shared"` summary；新增 `ProjectWorkspaceDraftSummaryModelBuilder` 承接 `workspace-summary-status` fallback，旧 `ProjectWorkspaceSummaryModelBuilder` 仅保留兼容门面。Workbench 会在 hosted inputs 不完整时才回到 draft summary；`check:syntax`、`check:structure`、`check:model`、`check:semantic-parity-http`、`check:localization-review-http` 已通过。
@@ -34,7 +164,7 @@ SelfHostedEditor regression invariant: Preview choice clicks must advance the re
 - [x] 第 7 轮：建立 CSS inventory 与 style structure contract。新增 `docs/self-hosted-editor-css-architecture.md`，记录 `Resources/Styles` 当前 owner、脚本口径行数、current limit 和 target；新增 `DevScripts/SelfHostedEditorStyleStructureContractCheck.js` 与 `check:style-structure`，并接入 `check:structure`。该检查会守住 Workbench import 顺序、孤儿 CSS、Common/Utils 命名、`:root` token 边界和当前行数上限；`SelfHostedEditorWorkspaceLayout.css` 与 `SelfHostedEditorEditorAuthoring.css` 仍高于 450 行目标，但不允许继续增长。
 - [x] 第 8 轮：拆分 WorkspaceLayout CSS ownership。新增 `SelfHostedEditorSidebar.css` 与 `SelfHostedEditorTopbar.css`，将 sidebar / files / outline / session panel 以及 top bar / layout switcher / syntax toggle / node-map action 从 `SelfHostedEditorWorkspaceLayout.css` 移出；`SelfHostedEditorWorkspaceLayout.css` 从 722 行降到 233 行，保留 button baseline、app shell/main、workspace panes、summary、shared panel shell 和 responsive shell。`check:structure`、`check:style-structure`、`check:static-assets`、`check:static-assets-http`、`check:model` 已通过。
 - [x] 第 9 轮：拆分 EditorAuthoring CSS ownership。新增 `SelfHostedEditorLineHintRail.css`、`SelfHostedEditorReferenceOverlay.css` 与 `SelfHostedEditorAuthoringDecorations.css`，将 hint rail / stable id、references overlay 和 Monaco semantic decorations 从 `SelfHostedEditorEditorAuthoring.css` 移出；`SelfHostedEditorEditorAuthoring.css` 从 659 行降到 229 行，只保留 editor frame、rename dialog、Monaco hover 与 suggest widget shell。`check:syntax`、`check:style-structure`、`check:structure`、`check:static-assets`、`check:static-assets-http`、`check:model` 已通过。
-- [x] 第 10 轮：收口 draft fallback reason 分级与可见状态。`ScriptDocumentFallbackPolicy` 现在把 reason 分为 `offline-only`、`temporary-hosted-fallback` 与 `migration-target`，并为每个 reason 记录 owner 和 migration target；`workspace-summary-status` 已标记为迁移目标，summary model 会暴露 `provider: "draft-fallback"` 与 fallback 元数据，侧栏 summary 显示 `draft summary`；Outline 会显示 `LanguageServer outline` 或 `Draft outline`，避免 draft fallback 被误认为 hosted 正常结果。`check:syntax`、`check:structure`、`check:model` 已通过。
+- [x] 第 10 轮：收口 draft fallback reason 分级与可见状态。当时 `ScriptDocumentFallbackPolicy` 先建立 `offline-only` / `temporary-hosted-fallback` / `migration-target` 三层分类；2026-06-15 P0 收口已关闭 `workspace-summary-status` 的 `migration-target` 分类，当前 fallback catalog 只保留 `offline-only` 与 `temporary-hosted-fallback`，summary model 仅在 hosted inputs 不完整时暴露 `provider: "draft-fallback"` 与 fallback 元数据。Outline 会显示 `LanguageServer outline`、`LanguageServer outline error` 或 `Draft outline`，避免 draft fallback 被误认为 hosted 正常结果。`check:syntax`、`check:structure`、`check:model` 已通过。
 
 ## 2026-06-13 SelfHostedEditor UI controller 重构执行状态
 

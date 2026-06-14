@@ -132,6 +132,8 @@ Runtime
 
 具体 endpoint 迁移表和 session 要求见 [SelfHostedEditor backend migration map](self-hosted-editor-backend-migration-map.md)，长期决策见 [ADR 0018](adr/0018-self-hosted-editor-backend-session-boundary.md)。
 
+2026-06-15 current-stage P0 收口补充：当前 dev-host 阶段已经关闭 Workspace Summary 的 `migration-target` 口径，hosted Compiler graph 与 hosted localization presenter inputs 完整时以 hosted aggregation summary 作为 normal path；draft summary 只在 hosted inputs 不完整时作为 explicit fallback。`project-session` / `language-session-request` 仍是 dev-host mode 迁移词汇，不代表正式 desktop backend 已完成。
+
 `VSCode`：
 
 - 继续作为专业编辑入口和回归验证入口。
@@ -247,7 +249,7 @@ src/ExternalSupport/SelfHostedEditor/
 - 已新增宿主侧本地化 review 筛选：`LocalizationEditorController` 会直接消费 shared `presenter.items` 与 draft store，在浏览器里按 `all / actionable / draft / empty / kept / new / changed / conflict / stale / removed` 切换可见行，并显示 `Showing X of Y rows` 摘要；这层只负责可见性，不改 Tooling review 语义。
 - 已新增宿主侧 CSV 会话状态与当前筛选范围的一键清草稿：本地化工具栏现在会显示 session override 数、当前 filter 下可见 draft 数，以及 updated CSV 当前为什么不可导出；`Clear visible drafts` 只清宿主侧当前可见的 draft overrides，不改 Tooling presenter 与 shared CSV 语义。
 - 已新增 Stable Node Map 显式审查入口：顶栏 `Node Map` 会通过开发宿主 `/api/node-map-review` 运行共享 CLI `update-node-map-project --report`，展示 shared report 的 `new / renamed / manual-review / conflict / missing` 摘要与审查项，支持 source jump，并允许下载生成的 `inscape.node-map.json`。浏览器端不复制 VSCode 的 candidate apply / revert sidecar mutation；candidate apply 语义现已收成 Tooling / CLI 共享契约，后续 SelfHostedEditor 若需要应用候选，应调用共享动作。
-- 已新增工作区摘要状态：顶部状态栏显示节点数、本地化行数、译文草稿数和诊断数；后续可替换为真实项目工作区 / LanguageServer / Tooling 汇总。
+- 已新增工作区摘要状态：顶部状态栏显示节点数、本地化行数、译文草稿数和诊断数；当前 hosted aggregation summary 已从 Compiler project graph、Tooling localization presenter、LanguageServer diagnostics 与 Runtime provider status 汇总为 current-stage normal path，draft summary 只在 hosted inputs 不完整时使用。
 - 下一步打开真实项目目录。
 - 下一步调用 `Tooling` / `Cli` 或 `LanguageServer` 获取项目 IR。
 - 下一步用 `Runtime` 显示当前节点、文本、选项、Back / Restart / 路径记录。
@@ -316,7 +318,10 @@ src/ExternalSupport/SelfHostedEditor/
 - Runtime 最小生命周期现已继续补到 `rewind`：共享层会依据 `state.path` 回退一个已访问节点，开发宿主与 SelfHostedEditor 只负责透传这个动作并显示轻量 path / Back 控件，不在浏览器里另建一份节点历史真相。
 - 2026-06-02 当前状态：SelfHostedEditor L10N 视图已补上“真实旧 CSV 选择 + 真实 updated CSV 导出 / 直接替换”，并继续把 linked baseline 的宿主状态说清楚。共享层 / CLI 新增 `--translation-overrides`，允许在 `update-l10n` / `update-l10n-project` 前按 anchor 吃掉前端草稿覆盖；开发宿主 `/api/localization-review` 与 `/api/localization-update` 现在按 `sessionId` 记住 previous CSV baseline，前端只在旧 CSV 新增或变化时重传，后续可只传 session 与 translation overrides，由 CLI 继续产出真实 updated CSV。`LocalizationEditorController` 现在会显示 review baseline、读取真实旧 CSV、保留 session draft overrides、按状态筛选当前可见 review 行、显示当前 override / 可见 draft / 导出 readiness 状态，并在浏览器支持 native file handle 时把 updated CSV 直接写回已链接旧文件；linked baseline 会根据当前 anchor 草稿切换 `linked clean` / `linked N unsaved`，`Replace previous CSV` 也只在确实有未保存 linked 草稿时可用；不支持 native file handle 时仍保留浏览器下载导出。该链路已补 `check:model`、`check:localization-update` 与 `check:localization-update-http` 回归，保持“共享语义留在 Internal / CLI，消费端只做薄适配”。
 - 2026-06-13 当前状态：SelfHostedEditor dev-host session cache 已补生命周期边界。Runtime snapshot、line-map sidecar、localization baseline 三类会话记忆统一走 `SelfHostedEditorSessionBridge` 的 bounded cache，默认 2 小时 idle TTL、每类最多 64 条 session；`/api/session-cache-status`、`check:session-cache` 与 `check:session-cache-http` 只暴露 session id、大小、age/idle 和淘汰计数，不暴露缓存内容本体。该层仍只属于开发宿主生命周期，不改变 Runtime、Tooling、LanguageServer 或 CLI 的语义 contract。
-- 2026-06-13 当前状态：SelfHostedEditor 已具备 dev-host mode 的 `project-session` 状态词汇和 `language-session-request` 请求词汇。前端共享 `EditorBackendClient.sessionId`，Runtime / line-map / localization 使用同一个 session id；sidebar session panel 显示 backend mode 与 session id。LanguageServer 请求统一带 session id、active document path、document revision 与 query envelope，但底层默认仍是 process-per-request。可选 `SELF_HOSTED_EDITOR_LANGUAGE_SESSION=stdio` spike 只覆盖 diagnostics / documentSymbols，并且失败会回退。Preview / StoryGraph / Localization 的 draft fallback 已明确为 offline/unavailable 状态，不再伪装成 hosted 成功路径。
+- 2026-06-13 / 2026-06-15 当前状态：SelfHostedEditor 已具备 dev-host mode 的 `project-session` 状态词汇和 `language-session-request` 请求词汇。前端共享 `EditorBackendClient.sessionId`，Runtime / line-map / localization 使用同一个 session id；sidebar session panel 显示 backend mode 与 session id。LanguageServer 请求统一带 session id、active document path、document revision 与 query envelope，但底层默认仍是 process-per-request。可选 `SELF_HOSTED_EDITOR_LANGUAGE_SESSION=stdio` spike 只覆盖 diagnostics / documentSymbols，并且失败会回退；status 会明确列出 stdio supported endpoints 与其余 process-per-request fallback endpoints。Preview / StoryGraph / Localization / Outline 的 draft fallback 已明确为 offline/unavailable 状态，不再伪装成 hosted 成功路径。
+- 2026-06-15 当前状态：current-stage P0 readiness 已收口。CSS hard-coded feature colors 已迁到 base tokens，fallback catalog 不再包含 current-stage `migration-target`，Workbench integration contract 覆盖 default sample、hosted summary、Preview / Graph provider、Localization 空 hosted review 与 Outline error。当前阶段仍不做 Electron shell、正式 embedded EditorBackend、持久化 `DocumentBufferStore`、默认 full long-lived LanguageServer、跨重启 session restore 或多窗口 session ownership。
+- 2026-06-14 当前决策：SelfHostedEditor desktop backend v0 采用嵌入式 EditorBackend，而不是独立 sidecar daemon。它是 SelfHostedEditor 桌面产品的编辑器应用后端 / 宿主编排层，优先服务一个桌面窗口和一个 active project session；`Compiler` / `LanguageServer` / `Tooling` / `Runtime` 继续拥有语义真相。详见 ADR 0019 与 `docs/self-hosted-editor-desktop-backend-v0-plan.md`。
+- 2026-06-14 产品决策：SelfHostedEditor v0 desktop shell 采用 Electron。项目入口只支持打开目录作为 workspace，不提供正式打开单文件功能；一个窗口一个 workspace folder。默认自动保存，UI 与 embedded backend 都持有未保存内容，backend 是 session truth；崩溃恢复依赖磁盘 recovery snapshot。localization CSV、node-map sidecar、line-map sidecar 写回前默认自动备份；Git 是可选增强而不是基础恢复机制。详见 ADR 0020。
 - 2026-06-13 当前状态：SelfHostedEditor dev-host process bridge 已补失败可观测性。CLI / LanguageServer 子进程成功时仍返回完整 stdout/stderr 供现有 JSON 解析；失败、spawn error 或 timeout 时统一变成 structured process error，只带 exit code / signal / timedOut / duration 与截断后的 stdout/stderr preview，避免 HTTP 错误返回无界子进程输出。
 - 2026-06-13 当前状态：SelfHostedEditor model contract check 已从单个大文件拆成 `DevScripts/ModelContracts/` 下的能力分组，`check:model` 仍是统一入口。后续新增断言应优先放进对应分组，而不是重新塞回组合入口。
 - 2026-06-13 当前状态：SelfHostedEditor package scripts 已把过长的 `check:syntax` 与 `check:model` 命令沉到 `DevScripts/SelfHostedEditorSyntaxContractCheck.js` 与 `DevScripts/SelfHostedEditorModelContractSuite.js`。npm 命令名保持不变，syntax 入口递归覆盖 `Scripts/` 与 `DevScripts/` 下的 JavaScript 文件，避免 package.json 重新成为维护瓶颈。
@@ -354,9 +359,9 @@ src/ExternalSupport/SelfHostedEditor/
 
 ## 待确认问题
 
-- Tauri 是否仍是第一版最合适壳，还是应评估 Avalonia / Electron / WebView2。
+- v0 desktop shell 已由 ADR 0020 决定为 Electron；Tauri 可后续重新评估，Avalonia / WebView2 暂不进入 v0。
 - Tauri / Web UI 方案在 Windows 与 macOS 上的打包、自动更新、签名和本机文件权限成本；移动端暂不进入第一版验证。
-- 自研编辑器是否直接启动 `LanguageServer --stdio`，还是引入统一 Editor Backend 进程。
+- 自研编辑器 backend v0 的物理形态已由 ADR 0019 决定：采用嵌入式 EditorBackend；默认仍可直接编排 `LanguageServer`，未来只有在多窗口共享、跨宿主共享、后台 daemon 或故障隔离需求出现时再评估 sidecar。
 - Monaco 是否能完整覆盖 VSCode 当前 `.inscape` 体验中的 semantic rename、references、diagnostics 和 hover 交互；若不能，需明确补齐策略或替代方案。
 - CSV 视图是否只承载本地化，还是扩展到 HostBinding / RoleMap / Resource binding；当前倾向是界面模型分开。
 - 节点图可编辑时的真相边界：文本源仍应是主真相，节点图编辑需要通过受控 command / patch 回写文本或 sidecar，而不是维护第二份漂移结构。

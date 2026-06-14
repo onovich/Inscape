@@ -2,6 +2,7 @@ import { SelfHostedEditorLanguageSessionBridge } from "./SelfHostedEditorLanguag
 import { withTemporaryWorkspace } from "./SelfHostedEditorWorkspaceBridge.js";
 
 await assertMalformedStdioFrameRejectsPendingRequest();
+await assertDisposeReleasesNonresponsiveSession();
 
 const openingText = `# Opening
 Narrator: Start.
@@ -79,6 +80,30 @@ async function assertMalformedStdioFrameRejectsPendingRequest() {
   assertEqual(killed, true, "malformed stdio frame should kill session child");
   assertEqual(bridge.child, null, "malformed stdio frame should clear child");
   assertEqual(bridge.pendingRequests.size, 0, "malformed stdio frame should clear pending requests");
+}
+
+async function assertDisposeReleasesNonresponsiveSession() {
+  const bridge = new SelfHostedEditorLanguageSessionBridge({
+    disposeTimeoutMilliseconds: 1,
+    requestTimeoutMilliseconds: 60000,
+  });
+  let exitWritten = false;
+  let killed = false;
+  bridge.child = {
+    kill() {
+      killed = true;
+    },
+    stdin: {
+      write() {
+        exitWritten = true;
+      },
+    },
+  };
+  bridge.request = async () => new Promise(() => {});
+  await bridge.dispose();
+  assertEqual(exitWritten, true, "dispose should send best-effort exit");
+  assertEqual(killed, true, "dispose should kill nonresponsive stdio child");
+  assertEqual(bridge.child, null, "dispose should clear nonresponsive stdio child");
 }
 
 function assertIncludesDiagnostic(diagnostics, code, sourcePath) {

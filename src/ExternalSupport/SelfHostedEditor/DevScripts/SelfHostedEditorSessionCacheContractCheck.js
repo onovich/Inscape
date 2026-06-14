@@ -58,9 +58,38 @@ function assertSharedSessionCaches() {
   const status = getSelfHostedEditorSessionCacheStatus();
   assertEqual(status?.format, "inscape.self-hosted-editor.session-cache-status", "session cache status format");
   assertEqual(status?.formatVersion, 1, "session cache status version");
+  assertEqual(status.languageSession?.kind, "process-per-request", "default language session kind");
+  assertEqual(
+    status.languageSession?.supportedEndpoints?.join(","),
+    "diagnostics,completions,definition,references,hover,document-symbols",
+    "default language session endpoints"
+  );
   assertCacheStatus(status.caches?.runtime, "runtime", "runtime-contract");
   assertCacheStatus(status.caches?.lineMap, "line-map", "line-map-contract");
   assertCacheStatus(status.caches?.localizationBaseline, "localization-baseline", "localization-contract");
+
+  const previousLanguageSessionMode = process.env.SELF_HOSTED_EDITOR_LANGUAGE_SESSION;
+  process.env.SELF_HOSTED_EDITOR_LANGUAGE_SESSION = "stdio";
+  try {
+    const stdioStatus = getSelfHostedEditorSessionCacheStatus();
+    assertEqual(stdioStatus.languageSession?.kind, "stdio-spike", "stdio language session kind");
+    assertEqual(
+      stdioStatus.languageSession?.supportedEndpoints?.join(","),
+      "diagnostics,document-symbols",
+      "stdio language session supported endpoints"
+    );
+    assertEqual(
+      stdioStatus.languageSession?.fallbackEndpoints?.join(","),
+      "completions,definition,references,hover",
+      "stdio language session fallback endpoints"
+    );
+  } finally {
+    if (previousLanguageSessionMode === undefined) {
+      delete process.env.SELF_HOSTED_EDITOR_LANGUAGE_SESSION;
+    } else {
+      process.env.SELF_HOSTED_EDITOR_LANGUAGE_SESSION = previousLanguageSessionMode;
+    }
+  }
 
   clearSelfHostedEditorSessionCaches();
 }

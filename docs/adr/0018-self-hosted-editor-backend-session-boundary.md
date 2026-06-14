@@ -44,6 +44,14 @@ SelfHostedEditor 当前已经从静态 UI 原型推进到真实消费 `LanguageS
 - localization、node-map、HostSchema、HostBinding 等共享流程来自 `Tooling`。
 - player state 和 narrative action 来自 `Runtime`。
 
+2026-06-15 current-stage P0 follow-up：
+
+- 当前 dev-host `project-session` / `language-session-request` 词汇只用于迁移准备和可观测性，不表示正式 desktop backend 已完成。
+- `/api/session-cache-status` 可以暴露 language-session mode、supported endpoints 和 process-per-request fallback endpoints，但仍不得暴露文档正文、Runtime snapshot、CSV 或 line-map 内容本体。
+- 默认 LanguageServer authoring endpoint 仍全部是 `process-per-request`；`SELF_HOSTED_EDITOR_LANGUAGE_SESSION=stdio` 只覆盖 diagnostics / documentSymbols，并允许失败后回退。
+- Workspace Summary 当前接受 hosted aggregation summary 作为 current-stage normal path；只有 hosted Compiler graph 或 hosted localization presenter inputs 不完整时才使用 draft summary fallback。
+- `ScriptDocumentFallbackPolicy` 当前阶段不再保留 `migration-target` reason；剩余 fallback 必须明确 owner 与触发条件。
+
 ## 不做的事
 
 - 不把当前 `/api/*` 当成最终产品 backend API 逐字冻结。
@@ -51,13 +59,14 @@ SelfHostedEditor 当前已经从静态 UI 原型推进到真实消费 `LanguageS
 - 不把 dev-host bounded cache 当作正式 project session。
 - 不在 SelfHostedEditor 前端重算 diagnostics、references、line identity、localization alignment、candidate score、CSV merge 或 Runtime progress。
 - 不为了未来 backend 提前把当前 dev host 改成复杂框架。
+- 不在 current-stage P0 中实现 Electron shell、正式 embedded EditorBackend、持久化 `DocumentBufferStore`、默认 full long-lived LanguageServer、跨重启 session restore 或多窗口 session ownership。
 
 ## 影响
 
 - 当前 dev host 继续保留轻量本地服务器身份，并继续服务 smoke tests。
 - 后续可以先新增窄 `EditorBackendClient` adapter，让它继续调用现有 `/api/*`，再逐步替换 transport。
 - Runtime、line-map、localization baseline 的正式迁移应以 project session 为单位，而不是继续依赖 request body 上传整份 state。
-- `/api/session-cache-status` 在 dev host 中仍是 cache 观测接口；产品 backend 可保留 session status，但不得暴露 Runtime、CSV 或 line-map 内容本体。
+- `/api/session-cache-status` 在 dev host 中仍是 cache / language-session 观测接口；产品 backend 可保留 session status，但不得暴露 Runtime、CSV、line-map 或文档正文内容本体。
 - 任何同时被 VSCode 与 SelfHostedEditor 需要的 presenter / model / report shape，应优先下沉或保留在 `Internal`，不能在 backend client 中重新命名成宿主私有 truth。
 
 ## 验证
@@ -68,6 +77,7 @@ SelfHostedEditor 当前已经从静态 UI 原型推进到真实消费 `LanguageS
 - line-map session 改动至少覆盖 `check:line-map-http`。
 - localization baseline / update 改动至少覆盖 `check:localization-update-http`。
 - session observability 改动至少覆盖 `check:session-cache-http`。
+- LanguageSession spike 范围改动至少覆盖 `check:language-session` 与 stdio 开关下的 `check:semantic-parity-http`。
 
 ## 关联文件
 

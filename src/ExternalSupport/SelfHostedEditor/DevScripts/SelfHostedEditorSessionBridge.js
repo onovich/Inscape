@@ -5,6 +5,18 @@ const defaultLineMapSessionId = "default";
 const defaultRuntimeSessionId = "default";
 const defaultSessionCacheTtlMilliseconds = 2 * 60 * 60 * 1000;
 const defaultMaximumSessionCacheEntries = 64;
+const languageSessionEndpoints = Object.freeze([
+  "diagnostics",
+  "completions",
+  "definition",
+  "references",
+  "hover",
+  "document-symbols",
+]);
+const stdioLanguageSessionEndpoints = Object.freeze([
+  "diagnostics",
+  "document-symbols",
+]);
 const localizationBaselineStates = createSelfHostedEditorSessionCacheStore("localization-baseline", {
   estimateByteLength: estimateTextByteLength,
 });
@@ -217,6 +229,7 @@ export function getSelfHostedEditorSessionCacheStatus() {
     },
     format: "inscape.self-hosted-editor.session-cache-status",
     formatVersion: 1,
+    languageSession: getSelfHostedEditorLanguageSessionStatus(),
   };
 }
 
@@ -260,6 +273,22 @@ function createSessionCacheStatus(kind, records, counters, options) {
     maximumEntries: options.maximumEntries,
     ttlMilliseconds: options.ttlMilliseconds,
     totalByteLength: entries.reduce((total, entry) => total + entry.byteLength, 0),
+  };
+}
+
+function getSelfHostedEditorLanguageSessionStatus() {
+  if (process.env.SELF_HOSTED_EDITOR_LANGUAGE_SESSION === "stdio") {
+    return {
+      fallbackKind: "process-per-request",
+      fallbackEndpoints: languageSessionEndpoints.filter((endpoint) => !stdioLanguageSessionEndpoints.includes(endpoint)),
+      kind: "stdio-spike",
+      supportedEndpoints: [...stdioLanguageSessionEndpoints],
+    };
+  }
+
+  return {
+    kind: "process-per-request",
+    supportedEndpoints: [...languageSessionEndpoints],
   };
 }
 

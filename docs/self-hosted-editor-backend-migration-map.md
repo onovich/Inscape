@@ -2,11 +2,15 @@
 
 状态：草案
 
-最后更新：2026-06-13
+最后更新：2026-06-15
 
 本文记录 SelfHostedEditor 从当前 dev host 迁向产品化 editor backend 时的边界图。它不是立即实现 backend 的施工单；它用来防止后续把临时 HTTP server、浏览器 UI state、Runtime / Tooling / LanguageServer 语义状态混成一团。
 
-相关 ADR：见 [ADR 0018](adr/0018-self-hosted-editor-backend-session-boundary.md)。
+相关 ADR：
+
+- [ADR 0018：SelfHostedEditor backend 使用业务窄接口并区分 session 状态](adr/0018-self-hosted-editor-backend-session-boundary.md)
+- [ADR 0019：SelfHostedEditor desktop backend v0 采用嵌入式 EditorBackend](adr/0019-self-hosted-editor-embedded-backend-v0.md)
+- [ADR 0020：SelfHostedEditor v0 采用 Electron、目录 workspace 与分层保存恢复策略](adr/0020-self-hosted-editor-electron-workspace-and-save-strategy.md)
 
 ## 当前结论
 
@@ -32,7 +36,13 @@
 - Monaco 光标、临时 overlay、filter mode、当前可见行。
 - 未写回前的用户输入草稿可以先在 UI store 中存在，但真实 CSV merge、alignment、line identity 和 Runtime 进度仍属于 `Tooling` / `LanguageServer` / `Runtime` 或未来 project session。
 
-2026-06-13 现状补充：前端已有 `inscape.self-hosted-editor.project-session` 状态投影和 `inscape.self-hosted-editor.language-session-request` 请求 envelope，但它们仍是 dev-host mode 的迁移词汇。`EditorBackendClient.projectSession.status()` 只投影 `/api/session-cache-status` 的非内容计数与 workspace request snapshot 元数据；`EditorBackendClient.languageSession.*` 只把当前请求包成 session-aware shape，再展开到既有 `/api/*`。可选 `SELF_HOSTED_EDITOR_LANGUAGE_SESSION=stdio` 只作为 diagnostics / documentSymbols 的可回退 spike，不代表正式 backend 已完成。
+2026-06-13 / 2026-06-15 现状补充：前端已有 `inscape.self-hosted-editor.project-session` 状态投影和 `inscape.self-hosted-editor.language-session-request` 请求 envelope，但它们仍是 dev-host mode 的迁移词汇。`EditorBackendClient.projectSession.status()` 只投影 `/api/session-cache-status` 的非内容计数、language-session mode / supported endpoints 与 workspace request snapshot 元数据；`EditorBackendClient.languageSession.*` 只把当前请求包成 session-aware shape，再展开到既有 `/api/*`。可选 `SELF_HOSTED_EDITOR_LANGUAGE_SESSION=stdio` 只作为 diagnostics / documentSymbols 的可回退 spike，未覆盖的 completions / definition / references / hover 继续走 process-per-request fallback，不代表正式 backend 已完成。
+
+2026-06-15 P0 收口补充：进入 desktop backend v0 前的 current-stage readiness 已完成。Workspace Summary 当前接受 hosted aggregation summary 作为 normal path，不再标为 shared project-summary migration target；draft summary 只在 hosted Compiler graph 或 hosted localization presenter inputs 不完整时使用。fallback catalog 当前不再包含 current-stage `migration-target`。这些结论不改变正式 backend v0 的施工范围：Electron shell、embedded EditorBackend、DocumentBufferStore、autosave / recovery 与 workspace filesystem boundary 仍属于 P1。
+
+2026-06-14 决策补充：desktop backend v0 采用嵌入式 EditorBackend，而不是独立 sidecar daemon。它是 SelfHostedEditor 桌面产品的编辑器应用后端 / 宿主编排层，优先服务一个 SelfHostedEditor 桌面窗口和一个 active project session。VSCode 继续使用 extension + LanguageServer + Tooling / Runtime contracts；Web dev host 继续作为开发验证和 smoke test 工具。v0 代码仍必须通过 `EditorBackendClient` / transport 边界保持未来可 sidecar 化。
+
+2026-06-14 产品补充：desktop shell v0 采用 Electron；一个窗口只打开一个 workspace folder，workspace 是目录并支持多个 `.inscape` 文件，不提供正式打开单文件功能。默认自动保存，UI 与 embedded backend 都持有未保存内容，backend 是 session truth；崩溃恢复依赖磁盘 recovery snapshot。localization CSV、node-map sidecar 和 line-map sidecar 写回前默认自动备份；Git 只作为可选增强，不作为唯一恢复机制。
 
 ## 状态分类
 
@@ -61,7 +71,7 @@
 | `/api/runtime-state` | 调 `runtime-project` 启动 snapshot 并记入 bounded cache | `RuntimeSessionClient.startOrObserve` | Backend project session | A4 runtime session interface | 迁到 long-lived Runtime project session；dev cache 不再是正式状态。 |
 | `/api/runtime-action` | 用 request state 或 cached state 调 `runtime-project` action | `RuntimeSessionClient.step` | Backend project session | A4 runtime session interface | action 只透传，浏览器不模拟 Runtime。 |
 | `/api/line-map-refresh` | 调 line-map refresh，使用 request sidecar 或 cache sidecar | `LineIdentitySessionClient.refresh` | Backend project session | A4 line-identity session interface | sidecar 应绑定 workspace / document identity / mtime。 |
-| `/api/session-cache-status` | 暴露 dev-host bounded cache 状态 | `BackendDiagnosticsClient.sessionStatus` | Dev-host diagnostic | A2 backend session status contract | 产品 backend 可保留观测接口，但不能暴露 Runtime / CSV / line-map 内容本体。 |
+| `/api/session-cache-status` | 暴露 dev-host bounded cache 状态与 language-session mode / supported endpoints | `BackendDiagnosticsClient.sessionStatus` | Dev-host diagnostic | A2 backend session status contract | 产品 backend 可保留观测接口，但不能暴露 Runtime / CSV / line-map 内容本体；stdio spike 只声明 diagnostics / documentSymbols。 |
 | `/api/node-map-review` | 调 `update-node-map-project --report` 并 compact report | `StableNodeMapClient.review` | Backend project session | A1 backend client adapter | 继续消费 Tooling report；前端不做 candidate scoring。 |
 | `/api/node-map-apply` | 调 shared candidate apply，返回 dry-run / sidecar payload | `StableNodeMapClient.applyCandidate` | Backend project session | A1 backend client adapter | 写回必须由 Tooling / CLI command 执行或预览，不在浏览器私改 sidecar。 |
 | `/api/localization-review` | 调 localization extract/audit，session 记住 previous CSV | `LocalizationSessionClient.review` | Backend project session | A4 localization session interface | baseline 应绑定文件身份；Presenter shape 保持 `presenter.items`。 |

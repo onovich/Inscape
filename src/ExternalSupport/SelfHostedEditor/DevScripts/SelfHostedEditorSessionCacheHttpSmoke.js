@@ -46,6 +46,12 @@ async function main() {
     const status = await postJson(address.port, "/api/session-cache-status", {});
     assertEqual(status?.format, "inscape.self-hosted-editor.session-cache-status", "status format");
     assertEqual(status?.formatVersion, 1, "status formatVersion");
+    assertEqual(status.languageSession?.kind, "process-per-request", "language session status kind");
+    assertEqual(
+      status.languageSession?.supportedEndpoints?.join(","),
+      "diagnostics,completions,definition,references,hover,document-symbols",
+      "language session status endpoints"
+    );
     assertCacheStatus(status.caches?.runtime, "runtime", runtimeSessionId);
     assertCacheStatus(status.caches?.lineMap, "line-map", lineMapSessionId);
     assertCacheStatus(status.caches?.localizationBaseline, "localization-baseline", localizationSessionId);

@@ -25,6 +25,11 @@ async function main() {
     assertEqual(monacoLoader.status, 200, "monaco loader status");
     assertIncludes(monacoLoader.headers.get("content-type"), "text/javascript; charset=utf-8", "monaco loader content type");
 
+    const defaultSample = await fetchAsset(address.port, "/samples/court-loop.inscape");
+    assertEqual(defaultSample.status, 200, "default sample status");
+    assertIncludes(defaultSample.headers.get("content-type"), "text/plain; charset=utf-8", "default sample content type");
+    assertIncludes(await defaultSample.text(), "# ", "default sample body");
+
     const blockedDevScript = await fetchAsset(address.port, "/DevScripts/StartSelfHostedEditorPreview.js");
     assertEqual(blockedDevScript.status, 403, "dev script static exposure status");
 

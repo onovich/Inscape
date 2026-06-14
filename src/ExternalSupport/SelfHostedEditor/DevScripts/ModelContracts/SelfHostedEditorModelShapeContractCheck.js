@@ -86,8 +86,13 @@ assertEqual(
 );
 assertEqual(
   fallbackReasonCatalog[ScriptDocumentFallbackReason.WorkspaceSummaryStatus].category,
-  ScriptDocumentFallbackCategory.MigrationTarget,
+  ScriptDocumentFallbackCategory.TemporaryHostedFallback,
   "workspace summary fallback category"
+);
+assertEqual(
+  Object.values(fallbackReasonCatalog).some((entry) => entry.category === "migration-target"),
+  false,
+  "fallback catalog has no current-stage migration target"
 );
 let missingFallbackReasonFailed = false;
 try {
@@ -137,6 +142,11 @@ const backendStatus = await backendClient.diagnostics.sessionStatus();
 assertEqual(backendStatus.format, EditorBackendSessionStatusFormat, "backend session status format");
 assertEqual(backendStatus.mode, "dev-host", "backend session status mode");
 assertEqual(backendStatus.languageSession.kind, "process-per-request", "backend language session status kind");
+assertEqual(
+  backendStatus.languageSession.supportedEndpoints.join(","),
+  "diagnostics,completions,definition,references,hover,document-symbols",
+  "backend language session process-per-request endpoints"
+);
 assertEqual(backendStatus.runtimeSession.entryCount, 3, "backend runtime cache entry count");
 assertEqual(backendStatus.lineIdentitySession.entryCount, 2, "backend line-map cache entry count");
 assertEqual(backendStatus.localizationSession.entryCount, 1, "backend localization cache entry count");
@@ -217,7 +227,7 @@ assertEqual(summary.draftTranslationCount, 1, "summary draft count");
 assertEqual(summary.diagnosticCount, 4, "summary diagnostic count");
 assertEqual(summary.provider, "draft-fallback", "summary provider");
 assertEqual(summary.fallback.reason, ScriptDocumentFallbackReason.WorkspaceSummaryStatus, "summary fallback reason");
-assertEqual(summary.fallback.category, ScriptDocumentFallbackCategory.MigrationTarget, "summary fallback category");
+assertEqual(summary.fallback.category, ScriptDocumentFallbackCategory.TemporaryHostedFallback, "summary fallback category");
 assertEqual(summaryCompatibility.provider, "draft-fallback", "summary compatibility provider");
 const hostedSummaryRows = [
   {

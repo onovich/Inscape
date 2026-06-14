@@ -1,5 +1,17 @@
 export const EditorBackendProjectSessionFormat = "inscape.self-hosted-editor.project-session";
 export const EditorBackendProjectSessionFormatVersion = 1;
+const defaultLanguageEndpoints = Object.freeze([
+  "diagnostics",
+  "completions",
+  "definition",
+  "references",
+  "hover",
+  "document-symbols",
+]);
+const stdioLanguageEndpoints = Object.freeze([
+  "diagnostics",
+  "document-symbols",
+]);
 
 export class EditorBackendProjectSessionModel {
   static buildDevHostProjectSession({
@@ -11,9 +23,7 @@ export class EditorBackendProjectSessionModel {
     return {
       format: EditorBackendProjectSessionFormat,
       formatVersion: EditorBackendProjectSessionFormatVersion,
-      languageSession: {
-        kind: "process-per-request",
-      },
+      languageSession: buildLanguageSessionModel(sessionCacheStatus.languageSession),
       lineIdentitySession: {
         entryCount: normalizeEntryCount(caches.lineMap),
         kind: "bounded-cache",
@@ -33,6 +43,23 @@ export class EditorBackendProjectSessionModel {
   }
 }
 
+function buildLanguageSessionModel(languageSessionStatus) {
+  if (languageSessionStatus?.kind === "stdio-spike") {
+    return {
+      fallbackEndpoints: normalizeEndpointList(languageSessionStatus.fallbackEndpoints, defaultLanguageEndpoints)
+        .filter((endpoint) => !stdioLanguageEndpoints.includes(endpoint)),
+      fallbackKind: "process-per-request",
+      kind: "stdio-spike",
+      supportedEndpoints: normalizeEndpointList(languageSessionStatus.supportedEndpoints, stdioLanguageEndpoints),
+    };
+  }
+
+  return {
+    kind: "process-per-request",
+    supportedEndpoints: normalizeEndpointList(languageSessionStatus?.supportedEndpoints, defaultLanguageEndpoints),
+  };
+}
+
 function buildWorkspaceModel(workspace) {
   const documents = Array.isArray(workspace?.documents) ? workspace.documents : [];
   return {
@@ -47,6 +74,15 @@ function buildWorkspaceModel(workspace) {
     revision: normalizeRevision(workspace?.revision ?? workspace?.documentRevision ?? workspace?.workspaceRevision),
     source: documents.length > 0 ? "request-snapshot" : "temporary-workspace",
   };
+}
+
+function normalizeEndpointList(endpoints, fallback) {
+  const source = Array.isArray(endpoints) ? endpoints : fallback;
+  const normalized = source
+    .map((endpoint) => String(endpoint || "").trim())
+    .filter((endpoint) => defaultLanguageEndpoints.includes(endpoint));
+  const unique = [...new Set(normalized)];
+  return unique.length > 0 ? unique : [...fallback];
 }
 
 function normalizeEntryCount(cacheStatus) {

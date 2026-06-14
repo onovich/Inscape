@@ -2,11 +2,61 @@
 
 状态：基线
 
-最后更新：2026-06-13
+最后更新：2026-06-15
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-14 SelfHostedEditor desktop backend v0 决策快照
+
+本轮已采纳 [ADR 0019](adr/0019-self-hosted-editor-embedded-backend-v0.md)：SelfHostedEditor desktop backend v0 采用嵌入式 EditorBackend，而不是独立 sidecar daemon。
+
+- backend 是 SelfHostedEditor 的编辑器应用后端 / 宿主编排层，不是 Inscape 底层业务 backend。
+- v0 优先服务一个 SelfHostedEditor 桌面窗口和一个 active project session。
+- backend owns editor session and resource orchestration；`Compiler` / `LanguageServer` / `Tooling` / `Runtime` 继续 owns semantic truth。
+- v0 不做多窗口共享、后台 daemon、跨重启 session restore、VSCode 复用同一 backend 进程或 localhost 产品 API。
+- 用户已确认 LanguageServer long-lived 很重要；它不是 desktop backend v0 的阻塞项，但必须作为 v0 后关键下一步显式推进，不能被当成普通性能优化长期搁置。
+- 代码组织仍要保留可 sidecar 化边界：UI 只依赖 `EditorBackendClient` 与业务窄接口，transport 可替换。
+- 实施计划见 [SelfHostedEditor desktop backend v0 实施计划](self-hosted-editor-desktop-backend-v0-plan.md)；进入 v0 前的 current-stage P0 收口已完成，留痕见 [SelfHostedEditor 当前阶段 100% 收口推进计划](self-hosted-editor-current-stage-100-plan.md) 与 [SelfHostedEditor P0 12 轮内执行方案](self-hosted-editor-p0-12-round-execution-plan.md)。
+
+### 2026-06-14 SelfHostedEditor shell / workspace / save 决策快照
+
+本轮已采纳 [ADR 0020](adr/0020-self-hosted-editor-electron-workspace-and-save-strategy.md)：
+
+- desktop shell v0 采用 Electron；Tauri 后续可重新评估，WebView2 / Avalonia 暂不进入 v0。
+- 项目入口只提供打开目录，不提供正式打开单文件功能。
+- 一个窗口一个 workspace folder；workspace 是目录，支持多个 `.inscape` 文件。
+- 默认自动保存；UI 与 embedded backend 都持有未保存内容，backend 是 session truth。
+- Electron renderer 只通过 preload 白名单 editor command 访问 backend，不直接访问 Node / 文件系统 / shell。
+- 文件读写由 backend 统一执行 workspace 文件系统边界检查，拒绝 workspace 外路径和未列入白名单的写回目标。
+- autosave 采用 debounce：UI 合并文本同步，backend 合并磁盘写入，并在手动保存 / 关闭窗口 / 切换 workspace 时 flush 最新 buffer。
+- 崩溃恢复依赖磁盘 recovery snapshot。
+- localization CSV、node-map sidecar、line-map sidecar 写回前默认自动备份，设置项可调整或关闭。
+- Git 作为可选增强，不作为基础备份 / 恢复机制。
+- v0 先做单窗口；后续多窗口时每个窗口独立 backend / ProjectSession，不共享 session。
+- 外部资源默认复制进 workspace，不长期引用 workspace 外路径。
+- recovery / backup / cache 使用 workspace 内部目录 `.inscape-workspace/`。
+- `.inscape-workspace/` 默认不进 Git；若未来存放项目级可复现配置，必须拆出明确可提交部分。
+- 保留手动 Save 作为立即 flush，UI 显示保存状态；autosave 默认开启，可设置关闭。
+- v0 最小可用闭环：打开目录、文件列表、编辑、autosave、手动 Save、recovery、基础诊断 / 补全和 Preview。
+- 外部资源默认进入 `assets/`，后续可细分 `assets/images/`、`assets/audio/`。
+- recovery UI 列出可恢复文件，并提供恢复、丢弃、稍后处理。
+- v0 可以先提供最小设置页；若设置页暂缓，也必须先保留稳定配置结构，避免默认值散落硬编码。
+- v0 首发 Windows 内部可用版；签名、自动更新、安装器体验和 macOS 后置。
+- 设置分层：UI 主题、autosave、backup 保留偏全局；项目入口、资源路径、导出配置、Git/checkpoint 策略偏 workspace / project。
+
+### 2026-06-15 SelfHostedEditor P0 current-stage readiness 收口快照
+
+本轮已完成进入 desktop backend v0 前的 current-stage P0 收口：
+
+- CSS / style structure warning 清零：`SelfHostedEditorEditorAuthoring.css`、`SelfHostedEditorPreview.css`、`SelfHostedEditorStoryGraph.css` 的 feature hard-coded colors 已迁到 `SelfHostedEditorBase.css` tokens，`check:style-structure` 不再输出可消除 warning。
+- Workspace Summary 已关闭 `migration-target` 口径：hosted Compiler graph + hosted localization presenter inputs 完整时走 `provider: "shared"` normal path；只有 hosted inputs 不完整时才进入 `workspace-summary-status` draft fallback。
+- `ScriptDocumentFallbackPolicy` 当前只保留 `offline-only` 与 `temporary-hosted-fallback` 两类 reason；model contract 明确断言 fallback catalog 不再有 current-stage `migration-target`。
+- Preview / StoryGraph / Localization / Outline 的 provider-aware contract 已补强：malformed shared payload 显示显式错误，空 hosted localization presenter 保持 hosted empty state，Outline malformed symbols 显示 LanguageServer error。
+- `project-session` status 仍是 dev-host mode 迁移词汇，但现在会报告 language mode 与 supported endpoints；默认六个 authoring endpoint 都是 `process-per-request`，`SELF_HOSTED_EDITOR_LANGUAGE_SESSION=stdio` 仅覆盖 diagnostics / documentSymbols，其余四个 endpoint 保持 process-per-request fallback。
+- Workbench 集成 contract 覆盖 default sample 静态加载、hosted summary、Runtime/Compiler Preview provider、Compiler Graph provider、Localization 空 hosted review、Outline error 与 Preview choice click invariant。
+- 当前阶段仍不做 Electron shell、正式 embedded EditorBackend、持久化 `DocumentBufferStore`、默认 full long-lived LanguageServer、跨重启 session restore 或多窗口 session ownership；这些进入 P1 / P1.5。
 
 ### 2026-06-13 SelfHostedEditor long-lived backend / fallback 收口快照
 
@@ -67,7 +117,7 @@
 - 2026-06-13 最新：下一阶段第 7 轮已建立 CSS inventory 和 `check:style-structure`。`docs/self-hosted-editor-css-architecture.md` 记录当前 CSS owner / line baseline / target；`check:structure` 现在会同时跑 style structure contract。当前两个 legacy CSS 文件仍高于 450 行目标：WorkspaceLayout 722 行、EditorAuthoring 659 行，但检查会阻止它们继续增长。下一轮优先拆 WorkspaceLayout。
 - 2026-06-13 最新：下一阶段第 8 轮已拆 WorkspaceLayout CSS ownership。新增 `SelfHostedEditorSidebar.css` 与 `SelfHostedEditorTopbar.css`，`SelfHostedEditorWorkspaceLayout.css` 降到 233 行并只保留 shared shell / workspace / pane / summary / responsive shell。CSS style structure、static assets direct/HTTP 和 model contract 已通过。下一轮优先拆 `SelfHostedEditorEditorAuthoring.css`，它仍是 659 行的唯一 legacy CSS owner。
 - 2026-06-13 最新：下一阶段第 9 轮已拆 EditorAuthoring CSS ownership。新增 `SelfHostedEditorLineHintRail.css`、`SelfHostedEditorReferenceOverlay.css` 与 `SelfHostedEditorAuthoringDecorations.css`，`SelfHostedEditorEditorAuthoring.css` 降到 229 行并只保留 editor frame / rename dialog / Monaco hover / suggest widget shell。CSS structure contract 已守住新 import 顺序、feature owner 与 forbidden absorption；下一轮优先进入 fallback reason 分级与可见降级状态，不要再把 CSS 拆分混进同一提交。
-- 2026-06-13 最新：下一阶段第 10 轮已完成 draft fallback reason 分级第一刀。`ScriptDocumentFallbackPolicy` 现在使用 `offline-only` / `temporary-hosted-fallback` / `migration-target` 三层分类，并为每个 reason 记录 owner 与 migration target；`workspace-summary-status` 标记为迁移目标，summary model 暴露 draft provider 与 fallback 元数据，Outline 会显示 LanguageServer / Draft provider 状态。当前仍未实现完整 shared project-summary backend model，后续若继续收窄 fallback，应优先替换 workspace summary 和 draft outline 的正常路径，而不是扩展 `ScriptDocumentModelBuilder`。
+- 2026-06-13 最新：下一阶段第 10 轮已完成 draft fallback reason 分级第一刀。当时 `ScriptDocumentFallbackPolicy` 使用 `offline-only` / `temporary-hosted-fallback` / `migration-target` 三层分类，并把 `workspace-summary-status` 标记为迁移目标；2026-06-15 P0 收口已关闭该 migration-target 口径，当前 Summary hosted aggregation 是 current-stage normal path，draft summary 只作为 hosted inputs unavailable fallback。后续若继续收窄 fallback，应优先替换仍需产品化 backend / long-lived session 承担的正常路径，而不是扩展 `ScriptDocumentModelBuilder`。
 - 2026-06-13 最新：14 轮以内 UI controller 重构第 1 轮完成 StoryGraph rendering 边界拆分。`StoryGraphPreviewController.js` 从 1025 行降到 824 行，新增 `StoryGraphNodeRenderer` 承担节点卡片、端口和输出行 DOM 创建，新增 `StoryGraphEdgeRenderer` 承担 SVG edge layer / path 创建；controller 仍负责 layout、reference projection、viewport、drag / retarget 和 hover 编排。改动前已跑 SelfHostedEditor 全套轻量基线；改动后通过 `check:syntax`、`check:structure`、`check:model`、`check:node-map-http`、`check:semantic-parity-http`。下一轮应继续拆 StoryGraph interaction / viewport，不改变 Compiler graph truth、reference node view-only 语义或 edge retarget patch contract。
 - 2026-06-13 最新：14 轮以内 UI controller 重构第 2 轮完成 StoryGraph viewport 边界拆分。新增 `StoryGraphViewportController` 承担 viewport DOM、pan / zoom / reset、transform 应用、graph-space 坐标换算和 node position 读取；`StoryGraphPreviewController.js` 从 824 行降到 662 行。controller 仍保留 node drag、connection drag / retarget、hover highlight、layout 和 reference projection。改动后通过 `check:syntax`、`check:structure`、`check:model`、`check:node-map-http`、`check:semantic-parity-http`。下一轮应继续拆 StoryGraph interaction / geometry。
 - 2026-06-13 最新：14 轮以内 UI controller 重构第 3 轮完成 StoryGraph interaction / geometry 拆分。新增 `StoryGraphInteractionController` 管理 node drag、connection drag / retarget、connection target hit test 和 preview path，新增 `StoryGraphPortGeometryModelBuilder` 管理端口中心与连接曲线路径；`StoryGraphPreviewController.js` 从 662 行降到 472 行，达到阶段 1 的 350 到 500 行目标。reference projection / layout 仍留在 controller 作为当前编排职责。改动后通过 `check:syntax`、`check:structure`、`check:model`、`check:node-map-http`、`check:semantic-parity-http`。下一轮可进入 Preview controller 拆分。

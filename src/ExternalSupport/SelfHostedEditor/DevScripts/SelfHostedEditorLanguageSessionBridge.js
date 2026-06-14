@@ -4,6 +4,7 @@ import { resolveLanguageServerInvocation } from "./SelfHostedEditorProcessBridge
 export class SelfHostedEditorLanguageSessionBridge {
   constructor(options = {}) {
     this.invocation = options.invocation || resolveLanguageServerInvocation(["--stdio"]);
+    this.disposeTimeoutMilliseconds = Number(options.disposeTimeoutMilliseconds || 1000);
     this.requestTimeoutMilliseconds = Number(options.requestTimeoutMilliseconds || 30000);
     this.child = null;
     this.nextRequestId = 1;
@@ -30,17 +31,23 @@ export class SelfHostedEditorLanguageSessionBridge {
     }
 
     try {
-      await this.request("shutdown", {});
+      await Promise.race([
+        this.request("shutdown", {}),
+        delay(this.disposeTimeoutMilliseconds),
+      ]);
     } catch {
       // Best-effort shutdown for an optional spike path.
     }
 
-    this.writeMessage({
-      jsonrpc: "2.0",
-      method: "exit",
-    });
-    this.child.kill();
-    this.child = null;
+    if (this.child) {
+      this.writeMessage({
+        jsonrpc: "2.0",
+        method: "exit",
+      });
+      this.child.kill();
+      this.child = null;
+    }
+    this.rejectPending(new Error("LanguageServer session disposed."));
   }
 
   async request(method, params = {}) {
@@ -192,4 +199,10 @@ export async function disposeSharedSelfHostedEditorLanguageSessionBridge() {
   const bridge = sharedLanguageSessionBridge;
   sharedLanguageSessionBridge = null;
   await bridge?.dispose();
+}
+
+function delay(milliseconds) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, Math.max(0, Number(milliseconds) || 0));
+  });
 }

@@ -73,12 +73,43 @@ assertEqual(directStatus.workspace.activeRelativePath, "story/opening.inscape", 
 assertEqual(directStatus.workspace.documentCount, 2, "project session document count");
 assertEqual(directStatus.workspace.revision, 7, "project session revision");
 assertEqual(directStatus.languageSession.kind, "process-per-request", "project session language kind");
+assertEqual(
+  directStatus.languageSession.supportedEndpoints.join(","),
+  "diagnostics,completions,definition,references,hover,document-symbols",
+  "project session language process-per-request endpoints"
+);
 assertEqual(directStatus.runtimeSession.kind, "bounded-cache", "project session runtime kind");
 assertEqual(directStatus.runtimeSession.entryCount, 3, "project session runtime count");
 assertEqual(directStatus.lineIdentitySession.entryCount, 2, "project session line-map count");
 assertEqual(directStatus.localizationSession.entryCount, 1, "project session localization count");
 assertNotIncludes(JSON.stringify(directStatus), "secret", "project session status should not expose workspace text");
 assertNotIncludes(JSON.stringify(directStatus), "entries", "project session status should not expose cache entry metadata");
+const stdioStatus = EditorBackendProjectSessionModel.buildDevHostProjectSession({
+  sessionCacheStatus: {
+    ...sessionCacheStatus,
+    languageSession: {
+      fallbackEndpoints: ["completions", "definition", "references", "hover"],
+      fallbackKind: "process-per-request",
+      kind: "stdio-spike",
+      supportedEndpoints: ["diagnostics", "document-symbols"],
+    },
+  },
+  sessionId: "shared-session",
+  workspace,
+});
+assertEqual(stdioStatus.languageSession.kind, "stdio-spike", "project session stdio spike language kind");
+assertEqual(
+  stdioStatus.languageSession.supportedEndpoints.join(","),
+  "diagnostics,document-symbols",
+  "project session stdio spike endpoints"
+);
+assertEqual(stdioStatus.languageSession.fallbackKind, "process-per-request", "project session stdio fallback kind");
+assertEqual(
+  stdioStatus.languageSession.fallbackEndpoints.join(","),
+  "completions,definition,references,hover",
+  "project session stdio fallback endpoints"
+);
+assertNotIncludes(JSON.stringify(stdioStatus), "secret", "project session stdio status should not expose workspace text");
 
 const backendCalls = [];
 const backendClient = new EditorBackendClient({
