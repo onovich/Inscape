@@ -1,6 +1,6 @@
 # SelfHostedEditor P1 40 轮内执行方案
 
-状态：执行中（Round 1-6 已完成）
+状态：执行中（Round 1-7 已完成）
 
 日期：2026-06-15
 
@@ -275,6 +275,36 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 2. dev-host `/api/*` 仍只属于 transport catalog / DevScripts，不进入 feature controller。
 3. 下一轮应进入 Round 7：建立 Electron 工程骨架，但不改变 dev host 默认启动路径。
 
+### 2026-06-16 Round 7：Electron 工程骨架
+
+范围：建立 Electron main / preload / app entry 骨架与 contract；不新增 Electron 依赖、不新增启动脚本、不改变 `npm run start` 的 dev-host 默认路径，不接真实 IPC 或文件 IO。
+
+完成内容：
+
+1. 新增 `Desktop/ElectronMain.js`，定义 BrowserWindow 骨架，默认启用 `contextIsolation: true`、`nodeIntegration: false`、`sandbox: true`，并指向 `ElectronPreload.js` 与现有 Workbench HTML。
+2. 新增 `Desktop/ElectronPreload.js`，只通过 `contextBridge` 暴露静态 `inscapeSelfHostedEditor` capability summary；当前明确声明 `embeddedBackend: false` 与 `workspaceFileSystem: false`，不暴露 `ipcRenderer`。
+3. 新增 `Desktop/ElectronAppEntry.js`，记录 Electron shell 与现有 renderer app entry / workbench document 的骨架关系。
+4. 新增 `check:electron-shell` 并接入 `check:model`；`check:syntax` 现在覆盖 `Desktop/`，`check:structure` 守住 Electron skeleton 文件存在和脚本委托。
+
+本轮验证已通过：
+
+```powershell
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:electron-shell
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:structure
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
+npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
+dotnet build Inscape.slnx --no-restore
+dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build
+```
+
+架构对照结论：
+
+1. 本轮只建立 Electron 文件骨架和安全默认，不把 Node / Electron 能力暴露到 production renderer `Scripts/`。
+2. preload 当前没有 IPC channel，也没有 workspace file-system / embedded backend 能力；后续必须通过白名单 command 逐步补。
+3. 下一轮应进入 Round 8：BrowserWindow 安全配置细化与 contract 加固。
+
 ## 36 轮主计划
 
 ### A. Contract 与 transport 基础，Round 1-6
@@ -292,7 +322,7 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 
 | 轮次 | 目标 | 完成标准 |
 |---|---|---|
-| 7 | Electron 工程骨架 | 在现有 package 结构下建立 Electron main / preload / app entry 骨架；不改变 dev host 默认启动路径。 |
+| 7 | Electron 工程骨架 | 已完成。新增 `Desktop/ElectronMain.js`、`ElectronPreload.js` 与 `ElectronAppEntry.js` 骨架，新增 `check:electron-shell` 并纳入 `check:model` / `check:syntax`；未新增 Electron 依赖、启动脚本、IPC 或文件 IO，dev host 默认启动路径不变。 |
 | 8 | BrowserWindow 安全配置 | renderer 使用隔离配置；默认不启用 Node integration；preload 成为唯一本机能力入口。 |
 | 9 | preload 白名单 API | `window.inscape` 或等价命名只暴露 editor command；不暴露通用 `readFile`、`writeFile`、`runCommand`、arbitrary IPC。 |
 | 10 | Desktop invoke transport | `EditorBackendClient` 能在 desktop 环境使用 preload transport，在 dev 环境保留 HTTP transport；feature controller 不感知切换。 |

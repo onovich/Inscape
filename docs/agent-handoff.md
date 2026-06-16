@@ -70,6 +70,16 @@ P1 Round 6 已完成 structure guard 第一刀，仍未接 Electron 工程骨架
 - `check:structure` 现在守住 backend access：生产 `Scripts/` 只有 `EditorBackendClient` 与 `EditorBackendServiceRegistry` 可接触完整 backend client，transport 细节必须留在 client / adapter 内。
 - Round 6 验证已通过：SelfHostedEditor `check:structure` / `check:syntax` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity`，`.NET build` 与 Internal tests。下一步进入 Round 7：Electron 工程骨架，并保持 dev host 默认路径不变。
 
+### 2026-06-16 SelfHostedEditor P1 Round 7 Electron skeleton 快照
+
+P1 Round 7 已完成 Electron main / preload / app entry 骨架，尚未新增 Electron 依赖、启动脚本、IPC 或文件 IO。
+
+- 新增 `Desktop/ElectronMain.js`，定义 BrowserWindow skeleton，默认 `contextIsolation: true`、`nodeIntegration: false`、`sandbox: true`，并指向现有 Workbench HTML 与 `ElectronPreload.js`。
+- 新增 `Desktop/ElectronPreload.js`，只通过 `contextBridge` 暴露静态 `inscapeSelfHostedEditor` capability summary；当前明确 `embeddedBackend: false` 与 `workspaceFileSystem: false`。
+- 新增 `Desktop/ElectronAppEntry.js`，记录 Electron shell 与现有 renderer app entry / workbench document 的关系。
+- 新增 `check:electron-shell` 并接入 `check:model`；`check:syntax` 现在覆盖 `Desktop/`。
+- Round 7 验证已通过：SelfHostedEditor `check:electron-shell` / `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity`，`.NET build` 与 Internal tests。下一步进入 Round 8：BrowserWindow 安全配置 contract 加固。
+
 ### 2026-06-14 SelfHostedEditor desktop backend v0 决策快照
 
 本轮已采纳 [ADR 0019](adr/0019-self-hosted-editor-embedded-backend-v0.md)：SelfHostedEditor desktop backend v0 采用嵌入式 EditorBackend，而不是独立 sidecar daemon。

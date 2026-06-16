@@ -144,6 +144,7 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:backend-transport
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:fake-embedded-transport
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:payload-bridge
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:desktop-backend
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:electron-shell
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:host-binding
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:host-binding-http
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:host-schema
@@ -186,6 +187,7 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:language-session
 `check:references-http` starts the preview dev server in-process and performs a real HTTP request to `/api/references`, including workspace-relative source path normalization.
 `check:payload-bridge` verifies that compact dev-host payloads preserve shared localization presenter, node-map report, Runtime, and source-location shapes while trimming only transport fields.
 `check:desktop-backend` verifies the P1 model-only embedded backend contract: `embedded-desktop` session status, DocumentBuffer summaries, workspace write target guards, save / recovery status, and settings summary defaults. It does not launch Electron or perform real file IO.
+`check:electron-shell` verifies the Electron main / preload / app entry skeleton, BrowserWindow safety defaults, static preload capability surface, and the absence of IPC / HTTP route knowledge in the skeleton.
 `check:node-map` exercises the stable node map review and candidate apply helpers without requiring the local HTTP server to be started first, including a title rename over an existing generated sidecar and a manual-review candidate dry-run/apply.
 `check:node-map-http` starts the preview dev server in-process and performs real HTTP requests to `/api/node-map-review` and `/api/node-map-apply`.
 `check:process-bridge` verifies successful process output, nonzero exit diagnostics, truncated stdout/stderr previews, and timeout state without starting a server.

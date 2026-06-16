@@ -47,7 +47,8 @@ SelfHostedEditor desktop backend v0
 - [x] 完成 P1 Round 4 业务窄接口 adapter：新增 `EditorBackendServiceRegistry`，把 `EditorBackendClient` 包装成 `ProjectSessionService`、`DocumentBufferStore`、`LanguageSessionClient`、`RuntimeSessionClient`、`LocalizationWorkflowClient` 等窄接口；feature Bridge 不再接收完整 backend client，也不暴露 generic RPC。
 - [x] 完成 P1 Round 5 fake embedded transport harness：新增 `SelfHostedEditorFakeEmbeddedTransport` 与 `check:fake-embedded-transport`，用 direct command transport 驱动真实 backend client / services / Bridge，证明 UI service layer 不依赖 HTTP path。
 - [x] 完成 P1 Round 6 structure guard 第一刀：`check:structure` 覆盖业务 `Scripts/` 不直接打 `/api/*`、生产 renderer 不直接 import Node / Electron runtime / IPC、transport 细节只留在 `EditorBackendClient` / adapter。
-- [ ] 建立 P1 Round 7 Electron 工程骨架：在现有 package 结构下建立 Electron main / preload / app entry 骨架；不改变 dev host 默认启动路径。
+- [x] 完成 P1 Round 7 Electron 工程骨架：新增 `Desktop/ElectronMain.js`、`ElectronPreload.js`、`ElectronAppEntry.js` 与 `check:electron-shell`，只定义安全默认和静态 preload capability，不新增 Electron 依赖、启动脚本、IPC 或文件 IO。
+- [ ] 完成 P1 Round 8 BrowserWindow 安全配置：renderer 使用隔离配置，默认不启用 Node integration，preload 成为唯一本机能力入口。
 - [ ] 建立 Electron preload 白名单边界：renderer 不直接访问 Node / fs / shell / arbitrary IPC；preload 只暴露受控 editor command。
 - [ ] 实现 workspace 文件系统边界：只接受 workspace-relative path，拒绝绝对路径、`..` 越界、workspace 外路径和未列入白名单的写回目标。
 - [ ] 实现 `ProjectSession v0`：一个窗口一个 active workspace folder，一个 active project session；不支持正式单文件打开。

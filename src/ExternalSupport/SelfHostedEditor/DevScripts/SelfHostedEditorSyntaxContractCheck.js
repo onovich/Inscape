@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 
 const moduleRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const syntaxRoots = [
+  "Desktop",
   "Scripts",
   "DevScripts",
 ];
