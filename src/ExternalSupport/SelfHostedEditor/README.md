@@ -173,6 +173,7 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:session-cache
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:session-cache-http
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:language-session
 npm --prefix src\ExternalSupport\SelfHostedEditor run smoke:desktop
+npm --prefix src\ExternalSupport\SelfHostedEditor run smoke:desktop-package
 npm --prefix src\ExternalSupport\SelfHostedEditor run smoke:desktop-runtime
 npm --prefix src\ExternalSupport\SelfHostedEditor run smoke:desktop-startup
 ```
@@ -207,6 +208,7 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run smoke:desktop-startup
 `check:session-cache-http` starts the preview dev server in-process, seeds Runtime, line-map, and localization baseline session caches through real HTTP APIs, then requests `/api/session-cache-status` and verifies the non-content language-session status summary.
 `check:language-session` starts the optional `Inscape.LanguageServer --stdio` bridge directly and verifies diagnostics plus document symbols can reuse the same process.
 `smoke:desktop` runs the desktop v0 contract smoke without launching Electron or doing real file IO. It covers directory workspace open, `.inscape` file listing, document edit, autosave planning, manual Save, recovery snapshot planning, diagnostics / completion bridge payloads, and Runtime choose action payloads.
+`smoke:desktop-package` verifies the Windows unpacked package artifact after `package:windows` has run. It checks the generated executable, `resources/app.asar`, builder metadata, and that `DevScripts/` is not exposed as a loose packaged directory.
 `smoke:desktop-runtime` verifies the installed Electron runtime without opening a window. It runs the Electron CLI version check, then starts a guarded runtime probe with `SELF_HOSTED_EDITOR_ELECTRON_AUTOSTART=false` so `Desktop/ElectronMain.js` loads in a real Electron main process and exits after checking BrowserWindow security defaults.
 `smoke:desktop-startup` runs the local startup readiness smoke. It verifies package / lockfile, Desktop entry metadata, Workbench entry wiring, Electron autostart guard, preload whitelist API, then reuses `smoke:desktop-runtime` and `smoke:desktop`; it records that Electron runtime is available while Windows packaging is not generated yet.
 
@@ -234,6 +236,7 @@ Build the Windows unpacked package locally:
 
 ```powershell
 npm --prefix src\ExternalSupport\SelfHostedEditor run package:windows
+npm --prefix src\ExternalSupport\SelfHostedEditor run smoke:desktop-package
 ```
 
 Install dependencies when the package lock changes:

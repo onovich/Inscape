@@ -72,6 +72,8 @@
 
 2026-06-17 P1 Round 38 补充：Windows package 先落为 electron-builder config contract。`check:desktop-package` 验证 package main entry、`package:windows`、files 白名单、Windows `dir` x64 target 与 artifact readiness；当前只固定可复现打包入口，不提交构建产物，也不把 package artifact smoke 伪装为已完成。
 
+2026-06-17 P1 Round 39 补充：Windows package artifact smoke 已落地。真实运行 `package:windows` 后，`smoke:desktop-package` 验证 `dist/win-unpacked/Inscape SelfHostedEditor.exe`、`resources/app.asar` 与 builder metadata；构建产物保持 ignored，不进入 Git。该 smoke 仍不是 GUI/workspace/edit-save/recovery smoke。
+
 ## 状态分类
 
 | 分类 | 当前例子 | 未来归属 | 规则 |

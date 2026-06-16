@@ -1466,6 +1466,50 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 4. `start` dev-host 与 `start:desktop` 桌面入口继续分离，本轮没有把 dev-host `/api/*` 变成产品 API。
 5. 下一步应运行真实 `package:windows` 并补 package artifact smoke，或推进真实 workspace IO；仍不得进入 P1.5。
 
+### 2026-06-17 Round 39：Windows package artifact smoke
+
+范围：运行真实 `package:windows`，并补 package artifact smoke。验证本机 Windows unpacked package 能生成，且产物具备 exe、`app.asar` 与 builder metadata。本轮仍不启动 GUI、不打开 workspace、不执行真实编辑保存/恢复流程。
+
+完成内容：
+
+1. 运行 `npm --prefix src\ExternalSupport\SelfHostedEditor run package:windows`，electron-builder 生成 `dist/win-unpacked/Inscape SelfHostedEditor.exe` 与 `resources/app.asar`。
+2. 新增 `DevScripts/SelfHostedEditorDesktopPackageSmoke.js` 与 npm script `smoke:desktop-package`。
+3. package smoke 复用 package readiness，要求 artifact 已生成，并验证 exe 体积、`resources/app.asar`、`builder-debug.yml` 与 package files 白名单痕迹。
+4. `check:structure` 纳入 `smoke:desktop-package`，并忽略 `dist/` 构建输出，避免把 Chromium license 等打包产物当源码编码扫描。
+5. 构建产物约 425MB，保持为本地 ignored output，不纳入 Git。
+
+验证：
+
+```powershell
+npm --prefix src\ExternalSupport\SelfHostedEditor run package:windows
+npm --prefix src\ExternalSupport\SelfHostedEditor run smoke:desktop-package
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:desktop-package
+npm --prefix src\ExternalSupport\SelfHostedEditor run smoke:desktop-runtime
+npm --prefix src\ExternalSupport\SelfHostedEditor run smoke:desktop-startup
+npm --prefix src\ExternalSupport\SelfHostedEditor run smoke:desktop
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:electron-shell
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:electron-boundary
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:preload-transport
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:structure
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
+npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
+node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js
+npm --prefix src\ExternalSupport\VSCode run check:structure
+git -c safe.directory=D:/LabProjects/Inscape diff --check
+dotnet build Inscape.slnx --no-restore
+dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build
+```
+
+架构对照结论：
+
+1. package artifact smoke 只验证 Electron packaging 输出，不把 GUI/manual workspace smoke 伪装为已完成。
+2. `dist/` 是构建输出，不进入源码结构/编码扫描，也不提交到 Git。
+3. `DevScripts/` 仍不作为 loose product directory 打包；产品输出通过 `app.asar` 承载 package files。
+4. 本轮没有把 Compiler / Tooling / LanguageServer / Runtime 语义复制进 Electron packaging 层。
+5. 下一步应补真实 GUI 启动 / workspace open / save / recovery smoke，或推进真实 workspace IO；仍不得进入 P1.5。
+
 ## 36 轮主计划
 
 ### A. Contract 与 transport 基础，Round 1-6
@@ -1532,7 +1576,7 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 | 33 | external resource import | 已完成。`EditorBackendWorkspaceAssetImportPlanModel` 生成 text-free asset copy plan，图片 / 音频 / CSV 默认进入 `assets/images` / `assets/audio` / `assets/data`，不持久化 workspace 外路径；`assets/**` 写目标优先于扩展名规则。 |
 | 34 | settings 分层 | 已完成。新增 `EditorBackendSettingsSchemaModel` 与集中 defaults，global user preferences 与 workspace project behavior 分层；覆盖 autosave、backup retention、asset directory、resource import policy，设置页和真实持久化后置。 |
 
-### G. v0 闭环、Windows smoke 与文档，Round 35-38
+### G. v0 闭环、Windows smoke 与文档，Round 35-39
 
 | 轮次 | 目标 | 完成标准 |
 |---|---|---|
@@ -1540,6 +1584,7 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 | 36 | Windows internal package v0 | 已完成等价本机启动 smoke。新增 `smoke:desktop-startup` 验证 package / Desktop entry / Workbench / preload / contract loop；当轮未生成 Windows package、未安装 Electron runtime。 |
 | 37 | Electron runtime launch entry | 已完成。新增 Electron dev runtime、`start:desktop`、`smoke:desktop-runtime` 与 Electron runtime probe；startup smoke 现在验证 runtime 可用，但仍不生成 Windows package、不打开 GUI、不做真实文件 IO。 |
 | 38 | Windows package script / config | 已完成。新增 electron-builder dev dependency、`main`、`package:windows`、build config 与 `check:desktop-package`；startup smoke 记录 package script 可用，但 artifact 未生成时继续保留 `windows-package-not-generated`。 |
+| 39 | Windows package artifact smoke | 已完成。真实运行 `package:windows` 生成 `dist/win-unpacked`，新增 `smoke:desktop-package` 验证 exe、`app.asar` 与 builder metadata；构建产物保持 ignored，不纳入 Git，也不声明 GUI/workspace smoke 完成。 |
 
 ## 4 轮缓冲
 
@@ -1547,7 +1592,7 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 |---|---|
 | 37 | 已用于补真实 Electron runtime / launch-entry smoke、structure guard 与 startup readiness 更新；未引入 renderer Node / arbitrary IPC。 |
 | 38 | 已用于补 Windows package script / electron-builder config contract 与 package readiness guard；未生成 package artifact。 |
-| 39 | 如果 autosave / recovery / backup 在真实文件系统上暴露边界问题，用于修路径 guard、flush、恢复 UI 和 backup retention。 |
+| 39 | 已用于真实 Windows package artifact smoke；尚未覆盖 GUI 打开 workspace、编辑保存或 recovery 提示。 |
 | 40 | 最终文档、全量验证、diff 审计和提交准备；不得进入 P1.5 long-lived LanguageServer。 |
 
 ## 每轮建议验证

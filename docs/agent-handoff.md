@@ -412,6 +412,17 @@ P1 Round 38 已补 Windows package script 与 electron-builder config contract�
 - `smoke:desktop-startup` 现在串起 package contract、runtime smoke 与 `smoke:desktop`；readiness 记录 `windowsPackageScriptAvailable: true`，但 artifact 未生成时仍保留 `windows-package-not-generated`。
 - Round 38 当前已通过：SelfHostedEditor `check:desktop-package` / `smoke:desktop-runtime` / `smoke:desktop-startup` / `smoke:desktop` / `check:electron-shell` / `check:electron-boundary` / `check:preload-transport` / `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity` / `check:structure`，`node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js`，`git diff --check`，`.NET build` 与 Internal tests。下一步应运行真实 `package:windows` 并补 artifact smoke，或推进真实 workspace IO。
 
+### 2026-06-17 SelfHostedEditor P1 Round 39 package artifact smoke 快照
+
+P1 Round 39 已运行真实 Windows unpacked package build，并补 package artifact smoke。本轮仍没有做 GUI 打开 workspace / 编辑保存 / recovery 提示 smoke。
+
+- `npm --prefix src\ExternalSupport\SelfHostedEditor run package:windows` 已成功生成 `dist\win-unpacked\Inscape SelfHostedEditor.exe` 与 `resources\app.asar`。
+- 新增 `DevScripts/SelfHostedEditorDesktopPackageSmoke.js` 与 npm script `smoke:desktop-package`。
+- package smoke 复用 package readiness，要求 artifact 已生成，并验证 exe、`app.asar`、`builder-debug.yml` 与 package files 白名单痕迹。
+- `check:structure` 现在忽略 `dist/` 构建输出，避免把 Chromium license 等打包产物当源码编码扫描。
+- package 输出约 425MB，保持为 ignored local output，不提交。
+- Round 39 当前已通过：SelfHostedEditor `package:windows` / `smoke:desktop-package` / `check:desktop-package` / `smoke:desktop-runtime` / `smoke:desktop-startup` / `smoke:desktop` / `check:electron-shell` / `check:electron-boundary` / `check:preload-transport` / `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity` / `check:structure`，`node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js`，`git diff --check`，`.NET build` 与 Internal tests。下一步应补真实 GUI/workspace/save/recovery smoke 或推进真实 workspace IO。
+
 ### 2026-06-14 SelfHostedEditor desktop backend v0 决策快照
 
 本轮已采纳 [ADR 0019](adr/0019-self-hosted-editor-embedded-backend-v0.md)：SelfHostedEditor desktop backend v0 采用嵌入式 EditorBackend，而不是独立 sidecar daemon。

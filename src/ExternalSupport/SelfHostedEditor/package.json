@@ -46,6 +46,7 @@
     "check:structure": "node DevScripts/SelfHostedEditorStructureContractCheck.js && node DevScripts/SelfHostedEditorStyleStructureContractCheck.js",
     "check:syntax": "node DevScripts/SelfHostedEditorSyntaxContractCheck.js",
     "smoke:desktop": "node DevScripts/SelfHostedEditorDesktopV0Smoke.js",
+    "smoke:desktop-package": "node DevScripts/SelfHostedEditorDesktopPackageSmoke.js",
     "smoke:desktop-runtime": "node DevScripts/SelfHostedEditorDesktopRuntimeSmoke.js",
     "smoke:desktop-startup": "node DevScripts/SelfHostedEditorDesktopStartupSmoke.js",
     "package:windows": "electron-builder --win dir --x64",

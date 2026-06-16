@@ -558,6 +558,7 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
 - 2026-06-17 P1 Round 37 已补 Electron dev runtime、`start:desktop` 与 `smoke:desktop-runtime`。runtime smoke 会运行 Electron CLI `--version`，并在真实 Electron main process 中加载 `Desktop/ElectronMain.js` 的受保护 probe，检查 BrowserWindow 安全默认后退出。
 - 该进展只证明桌面入口可由真实 Electron runtime 加载；尚未生成 Windows package，尚未执行 GUI 打开 workspace / 真实文件 IO / installer smoke。
 - 2026-06-17 P1 Round 38 已补 `package:windows`、electron-builder build config 与 `check:desktop-package`。该检查固定 package main entry、files 白名单、Windows `dir` x64 target 与 artifact readiness；真实 `package:windows` 执行和 artifact smoke 仍是后续工作。
+- 2026-06-17 P1 Round 39 已运行真实 `package:windows` 并新增 `smoke:desktop-package`，验证 Windows unpacked exe、`resources/app.asar` 与 builder metadata；GUI 打开 workspace、编辑保存、恢复提示和基础 LanguageServer authoring smoke 仍待后续。
 
 验收：
 
