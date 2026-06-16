@@ -94,6 +94,8 @@
 
 2026-06-17 P1 post-40 authoring current-buffer GUI 补充：Electron dispatcher 已将 language-session commands 接到 `ElectronWorkspaceSessionStore`，由 main-process 当前 `DocumentBufferStore` 通过 `EditorBackendWorkspaceSnapshotModel` / `EditorBackendLanguageSessionRequestModel` 构建 authoring payload，不使用 renderer 传入的 stale `scriptText`。`smoke:desktop-gui-recovery` 现在覆盖 diagnostics / completions 在 recovery restore 后使用当前 buffer，且 language action response 仍保持 text-free。
 
+2026-06-17 P1 post-40 packaged GUI smoke 补充：`smoke:desktop-package-gui` 在真实 `dist/win-unpacked/Inscape SelfHostedEditor.exe` 上运行受保护 smoke path，验证 packaged app 自身加载 Workbench/app protocol/preload 后可以打开临时 workspace、显式 read、edit、manual Save 写盘、recovery restore 写盘，并让 diagnostics / completions 使用 restore 后当前 buffer。该入口通过 env guard 与临时 result file 驱动，不引入 localhost 产品 API，也不把 `DevScripts/` 打进 loose package 目录。
+
 ## 状态分类
 
 | 分类 | 当前例子 | 未来归属 | 规则 |

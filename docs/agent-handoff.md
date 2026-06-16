@@ -511,6 +511,14 @@ P1 40 轮计划完成后，继续补上了真实 Electron preload -> main 的固
 - 该轮同时发现并修复真实 preload 启动问题：sandboxed Electron preload 不能直接加载 ESM `ElectronPreload.js`，实际 BrowserWindow 改为加载 `ElectronPreload.cjs`；`ElectronPreloadApi.js` 继续作为 ESM contract/API 定义，contracts 同步覆盖 CJS preload path。
 - 当前 Electron dispatcher 已将六个 language-session command 接到 main-process `ElectronWorkspaceSessionStore` 的当前 `DocumentBufferStore` snapshot；本轮 GUI smoke 只实证 diagnostics / completions。下一步若继续 P1.5，应推进 workspace-scoped long-lived LanguageServer，并补 definition / references / hover / documentSymbols 的同源状态验证。
 
+### 2026-06-17 SelfHostedEditor P1 post-40 Windows packaged GUI smoke 快照
+
+本轮新增 `smoke:desktop-package-gui`，在 `package:windows` 生成 `dist/win-unpacked/Inscape SelfHostedEditor.exe` 后，直接运行 packaged exe，而不是 Electron dev binary 或 artifact-only smoke。
+
+- packaged app 通过 `SELF_HOSTED_EDITOR_ELECTRON_PACKAGED_GUI_SMOKE=true` 进入受保护 smoke path；正常启动不会触发。smoke path 仍加载 packaged Workbench / app protocol / sandbox preload，通过 renderer preload API 打开临时 workspace、read、edit、manual Save 写盘、recovery restore 写盘，并验证 diagnostics / completions 使用 restore 后当前 buffer。
+- `Desktop/ElectronPackagedGuiSmoke.js` 只在 explicit env guard 下运行；它不认识 `/api/*` 或 localhost，也不向 renderer 暴露 Node/fs/shell。结果通过临时 JSON result file 回传给 `DevScripts/SelfHostedEditorDesktopPackageGuiSmoke.js`。
+- 本轮当前已通过：`package:windows`、`smoke:desktop-package-gui`、`smoke:desktop-package`、`check:desktop-package`、`smoke:desktop-gui-recovery`、Electron shell / boundary / IPC / workspace / lifecycle contracts、SelfHostedEditor syntax / structure / model、VSCode parity / structure、`.NET build` 与 Internal tests。下一步仍不应默认进入 P1.5，除非明确开始 workspace-scoped long-lived LanguageServer 里程碑。
+
 ### 2026-06-14 SelfHostedEditor desktop backend v0 决策快照
 
 本轮已采纳 [ADR 0019](adr/0019-self-hosted-editor-embedded-backend-v0.md)：SelfHostedEditor desktop backend v0 采用嵌入式 EditorBackend，而不是独立 sidecar daemon。

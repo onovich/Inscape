@@ -3,6 +3,10 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { registerSelfHostedEditorBackendIpc } from "./ElectronBackendIpc.js";
 import { SelfHostedEditorElectronAppEntry } from "./ElectronAppEntry.js";
+import {
+  buildSelfHostedEditorElectronPackagedGuiSmokeOptions,
+  runSelfHostedEditorElectronPackagedGuiSmoke,
+} from "./ElectronPackagedGuiSmoke.js";
 import { createSelfHostedEditorElectronWorkspaceLifecycle } from "./ElectronWorkspaceLifecycle.js";
 
 const currentModulePath = fileURLToPath(import.meta.url);
@@ -57,9 +61,11 @@ export function createSelfHostedEditorBrowserWindow(options = {}) {
   const browserWindow = new BrowserWindowCtor(buildSelfHostedEditorBrowserWindowOptions());
   applySelfHostedEditorWindowSecurity(browserWindow);
 
-  browserWindow.once("ready-to-show", () => {
-    browserWindow.show();
-  });
+  if (options.showOnReady !== false) {
+    browserWindow.once("ready-to-show", () => {
+      browserWindow.show();
+    });
+  }
 
   void browserWindow.loadURL(buildSelfHostedEditorWorkbenchUrl());
   return browserWindow;
@@ -208,6 +214,13 @@ export function registerSelfHostedEditorElectronApp(electronApp = app, options =
     workspaceLifecycle.startAutosaveTimer();
     const browserWindow = createSelfHostedEditorBrowserWindow(options);
     workspaceLifecycle.registerBrowserWindow(browserWindow);
+    if (options.packagedGuiSmoke) {
+      void runSelfHostedEditorElectronPackagedGuiSmoke({
+        browserWindow,
+        electronApp,
+        state: options.packagedGuiSmoke,
+      });
+    }
   });
 
   workspaceLifecycle.registerAppLifecycle(electronApp);
@@ -229,5 +242,8 @@ export function registerSelfHostedEditorElectronApp(electronApp = app, options =
 registerSelfHostedEditorProtocolScheme();
 
 if (process.env.SELF_HOSTED_EDITOR_ELECTRON_AUTOSTART !== "false") {
-  registerSelfHostedEditorElectronApp();
+  registerSelfHostedEditorElectronApp(
+    app,
+    buildSelfHostedEditorElectronPackagedGuiSmokeOptions()
+  );
 }

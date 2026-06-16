@@ -10,6 +10,7 @@ const requiredDesktopPaths = [
   "Desktop/ElectronBackendIpc.js",
   "Desktop/ElectronIpcContract.js",
   "Desktop/ElectronMain.js",
+  "Desktop/ElectronPackagedGuiSmoke.js",
   "Desktop/ElectronPreload.cjs",
   "Desktop/ElectronPreloadApi.js",
   "Desktop/ElectronPreload.js",
@@ -43,6 +44,7 @@ assertIncludesText(mainText, "workspaceLifecycle.sessionStore", "Electron main s
 assertIncludesText(mainText, "workspaceLifecycle.startAutosaveTimer", "Electron main starts lifecycle autosave timer");
 assertIncludesText(mainText, "workspaceLifecycle.registerBrowserWindow", "Electron main registers window close flush lifecycle");
 assertIncludesText(mainText, "workspaceLifecycle.registerAppLifecycle", "Electron main registers app-exit flush lifecycle");
+assertIncludesText(mainText, "runSelfHostedEditorElectronPackagedGuiSmoke", "Electron main can run protected packaged GUI smoke");
 assertIncludesText(mainText, "loadURL", "Electron main loads workbench through app protocol");
 assertIncludesText(mainText, "buildSelfHostedEditorBrowserWindowOptions", "Electron main exports BrowserWindow options builder");
 assertIncludesText(mainText, "applySelfHostedEditorWindowSecurity", "Electron main applies window security handlers");
@@ -122,6 +124,10 @@ assertIncludesText(workspaceLifecycleText, "flushForTrigger", "Electron lifecycl
 assertNoText(workspaceLifecycleText, "/api/", "Electron workspace lifecycle must not know dev-host routes");
 assertNoText(workspaceLifecycleText, "ipcRenderer", "Electron workspace lifecycle must not use renderer IPC");
 assertNoText(workspaceLifecycleText, "contextBridge", "Electron workspace lifecycle must not expose renderer APIs");
+
+const packagedGuiSmokeText = readModuleText("Desktop/ElectronPackagedGuiSmoke.js");
+assertIncludesText(packagedGuiSmokeText, "SELF_HOSTED_EDITOR_ELECTRON_PACKAGED_GUI_SMOKE", "Packaged GUI smoke is guarded by explicit environment variable");
+assertNoText(packagedGuiSmokeText, "/api/", "Packaged GUI smoke must not know dev-host routes");
 
 const preloadApiModule = await import("../Desktop/ElectronPreloadApi.js");
 const preloadApi = preloadApiModule.createSelfHostedEditorPreloadApi();

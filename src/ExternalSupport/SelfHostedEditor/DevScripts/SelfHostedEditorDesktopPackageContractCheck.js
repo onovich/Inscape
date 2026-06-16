@@ -11,6 +11,7 @@ const packageLock = readJson("package-lock.json");
 assertEqual(packageJson.main, "Desktop/ElectronMain.js", "desktop package main entry");
 assertEqual(packageJson.scripts?.["check:desktop-package"], "node DevScripts/SelfHostedEditorDesktopPackageContractCheck.js", "desktop package check script");
 assertEqual(packageJson.scripts?.["package:windows"], "electron-builder --win dir --x64", "desktop package Windows script");
+assertEqual(packageJson.scripts?.["smoke:desktop-package-gui"], "node DevScripts/SelfHostedEditorDesktopPackageGuiSmoke.js", "desktop package GUI smoke script");
 assert(packageJson.devDependencies?.electron, "desktop package requires Electron dev dependency");
 assert(packageJson.devDependencies?.["electron-builder"], "desktop package requires electron-builder dev dependency");
 

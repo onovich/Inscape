@@ -89,6 +89,7 @@ SelfHostedEditor desktop backend v0
 - [x] 接入真实 Electron idle autosave / lifecycle flush：`ElectronWorkspaceLifecycle` 与 IPC 共享同一个 `ElectronWorkspaceSessionStore`，main process 启动 autosave timer，BrowserWindow close / app before-quit 走 lifecycle flush，再次 open folder 前以 `switch-workspace` trigger flush 当前 dirty workspace；`check:electron-lifecycle` 覆盖 timer、close-window、switch-workspace、app-exit 与 text-free status。
 - [x] 接入真实 Electron recovery restore / discard / later 动作：新增 desktop-only `recovery.restore` / `recovery.discard` / `recovery.later` commands；restore 校验 snapshot path/hash/text 后写回 `.inscape` 并清理 snapshot，discard 删除 snapshot，later 保留 snapshot 且只更新当前 session action state；相关响应保持 text-free。
 - [x] 补真实 Electron GUI recovery smoke：`smoke:desktop-gui-recovery` 启动真实 BrowserWindow，加载 app protocol Workbench 和 sandbox-compatible `ElectronPreload.cjs`，通过 renderer preload API 覆盖 open folder、read、edit、manual save、idle autosave、recovery restore / later / discard，以及 diagnostics / completions 使用 restore 后当前 buffer 的真实 IPC/main-process 路径。
+- [x] 补真实 Windows packaged GUI smoke：`smoke:desktop-package-gui` 运行 `dist/win-unpacked/Inscape SelfHostedEditor.exe`，由 packaged app 自己加载 app protocol Workbench、打开临时 workspace、编辑保存、recovery restore，并验证 diagnostics / completions 使用 restore 后当前 buffer。
 - [ ] 实现 workspace 文件系统边界：只接受 workspace-relative path，拒绝绝对路径、`..` 越界、workspace 外路径和未列入白名单的写回目标。
 - [ ] 实现 `ProjectSession v0`：一个窗口一个 active workspace folder，一个 active project session；不支持正式单文件打开。
 - [ ] 实现 `DocumentBufferStore v0`：backend 持有 dirty buffers、revision、active document，LanguageServer / Runtime / Tooling 请求从 backend buffer 组 workspace snapshot。
@@ -97,7 +98,7 @@ SelfHostedEditor desktop backend v0
 - [ ] 实现 CSV / node-map / line-map 写前 backup：默认启用，可由设置项调整或关闭。
 - [x] 落地 settings 分层：全局偏好与 workspace / project 行为分开；即使设置页后置，配置 schema 也先稳定。
 - [ ] 打通 v0 最小可用闭环：打开目录 -> 文件列表 -> 编辑 `.inscape` -> autosave / 手动 Save -> recovery -> 基础诊断 / 补全 -> Preview。
-- [ ] 做 Windows internal package v0 smoke：能启动、打开 workspace、编辑保存、恢复提示、跑基础 LanguageServer authoring 能力。
+- [x] 做 Windows internal package v0 smoke：`package:windows` 生成 unpacked package 后，`smoke:desktop-package-gui` 已验证 packaged exe 能启动、打开 workspace、编辑保存、恢复，并跑基础 diagnostics / completions authoring 能力。
 - [ ] 评估 SelfHostedEditor `monaco-editor` / `dompurify` npm audit advisory：当前 `npm audit fix --force` 会降到 `monaco-editor@0.53.0` 且为 breaking change，应单独依赖安全轮次决策。
 
 细化执行以 [SelfHostedEditor desktop backend v0 实施计划](self-hosted-editor-desktop-backend-v0-plan.md)、[ADR 0019](adr/0019-self-hosted-editor-embedded-backend-v0.md) 与 [ADR 0020](adr/0020-self-hosted-editor-electron-workspace-and-save-strategy.md) 为准。
