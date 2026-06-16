@@ -587,6 +587,38 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 2. 本轮仍不引入多窗口共享、sidecar daemon、跨重启 session restore、正式单文件模式或 P1.5 long-lived LanguageServer 默认启用。
 3. 下一轮应进入 Round 17：close / switch workspace cleanup，定义关闭或切换 workspace 时需要清理的子 session 摘要边界。
 
+### 2026-06-16 Round 17：close / switch workspace cleanup
+
+范围：定义关闭或切换 workspace 时的 cleanup summary contract；不执行真实进程清理、磁盘删除、session restore 或多窗口共享。
+
+完成内容：
+
+1. 新增 `EditorBackendWorkspaceSessionCleanupModel`，定义 `inscape.self-hosted-editor.workspace-session-cleanup` status shape。
+2. cleanup summary 支持 `close-workspace` / `switch-workspace` operation，并列出需要清理的 `language-session`、`runtime-session`、`line-identity-session`、`localization-session` 与 `temporary-workspace` target。
+3. cleanup summary 只暴露 `runtimeSnapshots`、`lineMapSidecars`、`localizationBaselines`、`temporaryWorkspaceFiles` 计数和 target kind / action，不暴露 Runtime snapshot、line-map、CSV baseline 或临时文件内容。
+4. `EditorBackendDesktopSessionModel.buildWorkspaceSessionCleanupSummary()` 作为 desktop backend model 入口。
+5. `check:desktop-backend` 覆盖 cleanup shape、operation、session id / workspace root normalization、target 列表、计数与 payload content exposure flag。
+
+本轮验证已通过：
+
+```powershell
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:desktop-backend
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:workspace-fs
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:structure
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
+npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
+dotnet build Inscape.slnx --no-restore
+dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build
+```
+
+架构对照结论：
+
+1. cleanup 是 backend session boundary 的摘要 contract，没有新增真实 fs / process 能力，也没有让 renderer 直接清理任何本地资源。
+2. 本轮没有改变 dev-host session cache 实现或 shared Runtime / Tooling / LanguageServer payload shape。
+3. 下一轮应进入 Round 18：session panel / status 接入，定义 UI 可显示的 embedded mode、session id、workspace 摘要与子状态安全边界。
+
 ## 36 轮主计划
 
 ### A. Contract 与 transport 基础，Round 1-6
@@ -619,7 +651,7 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 | 14 | 写回白名单 | 已完成。新增 `EditorBackendWorkspaceWriteTargetModel`，显式 catalog 覆盖 `.inscape` 文档、localization CSV、node-map sidecar、line-map sidecar、recovery、backup、cache、assets；其他写回默认拒绝。 |
 | 15 | open workspace folder | 已完成。新增 `EditorBackendWorkspaceFolderModel`，v0 只接受目录，拒绝正式单文件模式，可列出多个 workspace-relative `.inscape` 文件并设置 active document。 |
 | 16 | ProjectSession lifecycle | 已完成。新增 `EditorBackendProjectSessionLifecycleModel`，ProjectSession status 可查询 single-window active session、session id、workspace root、active relative path、document count、revision 与 `mode=embedded-desktop`。 |
-| 17 | close / switch workspace cleanup | close 或切换 workspace 时清理 Runtime / line-map / localization baseline 与临时子 session；status 只返回摘要和计数。 |
+| 17 | close / switch workspace cleanup | 已完成。新增 `EditorBackendWorkspaceSessionCleanupModel`，close / switch workspace cleanup status 只返回待清理 target 摘要和 Runtime / line-map / localization / temporary workspace 计数。 |
 | 18 | session panel / status 接入 | UI session panel 显示 embedded mode、session id、workspace 摘要、language mode、runtime / line / localization 状态；不泄露正文、CSV、line-map 或 Runtime snapshot。 |
 
 ### D. DocumentBufferStore v0，Round 19-24

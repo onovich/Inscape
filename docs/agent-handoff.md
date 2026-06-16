@@ -171,6 +171,16 @@ P1 Round 16 已完成一个窗口一个 active project session 的 lifecycle sta
 - `check:desktop-backend` 覆盖 lifecycle shape、window id normalization、workspace root、active document、document count、revision 与 embedded mode。
 - Round 16 验证已通过：SelfHostedEditor `check:desktop-backend` / `check:workspace-fs` / `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity`，`.NET build` 与 Internal tests。下一步进入 Round 17：close / switch workspace cleanup。
 
+### 2026-06-16 SelfHostedEditor P1 Round 17 cleanup summary 快照
+
+P1 Round 17 已完成 close / switch workspace cleanup summary contract，仍未执行真实进程清理、磁盘删除、session restore 或多窗口共享。
+
+- 新增 `EditorBackendWorkspaceSessionCleanupModel`，定义 `inscape.self-hosted-editor.workspace-session-cleanup` status shape。
+- cleanup summary 支持 `close-workspace` / `switch-workspace` operation，并列出需要清理的 `language-session`、`runtime-session`、`line-identity-session`、`localization-session` 与 `temporary-workspace` target。
+- cleanup summary 只暴露 `runtimeSnapshots`、`lineMapSidecars`、`localizationBaselines`、`temporaryWorkspaceFiles` 计数和 target kind / action，不暴露 Runtime snapshot、line-map、CSV baseline 或临时文件内容。
+- `EditorBackendDesktopSessionModel.buildWorkspaceSessionCleanupSummary()` 作为 desktop backend model 入口；`check:desktop-backend` 覆盖 cleanup shape、target、计数与 payload exposure flag。
+- Round 17 验证已通过：SelfHostedEditor `check:desktop-backend` / `check:workspace-fs` / `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity`，`.NET build` 与 Internal tests。下一步进入 Round 18：session panel / status 接入。
+
 ### 2026-06-14 SelfHostedEditor desktop backend v0 决策快照
 
 本轮已采纳 [ADR 0019](adr/0019-self-hosted-editor-embedded-backend-v0.md)：SelfHostedEditor desktop backend v0 采用嵌入式 EditorBackend，而不是独立 sidecar daemon。

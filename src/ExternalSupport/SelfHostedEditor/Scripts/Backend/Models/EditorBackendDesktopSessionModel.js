@@ -4,6 +4,7 @@ import {
 } from "./EditorBackendProjectSessionModel.js";
 import { EditorBackendProjectSessionLifecycleModel } from "./EditorBackendProjectSessionLifecycleModel.js";
 import { EditorBackendWorkspacePathModel } from "./EditorBackendWorkspacePathModel.js";
+import { EditorBackendWorkspaceSessionCleanupModel } from "./EditorBackendWorkspaceSessionCleanupModel.js";
 import { EditorBackendWorkspaceWriteTargetModel } from "./EditorBackendWorkspaceWriteTargetModel.js";
 
 export const EditorBackendDesktopProjectSessionMode = "embedded-desktop";
@@ -245,6 +246,10 @@ export class EditorBackendDesktopSessionModel {
         resourceImportPolicy: String(workspaceSettings.resourceImportPolicy || "copy-into-workspace"),
       },
     };
+  }
+
+  static buildWorkspaceSessionCleanupSummary(cleanup = {}) {
+    return EditorBackendWorkspaceSessionCleanupModel.buildSummary(cleanup);
   }
 }
 

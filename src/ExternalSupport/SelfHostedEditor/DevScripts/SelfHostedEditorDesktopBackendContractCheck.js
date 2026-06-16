@@ -15,6 +15,9 @@ import {
 import {
   EditorBackendProjectSessionFormat,
 } from "../Scripts/Backend/Models/EditorBackendProjectSessionModel.js";
+import {
+  EditorBackendWorkspaceSessionCleanupFormat,
+} from "../Scripts/Backend/Models/EditorBackendWorkspaceSessionCleanupModel.js";
 
 const documentBuffer = EditorBackendDesktopSessionModel.buildDocumentBuffer({
   active: true,
@@ -204,6 +207,34 @@ const defaultSettings = EditorBackendDesktopSessionModel.buildSettingsSummary();
 assertEqual(defaultSettings.global.autosaveEnabled, true, "default settings autosave enabled");
 assertEqual(defaultSettings.workspace.backupEnabled, true, "default settings backup enabled");
 assertEqual(defaultSettings.workspace.resourceDirectory, "assets", "default settings resource directory");
+
+const cleanupSummary = EditorBackendDesktopSessionModel.buildWorkspaceSessionCleanupSummary({
+  cacheCounts: {
+    lineMapSidecars: 2,
+    localizationBaselines: 3,
+    runtimeSnapshots: 1,
+    temporaryWorkspaceFiles: 5,
+  },
+  operation: "switch-workspace",
+  sessionId: "desktop session!? 01",
+  workspaceRoot: "C:\\Case Files\\Court Loop",
+});
+assertEqual(cleanupSummary.format, EditorBackendWorkspaceSessionCleanupFormat, "workspace cleanup format");
+assertEqual(cleanupSummary.operation, "switch-workspace", "workspace cleanup operation");
+assertEqual(cleanupSummary.sessionId, "desktop-session---01", "workspace cleanup session id");
+assertEqual(cleanupSummary.workspaceRoot, "C:/Case Files/Court Loop", "workspace cleanup root");
+assertEqual(cleanupSummary.payloadContentExposed, false, "workspace cleanup payload exposure flag");
+assertEqual(cleanupSummary.targetCount, 5, "workspace cleanup target count");
+assertEqual(
+  cleanupSummary.targets.map((target) => `${target.kind}:${target.action}`).join(","),
+  "language-session:clear,runtime-session:clear,line-identity-session:clear,localization-session:clear,temporary-workspace:clear",
+  "workspace cleanup targets"
+);
+assertEqual(cleanupSummary.cacheCounts.runtimeSnapshots, 1, "workspace cleanup runtime count");
+assertEqual(cleanupSummary.cacheCounts.lineMapSidecars, 2, "workspace cleanup line-map count");
+assertEqual(cleanupSummary.cacheCounts.localizationBaselines, 3, "workspace cleanup localization count");
+assertEqual(cleanupSummary.cacheCounts.temporaryWorkspaceFiles, 5, "workspace cleanup temp file count");
+assertNotIncludes(JSON.stringify(cleanupSummary), "secret", "workspace cleanup summary must not expose cached payload content");
 
 assertEqual(
   listEditorBackendAllowedWriteTargets().join(","),
