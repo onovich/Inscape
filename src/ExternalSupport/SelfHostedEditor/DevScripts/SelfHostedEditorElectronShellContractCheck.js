@@ -12,6 +12,7 @@ const requiredDesktopPaths = [
   "Desktop/ElectronMain.js",
   "Desktop/ElectronPreloadApi.js",
   "Desktop/ElectronPreload.js",
+  "Desktop/ElectronWorkspaceSessionStore.js",
 ];
 
 for (const relativePath of requiredDesktopPaths) {
@@ -68,8 +69,8 @@ const preloadApiText = readModuleText("Desktop/ElectronPreloadApi.js");
 assertIncludesText(preloadApiText, "SelfHostedEditorPreloadEditorCommand", "Electron preload API defines command whitelist");
 assertIncludesText(preloadApiText, "inscapeSelfHostedEditor", "Electron preload API name");
 assertIncludesText(preloadApiText, "backendCommandTransport: \"electron-ipc\"", "Electron preload API declares IPC command transport");
-assertIncludesText(preloadApiText, "embeddedBackend: false", "Electron preload does not claim embedded backend yet");
-assertIncludesText(preloadApiText, "workspaceFileSystem: false", "Electron preload does not claim workspace file IO yet");
+assertIncludesText(preloadApiText, "embeddedBackend: \"workspace-session-v0-partial\"", "Electron preload declares partial embedded backend capability");
+assertIncludesText(preloadApiText, "workspaceFileSystem: \"read-buffer-session\"", "Electron preload declares read-buffer workspace file capability");
 assertIncludesText(preloadApiText, "ProjectSessionStatus", "Electron preload API whitelists project-session status");
 assertIncludesText(preloadApiText, "DocumentBufferRead", "Electron preload API whitelists document-buffer read");
 assertIncludesText(preloadApiText, "WorkspaceOpenFolder", "Electron preload API whitelists workspace open folder");
@@ -85,20 +86,27 @@ assertIncludesText(ipcContractText, "inscape.self-hosted-editor.backend.invoke",
 
 const ipcDispatcherText = readModuleText("Desktop/ElectronBackendCommandDispatcher.js");
 assertIncludesText(ipcDispatcherText, "validateSelfHostedEditorPreloadCommandPayload", "Electron backend dispatcher validates payloads");
-assertIncludesText(ipcDispatcherText, "EditorBackendDesktopSessionModel", "Electron backend dispatcher reuses desktop session model");
+assertIncludesText(ipcDispatcherText, "createSelfHostedEditorElectronWorkspaceSessionStore", "Electron backend dispatcher owns workspace session store boundary");
 assertNoText(ipcDispatcherText, "/api/", "Electron backend dispatcher must not know dev-host routes");
 
 const ipcMainText = readModuleText("Desktop/ElectronBackendIpc.js");
 assertIncludesText(ipcMainText, "ipcMain", "Electron backend IPC module owns ipcMain access");
+assertIncludesText(ipcMainText, "showOpenDialog", "Electron backend IPC selects workspace folders through native dialog");
 assertIncludesText(ipcMainText, "SelfHostedEditorElectronIpcChannel", "Electron backend IPC uses fixed channel");
 assertNoText(ipcMainText, "/api/", "Electron backend IPC module must not know dev-host routes");
+
+const workspaceStoreText = readModuleText("Desktop/ElectronWorkspaceSessionStore.js");
+assertIncludesText(workspaceStoreText, "node:fs", "Electron workspace store owns filesystem access");
+assertIncludesText(workspaceStoreText, "EditorBackendWorkspacePathModel", "Electron workspace store reuses workspace path guard");
+assertIncludesText(workspaceStoreText, "EditorBackendDocumentBufferStoreModel", "Electron workspace store reuses document buffer store model");
+assertNoText(workspaceStoreText, "/api/", "Electron workspace store must not know dev-host routes");
 
 const preloadApiModule = await import("../Desktop/ElectronPreloadApi.js");
 const preloadApi = preloadApiModule.createSelfHostedEditorPreloadApi();
 assertEqual(Object.isFrozen(preloadApi), true, "Electron preload API is frozen");
 assertEqual(preloadApi.capabilities.backendCommandTransport, "electron-ipc", "Electron preload API command transport capability");
-assertEqual(preloadApi.capabilities.embeddedBackend, false, "Electron preload API embedded backend capability");
-assertEqual(preloadApi.capabilities.workspaceFileSystem, false, "Electron preload API workspace file capability");
+assertEqual(preloadApi.capabilities.embeddedBackend, "workspace-session-v0-partial", "Electron preload API embedded backend capability");
+assertEqual(preloadApi.capabilities.workspaceFileSystem, "read-buffer-session", "Electron preload API workspace file capability");
 assertEqual(preloadApi.editorCommands.ProjectSessionStatus, "project-session.status", "Electron preload project-session command");
 assertEqual(
   preloadApiModule.listSelfHostedEditorPreloadCommands().length,

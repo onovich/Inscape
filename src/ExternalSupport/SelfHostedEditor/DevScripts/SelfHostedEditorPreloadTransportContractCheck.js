@@ -51,6 +51,18 @@ const preloadApi = createSelfHostedEditorPreloadApi({
         },
       };
     },
+    [EditorBackendTransportCommand.WorkspaceListFiles]: async (payload) => {
+      preloadCalls.push({ command: EditorBackendTransportCommand.WorkspaceListFiles, payload });
+      return {
+        documents: [],
+      };
+    },
+    [EditorBackendTransportCommand.WorkspaceOpenFolder]: async (payload) => {
+      preloadCalls.push({ command: EditorBackendTransportCommand.WorkspaceOpenFolder, payload });
+      return {
+        ok: true,
+      };
+    },
   },
 });
 
@@ -97,6 +109,12 @@ const saveAllResult = await preloadTransport.invoke(EditorBackendTransportComman
   workspaceId: "workspace-1",
 });
 assertEqual(saveAllResult.savedCount, 1, "preload transport document save all payload");
+const openWorkspaceResult = await preloadTransport.invoke(EditorBackendTransportCommand.WorkspaceOpenFolder, {
+  dialogTitle: "Open workspace",
+});
+assertEqual(openWorkspaceResult.ok, true, "preload transport workspace open payload");
+const workspaceOpenCall = preloadCalls.find((call) => call.command === EditorBackendTransportCommand.WorkspaceOpenFolder);
+assertEqual(workspaceOpenCall.payload.dialogTitle, "Open workspace", "preload transport workspace open command");
 
 let unknownCommandRejected = false;
 try {
@@ -131,6 +149,10 @@ const desktopSave = await desktopBackendClient.documentBuffer.saveDocument({
   relativePath: "story/desktop.inscape",
 });
 assertEqual(desktopSave.saveStatus.state, "saved", "desktop backend client document save preload payload");
+const desktopWorkspaceOpen = await desktopBackendClient.workspace.openFolder({
+  dialogTitle: "Open desktop workspace",
+});
+assertEqual(desktopWorkspaceOpen.ok, true, "desktop backend client workspace open preload payload");
 
 const fetchCalls = [];
 const devBackendClient = new EditorBackendClient({

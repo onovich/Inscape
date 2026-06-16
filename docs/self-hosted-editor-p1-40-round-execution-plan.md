@@ -282,7 +282,7 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 完成内容：
 
 1. 新增 `Desktop/ElectronMain.js`，定义 BrowserWindow 骨架，默认启用 `contextIsolation: true`、`nodeIntegration: false`、`sandbox: true`，并指向 `ElectronPreload.js` 与现有 Workbench HTML。
-2. 新增 `Desktop/ElectronPreload.js`，只通过 `contextBridge` 暴露静态 `inscapeSelfHostedEditor` capability summary；当前明确声明 `embeddedBackend: false` 与 `workspaceFileSystem: false`，不暴露 `ipcRenderer`。
+2. 新增 `Desktop/ElectronPreload.js`，只通过 `contextBridge` 暴露静态 `inscapeSelfHostedEditor` capability summary；当轮明确声明 `embeddedBackend: false` 与 `workspaceFileSystem: false`，不暴露 `ipcRenderer`。
 3. 新增 `Desktop/ElectronAppEntry.js`，记录 Electron shell 与现有 renderer app entry / workbench document 的骨架关系。
 4. 新增 `check:electron-shell` 并接入 `check:model`；`check:syntax` 现在覆盖 `Desktop/`，`check:structure` 守住 Electron skeleton 文件存在和脚本委托。
 
@@ -362,7 +362,7 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 架构对照结论：
 
 1. preload public API 已有白名单 shape，但仍不含可调用 IPC bridge；不会把 arbitrary IPC 暴露给 renderer。
-2. API capability 明确声明 `embeddedBackend: false` 与 `workspaceFileSystem: false`，不提前声称产品 backend / 文件 IO 已完成。
+2. API capability 当轮明确声明 `embeddedBackend: false` 与 `workspaceFileSystem: false`，不提前声称产品 backend / 文件 IO 已完成。
 3. 下一轮应进入 Round 10：embedded invoke transport skeleton，仍只接 contract / fake path，不接真实文件系统。
 
 ### 2026-06-16 Round 10：Desktop preload transport skeleton
@@ -1648,7 +1648,8 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 | 后续轮次 | 目标 | 完成标准 |
 |---|---|---|
 | post-40 A | Electron IPC command boundary | 已完成。preload 内部通过固定 `inscape.self-hosted-editor.backend.invoke` channel 转发白名单 editor command；main dispatcher 复用 payload validator，拒绝未知 / 未接线 command；`project-session.status` 返回 `embedded-desktop` 摘要；`check:electron-ipc`、Electron boundary / shell 与 runtime probe 覆盖该边界。 |
-| post-40 B | 真实 workspace open / file IO | 待完成。main process 持有 workspace root 和 ProjectSession，只接受目录，列出多个 `.inscape`，DocumentBufferStore 从磁盘读写真实 `.inscape`，并继续走 workspace path guard / write target whitelist。 |
+| post-40 B | 真实 workspace open / read file IO | 部分完成。main process 持有 workspace root 和 ProjectSession，只接受目录，列出多个 `.inscape`，DocumentBufferStore 已可从磁盘读取真实 `.inscape`；`check:electron-workspace` 覆盖真实临时 workspace、text-free open/list/status/update、显式 read 正文、路径穿越拒绝和单文件模式拒绝。真实写回仍待 post-40 B2。 |
+| post-40 B2 | 真实 workspace save / write-back IO | 待完成。`document-buffer.save` / `save-all` 需要落到 main process 真实磁盘写回，并继续走 workspace path guard / write target whitelist，覆盖 stale revision、disk conflict、flush failure visible state。 |
 | post-40 C | GUI edit-save-recovery smoke | 待完成。打包或本机 Electron app 能打开测试 workspace、编辑、manual Save / autosave 写盘、发现 recovery、执行 restore / discard / later，并验证 diagnostics / completion 使用当前 buffer。 |
 
 ## 每轮建议验证

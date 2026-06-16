@@ -21,6 +21,8 @@ export const EditorBackendTransportCommand = Object.freeze({
   StableNodeMapApplyCandidate: "stable-node-map.apply-candidate",
   StableNodeMapReview: "stable-node-map.review",
   StoryGraphCompileProject: "story-graph.compile-project",
+  WorkspaceListFiles: "workspace.list-files",
+  WorkspaceOpenFolder: "workspace.open-folder",
 });
 
 const devHostRoutesByCommand = Object.freeze({
@@ -55,6 +57,10 @@ export function listEditorBackendTransportCommands() {
 export function resolveEditorBackendDevHostRoute(command) {
   const routePath = devHostRoutesByCommand[command];
   if (!routePath) {
+    if (listEditorBackendTransportCommands().includes(command)) {
+      throw new Error(`SelfHostedEditor backend command does not have a dev-host HTTP route: ${String(command || "")}`);
+    }
+
     throw new Error(`Unknown SelfHostedEditor backend transport command: ${String(command || "")}`);
   }
 

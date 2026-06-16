@@ -1,7 +1,8 @@
 import { validateSelfHostedEditorPreloadCommandPayload } from "./ElectronPreloadApi.js";
 import {
-  EditorBackendDesktopSessionModel,
-} from "../Scripts/Backend/Models/EditorBackendDesktopSessionModel.js";
+  buildProjectSessionStatusFromPayload,
+  createSelfHostedEditorElectronWorkspaceSessionStore,
+} from "./ElectronWorkspaceSessionStore.js";
 import {
   EditorBackendTransportCommand,
   listEditorBackendTransportCommands,
@@ -21,10 +22,34 @@ export async function dispatchSelfHostedEditorBackendCommand(command, payload = 
   return await handler(normalizedPayload);
 }
 
+export function createSelfHostedEditorElectronBackendCommandDispatcher(options = {}) {
+  const sessionStore = options.sessionStore || createSelfHostedEditorElectronWorkspaceSessionStore(options);
+  return async (command, payload = {}) => await dispatchSelfHostedEditorBackendCommand(command, payload, {
+    ...options,
+    sessionStore,
+  });
+}
+
 export function createSelfHostedEditorBackendCommandHandlers(options = {}) {
+  const sessionStore = options.sessionStore || createSelfHostedEditorElectronWorkspaceSessionStore(options);
   return Object.freeze({
+    [EditorBackendTransportCommand.DocumentBufferList]: async () => {
+      return sessionStore.listDocumentBuffers();
+    },
+    [EditorBackendTransportCommand.DocumentBufferRead]: async (payload = {}) => {
+      return sessionStore.readDocument(payload);
+    },
+    [EditorBackendTransportCommand.DocumentBufferUpdateDraft]: async (payload = {}) => {
+      return sessionStore.updateDraft(payload);
+    },
     [EditorBackendTransportCommand.ProjectSessionStatus]: async (payload = {}) => {
-      return buildSelfHostedEditorElectronProjectSessionStatus(payload, options);
+      return sessionStore.getProjectSessionStatus(payload);
+    },
+    [EditorBackendTransportCommand.WorkspaceListFiles]: async () => {
+      return sessionStore.listFiles();
+    },
+    [EditorBackendTransportCommand.WorkspaceOpenFolder]: async (payload = {}) => {
+      return await sessionStore.openFolder(payload);
     },
   });
 }
@@ -34,43 +59,5 @@ export function listSelfHostedEditorElectronBackendCommands() {
 }
 
 export function buildSelfHostedEditorElectronProjectSessionStatus(payload = {}, options = {}) {
-  const workspace = payload.workspace || {};
-  const documents = normalizeWorkspaceDocuments(workspace);
-  return EditorBackendDesktopSessionModel.buildProjectSession({
-    documents,
-    sessionId: payload.sessionId || options.sessionId || "desktop-main",
-    workspace: {
-      activeRelativePath: workspace.activeRelativePath
-        || workspace.currentFilePath
-        || workspace.filePath
-        || documents.find((document) => document.active)?.relativePath
-        || documents[0]?.relativePath
-        || "",
-      revision: workspace.revision || workspace.documentRevision || workspace.workspaceRevision || 1,
-      workspaceName: workspace.workspaceName || workspace.name || "workspace",
-      workspaceRoot: workspace.workspaceRoot || workspace.rootPath || workspace.root || "",
-    },
-  });
-}
-
-function normalizeWorkspaceDocuments(workspace = {}) {
-  const documents = Array.isArray(workspace.documents) ? workspace.documents : [];
-  const activeRelativePath = String(
-    workspace.activeRelativePath
-      || workspace.currentFilePath
-      || workspace.filePath
-      || documents[0]?.relativePath
-      || ""
-  ).replace(/\\/g, "/");
-
-  return documents
-    .map((document) => ({
-      active: String(document.relativePath || "").replace(/\\/g, "/") === activeRelativePath,
-      dirty: Boolean(document.dirty),
-      existsOnDisk: document.existsOnDisk !== false,
-      relativePath: document.relativePath,
-      revision: document.revision || workspace.revision || 1,
-      text: "",
-    }))
-    .filter((document) => document.relativePath);
+  return buildProjectSessionStatusFromPayload(payload, options);
 }

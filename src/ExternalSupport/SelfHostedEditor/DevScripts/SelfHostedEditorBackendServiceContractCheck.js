@@ -26,6 +26,16 @@ const backendClient = {
       return { mode: "dev-host", sessionId: "service-session" };
     },
   },
+  workspace: {
+    async openFolder(payload) {
+      calls.push({ method: "workspace.openFolder", payload });
+      return { ok: true };
+    },
+    async listFiles(payload) {
+      calls.push({ method: "workspace.listFiles", payload });
+      return { documents: [] };
+    },
+  },
   diagnostics: {
     async sessionStatus(payload) {
       calls.push({ method: "diagnostics.sessionStatus", payload });
@@ -120,6 +130,11 @@ assertEqual("invoke" in services, false, "service registry must not expose invok
 assertEqual("request" in services, false, "service registry must not expose request");
 
 assertSurface(services.projectSessionService, ["sessionId", "status"], "project session service");
+assertSurface(services.workspaceSessionClient, [
+  "sessionId",
+  "openFolder",
+  "listFiles",
+], "workspace session client");
 assertSurface(services.documentBufferStore, [
   "sessionId",
   "buildBuffer",
@@ -170,12 +185,16 @@ assertSurface(services.stableNodeMapClient, ["sessionId", "applyCandidate", "rev
 assertSurface(services.diagnosticsService, ["sessionId", "sessionStatus"], "diagnostics service");
 
 await services.projectSessionService.status({ workspace: { currentFilePath: "story/opening.inscape" } });
+await services.workspaceSessionClient.openFolder({ dialogTitle: "Open workspace" });
+await services.workspaceSessionClient.listFiles();
 await services.languageSessionClient.diagnose({ scriptText: "# Opening" });
 await services.runtimeSessionClient.step({ action: "continue" });
 await services.localizationWorkflowClient.review({ scriptText: "# Opening" });
 await services.stableNodeMapClient.applyCandidate({ dryRun: true });
 assertEqual(calls.map((call) => call.method).join(","), [
   "projectSession.status",
+  "workspace.openFolder",
+  "workspace.listFiles",
   "languageSession.diagnose",
   "runtimeSession.step",
   "localizationSession.review",

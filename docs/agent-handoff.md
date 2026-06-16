@@ -75,7 +75,7 @@ P1 Round 6 已完成 structure guard 第一刀，仍未接 Electron 工程骨架
 P1 Round 7 已完成 Electron main / preload / app entry 骨架，尚未新增 Electron 依赖、启动脚本、IPC 或文件 IO。
 
 - 新增 `Desktop/ElectronMain.js`，定义 BrowserWindow skeleton，默认 `contextIsolation: true`、`nodeIntegration: false`、`sandbox: true`，并指向现有 Workbench HTML 与 `ElectronPreload.js`。
-- 新增 `Desktop/ElectronPreload.js`，只通过 `contextBridge` 暴露静态 `inscapeSelfHostedEditor` capability summary；当前明确 `embeddedBackend: false` 与 `workspaceFileSystem: false`。
+- 新增 `Desktop/ElectronPreload.js`，只通过 `contextBridge` 暴露静态 `inscapeSelfHostedEditor` capability summary；当轮明确 `embeddedBackend: false` 与 `workspaceFileSystem: false`。
 - 新增 `Desktop/ElectronAppEntry.js`，记录 Electron shell 与现有 renderer app entry / workbench document 的关系。
 - 新增 `check:electron-shell` 并接入 `check:model`；`check:syntax` 现在覆盖 `Desktop/`。
 - Round 7 验证已通过：SelfHostedEditor `check:electron-shell` / `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity`，`.NET build` 与 Internal tests。下一步进入 Round 8：BrowserWindow 安全配置 contract 加固。
@@ -443,6 +443,16 @@ P1 40 轮计划完成后，继续补上了真实 Electron preload -> main 的固
 - `project-session.status` 是当前唯一 main-process handler，会返回 `embedded-desktop` ProjectSession 摘要；status transport 仍不上传 workspace text，真实 workspace 状态要等 main 持有 ProjectSession / DocumentBufferStore 后再填充。
 - 新增 `check:electron-ipc`，并更新 `check:electron-shell` / `check:electron-boundary` / runtime probe：现在允许 preload 内部使用固定 `ipcRenderer.invoke`，仍禁止 renderer 直接 IPC、Node/fs/shell、preload generic/system API 和 dev-host `/api/*` 泄漏到 Electron main/preload。
 - 本轮当前已通过：SelfHostedEditor `check:electron-ipc` / `check:electron-shell` / `check:electron-boundary` / `check:preload-transport` / `check:syntax` / `check:structure` / `check:model` / `smoke:desktop-runtime`。后续优先推进真实 Electron workspace open / file IO，再做 GUI edit-save-recovery smoke。
+
+### 2026-06-17 SelfHostedEditor P1 post-40 Electron workspace open/read 快照
+
+固定 IPC channel 之后，本轮把 Electron main process 推进到真实 workspace open / read buffer 的局部闭环；仍不做真实保存写盘、autosave flush、recovery restore/discard/later 或 P1.5 long-lived LanguageServer。
+
+- 新增 `Desktop/ElectronWorkspaceSessionStore.js`。main process 持有单窗口 workspace session，open folder 只接受目录，递归扫描真实 `.inscape` 文件，忽略 `.inscape-workspace/`、`node_modules`、`dist` 等非项目 truth 目录，并把磁盘正文读入 `DocumentBufferStore`。
+- `EditorBackendTransportCommand` / preload transport / `EditorBackendClient` / `EditorBackendServiceRegistry` 新增 `workspace.open-folder` 与 `workspace.list-files` 的窄接口；这些 command 没有 dev-host `/api/*` route，HTTP transport 误用会显式失败。
+- Electron dispatcher 现在接线 `workspace.open-folder`、`workspace.list-files`、`document-buffer.list`、`document-buffer.read`、`document-buffer.update-draft` 与 `project-session.status`。open/list/status/update 响应保持 text-free；只有显式 `document-buffer.read` 返回请求文档正文。
+- 新增 `check:electron-workspace`，创建临时真实 workspace 验证目录打开、`.inscape` 列表、非脚本过滤、internal workspace 忽略、read buffer、路径穿越拒绝、单文件模式拒绝和 dirty status 摘要。`check:electron-shell` / `check:electron-boundary` / `check:backend-transport` / `check:backend-services` / `check:preload-transport` / `check:structure` 已同步该边界。
+- 下一步优先接 `document-buffer.save` / `save-all` 的真实磁盘写回、disk conflict / stale revision、close/switch/app-exit flush，再推进 GUI edit-save-recovery smoke；不能因为 open/read contract 通过就宣布 P1 完成。
 
 ### 2026-06-14 SelfHostedEditor desktop backend v0 决策快照
 

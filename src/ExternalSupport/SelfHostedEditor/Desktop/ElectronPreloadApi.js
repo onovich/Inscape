@@ -2,9 +2,9 @@ export const SelfHostedEditorPreloadApiName = "inscapeSelfHostedEditor";
 
 export const SelfHostedEditorPreloadCapabilities = Object.freeze({
   backendCommandTransport: "electron-ipc",
-  embeddedBackend: false,
+  embeddedBackend: "workspace-session-v0-partial",
   shell: "electron",
-  workspaceFileSystem: false,
+  workspaceFileSystem: "read-buffer-session",
 });
 
 export const SelfHostedEditorPreloadEditorCommand = Object.freeze({

@@ -86,6 +86,14 @@ export class SelfHostedEditorFakeEmbeddedTransport {
       [EditorBackendTransportCommand.StoryGraphCompileProject]: async () => ({
         graph: null,
       }),
+      [EditorBackendTransportCommand.WorkspaceListFiles]: async () => ({
+        documentCount: 0,
+        documents: [],
+      }),
+      [EditorBackendTransportCommand.WorkspaceOpenFolder]: async () => ({
+        ok: false,
+        reason: "workspace-open-not-implemented",
+      }),
       ...options.handlers,
     });
   }

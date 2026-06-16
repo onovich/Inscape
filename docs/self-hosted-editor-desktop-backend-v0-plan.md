@@ -561,7 +561,8 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
 - 2026-06-17 P1 Round 38 已补 `package:windows`、electron-builder build config 与 `check:desktop-package`。该检查固定 package main entry、files 白名单、Windows `dir` x64 target 与 artifact readiness；真实 `package:windows` 执行和 artifact smoke 仍是后续工作。
 - 2026-06-17 P1 Round 39 已运行真实 `package:windows` 并新增 `smoke:desktop-package`，验证 Windows unpacked exe、`resources/app.asar` 与 builder metadata；GUI 打开 workspace、编辑保存、恢复提示和基础 LanguageServer authoring smoke 仍待后续。
 - 2026-06-17 P1 Round 40 已补 packaged app protocol：Workbench 通过 `inscape-self-hosted-editor://app/` 加载，协议白名单只服务 `Resources/`、`Scripts/`、Monaco 与 packaged samples；这为真实 GUI smoke 消除了 `file://` 绝对路径风险。
-- 2026-06-17 P1 post-40 已补 Electron IPC command boundary：preload 内部通过固定 `inscape.self-hosted-editor.backend.invoke` channel 转发白名单 editor command，main process 通过 dispatcher 复用 payload validator 并显式拒绝未知 / 未接线 command；当前只让 `project-session.status` 返回 `embedded-desktop` 摘要，仍未落真实 workspace 文件 IO。
+- 2026-06-17 P1 post-40 已补 Electron IPC command boundary：preload 内部通过固定 `inscape.self-hosted-editor.backend.invoke` channel 转发白名单 editor command，main process 通过 dispatcher 复用 payload validator 并显式拒绝未知 / 未接线 command。
+- 2026-06-17 P1 post-40 已补真实 Electron workspace open / read buffer 局部闭环：main process 持有 `ElectronWorkspaceSessionStore`，通过原生 open-folder 选择目录，扫描真实 `.inscape` 文件并读入 `DocumentBufferStore`；`project-session.status` / workspace list / update draft 保持 text-free，显式 `document-buffer.read` 才返回请求文档正文。真实 save/write-back、flush、recovery 和 GUI edit-save-recovery smoke 仍未完成。
 
 验收：
 
@@ -569,6 +570,7 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:structure
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:electron-ipc
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:electron-workspace
 ```
 
 ## 阶段 8：全量验收
@@ -580,6 +582,7 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:structure
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:electron-ipc
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:electron-workspace
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:language-session
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:runtime-http

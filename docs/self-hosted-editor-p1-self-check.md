@@ -128,6 +128,7 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:workspace-fs
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:document-buffer
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:save-recovery
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:electron-ipc
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:electron-workspace
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:desktop-package
 npm --prefix src\ExternalSupport\SelfHostedEditor run smoke:desktop
 npm --prefix src\ExternalSupport\SelfHostedEditor run smoke:desktop-package

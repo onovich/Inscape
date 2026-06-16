@@ -23,6 +23,8 @@ const preloadMethodsByCommand = Object.freeze({
   [EditorBackendTransportCommand.StableNodeMapApplyCandidate]: ["stableNodeMap", "applyCandidate"],
   [EditorBackendTransportCommand.StableNodeMapReview]: ["stableNodeMap", "review"],
   [EditorBackendTransportCommand.StoryGraphCompileProject]: ["storyGraph", "compileProjectGraph"],
+  [EditorBackendTransportCommand.WorkspaceListFiles]: ["workspace", "listFiles"],
+  [EditorBackendTransportCommand.WorkspaceOpenFolder]: ["workspace", "openFolder"],
 });
 
 export class SelfHostedEditorPreloadBackendTransport {

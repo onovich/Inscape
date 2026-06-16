@@ -14,6 +14,13 @@ assertEqual(resolveEditorBackendDevHostRoute(EditorBackendTransportCommand.Docum
 assertEqual(resolveEditorBackendDevHostRoute(EditorBackendTransportCommand.DocumentBufferSaveAll), "/api/document-buffer-save-all", "document-buffer save all dev-host route");
 assertEqual(resolveEditorBackendDevHostRoute(EditorBackendTransportCommand.ProjectSessionStatus), "/api/session-cache-status", "project-session status dev-host route");
 assertEqual(resolveEditorBackendDevHostRoute(EditorBackendTransportCommand.RuntimeStep), "/api/runtime-action", "runtime step dev-host route");
+let desktopOnlyRouteRejected = false;
+try {
+  resolveEditorBackendDevHostRoute(EditorBackendTransportCommand.WorkspaceOpenFolder);
+} catch (error) {
+  desktopOnlyRouteRejected = String(error?.message || "").includes("does not have a dev-host HTTP route");
+}
+assertEqual(desktopOnlyRouteRejected, true, "workspace open command is desktop-only");
 
 for (const route of listEditorBackendDevHostRoutes()) {
   assertEqual(commands.includes(route.command), true, `dev-host route command registered: ${route.command}`);
@@ -98,6 +105,12 @@ const documentSaveAll = await backendClient.documentBuffer.saveAll({
   workspaceId: "main-workspace",
 });
 assertEqual(documentSaveAll.command, EditorBackendTransportCommand.DocumentBufferSaveAll, "backend client document save all command");
+const workspaceOpen = await backendClient.workspace.openFolder({
+  dialogTitle: "Open workspace",
+});
+assertEqual(workspaceOpen.command, EditorBackendTransportCommand.WorkspaceOpenFolder, "backend client workspace open command");
+const workspaceList = await backendClient.workspace.listFiles();
+assertEqual(workspaceList.command, EditorBackendTransportCommand.WorkspaceListFiles, "backend client workspace list command");
 const projectStatus = await backendClient.projectSession.status();
 assertEqual(backendCalls.find((call) => call.command === EditorBackendTransportCommand.ProjectSessionStatus)?.payload && Object.keys(backendCalls.find((call) => call.command === EditorBackendTransportCommand.ProjectSessionStatus).payload).length, 0, "project-session status must not upload workspace text");
 assertEqual(projectStatus.mode, "dev-host", "project-session status compatibility mode");

@@ -9,6 +9,7 @@ import { EditorBackendClient } from "./EditorBackendClient.js";
 
 const serviceKeys = Object.freeze([
   "projectSessionService",
+  "workspaceSessionClient",
   "documentBufferStore",
   "languageSessionClient",
   "hostCapabilityClient",
@@ -31,6 +32,27 @@ export class ProjectSessionService {
 
   async status(request = {}) {
     return await this.#projectSession.status(request);
+  }
+}
+
+export class WorkspaceSessionClient {
+  #workspace;
+
+  constructor(backendClient) {
+    this.sessionId = backendClient?.sessionId || "";
+    this.#workspace = requireCapabilities(backendClient?.workspace, [
+      "listFiles",
+      "openFolder",
+    ], "WorkspaceSessionClient");
+    Object.freeze(this);
+  }
+
+  async openFolder(request = {}) {
+    return await this.#workspace.openFolder(request);
+  }
+
+  async listFiles(request = {}) {
+    return await this.#workspace.listFiles(request);
   }
 }
 
@@ -321,6 +343,7 @@ export function createEditorBackendServices(options = {}) {
   const backendClient = options.backendClient || new EditorBackendClient(options);
   return Object.freeze({
     projectSessionService: new ProjectSessionService(backendClient),
+    workspaceSessionClient: new WorkspaceSessionClient(backendClient),
     documentBufferStore: new DocumentBufferStore({ backendClient }),
     languageSessionClient: new LanguageSessionClient(backendClient),
     hostCapabilityClient: new HostCapabilityClient(backendClient),

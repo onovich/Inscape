@@ -54,6 +54,10 @@ export class EditorBackendClient {
       applyCandidate: (request) => this.#invoke(EditorBackendTransportCommand.StableNodeMapApplyCandidate, request),
       review: (request) => this.#invoke(EditorBackendTransportCommand.StableNodeMapReview, request),
     });
+    this.workspace = Object.freeze({
+      listFiles: (request) => this.#invoke(EditorBackendTransportCommand.WorkspaceListFiles, request),
+      openFolder: (request) => this.#invoke(EditorBackendTransportCommand.WorkspaceOpenFolder, request),
+    });
     this.projectSession = Object.freeze({
       status: async (request = {}) => {
         return EditorBackendSessionStatusModel.normalizeTransportStatus(
