@@ -1,9 +1,12 @@
 import { LanguageServerReferenceModelMapper } from "../Models/LanguageServerReferenceModelMapper.js";
-import { EditorBackendClient } from "../../Backend/Clients/EditorBackendClient.js";
+import { createEditorBackendServices } from "../../Backend/Clients/EditorBackendServiceRegistry.js";
 
 export class SelfHostedEditorReferencesBridge {
   constructor(options = {}) {
-    this.backendClient = options.backendClient || new EditorBackendClient();
+    const services = options.backendServices || null;
+    this.languageSessionClient = options.languageSessionClient
+      || services?.languageSessionClient
+      || createEditorBackendServices(options).languageSessionClient;
     this.workspaceContextProvider = null;
   }
 
@@ -13,7 +16,7 @@ export class SelfHostedEditorReferencesBridge {
 
   async getReferences(scriptText, hoverTarget) {
     try {
-      const payload = await this.backendClient.languageSession.references({
+      const payload = await this.languageSessionClient.references({
         referenceName: hoverTarget.name,
         scriptText,
         workspace: this.workspaceContextProvider?.() || null,

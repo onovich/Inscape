@@ -1,10 +1,13 @@
-import { EditorBackendClient } from "../../Backend/Clients/EditorBackendClient.js";
+import { createEditorBackendServices } from "../../Backend/Clients/EditorBackendServiceRegistry.js";
 
 export class SelfHostedEditorLineMapBridge {
   constructor(options = {}) {
-    this.backendClient = options.backendClient || new EditorBackendClient();
+    const services = options.backendServices || null;
+    this.lineIdentityClient = options.lineIdentityClient
+      || services?.lineIdentityClient
+      || createEditorBackendServices(options).lineIdentityClient;
     this.currentLineMap = null;
-    this.sessionId = options.sessionId || this.backendClient.sessionId || "self-hosted-editor-line-map";
+    this.sessionId = options.sessionId || this.lineIdentityClient.sessionId || "self-hosted-editor-line-map";
     this.workspaceContextProvider = null;
   }
 
@@ -55,6 +58,6 @@ export class SelfHostedEditorLineMapBridge {
       requestPayload.existingLineMap = this.currentLineMap;
     }
 
-    return await this.backendClient.lineIdentitySession.refresh(requestPayload);
+    return await this.lineIdentityClient.refresh(requestPayload);
   }
 }

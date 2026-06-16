@@ -148,41 +148,39 @@ const documentModel = ScriptDocumentFallbackPolicy.buildDocumentModel(scriptText
 });
 
 const workbench = new SelfHostedEditorWorkbenchRenderController({
-  backendClient: {
+  projectSessionService: {
     sessionId: "integration-session",
-    projectSession: {
-      async status() {
-        return {
-          format: "inscape.self-hosted-editor.project-session",
-          formatVersion: 1,
-          languageSession: {
-            fallbackEndpoints: ["completions", "definition", "references", "hover"],
-            fallbackKind: "process-per-request",
-            kind: "stdio-spike",
-            supportedEndpoints: ["diagnostics", "document-symbols"],
-          },
-          lineIdentitySession: {
-            entryCount: 0,
-            kind: "bounded-cache",
-          },
-          localizationSession: {
-            entryCount: 0,
-            kind: "bounded-cache",
-          },
-          mode: "dev-host",
-          runtimeSession: {
-            entryCount: 1,
-            kind: "bounded-cache",
-          },
-          sessionId: "integration-session",
-          workspace: {
-            activeRelativePath: "samples/court-loop.inscape",
-            documentCount: 1,
-            revision: 5,
-            source: "request-snapshot",
-          },
-        };
-      },
+    async status() {
+      return {
+        format: "inscape.self-hosted-editor.project-session",
+        formatVersion: 1,
+        languageSession: {
+          fallbackEndpoints: ["completions", "definition", "references", "hover"],
+          fallbackKind: "process-per-request",
+          kind: "stdio-spike",
+          supportedEndpoints: ["diagnostics", "document-symbols"],
+        },
+        lineIdentitySession: {
+          entryCount: 0,
+          kind: "bounded-cache",
+        },
+        localizationSession: {
+          entryCount: 0,
+          kind: "bounded-cache",
+        },
+        mode: "dev-host",
+        runtimeSession: {
+          entryCount: 1,
+          kind: "bounded-cache",
+        },
+        sessionId: "integration-session",
+        workspace: {
+          activeRelativePath: "samples/court-loop.inscape",
+          documentCount: 1,
+          revision: 5,
+          source: "request-snapshot",
+        },
+      };
     },
   },
   diagnosticsBridge: {

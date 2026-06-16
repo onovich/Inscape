@@ -1,9 +1,12 @@
 import { HostSchemaCapabilityModelMapper } from "../Models/HostSchemaCapabilityModelMapper.js";
-import { EditorBackendClient } from "../../Backend/Clients/EditorBackendClient.js";
+import { createEditorBackendServices } from "../../Backend/Clients/EditorBackendServiceRegistry.js";
 
 export class SelfHostedEditorHostSchemaBridge {
   constructor(options = {}) {
-    this.backendClient = options.backendClient || new EditorBackendClient();
+    const services = options.backendServices || null;
+    this.hostCapabilityClient = options.hostCapabilityClient
+      || services?.hostCapabilityClient
+      || createEditorBackendServices(options).hostCapabilityClient;
     this.cachedCatalog = null;
     this.cachedRequestKey = "";
     this.workspaceContextProvider = null;
@@ -26,7 +29,7 @@ export class SelfHostedEditorHostSchemaBridge {
     }
 
     try {
-      const payload = await this.backendClient.hostCapabilities.schemaCapabilities({
+      const payload = await this.hostCapabilityClient.schemaCapabilities({
         scriptText,
         workspace,
       });

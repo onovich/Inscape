@@ -1,4 +1,5 @@
 import { EditorBackendClient } from "../Scripts/Backend/Clients/EditorBackendClient.js";
+import { createEditorBackendServices } from "../Scripts/Backend/Clients/EditorBackendServiceRegistry.js";
 import { EditorBackendTransportCommand } from "../Scripts/Backend/Clients/EditorBackendTransport.js";
 import {
   EditorBackendLanguageSessionRequestFormat,
@@ -135,9 +136,16 @@ const diagnosticStatus = await backendClient.diagnostics.sessionStatus({ workspa
 assertEqual(diagnosticStatus.format, EditorBackendProjectSessionFormat, "diagnostics status compatibility format");
 assertEqual(diagnosticStatus.sessionId, "shared-session", "diagnostics status compatibility session id");
 
-const runtimeBridge = new SelfHostedEditorRuntimeBridge({ backendClient });
-const lineMapBridge = new SelfHostedEditorLineMapBridge({ backendClient });
-const localizationBridge = new SelfHostedEditorLocalizationReviewBridge({ backendClient });
+const backendServices = createEditorBackendServices({ backendClient });
+const runtimeBridge = new SelfHostedEditorRuntimeBridge({
+  runtimeSessionClient: backendServices.runtimeSessionClient,
+});
+const lineMapBridge = new SelfHostedEditorLineMapBridge({
+  lineIdentityClient: backendServices.lineIdentityClient,
+});
+const localizationBridge = new SelfHostedEditorLocalizationReviewBridge({
+  localizationWorkflowClient: backendServices.localizationWorkflowClient,
+});
 assertEqual(runtimeBridge.sessionId, "shared-session", "runtime bridge should use backend project session id");
 assertEqual(lineMapBridge.sessionId, "shared-session", "line-map bridge should use backend project session id");
 assertEqual(localizationBridge.sessionId, "shared-session", "localization bridge should use backend project session id");

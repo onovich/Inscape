@@ -1,9 +1,12 @@
-import { EditorBackendClient } from "../../Backend/Clients/EditorBackendClient.js";
+import { createEditorBackendServices } from "../../Backend/Clients/EditorBackendServiceRegistry.js";
 
 export class SelfHostedEditorRuntimeBridge {
   constructor(options = {}) {
-    this.backendClient = options.backendClient || new EditorBackendClient();
-    this.sessionId = options.sessionId || this.backendClient.sessionId || this.createSessionId();
+    const services = options.backendServices || null;
+    this.runtimeSessionClient = options.runtimeSessionClient
+      || services?.runtimeSessionClient
+      || createEditorBackendServices(options).runtimeSessionClient;
+    this.sessionId = options.sessionId || this.runtimeSessionClient.sessionId || this.createSessionId();
     this.workspaceContextProvider = null;
   }
 
@@ -14,7 +17,7 @@ export class SelfHostedEditorRuntimeBridge {
   async getRuntimeSnapshot(scriptText) {
     try {
       const workspace = this.workspaceContextProvider?.() || null;
-      const snapshot = await this.backendClient.runtimeSession.startOrObserve({
+      const snapshot = await this.runtimeSessionClient.startOrObserve({
         sessionId: this.sessionId,
         scriptText,
         workspace,
@@ -38,7 +41,7 @@ export class SelfHostedEditorRuntimeBridge {
       const workspace = this.workspaceContextProvider?.() || null;
       let snapshot;
       try {
-        snapshot = await this.backendClient.runtimeSession.step({
+        snapshot = await this.runtimeSessionClient.step({
           action,
           sessionId: this.sessionId,
           scriptText,
@@ -49,7 +52,7 @@ export class SelfHostedEditorRuntimeBridge {
           throw error;
         }
 
-        snapshot = await this.backendClient.runtimeSession.step({
+        snapshot = await this.runtimeSessionClient.step({
           action,
           runtimeState,
           sessionId: this.sessionId,

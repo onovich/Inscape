@@ -40,6 +40,17 @@ P1 Round 3 已完成 command-based `EditorBackendTransport` 抽出，HTTP dev ho
 - 新增 `check:backend-transport` 并接入 `check:model`；`check:structure` 已守住 `EditorBackendClient` 不得重新包含 `/api/*`。
 - Round 3 验证已通过：SelfHostedEditor `check:backend-transport` / `check:syntax` / `check:model` / `check:structure` / `check:semantic-parity-http`。下一步进入 Round 4：业务窄接口 adapter。
 
+### 2026-06-16 SelfHostedEditor P1 Round 4 services 快照
+
+P1 Round 4 已完成 UI 侧业务窄接口 adapter，仍未接 Electron 或真实文件 IO。
+
+- 新增 `EditorBackendServiceRegistry`，从 `EditorBackendClient` 派生 `ProjectSessionService`、`DocumentBufferStore`、`LanguageSessionClient`、`HostCapabilityClient`、`StoryGraphClient`、`RuntimeSessionClient`、`LineIdentitySessionClient`、`LocalizationWorkflowClient`、`StableNodeMapClient` 与 `BackendDiagnosticsService`。
+- Service object 只暴露业务方法，不暴露 `invoke`、`request`、`postJson` 或底层 `backendClient`。
+- `SelfHostedEditorFeatureBootstrapper` 现在创建服务集合并向 Bridge 注入具体能力；feature Bridge 不再 import / new `EditorBackendClient`。
+- `SelfHostedEditorWorkbenchRenderController` 只依赖 `ProjectSessionService.status()` 刷新 session 状态。
+- 新增 `check:backend-services` 并接入 `check:model`；`check:structure` 已守住 service registry 与 Bridge narrow dependency。
+- Round 4 验证已通过：SelfHostedEditor `check:backend-services` / `check:syntax` / `check:model` / `check:structure` / `check:semantic-parity-http`，VSCode `check:semantic-parity`，`dotnet build Inscape.slnx --no-restore` 与 Internal tests。下一步进入 Round 5：fake embedded transport harness，证明 UI service layer 不依赖 HTTP path。
+
 ### 2026-06-14 SelfHostedEditor desktop backend v0 决策快照
 
 本轮已采纳 [ADR 0019](adr/0019-self-hosted-editor-embedded-backend-v0.md)：SelfHostedEditor desktop backend v0 采用嵌入式 EditorBackend，而不是独立 sidecar daemon。

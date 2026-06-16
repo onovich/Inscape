@@ -1,10 +1,13 @@
-import { EditorBackendClient } from "../../Backend/Clients/EditorBackendClient.js";
+import { createEditorBackendServices } from "../../Backend/Clients/EditorBackendServiceRegistry.js";
 
 export class SelfHostedEditorLocalizationReviewBridge {
   constructor(options = {}) {
-    this.backendClient = options.backendClient || new EditorBackendClient();
+    const services = options.backendServices || null;
+    this.localizationWorkflowClient = options.localizationWorkflowClient
+      || services?.localizationWorkflowClient
+      || createEditorBackendServices(options).localizationWorkflowClient;
     this.lastSentPreviousCsv = "";
-    this.sessionId = options.sessionId || this.backendClient.sessionId || "self-hosted-editor-localization";
+    this.sessionId = options.sessionId || this.localizationWorkflowClient.sessionId || "self-hosted-editor-localization";
     this.workspaceContextProvider = null;
   }
 
@@ -87,7 +90,7 @@ export class SelfHostedEditorLocalizationReviewBridge {
   }
 
   async postLocalizationReview(scriptText, previousCsv, includePreviousCsv) {
-    return await this.backendClient.localizationSession.review(
+    return await this.localizationWorkflowClient.review(
       this.createRequestPayload(scriptText, previousCsv, includePreviousCsv)
     );
   }
@@ -96,7 +99,7 @@ export class SelfHostedEditorLocalizationReviewBridge {
     const requestPayload = this.createRequestPayload(scriptText, previousCsv, includePreviousCsv);
     requestPayload.translationOverrides = translationOverrides;
 
-    return await this.backendClient.localizationSession.updateCsv(requestPayload);
+    return await this.localizationWorkflowClient.updateCsv(requestPayload);
   }
 
   createRequestPayload(scriptText, previousCsv, includePreviousCsv) {

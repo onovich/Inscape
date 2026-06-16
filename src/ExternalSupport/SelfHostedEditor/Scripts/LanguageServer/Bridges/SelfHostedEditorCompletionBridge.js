@@ -1,9 +1,12 @@
 import { LanguageServerCompletionModelMapper } from "../Models/LanguageServerCompletionModelMapper.js";
-import { EditorBackendClient } from "../../Backend/Clients/EditorBackendClient.js";
+import { createEditorBackendServices } from "../../Backend/Clients/EditorBackendServiceRegistry.js";
 
 export class SelfHostedEditorCompletionBridge {
   constructor(options = {}) {
-    this.backendClient = options.backendClient || new EditorBackendClient();
+    const services = options.backendServices || null;
+    this.languageSessionClient = options.languageSessionClient
+      || services?.languageSessionClient
+      || createEditorBackendServices(options).languageSessionClient;
     this.workspaceContextProvider = null;
   }
 
@@ -13,7 +16,7 @@ export class SelfHostedEditorCompletionBridge {
 
   async getCompletions(scriptText) {
     try {
-      const payload = await this.backendClient.languageSession.completions({
+      const payload = await this.languageSessionClient.completions({
         scriptText,
         workspace: this.workspaceContextProvider?.() || null,
       });

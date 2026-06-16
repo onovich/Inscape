@@ -1,4 +1,4 @@
-import { EditorBackendClient } from "../Backend/Clients/EditorBackendClient.js";
+import { createEditorBackendServices } from "../Backend/Clients/EditorBackendServiceRegistry.js";
 import { SelfHostedEditorStoryNodeMapBridge } from "../EditorAuthoring/Bridges/SelfHostedEditorStoryNodeMapBridge.js";
 import { EditorCompletionController } from "../EditorAuthoring/Controllers/EditorCompletionController.js";
 import { EditorDefinitionController } from "../EditorAuthoring/Controllers/EditorDefinitionController.js";
@@ -64,9 +64,11 @@ export async function createSelfHostedEditorFeatures(bindings, callbacks = {}) {
   });
   const diagnosticsController = new EditorDiagnosticsController(bindings.diagnosticsElement);
   const editorStatusController = new EditorStatusController(bindings.statusBarElement);
-  const backendClient = new EditorBackendClient();
+  const backendServices = createEditorBackendServices();
   const localizationDraftStore = new LocalizationDraftStore();
-  const localizationReviewBridge = new SelfHostedEditorLocalizationReviewBridge({ backendClient });
+  const localizationReviewBridge = new SelfHostedEditorLocalizationReviewBridge({
+    localizationWorkflowClient: backendServices.localizationWorkflowClient,
+  });
   const localizationController = new LocalizationEditorController({
     panelElement: bindings.localizationPanelElement,
     draftStore: localizationDraftStore,
@@ -91,18 +93,42 @@ export async function createSelfHostedEditorFeatures(bindings, callbacks = {}) {
   const editorController = await EditorSurfaceController.create(bindings.editorElement, bindings.hintRailElement);
   editorController.setSemanticHighlightEnabled(bindings.syntaxToggleElement?.getAttribute("aria-pressed") !== "false");
 
-  const documentSymbolBridge = new SelfHostedEditorDocumentSymbolBridge({ backendClient });
-  const completionBridge = new SelfHostedEditorCompletionBridge({ backendClient });
-  const definitionBridge = new SelfHostedEditorDefinitionBridge({ backendClient });
-  const diagnosticsBridge = new SelfHostedEditorDiagnosticsBridge({ backendClient });
-  const hoverBridge = new SelfHostedEditorHoverBridge({ backendClient });
-  const hostBindingBridge = new SelfHostedEditorHostBindingBridge({ backendClient });
-  const hostSchemaBridge = new SelfHostedEditorHostSchemaBridge({ backendClient });
-  const lineMapBridge = new SelfHostedEditorLineMapBridge({ backendClient });
-  const nodeMapBridge = new SelfHostedEditorStoryNodeMapBridge({ backendClient });
-  const referencesBridge = new SelfHostedEditorReferencesBridge({ backendClient });
-  const runtimeBridge = new SelfHostedEditorRuntimeBridge({ backendClient });
-  const storyGraphBridge = new SelfHostedEditorStoryGraphBridge({ backendClient });
+  const documentSymbolBridge = new SelfHostedEditorDocumentSymbolBridge({
+    languageSessionClient: backendServices.languageSessionClient,
+  });
+  const completionBridge = new SelfHostedEditorCompletionBridge({
+    languageSessionClient: backendServices.languageSessionClient,
+  });
+  const definitionBridge = new SelfHostedEditorDefinitionBridge({
+    languageSessionClient: backendServices.languageSessionClient,
+  });
+  const diagnosticsBridge = new SelfHostedEditorDiagnosticsBridge({
+    languageSessionClient: backendServices.languageSessionClient,
+  });
+  const hoverBridge = new SelfHostedEditorHoverBridge({
+    languageSessionClient: backendServices.languageSessionClient,
+  });
+  const hostBindingBridge = new SelfHostedEditorHostBindingBridge({
+    hostCapabilityClient: backendServices.hostCapabilityClient,
+  });
+  const hostSchemaBridge = new SelfHostedEditorHostSchemaBridge({
+    hostCapabilityClient: backendServices.hostCapabilityClient,
+  });
+  const lineMapBridge = new SelfHostedEditorLineMapBridge({
+    lineIdentityClient: backendServices.lineIdentityClient,
+  });
+  const nodeMapBridge = new SelfHostedEditorStoryNodeMapBridge({
+    stableNodeMapClient: backendServices.stableNodeMapClient,
+  });
+  const referencesBridge = new SelfHostedEditorReferencesBridge({
+    languageSessionClient: backendServices.languageSessionClient,
+  });
+  const runtimeBridge = new SelfHostedEditorRuntimeBridge({
+    runtimeSessionClient: backendServices.runtimeSessionClient,
+  });
+  const storyGraphBridge = new SelfHostedEditorStoryGraphBridge({
+    storyGraphClient: backendServices.storyGraphClient,
+  });
   const workspaceController = new ProjectWorkspaceController({
     fileInputElement: bindings.scriptFileInputElement,
     scriptSourceLabelElement: bindings.scriptSourceLabelElement,
@@ -191,7 +217,8 @@ export async function createSelfHostedEditorFeatures(bindings, callbacks = {}) {
   );
 
   return {
-    backendClient,
+    documentBufferStore: backendServices.documentBufferStore,
+    projectSessionService: backendServices.projectSessionService,
     diagnosticsBridge,
     diagnosticsController,
     documentOutlineController,

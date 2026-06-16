@@ -1,9 +1,12 @@
 import { LanguageServerStoryGraphModelMapper } from "../Models/LanguageServerStoryGraphModelMapper.js";
-import { EditorBackendClient } from "../../Backend/Clients/EditorBackendClient.js";
+import { createEditorBackendServices } from "../../Backend/Clients/EditorBackendServiceRegistry.js";
 
 export class SelfHostedEditorStoryGraphBridge {
   constructor(options = {}) {
-    this.backendClient = options.backendClient || new EditorBackendClient();
+    const services = options.backendServices || null;
+    this.storyGraphClient = options.storyGraphClient
+      || services?.storyGraphClient
+      || createEditorBackendServices(options).storyGraphClient;
     this.workspaceContextProvider = null;
   }
 
@@ -14,7 +17,7 @@ export class SelfHostedEditorStoryGraphBridge {
   async getStoryGraph(scriptText) {
     try {
       const workspace = this.workspaceContextProvider?.() || null;
-      const payload = await this.backendClient.storyGraph.compileProjectGraph({
+      const payload = await this.storyGraphClient.compileProjectGraph({
         scriptText,
         workspace,
       });

@@ -1,9 +1,12 @@
 import { LanguageServerDefinitionModelMapper } from "../Models/LanguageServerDefinitionModelMapper.js";
-import { EditorBackendClient } from "../../Backend/Clients/EditorBackendClient.js";
+import { createEditorBackendServices } from "../../Backend/Clients/EditorBackendServiceRegistry.js";
 
 export class SelfHostedEditorDefinitionBridge {
   constructor(options = {}) {
-    this.backendClient = options.backendClient || new EditorBackendClient();
+    const services = options.backendServices || null;
+    this.languageSessionClient = options.languageSessionClient
+      || services?.languageSessionClient
+      || createEditorBackendServices(options).languageSessionClient;
     this.workspaceContextProvider = null;
   }
 
@@ -13,7 +16,7 @@ export class SelfHostedEditorDefinitionBridge {
 
   async getDefinition(scriptText, hoverTarget) {
     try {
-      const payload = await this.backendClient.languageSession.definition({
+      const payload = await this.languageSessionClient.definition({
         definitionName: hoverTarget.name,
         scriptText,
         workspace: this.workspaceContextProvider?.() || null,

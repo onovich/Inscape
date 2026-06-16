@@ -4,7 +4,6 @@ import { WorkspaceSummaryHostedModelBuilder } from "../ProjectWorkspace/Models/W
 
 export class SelfHostedEditorWorkbenchRenderController {
   constructor({
-    backendClient,
     diagnosticsBridge,
     diagnosticsController,
     documentOutlineController,
@@ -18,6 +17,7 @@ export class SelfHostedEditorWorkbenchRenderController {
     localizationController,
     localizationDraftStore,
     previewController,
+    projectSessionService,
     runtimeBridge,
     storyGraphBridge,
     storyGraphController,
@@ -26,7 +26,6 @@ export class SelfHostedEditorWorkbenchRenderController {
     workspaceSessionController,
     workspaceSummaryController,
   }) {
-    this.backendClient = backendClient;
     this.diagnosticsBridge = diagnosticsBridge;
     this.diagnosticsController = diagnosticsController;
     this.documentOutlineController = documentOutlineController;
@@ -40,6 +39,7 @@ export class SelfHostedEditorWorkbenchRenderController {
     this.localizationController = localizationController;
     this.localizationDraftStore = localizationDraftStore;
     this.previewController = previewController;
+    this.projectSessionService = projectSessionService;
     this.runtimeBridge = runtimeBridge;
     this.storyGraphBridge = storyGraphBridge;
     this.storyGraphController = storyGraphController;
@@ -64,7 +64,7 @@ export class SelfHostedEditorWorkbenchRenderController {
     this.latestStoryGraphModel = null;
     this.latestBackendSessionStatus = {
       mode: "dev-host",
-      sessionId: this.backendClient?.sessionId || "default",
+      sessionId: this.projectSessionService?.sessionId || "default",
       workspace: {
         activeRelativePath: "",
         documentCount: 0,
@@ -169,12 +169,12 @@ export class SelfHostedEditorWorkbenchRenderController {
   }
 
   async refreshBackendSessionStatus() {
-    if (typeof this.backendClient?.projectSession?.status !== "function") {
+    if (typeof this.projectSessionService?.status !== "function") {
       return;
     }
 
     try {
-      this.latestBackendSessionStatus = await this.backendClient.projectSession.status({
+      this.latestBackendSessionStatus = await this.projectSessionService.status({
         workspace: this.workspaceController.getWorkspaceContext(),
       });
     } catch (error) {
@@ -182,7 +182,7 @@ export class SelfHostedEditorWorkbenchRenderController {
       this.latestBackendSessionStatus = {
         error: error instanceof Error ? error.message : String(error),
         mode: "dev-host",
-        sessionId: this.backendClient.sessionId || "default",
+        sessionId: this.projectSessionService.sessionId || "default",
         workspace: {
           activeRelativePath: workspace.currentFilePath || "",
           documentCount: Array.isArray(workspace.documents) ? workspace.documents.length : 0,

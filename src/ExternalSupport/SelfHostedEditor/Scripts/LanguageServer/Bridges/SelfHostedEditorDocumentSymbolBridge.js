@@ -2,12 +2,15 @@ import {
   ScriptDocumentFallbackPolicy,
   ScriptDocumentFallbackReason,
 } from "../../ProjectWorkspace/Models/ScriptDocumentFallbackPolicy.js";
-import { EditorBackendClient } from "../../Backend/Clients/EditorBackendClient.js";
+import { createEditorBackendServices } from "../../Backend/Clients/EditorBackendServiceRegistry.js";
 import { LanguageServerDocumentSymbolModelMapper } from "../Models/LanguageServerDocumentSymbolModelMapper.js";
 
 export class SelfHostedEditorDocumentSymbolBridge {
   constructor(options = {}) {
-    this.backendClient = options.backendClient || new EditorBackendClient();
+    const services = options.backendServices || null;
+    this.languageSessionClient = options.languageSessionClient
+      || services?.languageSessionClient
+      || createEditorBackendServices(options).languageSessionClient;
     this.workspaceContextProvider = null;
   }
 
@@ -18,7 +21,7 @@ export class SelfHostedEditorDocumentSymbolBridge {
   async getDocumentSymbols(scriptText) {
     let payload;
     try {
-      payload = await this.backendClient.languageSession.documentSymbols({
+      payload = await this.languageSessionClient.documentSymbols({
         scriptText,
         workspace: this.workspaceContextProvider?.() || null,
       });

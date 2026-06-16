@@ -1,9 +1,12 @@
 import { LanguageServerHoverModelMapper } from "../Models/LanguageServerHoverModelMapper.js";
-import { EditorBackendClient } from "../../Backend/Clients/EditorBackendClient.js";
+import { createEditorBackendServices } from "../../Backend/Clients/EditorBackendServiceRegistry.js";
 
 export class SelfHostedEditorHoverBridge {
   constructor(options = {}) {
-    this.backendClient = options.backendClient || new EditorBackendClient();
+    const services = options.backendServices || null;
+    this.languageSessionClient = options.languageSessionClient
+      || services?.languageSessionClient
+      || createEditorBackendServices(options).languageSessionClient;
     this.workspaceContextProvider = null;
   }
 
@@ -13,7 +16,7 @@ export class SelfHostedEditorHoverBridge {
 
   async getHover(scriptText, hoverTarget) {
     try {
-      const payload = await this.backendClient.languageSession.hover({
+      const payload = await this.languageSessionClient.hover({
         hoverKind: hoverTarget.kind,
         hoverName: hoverTarget.name,
         scriptText,

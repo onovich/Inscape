@@ -421,11 +421,9 @@ try {
 }
 assertEqual(malformedSymbolsFailed, true, "symbol mapper rejects malformed payload");
 const unavailableDocumentSymbolsBridge = new SelfHostedEditorDocumentSymbolBridge({
-  backendClient: {
-    languageSession: {
-      async documentSymbols() {
-        throw new Error("LanguageServer unavailable");
-      },
+  languageSessionClient: {
+    async documentSymbols() {
+      throw new Error("LanguageServer unavailable");
     },
   },
 });
@@ -440,17 +438,15 @@ try {
 assertEqual(unavailableDocumentSymbols.provider, "draft-fallback", "unavailable document symbols use draft fallback");
 assertEqual(unavailableDocumentSymbols.symbols.length, 2, "unavailable document symbols draft count");
 const malformedDocumentSymbolsBridge = new SelfHostedEditorDocumentSymbolBridge({
-  backendClient: {
-    languageSession: {
-      async documentSymbols() {
-        return {
-          symbols: [
-            {
-              name: "Broken",
-            },
-          ],
-        };
-      },
+  languageSessionClient: {
+    async documentSymbols() {
+      return {
+        symbols: [
+          {
+            name: "Broken",
+          },
+        ],
+      };
     },
   },
 });

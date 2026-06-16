@@ -1,8 +1,11 @@
-import { EditorBackendClient } from "../../Backend/Clients/EditorBackendClient.js";
+import { createEditorBackendServices } from "../../Backend/Clients/EditorBackendServiceRegistry.js";
 
 export class SelfHostedEditorStoryNodeMapBridge {
   constructor(options = {}) {
-    this.backendClient = options.backendClient || new EditorBackendClient();
+    const services = options.backendServices || null;
+    this.stableNodeMapClient = options.stableNodeMapClient
+      || services?.stableNodeMapClient
+      || createEditorBackendServices(options).stableNodeMapClient;
     this.workspaceContextProvider = null;
   }
 
@@ -12,7 +15,7 @@ export class SelfHostedEditorStoryNodeMapBridge {
 
   async reviewNodeMap(scriptText) {
     try {
-      const review = await this.backendClient.stableNodeMap.review({
+      const review = await this.stableNodeMapClient.review({
         scriptText,
         workspace: this.workspaceContextProvider ? this.workspaceContextProvider() : null,
       });
@@ -36,7 +39,7 @@ export class SelfHostedEditorStoryNodeMapBridge {
 
   async applyCandidate(scriptText, item, candidate, dryRun = false, nodeMapPath = "") {
     try {
-      const apply = await this.backendClient.stableNodeMap.applyCandidate({
+      const apply = await this.stableNodeMapClient.applyCandidate({
         candidate,
         dryRun,
         item,
