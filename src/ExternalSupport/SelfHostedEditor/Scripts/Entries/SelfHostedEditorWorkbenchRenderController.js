@@ -1,5 +1,6 @@
 import { ProjectWorkspaceDraftSummaryModelBuilder } from "../ProjectWorkspace/Models/ProjectWorkspaceDraftSummaryModelBuilder.js";
 import { ScriptLineIdentityModelBuilder } from "../ProjectWorkspace/Models/ScriptLineIdentityModelBuilder.js";
+import { ProjectWorkspaceSessionStatusModelBuilder } from "../ProjectWorkspace/Models/ProjectWorkspaceSessionStatusModelBuilder.js";
 import { WorkspaceSummaryHostedModelBuilder } from "../ProjectWorkspace/Models/WorkspaceSummaryHostedModelBuilder.js";
 
 export class SelfHostedEditorWorkbenchRenderController {
@@ -214,23 +215,13 @@ export class SelfHostedEditorWorkbenchRenderController {
   renderWorkspaceSession() {
     const workspaceState = this.workspaceController.getState();
     const layoutState = this.layoutController.getState();
-    this.workspaceSessionController.render({
-      ...workspaceState,
-      ...layoutState,
-      diagnosticsLabel: this.latestDiagnosticSnapshot.provider === "language-server"
-        ? "LanguageServer"
-        : "Draft fallback",
-      backendModeLabel: this.latestBackendSessionStatus.mode || "dev-host",
-      backendSessionLabel: this.formatSessionLabel(this.latestBackendSessionStatus.sessionId),
-      runtimeLabel: this.latestRuntimeSnapshot.provider === "runtime-project"
-        ? (this.latestRuntimeSnapshot.snapshot?.state?.currentNodeName || "started")
-        : "unavailable",
-    });
-  }
-
-  formatSessionLabel(sessionId) {
-    const text = String(sessionId || "default");
-    return text.length > 24 ? `${text.slice(0, 21)}...` : text;
+    this.workspaceSessionController.render(ProjectWorkspaceSessionStatusModelBuilder.build({
+      diagnosticsSnapshot: this.latestDiagnosticSnapshot,
+      layoutState,
+      projectSession: this.latestBackendSessionStatus,
+      runtimeSnapshot: this.latestRuntimeSnapshot,
+      workspaceState,
+    }));
   }
 
   renderWorkspaceFiles() {

@@ -4,7 +4,12 @@ import {
   ScriptDocumentFallbackReason,
 } from "../../Scripts/ProjectWorkspace/Models/ScriptDocumentFallbackPolicy.js";
 import { DocumentOutlineController } from "../../Scripts/ProjectWorkspace/Controllers/DocumentOutlineController.js";
+import { ProjectWorkspaceSessionController } from "../../Scripts/ProjectWorkspace/Controllers/ProjectWorkspaceSessionController.js";
 import { ProjectWorkspaceSummaryController } from "../../Scripts/ProjectWorkspace/Controllers/ProjectWorkspaceSummaryController.js";
+import {
+  ProjectWorkspaceSessionStatusFormat,
+  ProjectWorkspaceSessionStatusModelBuilder,
+} from "../../Scripts/ProjectWorkspace/Models/ProjectWorkspaceSessionStatusModelBuilder.js";
 import { PreviewPanelController } from "../../Scripts/Preview/Controllers/PreviewPanelController.js";
 import { assertEqual, assertIncludesText, assertNotIncludesText, FakeElement, getTextContent, installFakeDomEnvironment } from "./SelfHostedEditorModelContractHarness.js";
 
@@ -131,6 +136,7 @@ const runtimeSnapshot = {
     path: ["Opening"],
     visibleStepCount: 1,
   },
+  debugSnapshotText: "secret runtime snapshot text",
 };
 
 const summaryPanel = new FakeElement("section");
@@ -176,7 +182,14 @@ const workbench = new SelfHostedEditorWorkbenchRenderController({
         sessionId: "integration-session",
         workspace: {
           activeRelativePath: "samples/court-loop.inscape",
+          debugCsv: "secret csv payload",
           documentCount: 1,
+          documents: [
+            {
+              relativePath: "samples/court-loop.inscape",
+              text: "secret session document text",
+            },
+          ],
           revision: 5,
           source: "request-snapshot",
         },
@@ -320,3 +333,94 @@ assertNotIncludesText(getTextContent(outlinePanel), "Draft outline");
 assertEqual(renderedWorkspaceSession?.backendModeLabel, "dev-host", "workbench session should show dev-host mode");
 assertEqual(renderedWorkspaceSession?.backendSessionLabel, "integration-session", "workbench session should show backend session id");
 assertEqual(renderedWorkspaceSession?.runtimeLabel, "Opening", "workbench session should show runtime current node");
+assertEqual(renderedWorkspaceSession?.format, ProjectWorkspaceSessionStatusFormat, "workbench session should use panel status format");
+assertEqual(renderedWorkspaceSession?.payloadContentExposed, false, "workbench session should mark payload content as hidden");
+assertEqual(renderedWorkspaceSession?.workspaceRevisionLabel, "5", "workbench session should show workspace revision");
+assertEqual(renderedWorkspaceSession?.languageLabel, "stdio-spike", "workbench session should show language session mode");
+assertEqual(renderedWorkspaceSession?.runtimeSessionLabel, "bounded-cache (1)", "workbench session should show runtime cache state");
+assertEqual(renderedWorkspaceSession?.lineIdentityLabel, "bounded-cache (0)", "workbench session should show line identity cache state");
+assertEqual(renderedWorkspaceSession?.localizationLabel, "bounded-cache (0)", "workbench session should show localization cache state");
+assertNotIncludesText(JSON.stringify(renderedWorkspaceSession), "secret session document text");
+assertNotIncludesText(JSON.stringify(renderedWorkspaceSession), "secret csv payload");
+assertNotIncludesText(JSON.stringify(renderedWorkspaceSession), "secret runtime snapshot text");
+
+const sessionPanel = new FakeElement("section");
+const runtimePanel = new FakeElement("section");
+new ProjectWorkspaceSessionController(sessionPanel, runtimePanel).render(renderedWorkspaceSession);
+assertIncludesText(getTextContent(sessionPanel), "Revision");
+assertIncludesText(getTextContent(sessionPanel), "5");
+assertIncludesText(getTextContent(runtimePanel), "Language");
+assertIncludesText(getTextContent(runtimePanel), "Runtime Store");
+assertIncludesText(getTextContent(runtimePanel), "Line IDs");
+assertIncludesText(getTextContent(runtimePanel), "L10N");
+
+const embeddedPanelStatus = ProjectWorkspaceSessionStatusModelBuilder.build({
+  diagnosticsSnapshot: {
+    provider: "language-server",
+  },
+  layoutState: {
+    layoutLabel: "Split",
+    viewLabel: "Editor",
+  },
+  projectSession: {
+    languageSession: {
+      kind: "process-per-request",
+    },
+    lineIdentitySession: {
+      entryCount: 2,
+      kind: "bounded-cache",
+    },
+    localizationSession: {
+      entryCount: 1,
+      kind: "bounded-cache",
+    },
+    mode: "embedded-desktop",
+    runtimeSession: {
+      kind: "not-started",
+    },
+    sessionId: "embedded-session",
+    workspace: {
+      activeRelativePath: "story/opening.inscape",
+      documentCount: 2,
+      documents: [
+        {
+          relativePath: "story/opening.inscape",
+          text: "secret embedded document text",
+        },
+      ],
+      revision: 8,
+      source: "backend-buffer-store",
+      workspaceName: "Court Case",
+    },
+  },
+  runtimeSnapshot: {
+    provider: "unavailable",
+    snapshot: {
+      state: {
+        currentNodeName: "secret runtime node",
+      },
+      text: "secret runtime snapshot body",
+    },
+  },
+  workspaceState: {
+    fileName: "opening.inscape",
+    filePath: "story/opening.inscape",
+    isDirty: true,
+    sourceLabel: "Loaded script",
+    workspaceFileCount: 2,
+    workspaceName: "Court Case",
+  },
+});
+assertEqual(embeddedPanelStatus.backendModeLabel, "embedded-desktop", "embedded panel status should show embedded desktop mode");
+assertEqual(embeddedPanelStatus.backendSessionLabel, "embedded-session", "embedded panel status should show session id");
+assertEqual(embeddedPanelStatus.workspaceName, "Court Case", "embedded panel status should show workspace name");
+assertEqual(embeddedPanelStatus.workspaceFileCount, 2, "embedded panel status should show workspace document count");
+assertEqual(embeddedPanelStatus.workspaceRevisionLabel, "8", "embedded panel status should show workspace revision");
+assertEqual(embeddedPanelStatus.languageLabel, "process-per-request", "embedded panel status should show language mode");
+assertEqual(embeddedPanelStatus.runtimeSessionLabel, "not-started", "embedded panel status should show runtime session state");
+assertEqual(embeddedPanelStatus.lineIdentityLabel, "bounded-cache (2)", "embedded panel status should show line identity state");
+assertEqual(embeddedPanelStatus.localizationLabel, "bounded-cache (1)", "embedded panel status should show localization state");
+assertEqual(embeddedPanelStatus.payloadContentExposed, false, "embedded panel status should mark payload content as hidden");
+assertNotIncludesText(JSON.stringify(embeddedPanelStatus), "secret embedded document text");
+assertNotIncludesText(JSON.stringify(embeddedPanelStatus), "secret runtime node");
+assertNotIncludesText(JSON.stringify(embeddedPanelStatus), "secret runtime snapshot body");

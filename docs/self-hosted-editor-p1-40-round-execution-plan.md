@@ -619,6 +619,38 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 2. 本轮没有改变 dev-host session cache 实现或 shared Runtime / Tooling / LanguageServer payload shape。
 3. 下一轮应进入 Round 18：session panel / status 接入，定义 UI 可显示的 embedded mode、session id、workspace 摘要与子状态安全边界。
 
+### 2026-06-16 Round 18：session panel / status 接入
+
+范围：把 ProjectSession status 安全投影到 UI session panel；不引入真实 Electron IPC、文件 IO、保存恢复或 P1.5 long-lived LanguageServer 默认启用。
+
+完成内容：
+
+1. 新增 `ProjectWorkspaceSessionStatusModelBuilder`，定义 `inscape.self-hosted-editor.workspace-session-panel-status` UI-safe panel status shape。
+2. `SelfHostedEditorWorkbenchRenderController` 现在通过该模型把 workspace / layout / project-session / runtime snapshot 输入投影为 panel 标签，不再在 render controller 内散落 session label 格式化。
+3. `ProjectWorkspaceSessionController` 显示 workspace revision、language mode、Runtime 当前状态、Runtime session store、line identity 与 localization 子状态。
+4. `SelfHostedEditorWorkbenchIntegrationContractCheck` 覆盖 dev-host integration path 与 `embedded-desktop` 投影 path，并断言 panel status 不暴露 document text、CSV、line-map 或 Runtime snapshot 内容。
+5. `SelfHostedEditorStructureContractCheck` 将新的 ProjectWorkspace session status model 纳入结构守卫。
+
+验证：
+
+```powershell
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:structure
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
+npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
+node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js
+npm --prefix src\ExternalSupport\VSCode run check:structure
+dotnet build Inscape.slnx --no-restore
+dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build
+```
+
+架构对照结论：
+
+1. session panel status 是 SelfHostedEditor UI 投影模型，只消费既有 ProjectSession / Runtime 摘要，不重建 Compiler、LanguageServer、Tooling 或 Runtime 语义。
+2. renderer 仍只通过 `ProjectSessionService.status()` 与窄 bridge/service 获取状态；没有新增 Node / fs / Electron / arbitrary IPC 能力。
+3. 本轮关闭 Round 13-18 的 Workspace 文件系统边界与 ProjectSession C 段，可继续进入 Round 19：DocumentBufferStore v0。
+
 ## 36 轮主计划
 
 ### A. Contract 与 transport 基础，Round 1-6
@@ -652,7 +684,7 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 | 15 | open workspace folder | 已完成。新增 `EditorBackendWorkspaceFolderModel`，v0 只接受目录，拒绝正式单文件模式，可列出多个 workspace-relative `.inscape` 文件并设置 active document。 |
 | 16 | ProjectSession lifecycle | 已完成。新增 `EditorBackendProjectSessionLifecycleModel`，ProjectSession status 可查询 single-window active session、session id、workspace root、active relative path、document count、revision 与 `mode=embedded-desktop`。 |
 | 17 | close / switch workspace cleanup | 已完成。新增 `EditorBackendWorkspaceSessionCleanupModel`，close / switch workspace cleanup status 只返回待清理 target 摘要和 Runtime / line-map / localization / temporary workspace 计数。 |
-| 18 | session panel / status 接入 | UI session panel 显示 embedded mode、session id、workspace 摘要、language mode、runtime / line / localization 状态；不泄露正文、CSV、line-map 或 Runtime snapshot。 |
+| 18 | session panel / status 接入 | 已完成。新增 `ProjectWorkspaceSessionStatusModelBuilder`，UI session panel 显示 backend mode、session id、workspace 摘要、revision、language mode、Runtime / line identity / localization 状态；contract 断言不泄露正文、CSV、line-map 或 Runtime snapshot。 |
 
 ### D. DocumentBufferStore v0，Round 19-24
 

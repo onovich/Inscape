@@ -147,6 +147,7 @@ const requiredPaths = [
   "Scripts/ProjectWorkspace/Controllers/ProjectWorkspaceSummaryController.js",
   "Scripts/ProjectWorkspace/Controllers/ProjectWorkspaceSessionController.js",
   "Scripts/ProjectWorkspace/Models/ProjectWorkspaceDraftSummaryModelBuilder.js",
+  "Scripts/ProjectWorkspace/Models/ProjectWorkspaceSessionStatusModelBuilder.js",
   "Scripts/ProjectWorkspace/Models/ProjectWorkspaceSummaryModelBuilder.js",
   "Scripts/ProjectWorkspace/Models/ScriptBlockEditPatchBuilder.js",
   "Scripts/ProjectWorkspace/Models/ScriptDiagnosticsModelBuilder.js",

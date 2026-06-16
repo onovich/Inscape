@@ -58,6 +58,7 @@ SelfHostedEditor desktop backend v0
 - [x] 完成 P1 Round 15 open workspace folder：新增 `EditorBackendWorkspaceFolderModel`，v0 只接受目录、拒绝正式单文件模式，可列出多个 workspace-relative `.inscape` 文件并设置 active document。
 - [x] 完成 P1 Round 16 ProjectSession lifecycle：新增 `EditorBackendProjectSessionLifecycleModel`，ProjectSession status 可查询 single-window active session、session id、workspace root、active path、document count、revision 与 `embedded-desktop` mode。
 - [x] 完成 P1 Round 17 close / switch workspace cleanup：新增 `EditorBackendWorkspaceSessionCleanupModel`，cleanup status 只返回待清理 target 摘要和 Runtime / line-map / localization / temporary workspace 计数，不暴露缓存内容。
+- [x] 完成 P1 Round 18 session panel / status 接入：新增 `ProjectWorkspaceSessionStatusModelBuilder`，UI panel 显示 backend mode、session id、workspace 摘要、revision、language / Runtime / line identity / localization 子状态，并通过 contract 禁止暴露正文、CSV、line-map 或 Runtime snapshot。
 - [ ] 建立 Electron preload 白名单边界：renderer 不直接访问 Node / fs / shell / arbitrary IPC；preload 只暴露受控 editor command。
 - [ ] 实现 workspace 文件系统边界：只接受 workspace-relative path，拒绝绝对路径、`..` 越界、workspace 外路径和未列入白名单的写回目标。
 - [ ] 实现 `ProjectSession v0`：一个窗口一个 active workspace folder，一个 active project session；不支持正式单文件打开。

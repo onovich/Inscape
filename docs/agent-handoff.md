@@ -181,6 +181,16 @@ P1 Round 17 已完成 close / switch workspace cleanup summary contract，仍未
 - `EditorBackendDesktopSessionModel.buildWorkspaceSessionCleanupSummary()` 作为 desktop backend model 入口；`check:desktop-backend` 覆盖 cleanup shape、target、计数与 payload exposure flag。
 - Round 17 验证已通过：SelfHostedEditor `check:desktop-backend` / `check:workspace-fs` / `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity`，`.NET build` 与 Internal tests。下一步进入 Round 18：session panel / status 接入。
 
+### 2026-06-16 SelfHostedEditor P1 Round 18 session panel status 快照
+
+P1 Round 18 已完成 session panel / status 接入，仍未接真实 Electron IPC、真实文件 IO、保存恢复或 P1.5 long-lived LanguageServer 默认启用。
+
+- 新增 `ProjectWorkspaceSessionStatusModelBuilder`，定义 `inscape.self-hosted-editor.workspace-session-panel-status` UI-safe panel status shape。
+- `SelfHostedEditorWorkbenchRenderController` 通过该模型投影 workspace / layout / ProjectSession / Runtime snapshot 摘要；render controller 不再自行拼 backend/session/runtime 标签。
+- `ProjectWorkspaceSessionController` 现在显示 workspace revision、language mode、Runtime 当前状态、Runtime store、line identity 与 localization 子状态。
+- `SelfHostedEditorWorkbenchIntegrationContractCheck` 覆盖 dev-host status 与 `embedded-desktop` status 的 panel 投影，并断言不暴露 document text、CSV、line-map 或 Runtime snapshot 内容。
+- Round 18 验证已通过：SelfHostedEditor `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity` / `node --check ExtensionManifestEntry.js` / `check:structure`，`.NET build` 与 Internal tests。下一步进入 Round 19：DocumentBufferStore v0。
+
 ### 2026-06-14 SelfHostedEditor desktop backend v0 决策快照
 
 本轮已采纳 [ADR 0019](adr/0019-self-hosted-editor-embedded-backend-v0.md)：SelfHostedEditor desktop backend v0 采用嵌入式 EditorBackend，而不是独立 sidecar daemon。
