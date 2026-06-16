@@ -136,6 +136,20 @@ try {
   assertEqual(updateResult.document.dirty, true, "document update draft summary dirty");
   assertEqual(updateResult.payloadContentExposed, false, "document update draft response is text-free");
   assertEqual(JSON.stringify(updateResult).includes("secret updated text"), false, "document update draft does not echo text");
+  assertEqual(updateResult.recoveryWrite.ok, true, "document update writes recovery snapshot");
+  const openingSnapshotPath = path.join(
+    tempRoot,
+    ".inscape-workspace",
+    "recovery",
+    "story",
+    "opening.inscape.snapshot.json"
+  );
+  assertEqual(await fileExists(openingSnapshotPath), true, "recovery snapshot file exists after dirty edit");
+  assertEqual(
+    (await fs.readFile(openingSnapshotPath, "utf8")).includes("secret updated text"),
+    true,
+    "recovery snapshot file stores recoverable text"
+  );
 
   const dirtyStatus = await dispatchSelfHostedEditorBackendCommand(
     EditorBackendTransportCommand.ProjectSessionStatus,
@@ -145,6 +159,12 @@ try {
     }
   );
   assertEqual(dirtyStatus.workspace.hasUnsavedChanges, true, "workspace status tracks dirty buffer");
+  assertEqual(dirtyStatus.recoveryStatus.state, "available", "workspace status reports recovery availability");
+  assertEqual(
+    dirtyStatus.recoveryStatus.items.some((item) => item.relativePath === "story/opening.inscape"),
+    true,
+    "workspace status lists recovery item"
+  );
   assertEqual(JSON.stringify(dirtyStatus).includes("secret updated text"), false, "dirty status is text-free");
 
   const saveResult = await dispatchSelfHostedEditorBackendCommand(
@@ -160,6 +180,8 @@ try {
   assertEqual(saveResult.ok, true, "document save ok");
   assertEqual(saveResult.saveStatus.state, "saved", "document save status");
   assertEqual(saveResult.document.dirty, false, "document save summary clean");
+  assertEqual(saveResult.recoveryCleanup.ok, true, "document save cleans recovery snapshot");
+  assertEqual(await fileExists(openingSnapshotPath), false, "document save removes recovery snapshot");
   assertEqual(JSON.stringify(saveResult).includes("secret updated text"), false, "document save response is text-free");
   assertEqual(
     await fs.readFile(path.join(tempRoot, "story", "opening.inscape"), "utf8"),
@@ -175,6 +197,7 @@ try {
     }
   );
   assertEqual(cleanStatus.workspace.hasUnsavedChanges, false, "workspace status clean after save");
+  assertEqual(cleanStatus.recoveryStatus.state, "none", "workspace status recovery clears after save");
 
   const branchRead = await dispatchSelfHostedEditorBackendCommand(
     EditorBackendTransportCommand.DocumentBufferRead,
@@ -197,6 +220,14 @@ try {
     }
   );
   assertEqual(branchUpdate.ok, true, "branch update ok");
+  const branchSnapshotPath = path.join(
+    tempRoot,
+    ".inscape-workspace",
+    "recovery",
+    "story",
+    "branch.inscape.snapshot.json"
+  );
+  assertEqual(await fileExists(branchSnapshotPath), true, "branch update writes recovery snapshot");
   const saveAllResult = await dispatchSelfHostedEditorBackendCommand(
     EditorBackendTransportCommand.DocumentBufferSaveAll,
     {},
@@ -206,6 +237,7 @@ try {
   );
   assertEqual(saveAllResult.ok, true, "document save all ok");
   assertEqual(saveAllResult.savedCount, 1, "document save all saves dirty branch");
+  assertEqual(await fileExists(branchSnapshotPath), false, "save all removes branch recovery snapshot");
   assertEqual(JSON.stringify(saveAllResult).includes("secret branch updated text"), false, "save all response is text-free");
   assertEqual(
     await fs.readFile(path.join(tempRoot, "story", "branch.inscape"), "utf8"),
@@ -234,6 +266,12 @@ try {
     }
   );
   assertEqual(conflictUpdate.ok, true, "conflict draft update ok");
+  assertEqual(await fileExists(openingSnapshotPath), true, "conflict draft keeps recovery snapshot");
+  assertEqual(
+    (await fs.readFile(openingSnapshotPath, "utf8")).includes("secret conflicting draft"),
+    true,
+    "conflict recovery snapshot stores latest draft text"
+  );
   const staleSave = await dispatchSelfHostedEditorBackendCommand(
     EditorBackendTransportCommand.DocumentBufferSave,
     {
@@ -266,6 +304,40 @@ try {
     "# Opening\nNarrator: external disk change",
     "disk conflict does not overwrite external change"
   );
+  await writeText(
+    path.join(tempRoot, ".inscape-workspace", "recovery", "tampered.snapshot.json"),
+    JSON.stringify({
+      contentHash: "fnv1a32:00000000",
+      documentRevision: 2,
+      relativePath: "../escape.inscape",
+      snapshotModifiedUtc: new Date().toISOString(),
+    })
+  );
+
+  const reopenedStore = createSelfHostedEditorElectronWorkspaceSessionStore({
+    selectWorkspaceRoot: async () => tempRoot,
+    sessionId: "electron-workspace-reopen-session",
+  });
+  const reopened = await dispatchSelfHostedEditorBackendCommand(
+    EditorBackendTransportCommand.WorkspaceOpenFolder,
+    {},
+    {
+      sessionStore: reopenedStore,
+    }
+  );
+  assertEqual(reopened.ok, true, "workspace reopen ok");
+  assertEqual(reopened.projectSession.recoveryStatus.state, "available", "workspace reopen scans recovery snapshot");
+  assertEqual(
+    reopened.projectSession.recoveryStatus.items.some((item) => item.relativePath === "story/opening.inscape"),
+    true,
+    "workspace reopen reports valid recovery snapshot"
+  );
+  assertEqual(
+    reopened.projectSession.recoveryStatus.items.some((item) => item.relativePath === "../escape.inscape"),
+    false,
+    "workspace reopen skips tampered recovery snapshot path"
+  );
+  assertEqual(JSON.stringify(reopened.projectSession).includes("secret conflicting draft"), false, "reopened recovery status is text-free");
 
   const canceledStore = createSelfHostedEditorElectronWorkspaceSessionStore({
     selectWorkspaceRoot: async () => "",
@@ -306,5 +378,14 @@ async function writeText(filePath, text) {
 function assertEqual(actual, expected, label) {
   if (actual !== expected) {
     throw new Error(`${label}: expected ${expected}, got ${actual}`);
+  }
+}
+
+async function fileExists(filePath) {
+  try {
+    await fs.stat(filePath);
+    return true;
+  } catch {
+    return false;
   }
 }

@@ -1650,7 +1650,7 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 | post-40 A | Electron IPC command boundary | 已完成。preload 内部通过固定 `inscape.self-hosted-editor.backend.invoke` channel 转发白名单 editor command；main dispatcher 复用 payload validator，拒绝未知 / 未接线 command；`project-session.status` 返回 `embedded-desktop` 摘要；`check:electron-ipc`、Electron boundary / shell 与 runtime probe 覆盖该边界。 |
 | post-40 B | 真实 workspace open / read file IO | 部分完成。main process 持有 workspace root 和 ProjectSession，只接受目录，列出多个 `.inscape`，DocumentBufferStore 已可从磁盘读取真实 `.inscape`；`check:electron-workspace` 覆盖真实临时 workspace、text-free open/list/status/update、显式 read 正文、路径穿越拒绝和单文件模式拒绝。真实写回仍待 post-40 B2。 |
 | post-40 B2 | 真实 workspace save / write-back IO | 已完成。`document-buffer.save` / `save-all` 已落到 main process 真实磁盘写回，并继续走 workspace path guard / write target whitelist；`check:electron-workspace` 覆盖 stale revision、disk conflict、不覆盖外部磁盘变更和 text-free save response。 |
-| post-40 B3 | autosave / flush / recovery IO | 待完成。把 idle autosave、manual save flush、close/switch/app-exit flush、`.inscape-workspace/recovery` snapshot 写入、下次打开扫描与 restore / discard / later 接到真实 main-process IO。 |
+| post-40 B3 | autosave / flush / recovery IO | 部分完成。dirty draft update 已在 main process 写入 `.inscape-workspace/recovery/<relative>.snapshot.json`，open workspace 会扫描 text-free recovery status，正常保存后清理对应 snapshot；`check:electron-workspace` 覆盖真实 snapshot 正文写盘、状态不泄露正文、重开扫描和篡改路径跳过。idle autosave timer、close/switch/app-exit flush、restore / discard / later 动作与 GUI recovery smoke 仍待完成。 |
 | post-40 C | GUI edit-save-recovery smoke | 待完成。打包或本机 Electron app 能打开测试 workspace、编辑、manual Save / autosave 写盘、发现 recovery、执行 restore / discard / later，并验证 diagnostics / completion 使用当前 buffer。 |
 
 ## 每轮建议验证

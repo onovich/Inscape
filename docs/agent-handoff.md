@@ -461,8 +461,18 @@ P1 40 轮计划完成后，继续补上了真实 Electron preload -> main 的固
 - `ElectronWorkspaceSessionStore` 现在处理 `document-buffer.save` 与 `document-buffer.save-all`：保存前复用 workspace path guard / write target whitelist / `baseRevision` guard，读取当前磁盘 hash，写入当前 backend buffer 文本，并刷新 `diskTextHash`、`lastSavedRevision` 与 dirty summary。
 - save/save-all 响应保持 text-free；只有 main process 内部 buffer 和磁盘写入包含正文。`document-buffer.read` 仍是唯一显式正文读取响应。
 - 新增 `check:electron-workspace` 断言：手动 save 写回真实临时 workspace 文件、save-all 写回剩余 dirty 文件、stale save 被拒绝、disk conflict 不覆盖外部磁盘变更、所有 save/status 响应不泄露 draft text。
-- `SelfHostedEditorPreloadCapabilities.workspaceFileSystem` 从 `read-buffer-session` 提升为 `read-write-buffer-session`，但这只表示 open/read/write buffer 局部闭环；autosave flush、recovery 和 GUI smoke 仍未完成。
-- 下一步应接 autosave idle debounce 到真实 save、manual save/close/switch/app-exit flush 规则，以及 `.inscape-workspace/recovery` snapshot 写入 / 下次打开扫描 / restore-discard-later UI smoke。
+- `SelfHostedEditorPreloadCapabilities.workspaceFileSystem` 从 `read-buffer-session` 提升为 `read-write-buffer-session`，但这只表示 open/read/write buffer 局部闭环；recovery snapshot IO 已由下一段补上，idle autosave、close/switch/app-exit flush、recovery actions 和 GUI smoke 仍未完成。
+- 下一步应接 autosave idle debounce 到真实 save、manual save/close/switch/app-exit flush 规则，以及 restore / discard / later UI smoke。
+
+### 2026-06-17 SelfHostedEditor P1 post-40 Electron recovery snapshot IO 快照
+
+在真实 workspace open/read/write 后，本轮把 recovery snapshot 的最小真实 IO 闭环接入 Electron main process；仍不做 idle autosave timer、close/switch/app-exit flush、restore / discard / later 操作 UI、GUI smoke 或 P1.5 long-lived LanguageServer。
+
+- `ElectronWorkspaceSessionStore.updateDraft()` 成功更新 dirty buffer 后，会通过既有 `EditorBackendDocumentBufferStoreModel.buildRecoverySnapshotPlan()` 生成 snapshot，并写入 `.inscape-workspace/recovery/<relative>.snapshot.json`；snapshot 文件包含可恢复正文，但 update/status 响应保持 text-free。
+- open workspace 时会扫描 `.inscape-workspace/recovery/**/*.snapshot.json` 并投影为 ProjectSession `recoveryStatus`；扫描会跳过越界或路径不匹配的 snapshot，避免把篡改过的 relative path 放入 UI 状态。
+- manual `document-buffer.save` / `save-all` 成功后会删除对应 recovery snapshot，并刷新 ProjectSession `recoveryStatus`。
+- `check:electron-workspace` 现在覆盖：dirty edit 写入真实 recovery snapshot、snapshot 文件包含 draft text、ProjectSession recovery status 不泄露正文、保存后 cleanup、disk conflict 后 snapshot 保留、重开 workspace 可扫描 recovery，以及篡改 snapshot path 被跳过。
+- 下一步应把 idle autosave timer 和 close/switch/app-exit flush 接到真实 save 路径，再补 restore / discard / later 操作与 GUI edit-save-recovery smoke。
 
 ### 2026-06-14 SelfHostedEditor desktop backend v0 决策快照
 

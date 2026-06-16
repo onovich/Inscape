@@ -92,8 +92,13 @@ export class SelfHostedEditorElectronWorkspaceSessionStore {
       sessionId: this.#sessionId,
       workspaceName: workspaceFolder.workspaceName,
     });
+    const recoveryStatus = await scanRecoveryStatus({
+      fsImpl: this.#fs,
+      workspaceRoot,
+    });
     this.#activeWorkspace = {
       documentStore,
+      recoveryStatus,
       workspaceFolder,
       workspaceRoot,
     };
@@ -162,7 +167,7 @@ export class SelfHostedEditorElectronWorkspaceSessionStore {
     };
   }
 
-  updateDraft(payload = {}) {
+  async updateDraft(payload = {}) {
     if (!this.#activeWorkspace) {
       return buildMutationFailure({
         reason: "workspace-not-open",
@@ -189,18 +194,30 @@ export class SelfHostedEditorElectronWorkspaceSessionStore {
         relativePath: boundary.relativePath,
       }
     );
+    let recoveryWrite = null;
     if (result.ok && result.store) {
       this.#activeWorkspace = {
         ...this.#activeWorkspace,
         documentStore: result.store,
       };
+      recoveryWrite = await this.#writeRecoverySnapshot(result.document);
+      this.#activeWorkspace = {
+        ...this.#activeWorkspace,
+        recoveryStatus: await scanRecoveryStatus({
+          fsImpl: this.#fs,
+          workspaceRoot: this.#activeWorkspace.workspaceRoot,
+        }),
+      };
     }
 
-    return summarizeDocumentMutationResult(
-      result,
-      result.store || this.#activeWorkspace.documentStore,
-      this.#sessionId
-    );
+    return {
+      ...summarizeDocumentMutationResult(
+        result,
+        result.store || this.#activeWorkspace.documentStore,
+        this.#sessionId
+      ),
+      recoveryWrite,
+    };
   }
 
   async saveDocument(payload = {}) {
@@ -281,12 +298,21 @@ export class SelfHostedEditorElectronWorkspaceSessionStore {
       ...this.#activeWorkspace,
       documentStore: nextStore,
     };
+    const recoveryCleanup = await this.#cleanupRecoverySnapshot(relativePath);
+    this.#activeWorkspace = {
+      ...this.#activeWorkspace,
+      recoveryStatus: await scanRecoveryStatus({
+        fsImpl: this.#fs,
+        workspaceRoot: this.#activeWorkspace.workspaceRoot,
+      }),
+    };
 
     return {
       ...plannedSave,
       document: EditorBackendDesktopSessionModel.buildDocumentBufferSummary(
         nextStore.documents.find((document) => document.relativePath === relativePath) || currentDocument
       ),
+      recoveryCleanup,
       storeSummary: EditorBackendDocumentBufferStoreModel.listDocuments(nextStore),
     };
   }
@@ -340,6 +366,7 @@ export class SelfHostedEditorElectronWorkspaceSessionStore {
     const { documentStore, workspaceFolder, workspaceRoot } = this.#activeWorkspace;
     return EditorBackendDesktopSessionModel.buildProjectSession({
       documents: documentStore.documents,
+      recoveryStatus: this.#activeWorkspace.recoveryStatus,
       sessionId: documentStore.sessionId || this.#sessionId,
       workspace: {
         activeRelativePath: documentStore.activeRelativePath,
@@ -416,6 +443,57 @@ export class SelfHostedEditorElectronWorkspaceSessionStore {
     const absolutePath = resolveWorkspacePath(this.#activeWorkspace.workspaceRoot, relativePath);
     await this.#fs.mkdir(path.dirname(absolutePath), { recursive: true });
     await this.#fs.writeFile(absolutePath, String(text || ""), "utf8");
+  }
+
+  async #writeRecoverySnapshot(document) {
+    if (!document) {
+      return null;
+    }
+
+    const recoveryPlan = EditorBackendDocumentBufferStoreModel.buildRecoverySnapshotPlan(
+      this.#activeWorkspace.documentStore,
+      {
+        relativePaths: [document.relativePath],
+        snapshotModifiedUtc: new Date().toISOString(),
+        workspaceRoot: this.#activeWorkspace.workspaceRoot,
+      }
+    );
+    const snapshot = recoveryPlan.snapshotWrites.find((item) => item.relativePath === document.relativePath) || null;
+    if (!snapshot) {
+      return {
+        ok: false,
+        reason: recoveryPlan.skippedDocuments[0]?.reason || "recovery-snapshot-not-created",
+        relativePath: document.relativePath,
+      };
+    }
+
+    const absolutePath = resolveWorkspacePath(this.#activeWorkspace.workspaceRoot, snapshot.snapshotRelativePath);
+    await this.#fs.mkdir(path.dirname(absolutePath), { recursive: true });
+    await this.#fs.writeFile(absolutePath, JSON.stringify(snapshot, null, 2), "utf8");
+
+    return {
+      contentHash: snapshot.contentHash,
+      documentRevision: snapshot.documentRevision,
+      ok: true,
+      payloadContentExposed: false,
+      reason: "dirty-buffer-recovery-snapshot",
+      relativePath: snapshot.relativePath,
+      snapshotModifiedUtc: snapshot.snapshotModifiedUtc,
+      snapshotRelativePath: snapshot.snapshotRelativePath,
+    };
+  }
+
+  async #cleanupRecoverySnapshot(relativePath) {
+    const snapshotRelativePath = buildRecoverySnapshotRelativePath(relativePath);
+    const absolutePath = resolveWorkspacePath(this.#activeWorkspace.workspaceRoot, snapshotRelativePath);
+    await this.#fs.rm(absolutePath, { force: true });
+    return {
+      ok: true,
+      payloadContentExposed: false,
+      reason: "saved-document-recovery-cleanup",
+      relativePath: normalizeRelativePath(relativePath),
+      snapshotRelativePath,
+    };
   }
 }
 
@@ -637,6 +715,87 @@ function buildSaveAllResult({
   };
 }
 
+async function scanRecoveryStatus({
+  fsImpl,
+  workspaceRoot,
+}) {
+  const recoveryRoot = resolveWorkspacePath(workspaceRoot, ".inscape-workspace/recovery");
+  const items = [];
+
+  async function walk(relativeDirectory = "") {
+    const absoluteDirectory = path.join(recoveryRoot, ...normalizeRelativePath(relativeDirectory).split("/").filter(Boolean));
+    let entries = [];
+    try {
+      entries = await fsImpl.readdir(absoluteDirectory, { withFileTypes: true });
+    } catch {
+      return;
+    }
+
+    entries.sort((left, right) => left.name.localeCompare(right.name, "en"));
+    for (const entry of entries) {
+      const relativePath = joinRelativePath(relativeDirectory, entry.name);
+      if (entry.isDirectory()) {
+        await walk(relativePath);
+        continue;
+      }
+
+      if (!entry.isFile() || !relativePath.endsWith(".snapshot.json")) {
+        continue;
+      }
+
+      const snapshot = await readRecoverySnapshot({
+        absolutePath: path.join(absoluteDirectory, entry.name),
+        fsImpl,
+        workspaceRoot,
+      });
+      if (snapshot) {
+        items.push(snapshot);
+      }
+    }
+  }
+
+  await walk();
+  return EditorBackendDesktopSessionModel.buildRecoveryStatus({
+    items,
+  });
+}
+
+async function readRecoverySnapshot({
+  absolutePath,
+  fsImpl,
+  workspaceRoot,
+}) {
+  try {
+    const snapshot = JSON.parse(await fsImpl.readFile(absolutePath, "utf8"));
+    const relativePath = normalizeRelativePath(snapshot.relativePath);
+    const boundary = EditorBackendWorkspacePathModel.buildBoundary({
+      relativePath,
+      workspaceRoot,
+    });
+    if (!boundary.allowed) {
+      return null;
+    }
+
+    const expectedAbsolutePath = resolveWorkspacePath(
+      workspaceRoot,
+      buildRecoverySnapshotRelativePath(relativePath)
+    );
+    if (path.resolve(absolutePath) !== path.resolve(expectedAbsolutePath)) {
+      return null;
+    }
+
+    return {
+      contentHash: snapshot.contentHash,
+      diskModifiedUtc: snapshot.diskModifiedUtc,
+      relativePath,
+      revision: snapshot.documentRevision || snapshot.revision,
+      snapshotModifiedUtc: snapshot.snapshotModifiedUtc,
+    };
+  } catch {
+    return null;
+  }
+}
+
 function summarizeDocumentMutationResult(result, store, sessionId) {
   const storeSummary = EditorBackendDocumentBufferStoreModel.listDocuments({
     ...store,
@@ -711,6 +870,10 @@ function isExcludedWorkspaceDirectory(relativePath, directoryName) {
 
 function joinRelativePath(relativeDirectory, name) {
   return normalizeRelativePath(relativeDirectory ? `${relativeDirectory}/${name}` : name);
+}
+
+function buildRecoverySnapshotRelativePath(relativePath) {
+  return `.inscape-workspace/recovery/${normalizeRelativePath(relativePath)}.snapshot.json`;
 }
 
 function normalizePositiveInteger(value, fallback) {
