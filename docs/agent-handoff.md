@@ -378,6 +378,17 @@ P1 Round 35 已新增 desktop v0 contract smoke。本轮只组合已完成 backe
 - `check:structure` 已守住 `smoke:desktop` script 与文件存在性。
 - Round 35 当前已通过：SelfHostedEditor `smoke:desktop` / `check:desktop-backend` / `check:workspace-fs` / `check:backend-services` / `check:backend-transport` / `check:preload-transport` / `check:fake-embedded-transport` / `check:electron-boundary` / `check:runtime` / `check:runtime-http` / `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity` / `check:structure`，`node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js`，`git diff --check`，`.NET build` 与 Internal tests。下一步进入 Round 36：Windows internal package v0 / 等价本机启动 smoke。
 
+### 2026-06-17 SelfHostedEditor P1 Round 36 startup smoke 快照
+
+P1 Round 36 已完成等价本机启动 smoke。本轮没有生成 Windows installer，也没有新增 Electron runtime / builder 依赖。
+
+- 新增 `DevScripts/SelfHostedEditorDesktopStartupSmoke.js` 与 npm script `smoke:desktop-startup`。
+- startup smoke 验证 package / lockfile、Electron app entry、Workbench entry、Electron autostart guard、preload whitelist API。
+- startup smoke 记录当前 readiness：`electronRuntimeAvailable: false`、`windowsPackageGenerated: false`，known limitations 包含 `electron-runtime-not-installed` 与 `windows-package-not-generated`。
+- startup smoke 复用 `smoke:desktop`，证明本机 contract 闭环仍可运行。
+- `check:structure` 已守住 `smoke:desktop-startup` script 与文件存在性。
+- Round 36 当前已通过：SelfHostedEditor `smoke:desktop-startup` / `smoke:desktop` / `check:desktop-backend` / `check:workspace-fs` / `check:backend-services` / `check:backend-transport` / `check:preload-transport` / `check:fake-embedded-transport` / `check:electron-boundary` / `check:runtime` / `check:runtime-http` / `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity` / `check:structure`，`node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js`，`git diff --check`，`.NET build` 与 Internal tests。后续若继续产品化，应进入真实 Electron runtime / Windows package / GUI smoke，而不是再扩 contract。
+
 ### 2026-06-14 SelfHostedEditor desktop backend v0 决策快照
 
 本轮已采纳 [ADR 0019](adr/0019-self-hosted-editor-embedded-backend-v0.md)：SelfHostedEditor desktop backend v0 采用嵌入式 EditorBackend，而不是独立 sidecar daemon。

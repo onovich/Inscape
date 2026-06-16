@@ -1339,6 +1339,51 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 3. smoke 不提供 renderer Node / fs / shell 能力，也不把 dev-host `/api/*` 当最终产品 API。
 4. 本轮不声明 Windows package 或真实 Electron smoke 已完成；下一轮应进入 Round 36：Windows internal package v0 / 等价本机启动 smoke。
 
+### 2026-06-17 Round 36：Windows internal package v0 / 等价本机启动 smoke
+
+范围：确认当前 SelfHostedEditor desktop v0 的本机启动就绪度。当前 package 尚未引入 Electron runtime / builder，因此本轮采用“等价本机启动 smoke”收口：验证 package / lockfile、Desktop entry、Workbench entry、Electron autostart guard、preload whitelist 和 Round 35 最小闭环 smoke。本轮不生成 Windows installer、不新增 Electron 依赖、不执行真实 Electron GUI 启动。
+
+完成内容：
+
+1. 新增 `DevScripts/SelfHostedEditorDesktopStartupSmoke.js` 与 npm script `smoke:desktop-startup`。
+2. startup smoke 验证 `package.json` / `package-lock.json`、Workbench document、Electron app entry、main process autostart guard、preload whitelist API。
+3. startup smoke 生成 readiness 判断：当前 `electronRuntimeAvailable: false`，`windowsPackageGenerated: false`，known limitations 包含 `electron-runtime-not-installed` 与 `windows-package-not-generated`。
+4. startup smoke 会复用 `smoke:desktop`，证明本机 contract 闭环仍能跑通。
+5. `check:structure` 守住 `smoke:desktop-startup` script 入口与文件存在性。
+
+验证：
+
+```powershell
+npm --prefix src\ExternalSupport\SelfHostedEditor run smoke:desktop-startup
+npm --prefix src\ExternalSupport\SelfHostedEditor run smoke:desktop
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:desktop-backend
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:workspace-fs
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:backend-services
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:backend-transport
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:preload-transport
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:fake-embedded-transport
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:electron-boundary
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:runtime
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:runtime-http
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:structure
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
+npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
+node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js
+npm --prefix src\ExternalSupport\VSCode run check:structure
+git -c safe.directory=D:/LabProjects/Inscape diff --check
+dotnet build Inscape.slnx --no-restore
+dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build
+```
+
+架构对照结论：
+
+1. 本轮没有把 Electron runtime / builder 临时塞进包，也没有把 package smoke 伪装成真实 Windows installer。
+2. startup smoke 只验证本机启动 readiness 与 contract loop，真实 GUI / package 工作仍需后续引入 Electron runtime、packaging script 与手动或自动 GUI smoke。
+3. renderer 仍不获得 Node / fs / shell 能力；preload 仍只表达受控 editor command 白名单。
+4. P1 36 轮计划在 contract 层已完成；剩余产品化风险是 Windows package / real Electron launch、真实文件 IO 和后续 P1.5 long-lived LanguageServer。
+
 ## 36 轮主计划
 
 ### A. Contract 与 transport 基础，Round 1-6
@@ -1410,7 +1455,7 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 | 轮次 | 目标 | 完成标准 |
 |---|---|---|
 | 35 | v0 最小闭环 smoke | 已完成。新增 `smoke:desktop`，用 contract smoke 覆盖打开目录、文件列表、编辑 `.inscape`、autosave、manual Save、recovery、diagnostics / completion、Preview choice click；不启动 Electron、不做真实文件 IO。 |
-| 36 | Windows internal package v0 | 生成或启动 Windows 内部可用版；能打开 workspace、编辑保存、看到恢复提示、跑基础 LanguageServer authoring 能力；记录 smoke checklist 与已知限制。 |
+| 36 | Windows internal package v0 | 已完成等价本机启动 smoke。新增 `smoke:desktop-startup` 验证 package / Desktop entry / Workbench / preload / contract loop，并明确记录当前未生成 Windows package、未安装 Electron runtime；真实 GUI/package smoke 后续补。 |
 
 ## 4 轮缓冲
 

@@ -44,6 +44,7 @@
     "check:structure": "node DevScripts/SelfHostedEditorStructureContractCheck.js && node DevScripts/SelfHostedEditorStyleStructureContractCheck.js",
     "check:syntax": "node DevScripts/SelfHostedEditorSyntaxContractCheck.js",
     "smoke:desktop": "node DevScripts/SelfHostedEditorDesktopV0Smoke.js",
+    "smoke:desktop-startup": "node DevScripts/SelfHostedEditorDesktopStartupSmoke.js",
     "start": "node DevScripts/StartSelfHostedEditorPreview.js"
   },
   "dependencies": {

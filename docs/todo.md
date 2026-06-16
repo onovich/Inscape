@@ -76,6 +76,7 @@ SelfHostedEditor desktop backend v0
 - [x] 完成 P1 Round 33 assets import policy：新增 text-free asset import plan，图片 / 音频 / CSV 默认复制到 workspace `assets/images|audio|data`，不持久化 workspace 外路径，并让 `assets/**` 写目标优先于扩展名规则。
 - [x] 完成 P1 Round 34 settings 分层：新增 settings schema 与集中 defaults，global user preferences / workspace project behavior 分层，设置页和真实持久化后置。
 - [x] 完成 P1 Round 35 v0 最小闭环 contract smoke：新增 `smoke:desktop`，覆盖打开目录、文件列表、编辑、autosave、manual Save、recovery、diagnostics / completion、Preview choice click 的 backend payload 边界。
+- [x] 完成 P1 Round 36 等价本机启动 smoke：新增 `smoke:desktop-startup`，验证 package / Desktop entry / Workbench / preload / contract loop，并明确记录当前未安装 Electron runtime、未生成 Windows package。
 - [ ] 建立 Electron preload 白名单边界：renderer 不直接访问 Node / fs / shell / arbitrary IPC；preload 只暴露受控 editor command。
 - [ ] 实现 workspace 文件系统边界：只接受 workspace-relative path，拒绝绝对路径、`..` 越界、workspace 外路径和未列入白名单的写回目标。
 - [ ] 实现 `ProjectSession v0`：一个窗口一个 active workspace folder，一个 active project session；不支持正式单文件打开。

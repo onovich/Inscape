@@ -66,6 +66,8 @@
 
 2026-06-17 P1 Round 35 补充：v0 最小闭环先落为 `smoke:desktop` contract smoke。该入口串起 open workspace、DocumentBuffer edit、autosave、manual Save、recovery snapshot、diagnostics / completion bridge、Runtime choose action，验证 backend payload 边界；不启动 Electron、不执行真实文件 IO、不替代 Windows package smoke。
 
+2026-06-17 P1 Round 36 补充：Windows internal package 先以 `smoke:desktop-startup` 等价本机启动 smoke 收口。该入口验证 package / lockfile、Desktop entry、Workbench entry、preload whitelist 与 contract loop，并显式记录当前未安装 Electron runtime、未生成 Windows package；真实 GUI launch、installer/package 与文件 IO smoke 仍待后续产品化轮次。
+
 ## 状态分类
 
 | 分类 | 当前例子 | 未来归属 | 规则 |
