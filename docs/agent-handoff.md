@@ -161,6 +161,16 @@ P1 Round 15 已完成 open workspace folder model / contract，仍未接真实�
 - document list 只接受 workspace-relative `.inscape` 文件；非 `.inscape` 候选和路径越界候选进入 `rejectedDocuments`，且 summary 不暴露 document text。
 - Round 15 验证已通过：SelfHostedEditor `check:workspace-fs` / `check:desktop-backend` / `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity`，`.NET build` 与 Internal tests。下一步进入 Round 16：ProjectSession lifecycle。
 
+### 2026-06-16 SelfHostedEditor P1 Round 16 ProjectSession lifecycle 快照
+
+P1 Round 16 已完成一个窗口一个 active project session 的 lifecycle status contract，仍未实现 session restore、多窗口共享或 workspace 切换清理。
+
+- 新增 `EditorBackendProjectSessionLifecycleModel`，定义 `inscape.self-hosted-editor.project-session-lifecycle` status shape。
+- `EditorBackendDesktopSessionModel.buildProjectSession()` 返回 `lifecycle` 摘要，包含 `ownership: "single-window-active-session"`、`windowId`、`sessionId`、`workspaceRoot`、`activeRelativePath`、`documentCount`、`revision` 与 `mode: "embedded-desktop"`。
+- workspace summary 同步暴露 normalized `workspaceRoot`，仍只返回 document summaries，不泄露 document text、recovery text、CSV、line-map 或 Runtime snapshot。
+- `check:desktop-backend` 覆盖 lifecycle shape、window id normalization、workspace root、active document、document count、revision 与 embedded mode。
+- Round 16 验证已通过：SelfHostedEditor `check:desktop-backend` / `check:workspace-fs` / `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity`，`.NET build` 与 Internal tests。下一步进入 Round 17：close / switch workspace cleanup。
+
 ### 2026-06-14 SelfHostedEditor desktop backend v0 决策快照
 
 本轮已采纳 [ADR 0019](adr/0019-self-hosted-editor-embedded-backend-v0.md)：SelfHostedEditor desktop backend v0 采用嵌入式 EditorBackend，而不是独立 sidecar daemon。

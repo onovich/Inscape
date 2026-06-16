@@ -10,6 +10,9 @@ import {
   listEditorBackendAllowedWriteTargets,
 } from "../Scripts/Backend/Models/EditorBackendDesktopSessionModel.js";
 import {
+  EditorBackendProjectSessionLifecycleFormat,
+} from "../Scripts/Backend/Models/EditorBackendProjectSessionLifecycleModel.js";
+import {
   EditorBackendProjectSessionFormat,
 } from "../Scripts/Backend/Models/EditorBackendProjectSessionModel.js";
 
@@ -85,13 +88,26 @@ const session = EditorBackendDesktopSessionModel.buildProjectSession({
     activeRelativePath: "story/opening.inscape",
     revision: 5,
     workspaceName: "Court Case",
+    workspaceRoot: "C:\\Case Files\\Court Loop",
   },
+  windowId: "main window!? 01",
 });
 assertEqual(session.format, EditorBackendProjectSessionFormat, "desktop project session format");
 assertEqual(session.mode, EditorBackendDesktopProjectSessionMode, "desktop project session mode");
 assertEqual(session.sessionId, "desktop-session---01", "desktop project session id normalization");
+assertEqual(session.lifecycle.format, EditorBackendProjectSessionLifecycleFormat, "desktop lifecycle format");
+assertEqual(session.lifecycle.ownership, "single-window-active-session", "desktop lifecycle ownership");
+assertEqual(session.lifecycle.windowId, "main-window---01", "desktop lifecycle window id normalization");
+assertEqual(session.lifecycle.sessionId, "desktop-session---01", "desktop lifecycle session id");
+assertEqual(session.lifecycle.workspaceRoot, "C:/Case Files/Court Loop", "desktop lifecycle workspace root");
+assertEqual(session.lifecycle.activeRelativePath, "story/opening.inscape", "desktop lifecycle active document");
+assertEqual(session.lifecycle.documentCount, 2, "desktop lifecycle document count");
+assertEqual(session.lifecycle.revision, 5, "desktop lifecycle revision");
+assertEqual(session.lifecycle.mode, EditorBackendDesktopProjectSessionMode, "desktop lifecycle mode");
+assertEqual(session.lifecycle.active, true, "desktop lifecycle active flag");
 assertEqual(session.workspace.source, "backend-buffer-store", "desktop project session workspace source");
 assertEqual(session.workspace.workspaceName, "Court Case", "desktop project session workspace name");
+assertEqual(session.workspace.workspaceRoot, "C:/Case Files/Court Loop", "desktop project session workspace root");
 assertEqual(session.workspace.activeRelativePath, "story/opening.inscape", "desktop project session active document");
 assertEqual(session.workspace.documentCount, 2, "desktop project session document count");
 assertEqual(session.workspace.revision, 5, "desktop project session revision");

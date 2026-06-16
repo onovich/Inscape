@@ -80,6 +80,7 @@ const requiredPaths = [
   "Scripts/Backend/Clients/SelfHostedEditorPreloadBackendTransport.js",
   "Scripts/Backend/Models/EditorBackendDesktopSessionModel.js",
   "Scripts/Backend/Models/EditorBackendLanguageSessionRequestModel.js",
+  "Scripts/Backend/Models/EditorBackendProjectSessionLifecycleModel.js",
   "Scripts/Backend/Models/EditorBackendProjectSessionModel.js",
   "Scripts/Backend/Models/EditorBackendSessionStatusModel.js",
   "Scripts/Backend/Models/EditorBackendWorkspaceFolderModel.js",

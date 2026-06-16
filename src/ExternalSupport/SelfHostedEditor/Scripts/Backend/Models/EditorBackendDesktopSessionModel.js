@@ -2,6 +2,7 @@ import {
   EditorBackendProjectSessionFormat,
   EditorBackendProjectSessionFormatVersion,
 } from "./EditorBackendProjectSessionModel.js";
+import { EditorBackendProjectSessionLifecycleModel } from "./EditorBackendProjectSessionLifecycleModel.js";
 import { EditorBackendWorkspacePathModel } from "./EditorBackendWorkspacePathModel.js";
 import { EditorBackendWorkspaceWriteTargetModel } from "./EditorBackendWorkspaceWriteTargetModel.js";
 
@@ -34,6 +35,7 @@ export class EditorBackendDesktopSessionModel {
     sessionId = "default",
     settingsSummary = null,
     workspace = {},
+    windowId = "main",
   } = {}) {
     const documentBuffers = documents.map((document) => this.buildDocumentBuffer(document));
     const activeRelativePath = normalizeRelativePath(
@@ -52,20 +54,33 @@ export class EditorBackendDesktopSessionModel {
       relativePath: saveStatus?.relativePath || activeRelativePath,
       revision,
     });
+    const normalizedSessionId = normalizeSessionId(sessionId);
+    const workspaceRoot = normalizeWorkspaceRoot(workspace.workspaceRoot || workspace.root);
     const recoveryStatusModel = this.buildRecoveryStatus(recoveryStatus || {});
     const settingsSummaryModel = this.buildSettingsSummary(settingsSummary || {});
+    const lifecycle = EditorBackendProjectSessionLifecycleModel.buildLifecycle({
+      active: true,
+      activeRelativePath,
+      documentCount: documentBuffers.length,
+      mode: EditorBackendDesktopProjectSessionMode,
+      revision,
+      sessionId: normalizedSessionId,
+      windowId,
+      workspaceRoot,
+    });
 
     return {
       format: EditorBackendProjectSessionFormat,
       formatVersion: EditorBackendProjectSessionFormatVersion,
       languageSession: buildLanguageSession(languageSession),
+      lifecycle,
       lineIdentitySession: buildSubSession(lineIdentitySession, "not-started"),
       localizationSession: buildSubSession(localizationSession, "not-started"),
       mode: EditorBackendDesktopProjectSessionMode,
       recoveryStatus: recoveryStatusModel,
       runtimeSession: buildSubSession(runtimeSession, "not-started"),
       saveStatus: saveStatusModel,
-      sessionId: normalizeSessionId(sessionId),
+      sessionId: normalizedSessionId,
       settingsSummary: settingsSummaryModel,
       workspace: {
         activeRelativePath,
@@ -75,6 +90,7 @@ export class EditorBackendDesktopSessionModel {
         revision,
         source: "backend-buffer-store",
         workspaceName: normalizeWorkspaceName(workspace.workspaceName || workspace.name),
+        workspaceRoot,
       },
     };
   }
@@ -372,6 +388,13 @@ function normalizeTimestamp(timestamp) {
 
 function normalizeWorkspaceName(workspaceName) {
   return String(workspaceName || "workspace").trim() || "workspace";
+}
+
+function normalizeWorkspaceRoot(workspaceRoot) {
+  return String(workspaceRoot || "")
+    .trim()
+    .replace(/\\/g, "/")
+    .replace(/\/+$/g, "");
 }
 
 export function listEditorBackendAllowedWriteTargets() {
