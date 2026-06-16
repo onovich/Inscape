@@ -2,13 +2,16 @@ import {
   EditorBackendDesktopModelFormatVersion,
   EditorBackendDesktopProjectSessionMode,
   EditorBackendDesktopSessionModel,
-  EditorBackendDocumentBufferFormat,
   EditorBackendRecoveryStatusFormat,
   EditorBackendSaveStatusFormat,
   EditorBackendSettingsSummaryFormat,
   EditorBackendWorkspaceFileBoundaryFormat,
   listEditorBackendAllowedWriteTargets,
 } from "../Scripts/Backend/Models/EditorBackendDesktopSessionModel.js";
+import {
+  EditorBackendDocumentBufferFormat,
+  EditorBackendDocumentBufferModel,
+} from "../Scripts/Backend/Models/EditorBackendDocumentBufferModel.js";
 import {
   EditorBackendProjectSessionLifecycleFormat,
 } from "../Scripts/Backend/Models/EditorBackendProjectSessionLifecycleModel.js";
@@ -19,7 +22,7 @@ import {
   EditorBackendWorkspaceSessionCleanupFormat,
 } from "../Scripts/Backend/Models/EditorBackendWorkspaceSessionCleanupModel.js";
 
-const documentBuffer = EditorBackendDesktopSessionModel.buildDocumentBuffer({
+const directDocumentBuffer = EditorBackendDocumentBufferModel.buildBuffer({
   active: true,
   dirty: true,
   diskTextHash: "disk-hash",
@@ -29,6 +32,15 @@ const documentBuffer = EditorBackendDesktopSessionModel.buildDocumentBuffer({
   revision: 5,
   text: "secret draft text",
 });
+assertEqual(directDocumentBuffer.format, EditorBackendDocumentBufferFormat, "direct document buffer format");
+assertEqual(directDocumentBuffer.formatVersion, EditorBackendDesktopModelFormatVersion, "direct document buffer format version");
+assertEqual(directDocumentBuffer.relativePath, "story/opening.inscape", "direct document buffer relative path normalization");
+assertEqual(directDocumentBuffer.text, "secret draft text", "direct document buffer owns text");
+const directDocumentSummary = EditorBackendDocumentBufferModel.buildSummary(directDocumentBuffer);
+assertEqual(directDocumentSummary.relativePath, "story/opening.inscape", "direct document summary relative path");
+assertNotIncludes(JSON.stringify(directDocumentSummary), "secret draft text", "direct document summary must not expose text");
+
+const documentBuffer = EditorBackendDesktopSessionModel.buildDocumentBuffer(directDocumentBuffer);
 assertEqual(documentBuffer.format, EditorBackendDocumentBufferFormat, "document buffer format");
 assertEqual(documentBuffer.formatVersion, EditorBackendDesktopModelFormatVersion, "document buffer format version");
 assertEqual(documentBuffer.relativePath, "story/opening.inscape", "document buffer relative path normalization");

@@ -1,4 +1,5 @@
 import { EditorBackendDesktopSessionModel } from "../Models/EditorBackendDesktopSessionModel.js";
+import { EditorBackendDocumentBufferModel } from "../Models/EditorBackendDocumentBufferModel.js";
 import { EditorBackendClient } from "./EditorBackendClient.js";
 
 const serviceKeys = Object.freeze([
@@ -35,11 +36,11 @@ export class DocumentBufferStore {
   }
 
   buildBuffer(document = {}) {
-    return EditorBackendDesktopSessionModel.buildDocumentBuffer(document);
+    return EditorBackendDocumentBufferModel.buildBuffer(document);
   }
 
   buildSummary(documentBuffer = {}) {
-    return EditorBackendDesktopSessionModel.buildDocumentBufferSummary(documentBuffer);
+    return EditorBackendDocumentBufferModel.buildSummary(documentBuffer);
   }
 
   buildWorkspaceBoundary(boundary = {}) {

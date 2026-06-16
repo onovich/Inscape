@@ -2,18 +2,22 @@ import {
   EditorBackendProjectSessionFormat,
   EditorBackendProjectSessionFormatVersion,
 } from "./EditorBackendProjectSessionModel.js";
+import {
+  EditorBackendDocumentBufferFormat,
+  EditorBackendDocumentBufferModel,
+} from "./EditorBackendDocumentBufferModel.js";
 import { EditorBackendProjectSessionLifecycleModel } from "./EditorBackendProjectSessionLifecycleModel.js";
 import { EditorBackendWorkspacePathModel } from "./EditorBackendWorkspacePathModel.js";
 import { EditorBackendWorkspaceSessionCleanupModel } from "./EditorBackendWorkspaceSessionCleanupModel.js";
 import { EditorBackendWorkspaceWriteTargetModel } from "./EditorBackendWorkspaceWriteTargetModel.js";
 
 export const EditorBackendDesktopProjectSessionMode = "embedded-desktop";
-export const EditorBackendDocumentBufferFormat = "inscape.self-hosted-editor.document-buffer";
 export const EditorBackendWorkspaceFileBoundaryFormat = "inscape.self-hosted-editor.workspace-file-boundary";
 export const EditorBackendSaveStatusFormat = "inscape.self-hosted-editor.save-status";
 export const EditorBackendRecoveryStatusFormat = "inscape.self-hosted-editor.recovery-status";
 export const EditorBackendSettingsSummaryFormat = "inscape.self-hosted-editor.settings-summary";
 export const EditorBackendDesktopModelFormatVersion = 1;
+export { EditorBackendDocumentBufferFormat } from "./EditorBackendDocumentBufferModel.js";
 
 const defaultLanguageEndpoints = Object.freeze([
   "diagnostics",
@@ -106,32 +110,20 @@ export class EditorBackendDesktopSessionModel {
     revision = 1,
     text = "",
   } = {}) {
-    return {
-      active: Boolean(active),
-      dirty: Boolean(dirty),
-      diskTextHash: String(diskTextHash || ""),
-      existsOnDisk: Boolean(existsOnDisk),
-      format: EditorBackendDocumentBufferFormat,
-      formatVersion: EditorBackendDesktopModelFormatVersion,
-      lastLoadedUtc: normalizeTimestamp(lastLoadedUtc),
-      relativePath: normalizeRelativePath(relativePath),
-      revision: normalizeRevision(revision),
-      text: typeof text === "string" ? text : "",
-    };
+    return EditorBackendDocumentBufferModel.buildBuffer({
+      active,
+      dirty,
+      diskTextHash,
+      existsOnDisk,
+      lastLoadedUtc,
+      relativePath,
+      revision,
+      text,
+    });
   }
 
   static buildDocumentBufferSummary(documentBuffer = {}) {
-    const normalized = documentBuffer.format === EditorBackendDocumentBufferFormat
-      ? documentBuffer
-      : this.buildDocumentBuffer(documentBuffer);
-    return {
-      dirty: Boolean(normalized.dirty),
-      diskTextHash: String(normalized.diskTextHash || ""),
-      existsOnDisk: Boolean(normalized.existsOnDisk),
-      lastLoadedUtc: normalizeTimestamp(normalized.lastLoadedUtc),
-      relativePath: normalizeRelativePath(normalized.relativePath),
-      revision: normalizeRevision(normalized.revision),
-    };
+    return EditorBackendDocumentBufferModel.buildSummary(documentBuffer);
   }
 
   static buildWorkspaceFileBoundary({

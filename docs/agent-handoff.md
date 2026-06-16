@@ -191,6 +191,17 @@ P1 Round 18 已完成 session panel / status 接入，仍未接真实 Electron I
 - `SelfHostedEditorWorkbenchIntegrationContractCheck` 覆盖 dev-host status 与 `embedded-desktop` status 的 panel 投影，并断言不暴露 document text、CSV、line-map 或 Runtime snapshot 内容。
 - Round 18 验证已通过：SelfHostedEditor `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity` / `node --check ExtensionManifestEntry.js` / `check:structure`，`.NET build` 与 Internal tests。下一步进入 Round 19：DocumentBufferStore v0。
 
+### 2026-06-16 SelfHostedEditor P1 Round 19 DocumentBuffer model 快照
+
+P1 Round 19 已完成 DocumentBuffer 独立 model 抽出，仍未实现 list / get / update / active document、真实文件 IO 或 authoring / Preview buffer 接入。
+
+- 新增 `EditorBackendDocumentBufferModel`，定义 `inscape.self-hosted-editor.document-buffer` shape。
+- buffer 记录 `relativePath`、`text`、`diskTextHash`、`revision`、`dirty`、`existsOnDisk`、`lastLoadedUtc` 与 `active`。
+- `EditorBackendDesktopSessionModel.buildDocumentBuffer()` / `buildDocumentBufferSummary()` 复用独立 DocumentBuffer model。
+- `DocumentBufferStore.buildBuffer()` / `buildSummary()` 直接复用 `EditorBackendDocumentBufferModel`；workspace boundary、save、recovery、settings 仍由 desktop session model 暂时承接。
+- `check:desktop-backend` 覆盖 direct DocumentBuffer model 与 desktop session 组合路径，summary 继续禁止暴露 document text。
+- Round 19 当前已通过：SelfHostedEditor `check:syntax` / `check:structure` / `check:desktop-backend` / `check:backend-services` / `check:model`。下一步进入 Round 20：list / get / update / active document。
+
 ### 2026-06-14 SelfHostedEditor desktop backend v0 决策快照
 
 本轮已采纳 [ADR 0019](adr/0019-self-hosted-editor-embedded-backend-v0.md)：SelfHostedEditor desktop backend v0 采用嵌入式 EditorBackend，而不是独立 sidecar daemon。

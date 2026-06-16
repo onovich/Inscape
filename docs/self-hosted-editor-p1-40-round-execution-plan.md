@@ -651,6 +651,34 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 2. renderer 仍只通过 `ProjectSessionService.status()` 与窄 bridge/service 获取状态；没有新增 Node / fs / Electron / arbitrary IPC 能力。
 3. 本轮关闭 Round 13-18 的 Workspace 文件系统边界与 ProjectSession C 段，可继续进入 Round 19：DocumentBufferStore v0。
 
+### 2026-06-16 Round 19：DocumentBuffer model
+
+范围：把 DocumentBuffer shape 从 desktop session 大模型中抽成独立 backend model；不实现 list / get / update / active document，不接真实文件 IO，也不改变 authoring / Preview 请求来源。
+
+完成内容：
+
+1. 新增 `EditorBackendDocumentBufferModel`，定义 `inscape.self-hosted-editor.document-buffer` 的 buffer shape。
+2. buffer 记录 `relativePath`、`text`、`diskTextHash`、`revision`、`dirty`、`existsOnDisk`、`lastLoadedUtc` 与 `active`。
+3. `EditorBackendDesktopSessionModel.buildDocumentBuffer()` 与 `buildDocumentBufferSummary()` 现在复用独立 DocumentBuffer model。
+4. `DocumentBufferStore.buildBuffer()` / `buildSummary()` 直接复用 `EditorBackendDocumentBufferModel`，继续只作为 UI-side narrow service 的 model adapter。
+5. `check:desktop-backend` 覆盖 direct DocumentBuffer model 与 desktop session 组合路径；summary 仍不暴露 document text。
+
+验证：
+
+```powershell
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:structure
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:desktop-backend
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:backend-services
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
+```
+
+架构对照结论：
+
+1. 本轮只抽出 backend 文档状态 shape，没有让 UI draft store 成为 project document truth。
+2. DocumentBuffer 仍只是 SelfHostedEditor backend ownership model，不复制 Compiler / LanguageServer / Tooling / Runtime 语义。
+3. 下一轮应进入 Round 20：list / get / update / active document，在 backend buffer store 层补文档列表、读取、更新与 active document contract。
+
 ## 36 轮主计划
 
 ### A. Contract 与 transport 基础，Round 1-6
@@ -690,7 +718,7 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 
 | 轮次 | 目标 | 完成标准 |
 |---|---|---|
-| 19 | DocumentBuffer model | backend buffer 记录 `relativePath`、text、disk hash、revision、dirty、existsOnDisk、lastLoadedUtc；contract 覆盖最小字段。 |
+| 19 | DocumentBuffer model | 已完成。新增 `EditorBackendDocumentBufferModel`，backend buffer 记录 `relativePath`、text、disk hash、revision、dirty、existsOnDisk、lastLoadedUtc 与 active；desktop session 与 `DocumentBufferStore` 均复用该 shape，summary 不暴露正文。 |
 | 20 | list / get / update / active document | 打开 workspace 后可列文档、取文档、更新文本、设置 active document；revision 只增不倒退。 |
 | 21 | baseRevision 与 stale guard | `updateDocument` 使用 `baseRevision` 或等价 stale guard；旧 debounce 不能覆盖更新 revision。 |
 | 22 | workspace snapshot builder | LanguageServer / Runtime / Tooling 请求从 backend buffer 组装 workspace snapshot，不再依赖前端每次上传完整 workspace truth。 |
