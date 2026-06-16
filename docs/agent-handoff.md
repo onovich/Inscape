@@ -439,7 +439,7 @@ P1 Round 40 已补 packaged Electron app 的资源加载 guard。Workbench 绝�
 P1 40 轮计划完成后，继续补上了真实 Electron preload -> main 的固定 command channel 第一刀。本轮仍不做 workspace 文件 IO，不打开 GUI，也不进入 P1.5 long-lived LanguageServer。
 
 - 新增 `Desktop/ElectronIpcContract.js`，固定 IPC channel 为 `inscape.self-hosted-editor.backend.invoke`，preload 不暴露 generic invoke / send / request。
-- 新增 `Desktop/ElectronBackendCommandDispatcher.js` 与 `Desktop/ElectronBackendIpc.js`。main process 只在固定 channel 上接收白名单 editor command，并复用既有 preload payload validator；未知 command 和未接线 command 都显式拒绝。
+- 新增 `Desktop/ElectronBackendCommandDispatcher.js` 与 `Desktop/ElectronBackendIpc.js`。main process 只在固定 channel 上接收白名单 editor command，并复用既有 preload payload validator；未知 command 会显式拒绝，已接入 store 但缺少实际 handler 的路径会显式失败。
 - `project-session.status` 是当前唯一 main-process handler，会返回 `embedded-desktop` ProjectSession 摘要；status transport 仍不上传 workspace text，真实 workspace 状态要等 main 持有 ProjectSession / DocumentBufferStore 后再填充。
 - 新增 `check:electron-ipc`，并更新 `check:electron-shell` / `check:electron-boundary` / runtime probe：现在允许 preload 内部使用固定 `ipcRenderer.invoke`，仍禁止 renderer 直接 IPC、Node/fs/shell、preload generic/system API 和 dev-host `/api/*` 泄漏到 Electron main/preload。
 - 本轮当前已通过：SelfHostedEditor `check:electron-ipc` / `check:electron-shell` / `check:electron-boundary` / `check:preload-transport` / `check:syntax` / `check:structure` / `check:model` / `smoke:desktop-runtime`。后续优先推进真实 Electron workspace open / file IO，再做 GUI edit-save-recovery smoke。
@@ -501,15 +501,15 @@ P1 40 轮计划完成后，继续补上了真实 Electron preload -> main 的固
 - `ElectronWorkspaceSessionStore.restoreRecoverySnapshot()` 会读取并校验 `.inscape-workspace/recovery/<relative>.snapshot.json` 的 relative path / content hash / text payload，把 snapshot 正文写回 `.inscape` 文件，刷新 buffer summary，并删除 snapshot。
 - `discardRecoverySnapshot()` 删除 snapshot 并刷新 text-free recovery status；`markRecoverySnapshotLater()` 只在当前 session status 标为 `later`，保留 snapshot 供后续提示。
 - `check:electron-workspace` 现在覆盖 restore 写盘且响应不泄露 snapshot text、restore 后 cleanup、later 保留 snapshot、discard 删除 snapshot、recovery action response text-free。`check:backend-transport` / `check:preload-transport` / `check:electron-shell` 同步覆盖新 command 面。
-- 下一步应做真实 GUI edit-save-recovery smoke：打包或本机 Electron 打开 workspace、编辑、触发 recovery、点击 restore / discard / later，并验证 diagnostics / completion 使用恢复后的当前 buffer。
+- 后续已完成真实 GUI edit-save-recovery smoke，并补入 diagnostics / completions 使用恢复后当前 buffer 的验证；下一步应转向 P1.5 workspace-scoped long-lived LanguageServer 或其余 language action 的同源状态验证。
 
 ### 2026-06-17 SelfHostedEditor P1 post-40 Electron GUI recovery smoke 快照
 
-本轮新增 `smoke:desktop-gui-recovery`，用真实 Electron BrowserWindow 加载 Workbench/app protocol/preload，并通过 renderer 可见的 `window.inscapeSelfHostedEditor` 窄 API 走 preload -> IPC -> main 的产品路径；仍不做 diagnostics / completion current-buffer GUI 验证。
+本轮新增 `smoke:desktop-gui-recovery`，用真实 Electron BrowserWindow 加载 Workbench/app protocol/preload，并通过 renderer 可见的 `window.inscapeSelfHostedEditor` 窄 API 走 preload -> IPC -> main 的产品路径；后续已把 diagnostics / completions current-buffer GUI 验证补入同一 smoke。
 
-- 真实 GUI smoke 覆盖：open folder、显式 read、dirty edit、manual save 写盘、idle autosave 写盘、recovery snapshot 发现、restore 写回磁盘、later 保留 snapshot、discard 删除 snapshot，且 open/save/recovery action 响应不泄露正文。
+- 真实 GUI smoke 覆盖：open folder、显式 read、dirty edit、manual save 写盘、idle autosave 写盘、recovery snapshot 发现、restore 写回磁盘、diagnostics / completions 从 restore 后当前 buffer 构建请求、later 保留 snapshot、discard 删除 snapshot，且 open/save/recovery/language action 响应不泄露正文。
 - 该轮同时发现并修复真实 preload 启动问题：sandboxed Electron preload 不能直接加载 ESM `ElectronPreload.js`，实际 BrowserWindow 改为加载 `ElectronPreload.cjs`；`ElectronPreloadApi.js` 继续作为 ESM contract/API 定义，contracts 同步覆盖 CJS preload path。
-- 下一步应把 diagnostics / completion 等 authoring command 接到 embedded backend 当前 buffer，或补 GUI 级验证证明这些 authoring 请求已使用恢复后的 buffer。
+- 当前 Electron dispatcher 已将六个 language-session command 接到 main-process `ElectronWorkspaceSessionStore` 的当前 `DocumentBufferStore` snapshot；本轮 GUI smoke 只实证 diagnostics / completions。下一步若继续 P1.5，应推进 workspace-scoped long-lived LanguageServer，并补 definition / references / hover / documentSymbols 的同源状态验证。
 
 ### 2026-06-14 SelfHostedEditor desktop backend v0 决策快照
 

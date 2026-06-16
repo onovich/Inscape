@@ -109,6 +109,8 @@ const workspaceStoreText = readModuleText("Desktop/ElectronWorkspaceSessionStore
 assertIncludesText(workspaceStoreText, "node:fs", "Electron workspace store owns filesystem access");
 assertIncludesText(workspaceStoreText, "EditorBackendWorkspacePathModel", "Electron workspace store reuses workspace path guard");
 assertIncludesText(workspaceStoreText, "EditorBackendDocumentBufferStoreModel", "Electron workspace store reuses document buffer store model");
+assertIncludesText(workspaceStoreText, "EditorBackendWorkspaceSnapshotModel", "Electron workspace store reuses workspace snapshot model for authoring requests");
+assertIncludesText(workspaceStoreText, "EditorBackendLanguageSessionRequestModel", "Electron workspace store reuses shared language session request model");
 assertNoText(workspaceStoreText, "/api/", "Electron workspace store must not know dev-host routes");
 
 const workspaceLifecycleText = readModuleText("Desktop/ElectronWorkspaceLifecycle.js");

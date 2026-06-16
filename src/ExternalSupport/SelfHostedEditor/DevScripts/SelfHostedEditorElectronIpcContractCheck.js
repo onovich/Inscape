@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -10,6 +11,9 @@ import {
   dispatchSelfHostedEditorBackendCommand,
   listSelfHostedEditorElectronBackendCommands,
 } from "../Desktop/ElectronBackendCommandDispatcher.js";
+import {
+  createSelfHostedEditorElectronWorkspaceSessionStore,
+} from "../Desktop/ElectronWorkspaceSessionStore.js";
 import {
   createSelfHostedEditorPreloadApi,
 } from "../Desktop/ElectronPreloadApi.js";
@@ -95,15 +99,54 @@ try {
 }
 assertEqual(unknownCommandRejected, true, "Electron backend rejects unknown commands");
 
-let unimplementedCommandRejected = false;
+const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "inscape-electron-ipc-language-"));
 try {
-  await dispatchSelfHostedEditorBackendCommand(EditorBackendTransportCommand.LanguageDiagnostics, {
-    scriptText: "# Opening",
+  fs.mkdirSync(path.join(tempRoot, "story"), { recursive: true });
+  fs.writeFileSync(
+    path.join(tempRoot, "story", "opening.inscape"),
+    "# Opening\nNarrator: disk text",
+    "utf8"
+  );
+  const languageCalls = [];
+  const sessionStore = createSelfHostedEditorElectronWorkspaceSessionStore({
+    languageSessionHandlers: {
+      async diagnostics(payload = {}) {
+        languageCalls.push({ kind: "diagnostics", payload });
+        return { diagnostics: [] };
+      },
+    },
+    selectWorkspaceRoot: async () => tempRoot,
+    sessionId: "electron-ipc-language",
   });
-} catch (error) {
-  unimplementedCommandRejected = String(error?.message || "").includes("not wired yet");
+  await dispatchSelfHostedEditorBackendCommand(EditorBackendTransportCommand.WorkspaceOpenFolder, {
+    dialogTitle: "Open language IPC workspace",
+  }, {
+    sessionStore,
+  });
+  const updateResult = await dispatchSelfHostedEditorBackendCommand(EditorBackendTransportCommand.DocumentBufferUpdateDraft, {
+    baseRevision: 1,
+    relativePath: "story/opening.inscape",
+    text: "# Opening\nNarrator: current buffer text",
+  }, {
+    sessionStore,
+  });
+  assertEqual(updateResult.ok, true, "Electron IPC language setup updates current buffer");
+  await dispatchSelfHostedEditorBackendCommand(EditorBackendTransportCommand.LanguageDiagnostics, {
+    scriptText: "# Stale\nNarrator: stale renderer text",
+  }, {
+    sessionStore,
+  });
+  assertEqual(languageCalls.length, 1, "Electron IPC language command handler called");
+  assertEqual(languageCalls[0].payload.activeRelativePath, "story/opening.inscape", "Electron IPC language payload active path");
+  assertEqual(languageCalls[0].payload.scriptText, "# Opening\nNarrator: current buffer text", "Electron IPC language payload uses current buffer");
+  assertEqual(
+    JSON.stringify(languageCalls[0].payload).includes("stale renderer text"),
+    false,
+    "Electron IPC language payload ignores stale renderer text"
+  );
+} finally {
+  fs.rmSync(tempRoot, { force: true, recursive: true });
 }
-assertEqual(unimplementedCommandRejected, true, "Electron backend rejects unwired commands explicitly");
 
 const preloadCalls = [];
 const preloadApi = createSelfHostedEditorPreloadApi({

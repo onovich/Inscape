@@ -7,8 +7,10 @@ import {
   EditorBackendDocumentBufferSaveResultFormat,
   EditorBackendDocumentBufferStoreModel,
 } from "../Scripts/Backend/Models/EditorBackendDocumentBufferStoreModel.js";
+import { EditorBackendLanguageSessionRequestModel } from "../Scripts/Backend/Models/EditorBackendLanguageSessionRequestModel.js";
 import { EditorBackendWorkspaceFolderModel } from "../Scripts/Backend/Models/EditorBackendWorkspaceFolderModel.js";
 import { EditorBackendWorkspacePathModel } from "../Scripts/Backend/Models/EditorBackendWorkspacePathModel.js";
+import { EditorBackendWorkspaceSnapshotModel } from "../Scripts/Backend/Models/EditorBackendWorkspaceSnapshotModel.js";
 
 export const SelfHostedEditorElectronWorkspaceOpenResultFormat = "inscape.self-hosted-editor.electron-workspace-open-result";
 export const SelfHostedEditorElectronWorkspaceReadResultFormat = "inscape.self-hosted-editor.electron-workspace-read-result";
@@ -30,6 +32,7 @@ export class SelfHostedEditorElectronWorkspaceSessionStore {
   #activeWorkspace = null;
   #fs;
   #lastDraftUpdatedAtMs = 0;
+  #languageSessionHandlers;
   #maxDocuments;
   #now;
   #selectWorkspaceRoot;
@@ -37,6 +40,7 @@ export class SelfHostedEditorElectronWorkspaceSessionStore {
 
   constructor(options = {}) {
     this.#fs = options.fsImpl || fs.promises;
+    this.#languageSessionHandlers = options.languageSessionHandlers || {};
     this.#now = typeof options.now === "function" ? options.now : Date.now;
     this.#maxDocuments = normalizePositiveInteger(options.maxDocuments, 500);
     this.#selectWorkspaceRoot = options.selectWorkspaceRoot || buildStaticWorkspaceSelector(options.workspaceRoot);
@@ -628,6 +632,40 @@ export class SelfHostedEditorElectronWorkspaceSessionStore {
         workspaceRoot,
       },
     });
+  }
+
+  async runLanguageSessionCommand(kind, payload = {}) {
+    const requestPayload = this.buildLanguageSessionRequest(kind, payload);
+    const handler = this.#languageSessionHandlers[kind];
+    if (typeof handler !== "function") {
+      throw new Error(`SelfHostedEditor Electron language session handler is not configured: ${kind}`);
+    }
+
+    return await handler(requestPayload);
+  }
+
+  buildLanguageSessionRequest(kind, payload = {}) {
+    if (!this.#activeWorkspace) {
+      throw new Error("SelfHostedEditor Electron language session requires an open workspace.");
+    }
+
+    const workspaceSnapshot = EditorBackendWorkspaceSnapshotModel.buildSnapshot({
+      activeRelativePath: payload.activeRelativePath,
+      store: this.#activeWorkspace.documentStore,
+    });
+    const activeDocumentRequest = EditorBackendWorkspaceSnapshotModel.buildActiveDocumentRequest(workspaceSnapshot);
+    const languageRequest = EditorBackendLanguageSessionRequestModel.build({
+      kind,
+      request: {
+        ...payload,
+        activeRelativePath: activeDocumentRequest.activeRelativePath,
+        documentRevision: activeDocumentRequest.documentRevision,
+        scriptText: activeDocumentRequest.scriptText,
+        workspace: workspaceSnapshot,
+      },
+      sessionId: payload.sessionId || this.#sessionId,
+    });
+    return EditorBackendLanguageSessionRequestModel.toDevHostPayload(languageRequest);
   }
 
   #buildOpenResult({

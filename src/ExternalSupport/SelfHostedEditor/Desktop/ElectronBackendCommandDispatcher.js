@@ -8,6 +8,15 @@ import {
   listEditorBackendTransportCommands,
 } from "../Scripts/Backend/Clients/EditorBackendTransport.js";
 
+const languageSessionKindsByCommand = Object.freeze({
+  [EditorBackendTransportCommand.LanguageCompletions]: "completions",
+  [EditorBackendTransportCommand.LanguageDefinition]: "definition",
+  [EditorBackendTransportCommand.LanguageDiagnostics]: "diagnostics",
+  [EditorBackendTransportCommand.LanguageDocumentSymbols]: "document-symbols",
+  [EditorBackendTransportCommand.LanguageHover]: "hover",
+  [EditorBackendTransportCommand.LanguageReferences]: "references",
+});
+
 export async function dispatchSelfHostedEditorBackendCommand(command, payload = {}, options = {}) {
   const normalizedPayload = validateSelfHostedEditorPreloadCommandPayload(command, payload || {});
   const handlers = {
@@ -48,6 +57,12 @@ export function createSelfHostedEditorBackendCommandHandlers(options = {}) {
     [EditorBackendTransportCommand.DocumentBufferUpdateDraft]: async (payload = {}) => {
       return await sessionStore.updateDraft(payload);
     },
+    ...Object.fromEntries(Object.entries(languageSessionKindsByCommand).map(([command, kind]) => [
+      command,
+      async (payload = {}) => {
+        return await sessionStore.runLanguageSessionCommand(kind, payload);
+      },
+    ])),
     [EditorBackendTransportCommand.ProjectSessionStatus]: async (payload = {}) => {
       return sessionStore.getProjectSessionStatus(payload);
     },

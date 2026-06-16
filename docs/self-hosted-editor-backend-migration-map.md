@@ -76,7 +76,7 @@
 
 2026-06-17 P1 Round 40 补充：packaged app asset loading 改为 Electron app protocol。`inscape-self-hosted-editor://app/` 只解析 `Resources/`、`Scripts/`、`node_modules/monaco-editor/` 与 packaged `samples/`，拒绝 traversal、`DevScripts/` 和非 app host；这修复 `file://` 下 Workbench 绝对路径会指向文件系统根目录的风险，但仍不代表真实 GUI/workspace/save/recovery smoke 已完成。
 
-2026-06-17 P1 post-40 补充：Electron preload -> main 已有固定 command channel。preload 内部只通过 `inscape.self-hosted-editor.backend.invoke` 转发白名单 editor command，main process dispatcher 复用 preload payload validator 并拒绝未知 / 未接线 command；`project-session.status` 可返回 `embedded-desktop` 摘要。该入口只是 embedded transport 的第一刀，不改变 dev-host `/api/*` smoke，也不让 renderer 获得 Node/fs/shell/arbitrary IPC；真实 workspace open/read/write 与 recovery snapshot IO 已在后续补充落地，idle autosave、flush 和 recovery UI 仍未完成。
+2026-06-17 P1 post-40 补充：Electron preload -> main 已有固定 command channel。preload 内部只通过 `inscape.self-hosted-editor.backend.invoke` 转发白名单 editor command，main process dispatcher 复用 preload payload validator，拒绝未知 command，并让缺少实际 handler 的路径显式失败；`project-session.status` 可返回 `embedded-desktop` 摘要。该入口只是 embedded transport 的第一刀，不改变 dev-host `/api/*` smoke，也不让 renderer 获得 Node/fs/shell/arbitrary IPC；真实 workspace open/read/write 与 recovery snapshot IO 已在后续补充落地，idle autosave、flush 和 recovery UI 仍未完成。
 
 2026-06-17 P1 post-40 workspace 补充：Electron main process 已新增 `ElectronWorkspaceSessionStore`，通过原生 open-folder 选择目录，扫描真实 `.inscape` 文件并读入 backend `DocumentBufferStore`；`workspace.open-folder` / `workspace.list-files` 是 desktop-only command，不映射 dev-host `/api/*`。`project-session.status`、workspace list 与 update draft 响应保持 text-free，显式 `document-buffer.read` 才返回请求文档正文。
 
@@ -90,7 +90,9 @@
 
 2026-06-17 P1 post-40 recovery actions IO 补充：desktop-only `recovery.restore` / `recovery.discard` / `recovery.later` 已进入 shared command catalog、preload whitelist、`EditorBackendClient.recovery.*` 与 Electron dispatcher，但不映射 dev-host HTTP route。`restore` 会校验 snapshot relative path / content hash / text payload，把 snapshot 正文写回 `.inscape` 并清理 snapshot；`discard` 删除 snapshot；`later` 只更新当前 session 的 action state 并保留 snapshot。GUI edit-save-recovery smoke 仍待后续迁移。
 
-2026-06-17 P1 post-40 GUI recovery smoke 补充：`smoke:desktop-gui-recovery` 已启动真实 Electron BrowserWindow，加载 `inscape-self-hosted-editor://app/` Workbench 与 `ElectronPreload.cjs`，通过 renderer 可见 preload API 覆盖 open/read/edit/manual save/autosave/recovery restore/later/discard 的真实 IPC/main-process 路径。该轮修复 sandbox preload 不能加载 ESM preload 的问题；`ElectronPreloadApi.js` 保留为 ESM contract，实际 BrowserWindow 使用 CJS preload bundle。diagnostics / completion current-buffer GUI 验证仍待后续迁移。
+2026-06-17 P1 post-40 GUI recovery smoke 补充：`smoke:desktop-gui-recovery` 已启动真实 Electron BrowserWindow，加载 `inscape-self-hosted-editor://app/` Workbench 与 `ElectronPreload.cjs`，通过 renderer 可见 preload API 覆盖 open/read/edit/manual save/autosave/recovery restore/later/discard 的真实 IPC/main-process 路径。该轮修复 sandbox preload 不能加载 ESM preload 的问题；`ElectronPreloadApi.js` 保留为 ESM contract，实际 BrowserWindow 使用 CJS preload bundle。
+
+2026-06-17 P1 post-40 authoring current-buffer GUI 补充：Electron dispatcher 已将 language-session commands 接到 `ElectronWorkspaceSessionStore`，由 main-process 当前 `DocumentBufferStore` 通过 `EditorBackendWorkspaceSnapshotModel` / `EditorBackendLanguageSessionRequestModel` 构建 authoring payload，不使用 renderer 传入的 stale `scriptText`。`smoke:desktop-gui-recovery` 现在覆盖 diagnostics / completions 在 recovery restore 后使用当前 buffer，且 language action response 仍保持 text-free。
 
 ## 状态分类
 

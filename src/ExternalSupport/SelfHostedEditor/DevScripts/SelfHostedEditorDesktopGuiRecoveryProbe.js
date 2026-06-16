@@ -14,6 +14,7 @@ void runProbe();
 
 async function runProbe() {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "inscape-electron-gui-recovery-"));
+  const languageSessionCalls = [];
   try {
     await fs.mkdir(path.join(tempRoot, "story"), { recursive: true });
     await fs.writeFile(
@@ -25,6 +26,7 @@ async function runProbe() {
     const workspaceLifecycle = createSelfHostedEditorElectronWorkspaceLifecycle({
       autosaveDebounceMs: 50,
       autosaveIntervalMs: 25,
+      languageSessionHandlers: createGuiRecoveryLanguageSessionHandlers(languageSessionCalls),
       selectWorkspaceRoot: async () => tempRoot,
       sessionId: "gui-recovery-smoke",
     });
@@ -117,6 +119,24 @@ async function runProbe() {
     );
     assertNotIncludes(JSON.stringify(restoreResult), "GUI smoke restore text", "GUI probe restore response is text-free");
 
+    const diagnosticsResult = await invokePreload(browserWindow, "languageSession.diagnose", {
+      scriptText: "# Stale\nNarrator: stale renderer diagnostics text",
+    });
+    assertEqual(diagnosticsResult.diagnostics[0].code, "GUI001", "GUI probe diagnostics result");
+    assertNotIncludes(JSON.stringify(diagnosticsResult), "GUI smoke restore text", "GUI probe diagnostics response is text-free");
+    const completionsResult = await invokePreload(browserWindow, "languageSession.completions", {
+      scriptText: "# Stale\nNarrator: stale renderer completions text",
+    });
+    assertEqual(completionsResult.completions[0].label, "GuiRestoredTarget", "GUI probe completions result");
+    assertNotIncludes(JSON.stringify(completionsResult), "GUI smoke restore text", "GUI probe completions response is text-free");
+    assertEqual(languageSessionCalls.length, 2, "GUI probe language session call count");
+    for (const call of languageSessionCalls) {
+      assertEqual(call.payload.activeRelativePath, "story/opening.inscape", `GUI probe ${call.kind} active path`);
+      assertEqual(call.payload.scriptText, restoreText, `GUI probe ${call.kind} uses restored current buffer`);
+      assertEqual(call.payload.workspace.documents[0].text, restoreText, `GUI probe ${call.kind} workspace snapshot text`);
+      assertNotIncludes(JSON.stringify(call.payload), "stale renderer", `GUI probe ${call.kind} ignores stale renderer text`);
+    }
+
     const laterRead = await invokePreload(browserWindow, "documentBuffer.read", {
       relativePath: "story/opening.inscape",
     });
@@ -154,6 +174,42 @@ async function runProbe() {
   } finally {
     await fs.rm(tempRoot, { force: true, recursive: true });
   }
+}
+
+function createGuiRecoveryLanguageSessionHandlers(calls) {
+  return Object.freeze({
+    async completions(payload = {}) {
+      calls.push({ kind: "completions", payload });
+      return {
+        completions: [
+          {
+            kind: "node",
+            label: "GuiRestoredTarget",
+          },
+        ],
+        format: "inscape.language-server-project-completions",
+      };
+    },
+    async diagnostics(payload = {}) {
+      calls.push({ kind: "diagnostics", payload });
+      return {
+        diagnostics: [
+          {
+            code: "GUI001",
+            location: {
+              character: 0,
+              length: 1,
+              line: 1,
+              sourcePath: payload.activeRelativePath,
+            },
+            message: "GUI smoke diagnostic from current buffer.",
+            severity: "info",
+          },
+        ],
+        format: "inscape.language-server-project-diagnostics",
+      };
+    },
+  });
 }
 
 async function invokePreload(browserWindow, methodPath, payload = {}) {

@@ -39,7 +39,18 @@ try {
   }
   assertEqual(desktopOnlyRouteRejected, true, "workspace open is desktop-only, not a dev-host route");
 
+  const languageSessionCalls = [];
   const sessionStore = createSelfHostedEditorElectronWorkspaceSessionStore({
+    languageSessionHandlers: {
+      async completions(payload = {}) {
+        languageSessionCalls.push({ kind: "completions", payload });
+        return { completions: [{ label: "CurrentBufferTarget" }] };
+      },
+      async diagnostics(payload = {}) {
+        languageSessionCalls.push({ kind: "diagnostics", payload });
+        return { diagnostics: [] };
+      },
+    },
     selectWorkspaceRoot: async () => tempRoot,
     sessionId: "electron-workspace-session",
   });
@@ -153,6 +164,36 @@ try {
     true,
     "recovery snapshot file stores recoverable text"
   );
+  const diagnosticsResult = await dispatchSelfHostedEditorBackendCommand(
+    EditorBackendTransportCommand.LanguageDiagnostics,
+    {
+      activeRelativePath: "story/opening.inscape",
+      scriptText: "# Stale\nNarrator: stale renderer text",
+    },
+    {
+      sessionStore,
+    }
+  );
+  assertEqual(Array.isArray(diagnosticsResult.diagnostics), true, "language diagnostics command returns handler result");
+  const completionsResult = await dispatchSelfHostedEditorBackendCommand(
+    EditorBackendTransportCommand.LanguageCompletions,
+    {
+      activeRelativePath: "story/opening.inscape",
+      scriptText: "# Stale\nNarrator: stale renderer completion text",
+    },
+    {
+      sessionStore,
+    }
+  );
+  assertEqual(completionsResult.completions[0].label, "CurrentBufferTarget", "language completions command returns handler result");
+  assertEqual(languageSessionCalls.length, 2, "workspace language session call count");
+  for (const call of languageSessionCalls) {
+    const activePayloadDocument = call.payload.workspace.documents.find((document) => document.relativePath === call.payload.activeRelativePath);
+    assertEqual(call.payload.activeRelativePath, "story/opening.inscape", `workspace ${call.kind} active path`);
+    assertEqual(call.payload.scriptText, "# Opening\nNarrator: secret updated text", `workspace ${call.kind} uses current buffer`);
+    assertEqual(activePayloadDocument.text, "# Opening\nNarrator: secret updated text", `workspace ${call.kind} snapshot includes current buffer`);
+    assertEqual(JSON.stringify(call.payload).includes("stale renderer"), false, `workspace ${call.kind} ignores stale renderer text`);
+  }
 
   const dirtyStatus = await dispatchSelfHostedEditorBackendCommand(
     EditorBackendTransportCommand.ProjectSessionStatus,
