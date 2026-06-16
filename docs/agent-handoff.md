@@ -80,6 +80,16 @@ P1 Round 7 已完成 Electron main / preload / app entry 骨架，尚未新增 E
 - 新增 `check:electron-shell` 并接入 `check:model`；`check:syntax` 现在覆盖 `Desktop/`。
 - Round 7 验证已通过：SelfHostedEditor `check:electron-shell` / `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity`，`.NET build` 与 Internal tests。下一步进入 Round 8：BrowserWindow 安全配置 contract 加固。
 
+### 2026-06-16 SelfHostedEditor P1 Round 8 BrowserWindow security 快照
+
+P1 Round 8 已完成 BrowserWindow 安全配置加固，仍未新增 IPC、文件 IO 或 Electron 启动脚本。
+
+- `ElectronMain` 新增 `buildSelfHostedEditorBrowserWindowOptions()`，集中定义 BrowserWindow 安全默认。
+- `webPreferences` 显式设置 `contextIsolation: true`、`nodeIntegration: false`、`nodeIntegrationInSubFrames: false`、`nodeIntegrationInWorker: false`、`sandbox: true`、`webSecurity: true`、`allowRunningInsecureContent: false` 与 `webviewTag: false`。
+- 新增 `applySelfHostedEditorWindowSecurity()`，默认阻止新窗口并限制 navigation 到 `file:`。
+- `check:electron-shell` 已覆盖上述安全字段和 window-open / navigation handler。
+- Round 8 验证已通过：SelfHostedEditor `check:electron-shell` / `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity`，`.NET build` 与 Internal tests。下一步进入 Round 9：preload public API 白名单边界。
+
 ### 2026-06-14 SelfHostedEditor desktop backend v0 决策快照
 
 本轮已采纳 [ADR 0019](adr/0019-self-hosted-editor-embedded-backend-v0.md)：SelfHostedEditor desktop backend v0 采用嵌入式 EditorBackend，而不是独立 sidecar daemon。

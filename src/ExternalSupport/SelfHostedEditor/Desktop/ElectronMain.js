@@ -15,22 +15,32 @@ export const SelfHostedEditorElectronWindowDefaults = Object.freeze({
   width: 1440,
 });
 
-export function createSelfHostedEditorBrowserWindow(options = {}) {
-  const BrowserWindowCtor = options.BrowserWindowCtor || BrowserWindow;
-  const browserWindow = new BrowserWindowCtor({
+export function buildSelfHostedEditorBrowserWindowOptions() {
+  return {
     height: SelfHostedEditorElectronWindowDefaults.height,
     minHeight: SelfHostedEditorElectronWindowDefaults.minHeight,
     minWidth: SelfHostedEditorElectronWindowDefaults.minWidth,
     show: false,
     title: SelfHostedEditorElectronWindowDefaults.title,
     webPreferences: {
+      allowRunningInsecureContent: false,
       contextIsolation: true,
       nodeIntegration: false,
+      nodeIntegrationInSubFrames: false,
+      nodeIntegrationInWorker: false,
       preload: path.join(desktopRoot, "ElectronPreload.js"),
       sandbox: true,
+      webSecurity: true,
+      webviewTag: false,
     },
     width: SelfHostedEditorElectronWindowDefaults.width,
-  });
+  };
+}
+
+export function createSelfHostedEditorBrowserWindow(options = {}) {
+  const BrowserWindowCtor = options.BrowserWindowCtor || BrowserWindow;
+  const browserWindow = new BrowserWindowCtor(buildSelfHostedEditorBrowserWindowOptions());
+  applySelfHostedEditorWindowSecurity(browserWindow);
 
   browserWindow.once("ready-to-show", () => {
     browserWindow.show();
@@ -38,6 +48,24 @@ export function createSelfHostedEditorBrowserWindow(options = {}) {
 
   void browserWindow.loadFile(path.join(moduleRoot, "Resources", "Workbench", "SelfHostedEditorWorkbenchDocument.html"));
   return browserWindow;
+}
+
+export function applySelfHostedEditorWindowSecurity(browserWindow) {
+  browserWindow.webContents?.setWindowOpenHandler?.(() => ({ action: "deny" }));
+  browserWindow.webContents?.on?.("will-navigate", (event, navigationUrl) => {
+    if (!isSelfHostedEditorAllowedNavigation(navigationUrl)) {
+      event.preventDefault();
+    }
+  });
+}
+
+export function isSelfHostedEditorAllowedNavigation(navigationUrl) {
+  try {
+    const parsedUrl = new URL(navigationUrl);
+    return parsedUrl.protocol === "file:";
+  } catch {
+    return false;
+  }
 }
 
 export function registerSelfHostedEditorElectronApp(electronApp = app) {

@@ -1,6 +1,6 @@
 # SelfHostedEditor P1 40 轮内执行方案
 
-状态：执行中（Round 1-7 已完成）
+状态：执行中（Round 1-8 已完成）
 
 日期：2026-06-15
 
@@ -305,6 +305,36 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 2. preload 当前没有 IPC channel，也没有 workspace file-system / embedded backend 能力；后续必须通过白名单 command 逐步补。
 3. 下一轮应进入 Round 8：BrowserWindow 安全配置细化与 contract 加固。
 
+### 2026-06-16 Round 8：BrowserWindow 安全配置
+
+范围：只细化 Electron BrowserWindow 安全默认与 contract；不新增 IPC channel，不新增本机文件能力，不改变 dev-host 启动路径。
+
+完成内容：
+
+1. `ElectronMain` 新增 `buildSelfHostedEditorBrowserWindowOptions()`，集中定义 BrowserWindow option。
+2. BrowserWindow `webPreferences` 现在显式设置 `contextIsolation: true`、`nodeIntegration: false`、`nodeIntegrationInSubFrames: false`、`nodeIntegrationInWorker: false`、`sandbox: true`、`webSecurity: true`、`allowRunningInsecureContent: false` 与 `webviewTag: false`。
+3. 新增 `applySelfHostedEditorWindowSecurity()`，默认禁止新窗口打开，并通过 `will-navigate` 只允许 `file:` navigation。
+4. `check:electron-shell` 已覆盖上述安全字段和 window-open / navigation handler。
+
+本轮验证已通过：
+
+```powershell
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:electron-shell
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:structure
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
+npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
+dotnet build Inscape.slnx --no-restore
+dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build
+```
+
+架构对照结论：
+
+1. BrowserWindow 安全默认集中在 main process skeleton 中；renderer `Scripts/` 仍不能访问 Node / Electron runtime。
+2. preload 仍是唯一计划中的本机能力入口，且当前只暴露静态 capability summary。
+3. 下一轮应进入 Round 9：preload public API 白名单边界，定义受控 editor command surface，但仍不接真实文件 IO。
+
 ## 36 轮主计划
 
 ### A. Contract 与 transport 基础，Round 1-6
@@ -323,7 +353,7 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 | 轮次 | 目标 | 完成标准 |
 |---|---|---|
 | 7 | Electron 工程骨架 | 已完成。新增 `Desktop/ElectronMain.js`、`ElectronPreload.js` 与 `ElectronAppEntry.js` 骨架，新增 `check:electron-shell` 并纳入 `check:model` / `check:syntax`；未新增 Electron 依赖、启动脚本、IPC 或文件 IO，dev host 默认启动路径不变。 |
-| 8 | BrowserWindow 安全配置 | renderer 使用隔离配置；默认不启用 Node integration；preload 成为唯一本机能力入口。 |
+| 8 | BrowserWindow 安全配置 | 已完成。BrowserWindow options 集中定义并显式启用隔离 / sandbox / webSecurity，禁用 Node integration、worker/subframe Node、insecure content 与 webview；main process 默认阻止 window-open，并限制 navigation。 |
 | 9 | preload 白名单 API | `window.inscape` 或等价命名只暴露 editor command；不暴露通用 `readFile`、`writeFile`、`runCommand`、arbitrary IPC。 |
 | 10 | Desktop invoke transport | `EditorBackendClient` 能在 desktop 环境使用 preload transport，在 dev 环境保留 HTTP transport；feature controller 不感知切换。 |
 | 11 | preload / IPC validation | main / preload 对 command name 与 payload 做白名单校验；未知 command、非法 payload、arbitrary channel 被拒绝。 |
