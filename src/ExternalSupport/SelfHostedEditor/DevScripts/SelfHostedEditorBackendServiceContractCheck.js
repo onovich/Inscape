@@ -243,6 +243,7 @@ const saveDocumentResult = services.documentBufferStore.saveDocumentToStore(docu
 assertEqual(saveDocumentResult.ok, true, "document buffer save document result ok");
 assertEqual(saveDocumentResult.saveStatus.state, "saved", "document buffer save document status");
 assertEqual(saveDocumentResult.document.dirty, false, "document buffer save document summary clean");
+assertEqual(saveDocumentResult.document.lastSavedRevision, documentUpdateResult.document.revision, "document buffer save document saved revision");
 assertEqual(saveDocumentResult.payloadContentExposed, false, "document buffer save document hides payload content");
 assertEqual(JSON.stringify(saveDocumentResult).includes("# Opening\nNarrator: Updated"), false, "document buffer save document must not expose text");
 const saveAllResult = services.documentBufferStore.saveAllToStore(documentUpdateResult.store, {
@@ -251,6 +252,7 @@ const saveAllResult = services.documentBufferStore.saveAllToStore(documentUpdate
 assertEqual(saveAllResult.ok, true, "document buffer save all result ok");
 assertEqual(saveAllResult.savedCount, 1, "document buffer save all saves dirty documents");
 assertEqual(saveAllResult.storeSummary.documents.find((document) => document.relativePath === "story/opening.inscape")?.dirty, false, "document buffer save all summary clean");
+assertEqual(saveAllResult.storeSummary.documents.find((document) => document.relativePath === "story/opening.inscape")?.lastSavedRevision, documentUpdateResult.document.revision, "document buffer save all saved revision");
 assertEqual(JSON.stringify(saveAllResult).includes("# Opening\nNarrator: Updated"), false, "document buffer save all must not expose text");
 const asyncSaveResult = await services.documentBufferStore.saveDocument({
   baseRevision: documentUpdateResult.document.revision,

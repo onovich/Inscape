@@ -8,20 +8,28 @@ export class EditorBackendDocumentBufferModel {
     diskTextHash = "",
     existsOnDisk = true,
     lastLoadedUtc = "",
+    lastSavedRevision = null,
     relativePath = "",
     revision = 1,
     text = "",
   } = {}) {
+    const normalizedRevision = normalizeRevision(revision);
+    const normalizedDirty = Boolean(dirty);
+    const normalizedLastSavedRevision = normalizeRevision(
+      lastSavedRevision ?? (normalizedDirty ? 0 : normalizedRevision),
+      0
+    );
     return {
       active: Boolean(active),
-      dirty: Boolean(dirty),
+      dirty: normalizedDirty,
       diskTextHash: String(diskTextHash || ""),
       existsOnDisk: Boolean(existsOnDisk),
       format: EditorBackendDocumentBufferFormat,
       formatVersion: EditorBackendDocumentBufferModelFormatVersion,
       lastLoadedUtc: normalizeTimestamp(lastLoadedUtc),
+      lastSavedRevision: normalizedLastSavedRevision,
       relativePath: normalizeRelativePath(relativePath),
-      revision: normalizeRevision(revision),
+      revision: normalizedRevision,
       text: typeof text === "string" ? text : "",
     };
   }
@@ -35,6 +43,7 @@ export class EditorBackendDocumentBufferModel {
       diskTextHash: String(normalized.diskTextHash || ""),
       existsOnDisk: Boolean(normalized.existsOnDisk),
       lastLoadedUtc: normalizeTimestamp(normalized.lastLoadedUtc),
+      lastSavedRevision: normalizeRevision(normalized.lastSavedRevision, 0),
       relativePath: normalizeRelativePath(normalized.relativePath),
       revision: normalizeRevision(normalized.revision),
     };

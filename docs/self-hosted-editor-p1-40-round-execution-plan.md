@@ -669,8 +669,24 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:structure
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:desktop-backend
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:workspace-fs
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:backend-services
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:backend-transport
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:preload-transport
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:fake-embedded-transport
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:electron-boundary
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:runtime
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:runtime-http
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:structure
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
+npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
+node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js
+npm --prefix src\ExternalSupport\VSCode run check:structure
+git -c safe.directory=D:/LabProjects/Inscape diff --check
+dotnet build Inscape.slnx --no-restore
+dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build
 ```
 
 架构对照结论：
@@ -869,6 +885,35 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 3. Save result 面向 UI，保持 text-free；完整 buffer text 仍只属于 backend buffer truth。
 4. 本轮没有复制 Compiler / LanguageServer / Tooling / Runtime 语义，也没有进入 P1.5 long-lived LanguageServer。
 5. 下一轮应进入 Round 26：dirty state / saved revision，补 clean baseline、磁盘更新冲突与 save status 更新规则。
+
+### 2026-06-16 Round 26：dirty state / saved revision
+
+范围：把 DocumentBuffer 的 clean baseline 显式化，让 edit / save 的 dirty state 与 saved revision 可由 contract 验证；用磁盘 hash 偏离模拟外部更新冲突。本轮仍不做真实文件写盘、autosave debounce、flush 或 recovery。
+
+完成内容：
+
+1. `EditorBackendDocumentBufferModel` 新增 `lastSavedRevision`，dirty buffer 默认保留既有 baseline，clean buffer 默认把当前 revision 视为 saved revision。
+2. `EditorBackendDocumentBufferStoreModel.updateDocument()` 在推进 revision 和 dirty state 时保留 `lastSavedRevision`，证明旧 clean baseline 不会被 edit 覆盖。
+3. `saveDocument()` 成功后把 document summary / store summary 标为 clean，并把 `lastSavedRevision` 更新到当前 document revision。
+4. `saveDocument()` 支持用 `observedDiskTextHash` / `currentDiskTextHash` 对比 buffer 的 `diskTextHash`；不一致时返回 text-free `disk-conflict` error 与可见 hash 摘要。
+5. `saveAll()` 继承同一套 saved revision 更新规则；Save result / Save All result 仍不暴露 buffer text。
+6. `check:desktop-backend` 与 `check:backend-services` 覆盖 edit 保留 baseline、save 刷新 baseline、disk conflict error 和 text-free result。
+
+验证：
+
+```powershell
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:desktop-backend
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:backend-services
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
+```
+
+架构对照结论：
+
+1. `lastSavedRevision` 和 `diskTextHash` 只描述 backend buffer / disk baseline，不复制 Compiler、LanguageServer、Tooling 或 Runtime 语义。
+2. 磁盘冲突以 save error status 呈现，不让 UI 直接读写任意文件或绕过 workspace boundary。
+3. Save result 继续保持 text-free；正文仍只在 backend buffer / content-bearing request snapshot 内流动。
+4. 本轮没有改变 dev-host `/api/*` shared semantic payload，也没有进入 P1.5 long-lived LanguageServer。
+5. 下一轮应进入 Round 27：backend autosave debounce，建立 idle debounce 与“只保存最新 revision”的 contract。
 
 ## 36 轮主计划
 

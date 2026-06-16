@@ -113,6 +113,7 @@ export class EditorBackendDocumentBufferStoreModel {
       diskTextHash: request.diskTextHash ?? currentDocument.diskTextHash,
       existsOnDisk: request.existsOnDisk ?? currentDocument.existsOnDisk,
       lastLoadedUtc: request.lastLoadedUtc ?? currentDocument.lastLoadedUtc,
+      lastSavedRevision: currentDocument.lastSavedRevision,
       revision: nextRevision,
       text: request.text,
     });
@@ -250,6 +251,22 @@ function buildSaveDocumentOutcome(store, request = {}) {
     };
   }
 
+  const diskConflict = buildDiskConflict(currentDocument, request);
+  if (diskConflict) {
+    const result = buildSaveDocumentFailureResult({
+      baseRevision,
+      currentDocument,
+      diskConflict,
+      normalizedStore,
+      reason: "disk-conflict",
+      relativePath,
+    });
+    return {
+      nextStore: normalizedStore,
+      result,
+    };
+  }
+
   const workspaceBoundary = EditorBackendDesktopSessionModel.buildWorkspaceFileBoundary({
     operation: "write",
     relativePath,
@@ -273,7 +290,8 @@ function buildSaveDocumentOutcome(store, request = {}) {
   const savedDocument = EditorBackendDocumentBufferModel.buildBuffer({
     ...currentDocument,
     dirty: false,
-    diskTextHash: request.diskTextHash ?? currentDocument.diskTextHash,
+    diskTextHash: resolveSavedDiskTextHash(currentDocument, request),
+    lastSavedRevision: currentDocument.revision,
   });
   const nextStore = EditorBackendDocumentBufferStoreModel.buildStore({
     ...normalizedStore,
@@ -333,6 +351,7 @@ function buildSaveDocumentSuccessResult({
 function buildSaveDocumentFailureResult({
   baseRevision = null,
   currentDocument,
+  diskConflict = null,
   normalizedStore,
   reason,
   relativePath,
@@ -343,6 +362,7 @@ function buildSaveDocumentFailureResult({
     baseRevision,
     currentRevision,
     document: currentDocument ? EditorBackendDocumentBufferModel.buildSummary(currentDocument) : null,
+    diskConflict,
     format: EditorBackendDocumentBufferSaveResultFormat,
     formatVersion: EditorBackendDocumentBufferStoreModelFormatVersion,
     ok: false,
@@ -367,6 +387,34 @@ function buildSaveDocumentFailureResult({
     workspaceName: normalizedStore.workspaceName,
     writeTarget: workspaceBoundary?.writeTarget || null,
   };
+}
+
+function buildDiskConflict(currentDocument, request = {}) {
+  const expectedDiskTextHash = normalizeTextHash(currentDocument.diskTextHash);
+  const observedDiskTextHash = normalizeTextHash(
+    request.observedDiskTextHash
+      ?? request.currentDiskTextHash
+      ?? ""
+  );
+  if (!expectedDiskTextHash || !observedDiskTextHash || expectedDiskTextHash === observedDiskTextHash) {
+    return null;
+  }
+
+  return {
+    expectedDiskTextHash,
+    observedDiskTextHash,
+    reason: "disk-conflict",
+  };
+}
+
+function resolveSavedDiskTextHash(currentDocument, request = {}) {
+  return normalizeTextHash(
+    request.nextDiskTextHash
+      ?? request.diskTextHash
+      ?? request.observedDiskTextHash
+      ?? request.currentDiskTextHash
+      ?? currentDocument.diskTextHash
+  );
 }
 
 function omitStoreSummary(result) {
@@ -418,6 +466,10 @@ function normalizeRelativePathList(relativePaths) {
   }
 
   return [...new Set(relativePaths.map(normalizeRelativePath).filter(Boolean))];
+}
+
+function normalizeTextHash(textHash) {
+  return String(textHash || "").trim();
 }
 
 function normalizeRevision(revision, fallback = 1) {

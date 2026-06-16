@@ -46,6 +46,8 @@
 
 2026-06-16 P1 Round 25 补充：`EditorBackendClient.documentBuffer.*` 已成为显式业务入口，覆盖 list / read / updateDraft / saveDocument / saveAll。当前实现仍是 contract layer：saveDocument / saveAll 返回 text-free save status、workspace boundary 和 revision 结果，用于接上手动 Save 命令面；真实 Electron 文件 IO、autosave debounce、flush 和 recovery 仍属于后续 P1 施工。
 
+2026-06-16 P1 Round 26 补充：DocumentBuffer 现在包含 `lastSavedRevision` clean baseline。updateDraft 推进 dirty revision 时保留 baseline，saveDocument / saveAll 成功后刷新 saved revision；当观测到的磁盘 hash 与 buffer baseline 不一致时，保存返回 text-free `disk-conflict` error。真实磁盘读取 / 写入、mtime 检查和冲突 UI 仍待后续 embedded backend handler 落地。
+
 ## 状态分类
 
 | 分类 | 当前例子 | 未来归属 | 规则 |
@@ -63,9 +65,9 @@
 |---|---|---|---|---|---|
 | `/api/document-buffer-list` | 返回请求内 `store` 的 text-free document summary list | `DocumentBufferStore.list` | Backend project session | P1 Round 25 save command skeleton | 产品 backend 应从 ProjectSession 内部 store 读取，不要求前端上传完整 store。 |
 | `/api/document-buffer-read` | 从请求内 `store` 读取指定 document buffer | `DocumentBufferStore.read` | Backend project session | P1 Round 25 save command skeleton | 产品 backend 应从 ProjectSession 内部 store 读取正文，status/list 仍不暴露正文。 |
-| `/api/document-buffer-update-draft` | 对请求内 `store` 应用 text update 与 `baseRevision` guard | `DocumentBufferStore.updateDraft` | Backend project session | P1 Round 25 save command skeleton | 真实实现应更新 backend buffer truth，旧 debounce 不能覆盖较新 revision。 |
-| `/api/document-buffer-save` | 对请求内 `store` 构造 text-free save result，不写盘 | `DocumentBufferStore.saveDocument` | Backend project session | P1 Round 25 save command skeleton | 真实实现必须从 ProjectSession 取 workspace root 和 buffer text，走 backend 文件边界写盘。 |
-| `/api/document-buffer-save-all` | 对请求内 `store` 构造 text-free save-all result，不写盘 | `DocumentBufferStore.saveAll` | Backend project session | P1 Round 25 save command skeleton | 真实实现必须只写回最新 dirty revision，并保持 save status / error 可见。 |
+| `/api/document-buffer-update-draft` | 对请求内 `store` 应用 text update 与 `baseRevision` guard | `DocumentBufferStore.updateDraft` | Backend project session | P1 Round 26 saved revision baseline | 真实实现应更新 backend buffer truth，旧 debounce 不能覆盖较新 revision，edit 不能覆盖 `lastSavedRevision` baseline。 |
+| `/api/document-buffer-save` | 对请求内 `store` 构造 text-free save result，不写盘 | `DocumentBufferStore.saveDocument` | Backend project session | P1 Round 26 saved revision baseline | 真实实现必须从 ProjectSession 取 workspace root 和 buffer text，走 backend 文件边界写盘；成功刷新 `lastSavedRevision`，磁盘 hash 冲突返回 save error。 |
+| `/api/document-buffer-save-all` | 对请求内 `store` 构造 text-free save-all result，不写盘 | `DocumentBufferStore.saveAll` | Backend project session | P1 Round 26 saved revision baseline | 真实实现必须只写回最新 dirty revision，并保持 save status / error / disk conflict 可见。 |
 | `/api/diagnostics` | 用当前 script/workspace 调 LanguageServer diagnostics | `LanguageSessionClient.diagnose` | Backend project session | A3 language-session request model | 走常驻 LanguageServer；保持 diagnostics payload shape。 |
 | `/api/hover` | 用 hover kind/name 调 LanguageServer hover | `LanguageSessionClient.hover` | Backend project session | A3 language-session request model | 只传定位/target，不在前端重算 hover 文案。 |
 | `/api/definition` | 用 definitionName 调 LanguageServer definition | `LanguageSessionClient.definition` | Backend project session | A3 language-session request model | sourcePath 继续 workspace-relative。 |

@@ -39,6 +39,7 @@ const directDocumentBuffer = EditorBackendDocumentBufferModel.buildBuffer({
   diskTextHash: "disk-hash",
   existsOnDisk: true,
   lastLoadedUtc: "2026-06-16T00:00:00.000Z",
+  lastSavedRevision: 4,
   relativePath: "story\\opening.inscape",
   revision: 5,
   text: "secret draft text",
@@ -46,9 +47,11 @@ const directDocumentBuffer = EditorBackendDocumentBufferModel.buildBuffer({
 assertEqual(directDocumentBuffer.format, EditorBackendDocumentBufferFormat, "direct document buffer format");
 assertEqual(directDocumentBuffer.formatVersion, EditorBackendDesktopModelFormatVersion, "direct document buffer format version");
 assertEqual(directDocumentBuffer.relativePath, "story/opening.inscape", "direct document buffer relative path normalization");
+assertEqual(directDocumentBuffer.lastSavedRevision, 4, "direct document buffer saved revision baseline");
 assertEqual(directDocumentBuffer.text, "secret draft text", "direct document buffer owns text");
 const directDocumentSummary = EditorBackendDocumentBufferModel.buildSummary(directDocumentBuffer);
 assertEqual(directDocumentSummary.relativePath, "story/opening.inscape", "direct document summary relative path");
+assertEqual(directDocumentSummary.lastSavedRevision, 4, "direct document summary saved revision baseline");
 assertNotIncludes(JSON.stringify(directDocumentSummary), "secret draft text", "direct document summary must not expose text");
 
 const documentBuffer = EditorBackendDesktopSessionModel.buildDocumentBuffer(directDocumentBuffer);
@@ -57,11 +60,13 @@ assertEqual(documentBuffer.formatVersion, EditorBackendDesktopModelFormatVersion
 assertEqual(documentBuffer.relativePath, "story/opening.inscape", "document buffer relative path normalization");
 assertEqual(documentBuffer.revision, 5, "document buffer revision");
 assertEqual(documentBuffer.dirty, true, "document buffer dirty state");
+assertEqual(documentBuffer.lastSavedRevision, 4, "document buffer saved revision baseline");
 assertEqual(documentBuffer.text, "secret draft text", "document buffer owns current text");
 
 const documentSummary = EditorBackendDesktopSessionModel.buildDocumentBufferSummary(documentBuffer);
 assertEqual(documentSummary.relativePath, "story/opening.inscape", "document summary relative path");
 assertEqual(documentSummary.dirty, true, "document summary dirty state");
+assertEqual(documentSummary.lastSavedRevision, 4, "document summary saved revision baseline");
 assertNotIncludes(JSON.stringify(documentSummary), "secret draft text", "document summary must not expose text");
 
 const bufferStore = EditorBackendDocumentBufferStoreModel.buildStore({
@@ -112,6 +117,7 @@ assertEqual(updateBufferResult.ok, true, "document buffer update ok");
 assertEqual(updateBufferResult.document.text, "secret updated buffer text", "document buffer update text");
 assertEqual(updateBufferResult.document.revision, 6, "document buffer update increments revision above store");
 assertEqual(updateBufferResult.document.dirty, true, "document buffer update dirty");
+assertEqual(updateBufferResult.document.lastSavedRevision, 4, "document buffer update preserves clean baseline");
 assertEqual(updateBufferResult.store.revision, 6, "document buffer update store revision");
 assertNotIncludes(JSON.stringify(EditorBackendDocumentBufferStoreModel.listDocuments(updateBufferResult.store)), "secret updated buffer text", "updated list must not expose text");
 const staleBufferUpdateResult = EditorBackendDocumentBufferStoreModel.updateDocument(updateBufferResult.store, {
@@ -127,6 +133,8 @@ assertNotIncludes(JSON.stringify(staleBufferUpdateResult), "secret stale overwri
 assertNotIncludes(JSON.stringify(staleBufferUpdateResult), "secret updated buffer text", "document buffer stale update must not expose current text");
 const saveBufferResult = EditorBackendDocumentBufferStoreModel.saveDocument(updateBufferResult.store, {
   baseRevision: updateBufferResult.document.revision,
+  nextDiskTextHash: "disk-hash-updated",
+  observedDiskTextHash: "disk-hash",
   relativePath: "story/opening.inscape",
   workspaceRoot: "C:/Case Files/Court Loop",
 });
@@ -137,7 +145,10 @@ assertEqual(saveBufferResult.savedRevision, updateBufferResult.document.revision
 assertEqual(saveBufferResult.saveStatus.state, "saved", "document buffer save status");
 assertEqual(saveBufferResult.saveStatus.dirty, false, "document buffer save clean status");
 assertEqual(saveBufferResult.document.dirty, false, "document buffer save summary clean");
+assertEqual(saveBufferResult.document.lastSavedRevision, updateBufferResult.document.revision, "document buffer save updates saved revision");
+assertEqual(saveBufferResult.document.diskTextHash, "disk-hash-updated", "document buffer save updates disk baseline");
 assertEqual(saveBufferResult.storeSummary.documents[0].dirty, false, "document buffer save store summary clean");
+assertEqual(saveBufferResult.storeSummary.documents[0].lastSavedRevision, updateBufferResult.document.revision, "document buffer save store summary saved revision");
 assertEqual(saveBufferResult.workspaceBoundary.allowed, true, "document buffer save boundary allowed");
 assertEqual(saveBufferResult.writeTarget.targetKind, "inscape-document", "document buffer save target");
 assertEqual(saveBufferResult.payloadContentExposed, false, "document buffer save payload exposure flag");
@@ -151,6 +162,18 @@ assertEqual(staleSaveBufferResult.ok, false, "document buffer stale save rejecte
 assertEqual(staleSaveBufferResult.reason, "stale-document-revision", "document buffer stale save reason");
 assertEqual(staleSaveBufferResult.saveStatus.state, "error", "document buffer stale save status");
 assertNotIncludes(JSON.stringify(staleSaveBufferResult), "secret updated buffer text", "document buffer stale save must not expose current text");
+const diskConflictSaveResult = EditorBackendDocumentBufferStoreModel.saveDocument(updateBufferResult.store, {
+  baseRevision: updateBufferResult.document.revision,
+  observedDiskTextHash: "disk-hash-external-update",
+  relativePath: "story/opening.inscape",
+  workspaceRoot: "C:/Case Files/Court Loop",
+});
+assertEqual(diskConflictSaveResult.ok, false, "document buffer disk conflict rejected");
+assertEqual(diskConflictSaveResult.reason, "disk-conflict", "document buffer disk conflict reason");
+assertEqual(diskConflictSaveResult.saveStatus.state, "error", "document buffer disk conflict status");
+assertEqual(diskConflictSaveResult.diskConflict.expectedDiskTextHash, "disk-hash", "document buffer disk conflict expected hash");
+assertEqual(diskConflictSaveResult.diskConflict.observedDiskTextHash, "disk-hash-external-update", "document buffer disk conflict observed hash");
+assertNotIncludes(JSON.stringify(diskConflictSaveResult), "secret updated buffer text", "document buffer disk conflict must not expose current text");
 const unsafeSaveStore = EditorBackendDocumentBufferStoreModel.buildStore({
   documents: [
     {
@@ -174,12 +197,14 @@ const saveAllStore = EditorBackendDocumentBufferStoreModel.buildStore({
   documents: [
     {
       dirty: true,
+      diskTextHash: "opening-save-all-hash",
       relativePath: "story/opening.inscape",
       revision: 6,
       text: "secret save all opening text",
     },
     {
       dirty: true,
+      diskTextHash: "branch-save-all-hash",
       relativePath: "story/branch.inscape",
       revision: 4,
       text: "secret save all branch text",
@@ -195,6 +220,8 @@ assertEqual(saveAllResult.savedCount, 2, "document buffer save all count");
 assertEqual(saveAllResult.failedCount, 0, "document buffer save all failed count");
 assertEqual(saveAllResult.saveStatus.state, "saved", "document buffer save all status");
 assertEqual(saveAllResult.storeSummary.documents.every((document) => !document.dirty), true, "document buffer save all store summary clean");
+assertEqual(saveAllResult.storeSummary.documents[0].lastSavedRevision, 6, "document buffer save all first saved revision");
+assertEqual(saveAllResult.storeSummary.documents[1].lastSavedRevision, 4, "document buffer save all second saved revision");
 assertEqual(saveAllResult.payloadContentExposed, false, "document buffer save all payload exposure flag");
 assertNotIncludes(JSON.stringify(saveAllResult), "secret save all opening text", "document buffer save all must not expose opening text");
 assertNotIncludes(JSON.stringify(saveAllResult), "secret save all branch text", "document buffer save all must not expose branch text");

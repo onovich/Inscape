@@ -269,6 +269,15 @@ P1 Round 25 已完成手动 Save 命令契约的第一刀：Save 入口走 backe
 - 契约检查覆盖 Save 成功、stale revision、非白名单写回拒绝、Save All、payload 白名单和结果不泄露 buffer text。
 - Round 25 当前已通过：SelfHostedEditor `check:desktop-backend` / `check:workspace-fs` / `check:backend-services` / `check:backend-transport` / `check:preload-transport` / `check:fake-embedded-transport` / `check:electron-boundary` / `check:runtime` / `check:runtime-http` / `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity` / `check:structure`，`node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js`，`git diff --check`，`.NET build` 与 Internal tests。下一步进入 Round 26：dirty state / saved revision。
 
+### 2026-06-16 SelfHostedEditor P1 Round 26 dirty state / saved revision 快照
+
+P1 Round 26 已把 DocumentBuffer clean baseline 显式化：edit 推进 dirty + revision 时保留 `lastSavedRevision`，save 成功后刷新 baseline；磁盘 hash 偏离会进入可见 `disk-conflict` error。本轮仍未实现真实 Electron 文件 IO、autosave debounce、flush 或 recovery。
+
+- `EditorBackendDocumentBufferModel` 新增 `lastSavedRevision`；clean buffer 默认以当前 revision 作为 saved baseline，dirty buffer 保留既有 baseline。
+- `EditorBackendDocumentBufferStoreModel.updateDocument()` 保留 saved baseline；`saveDocument()` / `saveAll()` 成功后把 summary 标 clean，并把 `lastSavedRevision` 更新到 saved revision。
+- `saveDocument()` 支持 `observedDiskTextHash` / `currentDiskTextHash` 与 buffer `diskTextHash` 对比；不一致时返回 text-free `disk-conflict`、`error` save status 和 hash 摘要。
+- Round 26 当前已通过：SelfHostedEditor `check:desktop-backend` / `check:workspace-fs` / `check:backend-services` / `check:backend-transport` / `check:preload-transport` / `check:fake-embedded-transport` / `check:electron-boundary` / `check:runtime` / `check:runtime-http` / `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity` / `check:structure`，`node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js`，`git diff --check`，`.NET build` 与 Internal tests。下一步进入 Round 27：backend autosave debounce。
+
 ### 2026-06-14 SelfHostedEditor desktop backend v0 决策快照
 
 本轮已采纳 [ADR 0019](adr/0019-self-hosted-editor-embedded-backend-v0.md)：SelfHostedEditor desktop backend v0 采用嵌入式 EditorBackend，而不是独立 sidecar daemon。
