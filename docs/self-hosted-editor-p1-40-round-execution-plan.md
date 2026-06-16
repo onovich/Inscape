@@ -794,6 +794,37 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
 2. UI draft/workspace context 仍可 fallback，但有 backend snapshot 时不会作为 authoring truth 上传。
 3. 下一轮应进入 Round 24：Preview / Runtime 接入 buffer，让 Preview / Runtime 使用 backend buffer 当前 workspace state。
 
+### 2026-06-16 Round 24：Preview / Runtime 接入 buffer
+
+范围：让 Preview 所依赖的 StoryGraph bridge 与 Runtime bridge 优先消费 backend workspace snapshot；不改变 dev-host `/api/*` route、Compiler / Runtime shared payload shape 或 Preview choice click invariant。
+
+完成内容：
+
+1. 新增 `EditorBackendWorkspaceRequestModel`，统一把 backend workspace snapshot active document 投影为 shared request 的 `scriptText`、`workspace`、`activeRelativePath` 与 `documentRevision`。
+2. `LanguageServerAuthoringRequestModel` 复用该通用 request 投影，避免 LanguageServer / StoryGraph / Runtime 各自重复 snapshot 取 active document 逻辑。
+3. `SelfHostedEditorStoryGraphBridge` 新增 `workspaceSnapshotProvider`，Preview 的 Compiler graph 请求优先使用 backend buffer active document。
+4. `SelfHostedEditorRuntimeBridge` 新增 `workspaceSnapshotProvider`，Runtime start / step 请求优先使用 backend buffer active document，同时保留 `sessionId`、`action` 与 `runtimeState` fallback。
+5. `SelfHostedEditorFeatureBootstrapper` 把同一个 backend snapshot provider 注入六个 authoring bridge、StoryGraph bridge 与 Runtime bridge。
+6. `check:backend-services` 覆盖 Preview / Runtime snapshot 优先级，并断言旧 workspace context 文本不会在 snapshot 存在时进入 payload。
+
+验证：
+
+```powershell
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:structure
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:backend-services
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:runtime
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:runtime-http
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
+```
+
+架构对照结论：
+
+1. 本轮只改变 SelfHostedEditor host adapter 的请求输入来源，不复制 Compiler graph、Preview presenter 或 Runtime execution 语义。
+2. Preview choice click invariant 仍由 `check:model` 覆盖，Runtime action 仍不要求前端上传完整 Runtime state。
+3. 下一轮应进入 Round 25：Save command skeleton，开始把 DocumentBufferStore 写回入口和 save status contract 接上。
+
 ## 36 轮主计划
 
 ### A. Contract 与 transport 基础，Round 1-6
@@ -838,7 +869,7 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
 | 21 | baseRevision 与 stale guard | 已完成。`updateDocument()` 支持 `baseRevision`，revision 不匹配时返回 `stale-document-revision`，并只回传 current/base revision 与 text-free summary；旧 debounce 不能覆盖较新 revision。 |
 | 22 | workspace snapshot builder | 已完成。新增 `EditorBackendWorkspaceSnapshotModel`，从 DocumentBufferStore 构建 content-bearing backend request snapshot，并可导出 active document request；status/list 仍保持 text-free。 |
 | 23 | authoring endpoint 接入 buffer | 已完成。六个 LanguageServer-backed authoring bridge 优先使用 backend workspace snapshot active buffer，旧 workspace context 仅 fallback；semantic parity HTTP 保持通过。 |
-| 24 | Preview / Runtime 接入 buffer | Preview / Runtime 使用 backend buffer 当前 workspace state；Preview choice click invariant 保持不变。 |
+| 24 | Preview / Runtime 接入 buffer | 已完成。StoryGraph / Runtime bridge 优先使用 backend workspace snapshot active buffer，旧 workspace context 仅 fallback；Preview choice click 与 Runtime HTTP smoke 保持通过。 |
 
 ### E. 保存、autosave 与 recovery，Round 25-30
 

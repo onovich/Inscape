@@ -1,7 +1,4 @@
-import {
-  EditorBackendWorkspaceSnapshotFormat,
-  EditorBackendWorkspaceSnapshotModel,
-} from "../../Backend/Models/EditorBackendWorkspaceSnapshotModel.js";
+import { EditorBackendWorkspaceRequestModel } from "../../Backend/Models/EditorBackendWorkspaceRequestModel.js";
 
 export class LanguageServerAuthoringRequestModel {
   static build({
@@ -10,21 +7,11 @@ export class LanguageServerAuthoringRequestModel {
     workspace = null,
     workspaceSnapshot = null,
   } = {}) {
-    if (workspaceSnapshot?.format === EditorBackendWorkspaceSnapshotFormat) {
-      const activeRequest = EditorBackendWorkspaceSnapshotModel.buildActiveDocumentRequest(workspaceSnapshot);
-      return {
-        ...query,
-        activeRelativePath: activeRequest.activeRelativePath,
-        documentRevision: activeRequest.documentRevision,
-        scriptText: activeRequest.scriptText,
-        workspace: activeRequest.workspace,
-      };
-    }
-
-    return {
-      ...query,
-      scriptText: typeof scriptText === "string" ? scriptText : "",
+    return EditorBackendWorkspaceRequestModel.build({
+      request: query,
+      scriptText,
       workspace,
-    };
+      workspaceSnapshot,
+    });
   }
 }

@@ -1,5 +1,6 @@
 import { LanguageServerStoryGraphModelMapper } from "../Models/LanguageServerStoryGraphModelMapper.js";
 import { createEditorBackendServices } from "../../Backend/Clients/EditorBackendServiceRegistry.js";
+import { EditorBackendWorkspaceRequestModel } from "../../Backend/Models/EditorBackendWorkspaceRequestModel.js";
 
 export class SelfHostedEditorStoryGraphBridge {
   constructor(options = {}) {
@@ -8,22 +9,32 @@ export class SelfHostedEditorStoryGraphBridge {
       || services?.storyGraphClient
       || createEditorBackendServices(options).storyGraphClient;
     this.workspaceContextProvider = null;
+    this.workspaceSnapshotProvider = null;
   }
 
   setWorkspaceContextProvider(provider) {
     this.workspaceContextProvider = provider;
   }
 
+  setWorkspaceSnapshotProvider(provider) {
+    this.workspaceSnapshotProvider = provider;
+  }
+
   async getStoryGraph(scriptText) {
     try {
       const workspace = this.workspaceContextProvider?.() || null;
-      const payload = await this.storyGraphClient.compileProjectGraph({
+      const request = EditorBackendWorkspaceRequestModel.build({
         scriptText,
         workspace,
+        workspaceSnapshot: this.workspaceSnapshotProvider?.() || null,
       });
+      const payload = await this.storyGraphClient.compileProjectGraph(request);
 
       return {
-        graph: LanguageServerStoryGraphModelMapper.mapProjectGraph(payload, workspace?.currentFilePath || ""),
+        graph: LanguageServerStoryGraphModelMapper.mapProjectGraph(
+          payload,
+          request.activeRelativePath || request.workspace?.currentFilePath || ""
+        ),
         provider: "compiler-project",
       };
     } catch (error) {

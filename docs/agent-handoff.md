@@ -249,6 +249,16 @@ P1 Round 23 已完成 LanguageServer-backed authoring bridge 的 backend snapsho
 - `check:backend-services` 覆盖六个 authoring bridge 的 snapshot 优先级，并断言旧 workspace context 文本不会在 snapshot 存在时进入 payload。
 - Round 23 当前已通过：SelfHostedEditor `check:syntax` / `check:structure` / `check:backend-services` / `check:model` / `check:semantic-parity-http`。下一步进入 Round 24：Preview / Runtime 接入 buffer。
 
+### 2026-06-16 SelfHostedEditor P1 Round 24 Preview / Runtime buffer 接入快照
+
+P1 Round 24 已完成 Preview 依赖的 StoryGraph bridge 与 Runtime bridge 的 backend snapshot 接入，仍未改变 dev-host `/api/*` route、Compiler / Runtime shared payload shape，也未把 Preview 或 Runtime 语义复制进 EditorBackend。
+
+- 新增 `EditorBackendWorkspaceRequestModel`，把 backend snapshot active document 投影为 shared request 的 `scriptText`、`workspace`、`activeRelativePath` 与 `documentRevision`；`LanguageServerAuthoringRequestModel` 也复用该投影。
+- `SelfHostedEditorStoryGraphBridge` 与 `SelfHostedEditorRuntimeBridge` 新增 `workspaceSnapshotProvider`；有 snapshot 时优先使用 backend buffer active document，旧 workspace context 仅 fallback。
+- Runtime start / step 继续保留 `sessionId`、`action` 与 `runtimeState` fallback；Preview choice click invariant 没有改动。
+- `check:backend-services` 覆盖 StoryGraph / Runtime 的 snapshot 优先级，并断言旧 workspace context 文本不会在 snapshot 存在时进入 payload。
+- Round 24 当前已通过：SelfHostedEditor `check:syntax` / `check:structure` / `check:backend-services` / `check:runtime` / `check:runtime-http` / `check:model` / `check:semantic-parity-http`。下一步进入 Round 25：Save command skeleton。
+
 ### 2026-06-14 SelfHostedEditor desktop backend v0 决策快照
 
 本轮已采纳 [ADR 0019](adr/0019-self-hosted-editor-embedded-backend-v0.md)：SelfHostedEditor desktop backend v0 采用嵌入式 EditorBackend，而不是独立 sidecar daemon。

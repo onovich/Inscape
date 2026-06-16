@@ -13,6 +13,8 @@ import { SelfHostedEditorDiagnosticsBridge } from "../Scripts/LanguageServer/Bri
 import { SelfHostedEditorDocumentSymbolBridge } from "../Scripts/LanguageServer/Bridges/SelfHostedEditorDocumentSymbolBridge.js";
 import { SelfHostedEditorHoverBridge } from "../Scripts/LanguageServer/Bridges/SelfHostedEditorHoverBridge.js";
 import { SelfHostedEditorReferencesBridge } from "../Scripts/LanguageServer/Bridges/SelfHostedEditorReferencesBridge.js";
+import { SelfHostedEditorStoryGraphBridge } from "../Scripts/LanguageServer/Bridges/SelfHostedEditorStoryGraphBridge.js";
+import { SelfHostedEditorRuntimeBridge } from "../Scripts/Runtime/Bridges/SelfHostedEditorRuntimeBridge.js";
 
 const moduleRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const calls = [];
@@ -307,6 +309,67 @@ for (const call of authoringCalls) {
 assertEqual(authoringCalls.find((call) => call.method === "definition")?.payload.definitionName, "Opening", "authoring definition query preserved");
 assertEqual(authoringCalls.find((call) => call.method === "hover")?.payload.hoverKind, "node", "authoring hover kind preserved");
 assertEqual(authoringCalls.find((call) => call.method === "references")?.payload.referenceName, "Opening", "authoring references query preserved");
+const previewRuntimeCalls = [];
+const previewStoryGraphBridge = new SelfHostedEditorStoryGraphBridge({
+  storyGraphClient: {
+    async compileProjectGraph(payload) {
+      previewRuntimeCalls.push({ method: "storyGraph.compileProjectGraph", payload });
+      return {
+        documents: [
+          {
+            edges: [],
+            nodes: [],
+            sourcePath: payload.activeRelativePath,
+          },
+        ],
+        entryNodeName: "",
+      };
+    },
+  },
+});
+const runtimeBridge = new SelfHostedEditorRuntimeBridge({
+  runtimeSessionClient: {
+    sessionId: "runtime-buffer-session",
+    async startOrObserve(payload) {
+      previewRuntimeCalls.push({ method: "runtimeSession.startOrObserve", payload });
+      return { currentNode: null };
+    },
+    async step(payload) {
+      previewRuntimeCalls.push({ method: "runtimeSession.step", payload });
+      return { currentNode: null };
+    },
+  },
+});
+for (const bridge of [previewStoryGraphBridge, runtimeBridge]) {
+  bridge.setWorkspaceContextProvider(() => legacyWorkspaceContext);
+  bridge.setWorkspaceSnapshotProvider(() => authoringSnapshot);
+}
+await previewStoryGraphBridge.getStoryGraph("legacy script text");
+await runtimeBridge.getRuntimeSnapshot("legacy script text");
+await runtimeBridge.stepRuntimeSnapshot("legacy script text", { state: { currentNodeName: "Opening" } }, {
+  groupIndex: 0,
+  optionIndex: 0,
+  type: "choose",
+});
+assertEqual(previewRuntimeCalls.length, 3, "preview/runtime bridge call count");
+for (const call of previewRuntimeCalls) {
+  assertEqual(call.payload.workspace.format, EditorBackendWorkspaceSnapshotFormat, `preview/runtime ${call.method} uses workspace snapshot`);
+  assertEqual(call.payload.workspace.source, "backend-buffer-store", `preview/runtime ${call.method} snapshot source`);
+  assertEqual(call.payload.activeRelativePath, "story/opening.inscape", `preview/runtime ${call.method} active path`);
+  assertEqual(call.payload.documentRevision, documentUpdateResult.document.revision, `preview/runtime ${call.method} document revision`);
+  assertEqual(call.payload.scriptText, "# Opening\nNarrator: Updated", `preview/runtime ${call.method} active buffer text`);
+  assertEqual(JSON.stringify(call.payload).includes("legacy workspace text"), false, `preview/runtime ${call.method} ignores legacy workspace text when snapshot exists`);
+}
+assertEqual(
+  previewRuntimeCalls.find((call) => call.method === "runtimeSession.startOrObserve")?.payload.sessionId,
+  "runtime-buffer-session",
+  "runtime snapshot request preserves session id"
+);
+assertEqual(
+  previewRuntimeCalls.find((call) => call.method === "runtimeSession.step")?.payload.action?.type,
+  "choose",
+  "runtime action request preserves action"
+);
 const workspaceBoundary = services.documentBufferStore.buildWorkspaceBoundary({
   relativePath: "assets/portrait.png",
   writeIntent: "create",

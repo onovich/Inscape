@@ -176,6 +176,8 @@ export async function createSelfHostedEditorFeatures(bindings, callbacks = {}) {
     documentSymbolBridge,
     hoverBridge,
     referencesBridge,
+    runtimeBridge,
+    storyGraphBridge,
   ]) {
     bridge.setWorkspaceSnapshotProvider(workspaceSnapshotProvider);
   }

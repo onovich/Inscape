@@ -1,4 +1,5 @@
 import { createEditorBackendServices } from "../../Backend/Clients/EditorBackendServiceRegistry.js";
+import { EditorBackendWorkspaceRequestModel } from "../../Backend/Models/EditorBackendWorkspaceRequestModel.js";
 
 export class SelfHostedEditorRuntimeBridge {
   constructor(options = {}) {
@@ -8,20 +9,28 @@ export class SelfHostedEditorRuntimeBridge {
       || createEditorBackendServices(options).runtimeSessionClient;
     this.sessionId = options.sessionId || this.runtimeSessionClient.sessionId || this.createSessionId();
     this.workspaceContextProvider = null;
+    this.workspaceSnapshotProvider = null;
   }
 
   setWorkspaceContextProvider(provider) {
     this.workspaceContextProvider = provider;
   }
 
+  setWorkspaceSnapshotProvider(provider) {
+    this.workspaceSnapshotProvider = provider;
+  }
+
   async getRuntimeSnapshot(scriptText) {
     try {
       const workspace = this.workspaceContextProvider?.() || null;
-      const snapshot = await this.runtimeSessionClient.startOrObserve({
-        sessionId: this.sessionId,
+      const request = this.buildWorkspaceRequest({
+        request: {
+          sessionId: this.sessionId,
+        },
         scriptText,
         workspace,
       });
+      const snapshot = await this.runtimeSessionClient.startOrObserve(request);
 
       return {
         provider: "runtime-project",
@@ -41,24 +50,28 @@ export class SelfHostedEditorRuntimeBridge {
       const workspace = this.workspaceContextProvider?.() || null;
       let snapshot;
       try {
-        snapshot = await this.runtimeSessionClient.step({
-          action,
-          sessionId: this.sessionId,
+        snapshot = await this.runtimeSessionClient.step(this.buildWorkspaceRequest({
+          request: {
+            action,
+            sessionId: this.sessionId,
+          },
           scriptText,
           workspace,
-        });
+        }));
       } catch (error) {
         if (!runtimeState) {
           throw error;
         }
 
-        snapshot = await this.runtimeSessionClient.step({
-          action,
-          runtimeState,
-          sessionId: this.sessionId,
+        snapshot = await this.runtimeSessionClient.step(this.buildWorkspaceRequest({
+          request: {
+            action,
+            runtimeState,
+            sessionId: this.sessionId,
+          },
           scriptText,
           workspace,
-        });
+        }));
       }
 
       return {
@@ -77,5 +90,14 @@ export class SelfHostedEditorRuntimeBridge {
   createSessionId() {
     const randomPart = Math.random().toString(36).slice(2);
     return `runtime-${Date.now().toString(36)}-${randomPart}`;
+  }
+
+  buildWorkspaceRequest({ request, scriptText, workspace }) {
+    return EditorBackendWorkspaceRequestModel.build({
+      request,
+      scriptText,
+      workspace,
+      workspaceSnapshot: this.workspaceSnapshotProvider?.() || null,
+    });
   }
 }
