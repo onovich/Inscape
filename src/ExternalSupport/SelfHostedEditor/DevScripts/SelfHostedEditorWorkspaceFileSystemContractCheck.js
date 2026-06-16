@@ -7,6 +7,11 @@ import {
   EditorBackendWorkspacePathModel,
 } from "../Scripts/Backend/Models/EditorBackendWorkspacePathModel.js";
 import {
+  EditorBackendWorkspaceFolderFormat,
+  EditorBackendWorkspaceFolderModel,
+  EditorBackendWorkspaceFolderOpenDecisionFormat,
+} from "../Scripts/Backend/Models/EditorBackendWorkspaceFolderModel.js";
+import {
   EditorBackendWorkspaceWriteTargetCatalogFormat,
   EditorBackendWorkspaceWriteTargetDecisionFormat,
   EditorBackendWorkspaceWriteTargetModel,
@@ -142,10 +147,100 @@ for (const relativePath of [
   assertEqual(decision.targetKind, "rejected", `write target rejected kind: ${relativePath}`);
 }
 
+const openDecision = EditorBackendWorkspaceFolderModel.buildOpenDecision({
+  selectedPathKind: "directory",
+  workspaceRoot,
+});
+assertEqual(openDecision.format, EditorBackendWorkspaceFolderOpenDecisionFormat, "workspace open decision format");
+assertEqual(openDecision.allowed, true, "workspace open accepts directory");
+assertEqual(openDecision.mode, "directory-workspace", "workspace open mode");
+assertEqual(openDecision.workspaceRoot, "C:/Case Files/Court Loop", "workspace open normalizes root");
+
+const fileOpenDecision = EditorBackendWorkspaceFolderModel.buildOpenDecision({
+  selectedPathKind: "file",
+  workspaceRoot: "C:/Case Files/Court Loop/story/opening.inscape",
+});
+assertEqual(fileOpenDecision.allowed, false, "workspace open rejects file path kind");
+assertEqual(fileOpenDecision.reason, "single-file-mode-rejected", "workspace open file rejection reason");
+
+const missingRootOpenDecision = EditorBackendWorkspaceFolderModel.buildOpenDecision({
+  selectedPathKind: "directory",
+  workspaceRoot: "",
+});
+assertEqual(missingRootOpenDecision.allowed, false, "workspace open rejects missing root");
+assertEqual(missingRootOpenDecision.reason, "workspace-root-required", "workspace open missing root reason");
+
+const workspaceFolder = EditorBackendWorkspaceFolderModel.buildWorkspaceFolder({
+  activeRelativePath: "story/branch.inscape",
+  documents: [
+    {
+      existsOnDisk: true,
+      relativePath: "story\\opening.inscape",
+      text: "secret opening text",
+    },
+    {
+      existsOnDisk: true,
+      relativePath: "story/branch.inscape",
+      text: "secret branch text",
+    },
+    {
+      relativePath: "notes/readme.txt",
+      text: "secret notes text",
+    },
+    {
+      relativePath: "../escape.inscape",
+      text: "secret escape text",
+    },
+  ],
+  selectedPathKind: "directory",
+  workspaceName: "Court Loop",
+  workspaceRoot,
+});
+assertEqual(workspaceFolder.format, EditorBackendWorkspaceFolderFormat, "workspace folder format");
+assertEqual(workspaceFolder.openDecision.allowed, true, "workspace folder open decision");
+assertEqual(workspaceFolder.documentCount, 2, "workspace folder document count");
+assertEqual(workspaceFolder.activeRelativePath, "story/branch.inscape", "workspace folder active document");
+assertEqual(workspaceFolder.documents[0].relativePath, "story/opening.inscape", "workspace folder first document");
+assertEqual(workspaceFolder.documents[0].active, false, "workspace folder first document inactive");
+assertEqual(workspaceFolder.documents[1].active, true, "workspace folder second document active");
+assertEqual(workspaceFolder.documents[1].title, "branch", "workspace folder derives title");
+assertEqual(workspaceFolder.rejectedDocuments.length, 2, "workspace folder rejected documents");
+assertEqual(
+  workspaceFolder.rejectedDocuments.map((document) => document.reason).join(","),
+  "workspace-document-not-inscape,path-traversal-rejected",
+  "workspace folder rejected document reasons"
+);
+assertNotIncludes(JSON.stringify(workspaceFolder), "secret", "workspace folder summary does not expose document text");
+
+const fallbackActiveWorkspaceFolder = EditorBackendWorkspaceFolderModel.buildWorkspaceFolder({
+  activeRelativePath: "missing.inscape",
+  documents: [
+    {
+      relativePath: "story/opening.inscape",
+    },
+    {
+      relativePath: "story/branch.inscape",
+    },
+  ],
+  selectedPathKind: "directory",
+  workspaceRoot,
+});
+assertEqual(
+  fallbackActiveWorkspaceFolder.activeRelativePath,
+  "story/opening.inscape",
+  "workspace folder falls back to first document when active path is missing"
+);
+
 console.log("SelfHostedEditor workspace file system contract ok");
 
 function assertEqual(actual, expected, label) {
   if (actual !== expected) {
     throw new Error(`${label}: expected ${expected}, got ${actual}`);
+  }
+}
+
+function assertNotIncludes(text, unexpected, label) {
+  if (String(text).includes(unexpected)) {
+    throw new Error(`${label}: did not expect ${unexpected}`);
   }
 }

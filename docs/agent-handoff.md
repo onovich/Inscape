@@ -151,6 +151,16 @@ P1 Round 14 已完成 workspace 写回白名单 catalog / decision contract，�
 - `check:workspace-fs` 覆盖 write target catalog、允许目标、未白名单目标，以及目录本身不能作为文件写回目标。
 - Round 14 验证已通过：SelfHostedEditor `check:workspace-fs` / `check:desktop-backend` / `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity`，`.NET build` 与 Internal tests。下一步进入 Round 15：open workspace folder。
 
+### 2026-06-16 SelfHostedEditor P1 Round 15 open workspace folder 快照
+
+P1 Round 15 已完成 open workspace folder model / contract，仍未接真实文件选择器、磁盘扫描或 ProjectSession lifecycle。
+
+- 新增 `EditorBackendWorkspaceFolderModel`，定义 workspace open decision、workspace folder summary 与 workspace document summary。
+- open decision 只接受 `directory`，拒绝正式单文件模式并返回 `single-file-mode-rejected`；空 workspace root 返回 `workspace-root-required`。
+- workspace folder summary 可列出多个 `.inscape` 文档、设置 active document，并在 active path 缺失时回落到第一个有效文档。
+- document list 只接受 workspace-relative `.inscape` 文件；非 `.inscape` 候选和路径越界候选进入 `rejectedDocuments`，且 summary 不暴露 document text。
+- Round 15 验证已通过：SelfHostedEditor `check:workspace-fs` / `check:desktop-backend` / `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity`，`.NET build` 与 Internal tests。下一步进入 Round 16：ProjectSession lifecycle。
+
 ### 2026-06-14 SelfHostedEditor desktop backend v0 决策快照
 
 本轮已采纳 [ADR 0019](adr/0019-self-hosted-editor-embedded-backend-v0.md)：SelfHostedEditor desktop backend v0 采用嵌入式 EditorBackend，而不是独立 sidecar daemon。

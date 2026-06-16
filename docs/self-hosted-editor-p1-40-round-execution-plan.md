@@ -523,6 +523,38 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 2. 本轮没有把 Tooling / LanguageServer / Runtime 语义复制进 EditorBackend，也没有改变 dev-host HTTP payload shape。
 3. 下一轮应进入 Round 15：open workspace folder，建立只接受目录、列出多个 `.inscape` 文件、不提供正式单文件入口的 contract。
 
+### 2026-06-16 Round 15：open workspace folder
+
+范围：定义 open workspace folder 的 model / contract；不接真实文件选择器、不扫描磁盘、不实现 ProjectSession lifecycle。
+
+完成内容：
+
+1. 新增 `EditorBackendWorkspaceFolderModel`，定义 workspace open decision、workspace folder summary 与 workspace document summary。
+2. open decision 只接受 `directory`，拒绝正式单文件模式并返回 `single-file-mode-rejected`；空 workspace root 返回 `workspace-root-required`。
+3. workspace folder summary 可列出多个 `.inscape` 文档、设置 active document，并在 active path 缺失时回落到第一个有效文档。
+4. document list 只接受 workspace-relative `.inscape` 文件；非 `.inscape` 候选和路径越界候选进入 `rejectedDocuments`。
+5. `check:workspace-fs` 已扩展覆盖目录打开、单文件拒绝、多 `.inscape` 列表、active document 与不泄露 document text。
+
+本轮验证已通过：
+
+```powershell
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:workspace-fs
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:desktop-backend
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:structure
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
+npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
+dotnet build Inscape.slnx --no-restore
+dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build
+```
+
+架构对照结论：
+
+1. open workspace folder 仍是 SelfHostedEditor backend model contract，不访问 Node / Electron / fs，不暴露给 renderer 任意文件能力。
+2. 本轮没有引入正式单文件模式、sidecar daemon、多窗口共享 session 或 P1.5 long-lived LanguageServer。
+3. 下一轮应进入 Round 16：ProjectSession lifecycle，建立一个窗口一个 active project session 的 status contract。
+
 ## 36 轮主计划
 
 ### A. Contract 与 transport 基础，Round 1-6
@@ -553,7 +585,7 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 |---|---|---|
 | 13 | workspace path guard | 已完成。新增 `EditorBackendWorkspacePathModel` 与 `check:workspace-fs`；backend boundary 只接受 workspace-relative path，拒绝绝对路径、`..` 越界、非法 segment / null byte 与解析后不在 workspace 内的路径。 |
 | 14 | 写回白名单 | 已完成。新增 `EditorBackendWorkspaceWriteTargetModel`，显式 catalog 覆盖 `.inscape` 文档、localization CSV、node-map sidecar、line-map sidecar、recovery、backup、cache、assets；其他写回默认拒绝。 |
-| 15 | open workspace folder | v0 只打开目录，列出 workspace 内多个 `.inscape` 文件；不提供正式打开单文件入口。 |
+| 15 | open workspace folder | 已完成。新增 `EditorBackendWorkspaceFolderModel`，v0 只接受目录，拒绝正式单文件模式，可列出多个 workspace-relative `.inscape` 文件并设置 active document。 |
 | 16 | ProjectSession lifecycle | 建立一个窗口一个 active project session；session id、workspace root、active relative path、document count、revision、mode=`embedded-desktop` 可查询。 |
 | 17 | close / switch workspace cleanup | close 或切换 workspace 时清理 Runtime / line-map / localization baseline 与临时子 session；status 只返回摘要和计数。 |
 | 18 | session panel / status 接入 | UI session panel 显示 embedded mode、session id、workspace 摘要、language mode、runtime / line / localization 状态；不泄露正文、CSV、line-map 或 Runtime snapshot。 |
