@@ -26,6 +26,10 @@ import {
 import {
   EditorBackendWorkspaceSessionCleanupFormat,
 } from "../Scripts/Backend/Models/EditorBackendWorkspaceSessionCleanupModel.js";
+import {
+  EditorBackendWorkspaceSnapshotFormat,
+  EditorBackendWorkspaceSnapshotModel,
+} from "../Scripts/Backend/Models/EditorBackendWorkspaceSnapshotModel.js";
 
 const directDocumentBuffer = EditorBackendDocumentBufferModel.buildBuffer({
   active: true,
@@ -125,6 +129,29 @@ const activeBufferResult = EditorBackendDocumentBufferStoreModel.setActiveDocume
 assertEqual(activeBufferResult.ok, true, "document buffer set active ok");
 assertEqual(activeBufferResult.store.activeRelativePath, "story/branch.inscape", "document buffer set active path");
 assertEqual(activeBufferResult.document.active, true, "document buffer set active document flag");
+const workspaceSnapshot = EditorBackendWorkspaceSnapshotModel.buildSnapshot({
+  store: activeBufferResult.store,
+});
+assertEqual(workspaceSnapshot.format, EditorBackendWorkspaceSnapshotFormat, "workspace snapshot format");
+assertEqual(workspaceSnapshot.source, "backend-buffer-store", "workspace snapshot source");
+assertEqual(workspaceSnapshot.currentFilePath, "story/branch.inscape", "workspace snapshot active path");
+assertEqual(workspaceSnapshot.documentCount, 2, "workspace snapshot document count");
+assertEqual(workspaceSnapshot.documentRevision, 2, "workspace snapshot active document revision");
+assertEqual(workspaceSnapshot.revision, 6, "workspace snapshot store revision");
+assertEqual(workspaceSnapshot.payloadContentExposed, true, "workspace snapshot payload exposure flag");
+assertEqual(workspaceSnapshot.documents[0].text, "secret updated buffer text", "workspace snapshot includes current buffer text");
+assertEqual(workspaceSnapshot.documents[1].text, "secret branch buffer text", "workspace snapshot includes secondary buffer text");
+const activeDocumentRequest = EditorBackendWorkspaceSnapshotModel.buildActiveDocumentRequest(workspaceSnapshot);
+assertEqual(activeDocumentRequest.activeRelativePath, "story/branch.inscape", "workspace snapshot active request path");
+assertEqual(activeDocumentRequest.documentRevision, 2, "workspace snapshot active request revision");
+assertEqual(activeDocumentRequest.scriptText, "secret branch buffer text", "workspace snapshot active request text");
+assertEqual(activeDocumentRequest.workspace.format, EditorBackendWorkspaceSnapshotFormat, "workspace snapshot active request workspace");
+const openingSnapshot = EditorBackendWorkspaceSnapshotModel.buildSnapshot({
+  activeRelativePath: "story/opening.inscape",
+  store: activeBufferResult.store,
+});
+assertEqual(openingSnapshot.currentFilePath, "story/opening.inscape", "workspace snapshot active override path");
+assertEqual(openingSnapshot.documentRevision, 6, "workspace snapshot active override revision");
 const missingActiveResult = EditorBackendDocumentBufferStoreModel.setActiveDocument(updateBufferResult.store, {
   relativePath: "story/missing.inscape",
 });

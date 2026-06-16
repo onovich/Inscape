@@ -120,6 +120,8 @@ assertSurface(services.documentBufferStore, [
   "getDocument",
   "updateDocument",
   "setActiveDocument",
+  "buildWorkspaceSnapshot",
+  "buildActiveDocumentRequest",
   "buildWorkspaceBoundary",
   "buildSaveStatus",
   "buildRecoveryStatus",
@@ -218,6 +220,16 @@ const activeDocumentResult = services.documentBufferStore.setActiveDocument(docu
 assertEqual(activeDocumentResult.ok, true, "document buffer active document result ok");
 assertEqual(activeDocumentResult.store.activeRelativePath, "story/branch.inscape", "document buffer active document switches");
 assertEqual(activeDocumentResult.document.active, true, "document buffer active document is marked active");
+const workspaceSnapshot = services.documentBufferStore.buildWorkspaceSnapshot(activeDocumentResult.store);
+assertEqual(workspaceSnapshot.source, "backend-buffer-store", "workspace snapshot source");
+assertEqual(workspaceSnapshot.currentFilePath, "story/branch.inscape", "workspace snapshot active path");
+assertEqual(workspaceSnapshot.documentCount, 2, "workspace snapshot document count");
+assertEqual(workspaceSnapshot.payloadContentExposed, true, "workspace snapshot exposes request payload content");
+assertEqual(workspaceSnapshot.documents[1].text, "# Branch", "workspace snapshot includes buffer text for backend requests");
+const activeDocumentRequest = services.documentBufferStore.buildActiveDocumentRequest(workspaceSnapshot);
+assertEqual(activeDocumentRequest.activeRelativePath, "story/branch.inscape", "active document request path");
+assertEqual(activeDocumentRequest.scriptText, "# Branch", "active document request script text");
+assertEqual(activeDocumentRequest.workspace.source, "backend-buffer-store", "active document request workspace source");
 const workspaceBoundary = services.documentBufferStore.buildWorkspaceBoundary({
   relativePath: "assets/portrait.png",
   writeIntent: "create",

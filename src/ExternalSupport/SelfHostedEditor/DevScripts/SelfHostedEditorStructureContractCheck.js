@@ -88,6 +88,7 @@ const requiredPaths = [
   "Scripts/Backend/Models/EditorBackendWorkspaceFolderModel.js",
   "Scripts/Backend/Models/EditorBackendWorkspacePathModel.js",
   "Scripts/Backend/Models/EditorBackendWorkspaceSessionCleanupModel.js",
+  "Scripts/Backend/Models/EditorBackendWorkspaceSnapshotModel.js",
   "Scripts/Backend/Models/EditorBackendWorkspaceWriteTargetModel.js",
   "Scripts/Entries/SelfHostedEditorAppEntry.js",
   "Scripts/Entries/SelfHostedEditorDomBindings.js",

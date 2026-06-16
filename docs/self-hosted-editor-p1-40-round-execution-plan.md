@@ -736,6 +736,35 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
 2. 旧 debounce / stale request 已有明确拒绝路径，不会覆盖较新 revision。
 3. 下一轮应进入 Round 22：workspace snapshot builder，让 LanguageServer / Runtime / Tooling 请求从 backend buffer 组 workspace snapshot。
 
+### 2026-06-16 Round 22：workspace snapshot builder
+
+范围：从 DocumentBufferStore 构建 backend-owned workspace snapshot；不接入 authoring endpoint、Preview 或 Runtime 调用，不改变 dev-host HTTP payload shape。
+
+完成内容：
+
+1. 新增 `EditorBackendWorkspaceSnapshotModel`，定义 `inscape.self-hosted-editor.workspace-snapshot` shape。
+2. snapshot 从 `EditorBackendDocumentBufferStoreModel` 构建，包含 `sessionId`、workspace name、active path、store revision、active document revision、document count 与 documents。
+3. snapshot documents 携带 `relativePath`、text、revision、dirty、existsOnDisk、lastLoadedUtc 与 active flag，用于后续 LanguageServer / Runtime / Tooling 请求。
+4. snapshot 标记 `payloadContentExposed: true`，明确它是 backend request payload，不是 status / list summary。
+5. 新增 `buildActiveDocumentRequest()`，从 snapshot 取 active document text、active relative path、document revision 与 workspace。
+6. `DocumentBufferStore` 窄服务暴露 `buildWorkspaceSnapshot()` 与 `buildActiveDocumentRequest()`。
+
+验证：
+
+```powershell
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:structure
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:desktop-backend
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:backend-services
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
+```
+
+架构对照结论：
+
+1. snapshot builder 只把 backend buffer store 投影成请求输入；没有重算 Compiler / LanguageServer / Runtime / Tooling 语义。
+2. status / list 仍不泄露正文；只有明确 backend request snapshot 标记为 content-bearing payload。
+3. 下一轮应进入 Round 23：authoring endpoint 接入 buffer，让 diagnostics / completions / definition / references / hover / documentSymbols 使用 backend snapshot。
+
 ## 36 轮主计划
 
 ### A. Contract 与 transport 基础，Round 1-6
@@ -778,7 +807,7 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
 | 19 | DocumentBuffer model | 已完成。新增 `EditorBackendDocumentBufferModel`，backend buffer 记录 `relativePath`、text、disk hash、revision、dirty、existsOnDisk、lastLoadedUtc 与 active；desktop session 与 `DocumentBufferStore` 均复用该 shape，summary 不暴露正文。 |
 | 20 | list / get / update / active document | 已完成。新增 `EditorBackendDocumentBufferStoreModel`，可 build store、list summaries、get document、update text 并切换 active document；list 不暴露正文，update 推进 document / store revision，缺失文档返回 `document-not-found`。 |
 | 21 | baseRevision 与 stale guard | 已完成。`updateDocument()` 支持 `baseRevision`，revision 不匹配时返回 `stale-document-revision`，并只回传 current/base revision 与 text-free summary；旧 debounce 不能覆盖较新 revision。 |
-| 22 | workspace snapshot builder | LanguageServer / Runtime / Tooling 请求从 backend buffer 组装 workspace snapshot，不再依赖前端每次上传完整 workspace truth。 |
+| 22 | workspace snapshot builder | 已完成。新增 `EditorBackendWorkspaceSnapshotModel`，从 DocumentBufferStore 构建 content-bearing backend request snapshot，并可导出 active document request；status/list 仍保持 text-free。 |
 | 23 | authoring endpoint 接入 buffer | diagnostics / completions / definition / references / hover / documentSymbols 使用 backend buffer 当前内容；payload shape 仍与 shared LanguageServer contract 对齐。 |
 | 24 | Preview / Runtime 接入 buffer | Preview / Runtime 使用 backend buffer 当前 workspace state；Preview choice click invariant 保持不变。 |
 

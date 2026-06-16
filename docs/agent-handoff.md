@@ -226,6 +226,18 @@ P1 Round 21 已完成 `updateDocument()` baseRevision / stale guard，仍未接�
 - `check:desktop-backend` 与 `check:backend-services` 均覆盖正常 baseRevision update 与 stale update rejected。
 - Round 21 当前已通过：SelfHostedEditor `check:syntax` / `check:desktop-backend` / `check:backend-services` / `check:model`。下一步进入 Round 22：workspace snapshot builder。
 
+### 2026-06-16 SelfHostedEditor P1 Round 22 workspace snapshot builder 快照
+
+P1 Round 22 已完成 workspace snapshot builder，仍未把 authoring endpoint、Preview 或 Runtime 改为消费 backend buffer。
+
+- 新增 `EditorBackendWorkspaceSnapshotModel`，定义 `inscape.self-hosted-editor.workspace-snapshot` shape。
+- snapshot 从 `EditorBackendDocumentBufferStoreModel` 构建，包含 session id、workspace name、active path、store revision、active document revision、document count 与 documents。
+- snapshot documents 携带 `relativePath`、text、revision、dirty、existsOnDisk、lastLoadedUtc 与 active flag，是明确的 backend request payload。
+- snapshot 标记 `payloadContentExposed: true`，区别于 text-free status / list summary。
+- 新增 `buildActiveDocumentRequest()`，从 snapshot 导出 active document text、active relative path、document revision 与 workspace。
+- `DocumentBufferStore` 窄服务已暴露 `buildWorkspaceSnapshot()` 与 `buildActiveDocumentRequest()`。
+- Round 22 当前已通过：SelfHostedEditor `check:syntax` / `check:structure` / `check:desktop-backend` / `check:backend-services` / `check:model`。下一步进入 Round 23：authoring endpoint 接入 buffer。
+
 ### 2026-06-14 SelfHostedEditor desktop backend v0 决策快照
 
 本轮已采纳 [ADR 0019](adr/0019-self-hosted-editor-embedded-backend-v0.md)：SelfHostedEditor desktop backend v0 采用嵌入式 EditorBackend，而不是独立 sidecar daemon。

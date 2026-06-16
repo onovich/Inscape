@@ -1,6 +1,7 @@
 import { EditorBackendDesktopSessionModel } from "../Models/EditorBackendDesktopSessionModel.js";
 import { EditorBackendDocumentBufferModel } from "../Models/EditorBackendDocumentBufferModel.js";
 import { EditorBackendDocumentBufferStoreModel } from "../Models/EditorBackendDocumentBufferStoreModel.js";
+import { EditorBackendWorkspaceSnapshotModel } from "../Models/EditorBackendWorkspaceSnapshotModel.js";
 import { EditorBackendClient } from "./EditorBackendClient.js";
 
 const serviceKeys = Object.freeze([
@@ -65,6 +66,17 @@ export class DocumentBufferStore {
 
   setActiveDocument(store = {}, request = {}) {
     return EditorBackendDocumentBufferStoreModel.setActiveDocument(store, request);
+  }
+
+  buildWorkspaceSnapshot(store = {}, request = {}) {
+    return EditorBackendWorkspaceSnapshotModel.buildSnapshot({
+      activeRelativePath: request.activeRelativePath,
+      store,
+    });
+  }
+
+  buildActiveDocumentRequest(snapshot = {}) {
+    return EditorBackendWorkspaceSnapshotModel.buildActiveDocumentRequest(snapshot);
   }
 
   buildWorkspaceBoundary(boundary = {}) {
