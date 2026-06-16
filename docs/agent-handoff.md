@@ -19,6 +19,17 @@ P1 已从 P0 验收后进入 desktop backend v0 执行线；当前完成的是 R
 - dev HTTP route、handler、temporary workspace 与 smoke 仍集中在 `DevScripts`，它们是开发宿主 transport，不是产品 backend API。
 - Round 1 没有进入 Electron/preload、`DocumentBufferStore`、workspace file IO、autosave/recovery 或 P1.5 full long-lived LanguageServer。下一步按计划进入 Round 2：embedded backend v0 model contract。
 
+### 2026-06-16 SelfHostedEditor P1 Round 2 model contract 快照
+
+P1 Round 2 已完成 embedded backend v0 model contract，仍未接 Electron 或真实文件 IO。
+
+- 新增 `EditorBackendDesktopSessionModel`，覆盖 `embedded-desktop` project session、DocumentBuffer、workspace file boundary、save status、recovery status 与 settings summary。
+- 新增 `check:desktop-backend`，并接入 `check:model`；`check:structure` 已守住新增 model 和 contract check。
+- DocumentBuffer model 可以持有当前 text，但 project session status 只暴露 summary；contract 明确断言不泄露 document text 或 recovery text。
+- workspace file boundary guard 当前允许 `.inscape`、localization CSV、node-map sidecar、line-map sidecar、`.inscape-workspace/recovery|backups|cache` 与 `assets/`，并拒绝空路径、绝对路径、`..` 越界和未白名单写回。
+- defaults 保持 P1 边界：autosave / backup 默认开启，资源默认复制进 `assets/`，language session 默认仍是 `process-per-request`，没有默认启用 P1.5 full long-lived LanguageServer。
+- Round 2 验证已通过：SelfHostedEditor `check:desktop-backend` / `check:syntax` / `check:model` / `check:structure`。下一步进入 Round 3：抽出更明确的 `EditorBackendTransport` contract，保留 HTTP dev host 默认路径。
+
 ### 2026-06-14 SelfHostedEditor desktop backend v0 决策快照
 
 本轮已采纳 [ADR 0019](adr/0019-self-hosted-editor-embedded-backend-v0.md)：SelfHostedEditor desktop backend v0 采用嵌入式 EditorBackend，而不是独立 sidecar daemon。

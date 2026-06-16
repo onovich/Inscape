@@ -1,6 +1,6 @@
 # SelfHostedEditor P1 40 轮内执行方案
 
-状态：执行中（Round 1 已完成）
+状态：执行中（Round 1-2 已完成）
 
 日期：2026-06-15
 
@@ -130,6 +130,33 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 2. 当前 Round 1 未引入 sidecar daemon、多窗口共享、正式单文件模式、localhost 产品 API 或默认 full long-lived LanguageServer。
 3. 下一轮应进入 Round 2：定义 embedded backend v0 model contract，先覆盖 shape 与 guard，不接 Electron，不改 dev-host payload 成功形状。
 
+### 2026-06-16 Round 2：embedded backend v0 model contract
+
+范围：只定义 shape 与 guard，不接 Electron，不做真实文件 IO，不改变 dev-host `/api/*` 成功 payload，不启用 P1.5 full long-lived LanguageServer。
+
+完成内容：
+
+1. 新增 `EditorBackendDesktopSessionModel`，定义 `embedded-desktop` project session、DocumentBuffer、workspace file boundary、save status、recovery status 与 settings summary 的 P1 v0 shape。
+2. `DocumentBuffer` 是 backend buffer truth，可包含当前文本；project session status 只暴露 document summary、dirty/revision/save/recovery/settings 摘要，不暴露正文或 recovery 文本。
+3. workspace file boundary guard 当前只做模型层判定：允许 `.inscape` 文档、localization CSV、`inscape.node-map.json`、`inscape.line-map.json`、`.inscape-workspace/recovery|backups|cache` 与 `assets/`；拒绝空路径、绝对路径、`..` 越界和未列入白名单的写回目标。
+4. save / recovery / settings summary 已建立默认值：autosave 默认开启，backup 默认开启，外部资源默认复制到 `assets/`，Git checkpoint 默认 manual。
+5. 新增 `check:desktop-backend`，并接入 `check:model`；`check:structure` 现在守住该 contract 入口和 model 文件存在。
+
+本轮验证已通过：
+
+```powershell
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:desktop-backend
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:structure
+```
+
+架构对照结论：
+
+1. 本轮新增的是 ExternalSupport / SelfHostedEditor 的 backend model contract，不把 parser、compiler、localization scoring、Runtime flow 或 LanguageServer authoring 语义复制进 EditorBackend。
+2. 语言会话默认仍是 `process-per-request`，没有声称 P1.5 long-lived LanguageServer 已完成。
+3. 下一轮应进入 Round 3：抽出 `EditorBackendTransport`，把当前 `postJson(path, payload)` 进一步收敛为明确 transport contract，同时保持现有 HTTP dev host 默认路径和 smoke 不变。
+
 ## 36 轮主计划
 
 ### A. Contract 与 transport 基础，Round 1-6
@@ -137,7 +164,7 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 | 轮次 | 目标 | 完成标准 |
 |---|---|---|
 | 1 | P1 基线审计 | 已完成。现有 `EditorBackendClient`、dev HTTP transport、feature controller 到 `/api/*` 的调用路径、package scripts 与 SelfHostedEditor 目录结构已记录在 2026-06-16 Round 1 执行记录中；未改行为。 |
-| 2 | 定义 embedded backend v0 model contract | 新增或扩展 model contract，覆盖 `ProjectSession`、`DocumentBuffer`、workspace file boundary、save status、recovery status、settings summary；只定义 shape 与 guard，不接 Electron。 |
+| 2 | 定义 embedded backend v0 model contract | 已完成。`EditorBackendDesktopSessionModel` 与 `check:desktop-backend` 覆盖 `ProjectSession`、`DocumentBuffer`、workspace file boundary、save status、recovery status、settings summary；只定义 shape 与 guard，不接 Electron。 |
 | 3 | 抽出 `EditorBackendTransport` | `EditorBackendClient` 支持 transport 注入；现有 HTTP dev host 作为默认 transport，现有 smoke 不变。 |
 | 4 | 定义业务窄接口 adapter | `ProjectSessionService`、`DocumentBufferStore`、`LanguageSessionClient`、`RuntimeSessionClient`、`LocalizationWorkflowClient` 等作为 UI 侧窄接口；feature controller 不获得 generic `call(method, payload)`。 |
 | 5 | Fake embedded transport harness | 增加 fake embedded transport / direct harness，用于 contract check；证明 UI 侧不依赖 HTTP path。 |

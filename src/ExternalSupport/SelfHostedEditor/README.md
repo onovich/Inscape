@@ -77,6 +77,7 @@ The current shell is intentionally small, but it now includes a first Monaco-bac
 - Dev-host process output is treated as UTF-8 end to end: CLI / LanguageServer entries set UTF-8 stdout, and the SelfHostedEditor dev server collects child-process stdout/stderr buffers before decoding. Failed commands report bounded process diagnostics with exit code or timeout state plus truncated stdout/stderr previews; do not decode child-process chunks one-by-one, and do not return unbounded process output in HTTP errors.
 - Dev-host payload trimming lives in `SelfHostedEditorPayloadBridge`. The bridge keeps shared shapes such as localization `presenter.items` and node-map `report.items`, trims host-unneeded fields for transport, and normalizes source paths without making the dev server a second presenter or report truth.
 - Current backend preparation is still a boundary adapter plan. `EditorBackendClient` calls the existing dev-host `/api/*` routes through business-named methods, exposes a dev-host project-session status vocabulary, and wraps LanguageServer requests in a session-aware envelope, but it still must not claim that the dev host is a formal desktop backend or turn endpoint names into a generic RPC surface.
+- P1 desktop backend preparation has started with a model-only contract. `EditorBackendDesktopSessionModel` defines the `embedded-desktop` ProjectSession, DocumentBuffer, workspace file boundary, save status, recovery status, and settings summary shapes, while `check:desktop-backend` guards that status payloads do not expose document text or recovery text. This is not Electron or real file IO yet; it is the contract layer for the upcoming embedded backend.
 
 The draft extraction model is UI-only. It exists to make the shell useful while the real `Tooling` / `LanguageServer` / `Runtime` contracts are wired in.
 
@@ -139,6 +140,7 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:style-structure
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:payload-bridge
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:desktop-backend
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:host-binding
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:host-binding-http
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:host-schema
@@ -180,6 +182,7 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:language-session
 `check:references` exercises the LanguageServer project references dev-host helper without requiring the local HTTP server to be started first, including cross-file references and current draft content.
 `check:references-http` starts the preview dev server in-process and performs a real HTTP request to `/api/references`, including workspace-relative source path normalization.
 `check:payload-bridge` verifies that compact dev-host payloads preserve shared localization presenter, node-map report, Runtime, and source-location shapes while trimming only transport fields.
+`check:desktop-backend` verifies the P1 model-only embedded backend contract: `embedded-desktop` session status, DocumentBuffer summaries, workspace write target guards, save / recovery status, and settings summary defaults. It does not launch Electron or perform real file IO.
 `check:node-map` exercises the stable node map review and candidate apply helpers without requiring the local HTTP server to be started first, including a title rename over an existing generated sidecar and a manual-review candidate dry-run/apply.
 `check:node-map-http` starts the preview dev server in-process and performs real HTTP requests to `/api/node-map-review` and `/api/node-map-apply`.
 `check:process-bridge` verifies successful process output, nonzero exit diagnostics, truncated stdout/stderr previews, and timeout state without starting a server.

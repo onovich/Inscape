@@ -6,6 +6,7 @@ const contractModules = [
   "./SelfHostedEditorProcessBridgeContractCheck.js",
   "./SelfHostedEditorSessionCacheContractCheck.js",
   "./SelfHostedEditorProjectSessionContractCheck.js",
+  "./SelfHostedEditorDesktopBackendContractCheck.js",
 ];
 
 for (const contractModule of contractModules) {
