@@ -10,6 +10,7 @@
     "check:backend-services": "node DevScripts/SelfHostedEditorBackendServiceContractCheck.js",
     "check:backend-transport": "node DevScripts/SelfHostedEditorBackendTransportContractCheck.js",
     "check:fake-embedded-transport": "node DevScripts/SelfHostedEditorFakeEmbeddedTransportContractCheck.js",
+    "check:preload-transport": "node DevScripts/SelfHostedEditorPreloadTransportContractCheck.js",
     "check:http-bridge": "node DevScripts/SelfHostedEditorHttpBridgeContractCheck.js",
     "check:payload-bridge": "node DevScripts/SelfHostedEditorPayloadBridgeContractCheck.js",
     "check:process-bridge": "node DevScripts/SelfHostedEditorProcessBridgeContractCheck.js",

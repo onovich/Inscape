@@ -100,6 +100,16 @@ P1 Round 9 已完成 preload public API 白名单，仍未接 `ipcRenderer`、�
 - `check:electron-shell` 现在验证 command 唯一性、capability 默认值和无 IPC / HTTP route / generic request surface。
 - Round 9 验证已通过：SelfHostedEditor `check:electron-shell` / `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity`，`.NET build` 与 Internal tests。下一步进入 Round 10：embedded invoke transport skeleton。
 
+### 2026-06-16 SelfHostedEditor P1 Round 10 preload transport 快照
+
+P1 Round 10 已完成 desktop preload transport skeleton，仍未接真实 IPC 或 workspace 文件系统。
+
+- 新增 `SelfHostedEditorPreloadBackendTransport`，把 `EditorBackendTransportCommand` 映射到 preload API typed namespace 方法。
+- `EditorBackendClient` 默认 transport 现在会检测 `globalThis.inscapeSelfHostedEditor`；Electron/preload 环境使用 preload transport，普通 dev browser 继续 HTTP transport。
+- `ElectronPreloadApi` typed namespace 覆盖现有 language / host / graph / runtime / line / localization / node-map / project session commands，并预留 document buffer / workspace command；默认 handler 未接线时显式报错。
+- 新增 `check:preload-transport` 并接入 `check:model`；该检查验证 desktop default path 与 dev HTTP fallback path。
+- Round 10 验证已通过：SelfHostedEditor `check:preload-transport` / `check:electron-shell` / `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity`，`.NET build` 与 Internal tests。下一步进入 Round 11：preload / IPC validation skeleton。
+
 ### 2026-06-14 SelfHostedEditor desktop backend v0 决策快照
 
 本轮已采纳 [ADR 0019](adr/0019-self-hosted-editor-embedded-backend-v0.md)：SelfHostedEditor desktop backend v0 采用嵌入式 EditorBackend，而不是独立 sidecar daemon。

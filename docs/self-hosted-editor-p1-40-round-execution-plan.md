@@ -1,6 +1,6 @@
 # SelfHostedEditor P1 40 轮内执行方案
 
-状态：执行中（Round 1-9 已完成）
+状态：执行中（Round 1-10 已完成）
 
 日期：2026-06-15
 
@@ -365,6 +365,37 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 2. API capability 明确声明 `embeddedBackend: false` 与 `workspaceFileSystem: false`，不提前声称产品 backend / 文件 IO 已完成。
 3. 下一轮应进入 Round 10：embedded invoke transport skeleton，仍只接 contract / fake path，不接真实文件系统。
 
+### 2026-06-16 Round 10：Desktop preload transport skeleton
+
+范围：建立 renderer 侧 preload transport skeleton 与 contract；不接真实 `ipcRenderer`、不接真实 filesystem，不改变 dev-host HTTP 默认路径。
+
+完成内容：
+
+1. 新增 `SelfHostedEditorPreloadBackendTransport`，实现 `transport.invoke(command, payload)`，内部把 `EditorBackendTransportCommand` 映射到 preload API 的 typed namespace 方法。
+2. `EditorBackendClient` 默认 transport 现在会检测 `globalThis.inscapeSelfHostedEditor`；存在 preload API 时使用 preload transport，否则继续使用 `SelfHostedEditorHttpBackendTransport`。
+3. `ElectronPreloadApi` 的 typed namespace 覆盖 language、host capability、story graph、runtime、line identity、localization、stable node map、project session，以及未来 document buffer / workspace command；默认 handler 未接线时显式报错。
+4. 新增 `check:preload-transport`，验证 desktop default path 使用 preload transport、dev default path 仍使用 HTTP transport、preload public API 不暴露 generic `invoke` / `send` / `request`。
+
+本轮验证已通过：
+
+```powershell
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:preload-transport
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:electron-shell
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:structure
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
+npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
+dotnet build Inscape.slnx --no-restore
+dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build
+```
+
+架构对照结论：
+
+1. feature controller 仍只通过 service / bridge 调用 `EditorBackendClient`，不感知 HTTP vs preload transport 切换。
+2. preload transport 当前只走白名单 typed API，未引入 arbitrary IPC 或文件系统能力。
+3. 下一轮应进入 Round 11：preload / IPC validation，补 main / preload command name 与 payload 白名单校验 skeleton。
+
 ## 36 轮主计划
 
 ### A. Contract 与 transport 基础，Round 1-6
@@ -385,7 +416,7 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 | 7 | Electron 工程骨架 | 已完成。新增 `Desktop/ElectronMain.js`、`ElectronPreload.js` 与 `ElectronAppEntry.js` 骨架，新增 `check:electron-shell` 并纳入 `check:model` / `check:syntax`；未新增 Electron 依赖、启动脚本、IPC 或文件 IO，dev host 默认启动路径不变。 |
 | 8 | BrowserWindow 安全配置 | 已完成。BrowserWindow options 集中定义并显式启用隔离 / sandbox / webSecurity，禁用 Node integration、worker/subframe Node、insecure content 与 webview；main process 默认阻止 window-open，并限制 navigation。 |
 | 9 | preload 白名单 API | 已完成。新增 `ElectronPreloadApi.js`，定义冻结的 `inscapeSelfHostedEditor` capability + editor command 白名单；不暴露 generic `invoke` / `send` / `request`，不接 `ipcRenderer` 或真实文件 IO。 |
-| 10 | Desktop invoke transport | `EditorBackendClient` 能在 desktop 环境使用 preload transport，在 dev 环境保留 HTTP transport；feature controller 不感知切换。 |
+| 10 | Desktop invoke transport | 已完成。新增 `SelfHostedEditorPreloadBackendTransport`，`EditorBackendClient` 会在存在 `inscapeSelfHostedEditor` preload API 时选择 preload transport，否则保留 HTTP dev transport；新增 `check:preload-transport`。 |
 | 11 | preload / IPC validation | main / preload 对 command name 与 payload 做白名单校验；未知 command、非法 payload、arbitrary channel 被拒绝。 |
 | 12 | Electron 边界 contract | 新增 structure / model check：renderer 不能直接访问 `fs`、`child_process`、Electron API 或 arbitrary IPC；preload public API 与窄接口一致。 |
 

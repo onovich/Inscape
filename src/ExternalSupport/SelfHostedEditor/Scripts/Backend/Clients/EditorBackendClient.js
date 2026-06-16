@@ -2,12 +2,16 @@ import { EditorBackendLanguageSessionRequestModel } from "../Models/EditorBacken
 import { EditorBackendSessionStatusModel } from "../Models/EditorBackendSessionStatusModel.js";
 import { EditorBackendTransportCommand } from "./EditorBackendTransport.js";
 import { SelfHostedEditorHttpBackendTransport } from "./SelfHostedEditorHttpBackendTransport.js";
+import {
+  hasSelfHostedEditorPreloadApi,
+  SelfHostedEditorPreloadBackendTransport,
+} from "./SelfHostedEditorPreloadBackendTransport.js";
 
 export class EditorBackendClient {
   #transport;
 
   constructor(options = {}) {
-    this.#transport = options.transport || new SelfHostedEditorHttpBackendTransport(options);
+    this.#transport = options.transport || createDefaultEditorBackendTransport(options);
     if (!this.#transport || typeof this.#transport.invoke !== "function") {
       throw new Error("EditorBackendClient requires a transport with invoke(command, payload).");
     }
@@ -76,4 +80,12 @@ export class EditorBackendClient {
     const randomPart = Math.random().toString(36).slice(2);
     return `project-${Date.now().toString(36)}-${randomPart}`;
   }
+}
+
+function createDefaultEditorBackendTransport(options = {}) {
+  if (hasSelfHostedEditorPreloadApi(options.globalObject)) {
+    return new SelfHostedEditorPreloadBackendTransport(options);
+  }
+
+  return new SelfHostedEditorHttpBackendTransport(options);
 }
