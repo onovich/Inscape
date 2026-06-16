@@ -127,6 +127,7 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:desktop-backend
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:workspace-fs
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:document-buffer
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:save-recovery
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:electron-ipc
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:desktop-package
 npm --prefix src\ExternalSupport\SelfHostedEditor run smoke:desktop
 npm --prefix src\ExternalSupport\SelfHostedEditor run smoke:desktop-package
@@ -185,6 +186,7 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 6. main process / embedded backend 对 command name 做白名单校验。
 7. unknown command、非法 payload、arbitrary channel 都被拒绝。
 8. feature controller 不 import Electron，不知道 IPC channel 名。
+9. preload 内部 IPC 只使用固定 backend command channel，不把 `ipcRenderer` 或 channel 名暴露给 renderer。
 
 建议搜索：
 

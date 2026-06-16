@@ -1641,6 +1641,16 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 | 39 | 已用于真实 Windows package artifact smoke；尚未覆盖 GUI 打开 workspace、编辑保存或 recovery 提示。 |
 | 40 | 已用于 packaged app protocol / asset loading guard、最终文档和全量验证；不得进入 P1.5 long-lived LanguageServer。 |
 
+## 40 轮后续补充
+
+40 轮计划已经用完，但 P1 自检仍不能通过真实产品闭环。后续继续按小轮次推进，且每轮仍必须自测、对照架构指南验证边界、测试通过后推送。
+
+| 后续轮次 | 目标 | 完成标准 |
+|---|---|---|
+| post-40 A | Electron IPC command boundary | 已完成。preload 内部通过固定 `inscape.self-hosted-editor.backend.invoke` channel 转发白名单 editor command；main dispatcher 复用 payload validator，拒绝未知 / 未接线 command；`project-session.status` 返回 `embedded-desktop` 摘要；`check:electron-ipc`、Electron boundary / shell 与 runtime probe 覆盖该边界。 |
+| post-40 B | 真实 workspace open / file IO | 待完成。main process 持有 workspace root 和 ProjectSession，只接受目录，列出多个 `.inscape`，DocumentBufferStore 从磁盘读写真实 `.inscape`，并继续走 workspace path guard / write target whitelist。 |
+| post-40 C | GUI edit-save-recovery smoke | 待完成。打包或本机 Electron app 能打开测试 workspace、编辑、manual Save / autosave 写盘、发现 recovery、执行 restore / discard / later，并验证 diagnostics / completion 使用当前 buffer。 |
+
 ## 每轮建议验证
 
 轻量轮默认跑：

@@ -55,13 +55,15 @@ export class EditorBackendClient {
       review: (request) => this.#invoke(EditorBackendTransportCommand.StableNodeMapReview, request),
     });
     this.projectSession = Object.freeze({
-      status: async (request = {}) => EditorBackendSessionStatusModel.buildDevHostStatus(
-        await this.#invoke(EditorBackendTransportCommand.ProjectSessionStatus, {}),
-        {
-          sessionId: request.sessionId || this.sessionId,
-          workspace: request.workspace || null,
-        }
-      ),
+      status: async (request = {}) => {
+        return EditorBackendSessionStatusModel.normalizeTransportStatus(
+          await this.#invoke(EditorBackendTransportCommand.ProjectSessionStatus, {}),
+          {
+            sessionId: request.sessionId || this.sessionId,
+            workspace: request.workspace || null,
+          }
+        );
+      },
     });
     this.diagnostics = Object.freeze({
       sessionStatus: (request = {}) => this.projectSession.status(request),

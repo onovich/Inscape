@@ -15,4 +15,15 @@ export class EditorBackendSessionStatusModel {
       workspace: options.workspace,
     });
   }
+
+  static normalizeTransportStatus(status = {}, options = {}) {
+    if (
+      status?.format === EditorBackendProjectSessionFormat
+      && status?.formatVersion === EditorBackendProjectSessionFormatVersion
+    ) {
+      return status;
+    }
+
+    return this.buildDevHostStatus(status, options);
+  }
 }

@@ -28,7 +28,10 @@ for (const scriptPath of getJavaScriptFiles(rendererScriptsRoot)) {
 
 const preloadText = readModuleText("Desktop/ElectronPreload.js");
 assertIncludesText(preloadText, "contextBridge", "preload uses contextBridge");
-assertNoText(preloadText, "ipcRenderer", "preload must not expose ipcRenderer");
+assertIncludesText(preloadText, "ipcRenderer", "preload may use ipcRenderer only inside the fixed command bridge");
+assertIncludesText(preloadText, "SelfHostedEditorElectronIpcChannel", "preload uses the fixed SelfHostedEditor IPC channel");
+assertNoPattern(preloadText, /\.send\s*\(/, "preload must not use arbitrary IPC send");
+assertNoPattern(preloadText, /\.sendSync\s*\(/, "preload must not use synchronous IPC");
 assertNoText(preloadText, "node:fs", "preload must not import fs");
 assertNoText(preloadText, "child_process", "preload must not import child_process");
 
@@ -41,6 +44,15 @@ const preloadTransportText = readModuleText("Scripts/Backend/Clients/SelfHostedE
 assertNoText(preloadTransportText, "/api/", "preload transport must not know HTTP routes");
 assertNoText(preloadTransportText, "fetch(", "preload transport must not fetch");
 assertNoText(preloadTransportText, "postJson", "preload transport must not expose HTTP helper");
+
+const electronIpcText = readModuleText("Desktop/ElectronBackendIpc.js");
+assertIncludesText(electronIpcText, "ipcMain", "Electron backend IPC module owns ipcMain");
+assertIncludesText(electronIpcText, "SelfHostedEditorElectronIpcChannel", "Electron backend IPC must use the fixed channel");
+assertNoText(electronIpcText, "/api/", "Electron backend IPC must not know HTTP routes");
+
+const electronDispatcherText = readModuleText("Desktop/ElectronBackendCommandDispatcher.js");
+assertIncludesText(electronDispatcherText, "validateSelfHostedEditorPreloadCommandPayload", "Electron backend dispatcher validates whitelisted payloads");
+assertNoText(electronDispatcherText, "/api/", "Electron backend dispatcher must not know HTTP routes");
 
 const backendCommands = listEditorBackendTransportCommands();
 const preloadCommands = listSelfHostedEditorPreloadCommands();

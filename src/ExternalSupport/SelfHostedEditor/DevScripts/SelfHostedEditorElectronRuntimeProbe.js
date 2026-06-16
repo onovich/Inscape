@@ -3,11 +3,16 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { SelfHostedEditorElectronAppEntry } from "../Desktop/ElectronAppEntry.js";
 import {
+  dispatchSelfHostedEditorBackendCommand,
+} from "../Desktop/ElectronBackendCommandDispatcher.js";
+import {
   buildSelfHostedEditorWorkbenchUrl,
   buildSelfHostedEditorBrowserWindowOptions,
   isSelfHostedEditorAllowedNavigation,
   resolveSelfHostedEditorProtocolFilePath,
 } from "../Desktop/ElectronMain.js";
+import { SelfHostedEditorElectronIpcChannel } from "../Desktop/ElectronIpcContract.js";
+import { EditorBackendTransportCommand } from "../Scripts/Backend/Clients/EditorBackendTransport.js";
 
 assertEqual(process.env.SELF_HOSTED_EDITOR_ELECTRON_RUNTIME_PROBE, "true", "runtime probe guard");
 assertEqual(process.env.SELF_HOSTED_EDITOR_ELECTRON_AUTOSTART, "false", "runtime probe autostart guard");
@@ -49,6 +54,21 @@ assertEqual(resolveSelfHostedEditorProtocolFilePath("inscape-self-hosted-editor:
 assertEqual(resolveSelfHostedEditorProtocolFilePath("inscape-self-hosted-editor://app/../AGENTS.md", {
   moduleRoot,
 }), null, "runtime probe rejects traversal protocol path");
+assertEqual(SelfHostedEditorElectronIpcChannel, "inscape.self-hosted-editor.backend.invoke", "runtime probe fixed IPC channel");
+const ipcStatus = await dispatchSelfHostedEditorBackendCommand(EditorBackendTransportCommand.ProjectSessionStatus, {
+  sessionId: "runtime-probe",
+  workspace: {
+    documents: [
+      {
+        relativePath: "story/runtime-probe.inscape",
+        text: "# Probe",
+      },
+    ],
+  },
+});
+assertEqual(ipcStatus.mode, "embedded-desktop", "runtime probe IPC project-session mode");
+assertEqual(ipcStatus.workspace.documentCount, 1, "runtime probe IPC document summary");
+assertEqual(ipcStatus.workspace.documents[0].text, undefined, "runtime probe IPC status does not leak text");
 
 console.log("SelfHostedEditor electron runtime probe ok");
 process.exit(0);

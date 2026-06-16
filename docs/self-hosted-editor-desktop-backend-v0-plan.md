@@ -194,6 +194,7 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
 - renderer production scripts 不直接 import / require `fs`、`child_process` 或 Electron runtime。
 - renderer production scripts 不直接调用 arbitrary IPC。
 - preload public API 只暴露白名单 editor command。
+- preload 内部只允许通过固定 Electron IPC channel 转发白名单 editor command；不得暴露 generic invoke / send / request 给 renderer。
 - workspace 外路径、绝对路径和路径穿越请求会被拒绝。
 
 ## 阶段 2：ProjectSession v0
@@ -560,12 +561,14 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
 - 2026-06-17 P1 Round 38 已补 `package:windows`、electron-builder build config 与 `check:desktop-package`。该检查固定 package main entry、files 白名单、Windows `dir` x64 target 与 artifact readiness；真实 `package:windows` 执行和 artifact smoke 仍是后续工作。
 - 2026-06-17 P1 Round 39 已运行真实 `package:windows` 并新增 `smoke:desktop-package`，验证 Windows unpacked exe、`resources/app.asar` 与 builder metadata；GUI 打开 workspace、编辑保存、恢复提示和基础 LanguageServer authoring smoke 仍待后续。
 - 2026-06-17 P1 Round 40 已补 packaged app protocol：Workbench 通过 `inscape-self-hosted-editor://app/` 加载，协议白名单只服务 `Resources/`、`Scripts/`、Monaco 与 packaged samples；这为真实 GUI smoke 消除了 `file://` 绝对路径风险。
+- 2026-06-17 P1 post-40 已补 Electron IPC command boundary：preload 内部通过固定 `inscape.self-hosted-editor.backend.invoke` channel 转发白名单 editor command，main process 通过 dispatcher 复用 payload validator 并显式拒绝未知 / 未接线 command；当前只让 `project-session.status` 返回 `embedded-desktop` 摘要，仍未落真实 workspace 文件 IO。
 
 验收：
 
 ```powershell
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:structure
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:electron-ipc
 ```
 
 ## 阶段 8：全量验收
@@ -576,6 +579,7 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:structure
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:structure
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:electron-ipc
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:language-session
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:runtime-http

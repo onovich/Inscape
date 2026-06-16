@@ -19,6 +19,7 @@
     "check:desktop-backend": "node DevScripts/SelfHostedEditorDesktopBackendContractCheck.js",
     "check:workspace-fs": "node DevScripts/SelfHostedEditorWorkspaceFileSystemContractCheck.js",
     "check:electron-boundary": "node DevScripts/SelfHostedEditorElectronBoundaryContractCheck.js",
+    "check:electron-ipc": "node DevScripts/SelfHostedEditorElectronIpcContractCheck.js",
     "check:electron-shell": "node DevScripts/SelfHostedEditorElectronShellContractCheck.js",
     "check:static-assets": "node DevScripts/SelfHostedEditorStaticAssetBridgeContractCheck.js",
     "check:static-assets-http": "node DevScripts/SelfHostedEditorStaticAssetHttpSmoke.js",

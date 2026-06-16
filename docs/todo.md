@@ -81,7 +81,8 @@ SelfHostedEditor desktop backend v0
 - [x] 完成 P1 Round 38 Windows package script / config contract：新增 electron-builder dev dependency、`main`、`package:windows`、build config 与 `check:desktop-package`；package artifact 未生成时继续记录 `windows-package-not-generated`。
 - [x] 完成 P1 Round 39 Windows package artifact smoke：真实运行 `package:windows` 生成 `dist/win-unpacked`，新增 `smoke:desktop-package` 验证 exe、`app.asar` 与 builder metadata；构建产物保持 ignored，不提交。
 - [x] 完成 P1 Round 40 packaged app protocol / asset loading guard：Electron main 改用 `inscape-self-hosted-editor://app/` 加载 Workbench，白名单服务 `Resources/`、`Scripts/`、Monaco 与 packaged samples，并拒绝 traversal / `DevScripts/` / 非 app host。
-- [ ] 建立 Electron preload 白名单边界：renderer 不直接访问 Node / fs / shell / arbitrary IPC；preload 只暴露受控 editor command。
+- [x] 完成 P1 Round 40 后续 Electron IPC command boundary：新增固定 `inscape.self-hosted-editor.backend.invoke` channel、main 侧白名单 dispatcher、`check:electron-ipc` 与 runtime probe 覆盖；preload 内部只通过固定 channel 转发 editor command，renderer 仍不直接访问 Node / fs / shell / arbitrary IPC；当前只让 `project-session.status` 返回 embedded-desktop 摘要，真实 workspace 文件 IO 仍待下一轮。
+- [ ] 接入真实 Electron workspace open / file IO：main process 持有 workspace root 和 ProjectSession，open folder 只接受目录，列出多个 `.inscape`，并把 DocumentBufferStore 从 contract store 推进到真实磁盘读取 / 写回。
 - [ ] 实现 workspace 文件系统边界：只接受 workspace-relative path，拒绝绝对路径、`..` 越界、workspace 外路径和未列入白名单的写回目标。
 - [ ] 实现 `ProjectSession v0`：一个窗口一个 active workspace folder，一个 active project session；不支持正式单文件打开。
 - [ ] 实现 `DocumentBufferStore v0`：backend 持有 dirty buffers、revision、active document，LanguageServer / Runtime / Tooling 请求从 backend buffer 组 workspace snapshot。

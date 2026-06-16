@@ -1,6 +1,7 @@
 export const SelfHostedEditorPreloadApiName = "inscapeSelfHostedEditor";
 
 export const SelfHostedEditorPreloadCapabilities = Object.freeze({
+  backendCommandTransport: "electron-ipc",
   embeddedBackend: false,
   shell: "electron",
   workspaceFileSystem: false,
@@ -69,7 +70,7 @@ const preloadPayloadKeysByCommand = Object.freeze({
   [SelfHostedEditorPreloadEditorCommand.LineIdentityRefresh]: ["existingLineMap", "scriptText", "sessionId", "workspace"],
   [SelfHostedEditorPreloadEditorCommand.LocalizationReview]: ["previousCsv", "scriptText", "sessionId", "workspace"],
   [SelfHostedEditorPreloadEditorCommand.LocalizationUpdateCsv]: ["previousCsv", "scriptText", "sessionId", "translationOverrides", "workspace"],
-  [SelfHostedEditorPreloadEditorCommand.ProjectSessionStatus]: [],
+  [SelfHostedEditorPreloadEditorCommand.ProjectSessionStatus]: ["sessionId", "workspace"],
   [SelfHostedEditorPreloadEditorCommand.RuntimeStartOrObserve]: ["scriptText", "sessionId", "workspace"],
   [SelfHostedEditorPreloadEditorCommand.RuntimeStep]: ["action", "runtimeState", "scriptText", "sessionId", "workspace"],
   [SelfHostedEditorPreloadEditorCommand.StableNodeMapApplyCandidate]: ["candidate", "dryRun", "item", "nodeMapPath", "scriptText", "workspace"],

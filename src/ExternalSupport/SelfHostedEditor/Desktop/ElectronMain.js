@@ -1,6 +1,7 @@
 import { app, BrowserWindow, net, protocol } from "electron";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { registerSelfHostedEditorBackendIpc } from "./ElectronBackendIpc.js";
 import { SelfHostedEditorElectronAppEntry } from "./ElectronAppEntry.js";
 
 const currentModulePath = fileURLToPath(import.meta.url);
@@ -195,6 +196,7 @@ function resolveFileInsideRoot(root, relativePath) {
 
 export function registerSelfHostedEditorElectronApp(electronApp = app) {
   registerSelfHostedEditorProtocolScheme();
+  registerSelfHostedEditorBackendIpc();
 
   electronApp.whenReady().then(() => {
     registerSelfHostedEditorProtocol();

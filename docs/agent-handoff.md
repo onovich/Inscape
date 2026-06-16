@@ -434,6 +434,16 @@ P1 Round 40 已补 packaged Electron app 的资源加载 guard。Workbench 绝�
 - runtime probe 覆盖 workbench URL、style/script/sample path、DevScripts 拒绝和 traversal 拒绝；Electron shell contract 守住 app protocol 与 `loadURL`，防止回退 `loadFile`。
 - Round 40 当前已通过：SelfHostedEditor `package:windows` / `smoke:desktop-package` / `check:desktop-package` / `smoke:desktop-runtime` / `smoke:desktop-startup` / `smoke:desktop` / `check:electron-shell` / `check:electron-boundary` / `check:preload-transport` / `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity` / `check:structure`，`node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js`，`git diff --check`，`.NET build` 与 Internal tests。后续仍需要真实 GUI 打开 workspace / 编辑保存 / recovery 提示 smoke；不要仅凭 artifact smoke 宣布交互闭环完成。
 
+### 2026-06-17 SelfHostedEditor P1 post-40 Electron IPC 快照
+
+P1 40 轮计划完成后，继续补上了真实 Electron preload -> main 的固定 command channel 第一刀。本轮仍不做 workspace 文件 IO，不打开 GUI，也不进入 P1.5 long-lived LanguageServer。
+
+- 新增 `Desktop/ElectronIpcContract.js`，固定 IPC channel 为 `inscape.self-hosted-editor.backend.invoke`，preload 不暴露 generic invoke / send / request。
+- 新增 `Desktop/ElectronBackendCommandDispatcher.js` 与 `Desktop/ElectronBackendIpc.js`。main process 只在固定 channel 上接收白名单 editor command，并复用既有 preload payload validator；未知 command 和未接线 command 都显式拒绝。
+- `project-session.status` 是当前唯一 main-process handler，会返回 `embedded-desktop` ProjectSession 摘要；status transport 仍不上传 workspace text，真实 workspace 状态要等 main 持有 ProjectSession / DocumentBufferStore 后再填充。
+- 新增 `check:electron-ipc`，并更新 `check:electron-shell` / `check:electron-boundary` / runtime probe：现在允许 preload 内部使用固定 `ipcRenderer.invoke`，仍禁止 renderer 直接 IPC、Node/fs/shell、preload generic/system API 和 dev-host `/api/*` 泄漏到 Electron main/preload。
+- 本轮当前已通过：SelfHostedEditor `check:electron-ipc` / `check:electron-shell` / `check:electron-boundary` / `check:preload-transport` / `check:syntax` / `check:structure` / `check:model` / `smoke:desktop-runtime`。后续优先推进真实 Electron workspace open / file IO，再做 GUI edit-save-recovery smoke。
+
 ### 2026-06-14 SelfHostedEditor desktop backend v0 决策快照
 
 本轮已采纳 [ADR 0019](adr/0019-self-hosted-editor-embedded-backend-v0.md)：SelfHostedEditor desktop backend v0 采用嵌入式 EditorBackend，而不是独立 sidecar daemon。

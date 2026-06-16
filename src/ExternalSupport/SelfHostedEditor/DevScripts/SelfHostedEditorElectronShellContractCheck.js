@@ -6,6 +6,9 @@ const moduleRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".
 
 const requiredDesktopPaths = [
   "Desktop/ElectronAppEntry.js",
+  "Desktop/ElectronBackendCommandDispatcher.js",
+  "Desktop/ElectronBackendIpc.js",
+  "Desktop/ElectronIpcContract.js",
   "Desktop/ElectronMain.js",
   "Desktop/ElectronPreloadApi.js",
   "Desktop/ElectronPreload.js",
@@ -35,6 +38,7 @@ assertIncludesText(mainText, "resolveSelfHostedEditorProtocolFilePath", "Electro
 assertIncludesText(mainText, "loadURL", "Electron main loads workbench through app protocol");
 assertIncludesText(mainText, "buildSelfHostedEditorBrowserWindowOptions", "Electron main exports BrowserWindow options builder");
 assertIncludesText(mainText, "applySelfHostedEditorWindowSecurity", "Electron main applies window security handlers");
+assertIncludesText(mainText, "registerSelfHostedEditorBackendIpc", "Electron main registers fixed backend IPC");
 assertIncludesText(mainText, "setWindowOpenHandler", "Electron main blocks window open by default");
 assertIncludesText(mainText, "will-navigate", "Electron main filters navigation");
 assertIncludesText(mainText, "contextIsolation: true", "Electron main enables context isolation");
@@ -45,7 +49,6 @@ assertIncludesText(mainText, "sandbox: true", "Electron main enables sandbox");
 assertIncludesText(mainText, "webSecurity: true", "Electron main keeps web security enabled");
 assertIncludesText(mainText, "allowRunningInsecureContent: false", "Electron main blocks insecure content");
 assertIncludesText(mainText, "webviewTag: false", "Electron main disables webview tags");
-assertNoText(mainText, "ipcMain", "Round 7 Electron main must not expose IPC yet");
 assertNoText(mainText, "loadFile", "Electron main must not load file URLs for packaged Workbench assets");
 assertNoText(mainText, "/api/", "Electron main must not know dev-host routes");
 assertNoText(mainText, "localhost", "Electron main must not depend on localhost product API");
@@ -55,7 +58,8 @@ const preloadText = readModuleText("Desktop/ElectronPreload.js");
 assertIncludesText(preloadText, "contextBridge", "Electron preload uses contextBridge");
 assertIncludesText(preloadText, "exposeInMainWorld", "Electron preload exposes a named API");
 assertIncludesText(preloadText, "createSelfHostedEditorPreloadApi", "Electron preload delegates API shape to whitelist module");
-assertNoText(preloadText, "ipcRenderer", "Round 7 Electron preload must not expose IPC yet");
+assertIncludesText(preloadText, "ipcRenderer", "Electron preload uses IPC internally");
+assertIncludesText(preloadText, "SelfHostedEditorElectronIpcChannel", "Electron preload uses fixed backend IPC channel");
 assertNoText(preloadText, "/api/", "Electron preload must not know dev-host routes");
 assertNoText(preloadText, "node:fs", "Electron preload must not expose filesystem yet");
 assertNoText(preloadText, "child_process", "Electron preload must not expose process control");
@@ -63,6 +67,7 @@ assertNoText(preloadText, "child_process", "Electron preload must not expose pro
 const preloadApiText = readModuleText("Desktop/ElectronPreloadApi.js");
 assertIncludesText(preloadApiText, "SelfHostedEditorPreloadEditorCommand", "Electron preload API defines command whitelist");
 assertIncludesText(preloadApiText, "inscapeSelfHostedEditor", "Electron preload API name");
+assertIncludesText(preloadApiText, "backendCommandTransport: \"electron-ipc\"", "Electron preload API declares IPC command transport");
 assertIncludesText(preloadApiText, "embeddedBackend: false", "Electron preload does not claim embedded backend yet");
 assertIncludesText(preloadApiText, "workspaceFileSystem: false", "Electron preload does not claim workspace file IO yet");
 assertIncludesText(preloadApiText, "ProjectSessionStatus", "Electron preload API whitelists project-session status");
@@ -75,9 +80,23 @@ assertNoText(preloadApiText, "request", "Electron preload API must not expose ge
 assertNoText(preloadApiText, "ipcRenderer", "Electron preload API must not use IPC directly");
 assertNoText(preloadApiText, "/api/", "Electron preload API must not know dev-host routes");
 
+const ipcContractText = readModuleText("Desktop/ElectronIpcContract.js");
+assertIncludesText(ipcContractText, "inscape.self-hosted-editor.backend.invoke", "Electron IPC contract defines a fixed channel");
+
+const ipcDispatcherText = readModuleText("Desktop/ElectronBackendCommandDispatcher.js");
+assertIncludesText(ipcDispatcherText, "validateSelfHostedEditorPreloadCommandPayload", "Electron backend dispatcher validates payloads");
+assertIncludesText(ipcDispatcherText, "EditorBackendDesktopSessionModel", "Electron backend dispatcher reuses desktop session model");
+assertNoText(ipcDispatcherText, "/api/", "Electron backend dispatcher must not know dev-host routes");
+
+const ipcMainText = readModuleText("Desktop/ElectronBackendIpc.js");
+assertIncludesText(ipcMainText, "ipcMain", "Electron backend IPC module owns ipcMain access");
+assertIncludesText(ipcMainText, "SelfHostedEditorElectronIpcChannel", "Electron backend IPC uses fixed channel");
+assertNoText(ipcMainText, "/api/", "Electron backend IPC module must not know dev-host routes");
+
 const preloadApiModule = await import("../Desktop/ElectronPreloadApi.js");
 const preloadApi = preloadApiModule.createSelfHostedEditorPreloadApi();
 assertEqual(Object.isFrozen(preloadApi), true, "Electron preload API is frozen");
+assertEqual(preloadApi.capabilities.backendCommandTransport, "electron-ipc", "Electron preload API command transport capability");
 assertEqual(preloadApi.capabilities.embeddedBackend, false, "Electron preload API embedded backend capability");
 assertEqual(preloadApi.capabilities.workspaceFileSystem, false, "Electron preload API workspace file capability");
 assertEqual(preloadApi.editorCommands.ProjectSessionStatus, "project-session.status", "Electron preload project-session command");

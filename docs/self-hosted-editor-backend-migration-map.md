@@ -76,6 +76,8 @@
 
 2026-06-17 P1 Round 40 补充：packaged app asset loading 改为 Electron app protocol。`inscape-self-hosted-editor://app/` 只解析 `Resources/`、`Scripts/`、`node_modules/monaco-editor/` 与 packaged `samples/`，拒绝 traversal、`DevScripts/` 和非 app host；这修复 `file://` 下 Workbench 绝对路径会指向文件系统根目录的风险，但仍不代表真实 GUI/workspace/save/recovery smoke 已完成。
 
+2026-06-17 P1 post-40 补充：Electron preload -> main 已有固定 command channel。preload 内部只通过 `inscape.self-hosted-editor.backend.invoke` 转发白名单 editor command，main process dispatcher 复用 preload payload validator 并拒绝未知 / 未接线 command；`project-session.status` 可返回 `embedded-desktop` 摘要。该入口只是 embedded transport 的第一刀，不改变 dev-host `/api/*` smoke，不让 renderer 获得 Node/fs/shell/arbitrary IPC，也不表示真实 workspace file IO 已完成。
+
 ## 状态分类
 
 | 分类 | 当前例子 | 未来归属 | 规则 |
