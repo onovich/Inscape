@@ -1,17 +1,11 @@
 import { contextBridge } from "electron";
-
-export const SelfHostedEditorPreloadApiName = "inscapeSelfHostedEditor";
-
-export const SelfHostedEditorPreloadCapabilities = Object.freeze({
-  embeddedBackend: false,
-  shell: "electron",
-  workspaceFileSystem: false,
-});
+import {
+  createSelfHostedEditorPreloadApi,
+  SelfHostedEditorPreloadApiName,
+} from "./ElectronPreloadApi.js";
 
 export function exposeSelfHostedEditorPreloadApi(bridge = contextBridge) {
-  bridge.exposeInMainWorld(SelfHostedEditorPreloadApiName, Object.freeze({
-    capabilities: SelfHostedEditorPreloadCapabilities,
-  }));
+  bridge.exposeInMainWorld(SelfHostedEditorPreloadApiName, createSelfHostedEditorPreloadApi());
 }
 
 exposeSelfHostedEditorPreloadApi();

@@ -49,7 +49,8 @@ SelfHostedEditor desktop backend v0
 - [x] 完成 P1 Round 6 structure guard 第一刀：`check:structure` 覆盖业务 `Scripts/` 不直接打 `/api/*`、生产 renderer 不直接 import Node / Electron runtime / IPC、transport 细节只留在 `EditorBackendClient` / adapter。
 - [x] 完成 P1 Round 7 Electron 工程骨架：新增 `Desktop/ElectronMain.js`、`ElectronPreload.js`、`ElectronAppEntry.js` 与 `check:electron-shell`，只定义安全默认和静态 preload capability，不新增 Electron 依赖、启动脚本、IPC 或文件 IO。
 - [x] 完成 P1 Round 8 BrowserWindow 安全配置：集中 BrowserWindow options，显式启用隔离 / sandbox / webSecurity，禁用 Node integration / worker/subframe Node / insecure content / webview，并阻止 window-open 与非 `file:` navigation。
-- [ ] 完成 P1 Round 9 preload public API 白名单边界：定义受控 editor command surface，不暴露 arbitrary IPC，不接真实 workspace 文件 IO。
+- [x] 完成 P1 Round 9 preload public API 白名单边界：新增 `ElectronPreloadApi.js`，定义冻结的 `inscapeSelfHostedEditor` capability + editor command 白名单，不暴露 generic invoke/send/request，不接 IPC 或真实 workspace 文件 IO。
+- [ ] 完成 P1 Round 10 embedded invoke transport skeleton：建立 Electron/preload 侧 invoke transport contract skeleton，用白名单 command 连接 fake/direct path，不接真实文件系统。
 - [ ] 建立 Electron preload 白名单边界：renderer 不直接访问 Node / fs / shell / arbitrary IPC；preload 只暴露受控 editor command。
 - [ ] 实现 workspace 文件系统边界：只接受 workspace-relative path，拒绝绝对路径、`..` 越界、workspace 外路径和未列入白名单的写回目标。
 - [ ] 实现 `ProjectSession v0`：一个窗口一个 active workspace folder，一个 active project session；不支持正式单文件打开。

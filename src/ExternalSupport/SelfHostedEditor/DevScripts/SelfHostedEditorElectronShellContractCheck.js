@@ -7,6 +7,7 @@ const moduleRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".
 const requiredDesktopPaths = [
   "Desktop/ElectronAppEntry.js",
   "Desktop/ElectronMain.js",
+  "Desktop/ElectronPreloadApi.js",
   "Desktop/ElectronPreload.js",
 ];
 
@@ -47,13 +48,37 @@ assertNoText(mainText, "127.0.0.1", "Electron main must not depend on localhost 
 const preloadText = readModuleText("Desktop/ElectronPreload.js");
 assertIncludesText(preloadText, "contextBridge", "Electron preload uses contextBridge");
 assertIncludesText(preloadText, "exposeInMainWorld", "Electron preload exposes a named API");
-assertIncludesText(preloadText, "inscapeSelfHostedEditor", "Electron preload API name");
-assertIncludesText(preloadText, "embeddedBackend: false", "Electron preload does not claim embedded backend yet");
-assertIncludesText(preloadText, "workspaceFileSystem: false", "Electron preload does not claim workspace file IO yet");
+assertIncludesText(preloadText, "createSelfHostedEditorPreloadApi", "Electron preload delegates API shape to whitelist module");
 assertNoText(preloadText, "ipcRenderer", "Round 7 Electron preload must not expose IPC yet");
 assertNoText(preloadText, "/api/", "Electron preload must not know dev-host routes");
 assertNoText(preloadText, "node:fs", "Electron preload must not expose filesystem yet");
 assertNoText(preloadText, "child_process", "Electron preload must not expose process control");
+
+const preloadApiText = readModuleText("Desktop/ElectronPreloadApi.js");
+assertIncludesText(preloadApiText, "SelfHostedEditorPreloadEditorCommand", "Electron preload API defines command whitelist");
+assertIncludesText(preloadApiText, "inscapeSelfHostedEditor", "Electron preload API name");
+assertIncludesText(preloadApiText, "embeddedBackend: false", "Electron preload does not claim embedded backend yet");
+assertIncludesText(preloadApiText, "workspaceFileSystem: false", "Electron preload does not claim workspace file IO yet");
+assertIncludesText(preloadApiText, "ProjectSessionStatus", "Electron preload API whitelists project-session status");
+assertIncludesText(preloadApiText, "DocumentBufferRead", "Electron preload API whitelists document-buffer read");
+assertIncludesText(preloadApiText, "WorkspaceOpenFolder", "Electron preload API whitelists workspace open folder");
+assertNoText(preloadApiText, "invoke", "Electron preload API must not expose generic invoke");
+assertNoText(preloadApiText, "send", "Electron preload API must not expose generic send");
+assertNoText(preloadApiText, "request", "Electron preload API must not expose generic request");
+assertNoText(preloadApiText, "ipcRenderer", "Electron preload API must not use IPC directly");
+assertNoText(preloadApiText, "/api/", "Electron preload API must not know dev-host routes");
+
+const preloadApiModule = await import("../Desktop/ElectronPreloadApi.js");
+const preloadApi = preloadApiModule.createSelfHostedEditorPreloadApi();
+assertEqual(Object.isFrozen(preloadApi), true, "Electron preload API is frozen");
+assertEqual(preloadApi.capabilities.embeddedBackend, false, "Electron preload API embedded backend capability");
+assertEqual(preloadApi.capabilities.workspaceFileSystem, false, "Electron preload API workspace file capability");
+assertEqual(preloadApi.editorCommands.ProjectSessionStatus, "project-session.status", "Electron preload project-session command");
+assertEqual(
+  preloadApiModule.listSelfHostedEditorPreloadCommands().length,
+  new Set(preloadApiModule.listSelfHostedEditorPreloadCommands()).size,
+  "Electron preload commands are unique"
+);
 
 console.log("SelfHostedEditor Electron shell contract ok");
 
@@ -70,5 +95,11 @@ function assertIncludesText(text, expected, label) {
 function assertNoText(text, forbidden, label) {
   if (text.includes(forbidden)) {
     throw new Error(`${label}: unexpected ${forbidden}`);
+  }
+}
+
+function assertEqual(actual, expected, label) {
+  if (actual !== expected) {
+    throw new Error(`${label}: expected ${expected}, got ${actual}`);
   }
 }

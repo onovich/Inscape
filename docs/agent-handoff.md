@@ -90,6 +90,16 @@ P1 Round 8 已完成 BrowserWindow 安全配置加固，仍未新增 IPC、文�
 - `check:electron-shell` 已覆盖上述安全字段和 window-open / navigation handler。
 - Round 8 验证已通过：SelfHostedEditor `check:electron-shell` / `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity`，`.NET build` 与 Internal tests。下一步进入 Round 9：preload public API 白名单边界。
 
+### 2026-06-16 SelfHostedEditor P1 Round 9 preload API 快照
+
+P1 Round 9 已完成 preload public API 白名单，仍未接 `ipcRenderer`、真实 command 执行或 workspace 文件 IO。
+
+- 新增 `Desktop/ElectronPreloadApi.js`，集中定义 `inscapeSelfHostedEditor` preload API 名称、capabilities 与 editor command 白名单。
+- command 白名单当前覆盖 project session、document buffer 与 workspace 打开 / 列表等受控 command 名称；不暴露 generic `invoke` / `send` / `request`。
+- `ElectronPreload.js` 只负责 `contextBridge.exposeInMainWorld()` 暴露冻结 API object。
+- `check:electron-shell` 现在验证 command 唯一性、capability 默认值和无 IPC / HTTP route / generic request surface。
+- Round 9 验证已通过：SelfHostedEditor `check:electron-shell` / `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity`，`.NET build` 与 Internal tests。下一步进入 Round 10：embedded invoke transport skeleton。
+
 ### 2026-06-14 SelfHostedEditor desktop backend v0 决策快照
 
 本轮已采纳 [ADR 0019](adr/0019-self-hosted-editor-embedded-backend-v0.md)：SelfHostedEditor desktop backend v0 采用嵌入式 EditorBackend，而不是独立 sidecar daemon。

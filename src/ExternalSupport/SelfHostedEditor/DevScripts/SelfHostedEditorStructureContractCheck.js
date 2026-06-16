@@ -11,6 +11,7 @@ const requiredPaths = [
   "Desktop",
   "Desktop/ElectronAppEntry.js",
   "Desktop/ElectronMain.js",
+  "Desktop/ElectronPreloadApi.js",
   "Desktop/ElectronPreload.js",
   "DevScripts",
   "DevScripts/SelfHostedEditorBackendServiceContractCheck.js",
