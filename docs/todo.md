@@ -41,6 +41,7 @@ SelfHostedEditor desktop backend v0
 
 目标：把 SelfHostedEditor 从 dev-host request-driven prototype 推进到 editor session-driven desktop product shell。v0 采用 Electron + embedded EditorBackend，不采用 sidecar daemon。
 
+- [x] 完成 P1 Round 1 基线审计：确认 `EditorBackendClient` 当前是 UI 侧业务入口、默认 HTTP transport 可注入、`/api/*` path 仍集中在 client 内部，dev host route / temp workspace / smoke 仍在 `DevScripts`；本轮未改产品行为，下一步进入 embedded backend v0 model contract。
 - [ ] 定义嵌入式 `EditorBackend` contract：`ProjectSessionService`、`DocumentBufferStore`、`LanguageSessionClient`、`RuntimeSessionClient`、`LocalizationWorkflowClient` 等窄接口，不暴露 generic RPC 给 feature controller。
 - [ ] 建立 Electron preload 白名单边界：renderer 不直接访问 Node / fs / shell / arbitrary IPC；preload 只暴露受控 editor command。
 - [ ] 实现 workspace 文件系统边界：只接受 workspace-relative path，拒绝绝对路径、`..` 越界、workspace 外路径和未列入白名单的写回目标。

@@ -1,0 +1,339 @@
+# SelfHostedEditor P1 40 轮内执行方案
+
+状态：执行中（Round 1 已完成）
+
+日期：2026-06-15
+
+适用范围：`src/ExternalSupport/SelfHostedEditor`
+
+相关文档：
+
+- [Agent 接手指南](agent-handoff.md)
+- [TODO](todo.md)
+- [SelfHostedEditor P0 12 轮内执行方案](self-hosted-editor-p0-12-round-execution-plan.md)
+- [SelfHostedEditor 当前阶段 100% 收口推进计划](self-hosted-editor-current-stage-100-plan.md)
+- [SelfHostedEditor desktop backend v0 实施计划](self-hosted-editor-desktop-backend-v0-plan.md)
+- [ADR 0019：SelfHostedEditor desktop backend v0 采用嵌入式 EditorBackend](adr/0019-self-hosted-editor-embedded-backend-v0.md)
+- [ADR 0020：SelfHostedEditor v0 采用 Electron、目录 workspace 与分层保存恢复策略](adr/0020-self-hosted-editor-electron-workspace-and-save-strategy.md)
+
+## 目标
+
+本计划用于把 P1，也就是 SelfHostedEditor desktop backend v0，实现压缩在 40 轮以内完成。
+
+P1 的目标是把 SelfHostedEditor 从 dev-host request-driven prototype 推进到 editor session-driven desktop product shell。v0 采用 Electron + embedded EditorBackend，不采用 sidecar daemon。
+
+P1 完成后应满足：
+
+1. SelfHostedEditor UI 只依赖 `EditorBackendClient` 与业务窄接口，不知道 backend 是 HTTP dev host、embedded invoke transport，还是未来 sidecar。
+2. Electron renderer 不能直接访问 Node、`fs`、`child_process`、shell 或 arbitrary IPC。
+3. preload 只暴露受控 editor command。
+4. embedded EditorBackend 持有 `ProjectSession` 与 `DocumentBufferStore`。
+5. 一个窗口一个 workspace folder，一个 active project session。
+6. v0 只打开目录，不提供正式单文件工作模式。
+7. backend 统一执行 workspace 文件系统边界与写回白名单。
+8. backend 持有 dirty buffers、revision、active document 和保存状态。
+9. LanguageServer / Runtime / Tooling / Compiler 请求从 backend buffer 组 workspace snapshot。
+10. autosave、manual Save、recovery snapshot 与 CSV / node-map / line-map 写前 backup 可用。
+11. `.inscape-workspace/` 承担 recovery / backups / cache，默认不进入 Git。
+12. 外部资源默认复制进 workspace 内 `assets/`，不长期引用 workspace 外路径。
+13. v0 最小闭环可用：打开目录 -> 文件列表 -> 编辑 `.inscape` -> autosave / 手动 Save -> recovery -> 基础诊断 / 补全 -> Preview。
+14. Windows 内部可用版能启动并通过 smoke。
+
+P1 不包括：
+
+1. 独立 sidecar daemon。
+2. 多窗口共享 session。
+3. 跨重启 session restore。
+4. VSCode 连接同一个 backend 进程。
+5. 本地 localhost 产品 API。
+6. 默认 full long-lived LanguageServer。
+7. P1.5 的 workspace-scoped long-lived LanguageServer 迁移。
+8. 首发 macOS、签名、自动更新或完整安装器体验。
+
+## 前置条件
+
+开始 P1 前应确认 P0 已完成：
+
+1. SelfHostedEditor current-stage fallback 与 session vocabulary 已收口。
+2. `check:structure` 不再输出当前可消除 warning。
+3. Summary / Preview / StoryGraph / Localization / Outline provider-aware contract 已稳定。
+4. `SELF_HOSTED_EDITOR_LANGUAGE_SESSION=stdio` spike 支持范围已明确。
+5. README、architecture、backend migration map、handoff 与 TODO 口径一致。
+
+如果 P0 未完成，先回到 [SelfHostedEditor P0 12 轮内执行方案](self-hosted-editor-p0-12-round-execution-plan.md)，不要直接进入 P1。
+
+## 新 session 启动步骤
+
+接手 session 先读：
+
+```text
+docs/agent-handoff.md
+docs/todo.md
+docs/self-hosted-editor-p0-12-round-execution-plan.md
+docs/self-hosted-editor-current-stage-100-plan.md
+docs/self-hosted-editor-desktop-backend-v0-plan.md
+docs/adr/0019-self-hosted-editor-embedded-backend-v0.md
+docs/adr/0020-self-hosted-editor-electron-workspace-and-save-strategy.md
+src/ExternalSupport/SelfHostedEditor/README.md
+```
+
+然后检查工作区：
+
+```powershell
+git -c safe.directory=D:/LabProjects/Inscape status --short --branch
+```
+
+建议先跑当前基线：
+
+```powershell
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:structure
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
+npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
+dotnet build Inscape.slnx --no-restore
+dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build
+```
+
+注意：当前仓库可能已有未提交文档变更。不要回滚或覆盖用户 / 上一 session 的变更；如果必须改同一文件，先读 diff，按现有口径追加。
+
+## 执行记录
+
+### 2026-06-16 Round 1：P1 基线审计
+
+范围：只读审计，不改产品行为，不接 Electron，不启动 P1.5 long-lived LanguageServer。
+
+启动基线已通过：
+
+```powershell
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:structure
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
+npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
+dotnet build Inscape.slnx --no-restore
+dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build
+```
+
+现状审计：
+
+1. `EditorBackendClient` 已经是 UI 侧业务入口，当前可通过构造参数注入 transport；默认 transport 是 `SelfHostedEditorHttpBackendTransport`。
+2. 当前 transport 契约仍是 `postJson(path, payload)`，HTTP `/api/*` path 只集中在 `EditorBackendClient` 内部业务方法映射中；Round 3 / Round 4 需要把它进一步收敛成可替换的 editor command / 窄服务契约，而不是让 feature controller 获得 generic RPC。
+3. 生产 `Scripts/` 中直接 `fetch()` 只用于 `SelfHostedEditorAppEntry.js` 加载默认静态 sample；业务 backend 调用经由 `EditorBackendClient` 下的 `languageSession`、`hostCapabilities`、`storyGraph`、`runtimeSession`、`lineIdentitySession`、`localizationSession`、`stableNodeMap` 与 `projectSession`。
+4. dev HTTP route / handler / temp workspace 编排集中在 `DevScripts/StartSelfHostedEditorPreview.js`、`SelfHostedEditorApiHandlerBridge.js`、`SelfHostedEditorRouteBridge.js` 与 `SelfHostedEditorWorkspaceBridge.js`；这仍是开发宿主 transport，不是产品 backend API。
+5. `check:structure` 当前已守住 `Scripts/` 业务代码不得直接 `fetch("/api/...")`，也守住 SelfHostedEditor 业务目录白名单、API route bridge、workspace temp path guard、static asset guard 与 session cache status；Round 6 还需要补 renderer / preload / desktop transport 的结构 guard。
+6. package scripts 当前只有 dev-host / model / HTTP smoke / session / static asset 等检查，还没有 P1 desktop-specific `check:desktop-backend`、`check:workspace-fs`、`check:document-buffer`、`check:save-recovery` 或 `smoke:desktop`。
+
+架构对照结论：
+
+1. 当前 Round 1 未把 `Compiler` / `LanguageServer` / `Tooling` / `Runtime` 语义复制进 `EditorBackend`。
+2. 当前 Round 1 未引入 sidecar daemon、多窗口共享、正式单文件模式、localhost 产品 API 或默认 full long-lived LanguageServer。
+3. 下一轮应进入 Round 2：定义 embedded backend v0 model contract，先覆盖 shape 与 guard，不接 Electron，不改 dev-host payload 成功形状。
+
+## 36 轮主计划
+
+### A. Contract 与 transport 基础，Round 1-6
+
+| 轮次 | 目标 | 完成标准 |
+|---|---|---|
+| 1 | P1 基线审计 | 已完成。现有 `EditorBackendClient`、dev HTTP transport、feature controller 到 `/api/*` 的调用路径、package scripts 与 SelfHostedEditor 目录结构已记录在 2026-06-16 Round 1 执行记录中；未改行为。 |
+| 2 | 定义 embedded backend v0 model contract | 新增或扩展 model contract，覆盖 `ProjectSession`、`DocumentBuffer`、workspace file boundary、save status、recovery status、settings summary；只定义 shape 与 guard，不接 Electron。 |
+| 3 | 抽出 `EditorBackendTransport` | `EditorBackendClient` 支持 transport 注入；现有 HTTP dev host 作为默认 transport，现有 smoke 不变。 |
+| 4 | 定义业务窄接口 adapter | `ProjectSessionService`、`DocumentBufferStore`、`LanguageSessionClient`、`RuntimeSessionClient`、`LocalizationWorkflowClient` 等作为 UI 侧窄接口；feature controller 不获得 generic `call(method, payload)`。 |
+| 5 | Fake embedded transport harness | 增加 fake embedded transport / direct harness，用于 contract check；证明 UI 侧不依赖 HTTP path。 |
+| 6 | structure guard 第一刀 | `check:structure` 或等价检查覆盖：业务 `Scripts/` 不直接打 `/api/*`，生产 renderer 不直接 import Node / Electron runtime，transport 只从 `EditorBackendClient` 注入。 |
+
+### B. Electron shell 与 preload 边界，Round 7-12
+
+| 轮次 | 目标 | 完成标准 |
+|---|---|---|
+| 7 | Electron 工程骨架 | 在现有 package 结构下建立 Electron main / preload / app entry 骨架；不改变 dev host 默认启动路径。 |
+| 8 | BrowserWindow 安全配置 | renderer 使用隔离配置；默认不启用 Node integration；preload 成为唯一本机能力入口。 |
+| 9 | preload 白名单 API | `window.inscape` 或等价命名只暴露 editor command；不暴露通用 `readFile`、`writeFile`、`runCommand`、arbitrary IPC。 |
+| 10 | Desktop invoke transport | `EditorBackendClient` 能在 desktop 环境使用 preload transport，在 dev 环境保留 HTTP transport；feature controller 不感知切换。 |
+| 11 | preload / IPC validation | main / preload 对 command name 与 payload 做白名单校验；未知 command、非法 payload、arbitrary channel 被拒绝。 |
+| 12 | Electron 边界 contract | 新增 structure / model check：renderer 不能直接访问 `fs`、`child_process`、Electron API 或 arbitrary IPC；preload public API 与窄接口一致。 |
+
+### C. Workspace 文件系统边界与 ProjectSession，Round 13-18
+
+| 轮次 | 目标 | 完成标准 |
+|---|---|---|
+| 13 | workspace path guard | backend 只接受 workspace-relative path；拒绝绝对路径、`..` 越界、解析后不在 workspace 内的路径。 |
+| 14 | 写回白名单 | 明确允许的文件类型 / 目录：`.inscape` 文档、localization CSV、node-map sidecar、line-map sidecar、recovery、backup、cache、assets；其他写回默认拒绝。 |
+| 15 | open workspace folder | v0 只打开目录，列出 workspace 内多个 `.inscape` 文件；不提供正式打开单文件入口。 |
+| 16 | ProjectSession lifecycle | 建立一个窗口一个 active project session；session id、workspace root、active relative path、document count、revision、mode=`embedded-desktop` 可查询。 |
+| 17 | close / switch workspace cleanup | close 或切换 workspace 时清理 Runtime / line-map / localization baseline 与临时子 session；status 只返回摘要和计数。 |
+| 18 | session panel / status 接入 | UI session panel 显示 embedded mode、session id、workspace 摘要、language mode、runtime / line / localization 状态；不泄露正文、CSV、line-map 或 Runtime snapshot。 |
+
+### D. DocumentBufferStore v0，Round 19-24
+
+| 轮次 | 目标 | 完成标准 |
+|---|---|---|
+| 19 | DocumentBuffer model | backend buffer 记录 `relativePath`、text、disk hash、revision、dirty、existsOnDisk、lastLoadedUtc；contract 覆盖最小字段。 |
+| 20 | list / get / update / active document | 打开 workspace 后可列文档、取文档、更新文本、设置 active document；revision 只增不倒退。 |
+| 21 | baseRevision 与 stale guard | `updateDocument` 使用 `baseRevision` 或等价 stale guard；旧 debounce 不能覆盖更新 revision。 |
+| 22 | workspace snapshot builder | LanguageServer / Runtime / Tooling 请求从 backend buffer 组装 workspace snapshot，不再依赖前端每次上传完整 workspace truth。 |
+| 23 | authoring endpoint 接入 buffer | diagnostics / completions / definition / references / hover / documentSymbols 使用 backend buffer 当前内容；payload shape 仍与 shared LanguageServer contract 对齐。 |
+| 24 | Preview / Runtime 接入 buffer | Preview / Runtime 使用 backend buffer 当前 workspace state；Preview choice click invariant 保持不变。 |
+
+### E. 保存、autosave 与 recovery，Round 25-30
+
+| 轮次 | 目标 | 完成标准 |
+|---|---|---|
+| 25 | manual Save | `saveDocument` / `saveAll` 通过 backend 文件边界写盘；UI 可触发手动 Save 并显示 saved / error。 |
+| 26 | UI -> backend debounce | 编辑文本以短 debounce 同步到 backend buffer；连续编辑合并，不为每个按键跨进程调用。 |
+| 27 | backend autosave debounce | backend 以较长 idle debounce 自动保存 dirty `.inscape`；只写回最新 revision。 |
+| 28 | flush rules | 手动 Save、关闭窗口、切换 workspace、应用退出前 flush 最新 backend buffer；失败时 UI 可见。 |
+| 29 | recovery snapshot | backend 写入 recovery snapshot，记录 relative path、revision、mtime、content hash 和文本；正常保存后清理过期 recovery。 |
+| 30 | recovery UI | 打开 workspace 时发现 recovery 新于磁盘文件，UI 列出可恢复文件，并支持恢复、丢弃、稍后处理；discard 后不反复提示。 |
+
+### F. Workspace 内部目录、资源、backup 与 settings，Round 31-34
+
+| 轮次 | 目标 | 完成标准 |
+|---|---|---|
+| 31 | `.inscape-workspace/` 策略 | open workspace 时确保 `.inscape-workspace/recovery`、`.inscape-workspace/backups`、`.inscape-workspace/cache` 可发现或可创建；`.inscape-workspace/` 默认被 Git 忽略。 |
+| 32 | write-back backup | localization CSV、`inscape.node-map.json`、`inscape.line-map.json` 写回前自动备份到 `.inscape-workspace/backups/`；默认启用。 |
+| 33 | external resource import | 外部图片、音频、CSV 等导入时默认复制到 workspace 内 `assets/`；不把 workspace 外路径保存为长期依赖。 |
+| 34 | settings 分层 | 建立全局设置与 workspace / project 设置 schema；至少覆盖 autosave、backup 保留策略、默认资源目录；若最小设置页暂缓，默认值集中在配置层，不散落在 feature controller。 |
+
+### G. v0 闭环、Windows smoke 与文档，Round 35-36
+
+| 轮次 | 目标 | 完成标准 |
+|---|---|---|
+| 35 | v0 最小闭环 smoke | 自动化或半自动 smoke 覆盖：打开目录、文件列表、编辑 `.inscape`、autosave、manual Save、recovery、diagnostics / completion、Preview choice click。 |
+| 36 | Windows internal package v0 | 生成或启动 Windows 内部可用版；能打开 workspace、编辑保存、看到恢复提示、跑基础 LanguageServer authoring 能力；记录 smoke checklist 与已知限制。 |
+
+## 4 轮缓冲
+
+| 轮次 | 用途 |
+|---|---|
+| 37 | 如果 Electron / preload 安全边界实现复杂，用于补 IPC validation、structure guard 和 desktop transport smoke。 |
+| 38 | 如果 DocumentBufferStore 接入 authoring / Preview 暴露回归，用于修 snapshot builder、revision guard 和 semantic parity。 |
+| 39 | 如果 autosave / recovery / backup 在真实文件系统上暴露边界问题，用于修路径 guard、flush、恢复 UI 和 backup retention。 |
+| 40 | 最终文档、全量验证、diff 审计和提交准备；不得进入 P1.5 long-lived LanguageServer。 |
+
+## 每轮建议验证
+
+轻量轮默认跑：
+
+```powershell
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:structure
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
+```
+
+涉及 LanguageServer / authoring endpoint 的轮次增加：
+
+```powershell
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:references-http
+npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
+```
+
+涉及 Preview / Runtime 的轮次增加：
+
+```powershell
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:runtime-http
+```
+
+涉及 localization / line-map / node-map 的轮次增加：
+
+```powershell
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:line-map-http
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:localization-review-http
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:localization-update-http
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:node-map-http
+```
+
+涉及 session / static assets / desktop shell 的轮次增加：
+
+```powershell
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:session-cache-http
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:static-assets-http
+```
+
+最终收口至少跑：
+
+```powershell
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:structure
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:language-session
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:runtime-http
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:line-map-http
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:localization-review-http
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:localization-update-http
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:node-map-http
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:references-http
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:host-schema-http
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:host-binding-http
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:static-assets-http
+node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js
+npm --prefix src\ExternalSupport\VSCode run check:structure
+npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
+dotnet build Inscape.slnx --no-restore
+dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build
+```
+
+如果新增 desktop-specific scripts，建议命名为明确的 contract / smoke 入口，例如：
+
+```powershell
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:desktop-backend
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:workspace-fs
+npm --prefix src\ExternalSupport\SelfHostedEditor run smoke:desktop
+```
+
+这些命令只有在实现中实际新增后才纳入最终必跑清单。
+
+## P1 完成判定
+
+P1 完成时必须满足：
+
+1. `EditorBackendClient` 支持 dev HTTP transport 与 desktop embedded transport，feature controller 不感知 transport 类型。
+2. Electron renderer 没有 Node / fs / shell / arbitrary IPC 能力。
+3. preload public API 是 editor command 白名单，不是通用系统 API。
+4. backend 统一处理 workspace root、relative path、路径归一化和写回白名单。
+5. open workspace 只接受目录，支持多个 `.inscape` 文件。
+6. `ProjectSession` status 真实表达 embedded desktop mode、session id、workspace 摘要、language/runtime/tooling 子状态。
+7. `DocumentBufferStore` 是 project document truth；UI draft store 只是交互态。
+8. LanguageServer / Runtime / Tooling 请求基于 backend buffer 当前 revision。
+9. autosave、manual Save、flush、save status、save error 全部可见且有 contract。
+10. recovery snapshot 能发现、恢复、丢弃、稍后处理。
+11. CSV / node-map / line-map 写回前自动 backup。
+12. `.inscape-workspace/` 承担 recovery / backups / cache，并默认不进入 Git。
+13. 外部资源导入默认复制到 workspace `assets/`。
+14. settings schema 区分全局偏好与 workspace / project 行为。
+15. v0 最小闭环 smoke 通过。
+16. Windows internal package 或等价本机启动 smoke 通过。
+17. README / architecture / backend migration map / handoff / TODO 已同步。
+18. 全量验证通过，工作树变更边界清楚，可以提交。
+
+## 风险控制
+
+- 不在 P1 中默认启用 full long-lived LanguageServer；P1 只保证 ProjectSession / DocumentBufferStore 为 P1.5 铺好 ownership。
+- 不把 embedded EditorBackend 做成新的 Compiler、LanguageServer、Tooling 或 Runtime 语义真相。
+- 不让 renderer 获得通用本机能力。
+- 不把 dev-host `/api/*` 当作最终产品 API。
+- 不提供正式打开单文件模式。
+- 不做多窗口共享 session。
+- 不把 `.inscape-workspace/` 中的 recovery / backup / cache 当作可提交项目真相。
+- 不依赖 Git 作为 autosave / recovery / backup 的基础机制。
+- 不为 Bird / Unity 调整通用 backend v0 contract。
+
+## 建议提交粒度
+
+如果每个里程碑都能独立通过验证，建议按以下粒度提交：
+
+```text
+refactor: add self hosted backend transport contracts
+feat: add self hosted electron preload boundary
+feat: add self hosted workspace project session
+feat: add self hosted document buffer store
+feat: add self hosted save and recovery workflow
+feat: add self hosted workspace backups and settings
+test: add self hosted desktop v0 smoke
+docs: document self hosted desktop backend v0 completion
+```
+
+如果改动量过大，不要把 40 轮合成一个巨大提交；至少按 Contract / Electron / ProjectSession / DocumentBuffer / Save Recovery / Final Smoke 六段拆分。

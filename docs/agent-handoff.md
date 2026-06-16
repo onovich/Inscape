@@ -8,6 +8,17 @@
 
 ## 当前项目快照
 
+### 2026-06-16 SelfHostedEditor P1 Round 1 基线审计快照
+
+P1 已从 P0 验收后进入 desktop backend v0 执行线；当前完成的是 Round 1 基线审计，未改产品行为。
+
+- P1 执行主线见 [SelfHostedEditor P1 40 轮内执行方案](self-hosted-editor-p1-40-round-execution-plan.md)，自检清单见 [SelfHostedEditor P1 自检文档](self-hosted-editor-p1-self-check.md)，本轮启动提示见 [SelfHostedEditor P1 Executor Prompt](self-hosted-editor-p1-executor-prompt.md)。
+- 启动基线已通过：SelfHostedEditor `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`、VSCode `check:semantic-parity`、`dotnet build Inscape.slnx --no-restore`、Internal tests。
+- 现有 `EditorBackendClient` 已经支持 transport 注入，默认使用 `SelfHostedEditorHttpBackendTransport`；feature bridge 通过 `languageSession`、`runtimeSession`、`localizationSession`、`lineIdentitySession`、`stableNodeMap`、`hostCapabilities`、`storyGraph` 与 `projectSession` 这类业务入口调用 backend。
+- 当前 transport 契约仍是 `postJson(path, payload)`，`/api/*` path 集中在 `EditorBackendClient` 内部；后续 Round 3 / Round 4 要把它收敛为可替换的 editor command / 业务窄接口，而不是暴露 generic RPC 给 feature controller。
+- dev HTTP route、handler、temporary workspace 与 smoke 仍集中在 `DevScripts`，它们是开发宿主 transport，不是产品 backend API。
+- Round 1 没有进入 Electron/preload、`DocumentBufferStore`、workspace file IO、autosave/recovery 或 P1.5 full long-lived LanguageServer。下一步按计划进入 Round 2：embedded backend v0 model contract。
+
 ### 2026-06-14 SelfHostedEditor desktop backend v0 决策快照
 
 本轮已采纳 [ADR 0019](adr/0019-self-hosted-editor-embedded-backend-v0.md)：SelfHostedEditor desktop backend v0 采用嵌入式 EditorBackend，而不是独立 sidecar daemon。
