@@ -474,6 +474,15 @@ P1 40 轮计划完成后，继续补上了真实 Electron preload -> main 的固
 - `check:electron-workspace` 现在覆盖：dirty edit 写入真实 recovery snapshot、snapshot 文件包含 draft text、ProjectSession recovery status 不泄露正文、保存后 cleanup、disk conflict 后 snapshot 保留、重开 workspace 可扫描 recovery，以及篡改 snapshot path 被跳过。
 - 下一步应把 idle autosave timer 和 close/switch/app-exit flush 接到真实 save 路径，再补 restore / discard / later 操作与 GUI edit-save-recovery smoke。
 
+### 2026-06-17 SelfHostedEditor P1 post-40 Electron autosave/flush 执行快照
+
+在 recovery snapshot IO 之后，本轮把既有 autosave / flush plan 接到 Electron main process session store 的真实 save 路径；仍不新增 renderer command，不挂真实 idle timer / window close / app exit lifecycle，也不做 restore / discard / later 或 GUI smoke。
+
+- `ElectronWorkspaceSessionStore.runAutosave()` 复用 `EditorBackendDocumentBufferStoreModel.buildAutosavePlan()`；debounce 未满足时返回 text-free no-op，ready 时只保存最新 dirty revision，并通过既有 `saveDocument()` 写盘与清理 recovery snapshot。
+- `ElectronWorkspaceSessionStore.flushDirtyDocuments()` 复用 `buildFlushPlan()`；可接收 `manual-save`、`close-window`、`switch-workspace`、`app-exit` trigger，按 flush request 走真实 save 路径，再返回初始 plan、final plan、save results 与 text-free summary。
+- `check:electron-workspace` 现在覆盖 waiting autosave 不写盘且保留 snapshot、ready autosave 写盘并清理 snapshot、`app-exit` flush 写盘并清理 snapshot、autosave / flush 响应不泄露正文。
+- 下一步应把这些 helper 挂到真实 idle timer、Electron close/switch/app-exit lifecycle，再补 recovery restore / discard / later 和 GUI edit-save-recovery smoke。
+
 ### 2026-06-14 SelfHostedEditor desktop backend v0 决策快照
 
 本轮已采纳 [ADR 0019](adr/0019-self-hosted-editor-embedded-backend-v0.md)：SelfHostedEditor desktop backend v0 采用嵌入式 EditorBackend，而不是独立 sidecar daemon。

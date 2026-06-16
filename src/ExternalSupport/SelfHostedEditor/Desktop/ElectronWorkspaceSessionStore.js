@@ -12,6 +12,8 @@ import { EditorBackendWorkspacePathModel } from "../Scripts/Backend/Models/Edito
 
 export const SelfHostedEditorElectronWorkspaceOpenResultFormat = "inscape.self-hosted-editor.electron-workspace-open-result";
 export const SelfHostedEditorElectronWorkspaceReadResultFormat = "inscape.self-hosted-editor.electron-workspace-read-result";
+export const SelfHostedEditorElectronAutosaveResultFormat = "inscape.self-hosted-editor.electron-autosave-result";
+export const SelfHostedEditorElectronFlushResultFormat = "inscape.self-hosted-editor.electron-flush-result";
 export const SelfHostedEditorElectronWorkspaceFormatVersion = 1;
 
 const defaultExcludedDirectoryNames = Object.freeze([
@@ -350,6 +352,84 @@ export class SelfHostedEditorElectronWorkspaceSessionStore {
     }
 
     return buildSaveAllResult({
+      results,
+      sessionId: this.#sessionId,
+      store: this.#activeWorkspace.documentStore,
+    });
+  }
+
+  async runAutosave(payload = {}) {
+    if (!this.#activeWorkspace) {
+      return buildAutosaveExecutionResult({
+        plan: EditorBackendDocumentBufferStoreModel.buildAutosavePlan({}, payload),
+        reason: "workspace-not-open",
+        sessionId: this.#sessionId,
+      });
+    }
+
+    const plan = EditorBackendDocumentBufferStoreModel.buildAutosavePlan(
+      this.#activeWorkspace.documentStore,
+      {
+        ...payload,
+        workspaceRoot: this.#activeWorkspace.workspaceRoot,
+      }
+    );
+    const results = [];
+    if (plan.ready) {
+      for (const saveRequest of plan.saveRequests) {
+        results.push(await this.saveDocument({
+          baseRevision: saveRequest.baseRevision,
+          relativePath: saveRequest.relativePath,
+        }));
+      }
+    }
+
+    return buildAutosaveExecutionResult({
+      plan,
+      results,
+      sessionId: this.#sessionId,
+      store: this.#activeWorkspace.documentStore,
+    });
+  }
+
+  async flushDirtyDocuments(payload = {}) {
+    if (!this.#activeWorkspace) {
+      return buildFlushExecutionResult({
+        plan: EditorBackendDocumentBufferStoreModel.buildFlushPlan({}, payload),
+        reason: "workspace-not-open",
+        sessionId: this.#sessionId,
+      });
+    }
+
+    const trigger = payload.trigger || payload.operation || "manual-save";
+    const plan = EditorBackendDocumentBufferStoreModel.buildFlushPlan(
+      this.#activeWorkspace.documentStore,
+      {
+        ...payload,
+        trigger,
+        workspaceRoot: this.#activeWorkspace.workspaceRoot,
+      }
+    );
+    const results = [];
+    for (const flushRequest of plan.flushRequests) {
+      results.push(await this.saveDocument({
+        baseRevision: flushRequest.baseRevision,
+        relativePath: flushRequest.relativePath,
+      }));
+    }
+
+    const finalPlan = EditorBackendDocumentBufferStoreModel.buildFlushPlan(
+      this.#activeWorkspace.documentStore,
+      {
+        ...payload,
+        saveResults: results,
+        trigger,
+        workspaceRoot: this.#activeWorkspace.workspaceRoot,
+      }
+    );
+    return buildFlushExecutionResult({
+      finalPlan,
+      plan,
       results,
       sessionId: this.#sessionId,
       store: this.#activeWorkspace.documentStore,
@@ -712,6 +792,63 @@ function buildSaveAllResult({
     sessionId,
     storeSummary,
     workspaceName: store?.workspaceName || "workspace",
+  };
+}
+
+function buildAutosaveExecutionResult({
+  plan,
+  reason = "",
+  results = [],
+  sessionId,
+  store = null,
+}) {
+  const failed = results.filter((result) => !result.ok);
+  const saved = results.filter((result) => result.ok);
+  return {
+    autosavePlan: plan,
+    failedCount: failed.length,
+    format: SelfHostedEditorElectronAutosaveResultFormat,
+    formatVersion: SelfHostedEditorElectronWorkspaceFormatVersion,
+    ok: failed.length === 0 && reason !== "workspace-not-open",
+    operation: "autosave",
+    payloadContentExposed: false,
+    reason: reason || (failed.length > 0 ? "one-or-more-documents-failed" : ""),
+    results: results.map(omitStoreSummary),
+    savedCount: saved.length,
+    sessionId,
+    storeSummary: store ? EditorBackendDocumentBufferStoreModel.listDocuments(store) : null,
+  };
+}
+
+function buildFlushExecutionResult({
+  finalPlan = null,
+  plan,
+  reason = "",
+  results = [],
+  sessionId,
+  store = null,
+}) {
+  const failed = results.filter((result) => !result.ok);
+  const saved = results.filter((result) => result.ok);
+  const effectiveFinalPlan = finalPlan || plan;
+  return {
+    failedCount: failed.length,
+    finalPlan: effectiveFinalPlan,
+    flushPlan: plan,
+    format: SelfHostedEditorElectronFlushResultFormat,
+    formatVersion: SelfHostedEditorElectronWorkspaceFormatVersion,
+    ok: failed.length === 0
+      && reason !== "workspace-not-open"
+      && effectiveFinalPlan.blockingIssues.length === 0
+      && effectiveFinalPlan.visibleFailures.length === 0,
+    operation: "flush",
+    payloadContentExposed: false,
+    reason: reason || (failed.length > 0 ? "one-or-more-documents-failed" : ""),
+    results: results.map(omitStoreSummary),
+    savedCount: saved.length,
+    sessionId,
+    storeSummary: store ? EditorBackendDocumentBufferStoreModel.listDocuments(store) : null,
+    trigger: effectiveFinalPlan.trigger,
   };
 }
 

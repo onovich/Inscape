@@ -6,6 +6,8 @@ import {
 } from "../Desktop/ElectronBackendCommandDispatcher.js";
 import {
   createSelfHostedEditorElectronWorkspaceSessionStore,
+  SelfHostedEditorElectronAutosaveResultFormat,
+  SelfHostedEditorElectronFlushResultFormat,
   SelfHostedEditorElectronWorkspaceOpenResultFormat,
   SelfHostedEditorElectronWorkspaceReadResultFormat,
 } from "../Desktop/ElectronWorkspaceSessionStore.js";
@@ -244,6 +246,95 @@ try {
     "# Branch\nNarrator: secret branch updated text",
     "document save all writes disk"
   );
+
+  const autosaveRead = await dispatchSelfHostedEditorBackendCommand(
+    EditorBackendTransportCommand.DocumentBufferRead,
+    {
+      relativePath: "story/branch.inscape",
+    },
+    {
+      sessionStore,
+    }
+  );
+  const autosaveUpdate = await dispatchSelfHostedEditorBackendCommand(
+    EditorBackendTransportCommand.DocumentBufferUpdateDraft,
+    {
+      baseRevision: autosaveRead.document.revision,
+      relativePath: "story/branch.inscape",
+      text: "# Branch\nNarrator: secret branch autosave text",
+    },
+    {
+      sessionStore,
+    }
+  );
+  assertEqual(autosaveUpdate.ok, true, "autosave draft update ok");
+  assertEqual(await fileExists(branchSnapshotPath), true, "autosave draft writes recovery snapshot");
+  const waitingAutosave = await sessionStore.runAutosave({
+    debounceMs: 1000,
+    idleElapsedMs: 250,
+  });
+  assertEqual(waitingAutosave.format, SelfHostedEditorElectronAutosaveResultFormat, "waiting autosave result format");
+  assertEqual(waitingAutosave.autosavePlan.ready, false, "waiting autosave not ready");
+  assertEqual(waitingAutosave.savedCount, 0, "waiting autosave does not save");
+  assertEqual(
+    await fs.readFile(path.join(tempRoot, "story", "branch.inscape"), "utf8"),
+    "# Branch\nNarrator: secret branch updated text",
+    "waiting autosave does not write disk"
+  );
+  assertEqual(await fileExists(branchSnapshotPath), true, "waiting autosave keeps recovery snapshot");
+  const autosaveResult = await sessionStore.runAutosave({
+    debounceMs: 1000,
+    idleElapsedMs: 1000,
+  });
+  assertEqual(autosaveResult.ok, true, "ready autosave ok");
+  assertEqual(autosaveResult.savedCount, 1, "ready autosave saves latest dirty document");
+  assertEqual(autosaveResult.autosavePlan.ready, true, "ready autosave plan ready");
+  assertEqual(JSON.stringify(autosaveResult).includes("secret branch autosave text"), false, "autosave result is text-free");
+  assertEqual(
+    await fs.readFile(path.join(tempRoot, "story", "branch.inscape"), "utf8"),
+    "# Branch\nNarrator: secret branch autosave text",
+    "ready autosave writes disk"
+  );
+  assertEqual(await fileExists(branchSnapshotPath), false, "ready autosave cleans recovery snapshot");
+
+  const flushRead = await dispatchSelfHostedEditorBackendCommand(
+    EditorBackendTransportCommand.DocumentBufferRead,
+    {
+      relativePath: "story/opening.inscape",
+    },
+    {
+      sessionStore,
+    }
+  );
+  const flushUpdate = await dispatchSelfHostedEditorBackendCommand(
+    EditorBackendTransportCommand.DocumentBufferUpdateDraft,
+    {
+      baseRevision: flushRead.document.revision,
+      relativePath: "story/opening.inscape",
+      text: "# Opening\nNarrator: secret app exit flush text",
+    },
+    {
+      sessionStore,
+    }
+  );
+  assertEqual(flushUpdate.ok, true, "flush draft update ok");
+  assertEqual(await fileExists(openingSnapshotPath), true, "flush draft writes recovery snapshot");
+  const flushResult = await sessionStore.flushDirtyDocuments({
+    trigger: "app-exit",
+  });
+  assertEqual(flushResult.format, SelfHostedEditorElectronFlushResultFormat, "flush result format");
+  assertEqual(flushResult.ok, true, "app-exit flush ok");
+  assertEqual(flushResult.trigger, "app-exit", "flush result trigger");
+  assertEqual(flushResult.flushPlan.flushRequestCount, 1, "flush schedules dirty document");
+  assertEqual(flushResult.finalPlan.continuationBlocked, false, "flush final plan allows continuation");
+  assertEqual(flushResult.savedCount, 1, "flush saves dirty document");
+  assertEqual(JSON.stringify(flushResult).includes("secret app exit flush text"), false, "flush result is text-free");
+  assertEqual(
+    await fs.readFile(path.join(tempRoot, "story", "opening.inscape"), "utf8"),
+    "# Opening\nNarrator: secret app exit flush text",
+    "app-exit flush writes disk"
+  );
+  assertEqual(await fileExists(openingSnapshotPath), false, "app-exit flush cleans recovery snapshot");
 
   const conflictRead = await dispatchSelfHostedEditorBackendCommand(
     EditorBackendTransportCommand.DocumentBufferRead,

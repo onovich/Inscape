@@ -84,6 +84,8 @@
 
 2026-06-17 P1 post-40 recovery snapshot IO 补充：dirty `document-buffer.update-draft` 已在 Electron main process 写入 `.inscape-workspace/recovery/<relative>.snapshot.json`，snapshot 文件包含可恢复正文；open workspace 会扫描 recovery snapshot 并只把 relative path、revision、mtime 和 hash 投影进 text-free `recoveryStatus`；保存成功会清理对应 snapshot。扫描会跳过越界或文件路径不匹配的 snapshot，避免篡改过的 recovery metadata 进入 UI 状态。idle autosave timer、close/switch/app-exit flush、restore / discard / later 和 GUI recovery smoke 仍待后续迁移。
 
+2026-06-17 P1 post-40 autosave/flush 执行补充：`ElectronWorkspaceSessionStore` 已新增 `runAutosave()` 与 `flushDirtyDocuments()`，把现有 autosave / flush plan 接到真实 `saveDocument()` 路径。waiting autosave 不写盘且保留 recovery snapshot，ready autosave 写盘并清理 snapshot；flush 可按 `app-exit` 等 trigger 保存最新 dirty buffer，并返回 text-free 初始 / 最终 plan 与 save result summary。真实 idle timer、Electron window close / workspace switch / app exit lifecycle 挂接、restore / discard / later 与 GUI recovery smoke 仍待后续迁移。
+
 ## 状态分类
 
 | 分类 | 当前例子 | 未来归属 | 规则 |
