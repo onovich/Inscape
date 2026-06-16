@@ -7,6 +7,7 @@ import { DocumentOutlineController } from "../../Scripts/ProjectWorkspace/Contro
 import { ProjectWorkspaceSessionController } from "../../Scripts/ProjectWorkspace/Controllers/ProjectWorkspaceSessionController.js";
 import { ProjectWorkspaceSummaryController } from "../../Scripts/ProjectWorkspace/Controllers/ProjectWorkspaceSummaryController.js";
 import {
+  ProjectWorkspaceRecoveryActionRequestFormat,
   ProjectWorkspaceSessionStatusFormat,
   ProjectWorkspaceSessionStatusModelBuilder,
 } from "../../Scripts/ProjectWorkspace/Models/ProjectWorkspaceSessionStatusModelBuilder.js";
@@ -175,6 +176,19 @@ const workbench = new SelfHostedEditorWorkbenchRenderController({
           kind: "bounded-cache",
         },
         mode: "dev-host",
+        recoveryStatus: {
+          items: [
+            {
+              contentHash: "recovery-hash",
+              diskModifiedUtc: "2026-06-16T00:59:00.000Z",
+              relativePath: "samples/court-loop.inscape",
+              revision: 6,
+              snapshotModifiedUtc: "2026-06-16T01:00:00.000Z",
+              text: "secret recovery panel text",
+            },
+          ],
+          state: "available",
+        },
         runtimeSession: {
           entryCount: 1,
           kind: "bounded-cache",
@@ -340,15 +354,21 @@ assertEqual(renderedWorkspaceSession?.languageLabel, "stdio-spike", "workbench s
 assertEqual(renderedWorkspaceSession?.runtimeSessionLabel, "bounded-cache (1)", "workbench session should show runtime cache state");
 assertEqual(renderedWorkspaceSession?.lineIdentityLabel, "bounded-cache (0)", "workbench session should show line identity cache state");
 assertEqual(renderedWorkspaceSession?.localizationLabel, "bounded-cache (0)", "workbench session should show localization cache state");
+assertEqual(renderedWorkspaceSession?.recoveryLabel, "1 available", "workbench session should show recovery availability");
+assertEqual(renderedWorkspaceSession?.recoveryFileLabel, "court-loop.inscape", "workbench session should list recoverable files");
+assertEqual(renderedWorkspaceSession?.recoveryItems[0].availableActions.join(","), "restore,discard,later", "workbench recovery item actions");
 assertNotIncludesText(JSON.stringify(renderedWorkspaceSession), "secret session document text");
 assertNotIncludesText(JSON.stringify(renderedWorkspaceSession), "secret csv payload");
 assertNotIncludesText(JSON.stringify(renderedWorkspaceSession), "secret runtime snapshot text");
+assertNotIncludesText(JSON.stringify(renderedWorkspaceSession), "secret recovery panel text");
 
 const sessionPanel = new FakeElement("section");
 const runtimePanel = new FakeElement("section");
 new ProjectWorkspaceSessionController(sessionPanel, runtimePanel).render(renderedWorkspaceSession);
 assertIncludesText(getTextContent(sessionPanel), "Revision");
 assertIncludesText(getTextContent(sessionPanel), "5");
+assertIncludesText(getTextContent(sessionPanel), "Recovery");
+assertIncludesText(getTextContent(sessionPanel), "court-loop.inscape");
 assertIncludesText(getTextContent(runtimePanel), "Language");
 assertIncludesText(getTextContent(runtimePanel), "Runtime Store");
 assertIncludesText(getTextContent(runtimePanel), "Line IDs");
@@ -375,6 +395,20 @@ const embeddedPanelStatus = ProjectWorkspaceSessionStatusModelBuilder.build({
       kind: "bounded-cache",
     },
     mode: "embedded-desktop",
+    recoveryStatus: {
+      items: [
+        {
+          actionState: "later",
+          contentHash: "embedded-recovery-hash",
+          diskModifiedUtc: "2026-06-16T00:59:00.000Z",
+          relativePath: "story/opening.inscape",
+          revision: 9,
+          snapshotModifiedUtc: "2026-06-16T01:00:00.000Z",
+          text: "secret embedded recovery text",
+        },
+      ],
+      state: "available",
+    },
     runtimeSession: {
       kind: "not-started",
     },
@@ -420,7 +454,32 @@ assertEqual(embeddedPanelStatus.languageLabel, "process-per-request", "embedded 
 assertEqual(embeddedPanelStatus.runtimeSessionLabel, "not-started", "embedded panel status should show runtime session state");
 assertEqual(embeddedPanelStatus.lineIdentityLabel, "bounded-cache (2)", "embedded panel status should show line identity state");
 assertEqual(embeddedPanelStatus.localizationLabel, "bounded-cache (1)", "embedded panel status should show localization state");
+assertEqual(embeddedPanelStatus.recoveryLabel, "1 available", "embedded panel status should show recovery state");
+assertEqual(embeddedPanelStatus.recoveryItems[0].relativePath, "story/opening.inscape", "embedded panel status should keep recovery path");
+assertEqual(embeddedPanelStatus.recoveryItems[0].actionState, "later", "embedded panel status should preserve later action state");
+assertEqual(embeddedPanelStatus.recoveryItems[0].availableActions.join(","), "restore,discard,later", "embedded panel recovery later item keeps actions");
 assertEqual(embeddedPanelStatus.payloadContentExposed, false, "embedded panel status should mark payload content as hidden");
 assertNotIncludesText(JSON.stringify(embeddedPanelStatus), "secret embedded document text");
 assertNotIncludesText(JSON.stringify(embeddedPanelStatus), "secret runtime node");
 assertNotIncludesText(JSON.stringify(embeddedPanelStatus), "secret runtime snapshot body");
+assertNotIncludesText(JSON.stringify(embeddedPanelStatus), "secret embedded recovery text");
+const restoreRecoveryRequest = ProjectWorkspaceSessionStatusModelBuilder.buildRecoveryActionRequest({
+  action: "restore",
+  item: embeddedPanelStatus.recoveryItems[0],
+});
+assertEqual(restoreRecoveryRequest.format, ProjectWorkspaceRecoveryActionRequestFormat, "recovery restore action format");
+assertEqual(restoreRecoveryRequest.requiresWriteBack, true, "recovery restore action writes back");
+assertEqual(restoreRecoveryRequest.suppressFuturePrompt, false, "recovery restore action does not suppress prompt");
+const discardRecoveryRequest = ProjectWorkspaceSessionStatusModelBuilder.buildRecoveryActionRequest({
+  action: "discard",
+  item: embeddedPanelStatus.recoveryItems[0],
+});
+assertEqual(discardRecoveryRequest.suppressFuturePrompt, true, "recovery discard action suppresses future prompt");
+assertEqual(discardRecoveryRequest.keepsSnapshot, false, "recovery discard action does not keep snapshot");
+const laterRecoveryRequest = ProjectWorkspaceSessionStatusModelBuilder.buildRecoveryActionRequest({
+  action: "later",
+  item: embeddedPanelStatus.recoveryItems[0],
+});
+assertEqual(laterRecoveryRequest.keepsSnapshot, true, "recovery later action keeps snapshot");
+assertEqual(laterRecoveryRequest.requiresWriteBack, false, "recovery later action does not write back");
+assertNotIncludesText(JSON.stringify(restoreRecoveryRequest), "secret embedded recovery text");

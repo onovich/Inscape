@@ -1067,6 +1067,51 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 4. 本轮没有让 renderer 获取 Node / fs / shell 能力，也没有进入 P1.5 long-lived LanguageServer。
 5. 下一轮应进入 Round 30：recovery UI，覆盖打开 workspace 后发现 recovery、恢复 / 丢弃 / 稍后处理。
 
+### 2026-06-16 Round 30：recovery UI
+
+范围：建立 recovery UI/status/action contract，让 ProjectSession 的 recoveryStatus 可投影到 session panel，列出可恢复文件，并为 restore / discard / later 三类动作生成 text-free action request。本轮仍不做真实启动扫描、snapshot 删除或恢复写回。
+
+完成内容：
+
+1. `ProjectWorkspaceSessionStatusModelBuilder` 新增 recovery UI 投影：`recoveryLabel`、`recoveryFileLabel`、`recoveryItemCount`、text-free `recoveryItems`。
+2. `recoveryItems` 保留 relative path、file name、revision、mtime、content hash、action state 和可用动作列表，不包含 recovery snapshot text。
+3. `ProjectWorkspaceSessionController` 在 session panel 渲染 Recovery / Recoverable 状态，显示可恢复文件名。
+4. `ProjectWorkspaceSessionStatusModelBuilder.buildRecoveryActionRequest()` 返回 `inscape.self-hosted-editor.workspace-recovery-action-request`，覆盖 restore / discard / later。
+5. Restore action 标记 `requiresWriteBack`；discard action 标记 `suppressFuturePrompt`；later action 标记 `keepsSnapshot`。
+6. Workbench integration contract 覆盖 dev-host / embedded ProjectSession recovery status、面板文本、动作请求与 no-text projection。
+
+验证：
+
+```powershell
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:desktop-backend
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:workspace-fs
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:backend-services
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:backend-transport
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:preload-transport
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:fake-embedded-transport
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:electron-boundary
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:runtime
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:runtime-http
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:structure
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
+npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
+node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js
+npm --prefix src\ExternalSupport\VSCode run check:structure
+git -c safe.directory=D:/LabProjects/Inscape diff --check
+dotnet build Inscape.slnx --no-restore
+dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build
+```
+
+架构对照结论：
+
+1. recovery UI 只消费 backend ProjectSession `recoveryStatus` summary，不读取 recovery snapshot text 或文件系统。
+2. restore / discard / later 先落为 action request contract；真实恢复写回、删除 snapshot 和稍后处理持久化留给后续 IO 层。
+3. session panel 只渲染文件名和状态，不暴露正文、CSV、Runtime snapshot 或 recovery payload。
+4. 本轮没有改变 Compiler / LanguageServer / Tooling / Runtime payload shape，也没有进入 P1.5 long-lived LanguageServer。
+5. 下一轮应进入 Round 31：`.inscape-workspace/` 策略。
+
 ## 36 轮主计划
 
 ### A. Contract 与 transport 基础，Round 1-6

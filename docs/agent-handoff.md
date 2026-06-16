@@ -309,6 +309,17 @@ P1 Round 29 已建立 recovery snapshot write payload 与 cleanup request contra
 - `recoveryStatus` 和 cleanup request 仍是 text-free；save success / `savedRelativePaths` 生成 `saved-document-recovery-cleanup` request。
 - Round 29 当前已通过：SelfHostedEditor `check:desktop-backend` / `check:workspace-fs` / `check:backend-services` / `check:backend-transport` / `check:preload-transport` / `check:fake-embedded-transport` / `check:electron-boundary` / `check:runtime` / `check:runtime-http` / `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity` / `check:structure`，`node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js`，`git diff --check`，`.NET build` 与 Internal tests。下一步进入 Round 30：recovery UI。
 
+### 2026-06-16 SelfHostedEditor P1 Round 30 recovery UI 快照
+
+P1 Round 30 已建立 recovery UI/status/action contract。本轮只把 ProjectSession recovery summary 投影到 session panel，不扫描磁盘、不删除 snapshot、不执行恢复写回。
+
+- `ProjectWorkspaceSessionStatusModelBuilder` 新增 `recoveryLabel`、`recoveryFileLabel`、`recoveryItemCount` 和 text-free `recoveryItems`。
+- session panel 渲染 Recovery / Recoverable，显示可恢复文件名。
+- `buildRecoveryActionRequest()` 返回 `inscape.self-hosted-editor.workspace-recovery-action-request`，覆盖 restore / discard / later。
+- restore 标记 `requiresWriteBack`，discard 标记 `suppressFuturePrompt`，later 标记 `keepsSnapshot`。
+- Workbench integration contract 覆盖 dev-host / embedded recovery status、panel display、action request 和 no-text projection。
+- Round 30 当前已通过：SelfHostedEditor `check:desktop-backend` / `check:workspace-fs` / `check:backend-services` / `check:backend-transport` / `check:preload-transport` / `check:fake-embedded-transport` / `check:electron-boundary` / `check:runtime` / `check:runtime-http` / `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity` / `check:structure`，`node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js`，`git diff --check`，`.NET build` 与 Internal tests。下一步进入 Round 31：`.inscape-workspace/` 策略。
+
 ### 2026-06-14 SelfHostedEditor desktop backend v0 决策快照
 
 本轮已采纳 [ADR 0019](adr/0019-self-hosted-editor-embedded-backend-v0.md)：SelfHostedEditor desktop backend v0 采用嵌入式 EditorBackend，而不是独立 sidecar daemon。

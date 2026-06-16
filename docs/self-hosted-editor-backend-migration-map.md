@@ -54,6 +54,8 @@
 
 2026-06-16 P1 Round 29 补充：recovery snapshot 先落为 `buildRecoverySnapshotPlan()` contract。plan 为 dirty backend buffer 生成含文本、mtime、revision、content hash 的 recovery snapshot write payload，同时提供 text-free `recoveryStatus` 和 save success cleanup request。真实磁盘写入、启动扫描和恢复 UI 仍待后续轮次。
 
+2026-06-16 P1 Round 30 补充：recovery UI 先落为 ProjectSession summary projection 与 action request contract。session panel 只显示 recovery 状态和可恢复文件名；restore / discard / later 分别表达写回、抑制后续提示、保留 snapshot。真实扫描、删除 snapshot 和恢复写回仍待后续 IO 层。
+
 ## 状态分类
 
 | 分类 | 当前例子 | 未来归属 | 规则 |

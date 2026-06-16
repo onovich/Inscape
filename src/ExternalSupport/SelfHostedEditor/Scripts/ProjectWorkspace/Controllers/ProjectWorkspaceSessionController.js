@@ -12,6 +12,8 @@ export class ProjectWorkspaceSessionController {
       this.createStateItem("Revision", sessionState.workspaceRevisionLabel || "1"),
       this.createStateItem("Draft", sessionState.isDirty ? "edited" : "saved"),
       this.createStateItem("Source", sessionState.sourceLabel || "loaded"),
+      this.createStateItem("Recovery", sessionState.recoveryLabel || "none"),
+      this.createStateItem("Recoverable", sessionState.recoveryFileLabel || "none"),
     ];
     const runtimeItems = [
       this.createStateItem("View", sessionState.viewLabel || "editor"),

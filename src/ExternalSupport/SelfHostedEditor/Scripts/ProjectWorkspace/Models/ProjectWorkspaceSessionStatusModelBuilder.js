@@ -1,4 +1,5 @@
 export const ProjectWorkspaceSessionStatusFormat = "inscape.self-hosted-editor.workspace-session-panel-status";
+export const ProjectWorkspaceRecoveryActionRequestFormat = "inscape.self-hosted-editor.workspace-recovery-action-request";
 export const ProjectWorkspaceSessionStatusFormatVersion = 1;
 
 export class ProjectWorkspaceSessionStatusModelBuilder {
@@ -18,6 +19,7 @@ export class ProjectWorkspaceSessionStatusModelBuilder {
         || lifecycle.activeRelativePath
     );
     const runtimeNodeLabel = buildRuntimeNodeLabel(runtimeSnapshot);
+    const recoveryItems = buildRecoveryItems(projectSession?.recoveryStatus);
 
     return {
       backendModeLabel: normalizeLabel(projectSession?.mode || lifecycle.mode, "dev-host"),
@@ -37,6 +39,10 @@ export class ProjectWorkspaceSessionStatusModelBuilder {
       lineIdentityLabel: formatCountedSessionKind(projectSession?.lineIdentitySession, "unknown"),
       localizationLabel: formatCountedSessionKind(projectSession?.localizationSession, "unknown"),
       payloadContentExposed: false,
+      recoveryFileLabel: buildRecoveryFileLabel(recoveryItems),
+      recoveryItemCount: recoveryItems.length,
+      recoveryItems,
+      recoveryLabel: buildRecoveryLabel(projectSession?.recoveryStatus, recoveryItems),
       runtimeLabel: normalizeLabel(runtimeNodeLabel || projectSession?.runtimeSession?.kind, "unavailable"),
       runtimeSessionLabel: formatCountedSessionKind(projectSession?.runtimeSession, "unavailable"),
       sourceLabel: normalizeLabel(workspaceState.sourceLabel || workspace.source, "loaded"),
@@ -59,6 +65,29 @@ export class ProjectWorkspaceSessionStatusModelBuilder {
           ?? lifecycle.revision,
         1
       )),
+    };
+  }
+
+  static buildRecoveryActionRequest({
+    action = "later",
+    item = {},
+    relativePath = "",
+  } = {}) {
+    const normalizedAction = normalizeRecoveryAction(action);
+    const normalizedRelativePath = normalizeRelativePath(relativePath || item.relativePath);
+    return {
+      action: normalizedAction,
+      contentHash: String(item.contentHash || ""),
+      format: ProjectWorkspaceRecoveryActionRequestFormat,
+      formatVersion: ProjectWorkspaceSessionStatusFormatVersion,
+      keepsSnapshot: normalizedAction === "later",
+      payloadContentExposed: false,
+      relativePath: normalizedRelativePath,
+      requiresWriteBack: normalizedAction === "restore",
+      revision: normalizePositiveInteger(item.revision, 1),
+      snapshotModifiedUtc: normalizeLabel(item.snapshotModifiedUtc, ""),
+      suppressFuturePrompt: normalizedAction === "discard",
+      targetActionState: normalizedAction === "restore" ? "restored" : normalizedAction === "discard" ? "discarded" : "later",
     };
   }
 }
@@ -87,6 +116,55 @@ function buildRuntimeNodeLabel(runtimeSnapshot) {
   );
 }
 
+function buildRecoveryItems(recoveryStatus = {}) {
+  const items = Array.isArray(recoveryStatus?.items) ? recoveryStatus.items : [];
+  return items
+    .map((item) => {
+      const relativePath = normalizeRelativePath(item.relativePath);
+      if (!relativePath) {
+        return null;
+      }
+
+      const actionState = normalizeRecoveryActionState(item.actionState);
+      return {
+        actionState,
+        availableActions: buildRecoveryAvailableActions(actionState),
+        contentHash: String(item.contentHash || item.textHash || ""),
+        diskModifiedUtc: normalizeLabel(item.diskModifiedUtc, ""),
+        fileName: getFileNameFromPath(relativePath),
+        relativePath,
+        revision: normalizePositiveInteger(item.revision, 1),
+        snapshotModifiedUtc: normalizeLabel(item.snapshotModifiedUtc, ""),
+      };
+    })
+    .filter(Boolean);
+}
+
+function buildRecoveryAvailableActions(actionState) {
+  if (actionState === "restored" || actionState === "discarded") {
+    return [];
+  }
+
+  return ["restore", "discard", "later"];
+}
+
+function buildRecoveryFileLabel(recoveryItems) {
+  if (!recoveryItems.length) {
+    return "none";
+  }
+
+  return recoveryItems.map((item) => item.fileName || item.relativePath).join(", ");
+}
+
+function buildRecoveryLabel(recoveryStatus = {}, recoveryItems = []) {
+  if (!recoveryItems.length) {
+    return normalizeLabel(recoveryStatus?.state, "none");
+  }
+
+  const availableCount = recoveryItems.filter((item) => item.actionState === "available" || item.actionState === "later").length;
+  return `${availableCount} available`;
+}
+
 function formatCountedSessionKind(session, fallbackKind) {
   const kind = formatSessionKind(session, fallbackKind);
   const entryCount = normalizeOptionalNonNegativeInteger(session?.entryCount);
@@ -100,6 +178,24 @@ function formatSessionKind(session, fallbackKind) {
 function formatSessionLabel(sessionId) {
   const text = normalizeLabel(sessionId, "default");
   return text.length > 24 ? `${text.slice(0, 21)}...` : text;
+}
+
+function normalizeRecoveryAction(action) {
+  const normalizedAction = String(action || "later").trim();
+  if (["restore", "discard", "later"].includes(normalizedAction)) {
+    return normalizedAction;
+  }
+
+  return "later";
+}
+
+function normalizeRecoveryActionState(actionState) {
+  const normalizedState = String(actionState || "available").trim();
+  if (["available", "restored", "discarded", "later"].includes(normalizedState)) {
+    return normalizedState;
+  }
+
+  return "available";
 }
 
 function getFileNameFromPath(relativePath) {
