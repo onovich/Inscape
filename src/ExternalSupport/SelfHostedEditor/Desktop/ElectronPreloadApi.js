@@ -4,7 +4,7 @@ export const SelfHostedEditorPreloadCapabilities = Object.freeze({
   backendCommandTransport: "electron-ipc",
   embeddedBackend: "workspace-session-v0-partial",
   shell: "electron",
-  workspaceFileSystem: "read-buffer-session",
+  workspaceFileSystem: "read-write-buffer-session",
 });
 
 export const SelfHostedEditorPreloadEditorCommand = Object.freeze({

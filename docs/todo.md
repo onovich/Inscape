@@ -81,14 +81,14 @@ SelfHostedEditor desktop backend v0
 - [x] 完成 P1 Round 38 Windows package script / config contract：新增 electron-builder dev dependency、`main`、`package:windows`、build config 与 `check:desktop-package`；package artifact 未生成时继续记录 `windows-package-not-generated`。
 - [x] 完成 P1 Round 39 Windows package artifact smoke：真实运行 `package:windows` 生成 `dist/win-unpacked`，新增 `smoke:desktop-package` 验证 exe、`app.asar` 与 builder metadata；构建产物保持 ignored，不提交。
 - [x] 完成 P1 Round 40 packaged app protocol / asset loading guard：Electron main 改用 `inscape-self-hosted-editor://app/` 加载 Workbench，白名单服务 `Resources/`、`Scripts/`、Monaco 与 packaged samples，并拒绝 traversal / `DevScripts/` / 非 app host。
-- [x] 完成 P1 Round 40 后续 Electron IPC command boundary：新增固定 `inscape.self-hosted-editor.backend.invoke` channel、main 侧白名单 dispatcher、`check:electron-ipc` 与 runtime probe 覆盖；preload 内部只通过固定 channel 转发 editor command，renderer 仍不直接访问 Node / fs / shell / arbitrary IPC；真实 workspace open/read 已由后续 `check:electron-workspace` 补上，save/write-back 仍待下一轮。
+- [x] 完成 P1 Round 40 后续 Electron IPC command boundary：新增固定 `inscape.self-hosted-editor.backend.invoke` channel、main 侧白名单 dispatcher、`check:electron-ipc` 与 runtime probe 覆盖；preload 内部只通过固定 channel 转发 editor command，renderer 仍不直接访问 Node / fs / shell / arbitrary IPC；真实 workspace open/read/write 已由后续 `check:electron-workspace` 补上，autosave / recovery 仍待下一轮。
 - [x] 接入真实 Electron workspace open / read file IO：main process 持有 workspace root 和 ProjectSession，open folder 只接受目录，列出多个 `.inscape`，并把 DocumentBufferStore 从 contract store 推进到真实磁盘读取；`check:electron-workspace` 覆盖真实临时 workspace、`.inscape-workspace/` 忽略、非脚本过滤、text-free open/list/status/update、显式 read 返回正文、路径穿越拒绝与单文件模式拒绝。
-- [ ] 接入真实 Electron workspace 写回：把 `document-buffer.save` / `save-all` 从 text-free contract 推进到 main process 真实磁盘写回，继续走 workspace path guard / write target whitelist，并覆盖 disk conflict / stale revision。
+- [x] 接入真实 Electron workspace 写回：把 `document-buffer.save` / `save-all` 从 text-free contract 推进到 main process 真实磁盘写回，继续走 workspace path guard / write target whitelist，并覆盖 disk conflict / stale revision；save response 保持 text-free，disk conflict 不覆盖外部变更。
 - [ ] 实现 workspace 文件系统边界：只接受 workspace-relative path，拒绝绝对路径、`..` 越界、workspace 外路径和未列入白名单的写回目标。
 - [ ] 实现 `ProjectSession v0`：一个窗口一个 active workspace folder，一个 active project session；不支持正式单文件打开。
 - [ ] 实现 `DocumentBufferStore v0`：backend 持有 dirty buffers、revision、active document，LanguageServer / Runtime / Tooling 请求从 backend buffer 组 workspace snapshot。
 - [ ] 落地 `.inscape-workspace/` 与 `assets/` 目录策略：recovery / backups / cache 放 `.inscape-workspace/`，外部资源默认复制进 workspace `assets/`。
-- [ ] 实现 autosave / manual Save / recovery：默认 autosave，手动 Save 立即 flush，崩溃恢复依赖磁盘 recovery snapshot。
+- [ ] 实现 autosave / flush / recovery：默认 autosave，手动 Save 已可写盘但仍需接 idle autosave、close/switch/app-exit flush、崩溃 recovery snapshot 写入与下次打开扫描。
 - [ ] 实现 CSV / node-map / line-map 写前 backup：默认启用，可由设置项调整或关闭。
 - [x] 落地 settings 分层：全局偏好与 workspace / project 行为分开；即使设置页后置，配置 schema 也先稳定。
 - [ ] 打通 v0 最小可用闭环：打开目录 -> 文件列表 -> 编辑 `.inscape` -> autosave / 手动 Save -> recovery -> 基础诊断 / 补全 -> Preview。

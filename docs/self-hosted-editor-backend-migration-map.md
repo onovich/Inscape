@@ -76,9 +76,11 @@
 
 2026-06-17 P1 Round 40 补充：packaged app asset loading 改为 Electron app protocol。`inscape-self-hosted-editor://app/` 只解析 `Resources/`、`Scripts/`、`node_modules/monaco-editor/` 与 packaged `samples/`，拒绝 traversal、`DevScripts/` 和非 app host；这修复 `file://` 下 Workbench 绝对路径会指向文件系统根目录的风险，但仍不代表真实 GUI/workspace/save/recovery smoke 已完成。
 
-2026-06-17 P1 post-40 补充：Electron preload -> main 已有固定 command channel。preload 内部只通过 `inscape.self-hosted-editor.backend.invoke` 转发白名单 editor command，main process dispatcher 复用 preload payload validator 并拒绝未知 / 未接线 command；`project-session.status` 可返回 `embedded-desktop` 摘要。该入口只是 embedded transport 的第一刀，不改变 dev-host `/api/*` smoke，也不让 renderer 获得 Node/fs/shell/arbitrary IPC；真实 workspace open/read 已在后续补充落地，save/write-back 仍未完成。
+2026-06-17 P1 post-40 补充：Electron preload -> main 已有固定 command channel。preload 内部只通过 `inscape.self-hosted-editor.backend.invoke` 转发白名单 editor command，main process dispatcher 复用 preload payload validator 并拒绝未知 / 未接线 command；`project-session.status` 可返回 `embedded-desktop` 摘要。该入口只是 embedded transport 的第一刀，不改变 dev-host `/api/*` smoke，也不让 renderer 获得 Node/fs/shell/arbitrary IPC；真实 workspace open/read/write 已在后续补充落地，autosave / recovery 仍未完成。
 
-2026-06-17 P1 post-40 workspace 补充：Electron main process 已新增 `ElectronWorkspaceSessionStore`，通过原生 open-folder 选择目录，扫描真实 `.inscape` 文件并读入 backend `DocumentBufferStore`；`workspace.open-folder` / `workspace.list-files` 是 desktop-only command，不映射 dev-host `/api/*`。`project-session.status`、workspace list 与 update draft 响应保持 text-free，显式 `document-buffer.read` 才返回请求文档正文。真实 `document-buffer.save` / `save-all` 磁盘写回、disk conflict、flush 和 recovery 仍待后续迁移。
+2026-06-17 P1 post-40 workspace 补充：Electron main process 已新增 `ElectronWorkspaceSessionStore`，通过原生 open-folder 选择目录，扫描真实 `.inscape` 文件并读入 backend `DocumentBufferStore`；`workspace.open-folder` / `workspace.list-files` 是 desktop-only command，不映射 dev-host `/api/*`。`project-session.status`、workspace list 与 update draft 响应保持 text-free，显式 `document-buffer.read` 才返回请求文档正文。
+
+2026-06-17 P1 post-40 save/write-back 补充：`document-buffer.save` / `save-all` 已接到 Electron main process 真实磁盘写回。保存前复用 workspace path guard / write target whitelist / `baseRevision` guard，并读取当前磁盘 hash 检测外部修改；stale save 与 disk conflict 返回 text-free error，不覆盖外部磁盘变更。保存成功后刷新 backend buffer 的 `diskTextHash`、`lastSavedRevision` 与 dirty summary。autosave timer、close/switch/app-exit flush、recovery snapshot 写入与恢复 UI 仍待后续迁移。
 
 ## 状态分类
 

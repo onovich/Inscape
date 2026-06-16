@@ -147,6 +147,126 @@ try {
   assertEqual(dirtyStatus.workspace.hasUnsavedChanges, true, "workspace status tracks dirty buffer");
   assertEqual(JSON.stringify(dirtyStatus).includes("secret updated text"), false, "dirty status is text-free");
 
+  const saveResult = await dispatchSelfHostedEditorBackendCommand(
+    EditorBackendTransportCommand.DocumentBufferSave,
+    {
+      baseRevision: updateResult.document.revision,
+      relativePath: "story/opening.inscape",
+    },
+    {
+      sessionStore,
+    }
+  );
+  assertEqual(saveResult.ok, true, "document save ok");
+  assertEqual(saveResult.saveStatus.state, "saved", "document save status");
+  assertEqual(saveResult.document.dirty, false, "document save summary clean");
+  assertEqual(JSON.stringify(saveResult).includes("secret updated text"), false, "document save response is text-free");
+  assertEqual(
+    await fs.readFile(path.join(tempRoot, "story", "opening.inscape"), "utf8"),
+    "# Opening\nNarrator: secret updated text",
+    "document save writes disk"
+  );
+
+  const cleanStatus = await dispatchSelfHostedEditorBackendCommand(
+    EditorBackendTransportCommand.ProjectSessionStatus,
+    {},
+    {
+      sessionStore,
+    }
+  );
+  assertEqual(cleanStatus.workspace.hasUnsavedChanges, false, "workspace status clean after save");
+
+  const branchRead = await dispatchSelfHostedEditorBackendCommand(
+    EditorBackendTransportCommand.DocumentBufferRead,
+    {
+      relativePath: "story/branch.inscape",
+    },
+    {
+      sessionStore,
+    }
+  );
+  const branchUpdate = await dispatchSelfHostedEditorBackendCommand(
+    EditorBackendTransportCommand.DocumentBufferUpdateDraft,
+    {
+      baseRevision: branchRead.document.revision,
+      relativePath: "story/branch.inscape",
+      text: "# Branch\nNarrator: secret branch updated text",
+    },
+    {
+      sessionStore,
+    }
+  );
+  assertEqual(branchUpdate.ok, true, "branch update ok");
+  const saveAllResult = await dispatchSelfHostedEditorBackendCommand(
+    EditorBackendTransportCommand.DocumentBufferSaveAll,
+    {},
+    {
+      sessionStore,
+    }
+  );
+  assertEqual(saveAllResult.ok, true, "document save all ok");
+  assertEqual(saveAllResult.savedCount, 1, "document save all saves dirty branch");
+  assertEqual(JSON.stringify(saveAllResult).includes("secret branch updated text"), false, "save all response is text-free");
+  assertEqual(
+    await fs.readFile(path.join(tempRoot, "story", "branch.inscape"), "utf8"),
+    "# Branch\nNarrator: secret branch updated text",
+    "document save all writes disk"
+  );
+
+  const conflictRead = await dispatchSelfHostedEditorBackendCommand(
+    EditorBackendTransportCommand.DocumentBufferRead,
+    {
+      relativePath: "story/opening.inscape",
+    },
+    {
+      sessionStore,
+    }
+  );
+  const conflictUpdate = await dispatchSelfHostedEditorBackendCommand(
+    EditorBackendTransportCommand.DocumentBufferUpdateDraft,
+    {
+      baseRevision: conflictRead.document.revision,
+      relativePath: "story/opening.inscape",
+      text: "# Opening\nNarrator: secret conflicting draft",
+    },
+    {
+      sessionStore,
+    }
+  );
+  assertEqual(conflictUpdate.ok, true, "conflict draft update ok");
+  const staleSave = await dispatchSelfHostedEditorBackendCommand(
+    EditorBackendTransportCommand.DocumentBufferSave,
+    {
+      baseRevision: conflictRead.document.revision,
+      relativePath: "story/opening.inscape",
+    },
+    {
+      sessionStore,
+    }
+  );
+  assertEqual(staleSave.ok, false, "document save rejects stale revision");
+  assertEqual(staleSave.reason, "stale-document-revision", "document save stale reason");
+  assertEqual(JSON.stringify(staleSave).includes("secret conflicting draft"), false, "stale save response is text-free");
+  await fs.writeFile(path.join(tempRoot, "story", "opening.inscape"), "# Opening\nNarrator: external disk change", "utf8");
+  const conflictSave = await dispatchSelfHostedEditorBackendCommand(
+    EditorBackendTransportCommand.DocumentBufferSave,
+    {
+      baseRevision: conflictUpdate.document.revision,
+      relativePath: "story/opening.inscape",
+    },
+    {
+      sessionStore,
+    }
+  );
+  assertEqual(conflictSave.ok, false, "document save rejects disk conflict");
+  assertEqual(conflictSave.reason, "disk-conflict", "document save disk conflict reason");
+  assertEqual(JSON.stringify(conflictSave).includes("secret conflicting draft"), false, "disk conflict response is text-free");
+  assertEqual(
+    await fs.readFile(path.join(tempRoot, "story", "opening.inscape"), "utf8"),
+    "# Opening\nNarrator: external disk change",
+    "disk conflict does not overwrite external change"
+  );
+
   const canceledStore = createSelfHostedEditorElectronWorkspaceSessionStore({
     selectWorkspaceRoot: async () => "",
   });

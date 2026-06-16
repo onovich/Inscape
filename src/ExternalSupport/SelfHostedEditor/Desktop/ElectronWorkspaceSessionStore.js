@@ -2,7 +2,11 @@ import fs from "node:fs";
 import crypto from "node:crypto";
 import path from "node:path";
 import { EditorBackendDesktopSessionModel } from "../Scripts/Backend/Models/EditorBackendDesktopSessionModel.js";
-import { EditorBackendDocumentBufferStoreModel } from "../Scripts/Backend/Models/EditorBackendDocumentBufferStoreModel.js";
+import {
+  EditorBackendDocumentBufferSaveAllResultFormat,
+  EditorBackendDocumentBufferSaveResultFormat,
+  EditorBackendDocumentBufferStoreModel,
+} from "../Scripts/Backend/Models/EditorBackendDocumentBufferStoreModel.js";
 import { EditorBackendWorkspaceFolderModel } from "../Scripts/Backend/Models/EditorBackendWorkspaceFolderModel.js";
 import { EditorBackendWorkspacePathModel } from "../Scripts/Backend/Models/EditorBackendWorkspacePathModel.js";
 
@@ -199,6 +203,133 @@ export class SelfHostedEditorElectronWorkspaceSessionStore {
     );
   }
 
+  async saveDocument(payload = {}) {
+    if (!this.#activeWorkspace) {
+      return buildSaveFailure({
+        reason: "workspace-not-open",
+        relativePath: payload.relativePath,
+        sessionId: this.#sessionId,
+      });
+    }
+
+    const currentStore = this.#activeWorkspace.documentStore;
+    const relativePath = normalizeRelativePath(payload.relativePath || currentStore.activeRelativePath);
+    const currentDocument = currentStore.documents.find((document) => document.relativePath === relativePath) || null;
+    if (!currentDocument) {
+      return buildSaveFailure({
+        reason: "document-not-found",
+        relativePath,
+        sessionId: this.#sessionId,
+        store: currentStore,
+      });
+    }
+
+    let observedDiskTextHash = "";
+    try {
+      observedDiskTextHash = buildTextHash(await this.#readDocumentText(relativePath));
+    } catch (error) {
+      return buildSaveFailure({
+        currentDocument,
+        reason: "disk-read-failed",
+        relativePath,
+        sessionId: this.#sessionId,
+        store: currentStore,
+        writeError: error,
+      });
+    }
+
+    const nextDiskTextHash = buildTextHash(currentDocument.text);
+    const plannedSave = EditorBackendDocumentBufferStoreModel.saveDocument(currentStore, {
+      ...payload,
+      nextDiskTextHash,
+      observedDiskTextHash,
+      relativePath,
+      workspaceRoot: this.#activeWorkspace.workspaceRoot,
+    });
+    if (!plannedSave.ok) {
+      return plannedSave;
+    }
+
+    try {
+      await this.#writeDocumentText(relativePath, currentDocument.text);
+    } catch (error) {
+      return buildSaveFailure({
+        currentDocument,
+        reason: "disk-write-failed",
+        relativePath,
+        sessionId: this.#sessionId,
+        store: currentStore,
+        workspaceBoundary: plannedSave.workspaceBoundary,
+        writeError: error,
+      });
+    }
+
+    const nextStore = EditorBackendDocumentBufferStoreModel.buildStore({
+      ...currentStore,
+      documents: currentStore.documents.map((document) => document.relativePath === relativePath
+        ? {
+          ...document,
+          dirty: false,
+          diskTextHash: nextDiskTextHash,
+          existsOnDisk: true,
+          lastLoadedUtc: new Date().toISOString(),
+          lastSavedRevision: document.revision,
+        }
+        : document),
+    });
+    this.#activeWorkspace = {
+      ...this.#activeWorkspace,
+      documentStore: nextStore,
+    };
+
+    return {
+      ...plannedSave,
+      document: EditorBackendDesktopSessionModel.buildDocumentBufferSummary(
+        nextStore.documents.find((document) => document.relativePath === relativePath) || currentDocument
+      ),
+      storeSummary: EditorBackendDocumentBufferStoreModel.listDocuments(nextStore),
+    };
+  }
+
+  async saveAll(payload = {}) {
+    if (!this.#activeWorkspace) {
+      return buildSaveAllResult({
+        failedResults: [
+          buildSaveFailure({
+            reason: "workspace-not-open",
+            sessionId: this.#sessionId,
+          }),
+        ],
+        sessionId: this.#sessionId,
+        store: null,
+      });
+    }
+
+    const requestedPaths = normalizeRelativePathList(payload.relativePaths);
+    const candidateDocuments = this.#activeWorkspace.documentStore.documents.filter((document) => (
+      document.dirty
+      && (
+        requestedPaths.length === 0
+        || requestedPaths.includes(document.relativePath)
+      )
+    ));
+    const results = [];
+    for (const document of candidateDocuments) {
+      const result = await this.saveDocument({
+        ...payload,
+        baseRevision: document.revision,
+        relativePath: document.relativePath,
+      });
+      results.push(result);
+    }
+
+    return buildSaveAllResult({
+      results,
+      sessionId: this.#sessionId,
+      store: this.#activeWorkspace.documentStore,
+    });
+  }
+
   getProjectSessionStatus(payload = {}) {
     if (!this.#activeWorkspace) {
       return buildProjectSessionStatusFromPayload(payload, {
@@ -274,6 +405,17 @@ export class SelfHostedEditorElectronWorkspaceSessionStore {
     }
 
     return "unsupported";
+  }
+
+  async #readDocumentText(relativePath) {
+    const absolutePath = resolveWorkspacePath(this.#activeWorkspace.workspaceRoot, relativePath);
+    return stripUtf8Bom(await this.#fs.readFile(absolutePath, "utf8"));
+  }
+
+  async #writeDocumentText(relativePath, text) {
+    const absolutePath = resolveWorkspacePath(this.#activeWorkspace.workspaceRoot, relativePath);
+    await this.#fs.mkdir(path.dirname(absolutePath), { recursive: true });
+    await this.#fs.writeFile(absolutePath, String(text || ""), "utf8");
   }
 }
 
@@ -413,6 +555,88 @@ function buildMutationFailure({
   };
 }
 
+function buildSaveFailure({
+  currentDocument = null,
+  reason,
+  relativePath = "",
+  sessionId,
+  store = null,
+  workspaceBoundary = null,
+  writeError = null,
+}) {
+  const normalizedRelativePath = normalizeRelativePath(relativePath || currentDocument?.relativePath);
+  const revision = currentDocument?.revision || store?.revision || 1;
+  const saveStatus = EditorBackendDesktopSessionModel.buildSaveStatus({
+    dirty: Boolean(currentDocument?.dirty),
+    lastError: {
+      code: reason,
+      message: writeError ? `${reason}: ${String(writeError.message || writeError).slice(0, 160)}` : `Document save rejected: ${reason}`,
+    },
+    lastSavedRevision: currentDocument?.lastSavedRevision || 0,
+    relativePath: normalizedRelativePath,
+    revision,
+    state: "error",
+  });
+  return {
+    currentRevision: revision,
+    document: currentDocument
+      ? EditorBackendDesktopSessionModel.buildDocumentBufferSummary(currentDocument)
+      : null,
+    format: EditorBackendDocumentBufferSaveResultFormat,
+    formatVersion: SelfHostedEditorElectronWorkspaceFormatVersion,
+    ok: false,
+    operation: "save-document",
+    payloadContentExposed: false,
+    reason,
+    relativePath: normalizedRelativePath,
+    saveStatus,
+    savedRevision: 0,
+    sessionId,
+    storeSummary: store ? EditorBackendDocumentBufferStoreModel.listDocuments(store) : null,
+    workspaceBoundary,
+    workspaceName: store?.workspaceName || "workspace",
+    writeTarget: workspaceBoundary?.writeTarget || null,
+  };
+}
+
+function buildSaveAllResult({
+  failedResults = [],
+  results = [],
+  sessionId,
+  store,
+}) {
+  const allResults = [...results, ...failedResults];
+  const failed = allResults.filter((result) => !result.ok);
+  const saved = allResults.filter((result) => result.ok);
+  const storeSummary = store ? EditorBackendDocumentBufferStoreModel.listDocuments(store) : null;
+  const activeDocument = store?.documents?.find((document) => document.relativePath === store.activeRelativePath)
+    || store?.documents?.[0]
+    || null;
+  return {
+    failedCount: failed.length,
+    format: EditorBackendDocumentBufferSaveAllResultFormat,
+    formatVersion: SelfHostedEditorElectronWorkspaceFormatVersion,
+    ok: failed.length === 0,
+    operation: "save-all",
+    payloadContentExposed: false,
+    reason: failed.length > 0 ? "one-or-more-documents-failed" : "",
+    results: allResults.map(omitStoreSummary),
+    saveStatus: failed[0]?.saveStatus || EditorBackendDesktopSessionModel.buildSaveStatus({
+      dirty: Boolean(store?.documents?.some((document) => document.dirty)),
+      lastSavedRevision: saved.length > 0
+        ? Math.max(...saved.map((result) => result.savedRevision || 0))
+        : activeDocument?.lastSavedRevision || activeDocument?.revision || store?.revision || 1,
+      relativePath: activeDocument?.relativePath || "",
+      revision: activeDocument?.revision || store?.revision || 1,
+      state: "saved",
+    }),
+    savedCount: saved.length,
+    sessionId,
+    storeSummary,
+    workspaceName: store?.workspaceName || "workspace",
+  };
+}
+
 function summarizeDocumentMutationResult(result, store, sessionId) {
   const storeSummary = EditorBackendDocumentBufferStoreModel.listDocuments({
     ...store,
@@ -431,6 +655,14 @@ function summarizeDocumentMutationResult(result, store, sessionId) {
     sessionId,
     storeSummary,
   };
+}
+
+function omitStoreSummary(result) {
+  const {
+    storeSummary,
+    ...summary
+  } = result;
+  return summary;
 }
 
 function normalizeWorkspaceDocuments(workspace = {}) {
@@ -497,6 +729,14 @@ function normalizeRelativePath(relativePath) {
     .replace(/^\.\//, "")
     .replace(/\/+/g, "/")
     .replace(/\/+$/g, "");
+}
+
+function normalizeRelativePathList(relativePaths) {
+  if (!Array.isArray(relativePaths)) {
+    return [];
+  }
+
+  return [...new Set(relativePaths.map(normalizeRelativePath).filter(Boolean))];
 }
 
 function normalizeSessionId(sessionId) {

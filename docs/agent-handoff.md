@@ -446,13 +446,23 @@ P1 40 轮计划完成后，继续补上了真实 Electron preload -> main 的固
 
 ### 2026-06-17 SelfHostedEditor P1 post-40 Electron workspace open/read 快照
 
-固定 IPC channel 之后，本轮把 Electron main process 推进到真实 workspace open / read buffer 的局部闭环；仍不做真实保存写盘、autosave flush、recovery restore/discard/later 或 P1.5 long-lived LanguageServer。
+固定 IPC channel 之后，本轮把 Electron main process 推进到真实 workspace open / read buffer 的局部闭环；当轮仍不做真实保存写盘、autosave flush、recovery restore/discard/later 或 P1.5 long-lived LanguageServer。
 
 - 新增 `Desktop/ElectronWorkspaceSessionStore.js`。main process 持有单窗口 workspace session，open folder 只接受目录，递归扫描真实 `.inscape` 文件，忽略 `.inscape-workspace/`、`node_modules`、`dist` 等非项目 truth 目录，并把磁盘正文读入 `DocumentBufferStore`。
 - `EditorBackendTransportCommand` / preload transport / `EditorBackendClient` / `EditorBackendServiceRegistry` 新增 `workspace.open-folder` 与 `workspace.list-files` 的窄接口；这些 command 没有 dev-host `/api/*` route，HTTP transport 误用会显式失败。
 - Electron dispatcher 现在接线 `workspace.open-folder`、`workspace.list-files`、`document-buffer.list`、`document-buffer.read`、`document-buffer.update-draft` 与 `project-session.status`。open/list/status/update 响应保持 text-free；只有显式 `document-buffer.read` 返回请求文档正文。
 - 新增 `check:electron-workspace`，创建临时真实 workspace 验证目录打开、`.inscape` 列表、非脚本过滤、internal workspace 忽略、read buffer、路径穿越拒绝、单文件模式拒绝和 dirty status 摘要。`check:electron-shell` / `check:electron-boundary` / `check:backend-transport` / `check:backend-services` / `check:preload-transport` / `check:structure` 已同步该边界。
-- 下一步优先接 `document-buffer.save` / `save-all` 的真实磁盘写回、disk conflict / stale revision、close/switch/app-exit flush，再推进 GUI edit-save-recovery smoke；不能因为 open/read contract 通过就宣布 P1 完成。
+- 该段的下一步（`document-buffer.save` / `save-all` 真实磁盘写回、disk conflict / stale revision）已由后续 save/write-back 快照完成；close/switch/app-exit flush 与 GUI edit-save-recovery smoke 仍待后续。
+
+### 2026-06-17 SelfHostedEditor P1 post-40 Electron save/write-back 快照
+
+在真实 workspace open/read 后，本轮继续把 `document-buffer.save` / `save-all` 接到 Electron main process 的真实磁盘写回；仍不做 idle autosave timer、close/switch/app-exit flush、recovery snapshot 写入 / 扫描 / 恢复 UI 或 P1.5 long-lived LanguageServer。
+
+- `ElectronWorkspaceSessionStore` 现在处理 `document-buffer.save` 与 `document-buffer.save-all`：保存前复用 workspace path guard / write target whitelist / `baseRevision` guard，读取当前磁盘 hash，写入当前 backend buffer 文本，并刷新 `diskTextHash`、`lastSavedRevision` 与 dirty summary。
+- save/save-all 响应保持 text-free；只有 main process 内部 buffer 和磁盘写入包含正文。`document-buffer.read` 仍是唯一显式正文读取响应。
+- 新增 `check:electron-workspace` 断言：手动 save 写回真实临时 workspace 文件、save-all 写回剩余 dirty 文件、stale save 被拒绝、disk conflict 不覆盖外部磁盘变更、所有 save/status 响应不泄露 draft text。
+- `SelfHostedEditorPreloadCapabilities.workspaceFileSystem` 从 `read-buffer-session` 提升为 `read-write-buffer-session`，但这只表示 open/read/write buffer 局部闭环；autosave flush、recovery 和 GUI smoke 仍未完成。
+- 下一步应接 autosave idle debounce 到真实 save、manual save/close/switch/app-exit flush 规则，以及 `.inscape-workspace/recovery` snapshot 写入 / 下次打开扫描 / restore-discard-later UI smoke。
 
 ### 2026-06-14 SelfHostedEditor desktop backend v0 决策快照
 

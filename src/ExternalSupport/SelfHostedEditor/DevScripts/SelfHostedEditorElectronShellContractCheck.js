@@ -70,7 +70,7 @@ assertIncludesText(preloadApiText, "SelfHostedEditorPreloadEditorCommand", "Elec
 assertIncludesText(preloadApiText, "inscapeSelfHostedEditor", "Electron preload API name");
 assertIncludesText(preloadApiText, "backendCommandTransport: \"electron-ipc\"", "Electron preload API declares IPC command transport");
 assertIncludesText(preloadApiText, "embeddedBackend: \"workspace-session-v0-partial\"", "Electron preload declares partial embedded backend capability");
-assertIncludesText(preloadApiText, "workspaceFileSystem: \"read-buffer-session\"", "Electron preload declares read-buffer workspace file capability");
+assertIncludesText(preloadApiText, "workspaceFileSystem: \"read-write-buffer-session\"", "Electron preload declares read/write buffer workspace file capability");
 assertIncludesText(preloadApiText, "ProjectSessionStatus", "Electron preload API whitelists project-session status");
 assertIncludesText(preloadApiText, "DocumentBufferRead", "Electron preload API whitelists document-buffer read");
 assertIncludesText(preloadApiText, "WorkspaceOpenFolder", "Electron preload API whitelists workspace open folder");
@@ -106,7 +106,7 @@ const preloadApi = preloadApiModule.createSelfHostedEditorPreloadApi();
 assertEqual(Object.isFrozen(preloadApi), true, "Electron preload API is frozen");
 assertEqual(preloadApi.capabilities.backendCommandTransport, "electron-ipc", "Electron preload API command transport capability");
 assertEqual(preloadApi.capabilities.embeddedBackend, "workspace-session-v0-partial", "Electron preload API embedded backend capability");
-assertEqual(preloadApi.capabilities.workspaceFileSystem, "read-buffer-session", "Electron preload API workspace file capability");
+assertEqual(preloadApi.capabilities.workspaceFileSystem, "read-write-buffer-session", "Electron preload API workspace file capability");
 assertEqual(preloadApi.editorCommands.ProjectSessionStatus, "project-session.status", "Electron preload project-session command");
 assertEqual(
   preloadApiModule.listSelfHostedEditorPreloadCommands().length,

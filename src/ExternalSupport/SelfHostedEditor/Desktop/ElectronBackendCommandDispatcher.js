@@ -39,6 +39,12 @@ export function createSelfHostedEditorBackendCommandHandlers(options = {}) {
     [EditorBackendTransportCommand.DocumentBufferRead]: async (payload = {}) => {
       return sessionStore.readDocument(payload);
     },
+    [EditorBackendTransportCommand.DocumentBufferSave]: async (payload = {}) => {
+      return await sessionStore.saveDocument(payload);
+    },
+    [EditorBackendTransportCommand.DocumentBufferSaveAll]: async (payload = {}) => {
+      return await sessionStore.saveAll(payload);
+    },
     [EditorBackendTransportCommand.DocumentBufferUpdateDraft]: async (payload = {}) => {
       return sessionStore.updateDraft(payload);
     },
