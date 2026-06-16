@@ -123,6 +123,7 @@ const requiredPaths = [
   "Scripts/LanguageServer/Bridges/SelfHostedEditorReferencesBridge.js",
   "Scripts/LanguageServer/Bridges/SelfHostedEditorStoryGraphBridge.js",
   "Scripts/LanguageServer/Models/LanguageServerCompletionModelMapper.js",
+  "Scripts/LanguageServer/Models/LanguageServerAuthoringRequestModel.js",
   "Scripts/LanguageServer/Models/LanguageServerDefinitionModelMapper.js",
   "Scripts/LanguageServer/Models/LanguageServerDiagnosticModelMapper.js",
   "Scripts/LanguageServer/Models/LanguageServerDocumentSymbolModelMapper.js",

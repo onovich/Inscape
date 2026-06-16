@@ -238,6 +238,17 @@ P1 Round 22 已完成 workspace snapshot builder，仍未把 authoring endpoint�
 - `DocumentBufferStore` 窄服务已暴露 `buildWorkspaceSnapshot()` 与 `buildActiveDocumentRequest()`。
 - Round 22 当前已通过：SelfHostedEditor `check:syntax` / `check:structure` / `check:desktop-backend` / `check:backend-services` / `check:model`。下一步进入 Round 23：authoring endpoint 接入 buffer。
 
+### 2026-06-16 SelfHostedEditor P1 Round 23 authoring endpoint buffer 接入快照
+
+P1 Round 23 已完成 LanguageServer-backed authoring bridge 的 backend snapshot 接入，仍未默认启用 P1.5 long-lived LanguageServer，也未改变 dev-host `/api/*` route 或 shared response shape。
+
+- 新增 `LanguageServerAuthoringRequestModel`，统一把 content-bearing workspace snapshot 投影为 authoring request。
+- diagnostics / completions / definition / references / hover / documentSymbols 六个 bridge 新增 `workspaceSnapshotProvider`。
+- snapshot 存在时，六个 bridge 使用 snapshot active document 的 `scriptText`、`activeRelativePath`、`documentRevision` 与 workspace；旧 `workspaceContextProvider` 仅 fallback。
+- `SelfHostedEditorFeatureBootstrapper` 通过 `DocumentBufferStore` 从当前 workspace context 构建 backend workspace snapshot，并注入六个 authoring bridge。
+- `check:backend-services` 覆盖六个 authoring bridge 的 snapshot 优先级，并断言旧 workspace context 文本不会在 snapshot 存在时进入 payload。
+- Round 23 当前已通过：SelfHostedEditor `check:syntax` / `check:structure` / `check:backend-services` / `check:model` / `check:semantic-parity-http`。下一步进入 Round 24：Preview / Runtime 接入 buffer。
+
 ### 2026-06-14 SelfHostedEditor desktop backend v0 决策快照
 
 本轮已采纳 [ADR 0019](adr/0019-self-hosted-editor-embedded-backend-v0.md)：SelfHostedEditor desktop backend v0 采用嵌入式 EditorBackend，而不是独立 sidecar daemon。

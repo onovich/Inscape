@@ -135,6 +135,23 @@ export async function createSelfHostedEditorFeatures(bindings, callbacks = {}) {
     workspaceStatusElement: bindings.workspaceStatusElement,
   });
   const workspaceContextProvider = () => workspaceController.getWorkspaceContext();
+  const workspaceSnapshotProvider = () => {
+    const workspace = workspaceController.getWorkspaceContext();
+    const activeRelativePath = workspace.currentFilePath || workspace.activeRelativePath || "";
+    const documents = (Array.isArray(workspace.documents) ? workspace.documents : []).map((document) => backendServices.documentBufferStore.buildBuffer({
+      active: document.relativePath === activeRelativePath,
+      relativePath: document.relativePath,
+      revision: workspace.revision || document.revision || 1,
+      text: document.text,
+    }));
+    const store = backendServices.documentBufferStore.buildStore({
+      activeRelativePath,
+      documents,
+      revision: workspace.revision || 1,
+      workspaceName: workspace.workspaceName,
+    });
+    return backendServices.documentBufferStore.buildWorkspaceSnapshot(store);
+  };
   for (const bridge of [
     completionBridge,
     definitionBridge,
@@ -151,6 +168,16 @@ export async function createSelfHostedEditorFeatures(bindings, callbacks = {}) {
     storyGraphBridge,
   ]) {
     bridge.setWorkspaceContextProvider(workspaceContextProvider);
+  }
+  for (const bridge of [
+    completionBridge,
+    definitionBridge,
+    diagnosticsBridge,
+    documentSymbolBridge,
+    hoverBridge,
+    referencesBridge,
+  ]) {
+    bridge.setWorkspaceSnapshotProvider(workspaceSnapshotProvider);
   }
 
   const editorCompletionController = new EditorCompletionController(

@@ -6,6 +6,13 @@ import {
   listEditorBackendServiceKeys,
   ProjectSessionService,
 } from "../Scripts/Backend/Clients/EditorBackendServiceRegistry.js";
+import { EditorBackendWorkspaceSnapshotFormat } from "../Scripts/Backend/Models/EditorBackendWorkspaceSnapshotModel.js";
+import { SelfHostedEditorCompletionBridge } from "../Scripts/LanguageServer/Bridges/SelfHostedEditorCompletionBridge.js";
+import { SelfHostedEditorDefinitionBridge } from "../Scripts/LanguageServer/Bridges/SelfHostedEditorDefinitionBridge.js";
+import { SelfHostedEditorDiagnosticsBridge } from "../Scripts/LanguageServer/Bridges/SelfHostedEditorDiagnosticsBridge.js";
+import { SelfHostedEditorDocumentSymbolBridge } from "../Scripts/LanguageServer/Bridges/SelfHostedEditorDocumentSymbolBridge.js";
+import { SelfHostedEditorHoverBridge } from "../Scripts/LanguageServer/Bridges/SelfHostedEditorHoverBridge.js";
+import { SelfHostedEditorReferencesBridge } from "../Scripts/LanguageServer/Bridges/SelfHostedEditorReferencesBridge.js";
 
 const moduleRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const calls = [];
@@ -230,6 +237,76 @@ const activeDocumentRequest = services.documentBufferStore.buildActiveDocumentRe
 assertEqual(activeDocumentRequest.activeRelativePath, "story/branch.inscape", "active document request path");
 assertEqual(activeDocumentRequest.scriptText, "# Branch", "active document request script text");
 assertEqual(activeDocumentRequest.workspace.source, "backend-buffer-store", "active document request workspace source");
+const authoringCalls = [];
+const authoringLanguageClient = {
+  async completions(payload) {
+    authoringCalls.push({ method: "completions", payload });
+    return { completions: [] };
+  },
+  async definition(payload) {
+    authoringCalls.push({ method: "definition", payload });
+    return { definition: null };
+  },
+  async diagnose(payload) {
+    authoringCalls.push({ method: "diagnose", payload });
+    return { diagnostics: [] };
+  },
+  async documentSymbols(payload) {
+    authoringCalls.push({ method: "documentSymbols", payload });
+    return { symbols: [] };
+  },
+  async hover(payload) {
+    authoringCalls.push({ method: "hover", payload });
+    return { hover: null };
+  },
+  async references(payload) {
+    authoringCalls.push({ method: "references", payload });
+    return { references: [] };
+  },
+};
+const authoringSnapshot = services.documentBufferStore.buildWorkspaceSnapshot(documentUpdateResult.store, {
+  activeRelativePath: "story/opening.inscape",
+});
+const legacyWorkspaceContext = {
+  currentFilePath: "story/legacy.inscape",
+  documents: [
+    {
+      relativePath: "story/legacy.inscape",
+      text: "legacy workspace text",
+    },
+  ],
+  revision: 1,
+};
+const authoringBridges = [
+  new SelfHostedEditorCompletionBridge({ languageSessionClient: authoringLanguageClient }),
+  new SelfHostedEditorDefinitionBridge({ languageSessionClient: authoringLanguageClient }),
+  new SelfHostedEditorDiagnosticsBridge({ languageSessionClient: authoringLanguageClient }),
+  new SelfHostedEditorDocumentSymbolBridge({ languageSessionClient: authoringLanguageClient }),
+  new SelfHostedEditorHoverBridge({ languageSessionClient: authoringLanguageClient }),
+  new SelfHostedEditorReferencesBridge({ languageSessionClient: authoringLanguageClient }),
+];
+for (const bridge of authoringBridges) {
+  bridge.setWorkspaceContextProvider(() => legacyWorkspaceContext);
+  bridge.setWorkspaceSnapshotProvider(() => authoringSnapshot);
+}
+await authoringBridges[0].getCompletions("legacy script text");
+await authoringBridges[1].getDefinition("legacy script text", { name: "Opening" });
+await authoringBridges[2].getDiagnostics("legacy script text");
+await authoringBridges[3].getDocumentSymbols("legacy script text");
+await authoringBridges[4].getHover("legacy script text", { kind: "node", name: "Opening" });
+await authoringBridges[5].getReferences("legacy script text", { name: "Opening" });
+assertEqual(authoringCalls.length, 6, "authoring bridge call count");
+for (const call of authoringCalls) {
+  assertEqual(call.payload.workspace.format, EditorBackendWorkspaceSnapshotFormat, `authoring ${call.method} uses workspace snapshot`);
+  assertEqual(call.payload.workspace.source, "backend-buffer-store", `authoring ${call.method} snapshot source`);
+  assertEqual(call.payload.activeRelativePath, "story/opening.inscape", `authoring ${call.method} active path`);
+  assertEqual(call.payload.documentRevision, documentUpdateResult.document.revision, `authoring ${call.method} document revision`);
+  assertEqual(call.payload.scriptText, "# Opening\nNarrator: Updated", `authoring ${call.method} active buffer text`);
+  assertEqual(JSON.stringify(call.payload).includes("legacy workspace text"), false, `authoring ${call.method} ignores legacy workspace text when snapshot exists`);
+}
+assertEqual(authoringCalls.find((call) => call.method === "definition")?.payload.definitionName, "Opening", "authoring definition query preserved");
+assertEqual(authoringCalls.find((call) => call.method === "hover")?.payload.hoverKind, "node", "authoring hover kind preserved");
+assertEqual(authoringCalls.find((call) => call.method === "references")?.payload.referenceName, "Opening", "authoring references query preserved");
 const workspaceBoundary = services.documentBufferStore.buildWorkspaceBoundary({
   relativePath: "assets/portrait.png",
   writeIntent: "create",

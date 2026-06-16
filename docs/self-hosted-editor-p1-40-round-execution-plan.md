@@ -765,6 +765,35 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
 2. status / list 仍不泄露正文；只有明确 backend request snapshot 标记为 content-bearing payload。
 3. 下一轮应进入 Round 23：authoring endpoint 接入 buffer，让 diagnostics / completions / definition / references / hover / documentSymbols 使用 backend snapshot。
 
+### 2026-06-16 Round 23：authoring endpoint 接入 buffer
+
+范围：让 LanguageServer-backed authoring bridge 优先消费 backend workspace snapshot；不改变 dev-host `/api/*` route 或 LanguageServer shared payload 语义，不默认启用 P1.5 long-lived LanguageServer。
+
+完成内容：
+
+1. 新增 `LanguageServerAuthoringRequestModel`，统一把 content-bearing workspace snapshot 投影为 LanguageServer authoring request。
+2. diagnostics / completions / definition / references / hover / documentSymbols 六个 bridge 新增 `workspaceSnapshotProvider`。
+3. 当 snapshot 存在时，六个 bridge 使用 snapshot active document 的 `scriptText`、`activeRelativePath`、`documentRevision` 与 workspace；旧 `workspaceContextProvider` 只作为 fallback。
+4. `SelfHostedEditorFeatureBootstrapper` 通过 `DocumentBufferStore` 从当前 workspace context 构建 backend workspace snapshot，并注入六个 authoring bridge。
+5. `check:backend-services` 覆盖六个 authoring bridge 的 snapshot 优先级，并断言旧 workspace context 文本不会在 snapshot 存在时进入 payload。
+6. `check:semantic-parity-http` 保持通过，确认当前 dev-host HTTP authoring 行为未回归。
+
+验证：
+
+```powershell
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:structure
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:backend-services
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
+```
+
+架构对照结论：
+
+1. 本轮只改变 SelfHostedEditor bridge 的请求来源选择，不复制 LanguageServer 语义，也不改变 shared endpoint response shape。
+2. UI draft/workspace context 仍可 fallback，但有 backend snapshot 时不会作为 authoring truth 上传。
+3. 下一轮应进入 Round 24：Preview / Runtime 接入 buffer，让 Preview / Runtime 使用 backend buffer 当前 workspace state。
+
 ## 36 轮主计划
 
 ### A. Contract 与 transport 基础，Round 1-6
@@ -808,7 +837,7 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
 | 20 | list / get / update / active document | 已完成。新增 `EditorBackendDocumentBufferStoreModel`，可 build store、list summaries、get document、update text 并切换 active document；list 不暴露正文，update 推进 document / store revision，缺失文档返回 `document-not-found`。 |
 | 21 | baseRevision 与 stale guard | 已完成。`updateDocument()` 支持 `baseRevision`，revision 不匹配时返回 `stale-document-revision`，并只回传 current/base revision 与 text-free summary；旧 debounce 不能覆盖较新 revision。 |
 | 22 | workspace snapshot builder | 已完成。新增 `EditorBackendWorkspaceSnapshotModel`，从 DocumentBufferStore 构建 content-bearing backend request snapshot，并可导出 active document request；status/list 仍保持 text-free。 |
-| 23 | authoring endpoint 接入 buffer | diagnostics / completions / definition / references / hover / documentSymbols 使用 backend buffer 当前内容；payload shape 仍与 shared LanguageServer contract 对齐。 |
+| 23 | authoring endpoint 接入 buffer | 已完成。六个 LanguageServer-backed authoring bridge 优先使用 backend workspace snapshot active buffer，旧 workspace context 仅 fallback；semantic parity HTTP 保持通过。 |
 | 24 | Preview / Runtime 接入 buffer | Preview / Runtime 使用 backend buffer 当前 workspace state；Preview choice click invariant 保持不变。 |
 
 ### E. 保存、autosave 与 recovery，Round 25-30
