@@ -2,6 +2,7 @@ import {
   EditorBackendTransportCommand,
   listEditorBackendTransportCommands,
 } from "../Scripts/Backend/Clients/EditorBackendTransport.js";
+import { EditorBackendDocumentBufferStoreModel } from "../Scripts/Backend/Models/EditorBackendDocumentBufferStoreModel.js";
 
 const knownCommands = new Set(listEditorBackendTransportCommands());
 
@@ -11,6 +12,16 @@ export class SelfHostedEditorFakeEmbeddedTransport {
 
   constructor(options = {}) {
     this.#handlers = Object.freeze({
+      [EditorBackendTransportCommand.DocumentBufferList]: async (payload) =>
+        EditorBackendDocumentBufferStoreModel.listDocuments(payload.store || {}),
+      [EditorBackendTransportCommand.DocumentBufferRead]: async (payload) =>
+        EditorBackendDocumentBufferStoreModel.getDocument(payload.store || {}, payload),
+      [EditorBackendTransportCommand.DocumentBufferSave]: async (payload) =>
+        EditorBackendDocumentBufferStoreModel.saveDocument(payload.store || {}, payload),
+      [EditorBackendTransportCommand.DocumentBufferSaveAll]: async (payload) =>
+        EditorBackendDocumentBufferStoreModel.saveAll(payload.store || {}, payload),
+      [EditorBackendTransportCommand.DocumentBufferUpdateDraft]: async (payload) =>
+        EditorBackendDocumentBufferStoreModel.updateDocument(payload.store || {}, payload),
       [EditorBackendTransportCommand.HostBindingCapabilities]: async () => ({
         bindings: [],
         speakers: [],

@@ -17,6 +17,13 @@ export class EditorBackendClient {
     }
 
     this.sessionId = options.sessionId || this.#createSessionId();
+    this.documentBuffer = Object.freeze({
+      list: (request) => this.#invoke(EditorBackendTransportCommand.DocumentBufferList, request),
+      read: (request) => this.#invoke(EditorBackendTransportCommand.DocumentBufferRead, request),
+      saveAll: (request) => this.#invoke(EditorBackendTransportCommand.DocumentBufferSaveAll, request),
+      saveDocument: (request) => this.#invoke(EditorBackendTransportCommand.DocumentBufferSave, request),
+      updateDraft: (request) => this.#invoke(EditorBackendTransportCommand.DocumentBufferUpdateDraft, request),
+    });
     this.languageSession = Object.freeze({
       completions: (request) => this.#invokeLanguageSession(EditorBackendTransportCommand.LanguageCompletions, "completions", request),
       definition: (request) => this.#invokeLanguageSession(EditorBackendTransportCommand.LanguageDefinition, "definition", request),

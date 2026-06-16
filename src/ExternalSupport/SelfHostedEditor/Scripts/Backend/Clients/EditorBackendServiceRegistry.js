@@ -32,8 +32,11 @@ export class ProjectSessionService {
 }
 
 export class DocumentBufferStore {
+  #documentBuffer;
+
   constructor(options = {}) {
     this.sessionId = options.sessionId || options.backendClient?.sessionId || "";
+    this.#documentBuffer = options.backendClient?.documentBuffer || buildLocalDocumentBufferCommands(this.sessionId);
     Object.freeze(this);
   }
 
@@ -60,12 +63,36 @@ export class DocumentBufferStore {
     return EditorBackendDocumentBufferStoreModel.getDocument(store, request);
   }
 
+  async readDocument(request = {}) {
+    return await this.#documentBuffer.read(request);
+  }
+
   updateDocument(store = {}, request = {}) {
     return EditorBackendDocumentBufferStoreModel.updateDocument(store, request);
   }
 
+  async updateDraft(request = {}) {
+    return await this.#documentBuffer.updateDraft(request);
+  }
+
   setActiveDocument(store = {}, request = {}) {
     return EditorBackendDocumentBufferStoreModel.setActiveDocument(store, request);
+  }
+
+  async saveDocument(request = {}) {
+    return await this.#documentBuffer.saveDocument(request);
+  }
+
+  saveDocumentToStore(store = {}, request = {}) {
+    return EditorBackendDocumentBufferStoreModel.saveDocument(store, request);
+  }
+
+  async saveAll(request = {}) {
+    return await this.#documentBuffer.saveAll(request);
+  }
+
+  saveAllToStore(store = {}, request = {}) {
+    return EditorBackendDocumentBufferStoreModel.saveAll(store, request);
   }
 
   buildWorkspaceSnapshot(store = {}, request = {}) {
@@ -297,4 +324,29 @@ function requireCapability(capability, name, ownerName) {
   }
 
   return capability;
+}
+
+function buildLocalDocumentBufferCommands(sessionId) {
+  return Object.freeze({
+    list: async (request = {}) => EditorBackendDocumentBufferStoreModel.listDocuments({
+      ...request.store,
+      sessionId: request.store?.sessionId || sessionId,
+    }),
+    read: async (request = {}) => EditorBackendDocumentBufferStoreModel.getDocument({
+      ...request.store,
+      sessionId: request.store?.sessionId || sessionId,
+    }, request),
+    saveAll: async (request = {}) => EditorBackendDocumentBufferStoreModel.saveAll({
+      ...request.store,
+      sessionId: request.store?.sessionId || sessionId,
+    }, request),
+    saveDocument: async (request = {}) => EditorBackendDocumentBufferStoreModel.saveDocument({
+      ...request.store,
+      sessionId: request.store?.sessionId || sessionId,
+    }, request),
+    updateDraft: async (request = {}) => EditorBackendDocumentBufferStoreModel.updateDocument({
+      ...request.store,
+      sessionId: request.store?.sessionId || sessionId,
+    }, request),
+  });
 }

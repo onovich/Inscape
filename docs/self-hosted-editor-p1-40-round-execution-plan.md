@@ -825,6 +825,51 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
 2. Preview choice click invariant 仍由 `check:model` 覆盖，Runtime action 仍不要求前端上传完整 Runtime state。
 3. 下一轮应进入 Round 25：Save command skeleton，开始把 DocumentBufferStore 写回入口和 save status contract 接上。
 
+### 2026-06-16 Round 25：Save command skeleton
+
+范围：建立 `saveDocument` / `saveAll` 的 backend buffer-store 命令契约，让手动 Save 入口先经过 workspace file boundary、baseRevision guard 与 text-free save status；本轮不声称真实 Electron 文件 IO、autosave debounce、flush 或 recovery 已完成。
+
+完成内容：
+
+1. `EditorBackendDocumentBufferStoreModel` 新增 `saveDocument()` 与 `saveAll()`，返回 `inscape.self-hosted-editor.document-buffer-save-result` / `document-buffer-save-all-result`。
+2. Save 成功会把对应 document summary 标记为 clean，返回 `saved` save status、`savedRevision`、workspace boundary 与 write target；结果不暴露 buffer 正文。
+3. Save 失败覆盖缺失文档、`stale-document-revision` 与写回白名单拒绝，返回 `error` save status 和稳定 reason，仍不回传当前正文或被拒绝正文。
+4. `DocumentBufferStore` 窄服务新增 async `saveDocument` / `saveAll` backend command 入口，以及纯模型 `saveDocumentToStore` / `saveAllToStore` contract helper。
+5. `EditorBackendClient.documentBuffer.*`、`EditorBackendTransportCommand`、preload whitelist、preload transport 与 fake embedded transport 接入 `document-buffer.save` / `document-buffer.save-all`。
+6. `check:desktop-backend`、`check:backend-services`、`check:backend-transport`、`check:preload-transport`、`check:fake-embedded-transport` 与 `check:electron-boundary` 覆盖 Save command shape、payload 白名单、path guard 和 text-free result。
+
+验证：
+
+```powershell
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:desktop-backend
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:workspace-fs
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:backend-services
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:backend-transport
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:preload-transport
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:fake-embedded-transport
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:electron-boundary
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:runtime
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:runtime-http
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:structure
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
+npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
+node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js
+npm --prefix src\ExternalSupport\VSCode run check:structure
+git -c safe.directory=D:/LabProjects/Inscape diff --check
+dotnet build Inscape.slnx --no-restore
+dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build
+```
+
+架构对照结论：
+
+1. Save 入口仍是受控 editor command，不暴露 generic `writeFile(path, text)`、arbitrary IPC、Node / fs 或 shell 能力给 renderer。
+2. workspace root、relative path guard 与 write target catalog 仍由 backend model 承担；UI 只表达保存意图和相对路径。
+3. Save result 面向 UI，保持 text-free；完整 buffer text 仍只属于 backend buffer truth。
+4. 本轮没有复制 Compiler / LanguageServer / Tooling / Runtime 语义，也没有进入 P1.5 long-lived LanguageServer。
+5. 下一轮应进入 Round 26：dirty state / saved revision，补 clean baseline、磁盘更新冲突与 save status 更新规则。
+
 ## 36 轮主计划
 
 ### A. Contract 与 transport 基础，Round 1-6

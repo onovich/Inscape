@@ -70,6 +70,26 @@ const backendClient = new EditorBackendClient({
   transport: fakeTransport,
 });
 const services = createEditorBackendServices({ backendClient });
+const fakeDocumentStore = services.documentBufferStore.buildStore({
+  activeRelativePath: "story/opening.inscape",
+  documents: [
+    {
+      dirty: true,
+      relativePath: "story/opening.inscape",
+      revision: 4,
+      text: "secret fake embedded buffer text",
+    },
+  ],
+});
+const fakeDocumentSave = await backendClient.documentBuffer.saveDocument({
+  baseRevision: 4,
+  relativePath: "story/opening.inscape",
+  store: fakeDocumentStore,
+  workspaceRoot: "C:/Case Files/Court Loop",
+});
+assertEqual(fakeDocumentSave.ok, true, "fake embedded document save result");
+assertEqual(fakeDocumentSave.saveStatus.state, "saved", "fake embedded document save status");
+assertEqual(JSON.stringify(fakeDocumentSave).includes("secret fake embedded buffer text"), false, "fake embedded document save must not expose text");
 const diagnosticsBridge = new SelfHostedEditorDiagnosticsBridge({
   languageSessionClient: services.languageSessionClient,
 });
@@ -113,6 +133,7 @@ assertEqual(JSON.stringify(projectStatus).includes("secret draft text"), false, 
 
 const calledCommands = fakeTransport.calls.map((call) => call.command);
 assertEqual(calledCommands.includes(EditorBackendTransportCommand.LanguageDiagnostics), true, "fake embedded diagnostics command called");
+assertEqual(calledCommands.includes(EditorBackendTransportCommand.DocumentBufferSave), true, "fake embedded document save command called");
 assertEqual(calledCommands.includes(EditorBackendTransportCommand.RuntimeStep), true, "fake embedded runtime command called");
 assertEqual(calledCommands.includes(EditorBackendTransportCommand.LocalizationReview), true, "fake embedded localization command called");
 assertEqual(calledCommands.includes(EditorBackendTransportCommand.ProjectSessionStatus), true, "fake embedded project-session command called");

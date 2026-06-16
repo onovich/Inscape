@@ -1,7 +1,10 @@
 import { EditorBackendDocumentBufferModel } from "./EditorBackendDocumentBufferModel.js";
+import { EditorBackendDesktopSessionModel } from "./EditorBackendDesktopSessionModel.js";
 
 export const EditorBackendDocumentBufferStoreFormat = "inscape.self-hosted-editor.document-buffer-store";
 export const EditorBackendDocumentBufferListFormat = "inscape.self-hosted-editor.document-buffer-list";
+export const EditorBackendDocumentBufferSaveResultFormat = "inscape.self-hosted-editor.document-buffer-save-result";
+export const EditorBackendDocumentBufferSaveAllResultFormat = "inscape.self-hosted-editor.document-buffer-save-all-result";
 export const EditorBackendDocumentBufferStoreModelFormatVersion = 1;
 
 export class EditorBackendDocumentBufferStoreModel {
@@ -156,6 +159,222 @@ export class EditorBackendDocumentBufferStoreModel {
       store: nextStore,
     };
   }
+
+  static saveDocument(store = {}, request = {}) {
+    return buildSaveDocumentOutcome(this.buildStore(store), request).result;
+  }
+
+  static saveAll(store = {}, request = {}) {
+    let nextStore = this.buildStore(store);
+    const requestedPaths = normalizeRelativePathList(request.relativePaths);
+    const candidateDocuments = nextStore.documents.filter((document) => (
+      document.dirty
+      && (
+        requestedPaths.length === 0
+        || requestedPaths.includes(document.relativePath)
+      )
+    ));
+    const results = [];
+
+    for (const document of candidateDocuments) {
+      const outcome = buildSaveDocumentOutcome(nextStore, {
+        ...request,
+        baseRevision: document.revision,
+        relativePath: document.relativePath,
+      });
+      results.push(omitStoreSummary(outcome.result));
+      nextStore = outcome.nextStore;
+    }
+
+    const firstFailedResult = results.find((result) => !result.ok) || null;
+    const activeDocument = nextStore.documents.find((document) => document.relativePath === nextStore.activeRelativePath)
+      || nextStore.documents[0]
+      || null;
+    const saveStatus = firstFailedResult?.saveStatus || EditorBackendDesktopSessionModel.buildSaveStatus({
+      dirty: nextStore.documents.some((document) => document.dirty),
+      lastSavedRevision: results.length > 0
+        ? Math.max(...results.filter((result) => result.ok).map((result) => result.savedRevision || 0), 0)
+        : activeDocument?.revision || nextStore.revision,
+      relativePath: activeDocument?.relativePath || "",
+      revision: activeDocument?.revision || nextStore.revision,
+      state: firstFailedResult ? "error" : "saved",
+    });
+
+    return {
+      failedCount: results.filter((result) => !result.ok).length,
+      format: EditorBackendDocumentBufferSaveAllResultFormat,
+      formatVersion: EditorBackendDocumentBufferStoreModelFormatVersion,
+      ok: !firstFailedResult,
+      operation: "save-all",
+      payloadContentExposed: false,
+      reason: firstFailedResult ? "one-or-more-documents-failed" : "",
+      results,
+      saveStatus,
+      savedCount: results.filter((result) => result.ok).length,
+      sessionId: nextStore.sessionId,
+      storeSummary: this.listDocuments(nextStore),
+      workspaceName: nextStore.workspaceName,
+    };
+  }
+}
+
+function buildSaveDocumentOutcome(store, request = {}) {
+  const normalizedStore = EditorBackendDocumentBufferStoreModel.buildStore(store);
+  const relativePath = normalizeRelativePath(request.relativePath || normalizedStore.activeRelativePath);
+  const currentDocument = normalizedStore.documents.find((item) => item.relativePath === relativePath);
+  if (!currentDocument) {
+    const result = buildSaveDocumentFailureResult({
+      currentDocument: null,
+      normalizedStore,
+      reason: "document-not-found",
+      relativePath,
+    });
+    return {
+      nextStore: normalizedStore,
+      result,
+    };
+  }
+
+  const baseRevision = normalizeOptionalRevision(request.baseRevision);
+  if (baseRevision !== null && baseRevision !== currentDocument.revision) {
+    const result = buildSaveDocumentFailureResult({
+      baseRevision,
+      currentDocument,
+      normalizedStore,
+      reason: "stale-document-revision",
+      relativePath,
+    });
+    return {
+      nextStore: normalizedStore,
+      result,
+    };
+  }
+
+  const workspaceBoundary = EditorBackendDesktopSessionModel.buildWorkspaceFileBoundary({
+    operation: "write",
+    relativePath,
+    workspaceRoot: request.workspaceRoot,
+  });
+  if (!workspaceBoundary.allowed) {
+    const result = buildSaveDocumentFailureResult({
+      baseRevision,
+      currentDocument,
+      normalizedStore,
+      reason: workspaceBoundary.reason || "workspace-boundary-rejected",
+      relativePath,
+      workspaceBoundary,
+    });
+    return {
+      nextStore: normalizedStore,
+      result,
+    };
+  }
+
+  const savedDocument = EditorBackendDocumentBufferModel.buildBuffer({
+    ...currentDocument,
+    dirty: false,
+    diskTextHash: request.diskTextHash ?? currentDocument.diskTextHash,
+  });
+  const nextStore = EditorBackendDocumentBufferStoreModel.buildStore({
+    ...normalizedStore,
+    documents: normalizedStore.documents.map((document) => (
+      document.relativePath === relativePath ? savedDocument : document
+    )),
+  });
+  const result = buildSaveDocumentSuccessResult({
+    baseRevision,
+    currentDocument: savedDocument,
+    nextStore,
+    normalizedStore,
+    relativePath,
+    workspaceBoundary,
+  });
+  return {
+    nextStore,
+    result,
+  };
+}
+
+function buildSaveDocumentSuccessResult({
+  baseRevision,
+  currentDocument,
+  nextStore,
+  normalizedStore,
+  relativePath,
+  workspaceBoundary,
+}) {
+  return {
+    baseRevision,
+    currentRevision: currentDocument.revision,
+    document: EditorBackendDocumentBufferModel.buildSummary(currentDocument),
+    format: EditorBackendDocumentBufferSaveResultFormat,
+    formatVersion: EditorBackendDocumentBufferStoreModelFormatVersion,
+    ok: true,
+    operation: "save-document",
+    payloadContentExposed: false,
+    reason: "",
+    relativePath,
+    saveStatus: EditorBackendDesktopSessionModel.buildSaveStatus({
+      dirty: false,
+      lastSavedRevision: currentDocument.revision,
+      relativePath,
+      revision: currentDocument.revision,
+      state: "saved",
+    }),
+    savedRevision: currentDocument.revision,
+    sessionId: normalizedStore.sessionId,
+    storeSummary: EditorBackendDocumentBufferStoreModel.listDocuments(nextStore),
+    workspaceBoundary,
+    workspaceName: normalizedStore.workspaceName,
+    writeTarget: workspaceBoundary.writeTarget || null,
+  };
+}
+
+function buildSaveDocumentFailureResult({
+  baseRevision = null,
+  currentDocument,
+  normalizedStore,
+  reason,
+  relativePath,
+  workspaceBoundary = null,
+}) {
+  const currentRevision = currentDocument?.revision || 0;
+  return {
+    baseRevision,
+    currentRevision,
+    document: currentDocument ? EditorBackendDocumentBufferModel.buildSummary(currentDocument) : null,
+    format: EditorBackendDocumentBufferSaveResultFormat,
+    formatVersion: EditorBackendDocumentBufferStoreModelFormatVersion,
+    ok: false,
+    operation: "save-document",
+    payloadContentExposed: false,
+    reason,
+    relativePath,
+    saveStatus: EditorBackendDesktopSessionModel.buildSaveStatus({
+      dirty: Boolean(currentDocument?.dirty),
+      lastError: {
+        code: reason,
+        message: `Document save rejected: ${reason}`,
+      },
+      relativePath,
+      revision: currentRevision || normalizedStore.revision,
+      state: "error",
+    }),
+    savedRevision: 0,
+    sessionId: normalizedStore.sessionId,
+    storeSummary: EditorBackendDocumentBufferStoreModel.listDocuments(normalizedStore),
+    workspaceBoundary,
+    workspaceName: normalizedStore.workspaceName,
+    writeTarget: workspaceBoundary?.writeTarget || null,
+  };
+}
+
+function omitStoreSummary(result) {
+  const {
+    storeSummary,
+    ...summary
+  } = result;
+  return summary;
 }
 
 function normalizeDocuments(documents) {
@@ -191,6 +410,14 @@ function normalizeRelativePath(relativePath) {
     .replace(/\\/g, "/")
     .replace(/^\.\//, "")
     .replace(/\/+/g, "/");
+}
+
+function normalizeRelativePathList(relativePaths) {
+  if (!Array.isArray(relativePaths)) {
+    return [];
+  }
+
+  return [...new Set(relativePaths.map(normalizeRelativePath).filter(Boolean))];
 }
 
 function normalizeRevision(revision, fallback = 1) {

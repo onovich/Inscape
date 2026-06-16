@@ -1,4 +1,9 @@
 export const EditorBackendTransportCommand = Object.freeze({
+  DocumentBufferList: "document-buffer.list",
+  DocumentBufferRead: "document-buffer.read",
+  DocumentBufferSave: "document-buffer.save",
+  DocumentBufferSaveAll: "document-buffer.save-all",
+  DocumentBufferUpdateDraft: "document-buffer.update-draft",
   HostBindingCapabilities: "host-binding.capabilities",
   HostSchemaCapabilities: "host-schema.capabilities",
   LanguageCompletions: "language.completions",
@@ -19,6 +24,11 @@ export const EditorBackendTransportCommand = Object.freeze({
 });
 
 const devHostRoutesByCommand = Object.freeze({
+  [EditorBackendTransportCommand.DocumentBufferList]: "/api/document-buffer-list",
+  [EditorBackendTransportCommand.DocumentBufferRead]: "/api/document-buffer-read",
+  [EditorBackendTransportCommand.DocumentBufferSave]: "/api/document-buffer-save",
+  [EditorBackendTransportCommand.DocumentBufferSaveAll]: "/api/document-buffer-save-all",
+  [EditorBackendTransportCommand.DocumentBufferUpdateDraft]: "/api/document-buffer-update-draft",
   [EditorBackendTransportCommand.HostBindingCapabilities]: "/api/host-binding-capabilities",
   [EditorBackendTransportCommand.HostSchemaCapabilities]: "/api/host-schema-capabilities",
   [EditorBackendTransportCommand.LanguageCompletions]: "/api/completions",

@@ -16,6 +16,8 @@ import {
   EditorBackendDocumentBufferStoreFormat,
   EditorBackendDocumentBufferStoreModel,
   EditorBackendDocumentBufferListFormat,
+  EditorBackendDocumentBufferSaveAllResultFormat,
+  EditorBackendDocumentBufferSaveResultFormat,
 } from "../Scripts/Backend/Models/EditorBackendDocumentBufferStoreModel.js";
 import {
   EditorBackendProjectSessionLifecycleFormat,
@@ -123,6 +125,86 @@ assertEqual(staleBufferUpdateResult.baseRevision, 5, "document buffer stale upda
 assertEqual(staleBufferUpdateResult.currentRevision, 6, "document buffer stale update current revision");
 assertNotIncludes(JSON.stringify(staleBufferUpdateResult), "secret stale overwrite text", "document buffer stale update must not echo rejected text");
 assertNotIncludes(JSON.stringify(staleBufferUpdateResult), "secret updated buffer text", "document buffer stale update must not expose current text");
+const saveBufferResult = EditorBackendDocumentBufferStoreModel.saveDocument(updateBufferResult.store, {
+  baseRevision: updateBufferResult.document.revision,
+  relativePath: "story/opening.inscape",
+  workspaceRoot: "C:/Case Files/Court Loop",
+});
+assertEqual(saveBufferResult.format, EditorBackendDocumentBufferSaveResultFormat, "document buffer save format");
+assertEqual(saveBufferResult.ok, true, "document buffer save ok");
+assertEqual(saveBufferResult.reason, "", "document buffer save reason");
+assertEqual(saveBufferResult.savedRevision, updateBufferResult.document.revision, "document buffer save revision");
+assertEqual(saveBufferResult.saveStatus.state, "saved", "document buffer save status");
+assertEqual(saveBufferResult.saveStatus.dirty, false, "document buffer save clean status");
+assertEqual(saveBufferResult.document.dirty, false, "document buffer save summary clean");
+assertEqual(saveBufferResult.storeSummary.documents[0].dirty, false, "document buffer save store summary clean");
+assertEqual(saveBufferResult.workspaceBoundary.allowed, true, "document buffer save boundary allowed");
+assertEqual(saveBufferResult.writeTarget.targetKind, "inscape-document", "document buffer save target");
+assertEqual(saveBufferResult.payloadContentExposed, false, "document buffer save payload exposure flag");
+assertNotIncludes(JSON.stringify(saveBufferResult), "secret updated buffer text", "document buffer save result must not expose text");
+const staleSaveBufferResult = EditorBackendDocumentBufferStoreModel.saveDocument(updateBufferResult.store, {
+  baseRevision: documentBuffer.revision,
+  relativePath: "story/opening.inscape",
+  workspaceRoot: "C:/Case Files/Court Loop",
+});
+assertEqual(staleSaveBufferResult.ok, false, "document buffer stale save rejected");
+assertEqual(staleSaveBufferResult.reason, "stale-document-revision", "document buffer stale save reason");
+assertEqual(staleSaveBufferResult.saveStatus.state, "error", "document buffer stale save status");
+assertNotIncludes(JSON.stringify(staleSaveBufferResult), "secret updated buffer text", "document buffer stale save must not expose current text");
+const unsafeSaveStore = EditorBackendDocumentBufferStoreModel.buildStore({
+  documents: [
+    {
+      dirty: true,
+      relativePath: "story/tool.exe",
+      revision: 1,
+      text: "secret executable draft text",
+    },
+  ],
+});
+const unsafeSaveResult = EditorBackendDocumentBufferStoreModel.saveDocument(unsafeSaveStore, {
+  baseRevision: 1,
+  relativePath: "story/tool.exe",
+  workspaceRoot: "C:/Case Files/Court Loop",
+});
+assertEqual(unsafeSaveResult.ok, false, "document buffer unsafe save rejected");
+assertEqual(unsafeSaveResult.reason, "write-target-not-whitelisted", "document buffer unsafe save reason");
+assertEqual(unsafeSaveResult.workspaceBoundary.allowed, false, "document buffer unsafe save boundary");
+assertNotIncludes(JSON.stringify(unsafeSaveResult), "secret executable draft text", "document buffer unsafe save must not expose text");
+const saveAllStore = EditorBackendDocumentBufferStoreModel.buildStore({
+  documents: [
+    {
+      dirty: true,
+      relativePath: "story/opening.inscape",
+      revision: 6,
+      text: "secret save all opening text",
+    },
+    {
+      dirty: true,
+      relativePath: "story/branch.inscape",
+      revision: 4,
+      text: "secret save all branch text",
+    },
+  ],
+});
+const saveAllResult = EditorBackendDocumentBufferStoreModel.saveAll(saveAllStore, {
+  workspaceRoot: "C:/Case Files/Court Loop",
+});
+assertEqual(saveAllResult.format, EditorBackendDocumentBufferSaveAllResultFormat, "document buffer save all format");
+assertEqual(saveAllResult.ok, true, "document buffer save all ok");
+assertEqual(saveAllResult.savedCount, 2, "document buffer save all count");
+assertEqual(saveAllResult.failedCount, 0, "document buffer save all failed count");
+assertEqual(saveAllResult.saveStatus.state, "saved", "document buffer save all status");
+assertEqual(saveAllResult.storeSummary.documents.every((document) => !document.dirty), true, "document buffer save all store summary clean");
+assertEqual(saveAllResult.payloadContentExposed, false, "document buffer save all payload exposure flag");
+assertNotIncludes(JSON.stringify(saveAllResult), "secret save all opening text", "document buffer save all must not expose opening text");
+assertNotIncludes(JSON.stringify(saveAllResult), "secret save all branch text", "document buffer save all must not expose branch text");
+const unsafeSaveAllResult = EditorBackendDocumentBufferStoreModel.saveAll(unsafeSaveStore, {
+  workspaceRoot: "C:/Case Files/Court Loop",
+});
+assertEqual(unsafeSaveAllResult.ok, false, "document buffer unsafe save all rejected");
+assertEqual(unsafeSaveAllResult.reason, "one-or-more-documents-failed", "document buffer unsafe save all reason");
+assertEqual(unsafeSaveAllResult.failedCount, 1, "document buffer unsafe save all failed count");
+assertNotIncludes(JSON.stringify(unsafeSaveAllResult), "secret executable draft text", "document buffer unsafe save all must not expose text");
 const activeBufferResult = EditorBackendDocumentBufferStoreModel.setActiveDocument(updateBufferResult.store, {
   relativePath: "story/branch.inscape",
 });

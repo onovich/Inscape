@@ -12,6 +12,23 @@ import {
 const preloadCalls = [];
 const preloadApi = createSelfHostedEditorPreloadApi({
   handlers: {
+    [EditorBackendTransportCommand.DocumentBufferSave]: async (payload) => {
+      preloadCalls.push({ command: EditorBackendTransportCommand.DocumentBufferSave, payload });
+      return {
+        ok: true,
+        relativePath: payload.relativePath,
+        saveStatus: {
+          state: "saved",
+        },
+      };
+    },
+    [EditorBackendTransportCommand.DocumentBufferSaveAll]: async (payload) => {
+      preloadCalls.push({ command: EditorBackendTransportCommand.DocumentBufferSaveAll, payload });
+      return {
+        ok: true,
+        savedCount: 1,
+      };
+    },
     [EditorBackendTransportCommand.LanguageDiagnostics]: async (payload) => {
       preloadCalls.push({ command: EditorBackendTransportCommand.LanguageDiagnostics, payload });
       return { diagnostics: [] };
@@ -69,6 +86,17 @@ const diagnosticsResult = await preloadTransport.invoke(EditorBackendTransportCo
 assertEqual(Array.isArray(diagnosticsResult.diagnostics), true, "preload transport diagnostics payload");
 assertEqual(preloadCalls[0].command, EditorBackendTransportCommand.LanguageDiagnostics, "preload transport diagnostics command");
 assertEqual(preloadCalls[0].payload.scriptText, "# Opening", "preload transport forwards payload");
+const saveResult = await preloadTransport.invoke(EditorBackendTransportCommand.DocumentBufferSave, {
+  baseRevision: 2,
+  relativePath: "story/opening.inscape",
+});
+assertEqual(saveResult.ok, true, "preload transport document save payload");
+const saveCall = preloadCalls.find((call) => call.command === EditorBackendTransportCommand.DocumentBufferSave);
+assertEqual(saveCall.payload.relativePath, "story/opening.inscape", "preload transport document save command");
+const saveAllResult = await preloadTransport.invoke(EditorBackendTransportCommand.DocumentBufferSaveAll, {
+  workspaceId: "workspace-1",
+});
+assertEqual(saveAllResult.savedCount, 1, "preload transport document save all payload");
 
 let unknownCommandRejected = false;
 try {
@@ -98,6 +126,11 @@ const runtimeStep = await desktopBackendClient.runtimeSession.step({
 assertEqual(runtimeStep.currentNode.name, "Opening", "desktop backend client runtime preload payload");
 const projectStatus = await desktopBackendClient.projectSession.status();
 assertEqual(projectStatus.sessionId, "desktop-session", "desktop backend client project session id");
+const desktopSave = await desktopBackendClient.documentBuffer.saveDocument({
+  baseRevision: 3,
+  relativePath: "story/desktop.inscape",
+});
+assertEqual(desktopSave.saveStatus.state, "saved", "desktop backend client document save preload payload");
 
 const fetchCalls = [];
 const devBackendClient = new EditorBackendClient({

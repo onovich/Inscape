@@ -1,6 +1,11 @@
 import { EditorBackendTransportCommand } from "./EditorBackendTransport.js";
 
 const preloadMethodsByCommand = Object.freeze({
+  [EditorBackendTransportCommand.DocumentBufferList]: ["documentBuffer", "list"],
+  [EditorBackendTransportCommand.DocumentBufferRead]: ["documentBuffer", "read"],
+  [EditorBackendTransportCommand.DocumentBufferSave]: ["documentBuffer", "save"],
+  [EditorBackendTransportCommand.DocumentBufferSaveAll]: ["documentBuffer", "saveAll"],
+  [EditorBackendTransportCommand.DocumentBufferUpdateDraft]: ["documentBuffer", "updateDraft"],
   [EditorBackendTransportCommand.HostBindingCapabilities]: ["hostCapabilities", "bindingCapabilities"],
   [EditorBackendTransportCommand.HostSchemaCapabilities]: ["hostCapabilities", "schemaCapabilities"],
   [EditorBackendTransportCommand.LanguageCompletions]: ["languageSession", "completions"],

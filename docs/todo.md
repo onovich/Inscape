@@ -65,6 +65,7 @@ SelfHostedEditor desktop backend v0
 - [x] 完成 P1 Round 22 workspace snapshot builder：新增 `EditorBackendWorkspaceSnapshotModel`，从 DocumentBufferStore 构建 content-bearing backend request snapshot，并导出 active document request；status/list 仍保持 text-free。
 - [x] 完成 P1 Round 23 authoring endpoint 接入 buffer：六个 LanguageServer-backed authoring bridge 优先使用 backend workspace snapshot active buffer，旧 workspace context 仅 fallback；`check:semantic-parity-http` 保持通过。
 - [x] 完成 P1 Round 24 Preview / Runtime 接入 buffer：新增 `EditorBackendWorkspaceRequestModel`，StoryGraph / Runtime bridge 优先使用 backend workspace snapshot active buffer；`check:model`、`check:runtime-http` 与 Preview choice click invariant 保持通过。
+- [x] 完成 P1 Round 25 Save command skeleton：`DocumentBufferStore` 新增 text-free `saveDocument` / `saveAll` contract，接入 backend command、preload whitelist 与 fake embedded transport；覆盖 baseRevision guard、workspace write boundary、saved / error status。
 - [ ] 建立 Electron preload 白名单边界：renderer 不直接访问 Node / fs / shell / arbitrary IPC；preload 只暴露受控 editor command。
 - [ ] 实现 workspace 文件系统边界：只接受 workspace-relative path，拒绝绝对路径、`..` 越界、workspace 外路径和未列入白名单的写回目标。
 - [ ] 实现 `ProjectSession v0`：一个窗口一个 active workspace folder，一个 active project session；不支持正式单文件打开。

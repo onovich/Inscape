@@ -922,6 +922,11 @@ const {
 } = await import("./SelfHostedEditorRouteBridge.js");
 const apiRoutePaths = listSelfHostedEditorApiRoutePaths();
 for (const expectedRoutePath of [
+  "/api/document-buffer-list",
+  "/api/document-buffer-read",
+  "/api/document-buffer-save",
+  "/api/document-buffer-save-all",
+  "/api/document-buffer-update-draft",
   "/api/diagnostics",
   "/api/hover",
   "/api/definition",

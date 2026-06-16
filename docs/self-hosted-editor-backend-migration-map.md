@@ -44,6 +44,8 @@
 
 2026-06-14 产品补充：desktop shell v0 采用 Electron；一个窗口只打开一个 workspace folder，workspace 是目录并支持多个 `.inscape` 文件，不提供正式打开单文件功能。默认自动保存，UI 与 embedded backend 都持有未保存内容，backend 是 session truth；崩溃恢复依赖磁盘 recovery snapshot。localization CSV、node-map sidecar 和 line-map sidecar 写回前默认自动备份；Git 只作为可选增强，不作为唯一恢复机制。
 
+2026-06-16 P1 Round 25 补充：`EditorBackendClient.documentBuffer.*` 已成为显式业务入口，覆盖 list / read / updateDraft / saveDocument / saveAll。当前实现仍是 contract layer：saveDocument / saveAll 返回 text-free save status、workspace boundary 和 revision 结果，用于接上手动 Save 命令面；真实 Electron 文件 IO、autosave debounce、flush 和 recovery 仍属于后续 P1 施工。
+
 ## 状态分类
 
 | 分类 | 当前例子 | 未来归属 | 规则 |
@@ -59,6 +61,11 @@
 
 | Endpoint | 当前 dev-host 行为 | 未来 backend service | 状态分类 | implementationPhase | 迁移要求 |
 |---|---|---|---|---|---|
+| `/api/document-buffer-list` | 返回请求内 `store` 的 text-free document summary list | `DocumentBufferStore.list` | Backend project session | P1 Round 25 save command skeleton | 产品 backend 应从 ProjectSession 内部 store 读取，不要求前端上传完整 store。 |
+| `/api/document-buffer-read` | 从请求内 `store` 读取指定 document buffer | `DocumentBufferStore.read` | Backend project session | P1 Round 25 save command skeleton | 产品 backend 应从 ProjectSession 内部 store 读取正文，status/list 仍不暴露正文。 |
+| `/api/document-buffer-update-draft` | 对请求内 `store` 应用 text update 与 `baseRevision` guard | `DocumentBufferStore.updateDraft` | Backend project session | P1 Round 25 save command skeleton | 真实实现应更新 backend buffer truth，旧 debounce 不能覆盖较新 revision。 |
+| `/api/document-buffer-save` | 对请求内 `store` 构造 text-free save result，不写盘 | `DocumentBufferStore.saveDocument` | Backend project session | P1 Round 25 save command skeleton | 真实实现必须从 ProjectSession 取 workspace root 和 buffer text，走 backend 文件边界写盘。 |
+| `/api/document-buffer-save-all` | 对请求内 `store` 构造 text-free save-all result，不写盘 | `DocumentBufferStore.saveAll` | Backend project session | P1 Round 25 save command skeleton | 真实实现必须只写回最新 dirty revision，并保持 save status / error 可见。 |
 | `/api/diagnostics` | 用当前 script/workspace 调 LanguageServer diagnostics | `LanguageSessionClient.diagnose` | Backend project session | A3 language-session request model | 走常驻 LanguageServer；保持 diagnostics payload shape。 |
 | `/api/hover` | 用 hover kind/name 调 LanguageServer hover | `LanguageSessionClient.hover` | Backend project session | A3 language-session request model | 只传定位/target，不在前端重算 hover 文案。 |
 | `/api/definition` | 用 definitionName 调 LanguageServer definition | `LanguageSessionClient.definition` | Backend project session | A3 language-session request model | sourcePath 继续 workspace-relative。 |
@@ -83,6 +90,12 @@
 
 ```text
 EditorBackendClient
+  documentBuffer
+    list(request)
+    read(request)
+    updateDraft(request)
+    saveDocument(request)
+    saveAll(request)
   languageSession
     diagnose(request)
     hover(request)

@@ -259,6 +259,16 @@ P1 Round 24 已完成 Preview 依赖的 StoryGraph bridge 与 Runtime bridge 的
 - `check:backend-services` 覆盖 StoryGraph / Runtime 的 snapshot 优先级，并断言旧 workspace context 文本不会在 snapshot 存在时进入 payload。
 - Round 24 当前已通过：SelfHostedEditor `check:syntax` / `check:structure` / `check:backend-services` / `check:runtime` / `check:runtime-http` / `check:model` / `check:semantic-parity-http`。下一步进入 Round 25：Save command skeleton。
 
+### 2026-06-16 SelfHostedEditor P1 Round 25 Save command skeleton 快照
+
+P1 Round 25 已完成手动 Save 命令契约的第一刀：Save 入口走 backend buffer-store / transport / preload 白名单，不暴露通用文件写 API；本轮仍不声称真实 Electron 文件 IO、autosave debounce、flush 或 recovery 已完成。
+
+- `EditorBackendDocumentBufferStoreModel.saveDocument()` / `saveAll()` 返回 text-free save result，覆盖 saved / error status、`savedRevision`、baseRevision stale guard、workspace boundary 与 write target。
+- `DocumentBufferStore` 窄服务新增 async `saveDocument` / `saveAll` command 入口，以及纯模型 `saveDocumentToStore` / `saveAllToStore` helper。
+- `EditorBackendClient.documentBuffer.*`、`EditorBackendTransportCommand`、preload command whitelist、preload transport 与 `SelfHostedEditorFakeEmbeddedTransport` 已接入 `document-buffer.save` / `document-buffer.save-all`。
+- 契约检查覆盖 Save 成功、stale revision、非白名单写回拒绝、Save All、payload 白名单和结果不泄露 buffer text。
+- Round 25 当前已通过：SelfHostedEditor `check:desktop-backend` / `check:workspace-fs` / `check:backend-services` / `check:backend-transport` / `check:preload-transport` / `check:fake-embedded-transport` / `check:electron-boundary` / `check:runtime` / `check:runtime-http` / `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity` / `check:structure`，`node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js`，`git diff --check`，`.NET build` 与 Internal tests。下一步进入 Round 26：dirty state / saved revision。
+
 ### 2026-06-14 SelfHostedEditor desktop backend v0 决策快照
 
 本轮已采纳 [ADR 0019](adr/0019-self-hosted-editor-embedded-backend-v0.md)：SelfHostedEditor desktop backend v0 采用嵌入式 EditorBackend，而不是独立 sidecar daemon。

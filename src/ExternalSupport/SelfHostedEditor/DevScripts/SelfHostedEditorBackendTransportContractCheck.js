@@ -10,6 +10,8 @@ import { SelfHostedEditorHttpBackendTransport } from "../Scripts/Backend/Clients
 const commands = listEditorBackendTransportCommands();
 assertEqual(commands.length, new Set(commands).size, "backend transport commands must be unique");
 assertEqual(resolveEditorBackendDevHostRoute(EditorBackendTransportCommand.LanguageDiagnostics), "/api/diagnostics", "diagnostics dev-host route");
+assertEqual(resolveEditorBackendDevHostRoute(EditorBackendTransportCommand.DocumentBufferSave), "/api/document-buffer-save", "document-buffer save dev-host route");
+assertEqual(resolveEditorBackendDevHostRoute(EditorBackendTransportCommand.DocumentBufferSaveAll), "/api/document-buffer-save-all", "document-buffer save all dev-host route");
 assertEqual(resolveEditorBackendDevHostRoute(EditorBackendTransportCommand.ProjectSessionStatus), "/api/session-cache-status", "project-session status dev-host route");
 assertEqual(resolveEditorBackendDevHostRoute(EditorBackendTransportCommand.RuntimeStep), "/api/runtime-action", "runtime step dev-host route");
 
@@ -86,6 +88,16 @@ const runtimeStep = await backendClient.runtimeSession.step({
   },
 });
 assertEqual(runtimeStep.command, EditorBackendTransportCommand.RuntimeStep, "backend client runtime command");
+const documentSave = await backendClient.documentBuffer.saveDocument({
+  baseRevision: 7,
+  relativePath: "story/opening.inscape",
+});
+assertEqual(documentSave.command, EditorBackendTransportCommand.DocumentBufferSave, "backend client document save command");
+assertEqual(documentSave.payload.relativePath, "story/opening.inscape", "backend client document save payload");
+const documentSaveAll = await backendClient.documentBuffer.saveAll({
+  workspaceId: "main-workspace",
+});
+assertEqual(documentSaveAll.command, EditorBackendTransportCommand.DocumentBufferSaveAll, "backend client document save all command");
 const projectStatus = await backendClient.projectSession.status();
 assertEqual(backendCalls.find((call) => call.command === EditorBackendTransportCommand.ProjectSessionStatus)?.payload && Object.keys(backendCalls.find((call) => call.command === EditorBackendTransportCommand.ProjectSessionStatus).payload).length, 0, "project-session status must not upload workspace text");
 assertEqual(projectStatus.mode, "dev-host", "project-session status compatibility mode");

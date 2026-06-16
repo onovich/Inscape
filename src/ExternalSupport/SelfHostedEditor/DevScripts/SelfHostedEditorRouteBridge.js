@@ -1,4 +1,9 @@
 const selfHostedEditorApiRouteDefinitions = [
+  ["documentBufferList", "/api/document-buffer-list"],
+  ["documentBufferRead", "/api/document-buffer-read"],
+  ["documentBufferSave", "/api/document-buffer-save"],
+  ["documentBufferSaveAll", "/api/document-buffer-save-all"],
+  ["documentBufferUpdateDraft", "/api/document-buffer-update-draft"],
   ["diagnostics", "/api/diagnostics"],
   ["hover", "/api/hover"],
   ["definition", "/api/definition"],

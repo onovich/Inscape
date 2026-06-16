@@ -14,6 +14,7 @@ import {
 import {
   normalizeWorkspacePayload,
 } from "./SelfHostedEditorWorkspaceBridge.js";
+import { EditorBackendDocumentBufferStoreModel } from "../Scripts/Backend/Models/EditorBackendDocumentBufferStoreModel.js";
 
 export function createSelfHostedEditorApiHandlers(services) {
   return {
@@ -22,6 +23,21 @@ export function createSelfHostedEditorApiHandlers(services) {
       const workspace = normalizeWorkspacePayload(payload.workspace);
       return services.getCompletionsForScriptText(scriptText, workspace);
     }),
+    documentBufferList: createJsonApiHandler(async (payload) =>
+      EditorBackendDocumentBufferStoreModel.listDocuments(payload.store || {})
+    ),
+    documentBufferRead: createJsonApiHandler(async (payload) =>
+      EditorBackendDocumentBufferStoreModel.getDocument(payload.store || {}, payload)
+    ),
+    documentBufferSave: createJsonApiHandler(async (payload) =>
+      EditorBackendDocumentBufferStoreModel.saveDocument(payload.store || {}, payload)
+    ),
+    documentBufferSaveAll: createJsonApiHandler(async (payload) =>
+      EditorBackendDocumentBufferStoreModel.saveAll(payload.store || {}, payload)
+    ),
+    documentBufferUpdateDraft: createJsonApiHandler(async (payload) =>
+      EditorBackendDocumentBufferStoreModel.updateDocument(payload.store || {}, payload)
+    ),
     definition: createJsonApiHandler(async (payload) => {
       const scriptText = readScriptText(payload);
       const definitionName = typeof payload.definitionName === "string"

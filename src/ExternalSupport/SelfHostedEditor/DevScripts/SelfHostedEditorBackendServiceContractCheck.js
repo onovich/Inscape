@@ -127,8 +127,14 @@ assertSurface(services.documentBufferStore, [
   "buildStore",
   "listDocuments",
   "getDocument",
+  "readDocument",
   "updateDocument",
+  "updateDraft",
   "setActiveDocument",
+  "saveDocument",
+  "saveDocumentToStore",
+  "saveAll",
+  "saveAllToStore",
   "buildWorkspaceSnapshot",
   "buildActiveDocumentRequest",
   "buildWorkspaceBoundary",
@@ -229,6 +235,31 @@ const activeDocumentResult = services.documentBufferStore.setActiveDocument(docu
 assertEqual(activeDocumentResult.ok, true, "document buffer active document result ok");
 assertEqual(activeDocumentResult.store.activeRelativePath, "story/branch.inscape", "document buffer active document switches");
 assertEqual(activeDocumentResult.document.active, true, "document buffer active document is marked active");
+const saveDocumentResult = services.documentBufferStore.saveDocumentToStore(documentUpdateResult.store, {
+  baseRevision: documentUpdateResult.document.revision,
+  relativePath: "story/opening.inscape",
+  workspaceRoot: "C:/Case Files/Court Loop",
+});
+assertEqual(saveDocumentResult.ok, true, "document buffer save document result ok");
+assertEqual(saveDocumentResult.saveStatus.state, "saved", "document buffer save document status");
+assertEqual(saveDocumentResult.document.dirty, false, "document buffer save document summary clean");
+assertEqual(saveDocumentResult.payloadContentExposed, false, "document buffer save document hides payload content");
+assertEqual(JSON.stringify(saveDocumentResult).includes("# Opening\nNarrator: Updated"), false, "document buffer save document must not expose text");
+const saveAllResult = services.documentBufferStore.saveAllToStore(documentUpdateResult.store, {
+  workspaceRoot: "C:/Case Files/Court Loop",
+});
+assertEqual(saveAllResult.ok, true, "document buffer save all result ok");
+assertEqual(saveAllResult.savedCount, 1, "document buffer save all saves dirty documents");
+assertEqual(saveAllResult.storeSummary.documents.find((document) => document.relativePath === "story/opening.inscape")?.dirty, false, "document buffer save all summary clean");
+assertEqual(JSON.stringify(saveAllResult).includes("# Opening\nNarrator: Updated"), false, "document buffer save all must not expose text");
+const asyncSaveResult = await services.documentBufferStore.saveDocument({
+  baseRevision: documentUpdateResult.document.revision,
+  relativePath: "story/opening.inscape",
+  store: documentUpdateResult.store,
+  workspaceRoot: "C:/Case Files/Court Loop",
+});
+assertEqual(asyncSaveResult.ok, true, "document buffer async save document result ok");
+assertEqual(JSON.stringify(asyncSaveResult).includes("# Opening\nNarrator: Updated"), false, "document buffer async save must not expose text");
 const workspaceSnapshot = services.documentBufferStore.buildWorkspaceSnapshot(activeDocumentResult.store);
 assertEqual(workspaceSnapshot.source, "backend-buffer-store", "workspace snapshot source");
 assertEqual(workspaceSnapshot.currentFilePath, "story/branch.inscape", "workspace snapshot active path");
