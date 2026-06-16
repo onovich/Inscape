@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { registerSelfHostedEditorBackendIpc } from "./ElectronBackendIpc.js";
 import { SelfHostedEditorElectronAppEntry } from "./ElectronAppEntry.js";
+import { createSelfHostedEditorElectronWorkspaceLifecycle } from "./ElectronWorkspaceLifecycle.js";
 
 const currentModulePath = fileURLToPath(import.meta.url);
 const desktopRoot = path.dirname(currentModulePath);
@@ -194,14 +195,22 @@ function resolveFileInsideRoot(root, relativePath) {
   return resolvedPath;
 }
 
-export function registerSelfHostedEditorElectronApp(electronApp = app) {
+export function registerSelfHostedEditorElectronApp(electronApp = app, options = {}) {
   registerSelfHostedEditorProtocolScheme();
-  registerSelfHostedEditorBackendIpc();
+  const workspaceLifecycle = options.workspaceLifecycle || createSelfHostedEditorElectronWorkspaceLifecycle(options);
+  registerSelfHostedEditorBackendIpc(undefined, {
+    ...options,
+    sessionStore: options.sessionStore || workspaceLifecycle.sessionStore,
+  });
 
   electronApp.whenReady().then(() => {
     registerSelfHostedEditorProtocol();
-    createSelfHostedEditorBrowserWindow();
+    workspaceLifecycle.startAutosaveTimer();
+    const browserWindow = createSelfHostedEditorBrowserWindow(options);
+    workspaceLifecycle.registerBrowserWindow(browserWindow);
   });
+
+  workspaceLifecycle.registerAppLifecycle(electronApp);
 
   electronApp.on("window-all-closed", () => {
     if (process.platform !== "darwin") {
@@ -211,7 +220,8 @@ export function registerSelfHostedEditorElectronApp(electronApp = app) {
 
   electronApp.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
-      createSelfHostedEditorBrowserWindow();
+      const browserWindow = createSelfHostedEditorBrowserWindow(options);
+      workspaceLifecycle.registerBrowserWindow(browserWindow);
     }
   });
 }

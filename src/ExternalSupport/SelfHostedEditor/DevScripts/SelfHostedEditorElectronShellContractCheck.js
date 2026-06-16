@@ -12,6 +12,7 @@ const requiredDesktopPaths = [
   "Desktop/ElectronMain.js",
   "Desktop/ElectronPreloadApi.js",
   "Desktop/ElectronPreload.js",
+  "Desktop/ElectronWorkspaceLifecycle.js",
   "Desktop/ElectronWorkspaceSessionStore.js",
 ];
 
@@ -36,6 +37,11 @@ assertIncludesText(mainText, "inscape-self-hosted-editor", "Electron main define
 assertIncludesText(mainText, "buildSelfHostedEditorWorkbenchUrl", "Electron main builds app protocol workbench URL");
 assertIncludesText(mainText, "registerSelfHostedEditorProtocol", "Electron main registers app protocol handler");
 assertIncludesText(mainText, "resolveSelfHostedEditorProtocolFilePath", "Electron main exposes app protocol file resolver");
+assertIncludesText(mainText, "createSelfHostedEditorElectronWorkspaceLifecycle", "Electron main creates workspace lifecycle coordinator");
+assertIncludesText(mainText, "workspaceLifecycle.sessionStore", "Electron main shares one session store with IPC");
+assertIncludesText(mainText, "workspaceLifecycle.startAutosaveTimer", "Electron main starts lifecycle autosave timer");
+assertIncludesText(mainText, "workspaceLifecycle.registerBrowserWindow", "Electron main registers window close flush lifecycle");
+assertIncludesText(mainText, "workspaceLifecycle.registerAppLifecycle", "Electron main registers app-exit flush lifecycle");
 assertIncludesText(mainText, "loadURL", "Electron main loads workbench through app protocol");
 assertIncludesText(mainText, "buildSelfHostedEditorBrowserWindowOptions", "Electron main exports BrowserWindow options builder");
 assertIncludesText(mainText, "applySelfHostedEditorWindowSecurity", "Electron main applies window security handlers");
@@ -100,6 +106,16 @@ assertIncludesText(workspaceStoreText, "node:fs", "Electron workspace store owns
 assertIncludesText(workspaceStoreText, "EditorBackendWorkspacePathModel", "Electron workspace store reuses workspace path guard");
 assertIncludesText(workspaceStoreText, "EditorBackendDocumentBufferStoreModel", "Electron workspace store reuses document buffer store model");
 assertNoText(workspaceStoreText, "/api/", "Electron workspace store must not know dev-host routes");
+
+const workspaceLifecycleText = readModuleText("Desktop/ElectronWorkspaceLifecycle.js");
+assertIncludesText(workspaceLifecycleText, "createSelfHostedEditorElectronWorkspaceSessionStore", "Electron lifecycle owns workspace session store creation");
+assertIncludesText(workspaceLifecycleText, "runAutosaveTick", "Electron lifecycle owns idle autosave tick");
+assertIncludesText(workspaceLifecycleText, "handleWindowClose", "Electron lifecycle owns close-window flush");
+assertIncludesText(workspaceLifecycleText, "handleAppBeforeQuit", "Electron lifecycle owns app-exit flush");
+assertIncludesText(workspaceLifecycleText, "flushForTrigger", "Electron lifecycle funnels lifecycle flushes through session store");
+assertNoText(workspaceLifecycleText, "/api/", "Electron workspace lifecycle must not know dev-host routes");
+assertNoText(workspaceLifecycleText, "ipcRenderer", "Electron workspace lifecycle must not use renderer IPC");
+assertNoText(workspaceLifecycleText, "contextBridge", "Electron workspace lifecycle must not expose renderer APIs");
 
 const preloadApiModule = await import("../Desktop/ElectronPreloadApi.js");
 const preloadApi = preloadApiModule.createSelfHostedEditorPreloadApi();

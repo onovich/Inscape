@@ -86,6 +86,8 @@
 
 2026-06-17 P1 post-40 autosave/flush 执行补充：`ElectronWorkspaceSessionStore` 已新增 `runAutosave()` 与 `flushDirtyDocuments()`，把现有 autosave / flush plan 接到真实 `saveDocument()` 路径。waiting autosave 不写盘且保留 recovery snapshot，ready autosave 写盘并清理 snapshot；flush 可按 `app-exit` 等 trigger 保存最新 dirty buffer，并返回 text-free 初始 / 最终 plan 与 save result summary。真实 idle timer、Electron window close / workspace switch / app exit lifecycle 挂接、restore / discard / later 与 GUI recovery smoke 仍待后续迁移。
 
+2026-06-17 P1 post-40 Electron lifecycle 补充：`ElectronWorkspaceLifecycle` 已在 main process 持有与 IPC 共享的 `ElectronWorkspaceSessionStore`，启动 idle autosave timer，并把 BrowserWindow close、workspace switch 和 app `before-quit` 接到真实 flush/save 路径。`runAutosave()` 未显式传 `idleElapsedMs` 时会按 main-process dirty timestamp 计算 debounce；workspace switch flush blocked 时不会切换目录。renderer/preload API 未扩大，restore / discard / later 与 GUI recovery smoke 仍待后续迁移。
+
 ## 状态分类
 
 | 分类 | 当前例子 | 未来归属 | 规则 |

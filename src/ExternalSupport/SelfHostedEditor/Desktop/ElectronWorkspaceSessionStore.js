@@ -28,18 +28,38 @@ const defaultExcludedDirectoryNames = Object.freeze([
 export class SelfHostedEditorElectronWorkspaceSessionStore {
   #activeWorkspace = null;
   #fs;
+  #lastDraftUpdatedAtMs = 0;
   #maxDocuments;
+  #now;
   #selectWorkspaceRoot;
   #sessionId;
 
   constructor(options = {}) {
     this.#fs = options.fsImpl || fs.promises;
+    this.#now = typeof options.now === "function" ? options.now : Date.now;
     this.#maxDocuments = normalizePositiveInteger(options.maxDocuments, 500);
     this.#selectWorkspaceRoot = options.selectWorkspaceRoot || buildStaticWorkspaceSelector(options.workspaceRoot);
     this.#sessionId = normalizeSessionId(options.sessionId || "desktop-main");
   }
 
   async openFolder(payload = {}) {
+    let switchFlush = null;
+    if (this.#activeWorkspace) {
+      switchFlush = await this.flushDirtyDocuments({
+        ...payload,
+        trigger: "switch-workspace",
+      });
+      if (!canContinueAfterFlush(switchFlush)) {
+        return this.#buildOpenResult({
+          ok: false,
+          reason: "workspace-switch-flush-blocked",
+          selectedPathKind: "directory",
+          switchFlush,
+          workspaceRoot: this.#activeWorkspace.workspaceRoot,
+        });
+      }
+    }
+
     const selectedWorkspaceRoot = await this.#selectWorkspaceRoot(payload || {});
     const workspaceRoot = normalizeWorkspaceRoot(selectedWorkspaceRoot);
     if (!workspaceRoot) {
@@ -104,12 +124,14 @@ export class SelfHostedEditorElectronWorkspaceSessionStore {
       workspaceFolder,
       workspaceRoot,
     };
+    this.#lastDraftUpdatedAtMs = 0;
 
     return this.#buildOpenResult({
       documentStore,
       ok: true,
       reason: "",
       selectedPathKind,
+      switchFlush,
       workspaceFolder,
       workspaceRoot,
     });
@@ -202,6 +224,7 @@ export class SelfHostedEditorElectronWorkspaceSessionStore {
         ...this.#activeWorkspace,
         documentStore: result.store,
       };
+      this.#lastDraftUpdatedAtMs = this.#now();
       recoveryWrite = await this.#writeRecoverySnapshot(result.document);
       this.#activeWorkspace = {
         ...this.#activeWorkspace,
@@ -291,11 +314,12 @@ export class SelfHostedEditorElectronWorkspaceSessionStore {
           dirty: false,
           diskTextHash: nextDiskTextHash,
           existsOnDisk: true,
-          lastLoadedUtc: new Date().toISOString(),
+          lastLoadedUtc: new Date(this.#now()).toISOString(),
           lastSavedRevision: document.revision,
         }
         : document),
     });
+    this.#resetDirtyTimestampIfClean(nextStore);
     this.#activeWorkspace = {
       ...this.#activeWorkspace,
       documentStore: nextStore,
@@ -371,6 +395,7 @@ export class SelfHostedEditorElectronWorkspaceSessionStore {
       this.#activeWorkspace.documentStore,
       {
         ...payload,
+        idleElapsedMs: payload.idleElapsedMs ?? this.#resolveDirtyIdleElapsedMs(),
         workspaceRoot: this.#activeWorkspace.workspaceRoot,
       }
     );
@@ -462,6 +487,7 @@ export class SelfHostedEditorElectronWorkspaceSessionStore {
     ok,
     reason,
     selectedPathKind,
+    switchFlush = null,
     workspaceFolder = null,
     workspaceRoot,
   }) {
@@ -486,6 +512,7 @@ export class SelfHostedEditorElectronWorkspaceSessionStore {
       projectSession: ok ? this.getProjectSessionStatus() : null,
       reason,
       sessionId: this.#sessionId,
+      switchFlush,
       workspace: folder,
     };
   }
@@ -534,7 +561,7 @@ export class SelfHostedEditorElectronWorkspaceSessionStore {
       this.#activeWorkspace.documentStore,
       {
         relativePaths: [document.relativePath],
-        snapshotModifiedUtc: new Date().toISOString(),
+        snapshotModifiedUtc: new Date(this.#now()).toISOString(),
         workspaceRoot: this.#activeWorkspace.workspaceRoot,
       }
     );
@@ -574,6 +601,20 @@ export class SelfHostedEditorElectronWorkspaceSessionStore {
       relativePath: normalizeRelativePath(relativePath),
       snapshotRelativePath,
     };
+  }
+
+  #resolveDirtyIdleElapsedMs() {
+    if (!this.#activeWorkspace || this.#lastDraftUpdatedAtMs <= 0) {
+      return 0;
+    }
+
+    return Math.max(0, this.#now() - this.#lastDraftUpdatedAtMs);
+  }
+
+  #resetDirtyTimestampIfClean(store) {
+    if (!store?.documents?.some((document) => document.dirty)) {
+      this.#lastDraftUpdatedAtMs = 0;
+    }
   }
 }
 
@@ -959,6 +1000,17 @@ function omitStoreSummary(result) {
     ...summary
   } = result;
   return summary;
+}
+
+function canContinueAfterFlush(result) {
+  if (!result || result.ok !== true) {
+    return false;
+  }
+
+  const finalPlan = result.finalPlan || result.flushPlan || {};
+  return finalPlan.continuationBlocked !== true
+    && (finalPlan.blockingIssues || []).length === 0
+    && (finalPlan.visibleFailures || []).length === 0;
 }
 
 function normalizeWorkspaceDocuments(workspace = {}) {
