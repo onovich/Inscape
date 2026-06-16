@@ -14,6 +14,7 @@ export const SelfHostedEditorElectronWorkspaceOpenResultFormat = "inscape.self-h
 export const SelfHostedEditorElectronWorkspaceReadResultFormat = "inscape.self-hosted-editor.electron-workspace-read-result";
 export const SelfHostedEditorElectronAutosaveResultFormat = "inscape.self-hosted-editor.electron-autosave-result";
 export const SelfHostedEditorElectronFlushResultFormat = "inscape.self-hosted-editor.electron-flush-result";
+export const SelfHostedEditorElectronRecoveryActionResultFormat = "inscape.self-hosted-editor.electron-recovery-action-result";
 export const SelfHostedEditorElectronWorkspaceFormatVersion = 1;
 
 const defaultExcludedDirectoryNames = Object.freeze([
@@ -461,6 +462,153 @@ export class SelfHostedEditorElectronWorkspaceSessionStore {
     });
   }
 
+  async restoreRecoverySnapshot(payload = {}) {
+    if (!this.#activeWorkspace) {
+      return buildRecoveryActionResult({
+        action: "restore",
+        reason: "workspace-not-open",
+        relativePath: payload.relativePath,
+        sessionId: this.#sessionId,
+      });
+    }
+
+    const snapshotResult = await this.#readRecoverySnapshotPayload(payload);
+    if (!snapshotResult.ok) {
+      return buildRecoveryActionResult({
+        ...snapshotResult,
+        action: "restore",
+        sessionId: this.#sessionId,
+      });
+    }
+
+    const { relativePath, snapshot } = snapshotResult;
+    const restoredText = String(snapshot.text || "");
+    await this.#writeDocumentText(relativePath, restoredText);
+    const currentStore = this.#activeWorkspace.documentStore;
+    const currentDocument = currentStore.documents.find((document) => document.relativePath === relativePath) || null;
+    const restoredRevision = Math.max(
+      currentDocument?.revision || 0,
+      Number(snapshot.documentRevision || snapshot.revision || 0)
+    ) + 1;
+    const restoredDocument = {
+      ...(currentDocument || {}),
+      active: currentDocument?.active ?? currentStore.activeRelativePath === relativePath,
+      dirty: false,
+      diskTextHash: buildTextHash(restoredText),
+      existsOnDisk: true,
+      lastLoadedUtc: new Date(this.#now()).toISOString(),
+      lastSavedRevision: restoredRevision,
+      relativePath,
+      revision: restoredRevision,
+      text: restoredText,
+    };
+    const nextDocuments = currentStore.documents.some((document) => document.relativePath === relativePath)
+      ? currentStore.documents.map((document) => document.relativePath === relativePath ? restoredDocument : document)
+      : [...currentStore.documents, restoredDocument];
+    const nextStore = EditorBackendDocumentBufferStoreModel.buildStore({
+      ...currentStore,
+      activeRelativePath: relativePath,
+      documents: nextDocuments,
+    });
+    this.#resetDirtyTimestampIfClean(nextStore);
+    this.#activeWorkspace = {
+      ...this.#activeWorkspace,
+      documentStore: nextStore,
+    };
+    const recoveryCleanup = await this.#cleanupRecoverySnapshot(relativePath);
+    const recoveryStatus = await this.#refreshRecoveryStatus();
+
+    return buildRecoveryActionResult({
+      action: "restore",
+      document: EditorBackendDesktopSessionModel.buildDocumentBufferSummary(restoredDocument),
+      ok: true,
+      reason: "recovery-restored",
+      recoveryCleanup,
+      recoveryStatus,
+      relativePath,
+      sessionId: this.#sessionId,
+      snapshotRelativePath: snapshotResult.snapshotRelativePath,
+      store: nextStore,
+    });
+  }
+
+  async discardRecoverySnapshot(payload = {}) {
+    if (!this.#activeWorkspace) {
+      return buildRecoveryActionResult({
+        action: "discard",
+        reason: "workspace-not-open",
+        relativePath: payload.relativePath,
+        sessionId: this.#sessionId,
+      });
+    }
+
+    const snapshotResult = await this.#readRecoverySnapshotPayload(payload);
+    if (!snapshotResult.ok) {
+      return buildRecoveryActionResult({
+        ...snapshotResult,
+        action: "discard",
+        sessionId: this.#sessionId,
+      });
+    }
+
+    const recoveryCleanup = await this.#cleanupRecoverySnapshot(snapshotResult.relativePath);
+    const recoveryStatus = await this.#refreshRecoveryStatus();
+    return buildRecoveryActionResult({
+      action: "discard",
+      ok: true,
+      reason: "recovery-discarded",
+      recoveryCleanup,
+      recoveryStatus,
+      relativePath: snapshotResult.relativePath,
+      sessionId: this.#sessionId,
+      snapshotRelativePath: snapshotResult.snapshotRelativePath,
+      store: this.#activeWorkspace.documentStore,
+    });
+  }
+
+  async markRecoverySnapshotLater(payload = {}) {
+    if (!this.#activeWorkspace) {
+      return buildRecoveryActionResult({
+        action: "later",
+        reason: "workspace-not-open",
+        relativePath: payload.relativePath,
+        sessionId: this.#sessionId,
+      });
+    }
+
+    const snapshotResult = await this.#readRecoverySnapshotPayload(payload);
+    if (!snapshotResult.ok) {
+      return buildRecoveryActionResult({
+        ...snapshotResult,
+        action: "later",
+        sessionId: this.#sessionId,
+      });
+    }
+
+    const recoveryStatus = EditorBackendDesktopSessionModel.buildRecoveryStatus({
+      items: this.#activeWorkspace.recoveryStatus.items.map((item) => item.relativePath === snapshotResult.relativePath
+        ? {
+          ...item,
+          actionState: "later",
+        }
+        : item),
+    });
+    this.#activeWorkspace = {
+      ...this.#activeWorkspace,
+      recoveryStatus,
+    };
+    return buildRecoveryActionResult({
+      action: "later",
+      ok: true,
+      reason: "recovery-kept-for-later",
+      recoveryStatus,
+      relativePath: snapshotResult.relativePath,
+      sessionId: this.#sessionId,
+      snapshotRelativePath: snapshotResult.snapshotRelativePath,
+      store: this.#activeWorkspace.documentStore,
+    });
+  }
+
   getProjectSessionStatus(payload = {}) {
     if (!this.#activeWorkspace) {
       return buildProjectSessionStatusFromPayload(payload, {
@@ -601,6 +749,86 @@ export class SelfHostedEditorElectronWorkspaceSessionStore {
       relativePath: normalizeRelativePath(relativePath),
       snapshotRelativePath,
     };
+  }
+
+  async #readRecoverySnapshotPayload(payload = {}) {
+    const boundary = EditorBackendWorkspacePathModel.buildBoundary({
+      relativePath: payload.relativePath,
+      workspaceRoot: this.#activeWorkspace.workspaceRoot,
+    });
+    if (!boundary.allowed) {
+      return {
+        ok: false,
+        pathBoundary: boundary,
+        reason: boundary.reason,
+        relativePath: boundary.relativePath,
+      };
+    }
+
+    const relativePath = boundary.relativePath;
+    const snapshotRelativePath = buildRecoverySnapshotRelativePath(relativePath);
+    const absolutePath = resolveWorkspacePath(this.#activeWorkspace.workspaceRoot, snapshotRelativePath);
+    let snapshot = null;
+    try {
+      snapshot = JSON.parse(await this.#fs.readFile(absolutePath, "utf8"));
+    } catch {
+      return {
+        ok: false,
+        reason: "recovery-snapshot-not-found",
+        relativePath,
+        snapshotRelativePath,
+      };
+    }
+
+    if (normalizeRelativePath(snapshot.relativePath) !== relativePath) {
+      return {
+        ok: false,
+        reason: "recovery-snapshot-path-mismatch",
+        relativePath,
+        snapshotRelativePath,
+      };
+    }
+
+    const contentHash = String(snapshot.contentHash || "");
+    if (payload.contentHash && String(payload.contentHash) !== contentHash) {
+      return {
+        contentHash,
+        ok: false,
+        reason: "recovery-snapshot-hash-mismatch",
+        relativePath,
+        snapshotRelativePath,
+      };
+    }
+
+    if (typeof snapshot.text !== "string") {
+      return {
+        ok: false,
+        reason: "recovery-snapshot-text-missing",
+        relativePath,
+        snapshotRelativePath,
+      };
+    }
+
+    return {
+      contentHash,
+      ok: true,
+      reason: "",
+      relativePath,
+      snapshot,
+      snapshotRelativePath,
+    };
+  }
+
+  async #refreshRecoveryStatus() {
+    const recoveryStatus = await scanRecoveryStatus({
+      fsImpl: this.#fs,
+      workspaceRoot: this.#activeWorkspace.workspaceRoot,
+    });
+    this.#activeWorkspace = {
+      ...this.#activeWorkspace,
+      recoveryStatus,
+    };
+    return recoveryStatus;
   }
 
   #resolveDirtyIdleElapsedMs() {
@@ -890,6 +1118,40 @@ function buildFlushExecutionResult({
     sessionId,
     storeSummary: store ? EditorBackendDocumentBufferStoreModel.listDocuments(store) : null,
     trigger: effectiveFinalPlan.trigger,
+  };
+}
+
+function buildRecoveryActionResult({
+  action,
+  contentHash = "",
+  document = null,
+  ok = false,
+  pathBoundary = null,
+  reason = "",
+  recoveryCleanup = null,
+  recoveryStatus = null,
+  relativePath = "",
+  sessionId,
+  snapshotRelativePath = "",
+  store = null,
+}) {
+  return {
+    action,
+    contentHash,
+    document,
+    format: SelfHostedEditorElectronRecoveryActionResultFormat,
+    formatVersion: SelfHostedEditorElectronWorkspaceFormatVersion,
+    ok: Boolean(ok),
+    operation: `recovery.${action || "unknown"}`,
+    pathBoundary,
+    payloadContentExposed: false,
+    reason,
+    recoveryCleanup,
+    recoveryStatus,
+    relativePath: normalizeRelativePath(relativePath),
+    sessionId,
+    snapshotRelativePath,
+    storeSummary: store ? EditorBackendDocumentBufferStoreModel.listDocuments(store) : null,
   };
 }
 

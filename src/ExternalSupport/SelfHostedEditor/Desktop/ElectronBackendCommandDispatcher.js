@@ -51,6 +51,15 @@ export function createSelfHostedEditorBackendCommandHandlers(options = {}) {
     [EditorBackendTransportCommand.ProjectSessionStatus]: async (payload = {}) => {
       return sessionStore.getProjectSessionStatus(payload);
     },
+    [EditorBackendTransportCommand.RecoveryDiscard]: async (payload = {}) => {
+      return await sessionStore.discardRecoverySnapshot(payload);
+    },
+    [EditorBackendTransportCommand.RecoveryLater]: async (payload = {}) => {
+      return await sessionStore.markRecoverySnapshotLater(payload);
+    },
+    [EditorBackendTransportCommand.RecoveryRestore]: async (payload = {}) => {
+      return await sessionStore.restoreRecoverySnapshot(payload);
+    },
     [EditorBackendTransportCommand.WorkspaceListFiles]: async () => {
       return sessionStore.listFiles();
     },

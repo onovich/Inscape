@@ -78,6 +78,9 @@ assertIncludesText(preloadApiText, "backendCommandTransport: \"electron-ipc\"", 
 assertIncludesText(preloadApiText, "embeddedBackend: \"workspace-session-v0-partial\"", "Electron preload declares partial embedded backend capability");
 assertIncludesText(preloadApiText, "workspaceFileSystem: \"read-write-buffer-session\"", "Electron preload declares read/write buffer workspace file capability");
 assertIncludesText(preloadApiText, "ProjectSessionStatus", "Electron preload API whitelists project-session status");
+assertIncludesText(preloadApiText, "RecoveryRestore", "Electron preload API whitelists recovery restore");
+assertIncludesText(preloadApiText, "RecoveryDiscard", "Electron preload API whitelists recovery discard");
+assertIncludesText(preloadApiText, "RecoveryLater", "Electron preload API whitelists recovery later");
 assertIncludesText(preloadApiText, "DocumentBufferRead", "Electron preload API whitelists document-buffer read");
 assertIncludesText(preloadApiText, "WorkspaceOpenFolder", "Electron preload API whitelists workspace open folder");
 assertIncludesText(preloadApiText, "validateSelfHostedEditorPreloadCommandPayload", "Electron preload API validates command payloads");
@@ -124,6 +127,10 @@ assertEqual(preloadApi.capabilities.backendCommandTransport, "electron-ipc", "El
 assertEqual(preloadApi.capabilities.embeddedBackend, "workspace-session-v0-partial", "Electron preload API embedded backend capability");
 assertEqual(preloadApi.capabilities.workspaceFileSystem, "read-write-buffer-session", "Electron preload API workspace file capability");
 assertEqual(preloadApi.editorCommands.ProjectSessionStatus, "project-session.status", "Electron preload project-session command");
+assertEqual(preloadApi.editorCommands.RecoveryRestore, "recovery.restore", "Electron preload recovery restore command");
+assertEqual(typeof preloadApi.recovery.restore, "function", "Electron preload recovery restore method");
+assertEqual(typeof preloadApi.recovery.discard, "function", "Electron preload recovery discard method");
+assertEqual(typeof preloadApi.recovery.later, "function", "Electron preload recovery later method");
 assertEqual(
   preloadApiModule.listSelfHostedEditorPreloadCommands().length,
   new Set(preloadApiModule.listSelfHostedEditorPreloadCommands()).size,

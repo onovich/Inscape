@@ -25,6 +25,9 @@ export const SelfHostedEditorPreloadEditorCommand = Object.freeze({
   LocalizationReview: "localization.review",
   LocalizationUpdateCsv: "localization.update-csv",
   ProjectSessionStatus: "project-session.status",
+  RecoveryDiscard: "recovery.discard",
+  RecoveryLater: "recovery.later",
+  RecoveryRestore: "recovery.restore",
   RuntimeStartOrObserve: "runtime.start-or-observe",
   RuntimeStep: "runtime.step",
   StableNodeMapApplyCandidate: "stable-node-map.apply-candidate",
@@ -71,6 +74,9 @@ const preloadPayloadKeysByCommand = Object.freeze({
   [SelfHostedEditorPreloadEditorCommand.LocalizationReview]: ["previousCsv", "scriptText", "sessionId", "workspace"],
   [SelfHostedEditorPreloadEditorCommand.LocalizationUpdateCsv]: ["previousCsv", "scriptText", "sessionId", "translationOverrides", "workspace"],
   [SelfHostedEditorPreloadEditorCommand.ProjectSessionStatus]: ["sessionId", "workspace"],
+  [SelfHostedEditorPreloadEditorCommand.RecoveryDiscard]: ["contentHash", "relativePath", "revision", "snapshotModifiedUtc", "workspaceId"],
+  [SelfHostedEditorPreloadEditorCommand.RecoveryLater]: ["contentHash", "relativePath", "revision", "snapshotModifiedUtc", "workspaceId"],
+  [SelfHostedEditorPreloadEditorCommand.RecoveryRestore]: ["contentHash", "relativePath", "revision", "snapshotModifiedUtc", "workspaceId"],
   [SelfHostedEditorPreloadEditorCommand.RuntimeStartOrObserve]: ["scriptText", "sessionId", "workspace"],
   [SelfHostedEditorPreloadEditorCommand.RuntimeStep]: ["action", "runtimeState", "scriptText", "sessionId", "workspace"],
   [SelfHostedEditorPreloadEditorCommand.StableNodeMapApplyCandidate]: ["candidate", "dryRun", "item", "nodeMapPath", "scriptText", "workspace"],
@@ -138,6 +144,11 @@ export function createSelfHostedEditorPreloadApi(options = {}) {
     }),
     projectSession: Object.freeze({
       status: createEditorCommandHandler(SelfHostedEditorPreloadEditorCommand.ProjectSessionStatus, handlers),
+    }),
+    recovery: Object.freeze({
+      discard: createEditorCommandHandler(SelfHostedEditorPreloadEditorCommand.RecoveryDiscard, handlers),
+      later: createEditorCommandHandler(SelfHostedEditorPreloadEditorCommand.RecoveryLater, handlers),
+      restore: createEditorCommandHandler(SelfHostedEditorPreloadEditorCommand.RecoveryRestore, handlers),
     }),
     runtimeSession: Object.freeze({
       startOrObserve: createEditorCommandHandler(SelfHostedEditorPreloadEditorCommand.RuntimeStartOrObserve, handlers),

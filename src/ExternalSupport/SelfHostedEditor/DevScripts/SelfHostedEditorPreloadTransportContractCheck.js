@@ -43,6 +43,27 @@ const preloadApi = createSelfHostedEditorPreloadApi({
         },
       };
     },
+    [EditorBackendTransportCommand.RecoveryDiscard]: async (payload) => {
+      preloadCalls.push({ command: EditorBackendTransportCommand.RecoveryDiscard, payload });
+      return {
+        action: "discard",
+        ok: true,
+      };
+    },
+    [EditorBackendTransportCommand.RecoveryLater]: async (payload) => {
+      preloadCalls.push({ command: EditorBackendTransportCommand.RecoveryLater, payload });
+      return {
+        action: "later",
+        ok: true,
+      };
+    },
+    [EditorBackendTransportCommand.RecoveryRestore]: async (payload) => {
+      preloadCalls.push({ command: EditorBackendTransportCommand.RecoveryRestore, payload });
+      return {
+        action: "restore",
+        ok: true,
+      };
+    },
     [EditorBackendTransportCommand.RuntimeStep]: async (payload) => {
       preloadCalls.push({ command: EditorBackendTransportCommand.RuntimeStep, payload });
       return {
@@ -115,6 +136,21 @@ const openWorkspaceResult = await preloadTransport.invoke(EditorBackendTransport
 assertEqual(openWorkspaceResult.ok, true, "preload transport workspace open payload");
 const workspaceOpenCall = preloadCalls.find((call) => call.command === EditorBackendTransportCommand.WorkspaceOpenFolder);
 assertEqual(workspaceOpenCall.payload.dialogTitle, "Open workspace", "preload transport workspace open command");
+const recoveryRestoreResult = await preloadTransport.invoke(EditorBackendTransportCommand.RecoveryRestore, {
+  contentHash: "fnv1a32:restore",
+  relativePath: "story/opening.inscape",
+});
+assertEqual(recoveryRestoreResult.action, "restore", "preload transport recovery restore payload");
+const recoveryRestoreCall = preloadCalls.find((call) => call.command === EditorBackendTransportCommand.RecoveryRestore);
+assertEqual(recoveryRestoreCall.payload.relativePath, "story/opening.inscape", "preload transport recovery restore command");
+const recoveryLaterResult = await preloadTransport.invoke(EditorBackendTransportCommand.RecoveryLater, {
+  relativePath: "story/opening.inscape",
+});
+assertEqual(recoveryLaterResult.action, "later", "preload transport recovery later payload");
+const recoveryDiscardResult = await preloadTransport.invoke(EditorBackendTransportCommand.RecoveryDiscard, {
+  relativePath: "story/opening.inscape",
+});
+assertEqual(recoveryDiscardResult.action, "discard", "preload transport recovery discard payload");
 
 let unknownCommandRejected = false;
 try {
@@ -153,6 +189,10 @@ const desktopWorkspaceOpen = await desktopBackendClient.workspace.openFolder({
   dialogTitle: "Open desktop workspace",
 });
 assertEqual(desktopWorkspaceOpen.ok, true, "desktop backend client workspace open preload payload");
+const desktopRecoveryRestore = await desktopBackendClient.recovery.restore({
+  relativePath: "story/desktop.inscape",
+});
+assertEqual(desktopRecoveryRestore.action, "restore", "desktop backend client recovery restore preload payload");
 
 const fetchCalls = [];
 const devBackendClient = new EditorBackendClient({

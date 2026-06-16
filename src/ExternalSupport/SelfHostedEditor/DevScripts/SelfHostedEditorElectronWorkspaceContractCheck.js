@@ -8,6 +8,7 @@ import {
   createSelfHostedEditorElectronWorkspaceSessionStore,
   SelfHostedEditorElectronAutosaveResultFormat,
   SelfHostedEditorElectronFlushResultFormat,
+  SelfHostedEditorElectronRecoveryActionResultFormat,
   SelfHostedEditorElectronWorkspaceOpenResultFormat,
   SelfHostedEditorElectronWorkspaceReadResultFormat,
 } from "../Desktop/ElectronWorkspaceSessionStore.js";
@@ -429,6 +430,89 @@ try {
     "workspace reopen skips tampered recovery snapshot path"
   );
   assertEqual(JSON.stringify(reopened.projectSession).includes("secret conflicting draft"), false, "reopened recovery status is text-free");
+  const recoveryItem = reopened.projectSession.recoveryStatus.items.find((item) => item.relativePath === "story/opening.inscape");
+  const restoreResult = await dispatchSelfHostedEditorBackendCommand(
+    EditorBackendTransportCommand.RecoveryRestore,
+    {
+      contentHash: recoveryItem.contentHash,
+      relativePath: "story/opening.inscape",
+    },
+    {
+      sessionStore: reopenedStore,
+    }
+  );
+  assertEqual(restoreResult.format, SelfHostedEditorElectronRecoveryActionResultFormat, "recovery restore result format");
+  assertEqual(restoreResult.ok, true, "recovery restore ok");
+  assertEqual(restoreResult.action, "restore", "recovery restore action");
+  assertEqual(restoreResult.recoveryCleanup.ok, true, "recovery restore removes snapshot");
+  assertEqual(await fileExists(openingSnapshotPath), false, "recovery restore deletes snapshot file");
+  assertEqual(
+    await fs.readFile(path.join(tempRoot, "story", "opening.inscape"), "utf8"),
+    "# Opening\nNarrator: secret conflicting draft",
+    "recovery restore writes snapshot text to disk"
+  );
+  assertEqual(JSON.stringify(restoreResult).includes("secret conflicting draft"), false, "recovery restore response is text-free");
+
+  const laterRead = await dispatchSelfHostedEditorBackendCommand(
+    EditorBackendTransportCommand.DocumentBufferRead,
+    {
+      relativePath: "story/opening.inscape",
+    },
+    {
+      sessionStore: reopenedStore,
+    }
+  );
+  const laterUpdate = await dispatchSelfHostedEditorBackendCommand(
+    EditorBackendTransportCommand.DocumentBufferUpdateDraft,
+    {
+      baseRevision: laterRead.document.revision,
+      relativePath: "story/opening.inscape",
+      text: "# Opening\nNarrator: secret later recovery text",
+    },
+    {
+      sessionStore: reopenedStore,
+    }
+  );
+  assertEqual(laterUpdate.ok, true, "recovery later setup update ok");
+  assertEqual(await fileExists(openingSnapshotPath), true, "recovery later setup writes snapshot");
+  const laterStatus = await dispatchSelfHostedEditorBackendCommand(
+    EditorBackendTransportCommand.ProjectSessionStatus,
+    {},
+    {
+      sessionStore: reopenedStore,
+    }
+  );
+  const laterItem = laterStatus.recoveryStatus.items.find((item) => item.relativePath === "story/opening.inscape");
+  const laterResult = await dispatchSelfHostedEditorBackendCommand(
+    EditorBackendTransportCommand.RecoveryLater,
+    {
+      contentHash: laterItem.contentHash,
+      relativePath: "story/opening.inscape",
+    },
+    {
+      sessionStore: reopenedStore,
+    }
+  );
+  assertEqual(laterResult.ok, true, "recovery later ok");
+  assertEqual(laterResult.action, "later", "recovery later action");
+  assertEqual(laterResult.recoveryStatus.items[0].actionState, "later", "recovery later marks item in session");
+  assertEqual(await fileExists(openingSnapshotPath), true, "recovery later keeps snapshot");
+  assertEqual(JSON.stringify(laterResult).includes("secret later recovery text"), false, "recovery later response is text-free");
+  const discardResult = await dispatchSelfHostedEditorBackendCommand(
+    EditorBackendTransportCommand.RecoveryDiscard,
+    {
+      contentHash: laterItem.contentHash,
+      relativePath: "story/opening.inscape",
+    },
+    {
+      sessionStore: reopenedStore,
+    }
+  );
+  assertEqual(discardResult.ok, true, "recovery discard ok");
+  assertEqual(discardResult.action, "discard", "recovery discard action");
+  assertEqual(await fileExists(openingSnapshotPath), false, "recovery discard deletes snapshot");
+  assertEqual(discardResult.recoveryStatus.state, "none", "recovery discard clears status");
+  assertEqual(JSON.stringify(discardResult).includes("secret later recovery text"), false, "recovery discard response is text-free");
 
   const canceledStore = createSelfHostedEditorElectronWorkspaceSessionStore({
     selectWorkspaceRoot: async () => "",

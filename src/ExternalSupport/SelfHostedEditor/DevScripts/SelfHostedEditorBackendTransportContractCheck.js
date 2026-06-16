@@ -21,6 +21,13 @@ try {
   desktopOnlyRouteRejected = String(error?.message || "").includes("does not have a dev-host HTTP route");
 }
 assertEqual(desktopOnlyRouteRejected, true, "workspace open command is desktop-only");
+let recoveryRouteRejected = false;
+try {
+  resolveEditorBackendDevHostRoute(EditorBackendTransportCommand.RecoveryRestore);
+} catch (error) {
+  recoveryRouteRejected = String(error?.message || "").includes("does not have a dev-host HTTP route");
+}
+assertEqual(recoveryRouteRejected, true, "recovery restore command is desktop-only");
 
 for (const route of listEditorBackendDevHostRoutes()) {
   assertEqual(commands.includes(route.command), true, `dev-host route command registered: ${route.command}`);
@@ -111,6 +118,20 @@ const workspaceOpen = await backendClient.workspace.openFolder({
 assertEqual(workspaceOpen.command, EditorBackendTransportCommand.WorkspaceOpenFolder, "backend client workspace open command");
 const workspaceList = await backendClient.workspace.listFiles();
 assertEqual(workspaceList.command, EditorBackendTransportCommand.WorkspaceListFiles, "backend client workspace list command");
+const recoveryRestore = await backendClient.recovery.restore({
+  contentHash: "fnv1a32:restore",
+  relativePath: "story/opening.inscape",
+});
+assertEqual(recoveryRestore.command, EditorBackendTransportCommand.RecoveryRestore, "backend client recovery restore command");
+assertEqual(recoveryRestore.payload.relativePath, "story/opening.inscape", "backend client recovery restore payload");
+const recoveryLater = await backendClient.recovery.later({
+  relativePath: "story/opening.inscape",
+});
+assertEqual(recoveryLater.command, EditorBackendTransportCommand.RecoveryLater, "backend client recovery later command");
+const recoveryDiscard = await backendClient.recovery.discard({
+  relativePath: "story/opening.inscape",
+});
+assertEqual(recoveryDiscard.command, EditorBackendTransportCommand.RecoveryDiscard, "backend client recovery discard command");
 const projectStatus = await backendClient.projectSession.status();
 assertEqual(backendCalls.find((call) => call.command === EditorBackendTransportCommand.ProjectSessionStatus)?.payload && Object.keys(backendCalls.find((call) => call.command === EditorBackendTransportCommand.ProjectSessionStatus).payload).length, 0, "project-session status must not upload workspace text");
 assertEqual(projectStatus.mode, "dev-host", "project-session status compatibility mode");

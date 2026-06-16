@@ -493,6 +493,16 @@ P1 40 轮计划完成后，继续补上了真实 Electron preload -> main 的固
 - 新增 `check:electron-lifecycle`，覆盖 timer 注册、waiting / ready autosave、close-window flush、switch-workspace flush、app-exit flush、timer cleanup 和 text-free lifecycle status；`check:model` 与 `check:structure` 已纳入该检查。
 - 下一步应补 recovery restore / discard / later 的真实 IO 与 UI 操作，并做 GUI edit-save-recovery smoke。
 
+### 2026-06-17 SelfHostedEditor P1 post-40 Electron recovery actions IO 快照
+
+在 lifecycle autosave/flush 之后，本轮把 recovery restore / discard / later 从 action request contract 接到 Electron main process 真实 IO；仍不做 GUI edit-save-recovery smoke，也不扩大 renderer 的通用 IPC/Node 能力。
+
+- 新增 desktop-only transport commands：`recovery.restore`、`recovery.discard`、`recovery.later`。它们进入 preload whitelist / `EditorBackendClient.recovery.*` / Electron dispatcher，但不映射 dev-host `/api/*` route。
+- `ElectronWorkspaceSessionStore.restoreRecoverySnapshot()` 会读取并校验 `.inscape-workspace/recovery/<relative>.snapshot.json` 的 relative path / content hash / text payload，把 snapshot 正文写回 `.inscape` 文件，刷新 buffer summary，并删除 snapshot。
+- `discardRecoverySnapshot()` 删除 snapshot 并刷新 text-free recovery status；`markRecoverySnapshotLater()` 只在当前 session status 标为 `later`，保留 snapshot 供后续提示。
+- `check:electron-workspace` 现在覆盖 restore 写盘且响应不泄露 snapshot text、restore 后 cleanup、later 保留 snapshot、discard 删除 snapshot、recovery action response text-free。`check:backend-transport` / `check:preload-transport` / `check:electron-shell` 同步覆盖新 command 面。
+- 下一步应做真实 GUI edit-save-recovery smoke：打包或本机 Electron 打开 workspace、编辑、触发 recovery、点击 restore / discard / later，并验证 diagnostics / completion 使用恢复后的当前 buffer。
+
 ### 2026-06-14 SelfHostedEditor desktop backend v0 决策快照
 
 本轮已采纳 [ADR 0019](adr/0019-self-hosted-editor-embedded-backend-v0.md)：SelfHostedEditor desktop backend v0 采用嵌入式 EditorBackend，而不是独立 sidecar daemon。

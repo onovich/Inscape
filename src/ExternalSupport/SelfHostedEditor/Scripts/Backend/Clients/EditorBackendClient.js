@@ -69,6 +69,11 @@ export class EditorBackendClient {
         );
       },
     });
+    this.recovery = Object.freeze({
+      discard: (request) => this.#invoke(EditorBackendTransportCommand.RecoveryDiscard, request),
+      later: (request) => this.#invoke(EditorBackendTransportCommand.RecoveryLater, request),
+      restore: (request) => this.#invoke(EditorBackendTransportCommand.RecoveryRestore, request),
+    });
     this.diagnostics = Object.freeze({
       sessionStatus: (request = {}) => this.projectSession.status(request),
     });

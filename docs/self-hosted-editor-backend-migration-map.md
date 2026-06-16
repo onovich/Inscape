@@ -88,6 +88,8 @@
 
 2026-06-17 P1 post-40 Electron lifecycle 补充：`ElectronWorkspaceLifecycle` 已在 main process 持有与 IPC 共享的 `ElectronWorkspaceSessionStore`，启动 idle autosave timer，并把 BrowserWindow close、workspace switch 和 app `before-quit` 接到真实 flush/save 路径。`runAutosave()` 未显式传 `idleElapsedMs` 时会按 main-process dirty timestamp 计算 debounce；workspace switch flush blocked 时不会切换目录。renderer/preload API 未扩大，restore / discard / later 与 GUI recovery smoke 仍待后续迁移。
 
+2026-06-17 P1 post-40 recovery actions IO 补充：desktop-only `recovery.restore` / `recovery.discard` / `recovery.later` 已进入 shared command catalog、preload whitelist、`EditorBackendClient.recovery.*` 与 Electron dispatcher，但不映射 dev-host HTTP route。`restore` 会校验 snapshot relative path / content hash / text payload，把 snapshot 正文写回 `.inscape` 并清理 snapshot；`discard` 删除 snapshot；`later` 只更新当前 session 的 action state 并保留 snapshot。GUI edit-save-recovery smoke 仍待后续迁移。
+
 ## 状态分类
 
 | 分类 | 当前例子 | 未来归属 | 规则 |

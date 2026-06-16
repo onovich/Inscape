@@ -87,11 +87,12 @@ SelfHostedEditor desktop backend v0
 - [x] 接入真实 Electron recovery snapshot 写入 / 扫描 / 保存后清理：dirty `document-buffer.update-draft` 在 main process 写入 `.inscape-workspace/recovery/<relative>.snapshot.json`，snapshot 文件包含可恢复正文；open workspace 扫描 recovery status 但不向 status 泄露正文；manual save / save-all 成功后删除对应 snapshot；`check:electron-workspace` 覆盖重开扫描、text-free status 和篡改 snapshot path 跳过。
 - [x] 接入真实 Electron autosave / flush 执行 helper：`ElectronWorkspaceSessionStore.runAutosave()` 复用 autosave plan，debounce 未满足时不写盘、ready 时保存最新 dirty revision；`flushDirtyDocuments()` 复用 flush plan，可按 `app-exit` 等 trigger 走真实 save 路径并清理 recovery；`check:electron-workspace` 覆盖 waiting autosave、ready autosave 和 app-exit flush 的 text-free 结果与磁盘写回。
 - [x] 接入真实 Electron idle autosave / lifecycle flush：`ElectronWorkspaceLifecycle` 与 IPC 共享同一个 `ElectronWorkspaceSessionStore`，main process 启动 autosave timer，BrowserWindow close / app before-quit 走 lifecycle flush，再次 open folder 前以 `switch-workspace` trigger flush 当前 dirty workspace；`check:electron-lifecycle` 覆盖 timer、close-window、switch-workspace、app-exit 与 text-free status。
+- [x] 接入真实 Electron recovery restore / discard / later 动作：新增 desktop-only `recovery.restore` / `recovery.discard` / `recovery.later` commands；restore 校验 snapshot path/hash/text 后写回 `.inscape` 并清理 snapshot，discard 删除 snapshot，later 保留 snapshot 且只更新当前 session action state；相关响应保持 text-free。
 - [ ] 实现 workspace 文件系统边界：只接受 workspace-relative path，拒绝绝对路径、`..` 越界、workspace 外路径和未列入白名单的写回目标。
 - [ ] 实现 `ProjectSession v0`：一个窗口一个 active workspace folder，一个 active project session；不支持正式单文件打开。
 - [ ] 实现 `DocumentBufferStore v0`：backend 持有 dirty buffers、revision、active document，LanguageServer / Runtime / Tooling 请求从 backend buffer 组 workspace snapshot。
 - [ ] 落地 `.inscape-workspace/` 与 `assets/` 目录策略：recovery / backups / cache 放 `.inscape-workspace/`，外部资源默认复制进 workspace `assets/`。
-- [ ] 实现 autosave / flush / recovery：手动 Save、autosave timer、close/switch/app-exit flush 已可写盘并清理 recovery snapshot，dirty edit 已写入 snapshot 且下次打开可扫描；仍需补 recovery restore / discard / later 动作与 GUI recovery smoke。
+- [ ] 实现 autosave / flush / recovery：手动 Save、autosave timer、close/switch/app-exit flush、recovery restore / discard / later 已可通过 Electron main process 真实 IO 工作；仍需补 GUI recovery smoke。
 - [ ] 实现 CSV / node-map / line-map 写前 backup：默认启用，可由设置项调整或关闭。
 - [x] 落地 settings 分层：全局偏好与 workspace / project 行为分开；即使设置页后置，配置 schema 也先稳定。
 - [ ] 打通 v0 最小可用闭环：打开目录 -> 文件列表 -> 编辑 `.inscape` -> autosave / 手动 Save -> recovery -> 基础诊断 / 补全 -> Preview。
