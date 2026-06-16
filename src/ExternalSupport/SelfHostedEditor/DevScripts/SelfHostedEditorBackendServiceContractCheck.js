@@ -139,6 +139,7 @@ assertSurface(services.documentBufferStore, [
   "buildFlushPlan",
   "buildRecoverySnapshotPlan",
   "buildBackupPlan",
+  "buildAssetImportPlan",
   "buildWorkspaceSnapshot",
   "buildActiveDocumentRequest",
   "buildWorkspaceBoundary",
@@ -353,6 +354,29 @@ assertEqual(backupPlan.backupRequests[0].backupTargetKind, "backup-artifact", "d
 assertEqual(backupPlan.skippedWrites[0].reason, "backup-target-not-supported", "document buffer backup plan skips unsupported source");
 assertEqual(backupPlan.payloadContentExposed, false, "document buffer backup plan text-free");
 assertEqual(JSON.stringify(backupPlan).includes("# Opening\nNarrator: Updated"), false, "document buffer backup plan must not expose text");
+const assetImportPlan = services.documentBufferStore.buildAssetImportPlan({
+  existingAssetRelativePaths: [
+    "assets/images/court-portrait.png",
+  ],
+  imports: [
+    {
+      byteLength: 1024,
+      sourcePath: "D:/Downloads/court portrait.png",
+    },
+    {
+      byteLength: 2048,
+      sourcePath: "D:/Downloads/theme song.wav",
+    },
+  ],
+  workspaceRoot: "C:/Case Files/Court Loop",
+});
+assertEqual(assetImportPlan.copyRequests.length, 2, "document buffer asset import plan request count");
+assertEqual(assetImportPlan.copyRequests[0].targetRelativePath, "assets/images/court-portrait-1.png", "document buffer asset import plan collision target");
+assertEqual(assetImportPlan.copyRequests[1].targetRelativePath, "assets/audio/theme-song.wav", "document buffer asset import plan audio target");
+assertEqual(assetImportPlan.copyRequests.every((request) => request.targetKind === "asset-copy"), true, "document buffer asset import plan target kind");
+assertEqual(assetImportPlan.externalPathPersisted, false, "document buffer asset import plan does not persist external path");
+assertEqual(assetImportPlan.payloadContentExposed, false, "document buffer asset import plan text-free");
+assertEqual(JSON.stringify(assetImportPlan).includes("D:/Downloads"), false, "document buffer asset import plan must not persist source path");
 const workspaceSnapshot = services.documentBufferStore.buildWorkspaceSnapshot(activeDocumentResult.store);
 assertEqual(workspaceSnapshot.source, "backend-buffer-store", "workspace snapshot source");
 assertEqual(workspaceSnapshot.currentFilePath, "story/branch.inscape", "workspace snapshot active path");

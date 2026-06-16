@@ -1203,6 +1203,51 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 5. 本轮没有改变 Compiler / LanguageServer / Tooling / Runtime payload shape，也没有进入 P1.5 long-lived LanguageServer。
 6. 下一轮应进入 Round 33：assets import policy。
 
+### 2026-06-17 Round 33：assets import policy
+
+范围：建立外部资源导入 plan contract，证明图片、音频、CSV 等外部资源默认复制到 workspace 内 `assets/`，不把 workspace 外绝对路径保存为长期依赖。本轮不执行真实文件复制、不接文件选择器、不写项目文件。
+
+完成内容：
+
+1. 新增 `EditorBackendWorkspaceAssetImportPlanModel.buildPlan()`，返回 `inscape.self-hosted-editor.workspace-asset-import-plan`。
+2. 支持图片、音频与 CSV 资源分类，默认目标分别为 `assets/images/`、`assets/audio/`、`assets/data/`；未知扩展进入 `asset-extension-not-supported` skip。
+3. 导入计划只保留 source name / source reference id，不持久化外部绝对路径；copy request 标记 `externalPathPersisted: false` 与 `payloadContentExposed: false`。
+4. 目标路径继续走 workspace file boundary / write target catalog，并处理已存在 asset target 的 `-1` suffix 避让。
+5. `assets/**` 写目标优先于扩展名规则，确保 `assets/data/*.csv` 作为 `asset-copy`，不会被误判为 localization CSV。
+6. `DocumentBufferStore` 窄服务新增 `buildAssetImportPlan()` helper；`check:workspace-fs` 与 `check:backend-services` 覆盖导入分类、目标路径、重名避让、unsupported skip、禁用外部引用策略和 no external path persistence。
+
+验证：
+
+```powershell
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:desktop-backend
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:workspace-fs
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:backend-services
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:backend-transport
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:preload-transport
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:fake-embedded-transport
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:electron-boundary
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:runtime
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:runtime-http
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:structure
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
+npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
+node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js
+npm --prefix src\ExternalSupport\VSCode run check:structure
+git -c safe.directory=D:/LabProjects/Inscape diff --check
+dotnet build Inscape.slnx --no-restore
+dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build
+```
+
+架构对照结论：
+
+1. asset import plan 只编排外部资源复制目标，不读取文件、不复制文件、不让 renderer 获得 Node / fs / shell 能力。
+2. workspace 外路径只作为临时输入，不进入 plan 输出；长期项目依赖只指向 workspace 内 `assets/**`。
+3. 路径和写目标继续复用 workspace boundary / write target catalog，没有在 feature controller 里重写路径语义。
+4. 本轮只处理编辑器资源编排，不改变 Compiler / LanguageServer / Tooling / Runtime payload shape，也没有进入 P1.5 long-lived LanguageServer。
+5. 下一轮应进入 Round 34：settings 分层。
+
 ## 36 轮主计划
 
 ### A. Contract 与 transport 基础，Round 1-6
@@ -1266,7 +1311,7 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 |---|---|---|
 | 31 | `.inscape-workspace/` 策略 | open workspace 时确保 `.inscape-workspace/recovery`、`.inscape-workspace/backups`、`.inscape-workspace/cache` 可发现或可创建；`.inscape-workspace/` 默认被 Git 忽略。 |
 | 32 | write-back backup | localization CSV、`inscape.node-map.json`、`inscape.line-map.json` 写回前自动备份到 `.inscape-workspace/backups/`；默认启用。 |
-| 33 | external resource import | 外部图片、音频、CSV 等导入时默认复制到 workspace 内 `assets/`；不把 workspace 外路径保存为长期依赖。 |
+| 33 | external resource import | 已完成。`EditorBackendWorkspaceAssetImportPlanModel` 生成 text-free asset copy plan，图片 / 音频 / CSV 默认进入 `assets/images` / `assets/audio` / `assets/data`，不持久化 workspace 外路径；`assets/**` 写目标优先于扩展名规则。 |
 | 34 | settings 分层 | 建立全局设置与 workspace / project 设置 schema；至少覆盖 autosave、backup 保留策略、默认资源目录；若最小设置页暂缓，默认值集中在配置层，不散落在 feature controller。 |
 
 ### G. v0 闭环、Windows smoke 与文档，Round 35-36

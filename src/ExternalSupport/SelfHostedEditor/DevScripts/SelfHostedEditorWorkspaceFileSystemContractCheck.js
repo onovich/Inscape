@@ -7,6 +7,10 @@ import {
   EditorBackendWorkspacePathModel,
 } from "../Scripts/Backend/Models/EditorBackendWorkspacePathModel.js";
 import {
+  EditorBackendWorkspaceAssetImportPlanFormat,
+  EditorBackendWorkspaceAssetImportPlanModel,
+} from "../Scripts/Backend/Models/EditorBackendWorkspaceAssetImportPlanModel.js";
+import {
   EditorBackendWorkspaceBackupPlanFormat,
   EditorBackendWorkspaceBackupPlanModel,
 } from "../Scripts/Backend/Models/EditorBackendWorkspaceBackupPlanModel.js";
@@ -112,12 +116,12 @@ const writeTargetCatalog = EditorBackendWorkspaceWriteTargetModel.buildCatalog()
 assertEqual(writeTargetCatalog.format, EditorBackendWorkspaceWriteTargetCatalogFormat, "write target catalog format");
 assertEqual(
   writeTargetCatalog.targets.map((target) => target.targetKind).join(","),
-  "inscape-document,localization-csv,node-map-sidecar,line-map-sidecar,recovery-snapshot,backup-artifact,cache-artifact,asset-copy",
+  "recovery-snapshot,backup-artifact,cache-artifact,asset-copy,inscape-document,localization-csv,node-map-sidecar,line-map-sidecar",
   "write target catalog order"
 );
 assertEqual(
   writeTargetCatalog.targets.map((target) => target.pathRule).join(","),
-  "*.inscape,*.csv,**/inscape.node-map.json,**/inscape.line-map.json,.inscape-workspace/recovery/**,.inscape-workspace/backups/**,.inscape-workspace/cache/**,assets/**",
+  ".inscape-workspace/recovery/**,.inscape-workspace/backups/**,.inscape-workspace/cache/**,assets/**,*.inscape,*.csv,**/inscape.node-map.json,**/inscape.line-map.json",
   "write target catalog path rules"
 );
 
@@ -282,6 +286,87 @@ const disabledBackupPlan = EditorBackendWorkspaceBackupPlanModel.buildPlan({
 });
 assertEqual(disabledBackupPlan.backupRequests.length, 0, "disabled backup plan no requests");
 assertEqual(disabledBackupPlan.skippedWrites[0].reason, "backup-disabled", "disabled backup reason");
+
+const assetImportPlan = EditorBackendWorkspaceAssetImportPlanModel.buildPlan({
+  existingAssetRelativePaths: [
+    "assets/images/court-portrait.png",
+  ],
+  imports: [
+    {
+      byteLength: 1024,
+      sourcePath: "D:/Downloads/court portrait.png",
+    },
+    {
+      byteLength: 2048,
+      sourcePath: "D:/Downloads/theme song.wav",
+    },
+    {
+      byteLength: 512,
+      sourcePath: "D:/Downloads/dialogue.csv",
+    },
+    {
+      byteLength: 4096,
+      sourcePath: "D:/Downloads/tool.exe",
+    },
+  ],
+  settingsSummary: EditorBackendDesktopSessionModel.buildSettingsSummary({
+    workspaceSettings: {
+      resourceDirectory: "assets",
+      resourceImportPolicy: "copy-into-workspace",
+    },
+  }),
+  workspaceRoot,
+});
+assertEqual(assetImportPlan.format, EditorBackendWorkspaceAssetImportPlanFormat, "asset import plan format");
+assertEqual(assetImportPlan.importPolicy, "copy-into-workspace", "asset import plan policy");
+assertEqual(assetImportPlan.resourceDirectory, "assets", "asset import plan resource directory");
+assertEqual(assetImportPlan.externalPathPersisted, false, "asset import plan does not persist external paths");
+assertEqual(assetImportPlan.payloadContentExposed, false, "asset import plan text-free");
+assertEqual(assetImportPlan.sourceCount, 4, "asset import plan source count");
+assertEqual(assetImportPlan.copyRequests.length, 3, "asset import plan copy request count");
+assertEqual(
+  assetImportPlan.copyRequests.map((request) => request.assetKind).join(","),
+  "image,audio,data",
+  "asset import plan asset kinds"
+);
+assertEqual(
+  assetImportPlan.copyRequests.map((request) => request.targetRelativePath).join(","),
+  "assets/images/court-portrait-1.png,assets/audio/theme-song.wav,assets/data/dialogue.csv",
+  "asset import plan target paths"
+);
+assertEqual(
+  assetImportPlan.copyRequests.every((request) => request.targetKind === "asset-copy"),
+  true,
+  "asset import plan target kind"
+);
+assertEqual(
+  assetImportPlan.copyRequests.every((request) => request.workspaceBoundary?.targetKind === "asset-copy"),
+  true,
+  "asset import plan target boundary"
+);
+assertEqual(assetImportPlan.skippedImports.length, 1, "asset import plan unsupported count");
+assertEqual(assetImportPlan.skippedImports[0].reason, "asset-extension-not-supported", "asset import plan unsupported reason");
+assertEqual(JSON.stringify(assetImportPlan).includes("D:/Downloads"), false, "asset import plan must not persist external source paths");
+const externalReferenceImportPlan = EditorBackendWorkspaceAssetImportPlanModel.buildPlan({
+  imports: [
+    {
+      sourcePath: "D:/Downloads/court portrait.png",
+    },
+  ],
+  settingsSummary: EditorBackendDesktopSessionModel.buildSettingsSummary({
+    workspaceSettings: {
+      resourceImportPolicy: "reference-external",
+    },
+  }),
+  workspaceRoot,
+});
+assertEqual(externalReferenceImportPlan.copyRequests.length, 0, "external reference import plan no copy");
+assertEqual(
+  externalReferenceImportPlan.skippedImports[0].reason,
+  "external-reference-policy-not-supported",
+  "external reference import plan rejection reason"
+);
+assertEqual(JSON.stringify(externalReferenceImportPlan).includes("D:/Downloads"), false, "external reference plan must not persist source paths");
 
 const workspaceFolder = EditorBackendWorkspaceFolderModel.buildWorkspaceFolder({
   activeRelativePath: "story/branch.inscape",

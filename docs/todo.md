@@ -73,6 +73,7 @@ SelfHostedEditor desktop backend v0
 - [x] 完成 P1 Round 30 recovery UI：ProjectSession recovery summary 投影到 session panel，列出可恢复文件，并提供 restore / discard / later 的 text-free action request contract。
 - [x] 完成 P1 Round 31 `.inscape-workspace/` 策略：新增 internal directory plan，覆盖 recovery / backups / cache 的发现/创建计划、non-project-truth、cache 可重建与默认 `.gitignore` 条目。
 - [x] 完成 P1 Round 32 write-back backup：新增 text-free backup plan，CSV / node-map / line-map 写回前备份到 `.inscape-workspace/backups/`，默认启用并支持数量 + 天数保留策略。
+- [x] 完成 P1 Round 33 assets import policy：新增 text-free asset import plan，图片 / 音频 / CSV 默认复制到 workspace `assets/images|audio|data`，不持久化 workspace 外路径，并让 `assets/**` 写目标优先于扩展名规则。
 - [ ] 建立 Electron preload 白名单边界：renderer 不直接访问 Node / fs / shell / arbitrary IPC；preload 只暴露受控 editor command。
 - [ ] 实现 workspace 文件系统边界：只接受 workspace-relative path，拒绝绝对路径、`..` 越界、workspace 外路径和未列入白名单的写回目标。
 - [ ] 实现 `ProjectSession v0`：一个窗口一个 active workspace folder，一个 active project session；不支持正式单文件打开。

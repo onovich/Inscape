@@ -639,7 +639,7 @@ assertNotIncludes(JSON.stringify(cleanupSummary), "secret", "workspace cleanup s
 
 assertEqual(
   listEditorBackendAllowedWriteTargets().join(","),
-  "inscape-document,localization-csv,node-map-sidecar,line-map-sidecar,recovery-snapshot,backup-artifact,cache-artifact,asset-copy",
+  "recovery-snapshot,backup-artifact,cache-artifact,asset-copy,inscape-document,localization-csv,node-map-sidecar,line-map-sidecar",
   "desktop allowed write target catalog"
 );
 

@@ -82,6 +82,7 @@ const requiredPaths = [
   "Scripts/Backend/Models/EditorBackendDocumentBufferModel.js",
   "Scripts/Backend/Models/EditorBackendDocumentBufferStoreModel.js",
   "Scripts/Backend/Models/EditorBackendLanguageSessionRequestModel.js",
+  "Scripts/Backend/Models/EditorBackendWorkspaceAssetImportPlanModel.js",
   "Scripts/Backend/Models/EditorBackendWorkspaceBackupPlanModel.js",
   "Scripts/Backend/Models/EditorBackendWorkspaceRequestModel.js",
   "Scripts/Backend/Models/EditorBackendProjectSessionLifecycleModel.js",

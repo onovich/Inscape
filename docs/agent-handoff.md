@@ -343,6 +343,17 @@ P1 Round 32 已建立 CSV / node-map / line-map 写回前 backup plan contract�
 - `DocumentBufferStore` 窄服务新增 `buildBackupPlan()` helper。
 - Round 32 当前已通过：SelfHostedEditor `check:desktop-backend` / `check:workspace-fs` / `check:backend-services` / `check:backend-transport` / `check:preload-transport` / `check:fake-embedded-transport` / `check:electron-boundary` / `check:runtime` / `check:runtime-http` / `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity` / `check:structure`，`node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js`，`git diff --check`，`.NET build` 与 Internal tests。下一步进入 Round 33：assets import policy。
 
+### 2026-06-17 SelfHostedEditor P1 Round 33 assets import policy 快照
+
+P1 Round 33 已建立外部资源导入 plan contract。本轮只生成 text-free asset copy plan，不执行真实文件复制、不接文件选择器、不写项目文件。
+
+- 新增 `EditorBackendWorkspaceAssetImportPlanModel.buildPlan()`，返回 `inscape.self-hosted-editor.workspace-asset-import-plan`。
+- 图片、音频、CSV 默认复制到 `assets/images/`、`assets/audio/`、`assets/data/`；未知扩展进入 `asset-extension-not-supported` skip。
+- plan 输出不持久化 workspace 外绝对路径，只保留 source name / source reference id，并标记 `externalPathPersisted: false`。
+- 目标路径继续走 workspace file boundary / write target catalog；`assets/**` 写目标优先于扩展名规则，确保 `assets/data/*.csv` 是 `asset-copy` 而不是 localization CSV。
+- `DocumentBufferStore` 窄服务新增 `buildAssetImportPlan()` helper。
+- Round 33 当前已通过：SelfHostedEditor `check:desktop-backend` / `check:workspace-fs` / `check:backend-services` / `check:backend-transport` / `check:preload-transport` / `check:fake-embedded-transport` / `check:electron-boundary` / `check:runtime` / `check:runtime-http` / `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity` / `check:structure`，`node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js`，`git diff --check`，`.NET build` 与 Internal tests。下一步进入 Round 34：settings 分层。
+
 ### 2026-06-14 SelfHostedEditor desktop backend v0 决策快照
 
 本轮已采纳 [ADR 0019](adr/0019-self-hosted-editor-embedded-backend-v0.md)：SelfHostedEditor desktop backend v0 采用嵌入式 EditorBackend，而不是独立 sidecar daemon。

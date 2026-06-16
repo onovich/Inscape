@@ -60,6 +60,8 @@
 
 2026-06-17 P1 Round 32 补充：write-back backup 先落为 `EditorBackendWorkspaceBackupPlanModel.buildPlan()` contract。plan 只覆盖 localization CSV、node-map sidecar、line-map sidecar 写回前 backup，生成 `.inscape-workspace/backups/` 下的 backup request 与 retention cleanup candidates；不复制文件、不删除旧备份，也不把 `.inscape` 正文混入该备份策略。
 
+2026-06-17 P1 Round 33 补充：external resource import 先落为 `EditorBackendWorkspaceAssetImportPlanModel.buildPlan()` contract。plan 只生成图片 / 音频 / CSV 复制到 workspace `assets/images|audio|data` 的 text-free copy request，不持久化 workspace 外路径；未知扩展跳过，`assets/**` 写目标优先于扩展名规则。真实文件复制、文件选择器和项目写入仍待 IO 层。
+
 ## 状态分类
 
 | 分类 | 当前例子 | 未来归属 | 规则 |

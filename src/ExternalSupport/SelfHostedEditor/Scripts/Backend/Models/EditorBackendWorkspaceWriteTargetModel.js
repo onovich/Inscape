@@ -4,26 +4,6 @@ export const EditorBackendWorkspaceWriteTargetFormatVersion = 1;
 
 const writeTargetPolicies = Object.freeze([
   buildWriteTargetPolicy({
-    match: (path) => path.endsWith(".inscape"),
-    pathRule: "*.inscape",
-    targetKind: "inscape-document",
-  }),
-  buildWriteTargetPolicy({
-    match: (path) => path.endsWith(".csv"),
-    pathRule: "*.csv",
-    targetKind: "localization-csv",
-  }),
-  buildWriteTargetPolicy({
-    match: (path) => path.endsWith("/inscape.node-map.json") || path === "inscape.node-map.json",
-    pathRule: "**/inscape.node-map.json",
-    targetKind: "node-map-sidecar",
-  }),
-  buildWriteTargetPolicy({
-    match: (path) => path.endsWith("/inscape.line-map.json") || path === "inscape.line-map.json",
-    pathRule: "**/inscape.line-map.json",
-    targetKind: "line-map-sidecar",
-  }),
-  buildWriteTargetPolicy({
     match: (path) => matchesDirectoryTarget(path, ".inscape-workspace/recovery/"),
     pathRule: ".inscape-workspace/recovery/**",
     targetKind: "recovery-snapshot",
@@ -42,6 +22,26 @@ const writeTargetPolicies = Object.freeze([
     match: (path) => matchesDirectoryTarget(path, "assets/"),
     pathRule: "assets/**",
     targetKind: "asset-copy",
+  }),
+  buildWriteTargetPolicy({
+    match: (path) => path.endsWith(".inscape"),
+    pathRule: "*.inscape",
+    targetKind: "inscape-document",
+  }),
+  buildWriteTargetPolicy({
+    match: (path) => path.endsWith(".csv"),
+    pathRule: "*.csv",
+    targetKind: "localization-csv",
+  }),
+  buildWriteTargetPolicy({
+    match: (path) => path.endsWith("/inscape.node-map.json") || path === "inscape.node-map.json",
+    pathRule: "**/inscape.node-map.json",
+    targetKind: "node-map-sidecar",
+  }),
+  buildWriteTargetPolicy({
+    match: (path) => path.endsWith("/inscape.line-map.json") || path === "inscape.line-map.json",
+    pathRule: "**/inscape.line-map.json",
+    targetKind: "line-map-sidecar",
   }),
 ]);
 
