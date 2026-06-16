@@ -1,4 +1,5 @@
 import { EditorBackendDesktopSessionModel } from "./EditorBackendDesktopSessionModel.js";
+import { EditorBackendSettingsDefaults } from "./EditorBackendSettingsSchemaModel.js";
 
 export const EditorBackendWorkspaceAssetImportPlanFormat = "inscape.self-hosted-editor.workspace-asset-import-plan";
 export const EditorBackendWorkspaceAssetImportPlanFormatVersion = 1;
@@ -184,12 +185,15 @@ function normalizeAssetImportSettings(settingsSummary) {
   const resourceDirectory = normalizeResourceDirectory(
     settingsSummary?.workspace?.resourceDirectory
       || settingsSummary?.global?.defaultAssetDirectory
-      || "assets"
+      || EditorBackendSettingsDefaults.workspace.resourceDirectory
   );
 
   return {
     resourceDirectory,
-    resourceImportPolicy: String(settingsSummary?.workspace?.resourceImportPolicy || "copy-into-workspace"),
+    resourceImportPolicy: String(
+      settingsSummary?.workspace?.resourceImportPolicy
+        || EditorBackendSettingsDefaults.workspace.resourceImportPolicy
+    ),
   };
 }
 
@@ -267,6 +271,7 @@ function normalizeRelativePath(relativePath) {
 }
 
 function normalizeResourceDirectory(resourceDirectory) {
+  const fallback = EditorBackendSettingsDefaults.workspace.resourceDirectory;
   const normalized = normalizeRelativePath(resourceDirectory);
   if (
     !normalized
@@ -275,11 +280,11 @@ function normalizeResourceDirectory(resourceDirectory) {
     || normalized.startsWith("/")
     || normalized.startsWith("\\")
   ) {
-    return "assets";
+    return fallback;
   }
 
   if (normalized !== "assets" && !normalized.startsWith("assets/")) {
-    return "assets";
+    return fallback;
   }
 
   return normalized;

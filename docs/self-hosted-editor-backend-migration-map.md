@@ -62,6 +62,8 @@
 
 2026-06-17 P1 Round 33 补充：external resource import 先落为 `EditorBackendWorkspaceAssetImportPlanModel.buildPlan()` contract。plan 只生成图片 / 音频 / CSV 复制到 workspace `assets/images|audio|data` 的 text-free copy request，不持久化 workspace 外路径；未知扩展跳过，`assets/**` 写目标优先于扩展名规则。真实文件复制、文件选择器和项目写入仍待 IO 层。
 
+2026-06-17 P1 Round 34 补充：settings 分层先落为 `EditorBackendSettingsSchemaModel.buildSchema()` contract。schema 集中 autosave、backup retention、默认资源目录、资源导入策略等默认值，并区分 global user preferences 与 workspace project behavior；设置页、配置文件读写和迁移仍待后续 backend command / IO 层。
+
 ## 状态分类
 
 | 分类 | 当前例子 | 未来归属 | 规则 |

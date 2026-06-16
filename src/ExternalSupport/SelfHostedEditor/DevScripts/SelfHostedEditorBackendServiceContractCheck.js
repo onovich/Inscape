@@ -146,6 +146,7 @@ assertSurface(services.documentBufferStore, [
   "buildSaveStatus",
   "buildRecoveryStatus",
   "buildSettingsSummary",
+  "buildSettingsSchema",
 ], "document buffer store");
 assertSurface(services.languageSessionClient, [
   "sessionId",
@@ -377,6 +378,23 @@ assertEqual(assetImportPlan.copyRequests.every((request) => request.targetKind =
 assertEqual(assetImportPlan.externalPathPersisted, false, "document buffer asset import plan does not persist external path");
 assertEqual(assetImportPlan.payloadContentExposed, false, "document buffer asset import plan text-free");
 assertEqual(JSON.stringify(assetImportPlan).includes("D:/Downloads"), false, "document buffer asset import plan must not persist source path");
+const settingsSummary = services.documentBufferStore.buildSettingsSummary({
+  globalSettings: {
+    backupRetentionLimit: 0,
+  },
+  workspaceSettings: {
+    resourceImportPolicy: "reference-external",
+  },
+});
+assertEqual(settingsSummary.global.backupRetentionLimit, 20, "document buffer settings summary centralizes retention limit fallback");
+assertEqual(settingsSummary.workspace.resourceImportPolicy, "reference-external", "document buffer settings summary preserves explicit unsupported resource policy");
+const settingsSchema = services.documentBufferStore.buildSettingsSchema({
+  settingsSummary,
+});
+assertEqual(settingsSchema.scopes.map((scope) => scope.scope).join(","), "global,workspace", "document buffer settings schema scopes");
+assertEqual(settingsSchema.settingCount, 11, "document buffer settings schema count");
+assertEqual(settingsSchema.payloadContentExposed, false, "document buffer settings schema text-free");
+assertEqual(JSON.stringify(settingsSchema).includes("# Opening\nNarrator: Updated"), false, "document buffer settings schema must not expose text");
 const workspaceSnapshot = services.documentBufferStore.buildWorkspaceSnapshot(activeDocumentResult.store);
 assertEqual(workspaceSnapshot.source, "backend-buffer-store", "workspace snapshot source");
 assertEqual(workspaceSnapshot.currentFilePath, "story/branch.inscape", "workspace snapshot active path");

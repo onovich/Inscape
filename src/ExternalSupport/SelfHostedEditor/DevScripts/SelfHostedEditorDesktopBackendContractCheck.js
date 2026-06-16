@@ -24,6 +24,11 @@ import {
   EditorBackendDocumentBufferSaveResultFormat,
 } from "../Scripts/Backend/Models/EditorBackendDocumentBufferStoreModel.js";
 import {
+  EditorBackendSettingsDefaults,
+  EditorBackendSettingsSchemaFormat,
+  EditorBackendSettingsSchemaModel,
+} from "../Scripts/Backend/Models/EditorBackendSettingsSchemaModel.js";
+import {
   EditorBackendProjectSessionLifecycleFormat,
 } from "../Scripts/Backend/Models/EditorBackendProjectSessionLifecycleModel.js";
 import {
@@ -608,6 +613,55 @@ const defaultSettings = EditorBackendDesktopSessionModel.buildSettingsSummary();
 assertEqual(defaultSettings.global.autosaveEnabled, true, "default settings autosave enabled");
 assertEqual(defaultSettings.workspace.backupEnabled, true, "default settings backup enabled");
 assertEqual(defaultSettings.workspace.resourceDirectory, "assets", "default settings resource directory");
+assertEqual(defaultSettings.global.backupRetentionLimit, EditorBackendSettingsDefaults.global.backupRetentionLimit, "default settings retention limit");
+
+const sanitizedSettings = EditorBackendDesktopSessionModel.buildSettingsSummary({
+  globalSettings: {
+    autosaveEnabled: false,
+    backupRetentionDays: -1,
+    backupRetentionLimit: 0,
+    defaultAssetDirectory: "../outside",
+    theme: "neon",
+  },
+  workspaceSettings: {
+    backupEnabled: false,
+    gitCheckpointPolicy: "auto",
+    resourceDirectory: "resources",
+    resourceImportPolicy: "reference-external",
+  },
+});
+assertEqual(sanitizedSettings.global.autosaveEnabled, false, "settings autosave can be disabled");
+assertEqual(sanitizedSettings.global.backupRetentionDays, EditorBackendSettingsDefaults.global.backupRetentionDays, "settings invalid retention days fallback");
+assertEqual(sanitizedSettings.global.backupRetentionLimit, EditorBackendSettingsDefaults.global.backupRetentionLimit, "settings invalid retention limit fallback");
+assertEqual(sanitizedSettings.global.defaultAssetDirectory, "assets", "settings invalid default asset directory fallback");
+assertEqual(sanitizedSettings.global.theme, "system", "settings invalid theme fallback");
+assertEqual(sanitizedSettings.workspace.backupEnabled, false, "settings backup can be disabled");
+assertEqual(sanitizedSettings.workspace.gitCheckpointPolicy, "manual", "settings invalid git policy fallback");
+assertEqual(sanitizedSettings.workspace.resourceDirectory, "assets", "settings invalid resource directory fallback");
+assertEqual(sanitizedSettings.workspace.resourceImportPolicy, "reference-external", "settings unsupported resource import policy remains explicit");
+
+const settingsSchema = EditorBackendSettingsSchemaModel.buildSchema({
+  settingsSummary: sanitizedSettings,
+});
+assertEqual(settingsSchema.format, EditorBackendSettingsSchemaFormat, "settings schema format");
+assertEqual(settingsSchema.payloadContentExposed, false, "settings schema text-free");
+assertEqual(settingsSchema.schemaCompleteForP1, true, "settings schema complete for P1");
+assertEqual(settingsSchema.settingCount, 11, "settings schema setting count");
+assertEqual(settingsSchema.scopes.map((scope) => scope.scope).join(","), "global,workspace", "settings schema scopes");
+assertEqual(settingsSchema.scopes[0].owner, "user-preference", "settings global owner");
+assertEqual(settingsSchema.scopes[0].projectBehavior, false, "settings global project behavior flag");
+assertEqual(settingsSchema.scopes[1].owner, "project-behavior", "settings workspace owner");
+assertEqual(settingsSchema.scopes[1].projectBehavior, true, "settings workspace project behavior flag");
+const backupRetentionLimitSetting = settingsSchema.scopes[0].settings.find((setting) => setting.key === "backupRetentionLimit");
+assertEqual(backupRetentionLimitSetting.minimum, 1, "settings schema backup retention minimum");
+assertEqual(backupRetentionLimitSetting.defaultValue, 20, "settings schema backup retention default");
+const resourceDirectorySetting = settingsSchema.scopes[1].settings.find((setting) => setting.key === "resourceDirectory");
+assertEqual(resourceDirectorySetting.pathRule, "assets/**", "settings schema resource directory path rule");
+const resourceImportPolicySetting = settingsSchema.scopes[1].settings.find((setting) => setting.key === "resourceImportPolicy");
+assertEqual(resourceImportPolicySetting.allowedValues.join(","), "copy-into-workspace,reference-external", "settings schema resource policy allowed values");
+assertEqual(resourceImportPolicySetting.supportedValues.join(","), "copy-into-workspace", "settings schema resource policy P1 supported values");
+assertEqual(settingsSchema.settingsSummary.workspace.resourceImportPolicy, "reference-external", "settings schema preserves explicit unsupported resource policy");
+assertNotIncludes(JSON.stringify(settingsSchema), "secret", "settings schema must not expose document-like payload content");
 
 const cleanupSummary = EditorBackendDesktopSessionModel.buildWorkspaceSessionCleanupSummary({
   cacheCounts: {

@@ -8,6 +8,7 @@ import {
 } from "./EditorBackendDocumentBufferModel.js";
 import { EditorBackendProjectSessionLifecycleModel } from "./EditorBackendProjectSessionLifecycleModel.js";
 import { EditorBackendWorkspacePathModel } from "./EditorBackendWorkspacePathModel.js";
+import { buildEditorBackendSettingsSummary } from "./EditorBackendSettingsSchemaModel.js";
 import { EditorBackendWorkspaceSessionCleanupModel } from "./EditorBackendWorkspaceSessionCleanupModel.js";
 import { EditorBackendWorkspaceWriteTargetModel } from "./EditorBackendWorkspaceWriteTargetModel.js";
 
@@ -15,8 +16,8 @@ export const EditorBackendDesktopProjectSessionMode = "embedded-desktop";
 export const EditorBackendWorkspaceFileBoundaryFormat = "inscape.self-hosted-editor.workspace-file-boundary";
 export const EditorBackendSaveStatusFormat = "inscape.self-hosted-editor.save-status";
 export const EditorBackendRecoveryStatusFormat = "inscape.self-hosted-editor.recovery-status";
-export const EditorBackendSettingsSummaryFormat = "inscape.self-hosted-editor.settings-summary";
 export const EditorBackendDesktopModelFormatVersion = 1;
+export { EditorBackendSettingsSummaryFormat } from "./EditorBackendSettingsSchemaModel.js";
 export { EditorBackendDocumentBufferFormat } from "./EditorBackendDocumentBufferModel.js";
 
 const defaultLanguageEndpoints = Object.freeze([
@@ -221,25 +222,10 @@ export class EditorBackendDesktopSessionModel {
     globalSettings = {},
     workspaceSettings = {},
   } = {}) {
-    return {
-      format: EditorBackendSettingsSummaryFormat,
-      formatVersion: EditorBackendDesktopModelFormatVersion,
-      global: {
-        autosaveEnabled: globalSettings.autosaveEnabled !== false,
-        backupRetentionDays: normalizeNonNegativeInteger(globalSettings.backupRetentionDays, 30),
-        backupRetentionLimit: normalizeNonNegativeInteger(globalSettings.backupRetentionLimit, 20),
-        defaultAssetDirectory: normalizeRelativePath(globalSettings.defaultAssetDirectory || "assets"),
-        theme: String(globalSettings.theme || "system"),
-      },
-      workspace: {
-        backupEnabled: workspaceSettings.backupEnabled !== false,
-        entryTitle: String(workspaceSettings.entryTitle || ""),
-        exportProfile: String(workspaceSettings.exportProfile || "default"),
-        gitCheckpointPolicy: String(workspaceSettings.gitCheckpointPolicy || "manual"),
-        resourceDirectory: normalizeRelativePath(workspaceSettings.resourceDirectory || "assets"),
-        resourceImportPolicy: String(workspaceSettings.resourceImportPolicy || "copy-into-workspace"),
-      },
-    };
+    return buildEditorBackendSettingsSummary({
+      globalSettings,
+      workspaceSettings,
+    });
   }
 
   static buildWorkspaceSessionCleanupSummary(cleanup = {}) {
@@ -323,15 +309,6 @@ function normalizeErrorSummary(error) {
     code: String(error.code || ""),
     message: String(error.message || "Unknown error").slice(0, 240),
   };
-}
-
-function normalizeNonNegativeInteger(value, fallback) {
-  const numericValue = Number(value);
-  if (!Number.isFinite(numericValue) || numericValue < 0) {
-    return fallback;
-  }
-
-  return Math.floor(numericValue);
 }
 
 function normalizeRecoveryActionState(actionState) {

@@ -3,6 +3,7 @@ import { EditorBackendDocumentBufferModel } from "../Models/EditorBackendDocumen
 import { EditorBackendDocumentBufferStoreModel } from "../Models/EditorBackendDocumentBufferStoreModel.js";
 import { EditorBackendWorkspaceAssetImportPlanModel } from "../Models/EditorBackendWorkspaceAssetImportPlanModel.js";
 import { EditorBackendWorkspaceBackupPlanModel } from "../Models/EditorBackendWorkspaceBackupPlanModel.js";
+import { EditorBackendSettingsSchemaModel } from "../Models/EditorBackendSettingsSchemaModel.js";
 import { EditorBackendWorkspaceSnapshotModel } from "../Models/EditorBackendWorkspaceSnapshotModel.js";
 import { EditorBackendClient } from "./EditorBackendClient.js";
 
@@ -142,6 +143,10 @@ export class DocumentBufferStore {
 
   buildSettingsSummary(settingsSummary = {}) {
     return EditorBackendDesktopSessionModel.buildSettingsSummary(settingsSummary);
+  }
+
+  buildSettingsSchema(settings = {}) {
+    return EditorBackendSettingsSchemaModel.buildSchema(settings);
   }
 }
 

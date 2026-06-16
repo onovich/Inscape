@@ -74,6 +74,7 @@ SelfHostedEditor desktop backend v0
 - [x] 完成 P1 Round 31 `.inscape-workspace/` 策略：新增 internal directory plan，覆盖 recovery / backups / cache 的发现/创建计划、non-project-truth、cache 可重建与默认 `.gitignore` 条目。
 - [x] 完成 P1 Round 32 write-back backup：新增 text-free backup plan，CSV / node-map / line-map 写回前备份到 `.inscape-workspace/backups/`，默认启用并支持数量 + 天数保留策略。
 - [x] 完成 P1 Round 33 assets import policy：新增 text-free asset import plan，图片 / 音频 / CSV 默认复制到 workspace `assets/images|audio|data`，不持久化 workspace 外路径，并让 `assets/**` 写目标优先于扩展名规则。
+- [x] 完成 P1 Round 34 settings 分层：新增 settings schema 与集中 defaults，global user preferences / workspace project behavior 分层，设置页和真实持久化后置。
 - [ ] 建立 Electron preload 白名单边界：renderer 不直接访问 Node / fs / shell / arbitrary IPC；preload 只暴露受控 editor command。
 - [ ] 实现 workspace 文件系统边界：只接受 workspace-relative path，拒绝绝对路径、`..` 越界、workspace 外路径和未列入白名单的写回目标。
 - [ ] 实现 `ProjectSession v0`：一个窗口一个 active workspace folder，一个 active project session；不支持正式单文件打开。
@@ -81,7 +82,7 @@ SelfHostedEditor desktop backend v0
 - [ ] 落地 `.inscape-workspace/` 与 `assets/` 目录策略：recovery / backups / cache 放 `.inscape-workspace/`，外部资源默认复制进 workspace `assets/`。
 - [ ] 实现 autosave / manual Save / recovery：默认 autosave，手动 Save 立即 flush，崩溃恢复依赖磁盘 recovery snapshot。
 - [ ] 实现 CSV / node-map / line-map 写前 backup：默认启用，可由设置项调整或关闭。
-- [ ] 落地 settings 分层：全局偏好与 workspace / project 行为分开；即使设置页后置，配置 schema 也先稳定。
+- [x] 落地 settings 分层：全局偏好与 workspace / project 行为分开；即使设置页后置，配置 schema 也先稳定。
 - [ ] 打通 v0 最小可用闭环：打开目录 -> 文件列表 -> 编辑 `.inscape` -> autosave / 手动 Save -> recovery -> 基础诊断 / 补全 -> Preview。
 - [ ] 做 Windows internal package v0 smoke：能启动、打开 workspace、编辑保存、恢复提示、跑基础 LanguageServer authoring 能力。
 

@@ -1,4 +1,5 @@
 import { EditorBackendDesktopSessionModel } from "./EditorBackendDesktopSessionModel.js";
+import { EditorBackendSettingsDefaults } from "./EditorBackendSettingsSchemaModel.js";
 import { EditorBackendWorkspaceWriteTargetModel } from "./EditorBackendWorkspaceWriteTargetModel.js";
 
 export const EditorBackendWorkspaceBackupPlanFormat = "inscape.self-hosted-editor.workspace-backup-plan";
@@ -231,11 +232,11 @@ function normalizeBackupSettings({
     backupEnabled: backupEnabled ?? settingsSummary?.workspace?.backupEnabled ?? true,
     retentionDays: normalizeNonNegativeInteger(
       retentionDays ?? settingsSummary?.global?.backupRetentionDays,
-      30
+      EditorBackendSettingsDefaults.global.backupRetentionDays
     ),
     retentionLimit: normalizePositiveInteger(
       retentionLimit ?? settingsSummary?.global?.backupRetentionLimit,
-      20
+      EditorBackendSettingsDefaults.global.backupRetentionLimit
     ),
   };
 }

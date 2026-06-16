@@ -1248,6 +1248,51 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 4. 本轮只处理编辑器资源编排，不改变 Compiler / LanguageServer / Tooling / Runtime payload shape，也没有进入 P1.5 long-lived LanguageServer。
 5. 下一轮应进入 Round 34：settings 分层。
 
+### 2026-06-17 Round 34：settings 分层
+
+范围：建立全局偏好与 workspace / project 行为的 settings schema contract，集中 autosave、backup 保留策略、默认资源目录、资源导入策略等默认值。本轮不实现设置页、不写真实配置文件、不接 settings persistence。
+
+完成内容：
+
+1. 新增 `EditorBackendSettingsSchemaModel.buildSchema()`，返回 `inscape.self-hosted-editor.settings-schema`。
+2. settings defaults 集中到 `EditorBackendSettingsDefaults`；`EditorBackendDesktopSessionModel.buildSettingsSummary()` 改为复用同一份默认值和归一化逻辑。
+3. global scope 标记为 `user-preference`，覆盖 autosave、backup retention days / limit、default asset directory 与 theme。
+4. workspace scope 标记为 `project-behavior`，覆盖 backup enabled、entry title、export profile、Git checkpoint policy、resource directory 与 resource import policy。
+5. resource directory 仍限制在 workspace `assets/**`；`reference-external` 只作为显式但 P1 不支持的 policy 被表达，schema 的 supported values 仍只有 `copy-into-workspace`。
+6. `DocumentBufferStore` 窄服务新增 `buildSettingsSchema()` helper；`check:desktop-backend` 与 `check:backend-services` 覆盖 schema scope、default fallback、invalid value fallback、unsupported resource policy 显式保留和 no-text plan。
+
+验证：
+
+```powershell
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:desktop-backend
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:workspace-fs
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:backend-services
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:backend-transport
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:preload-transport
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:fake-embedded-transport
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:electron-boundary
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:runtime
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:runtime-http
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:structure
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
+npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
+node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js
+npm --prefix src\ExternalSupport\VSCode run check:structure
+git -c safe.directory=D:/LabProjects/Inscape diff --check
+dotnet build Inscape.slnx --no-restore
+dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build
+```
+
+架构对照结论：
+
+1. settings schema 只描述配置结构、默认值和 scope，不接 UI 设置页或真实配置文件 IO。
+2. 全局偏好与 workspace / project 行为已分开，避免把项目行为默认值散落在 feature controller。
+3. autosave / backup / assets policy 仍由 EditorBackend orchestration 消费，不改变 Compiler / LanguageServer / Tooling / Runtime truth。
+4. renderer 仍不获得 Node / fs / shell 能力；settings 持久化后续必须走受控 backend command。
+5. 下一轮应进入 Round 35：v0 最小闭环 smoke。
+
 ## 36 轮主计划
 
 ### A. Contract 与 transport 基础，Round 1-6
@@ -1312,7 +1357,7 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 | 31 | `.inscape-workspace/` 策略 | open workspace 时确保 `.inscape-workspace/recovery`、`.inscape-workspace/backups`、`.inscape-workspace/cache` 可发现或可创建；`.inscape-workspace/` 默认被 Git 忽略。 |
 | 32 | write-back backup | localization CSV、`inscape.node-map.json`、`inscape.line-map.json` 写回前自动备份到 `.inscape-workspace/backups/`；默认启用。 |
 | 33 | external resource import | 已完成。`EditorBackendWorkspaceAssetImportPlanModel` 生成 text-free asset copy plan，图片 / 音频 / CSV 默认进入 `assets/images` / `assets/audio` / `assets/data`，不持久化 workspace 外路径；`assets/**` 写目标优先于扩展名规则。 |
-| 34 | settings 分层 | 建立全局设置与 workspace / project 设置 schema；至少覆盖 autosave、backup 保留策略、默认资源目录；若最小设置页暂缓，默认值集中在配置层，不散落在 feature controller。 |
+| 34 | settings 分层 | 已完成。新增 `EditorBackendSettingsSchemaModel` 与集中 defaults，global user preferences 与 workspace project behavior 分层；覆盖 autosave、backup retention、asset directory、resource import policy，设置页和真实持久化后置。 |
 
 ### G. v0 闭环、Windows smoke 与文档，Round 35-36
 

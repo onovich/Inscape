@@ -354,6 +354,18 @@ P1 Round 33 已建立外部资源导入 plan contract。本轮只生成 text-fre
 - `DocumentBufferStore` 窄服务新增 `buildAssetImportPlan()` helper。
 - Round 33 当前已通过：SelfHostedEditor `check:desktop-backend` / `check:workspace-fs` / `check:backend-services` / `check:backend-transport` / `check:preload-transport` / `check:fake-embedded-transport` / `check:electron-boundary` / `check:runtime` / `check:runtime-http` / `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity` / `check:structure`，`node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js`，`git diff --check`，`.NET build` 与 Internal tests。下一步进入 Round 34：settings 分层。
 
+### 2026-06-17 SelfHostedEditor P1 Round 34 settings 分层快照
+
+P1 Round 34 已建立 settings schema contract。本轮只定义 schema / defaults / summary 归一化，不实现设置页、不写真实配置文件、不接 settings persistence。
+
+- 新增 `EditorBackendSettingsSchemaModel.buildSchema()`，返回 `inscape.self-hosted-editor.settings-schema`。
+- settings defaults 集中在 `EditorBackendSettingsDefaults`；`EditorBackendDesktopSessionModel.buildSettingsSummary()` 改为复用同一份默认值和归一化逻辑。
+- global scope 标记为 `user-preference`，覆盖 autosave、backup retention days / limit、default asset directory、theme。
+- workspace scope 标记为 `project-behavior`，覆盖 backup enabled、entry title、export profile、Git checkpoint policy、resource directory、resource import policy。
+- `reference-external` 可被显式表达，但 P1 schema 的 supported values 仍只有 `copy-into-workspace`；资源目录继续限制到 workspace `assets/**`。
+- `DocumentBufferStore` 窄服务新增 `buildSettingsSchema()` helper。
+- Round 34 当前已通过：SelfHostedEditor `check:desktop-backend` / `check:workspace-fs` / `check:backend-services` / `check:backend-transport` / `check:preload-transport` / `check:fake-embedded-transport` / `check:electron-boundary` / `check:runtime` / `check:runtime-http` / `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity` / `check:structure`，`node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js`，`git diff --check`，`.NET build` 与 Internal tests。下一步进入 Round 35：v0 最小闭环 smoke。
+
 ### 2026-06-14 SelfHostedEditor desktop backend v0 决策快照
 
 本轮已采纳 [ADR 0019](adr/0019-self-hosted-editor-embedded-backend-v0.md)：SelfHostedEditor desktop backend v0 采用嵌入式 EditorBackend，而不是独立 sidecar daemon。
