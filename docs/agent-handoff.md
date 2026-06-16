@@ -120,6 +120,17 @@ P1 Round 11 已完成 preload command / payload validation skeleton，仍未接�
 - `check:preload-transport` 覆盖 unknown command 与非法 payload key；`check:electron-shell` 覆盖 validator 存在且无 generic request surface。
 - Round 11 验证已通过：SelfHostedEditor `check:preload-transport` / `check:electron-shell` / `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity`，`.NET build` 与 Internal tests。下一步进入 Round 12：Electron 边界 contract 收束。
 
+### 2026-06-16 SelfHostedEditor P1 Round 12 Electron boundary 快照
+
+P1 Round 12 已完成 Electron / preload / renderer / desktop transport 边界 contract，仍未接真实 IPC 或文件 IO。
+
+- 新增 `check:electron-boundary` 并接入 `check:model` / `check:structure`。
+- contract 扫描 renderer `Scripts/`：禁止直接 import Electron / Node runtime、使用 `ipcRenderer`，并继续禁止非 transport catalog 文件知道 `/api/*`。
+- contract 验证 preload 只使用 `contextBridge`，不使用 `ipcRenderer`、`node:fs` 或 `child_process`。
+- contract 验证 preload API 不暴露 `invoke` / `send` / `request` / `readFile` / `writeFile` / `runCommand` 等 generic/system surface。
+- contract 验证 preload command whitelist 覆盖当前 `EditorBackendTransportCommand`，并且 preload transport 可处理所有当前 backend command。
+- Round 12 验证已通过：SelfHostedEditor `check:electron-boundary` / `check:preload-transport` / `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity`，`.NET build` 与 Internal tests。下一步进入 Round 13：workspace path guard。
+
 ### 2026-06-14 SelfHostedEditor desktop backend v0 决策快照
 
 本轮已采纳 [ADR 0019](adr/0019-self-hosted-editor-embedded-backend-v0.md)：SelfHostedEditor desktop backend v0 采用嵌入式 EditorBackend，而不是独立 sidecar daemon。

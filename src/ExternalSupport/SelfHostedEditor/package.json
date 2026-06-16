@@ -15,6 +15,7 @@
     "check:payload-bridge": "node DevScripts/SelfHostedEditorPayloadBridgeContractCheck.js",
     "check:process-bridge": "node DevScripts/SelfHostedEditorProcessBridgeContractCheck.js",
     "check:desktop-backend": "node DevScripts/SelfHostedEditorDesktopBackendContractCheck.js",
+    "check:electron-boundary": "node DevScripts/SelfHostedEditorElectronBoundaryContractCheck.js",
     "check:electron-shell": "node DevScripts/SelfHostedEditorElectronShellContractCheck.js",
     "check:static-assets": "node DevScripts/SelfHostedEditorStaticAssetBridgeContractCheck.js",
     "check:static-assets-http": "node DevScripts/SelfHostedEditorStaticAssetHttpSmoke.js",

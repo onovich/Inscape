@@ -1,6 +1,6 @@
 # SelfHostedEditor P1 40 轮内执行方案
 
-状态：执行中（Round 1-11 已完成）
+状态：执行中（Round 1-12 已完成）
 
 日期：2026-06-15
 
@@ -427,6 +427,38 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 2. payload validator 只做 transport 边界白名单，不复制 Compiler / Tooling / Runtime / LanguageServer 业务语义。
 3. 下一轮应进入 Round 12：Electron 边界 contract 收束，确保 renderer / preload / desktop transport 边界与窄接口一致。
 
+### 2026-06-16 Round 12：Electron 边界 contract
+
+范围：收束 Electron / preload / renderer / desktop transport 的结构与 model contract；不接真实 IPC、不接真实文件 IO。
+
+完成内容：
+
+1. 新增 `check:electron-boundary`，扫描 renderer `Scripts/`，禁止直接 import Electron / Node runtime、使用 `ipcRenderer`，并继续禁止非 transport catalog 文件知道 `/api/*`。
+2. contract 验证 preload 只使用 `contextBridge`，不使用 `ipcRenderer`、`node:fs` 或 `child_process`。
+3. contract 验证 preload API 不暴露 `invoke` / `send` / `request` / `readFile` / `writeFile` / `runCommand` 等 generic/system surface。
+4. contract 验证 preload command whitelist 覆盖当前 `EditorBackendTransportCommand`，并且 `SelfHostedEditorPreloadBackendTransport` 可处理所有当前 backend command。
+5. `check:electron-boundary` 已接入 `check:model` 与 `check:structure`。
+
+本轮验证已通过：
+
+```powershell
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:electron-boundary
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:preload-transport
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:structure
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
+npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
+dotnet build Inscape.slnx --no-restore
+dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build
+```
+
+架构对照结论：
+
+1. Round 7-12 的 Electron / preload 基础边界已完成 contract 化；renderer 仍无 Node / Electron / arbitrary IPC。
+2. preload / desktop transport 与 `EditorBackendClient` command catalog 对齐，但仍未接真实 IPC / 文件 IO。
+3. 下一轮应进入 Round 13：workspace path guard，开始 backend workspace 文件系统边界 model / contract。
+
 ## 36 轮主计划
 
 ### A. Contract 与 transport 基础，Round 1-6
@@ -449,7 +481,7 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 | 9 | preload 白名单 API | 已完成。新增 `ElectronPreloadApi.js`，定义冻结的 `inscapeSelfHostedEditor` capability + editor command 白名单；不暴露 generic `invoke` / `send` / `request`，不接 `ipcRenderer` 或真实文件 IO。 |
 | 10 | Desktop invoke transport | 已完成。新增 `SelfHostedEditorPreloadBackendTransport`，`EditorBackendClient` 会在存在 `inscapeSelfHostedEditor` preload API 时选择 preload transport，否则保留 HTTP dev transport；新增 `check:preload-transport`。 |
 | 11 | preload / IPC validation | 已完成。`ElectronPreloadApi` 新增 command/payload validator，未知 command、非 object payload 与多余 top-level key 被拒绝；当前仍不接真实 IPC channel。 |
-| 12 | Electron 边界 contract | 新增 structure / model check：renderer 不能直接访问 `fs`、`child_process`、Electron API 或 arbitrary IPC；preload public API 与窄接口一致。 |
+| 12 | Electron 边界 contract | 已完成。新增 `check:electron-boundary` 并接入 `check:model` / `check:structure`，验证 renderer 无 Node / Electron / arbitrary IPC、preload 无 generic/system surface、preload command whitelist 覆盖当前 backend command。 |
 
 ### C. Workspace 文件系统边界与 ProjectSession，Round 13-18
 
