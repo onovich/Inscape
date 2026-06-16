@@ -172,6 +172,7 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:session-cache
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:session-cache-http
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:language-session
 npm --prefix src\ExternalSupport\SelfHostedEditor run smoke:desktop
+npm --prefix src\ExternalSupport\SelfHostedEditor run smoke:desktop-runtime
 npm --prefix src\ExternalSupport\SelfHostedEditor run smoke:desktop-startup
 ```
 
@@ -204,7 +205,8 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run smoke:desktop-startup
 `check:session-cache-http` starts the preview dev server in-process, seeds Runtime, line-map, and localization baseline session caches through real HTTP APIs, then requests `/api/session-cache-status` and verifies the non-content language-session status summary.
 `check:language-session` starts the optional `Inscape.LanguageServer --stdio` bridge directly and verifies diagnostics plus document symbols can reuse the same process.
 `smoke:desktop` runs the desktop v0 contract smoke without launching Electron or doing real file IO. It covers directory workspace open, `.inscape` file listing, document edit, autosave planning, manual Save, recovery snapshot planning, diagnostics / completion bridge payloads, and Runtime choose action payloads.
-`smoke:desktop-startup` runs the equivalent local startup readiness smoke. It verifies package / lockfile, Desktop entry metadata, Workbench entry wiring, Electron autostart guard, preload whitelist API, then reuses `smoke:desktop`; it records that Electron runtime and Windows packaging are not installed/generated yet.
+`smoke:desktop-runtime` verifies the installed Electron runtime without opening a window. It runs the Electron CLI version check, then starts a guarded runtime probe with `SELF_HOSTED_EDITOR_ELECTRON_AUTOSTART=false` so `Desktop/ElectronMain.js` loads in a real Electron main process and exits after checking BrowserWindow security defaults.
+`smoke:desktop-startup` runs the local startup readiness smoke. It verifies package / lockfile, Desktop entry metadata, Workbench entry wiring, Electron autostart guard, preload whitelist API, then reuses `smoke:desktop-runtime` and `smoke:desktop`; it records that Electron runtime is available while Windows packaging is not generated yet.
 
 `check:model` keeps the historical entry point, but now delegates to `DevScripts/SelfHostedEditorModelContractSuite.js`; the main model assertions live under `DevScripts/ModelContracts/` by ownership: model shape, Host capability, StoryGraph, localization, node-map, Preview / Runtime, session panel status, recovery UI/action projection, and the shared fake DOM harness. The suite also runs bridge-level guards for HTTP, payload trimming, static assets, process output, and session cache boundaries.
 `check:backend-services` verifies the UI-side narrow backend service registry, service method surfaces, DocumentBufferStore model/list/get/update/stale-update/active-document/save/saved-revision/autosave-plan/flush-plan/recovery-snapshot-plan/backup-plan/asset-import-plan/settings-schema/snapshot boundary, LanguageServer authoring bridge snapshot priority, StoryGraph / Runtime bridge snapshot priority, and that feature bridges no longer depend on the full `EditorBackendClient`.
@@ -218,6 +220,12 @@ Serve the prototype locally:
 
 ```powershell
 npm --prefix src\ExternalSupport\SelfHostedEditor run start
+```
+
+Launch the Electron desktop shell locally:
+
+```powershell
+npm --prefix src\ExternalSupport\SelfHostedEditor run start:desktop
 ```
 
 Install dependencies when the package lock changes:

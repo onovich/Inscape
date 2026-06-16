@@ -553,6 +553,11 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
 4. 不要求首版完成签名、自动更新、安装器美化或 macOS。
 5. 打包产物要有 smoke checklist，覆盖打开 workspace、编辑保存、恢复提示和基础 LanguageServer authoring 能力。
 
+当前进展：
+
+- 2026-06-17 P1 Round 37 已补 Electron dev runtime、`start:desktop` 与 `smoke:desktop-runtime`。runtime smoke 会运行 Electron CLI `--version`，并在真实 Electron main process 中加载 `Desktop/ElectronMain.js` 的受保护 probe，检查 BrowserWindow 安全默认后退出。
+- 该进展只证明桌面入口可由真实 Electron runtime 加载；尚未生成 Windows package，尚未执行 GUI 打开 workspace / 真实文件 IO / installer smoke。
+
 验收：
 
 ```powershell

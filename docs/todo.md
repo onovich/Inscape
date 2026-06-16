@@ -76,7 +76,8 @@ SelfHostedEditor desktop backend v0
 - [x] 完成 P1 Round 33 assets import policy：新增 text-free asset import plan，图片 / 音频 / CSV 默认复制到 workspace `assets/images|audio|data`，不持久化 workspace 外路径，并让 `assets/**` 写目标优先于扩展名规则。
 - [x] 完成 P1 Round 34 settings 分层：新增 settings schema 与集中 defaults，global user preferences / workspace project behavior 分层，设置页和真实持久化后置。
 - [x] 完成 P1 Round 35 v0 最小闭环 contract smoke：新增 `smoke:desktop`，覆盖打开目录、文件列表、编辑、autosave、manual Save、recovery、diagnostics / completion、Preview choice click 的 backend payload 边界。
-- [x] 完成 P1 Round 36 等价本机启动 smoke：新增 `smoke:desktop-startup`，验证 package / Desktop entry / Workbench / preload / contract loop，并明确记录当前未安装 Electron runtime、未生成 Windows package。
+- [x] 完成 P1 Round 36 等价本机启动 smoke：新增 `smoke:desktop-startup`，验证 package / Desktop entry / Workbench / preload / contract loop；当轮明确记录未安装 Electron runtime、未生成 Windows package。
+- [x] 完成 P1 Round 37 真实 Electron runtime / 启动入口 smoke：新增 Electron dev dependency、`start:desktop`、`smoke:desktop-runtime` 与 runtime probe；startup smoke 现在验证 Electron runtime 可用，仍明确未生成 Windows package。
 - [ ] 建立 Electron preload 白名单边界：renderer 不直接访问 Node / fs / shell / arbitrary IPC；preload 只暴露受控 editor command。
 - [ ] 实现 workspace 文件系统边界：只接受 workspace-relative path，拒绝绝对路径、`..` 越界、workspace 外路径和未列入白名单的写回目标。
 - [ ] 实现 `ProjectSession v0`：一个窗口一个 active workspace folder，一个 active project session；不支持正式单文件打开。
@@ -87,6 +88,7 @@ SelfHostedEditor desktop backend v0
 - [x] 落地 settings 分层：全局偏好与 workspace / project 行为分开；即使设置页后置，配置 schema 也先稳定。
 - [ ] 打通 v0 最小可用闭环：打开目录 -> 文件列表 -> 编辑 `.inscape` -> autosave / 手动 Save -> recovery -> 基础诊断 / 补全 -> Preview。
 - [ ] 做 Windows internal package v0 smoke：能启动、打开 workspace、编辑保存、恢复提示、跑基础 LanguageServer authoring 能力。
+- [ ] 评估 SelfHostedEditor `monaco-editor` / `dompurify` npm audit advisory：当前 `npm audit fix --force` 会降到 `monaco-editor@0.53.0` 且为 breaking change，应单独依赖安全轮次决策。
 
 细化执行以 [SelfHostedEditor desktop backend v0 实施计划](self-hosted-editor-desktop-backend-v0-plan.md)、[ADR 0019](adr/0019-self-hosted-editor-embedded-backend-v0.md) 与 [ADR 0020](adr/0020-self-hosted-editor-electron-workspace-and-save-strategy.md) 为准。
 

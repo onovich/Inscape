@@ -44,10 +44,15 @@
     "check:structure": "node DevScripts/SelfHostedEditorStructureContractCheck.js && node DevScripts/SelfHostedEditorStyleStructureContractCheck.js",
     "check:syntax": "node DevScripts/SelfHostedEditorSyntaxContractCheck.js",
     "smoke:desktop": "node DevScripts/SelfHostedEditorDesktopV0Smoke.js",
+    "smoke:desktop-runtime": "node DevScripts/SelfHostedEditorDesktopRuntimeSmoke.js",
     "smoke:desktop-startup": "node DevScripts/SelfHostedEditorDesktopStartupSmoke.js",
+    "start:desktop": "electron Desktop/ElectronMain.js",
     "start": "node DevScripts/StartSelfHostedEditorPreview.js"
   },
   "dependencies": {
     "monaco-editor": "^0.55.1"
+  },
+  "devDependencies": {
+    "electron": "^42.4.0"
   }
 }

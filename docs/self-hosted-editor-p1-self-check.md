@@ -128,6 +128,8 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:workspace-fs
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:document-buffer
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:save-recovery
 npm --prefix src\ExternalSupport\SelfHostedEditor run smoke:desktop
+npm --prefix src\ExternalSupport\SelfHostedEditor run smoke:desktop-runtime
+npm --prefix src\ExternalSupport\SelfHostedEditor run smoke:desktop-startup
 ```
 
 如果命令名称不同，在自检记录中写明实际命令和覆盖范围。
@@ -492,6 +494,8 @@ Commands passed:
 - document buffer checks:
 - save / recovery checks:
 - smoke:desktop:
+- smoke:desktop-runtime:
+- smoke:desktop-startup:
 - VSCode check:structure:
 - VSCode check:semantic-parity:
 - dotnet build:

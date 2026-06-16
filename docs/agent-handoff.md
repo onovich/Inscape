@@ -389,6 +389,18 @@ P1 Round 36 已完成等价本机启动 smoke。本轮没有生成 Windows insta
 - `check:structure` 已守住 `smoke:desktop-startup` script 与文件存在性。
 - Round 36 当前已通过：SelfHostedEditor `smoke:desktop-startup` / `smoke:desktop` / `check:desktop-backend` / `check:workspace-fs` / `check:backend-services` / `check:backend-transport` / `check:preload-transport` / `check:fake-embedded-transport` / `check:electron-boundary` / `check:runtime` / `check:runtime-http` / `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity` / `check:structure`，`node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js`，`git diff --check`，`.NET build` 与 Internal tests。后续若继续产品化，应进入真实 Electron runtime / Windows package / GUI smoke，而不是再扩 contract。
 
+### 2026-06-17 SelfHostedEditor P1 Round 37 Electron runtime smoke 快照
+
+P1 Round 37 已补真实 Electron runtime 与启动入口 smoke。本轮仍不生成 Windows installer，不打开 GUI，不接真实 IPC / workspace 文件 IO。
+
+- `SelfHostedEditor` package 新增 Electron dev dependency，并新增 `start:desktop` 指向 `Desktop/ElectronMain.js`。
+- 新增 `DevScripts/SelfHostedEditorDesktopRuntimeSmoke.js` 与 npm script `smoke:desktop-runtime`：先运行 Electron CLI `--version`，再启动受保护 runtime probe。
+- 新增 `DevScripts/SelfHostedEditorElectronRuntimeProbe.js`：在真实 Electron main process 中以 `SELF_HOSTED_EDITOR_ELECTRON_AUTOSTART=false` 加载 `Desktop/ElectronMain.js`，验证 BrowserWindow 安全默认、preload 路径和 navigation guard 后退出；不创建窗口、不读写 workspace。
+- `smoke:desktop-startup` 现在串起 runtime smoke 与 `smoke:desktop`；readiness 为 `electronRuntimeAvailable: true`、`desktopRuntimeSmoke: true`、`windowsPackageGenerated: false`，known limitations 只保留 `windows-package-not-generated`。
+- `check:structure` 已守住 `smoke:desktop-runtime`、runtime probe 与 `start:desktop` 入口。
+- 依赖安全观察：`npm audit` 当前报告 `monaco-editor` 依赖链中的 `dompurify` advisory；npm 的自动修复会降到 `monaco-editor@0.53.0` 且为 breaking change，本轮未混入强制降级。
+- Round 37 当前已通过：SelfHostedEditor `smoke:desktop-runtime` / `smoke:desktop-startup` / `smoke:desktop` / `check:electron-shell` / `check:electron-boundary` / `check:preload-transport` / `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity` / `check:structure`，`node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js`，`git diff --check`，`.NET build` 与 Internal tests。后续应补 Windows package script / package smoke 或真实 workspace IO，不要进入 P1.5。
+
 ### 2026-06-14 SelfHostedEditor desktop backend v0 决策快照
 
 本轮已采纳 [ADR 0019](adr/0019-self-hosted-editor-embedded-backend-v0.md)：SelfHostedEditor desktop backend v0 采用嵌入式 EditorBackend，而不是独立 sidecar daemon。
