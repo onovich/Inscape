@@ -491,6 +491,38 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 2. 本轮只定义路径边界与 contract，不实现真实文件 IO、open folder、autosave、recovery 或 P1.5 long-lived LanguageServer。
 3. 下一轮应进入 Round 14：写回白名单，将允许写回的文件类型 / 目录从现有 model contract 进一步显式化。
 
+### 2026-06-16 Round 14：写回白名单
+
+范围：显式化 workspace 写回白名单 catalog / decision contract；不接真实文件 IO、不实现保存、backup 或 recovery 写盘。
+
+完成内容：
+
+1. 新增 `EditorBackendWorkspaceWriteTargetModel`，集中定义允许写回的 target kind 与 path rule catalog。
+2. 写回白名单显式覆盖 `.inscape` 文档、localization CSV、`inscape.node-map.json`、`inscape.line-map.json`、`.inscape-workspace/recovery/**`、`.inscape-workspace/backups/**`、`.inscape-workspace/cache/**` 与 `assets/**`。
+3. `EditorBackendDesktopSessionModel.buildWorkspaceFileBoundary()` 现在先执行 workspace path guard，再调用 write target policy；boundary 输出嵌入 `writeTarget` decision。
+4. `check:workspace-fs` 已扩展覆盖 write target catalog 顺序、path rule、允许目标、未白名单目标，以及目录本身不能作为文件写回目标。
+5. `check:structure` 已守住新增 `EditorBackendWorkspaceWriteTargetModel` 文件存在。
+
+本轮验证已通过：
+
+```powershell
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:workspace-fs
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:desktop-backend
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:structure
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
+npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
+dotnet build Inscape.slnx --no-restore
+dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build
+```
+
+架构对照结论：
+
+1. 写回白名单仍在 SelfHostedEditor backend model 层，只定义产品允许的 workspace 文件目标，不执行真实写盘。
+2. 本轮没有把 Tooling / LanguageServer / Runtime 语义复制进 EditorBackend，也没有改变 dev-host HTTP payload shape。
+3. 下一轮应进入 Round 15：open workspace folder，建立只接受目录、列出多个 `.inscape` 文件、不提供正式单文件入口的 contract。
+
 ## 36 轮主计划
 
 ### A. Contract 与 transport 基础，Round 1-6
@@ -520,7 +552,7 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 | 轮次 | 目标 | 完成标准 |
 |---|---|---|
 | 13 | workspace path guard | 已完成。新增 `EditorBackendWorkspacePathModel` 与 `check:workspace-fs`；backend boundary 只接受 workspace-relative path，拒绝绝对路径、`..` 越界、非法 segment / null byte 与解析后不在 workspace 内的路径。 |
-| 14 | 写回白名单 | 明确允许的文件类型 / 目录：`.inscape` 文档、localization CSV、node-map sidecar、line-map sidecar、recovery、backup、cache、assets；其他写回默认拒绝。 |
+| 14 | 写回白名单 | 已完成。新增 `EditorBackendWorkspaceWriteTargetModel`，显式 catalog 覆盖 `.inscape` 文档、localization CSV、node-map sidecar、line-map sidecar、recovery、backup、cache、assets；其他写回默认拒绝。 |
 | 15 | open workspace folder | v0 只打开目录，列出 workspace 内多个 `.inscape` 文件；不提供正式打开单文件入口。 |
 | 16 | ProjectSession lifecycle | 建立一个窗口一个 active project session；session id、workspace root、active relative path、document count、revision、mode=`embedded-desktop` 可查询。 |
 | 17 | close / switch workspace cleanup | close 或切换 workspace 时清理 Runtime / line-map / localization baseline 与临时子 session；status 只返回摘要和计数。 |

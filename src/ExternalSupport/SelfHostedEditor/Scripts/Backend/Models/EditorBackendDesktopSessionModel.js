@@ -3,6 +3,7 @@ import {
   EditorBackendProjectSessionFormatVersion,
 } from "./EditorBackendProjectSessionModel.js";
 import { EditorBackendWorkspacePathModel } from "./EditorBackendWorkspacePathModel.js";
+import { EditorBackendWorkspaceWriteTargetModel } from "./EditorBackendWorkspaceWriteTargetModel.js";
 
 export const EditorBackendDesktopProjectSessionMode = "embedded-desktop";
 export const EditorBackendDocumentBufferFormat = "inscape.self-hosted-editor.document-buffer";
@@ -19,17 +20,6 @@ const defaultLanguageEndpoints = Object.freeze([
   "references",
   "hover",
   "document-symbols",
-]);
-
-const allowedWriteTargets = Object.freeze([
-  "inscape-document",
-  "localization-csv",
-  "node-map-sidecar",
-  "line-map-sidecar",
-  "recovery-snapshot",
-  "backup-artifact",
-  "cache-artifact",
-  "asset-copy",
 ]);
 
 export class EditorBackendDesktopSessionModel {
@@ -149,15 +139,18 @@ export class EditorBackendDesktopSessionModel {
       });
     }
 
-    const targetKind = resolveWriteTargetKind(pathBoundary.relativePath);
-    if (!targetKind) {
+    const writeTarget = EditorBackendWorkspaceWriteTargetModel.resolve({
+      relativePath: pathBoundary.relativePath,
+    });
+    if (!writeTarget.allowed) {
       return buildWorkspaceFileBoundaryDecision({
         allowed: false,
         operation,
         pathBoundary,
-        reason: "write-target-not-whitelisted",
+        reason: writeTarget.reason,
         relativePath: pathBoundary.relativePath,
         targetKind: "rejected",
+        writeTarget,
       });
     }
 
@@ -167,7 +160,8 @@ export class EditorBackendDesktopSessionModel {
       pathBoundary,
       reason: "",
       relativePath: pathBoundary.relativePath,
-      targetKind,
+      targetKind: writeTarget.targetKind,
+      writeTarget,
     });
   }
 
@@ -245,6 +239,7 @@ function buildWorkspaceFileBoundaryDecision({
   reason,
   relativePath,
   targetKind,
+  writeTarget,
 }) {
   return {
     allowed: Boolean(allowed),
@@ -257,6 +252,7 @@ function buildWorkspaceFileBoundaryDecision({
     resolvedWorkspacePath: pathBoundary?.resolvedWorkspacePath || relativePath,
     targetKind,
     withinWorkspace: Boolean(pathBoundary?.withinWorkspace && allowed),
+    writeTarget,
     workspaceRelative: Boolean(pathBoundary?.withinWorkspace && allowed),
     workspaceRoot: pathBoundary?.workspaceRoot || "",
   };
@@ -286,43 +282,6 @@ function buildSubSession(session, fallbackKind) {
     lastError: normalizeErrorSummary(session?.lastError),
     staleReason: String(session?.staleReason || ""),
   };
-}
-
-function resolveWriteTargetKind(relativePath) {
-  const lowerPath = relativePath.toLowerCase();
-  if (lowerPath.endsWith(".inscape")) {
-    return "inscape-document";
-  }
-
-  if (lowerPath.endsWith(".csv")) {
-    return "localization-csv";
-  }
-
-  if (lowerPath.endsWith("/inscape.node-map.json") || lowerPath === "inscape.node-map.json") {
-    return "node-map-sidecar";
-  }
-
-  if (lowerPath.endsWith("/inscape.line-map.json") || lowerPath === "inscape.line-map.json") {
-    return "line-map-sidecar";
-  }
-
-  if (lowerPath.startsWith(".inscape-workspace/recovery/")) {
-    return "recovery-snapshot";
-  }
-
-  if (lowerPath.startsWith(".inscape-workspace/backups/")) {
-    return "backup-artifact";
-  }
-
-  if (lowerPath.startsWith(".inscape-workspace/cache/")) {
-    return "cache-artifact";
-  }
-
-  if (lowerPath.startsWith("assets/")) {
-    return "asset-copy";
-  }
-
-  return "";
 }
 
 function normalizeEndpointList(endpoints, fallback) {
@@ -416,5 +375,9 @@ function normalizeWorkspaceName(workspaceName) {
 }
 
 export function listEditorBackendAllowedWriteTargets() {
-  return [...allowedWriteTargets];
+  return EditorBackendWorkspaceWriteTargetModel.listTargetKinds();
+}
+
+export function buildEditorBackendAllowedWriteTargetCatalog() {
+  return EditorBackendWorkspaceWriteTargetModel.buildCatalog();
 }

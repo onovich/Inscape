@@ -141,6 +141,16 @@ P1 Round 13 已完成 backend workspace path guard contract，仍未接真实文
 - 新增 `check:workspace-fs` 并接入 `check:model`；`check:structure` 已守住新增 model / contract 文件与 package script。
 - Round 13 验证已通过：SelfHostedEditor `check:workspace-fs` / `check:desktop-backend` / `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity`，`.NET build` 与 Internal tests。下一步进入 Round 14：写回白名单。
 
+### 2026-06-16 SelfHostedEditor P1 Round 14 write target whitelist 快照
+
+P1 Round 14 已完成 workspace 写回白名单 catalog / decision contract，仍未接真实文件 IO、保存、backup 或 recovery 写盘。
+
+- 新增 `EditorBackendWorkspaceWriteTargetModel`，集中定义允许写回的 target kind 与 path rule catalog。
+- 白名单显式覆盖 `.inscape` 文档、localization CSV、`inscape.node-map.json`、`inscape.line-map.json`、`.inscape-workspace/recovery/**`、`.inscape-workspace/backups/**`、`.inscape-workspace/cache/**` 与 `assets/**`。
+- `EditorBackendDesktopSessionModel.buildWorkspaceFileBoundary()` 现在先执行 workspace path guard，再调用 write target policy；boundary 输出嵌入 `writeTarget` decision。
+- `check:workspace-fs` 覆盖 write target catalog、允许目标、未白名单目标，以及目录本身不能作为文件写回目标。
+- Round 14 验证已通过：SelfHostedEditor `check:workspace-fs` / `check:desktop-backend` / `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity`，`.NET build` 与 Internal tests。下一步进入 Round 15：open workspace folder。
+
 ### 2026-06-14 SelfHostedEditor desktop backend v0 决策快照
 
 本轮已采纳 [ADR 0019](adr/0019-self-hosted-editor-embedded-backend-v0.md)：SelfHostedEditor desktop backend v0 采用嵌入式 EditorBackend，而不是独立 sidecar daemon。

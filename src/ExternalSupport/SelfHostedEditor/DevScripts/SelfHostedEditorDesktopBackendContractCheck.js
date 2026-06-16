@@ -137,6 +137,8 @@ for (const [relativePath, expectedTargetKind] of allowedBoundaries) {
   assertEqual(boundary.allowed, true, `workspace boundary allowed: ${relativePath}`);
   assertEqual(boundary.workspaceRelative, true, `workspace boundary relative: ${relativePath}`);
   assertEqual(boundary.withinWorkspace, true, `workspace boundary inside root: ${relativePath}`);
+  assertEqual(boundary.writeTarget.allowed, true, `workspace boundary write target allowed: ${relativePath}`);
+  assertEqual(boundary.writeTarget.targetKind, expectedTargetKind, `workspace boundary write target kind: ${relativePath}`);
   assertEqual(
     boundary.resolvedWorkspacePath,
     `C:/Case Files/Court Loop/${relativePath}`,

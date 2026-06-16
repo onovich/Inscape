@@ -54,6 +54,7 @@ SelfHostedEditor desktop backend v0
 - [x] 完成 P1 Round 11 preload / IPC validation skeleton：`ElectronPreloadApi` 新增 command/payload validator，未知 command、非 object payload 与多余 top-level key 被拒绝；当前仍不接真实 IPC channel。
 - [x] 完成 P1 Round 12 Electron 边界 contract：新增 `check:electron-boundary`，验证 renderer 无 Node / Electron / arbitrary IPC、preload 无 generic/system surface、preload command whitelist 覆盖当前 backend command。
 - [x] 完成 P1 Round 13 workspace path guard：新增 `EditorBackendWorkspacePathModel` 与 `check:workspace-fs`，backend boundary 只接受 workspace-relative path；拒绝绝对路径、`..` 越界、非法 segment / null byte 与解析后不在 workspace 内的路径。
+- [x] 完成 P1 Round 14 写回白名单：新增 `EditorBackendWorkspaceWriteTargetModel`，显式 catalog 覆盖 `.inscape`、localization CSV、node-map / line-map sidecar、recovery、backup、cache 与 `assets/` 写回目标；其他写回默认拒绝。
 - [ ] 建立 Electron preload 白名单边界：renderer 不直接访问 Node / fs / shell / arbitrary IPC；preload 只暴露受控 editor command。
 - [ ] 实现 workspace 文件系统边界：只接受 workspace-relative path，拒绝绝对路径、`..` 越界、workspace 外路径和未列入白名单的写回目标。
 - [ ] 实现 `ProjectSession v0`：一个窗口一个 active workspace folder，一个 active project session；不支持正式单文件打开。
