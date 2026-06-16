@@ -3,6 +3,7 @@ import { EditorBackendDesktopSessionModel } from "./EditorBackendDesktopSessionM
 
 export const EditorBackendDocumentBufferStoreFormat = "inscape.self-hosted-editor.document-buffer-store";
 export const EditorBackendDocumentBufferListFormat = "inscape.self-hosted-editor.document-buffer-list";
+export const EditorBackendDocumentBufferAutosavePlanFormat = "inscape.self-hosted-editor.document-buffer-autosave-plan";
 export const EditorBackendDocumentBufferSaveResultFormat = "inscape.self-hosted-editor.document-buffer-save-result";
 export const EditorBackendDocumentBufferSaveAllResultFormat = "inscape.self-hosted-editor.document-buffer-save-all-result";
 export const EditorBackendDocumentBufferStoreModelFormatVersion = 1;
@@ -215,6 +216,71 @@ export class EditorBackendDocumentBufferStoreModel {
       sessionId: nextStore.sessionId,
       storeSummary: this.listDocuments(nextStore),
       workspaceName: nextStore.workspaceName,
+    };
+  }
+
+  static buildAutosavePlan(store = {}, request = {}) {
+    const normalizedStore = this.buildStore(store);
+    const autosaveEnabled = request.autosaveEnabled !== false;
+    const debounceMs = normalizeNonNegativeInteger(request.debounceMs, 1500);
+    const idleElapsedMs = normalizeNonNegativeInteger(request.idleElapsedMs, 0);
+    const ready = autosaveEnabled && idleElapsedMs >= debounceMs;
+    const pendingWrites = normalizePendingWrites(request.pendingWrites);
+    const dirtyDocuments = normalizedStore.documents.filter((document) => document.dirty);
+    const saveRequests = [];
+    const skippedWrites = [];
+
+    for (const document of dirtyDocuments) {
+      const documentPendingWrites = pendingWrites.filter((pendingWrite) => pendingWrite.relativePath === document.relativePath);
+      for (const pendingWrite of documentPendingWrites) {
+        if (pendingWrite.documentRevision < document.revision) {
+          skippedWrites.push({
+            documentRevision: pendingWrite.documentRevision,
+            latestRevision: document.revision,
+            reason: "stale-autosave-revision",
+            relativePath: document.relativePath,
+          });
+        }
+      }
+
+      if (!autosaveEnabled) {
+        skippedWrites.push(buildAutosaveSkip(document, "autosave-disabled"));
+        continue;
+      }
+
+      if (!isInscapeDocumentPath(document.relativePath)) {
+        skippedWrites.push(buildAutosaveSkip(document, "autosave-target-not-supported"));
+        continue;
+      }
+
+      if (!ready) {
+        skippedWrites.push(buildAutosaveSkip(document, "debounce-waiting"));
+        continue;
+      }
+
+      saveRequests.push({
+        baseRevision: document.revision,
+        documentRevision: document.revision,
+        lastSavedRevision: document.lastSavedRevision,
+        reason: "idle-debounce-ready",
+        relativePath: document.relativePath,
+      });
+    }
+
+    return {
+      autosaveEnabled,
+      debounceMs,
+      dirtyCount: dirtyDocuments.length,
+      format: EditorBackendDocumentBufferAutosavePlanFormat,
+      formatVersion: EditorBackendDocumentBufferStoreModelFormatVersion,
+      idleElapsedMs,
+      payloadContentExposed: false,
+      ready,
+      saveRequests,
+      skippedWrites,
+      storeRevision: normalizedStore.revision,
+      storeSummary: this.listDocuments(normalizedStore),
+      workspaceName: normalizedStore.workspaceName,
     };
   }
 }
@@ -470,6 +536,41 @@ function normalizeRelativePathList(relativePaths) {
 
 function normalizeTextHash(textHash) {
   return String(textHash || "").trim();
+}
+
+function buildAutosaveSkip(document, reason) {
+  return {
+    documentRevision: document.revision,
+    latestRevision: document.revision,
+    reason,
+    relativePath: document.relativePath,
+  };
+}
+
+function isInscapeDocumentPath(relativePath) {
+  return normalizeRelativePath(relativePath).toLowerCase().endsWith(".inscape");
+}
+
+function normalizePendingWrites(pendingWrites) {
+  if (!Array.isArray(pendingWrites)) {
+    return [];
+  }
+
+  return pendingWrites
+    .map((pendingWrite) => ({
+      documentRevision: normalizeRevision(pendingWrite?.documentRevision ?? pendingWrite?.revision, 0),
+      relativePath: normalizeRelativePath(pendingWrite?.relativePath),
+    }))
+    .filter((pendingWrite) => pendingWrite.relativePath);
+}
+
+function normalizeNonNegativeInteger(value, fallback) {
+  const numericValue = Number(value ?? fallback);
+  if (!Number.isFinite(numericValue) || numericValue < 0) {
+    return fallback;
+  }
+
+  return Math.floor(numericValue);
 }
 
 function normalizeRevision(revision, fallback = 1) {

@@ -13,6 +13,7 @@ import {
   EditorBackendDocumentBufferModel,
 } from "../Scripts/Backend/Models/EditorBackendDocumentBufferModel.js";
 import {
+  EditorBackendDocumentBufferAutosavePlanFormat,
   EditorBackendDocumentBufferStoreFormat,
   EditorBackendDocumentBufferStoreModel,
   EditorBackendDocumentBufferListFormat,
@@ -232,6 +233,58 @@ assertEqual(unsafeSaveAllResult.ok, false, "document buffer unsafe save all reje
 assertEqual(unsafeSaveAllResult.reason, "one-or-more-documents-failed", "document buffer unsafe save all reason");
 assertEqual(unsafeSaveAllResult.failedCount, 1, "document buffer unsafe save all failed count");
 assertNotIncludes(JSON.stringify(unsafeSaveAllResult), "secret executable draft text", "document buffer unsafe save all must not expose text");
+const autosaveStore = EditorBackendDocumentBufferStoreModel.buildStore({
+  documents: [
+    {
+      dirty: true,
+      lastSavedRevision: 6,
+      relativePath: "story/opening.inscape",
+      revision: 8,
+      text: "secret autosave latest text",
+    },
+    {
+      dirty: false,
+      relativePath: "story/clean.inscape",
+      revision: 3,
+      text: "secret clean autosave text",
+    },
+  ],
+});
+const autosaveReadyPlan = EditorBackendDocumentBufferStoreModel.buildAutosavePlan(autosaveStore, {
+  debounceMs: 1500,
+  idleElapsedMs: 1800,
+  pendingWrites: [
+    {
+      relativePath: "story/opening.inscape",
+      revision: 7,
+    },
+  ],
+});
+assertEqual(autosaveReadyPlan.format, EditorBackendDocumentBufferAutosavePlanFormat, "autosave plan format");
+assertEqual(autosaveReadyPlan.ready, true, "autosave plan ready");
+assertEqual(autosaveReadyPlan.saveRequests.length, 1, "autosave plan save request count");
+assertEqual(autosaveReadyPlan.saveRequests[0].baseRevision, 8, "autosave plan uses latest revision");
+assertEqual(autosaveReadyPlan.saveRequests[0].lastSavedRevision, 6, "autosave plan preserves saved baseline");
+assertEqual(autosaveReadyPlan.skippedWrites[0].reason, "stale-autosave-revision", "autosave plan skips stale pending write");
+assertEqual(autosaveReadyPlan.skippedWrites[0].documentRevision, 7, "autosave plan stale pending revision");
+assertEqual(autosaveReadyPlan.payloadContentExposed, false, "autosave plan payload exposure flag");
+assertNotIncludes(JSON.stringify(autosaveReadyPlan), "secret autosave latest text", "autosave plan must not expose dirty text");
+assertNotIncludes(JSON.stringify(autosaveReadyPlan), "secret clean autosave text", "autosave plan must not expose clean text");
+const autosaveWaitingPlan = EditorBackendDocumentBufferStoreModel.buildAutosavePlan(autosaveStore, {
+  debounceMs: 1500,
+  idleElapsedMs: 200,
+});
+assertEqual(autosaveWaitingPlan.ready, false, "autosave waiting plan not ready");
+assertEqual(autosaveWaitingPlan.saveRequests.length, 0, "autosave waiting plan no save requests");
+assertEqual(autosaveWaitingPlan.skippedWrites[0].reason, "debounce-waiting", "autosave waiting plan reason");
+const autosaveDisabledPlan = EditorBackendDocumentBufferStoreModel.buildAutosavePlan(autosaveStore, {
+  autosaveEnabled: false,
+  debounceMs: 1500,
+  idleElapsedMs: 1800,
+});
+assertEqual(autosaveDisabledPlan.autosaveEnabled, false, "autosave disabled plan flag");
+assertEqual(autosaveDisabledPlan.saveRequests.length, 0, "autosave disabled plan no save requests");
+assertEqual(autosaveDisabledPlan.skippedWrites[0].reason, "autosave-disabled", "autosave disabled plan reason");
 const activeBufferResult = EditorBackendDocumentBufferStoreModel.setActiveDocument(updateBufferResult.store, {
   relativePath: "story/branch.inscape",
 });

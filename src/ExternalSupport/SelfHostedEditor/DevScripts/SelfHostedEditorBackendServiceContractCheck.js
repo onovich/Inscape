@@ -135,6 +135,7 @@ assertSurface(services.documentBufferStore, [
   "saveDocumentToStore",
   "saveAll",
   "saveAllToStore",
+  "buildAutosavePlan",
   "buildWorkspaceSnapshot",
   "buildActiveDocumentRequest",
   "buildWorkspaceBoundary",
@@ -262,6 +263,20 @@ const asyncSaveResult = await services.documentBufferStore.saveDocument({
 });
 assertEqual(asyncSaveResult.ok, true, "document buffer async save document result ok");
 assertEqual(JSON.stringify(asyncSaveResult).includes("# Opening\nNarrator: Updated"), false, "document buffer async save must not expose text");
+const autosavePlan = services.documentBufferStore.buildAutosavePlan(documentUpdateResult.store, {
+  debounceMs: 1500,
+  idleElapsedMs: 2000,
+  pendingWrites: [
+    {
+      relativePath: "story/opening.inscape",
+      revision: documentBuffer.revision,
+    },
+  ],
+});
+assertEqual(autosavePlan.ready, true, "document buffer autosave plan ready");
+assertEqual(autosavePlan.saveRequests[0].baseRevision, documentUpdateResult.document.revision, "document buffer autosave plan latest revision");
+assertEqual(autosavePlan.skippedWrites[0].reason, "stale-autosave-revision", "document buffer autosave plan stale pending write");
+assertEqual(JSON.stringify(autosavePlan).includes("# Opening\nNarrator: Updated"), false, "document buffer autosave plan must not expose text");
 const workspaceSnapshot = services.documentBufferStore.buildWorkspaceSnapshot(activeDocumentResult.store);
 assertEqual(workspaceSnapshot.source, "backend-buffer-store", "workspace snapshot source");
 assertEqual(workspaceSnapshot.currentFilePath, "story/branch.inscape", "workspace snapshot active path");

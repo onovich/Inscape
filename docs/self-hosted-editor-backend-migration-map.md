@@ -48,6 +48,8 @@
 
 2026-06-16 P1 Round 26 补充：DocumentBuffer 现在包含 `lastSavedRevision` clean baseline。updateDraft 推进 dirty revision 时保留 baseline，saveDocument / saveAll 成功后刷新 saved revision；当观测到的磁盘 hash 与 buffer baseline 不一致时，保存返回 text-free `disk-conflict` error。真实磁盘读取 / 写入、mtime 检查和冲突 UI 仍待后续 embedded backend handler 落地。
 
+2026-06-16 P1 Round 27 补充：backend autosave 先落为 `buildAutosavePlan()` contract。plan 根据 autosave enabled、idle debounce 和 dirty `.inscape` buffer 生成 text-free save request，并把低于当前 revision 的 pending write 标为 `stale-autosave-revision`。真实 timer、文件写入、flush 和 recovery 仍待后续轮次。
+
 ## 状态分类
 
 | 分类 | 当前例子 | 未来归属 | 规则 |

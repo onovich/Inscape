@@ -67,6 +67,7 @@ SelfHostedEditor desktop backend v0
 - [x] 完成 P1 Round 24 Preview / Runtime 接入 buffer：新增 `EditorBackendWorkspaceRequestModel`，StoryGraph / Runtime bridge 优先使用 backend workspace snapshot active buffer；`check:model`、`check:runtime-http` 与 Preview choice click invariant 保持通过。
 - [x] 完成 P1 Round 25 Save command skeleton：`DocumentBufferStore` 新增 text-free `saveDocument` / `saveAll` contract，接入 backend command、preload whitelist 与 fake embedded transport；覆盖 baseRevision guard、workspace write boundary、saved / error status。
 - [x] 完成 P1 Round 26 dirty state / saved revision：DocumentBuffer 新增 `lastSavedRevision` clean baseline；edit 保留 baseline，save 成功刷新 baseline，磁盘 hash 偏离进入 text-free `disk-conflict` error。
+- [x] 完成 P1 Round 27 backend autosave debounce：新增 text-free autosave plan，idle debounce ready 时只为 dirty `.inscape` 生成最新 revision save request，并显式跳过 stale pending write。
 - [ ] 建立 Electron preload 白名单边界：renderer 不直接访问 Node / fs / shell / arbitrary IPC；preload 只暴露受控 editor command。
 - [ ] 实现 workspace 文件系统边界：只接受 workspace-relative path，拒绝绝对路径、`..` 越界、workspace 外路径和未列入白名单的写回目标。
 - [ ] 实现 `ProjectSession v0`：一个窗口一个 active workspace folder，一个 active project session；不支持正式单文件打开。

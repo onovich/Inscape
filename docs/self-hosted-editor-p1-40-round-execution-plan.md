@@ -903,8 +903,24 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 
 ```powershell
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:desktop-backend
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:workspace-fs
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:backend-services
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:backend-transport
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:preload-transport
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:fake-embedded-transport
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:electron-boundary
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:runtime
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:runtime-http
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:structure
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
+npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
+node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js
+npm --prefix src\ExternalSupport\VSCode run check:structure
+git -c safe.directory=D:/LabProjects/Inscape diff --check
+dotnet build Inscape.slnx --no-restore
+dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build
 ```
 
 架构对照结论：
@@ -914,6 +930,35 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
 3. Save result 继续保持 text-free；正文仍只在 backend buffer / content-bearing request snapshot 内流动。
 4. 本轮没有改变 dev-host `/api/*` shared semantic payload，也没有进入 P1.5 long-lived LanguageServer。
 5. 下一轮应进入 Round 27：backend autosave debounce，建立 idle debounce 与“只保存最新 revision”的 contract。
+
+### 2026-06-16 Round 27：backend autosave debounce
+
+范围：建立 backend autosave idle-debounce 的计划模型，证明 autosave 只为 dirty `.inscape` 生成最新 revision 的 save request，并显式跳过 stale pending write；本轮仍不启动真实 timer、不写盘、不实现 flush 或 recovery。
+
+完成内容：
+
+1. `EditorBackendDocumentBufferStoreModel.buildAutosavePlan()` 返回 `inscape.self-hosted-editor.document-buffer-autosave-plan`。
+2. Autosave plan 读取 `autosaveEnabled`、`debounceMs`、`idleElapsedMs` 与 `pendingWrites`，只在 autosave 开启且 idle 已超过 debounce 时进入 ready 状态。
+3. ready plan 只为 dirty `.inscape` document 生成 save request，`baseRevision` / `documentRevision` 使用当前最新 buffer revision。
+4. 当 pending write 的 revision 低于当前 buffer revision 时，plan 记录 `stale-autosave-revision` skip，证明旧 autosave 回调不能覆盖新 revision。
+5. autosave disabled / debounce waiting 均返回显式 skipped reason；plan 结果保持 text-free。
+6. `DocumentBufferStore` 窄服务新增 `buildAutosavePlan()` helper；`check:desktop-backend` 与 `check:backend-services` 覆盖 ready、waiting、disabled、stale pending write 和 no-text result。
+
+验证：
+
+```powershell
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:desktop-backend
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:backend-services
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
+```
+
+架构对照结论：
+
+1. Autosave plan 只编排 backend buffer revision 和 save command readiness，不直接写文件，也不让 renderer 获取文件系统能力。
+2. “只保存最新 revision” 通过 `baseRevision` / `documentRevision` 和 stale pending write skip 表达，继续沿用 Round 21/26 的 revision guard。
+3. autosave 设置输入仍是配置层/ProjectSession 将来应持有的行为参数；本轮没有把默认值散落到 feature controller。
+4. 本轮没有改变 Compiler / LanguageServer / Tooling / Runtime payload shape，也没有进入 P1.5 long-lived LanguageServer。
+5. 下一轮应进入 Round 28：flush rules，覆盖手动 Save、关闭窗口、切换 workspace、应用退出前 flush 最新 backend buffer。
 
 ## 36 轮主计划
 
