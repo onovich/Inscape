@@ -64,6 +64,8 @@
     "appId": "dev.inscape.self-hosted-editor",
     "productName": "Inscape SelfHostedEditor",
     "asar": true,
+    "electronDist": "node_modules/electron/dist",
+    "electronVersion": "42.4.0",
     "directories": {
       "output": "dist"
     },
@@ -73,6 +75,15 @@
       "Scripts/**/*",
       "package.json",
       "node_modules/monaco-editor/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "../../../samples",
+        "to": "samples",
+        "filter": [
+          "**/*"
+        ]
+      }
     ],
     "win": {
       "target": [

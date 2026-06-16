@@ -1510,6 +1510,51 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 4. 本轮没有把 Compiler / Tooling / LanguageServer / Runtime 语义复制进 Electron packaging 层。
 5. 下一步应补真实 GUI 启动 / workspace open / save / recovery smoke，或推进真实 workspace IO；仍不得进入 P1.5。
 
+### 2026-06-17 Round 40：packaged app protocol / asset loading guard
+
+范围：修正 packaged Electron GUI 的资源加载风险。Workbench HTML 使用绝对 `/Resources`、`/Scripts`、`/node_modules` 与 `/samples` 路径；`file://` 下这些路径会指向文件系统根目录。本轮新增自定义 app protocol 与路径白名单，让 packaged app 能通过 `inscape-self-hosted-editor://app/...` 解析资源。本轮仍不做交互式 GUI/workspace/edit-save smoke，也不进入 P1.5。
+
+完成内容：
+
+1. `ElectronMain` 新增 `inscape-self-hosted-editor://app/` 协议、`buildSelfHostedEditorWorkbenchUrl()`、协议注册与路径解析函数。
+2. BrowserWindow 从 `loadFile(...)` 改为 `loadURL(buildSelfHostedEditorWorkbenchUrl())`，navigation 只允许同一 app protocol host。
+3. 协议解析只允许 `Resources/`、`Scripts/`、`node_modules/monaco-editor/` 与 `samples/`；拒绝 traversal、`DevScripts/` 和非 app host。
+4. `package.json` build config 新增 `extraResources`，把 repo `samples/` 复制到 packaged resources；同时固定 `electronDist: node_modules/electron/dist`，让 `package:windows` 复用本地 Electron runtime，避免反复触发远端下载。
+5. `check:desktop-package` 和 `smoke:desktop-package` 验证 package 配置、sample 产物和 artifact readiness。
+6. `smoke:desktop-runtime` 的 Electron probe 验证 workbench URL、协议路径解析、sample path、DevScripts 拒绝和 traversal 拒绝；`check:electron-shell` 守住 app protocol / `loadURL`，防止回退到 `loadFile`。
+
+验证：
+
+```powershell
+npm --prefix src\ExternalSupport\SelfHostedEditor run package:windows
+npm --prefix src\ExternalSupport\SelfHostedEditor run smoke:desktop-package
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:desktop-package
+npm --prefix src\ExternalSupport\SelfHostedEditor run smoke:desktop-runtime
+npm --prefix src\ExternalSupport\SelfHostedEditor run smoke:desktop-startup
+npm --prefix src\ExternalSupport\SelfHostedEditor run smoke:desktop
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:electron-shell
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:electron-boundary
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:preload-transport
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:structure
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
+npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
+node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js
+npm --prefix src\ExternalSupport\VSCode run check:structure
+git -c safe.directory=D:/LabProjects/Inscape diff --check
+dotnet build Inscape.slnx --no-restore
+dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build
+```
+
+架构对照结论：
+
+1. app protocol 是 Electron main process 的受控静态资源入口，不暴露 arbitrary file read、Node/fs/shell 或 IPC 给 renderer。
+2. 协议白名单只服务打包所需资源；`DevScripts/`、路径穿越和非 app host 都被拒绝。
+3. samples 作为 package `extraResources` 被复制进 Electron resources，不把 repo 外路径作为运行时长期依赖。
+4. 本轮不改变 backend transport、Compiler / Tooling / LanguageServer / Runtime payload shape，也不进入 P1.5。
+5. 40 轮收口后仍应把“真实 GUI 打开 workspace / 编辑保存 / recovery 提示”列为后续产品 smoke；不能仅凭 package artifact smoke 宣布该交互闭环完成。
+
 ## 36 轮主计划
 
 ### A. Contract 与 transport 基础，Round 1-6
@@ -1576,7 +1621,7 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 | 33 | external resource import | 已完成。`EditorBackendWorkspaceAssetImportPlanModel` 生成 text-free asset copy plan，图片 / 音频 / CSV 默认进入 `assets/images` / `assets/audio` / `assets/data`，不持久化 workspace 外路径；`assets/**` 写目标优先于扩展名规则。 |
 | 34 | settings 分层 | 已完成。新增 `EditorBackendSettingsSchemaModel` 与集中 defaults，global user preferences 与 workspace project behavior 分层；覆盖 autosave、backup retention、asset directory、resource import policy，设置页和真实持久化后置。 |
 
-### G. v0 闭环、Windows smoke 与文档，Round 35-39
+### G. v0 闭环、Windows smoke 与文档，Round 35-40
 
 | 轮次 | 目标 | 完成标准 |
 |---|---|---|
@@ -1585,6 +1630,7 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 | 37 | Electron runtime launch entry | 已完成。新增 Electron dev runtime、`start:desktop`、`smoke:desktop-runtime` 与 Electron runtime probe；startup smoke 现在验证 runtime 可用，但仍不生成 Windows package、不打开 GUI、不做真实文件 IO。 |
 | 38 | Windows package script / config | 已完成。新增 electron-builder dev dependency、`main`、`package:windows`、build config 与 `check:desktop-package`；startup smoke 记录 package script 可用，但 artifact 未生成时继续保留 `windows-package-not-generated`。 |
 | 39 | Windows package artifact smoke | 已完成。真实运行 `package:windows` 生成 `dist/win-unpacked`，新增 `smoke:desktop-package` 验证 exe、`app.asar` 与 builder metadata；构建产物保持 ignored，不纳入 Git，也不声明 GUI/workspace smoke 完成。 |
+| 40 | packaged app asset loading | 已完成。Electron main 改用 `inscape-self-hosted-editor://app/` 自定义协议加载 Workbench，白名单服务 `Resources/`、`Scripts/`、Monaco 与 packaged samples；runtime probe 和 package smoke 覆盖协议路径与 sample artifact。 |
 
 ## 4 轮缓冲
 
@@ -1593,7 +1639,7 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 | 37 | 已用于补真实 Electron runtime / launch-entry smoke、structure guard 与 startup readiness 更新；未引入 renderer Node / arbitrary IPC。 |
 | 38 | 已用于补 Windows package script / electron-builder config contract 与 package readiness guard；未生成 package artifact。 |
 | 39 | 已用于真实 Windows package artifact smoke；尚未覆盖 GUI 打开 workspace、编辑保存或 recovery 提示。 |
-| 40 | 最终文档、全量验证、diff 审计和提交准备；不得进入 P1.5 long-lived LanguageServer。 |
+| 40 | 已用于 packaged app protocol / asset loading guard、最终文档和全量验证；不得进入 P1.5 long-lived LanguageServer。 |
 
 ## 每轮建议验证
 

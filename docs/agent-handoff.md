@@ -423,6 +423,17 @@ P1 Round 39 已运行真实 Windows unpacked package build，并补 package arti
 - package 输出约 425MB，保持为 ignored local output，不提交。
 - Round 39 当前已通过：SelfHostedEditor `package:windows` / `smoke:desktop-package` / `check:desktop-package` / `smoke:desktop-runtime` / `smoke:desktop-startup` / `smoke:desktop` / `check:electron-shell` / `check:electron-boundary` / `check:preload-transport` / `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity` / `check:structure`，`node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js`，`git diff --check`，`.NET build` 与 Internal tests。下一步应补真实 GUI/workspace/save/recovery smoke 或推进真实 workspace IO。
 
+### 2026-06-17 SelfHostedEditor P1 Round 40 packaged app protocol 快照
+
+P1 Round 40 已补 packaged Electron app 的资源加载 guard。Workbench 绝对 `/Resources`、`/Scripts`、`/node_modules`、`/samples` 路径不再依赖 `file://` 根目录。
+
+- `ElectronMain` 新增 `inscape-self-hosted-editor://app/` app protocol、workbench URL builder、协议注册与路径解析函数。
+- BrowserWindow 改为 `loadURL(buildSelfHostedEditorWorkbenchUrl())`；navigation 只允许同一 app protocol host，不再允许任意 `file:` navigation。
+- 协议解析只允许 `Resources/`、`Scripts/`、`node_modules/monaco-editor/` 与 `samples/`；`DevScripts/`、traversal 与非 app host 被拒绝。
+- package build config 新增 `extraResources`，把 repo `samples/` 复制到 packaged resources；并固定 `electronDist: node_modules/electron/dist`，让 package build 复用本地 Electron runtime。package contract 和 artifact smoke 都验证该配置/产物。
+- runtime probe 覆盖 workbench URL、style/script/sample path、DevScripts 拒绝和 traversal 拒绝；Electron shell contract 守住 app protocol 与 `loadURL`，防止回退 `loadFile`。
+- Round 40 当前已通过：SelfHostedEditor `package:windows` / `smoke:desktop-package` / `check:desktop-package` / `smoke:desktop-runtime` / `smoke:desktop-startup` / `smoke:desktop` / `check:electron-shell` / `check:electron-boundary` / `check:preload-transport` / `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity` / `check:structure`，`node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js`，`git diff --check`，`.NET build` 与 Internal tests。后续仍需要真实 GUI 打开 workspace / 编辑保存 / recovery 提示 smoke；不要仅凭 artifact smoke 宣布交互闭环完成。
+
 ### 2026-06-14 SelfHostedEditor desktop backend v0 决策快照
 
 本轮已采纳 [ADR 0019](adr/0019-self-hosted-editor-embedded-backend-v0.md)：SelfHostedEditor desktop backend v0 采用嵌入式 EditorBackend，而不是独立 sidecar daemon。

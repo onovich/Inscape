@@ -434,6 +434,7 @@ Windows internal package 或等价本机启动 smoke 至少覆盖：
 3. 是否修改真实样例。
 4. 是否生成 recovery / backup / cache。
 5. 已知限制。
+6. packaged app 是否通过受控 app protocol 加载 Workbench assets，而不是依赖 `file://` 根目录。
 
 ## 文档一致性自检
 

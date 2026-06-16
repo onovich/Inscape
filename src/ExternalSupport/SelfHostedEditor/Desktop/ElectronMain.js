@@ -1,11 +1,24 @@
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, net, protocol } from "electron";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { SelfHostedEditorElectronAppEntry } from "./ElectronAppEntry.js";
 
 const currentModulePath = fileURLToPath(import.meta.url);
 const desktopRoot = path.dirname(currentModulePath);
 const moduleRoot = path.resolve(desktopRoot, "..");
+const repoRoot = path.resolve(moduleRoot, "..", "..", "..");
+
+export const SelfHostedEditorElectronProtocol = "inscape-self-hosted-editor";
+export const SelfHostedEditorElectronProtocolHost = "app";
+export const SelfHostedEditorElectronWorkbenchPath = "Resources/Workbench/SelfHostedEditorWorkbenchDocument.html";
+
+const SelfHostedEditorElectronProtocolAssetPrefixes = Object.freeze([
+  "Resources/",
+  "Scripts/",
+  "node_modules/monaco-editor/",
+]);
+
+let selfHostedEditorProtocolSchemeRegistered = false;
 
 export const SelfHostedEditorElectronWindowDefaults = Object.freeze({
   height: 960,
@@ -46,7 +59,7 @@ export function createSelfHostedEditorBrowserWindow(options = {}) {
     browserWindow.show();
   });
 
-  void browserWindow.loadFile(path.join(moduleRoot, "Resources", "Workbench", "SelfHostedEditorWorkbenchDocument.html"));
+  void browserWindow.loadURL(buildSelfHostedEditorWorkbenchUrl());
   return browserWindow;
 }
 
@@ -62,14 +75,129 @@ export function applySelfHostedEditorWindowSecurity(browserWindow) {
 export function isSelfHostedEditorAllowedNavigation(navigationUrl) {
   try {
     const parsedUrl = new URL(navigationUrl);
-    return parsedUrl.protocol === "file:";
+    return parsedUrl.protocol === `${SelfHostedEditorElectronProtocol}:`
+      && parsedUrl.hostname === SelfHostedEditorElectronProtocolHost;
   } catch {
     return false;
   }
 }
 
+export function buildSelfHostedEditorWorkbenchUrl() {
+  return `${SelfHostedEditorElectronProtocol}://${SelfHostedEditorElectronProtocolHost}/${SelfHostedEditorElectronWorkbenchPath}`;
+}
+
+export function registerSelfHostedEditorProtocolScheme(electronProtocol = protocol) {
+  if (selfHostedEditorProtocolSchemeRegistered) {
+    return;
+  }
+
+  electronProtocol.registerSchemesAsPrivileged?.([
+    {
+      privileges: {
+        corsEnabled: false,
+        secure: true,
+        standard: true,
+        supportFetchAPI: true,
+      },
+      scheme: SelfHostedEditorElectronProtocol,
+    },
+  ]);
+  selfHostedEditorProtocolSchemeRegistered = true;
+}
+
+export function registerSelfHostedEditorProtocol(electronProtocol = protocol, options = {}) {
+  electronProtocol.handle(SelfHostedEditorElectronProtocol, (request) => {
+    const filePath = resolveSelfHostedEditorProtocolFilePath(request.url, {
+      moduleRoot: options.moduleRoot || moduleRoot,
+      packaged: options.packaged ?? app.isPackaged,
+      repoRoot: options.repoRoot || repoRoot,
+      resourcesRoot: options.resourcesRoot || process.resourcesPath,
+    });
+
+    if (!filePath) {
+      return new Response("SelfHostedEditor resource not found.", { status: 404 });
+    }
+
+    return net.fetch(pathToFileURL(filePath).toString());
+  });
+}
+
+export function resolveSelfHostedEditorProtocolFilePath(requestUrl, options = {}) {
+  let parsedUrl;
+  try {
+    parsedUrl = new URL(requestUrl);
+  } catch {
+    return null;
+  }
+
+  if (
+    parsedUrl.protocol !== `${SelfHostedEditorElectronProtocol}:`
+    || parsedUrl.hostname !== SelfHostedEditorElectronProtocolHost
+  ) {
+    return null;
+  }
+
+  const relativePath = normalizeSelfHostedEditorProtocolPath(parsedUrl.pathname);
+  if (!relativePath) {
+    return null;
+  }
+
+  if (relativePath.startsWith("samples/")) {
+    return resolveSelfHostedEditorSampleFile(relativePath, options);
+  }
+
+  if (!SelfHostedEditorElectronProtocolAssetPrefixes.some((prefix) => relativePath.startsWith(prefix))) {
+    return null;
+  }
+
+  const assetRoot = options.moduleRoot || moduleRoot;
+  return resolveFileInsideRoot(assetRoot, relativePath);
+}
+
+function normalizeSelfHostedEditorProtocolPath(urlPathname) {
+  const normalizedPath = decodeURIComponent(urlPathname || "")
+    .replace(/\\/g, "/")
+    .replace(/^\/+/, "");
+
+  if (!normalizedPath) {
+    return SelfHostedEditorElectronWorkbenchPath;
+  }
+
+  if (
+    normalizedPath.includes("\0")
+    || normalizedPath.split("/").some((segment) => segment === ".." || segment === "")
+  ) {
+    return "";
+  }
+
+  return normalizedPath;
+}
+
+function resolveSelfHostedEditorSampleFile(relativePath, options) {
+  const sampleSubPath = relativePath.slice("samples/".length);
+  const sampleRoot = options.packaged
+    ? path.join(options.resourcesRoot || process.resourcesPath, "samples")
+    : path.join(options.repoRoot || repoRoot, "samples");
+
+  return resolveFileInsideRoot(sampleRoot, sampleSubPath);
+}
+
+function resolveFileInsideRoot(root, relativePath) {
+  const resolvedRoot = path.resolve(root);
+  const resolvedPath = path.resolve(resolvedRoot, ...relativePath.split("/"));
+  const relativeToRoot = path.relative(resolvedRoot, resolvedPath);
+  if (relativeToRoot.startsWith("..") || path.isAbsolute(relativeToRoot)) {
+    return null;
+  }
+
+  return resolvedPath;
+}
+
 export function registerSelfHostedEditorElectronApp(electronApp = app) {
+  registerSelfHostedEditorProtocolScheme();
+
   electronApp.whenReady().then(() => {
+    registerSelfHostedEditorProtocol();
     createSelfHostedEditorBrowserWindow();
   });
 
@@ -85,6 +213,8 @@ export function registerSelfHostedEditorElectronApp(electronApp = app) {
     }
   });
 }
+
+registerSelfHostedEditorProtocolScheme();
 
 if (process.env.SELF_HOSTED_EDITOR_ELECTRON_AUTOSTART !== "false") {
   registerSelfHostedEditorElectronApp();

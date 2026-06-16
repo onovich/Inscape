@@ -74,6 +74,8 @@
 
 2026-06-17 P1 Round 39 补充：Windows package artifact smoke 已落地。真实运行 `package:windows` 后，`smoke:desktop-package` 验证 `dist/win-unpacked/Inscape SelfHostedEditor.exe`、`resources/app.asar` 与 builder metadata；构建产物保持 ignored，不进入 Git。该 smoke 仍不是 GUI/workspace/edit-save/recovery smoke。
 
+2026-06-17 P1 Round 40 补充：packaged app asset loading 改为 Electron app protocol。`inscape-self-hosted-editor://app/` 只解析 `Resources/`、`Scripts/`、`node_modules/monaco-editor/` 与 packaged `samples/`，拒绝 traversal、`DevScripts/` 和非 app host；这修复 `file://` 下 Workbench 绝对路径会指向文件系统根目录的风险，但仍不代表真实 GUI/workspace/save/recovery smoke 已完成。
+
 ## 状态分类
 
 | 分类 | 当前例子 | 未来归属 | 规则 |

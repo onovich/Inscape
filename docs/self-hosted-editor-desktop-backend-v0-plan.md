@@ -559,6 +559,7 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
 - 该进展只证明桌面入口可由真实 Electron runtime 加载；尚未生成 Windows package，尚未执行 GUI 打开 workspace / 真实文件 IO / installer smoke。
 - 2026-06-17 P1 Round 38 已补 `package:windows`、electron-builder build config 与 `check:desktop-package`。该检查固定 package main entry、files 白名单、Windows `dir` x64 target 与 artifact readiness；真实 `package:windows` 执行和 artifact smoke 仍是后续工作。
 - 2026-06-17 P1 Round 39 已运行真实 `package:windows` 并新增 `smoke:desktop-package`，验证 Windows unpacked exe、`resources/app.asar` 与 builder metadata；GUI 打开 workspace、编辑保存、恢复提示和基础 LanguageServer authoring smoke 仍待后续。
+- 2026-06-17 P1 Round 40 已补 packaged app protocol：Workbench 通过 `inscape-self-hosted-editor://app/` 加载，协议白名单只服务 `Resources/`、`Scripts/`、Monaco 与 packaged samples；这为真实 GUI smoke 消除了 `file://` 绝对路径风险。
 
 验收：
 

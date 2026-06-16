@@ -17,6 +17,7 @@ assertEqual(readiness.knownLimitations.includes("windows-package-not-generated")
 assertFileSizeAtLeast(readiness.expectedExecutablePath, 50 * 1024 * 1024, "desktop package executable");
 const appAsarPath = path.join(moduleRoot, "dist", "win-unpacked", "resources", "app.asar");
 assertFileSizeAtLeast(appAsarPath, 1024 * 1024, "desktop package app.asar");
+assertFileSizeAtLeast(path.join(moduleRoot, "dist", "win-unpacked", "resources", "samples", "court-loop.inscape"), 1, "desktop package sample workspace");
 assertPathMissing(path.join(moduleRoot, "dist", "win-unpacked", "DevScripts"), "desktop package must not expose DevScripts as a loose directory");
 
 const builderDebugPath = path.join(moduleRoot, "dist", "builder-debug.yml");
