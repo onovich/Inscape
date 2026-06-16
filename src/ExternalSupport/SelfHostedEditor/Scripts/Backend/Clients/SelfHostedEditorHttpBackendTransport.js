@@ -1,3 +1,7 @@
+import {
+  resolveEditorBackendDevHostRoute,
+} from "./EditorBackendTransport.js";
+
 export class SelfHostedEditorHttpBackendTransport {
   #baseUrl;
   #fetchImpl;
@@ -5,6 +9,10 @@ export class SelfHostedEditorHttpBackendTransport {
   constructor(options = {}) {
     this.#baseUrl = options.baseUrl || "";
     this.#fetchImpl = options.fetchImpl || globalThis.fetch;
+  }
+
+  async invoke(command, payload = {}) {
+    return await this.postJson(resolveEditorBackendDevHostRoute(command), payload);
   }
 
   async postJson(path, payload = {}) {

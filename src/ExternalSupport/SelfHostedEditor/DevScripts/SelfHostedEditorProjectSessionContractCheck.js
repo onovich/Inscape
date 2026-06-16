@@ -1,4 +1,5 @@
 import { EditorBackendClient } from "../Scripts/Backend/Clients/EditorBackendClient.js";
+import { EditorBackendTransportCommand } from "../Scripts/Backend/Clients/EditorBackendTransport.js";
 import {
   EditorBackendLanguageSessionRequestFormat,
   EditorBackendLanguageSessionRequestModel,
@@ -115,9 +116,9 @@ const backendCalls = [];
 const backendClient = new EditorBackendClient({
   sessionId: "shared-session",
   transport: {
-    async postJson(path, payload) {
+    async invoke(command, payload) {
       backendCalls.push({
-        path,
+        command,
         payload,
       });
       return sessionCacheStatus;
@@ -125,8 +126,8 @@ const backendClient = new EditorBackendClient({
   },
 });
 const clientStatus = await backendClient.projectSession.status({ workspace });
-assertEqual(backendCalls[0].path, "/api/session-cache-status", "project session status route");
-assertEqual(Object.keys(backendCalls[0].payload).length, 0, "project session status route should not upload workspace text");
+assertEqual(backendCalls[0].command, EditorBackendTransportCommand.ProjectSessionStatus, "project session status command");
+assertEqual(Object.keys(backendCalls[0].payload).length, 0, "project session status command should not upload workspace text");
 assertEqual(clientStatus.format, EditorBackendProjectSessionFormat, "backend client project session format");
 assertEqual(clientStatus.sessionId, "shared-session", "backend client project session id");
 assertEqual(clientStatus.workspace.documentCount, 2, "backend client project session document count");
@@ -167,7 +168,7 @@ await backendClient.languageSession.definition({
   scriptText: openingScriptText,
   workspace,
 });
-const languageCall = backendCalls.find((call) => call.path === "/api/definition");
+const languageCall = backendCalls.find((call) => call.command === EditorBackendTransportCommand.LanguageDefinition);
 assertEqual(languageCall?.payload?.sessionId, "shared-session", "backend client language payload session id");
 assertEqual(languageCall?.payload?.activeRelativePath, "story/opening.inscape", "backend client language active path");
 assertEqual(languageCall?.payload?.documentRevision, 7, "backend client language revision");

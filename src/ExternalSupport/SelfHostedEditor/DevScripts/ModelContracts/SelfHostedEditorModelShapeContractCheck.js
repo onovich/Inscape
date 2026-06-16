@@ -1,5 +1,6 @@
 import { ScriptDiagnosticsModelBuilder } from "../../Scripts/ProjectWorkspace/Models/ScriptDiagnosticsModelBuilder.js";
 import { EditorBackendClient } from "../../Scripts/Backend/Clients/EditorBackendClient.js";
+import { EditorBackendTransportCommand } from "../../Scripts/Backend/Clients/EditorBackendTransport.js";
 import { EditorBackendSessionStatusFormat } from "../../Scripts/Backend/Models/EditorBackendSessionStatusModel.js";
 import {
   ScriptDocumentFallbackCategory,
@@ -105,12 +106,12 @@ assertEqual(missingFallbackReasonFailed, true, "draft document fallback requires
 const backendCalls = [];
 const backendClient = new EditorBackendClient({
   transport: {
-    async postJson(path, payload) {
+    async invoke(command, payload) {
       backendCalls.push({
-        path,
+        command,
         payload,
       });
-      if (path === "/api/session-cache-status") {
+      if (command === EditorBackendTransportCommand.ProjectSessionStatus) {
         return {
           caches: {
             lineMap: {
@@ -127,17 +128,17 @@ const backendClient = new EditorBackendClient({
       }
 
       return {
-        path,
+        command,
         payload,
       };
     },
   },
 });
 const backendDiagnostics = await backendClient.languageSession.diagnose({ scriptText: "# Start" });
-assertEqual(backendDiagnostics.path, "/api/diagnostics", "backend client diagnostics route");
+assertEqual(backendDiagnostics.command, EditorBackendTransportCommand.LanguageDiagnostics, "backend client diagnostics command");
 assertEqual(backendCalls[0].payload.scriptText, "# Start", "backend client forwards diagnostics payload");
 const backendRuntimeAction = await backendClient.runtimeSession.step({ action: "continue", sessionId: "session-a" });
-assertEqual(backendRuntimeAction.path, "/api/runtime-action", "backend client runtime action route");
+assertEqual(backendRuntimeAction.command, EditorBackendTransportCommand.RuntimeStep, "backend client runtime action command");
 const backendStatus = await backendClient.diagnostics.sessionStatus();
 assertEqual(backendStatus.format, EditorBackendSessionStatusFormat, "backend session status format");
 assertEqual(backendStatus.mode, "dev-host", "backend session status mode");

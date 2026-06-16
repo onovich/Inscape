@@ -1,6 +1,6 @@
 # SelfHostedEditor P1 40 轮内执行方案
 
-状态：执行中（Round 1-2 已完成）
+状态：执行中（Round 1-3 已完成）
 
 日期：2026-06-15
 
@@ -157,6 +157,33 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:structure
 2. 语言会话默认仍是 `process-per-request`，没有声称 P1.5 long-lived LanguageServer 已完成。
 3. 下一轮应进入 Round 3：抽出 `EditorBackendTransport`，把当前 `postJson(path, payload)` 进一步收敛为明确 transport contract，同时保持现有 HTTP dev host 默认路径和 smoke 不变。
 
+### 2026-06-16 Round 3：抽出 EditorBackendTransport
+
+范围：抽出 command-based transport contract，不改变现有 HTTP dev-host route、payload shape 或 feature controller 行为，不接 Electron。
+
+完成内容：
+
+1. 新增 `EditorBackendTransportCommand` catalog，定义 language、host capability、story graph、runtime、line identity、localization、stable node map 与 project session status 的业务 command。
+2. `SelfHostedEditorHttpBackendTransport` 现在实现 `invoke(command, payload)`，内部把 command 映射到既有 dev-host `/api/*` route；`postJson(path, payload)` 保留为 HTTP transport 内部实现细节。
+3. `EditorBackendClient` 现在只调用 `transport.invoke(command, payload)`，不再持有 `/api/*` path；feature bridge 仍只调用业务入口，不获得 generic request / invoke surface。
+4. 新增 `check:backend-transport`，并接入 `check:model`；`check:structure` 已守住 `EditorBackendClient` 不得重新包含 `/api/*`，以及 HTTP transport 必须负责 command -> route 映射。
+
+本轮验证已通过：
+
+```powershell
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:backend-transport
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:structure
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
+```
+
+架构对照结论：
+
+1. dev-host `/api/*` 仍存在，但已下沉为 HTTP transport adapter 细节；它不是产品 backend API。
+2. 本轮没有把 desktop transport 私有 payload 引入 feature controller，也没有改变 shared LanguageServer / Tooling / Runtime payload shape。
+3. 下一轮应进入 Round 4：定义业务窄接口 adapter，让 `ProjectSessionService`、`LanguageSessionClient`、`RuntimeSessionClient`、`LocalizationWorkflowClient` 等边界更显式，同时继续禁止 feature controller 获取 generic transport surface。
+
 ## 36 轮主计划
 
 ### A. Contract 与 transport 基础，Round 1-6
@@ -165,7 +192,7 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:structure
 |---|---|---|
 | 1 | P1 基线审计 | 已完成。现有 `EditorBackendClient`、dev HTTP transport、feature controller 到 `/api/*` 的调用路径、package scripts 与 SelfHostedEditor 目录结构已记录在 2026-06-16 Round 1 执行记录中；未改行为。 |
 | 2 | 定义 embedded backend v0 model contract | 已完成。`EditorBackendDesktopSessionModel` 与 `check:desktop-backend` 覆盖 `ProjectSession`、`DocumentBuffer`、workspace file boundary、save status、recovery status、settings summary；只定义 shape 与 guard，不接 Electron。 |
-| 3 | 抽出 `EditorBackendTransport` | `EditorBackendClient` 支持 transport 注入；现有 HTTP dev host 作为默认 transport，现有 smoke 不变。 |
+| 3 | 抽出 `EditorBackendTransport` | 已完成。`EditorBackendClient` 现在调用 command-based `transport.invoke(command, payload)`；现有 HTTP dev host 作为默认 transport，由 `SelfHostedEditorHttpBackendTransport` 负责 command -> `/api/*` route 映射，现有 smoke 不变。 |
 | 4 | 定义业务窄接口 adapter | `ProjectSessionService`、`DocumentBufferStore`、`LanguageSessionClient`、`RuntimeSessionClient`、`LocalizationWorkflowClient` 等作为 UI 侧窄接口；feature controller 不获得 generic `call(method, payload)`。 |
 | 5 | Fake embedded transport harness | 增加 fake embedded transport / direct harness，用于 contract check；证明 UI 侧不依赖 HTTP path。 |
 | 6 | structure guard 第一刀 | `check:structure` 或等价检查覆盖：业务 `Scripts/` 不直接打 `/api/*`，生产 renderer 不直接 import Node / Electron runtime，transport 只从 `EditorBackendClient` 注入。 |

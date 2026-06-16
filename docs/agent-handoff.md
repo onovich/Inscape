@@ -30,6 +30,16 @@ P1 Round 2 已完成 embedded backend v0 model contract，仍未接 Electron 或
 - defaults 保持 P1 边界：autosave / backup 默认开启，资源默认复制进 `assets/`，language session 默认仍是 `process-per-request`，没有默认启用 P1.5 full long-lived LanguageServer。
 - Round 2 验证已通过：SelfHostedEditor `check:desktop-backend` / `check:syntax` / `check:model` / `check:structure`。下一步进入 Round 3：抽出更明确的 `EditorBackendTransport` contract，保留 HTTP dev host 默认路径。
 
+### 2026-06-16 SelfHostedEditor P1 Round 3 transport 快照
+
+P1 Round 3 已完成 command-based `EditorBackendTransport` 抽出，HTTP dev host 仍是默认 transport。
+
+- 新增 `EditorBackendTransportCommand` catalog，覆盖 language、host capability、story graph、runtime、line identity、localization、stable node map 与 project session status commands。
+- `EditorBackendClient` 现在只调用 `transport.invoke(command, payload)`，不再保存 `/api/*` route；feature bridge 仍只看到业务入口。
+- `SelfHostedEditorHttpBackendTransport` 负责 command -> dev-host `/api/*` route 映射；`/api/*` 现在是 HTTP adapter 细节，不是产品 backend contract。
+- 新增 `check:backend-transport` 并接入 `check:model`；`check:structure` 已守住 `EditorBackendClient` 不得重新包含 `/api/*`。
+- Round 3 验证已通过：SelfHostedEditor `check:backend-transport` / `check:syntax` / `check:model` / `check:structure` / `check:semantic-parity-http`。下一步进入 Round 4：业务窄接口 adapter。
+
 ### 2026-06-14 SelfHostedEditor desktop backend v0 决策快照
 
 本轮已采纳 [ADR 0019](adr/0019-self-hosted-editor-embedded-backend-v0.md)：SelfHostedEditor desktop backend v0 采用嵌入式 EditorBackend，而不是独立 sidecar daemon。

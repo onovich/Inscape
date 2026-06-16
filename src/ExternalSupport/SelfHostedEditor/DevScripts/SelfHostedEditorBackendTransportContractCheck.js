@@ -1,0 +1,115 @@
+import { EditorBackendClient } from "../Scripts/Backend/Clients/EditorBackendClient.js";
+import {
+  EditorBackendTransportCommand,
+  listEditorBackendDevHostRoutes,
+  listEditorBackendTransportCommands,
+  resolveEditorBackendDevHostRoute,
+} from "../Scripts/Backend/Clients/EditorBackendTransport.js";
+import { SelfHostedEditorHttpBackendTransport } from "../Scripts/Backend/Clients/SelfHostedEditorHttpBackendTransport.js";
+
+const commands = listEditorBackendTransportCommands();
+assertEqual(commands.length, new Set(commands).size, "backend transport commands must be unique");
+assertEqual(resolveEditorBackendDevHostRoute(EditorBackendTransportCommand.LanguageDiagnostics), "/api/diagnostics", "diagnostics dev-host route");
+assertEqual(resolveEditorBackendDevHostRoute(EditorBackendTransportCommand.ProjectSessionStatus), "/api/session-cache-status", "project-session status dev-host route");
+assertEqual(resolveEditorBackendDevHostRoute(EditorBackendTransportCommand.RuntimeStep), "/api/runtime-action", "runtime step dev-host route");
+
+for (const route of listEditorBackendDevHostRoutes()) {
+  assertEqual(commands.includes(route.command), true, `dev-host route command registered: ${route.command}`);
+  assertEqual(route.routePath.startsWith("/api/"), true, `dev-host route path shape: ${route.command}`);
+}
+
+let unknownCommandRejected = false;
+try {
+  resolveEditorBackendDevHostRoute("unknown.command");
+} catch {
+  unknownCommandRejected = true;
+}
+assertEqual(unknownCommandRejected, true, "unknown transport command must be rejected");
+
+const fetchCalls = [];
+const httpTransport = new SelfHostedEditorHttpBackendTransport({
+  baseUrl: "http://127.0.0.1:5178",
+  fetchImpl: async (url, options) => {
+    fetchCalls.push({
+      body: options.body,
+      method: options.method,
+      url,
+    });
+    return {
+      ok: true,
+      async json() {
+        return {
+          ok: true,
+        };
+      },
+    };
+  },
+});
+const httpResult = await httpTransport.invoke(EditorBackendTransportCommand.LanguageDiagnostics, {
+  scriptText: "# Opening",
+});
+assertEqual(httpResult.ok, true, "HTTP transport invoke result");
+assertEqual(fetchCalls[0].url, "http://127.0.0.1:5178/api/diagnostics", "HTTP transport maps command to route");
+assertEqual(fetchCalls[0].method, "POST", "HTTP transport uses POST");
+assertEqual(JSON.parse(fetchCalls[0].body).scriptText, "# Opening", "HTTP transport serializes payload");
+
+const backendCalls = [];
+const backendClient = new EditorBackendClient({
+  sessionId: "transport-session",
+  transport: {
+    async invoke(command, payload) {
+      backendCalls.push({
+        command,
+        payload,
+      });
+      if (command === EditorBackendTransportCommand.ProjectSessionStatus) {
+        return {
+          caches: {},
+        };
+      }
+
+      return {
+        command,
+        payload,
+      };
+    },
+  },
+});
+const diagnostics = await backendClient.languageSession.diagnose({
+  scriptText: "# Opening",
+});
+assertEqual(diagnostics.command, EditorBackendTransportCommand.LanguageDiagnostics, "backend client diagnostics command");
+assertEqual(backendCalls[0].payload.scriptText, "# Opening", "backend client diagnostics payload");
+const runtimeStep = await backendClient.runtimeSession.step({
+  action: {
+    kind: "continue",
+  },
+});
+assertEqual(runtimeStep.command, EditorBackendTransportCommand.RuntimeStep, "backend client runtime command");
+const projectStatus = await backendClient.projectSession.status();
+assertEqual(backendCalls.find((call) => call.command === EditorBackendTransportCommand.ProjectSessionStatus)?.payload && Object.keys(backendCalls.find((call) => call.command === EditorBackendTransportCommand.ProjectSessionStatus).payload).length, 0, "project-session status must not upload workspace text");
+assertEqual(projectStatus.mode, "dev-host", "project-session status compatibility mode");
+assertEqual(typeof backendClient.invoke, "undefined", "backend client must not expose generic invoke");
+assertEqual(typeof backendClient.request, "undefined", "backend client must not expose generic request");
+
+let missingInvokeRejected = false;
+try {
+  new EditorBackendClient({
+    transport: {
+      async postJson() {
+        return {};
+      },
+    },
+  });
+} catch {
+  missingInvokeRejected = true;
+}
+assertEqual(missingInvokeRejected, true, "backend client must require invoke transport");
+
+console.log("SelfHostedEditor backend transport contract ok");
+
+function assertEqual(actual, expected, label) {
+  if (actual !== expected) {
+    throw new Error(`${label}: expected ${expected}, got ${actual}`);
+  }
+}

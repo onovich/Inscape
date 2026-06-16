@@ -10,6 +10,7 @@ const requiredPaths = [
   "package.json",
   "DevScripts",
   "DevScripts/SelfHostedEditorApiHandlerBridge.js",
+  "DevScripts/SelfHostedEditorBackendTransportContractCheck.js",
   "DevScripts/SelfHostedEditorDesktopBackendContractCheck.js",
   "DevScripts/SelfHostedEditorHttpBridge.js",
   "DevScripts/SelfHostedEditorHttpBridgeContractCheck.js",
@@ -61,6 +62,7 @@ const requiredPaths = [
   "Resources/Styles/SelfHostedEditorWorkspaceLayout.css",
   "Resources/Styles/SelfHostedEditorWorkbench.css",
   "Scripts/Backend/Clients/EditorBackendClient.js",
+  "Scripts/Backend/Clients/EditorBackendTransport.js",
   "Scripts/Backend/Clients/SelfHostedEditorHttpBackendTransport.js",
   "Scripts/Backend/Models/EditorBackendDesktopSessionModel.js",
   "Scripts/Backend/Models/EditorBackendLanguageSessionRequestModel.js",
@@ -225,6 +227,24 @@ if (!html.includes("/Scripts/Entries/SelfHostedEditorAppEntry.js")) {
 
 if (!html.includes('data-view="host"') || !html.includes("host-capability-panel")) {
   console.error("Workbench document must expose the Host capability view and panel.");
+  failed = true;
+}
+
+const editorBackendClientPath = path.join(moduleRoot, "Scripts/Backend/Clients/EditorBackendClient.js");
+const editorBackendClientText = fs.readFileSync(editorBackendClientPath, "utf8");
+if (editorBackendClientText.includes("/api/")) {
+  console.error("EditorBackendClient must call backend transport commands instead of dev-host /api routes.");
+  failed = true;
+}
+if (!editorBackendClientText.includes("EditorBackendTransportCommand") || !editorBackendClientText.includes(".invoke(")) {
+  console.error("EditorBackendClient must use the command-based EditorBackendTransport contract.");
+  failed = true;
+}
+
+const httpBackendTransportPath = path.join(moduleRoot, "Scripts/Backend/Clients/SelfHostedEditorHttpBackendTransport.js");
+const httpBackendTransportText = fs.readFileSync(httpBackendTransportPath, "utf8");
+if (!httpBackendTransportText.includes("resolveEditorBackendDevHostRoute") || !httpBackendTransportText.includes("async invoke(command")) {
+  console.error("SelfHostedEditorHttpBackendTransport must map backend commands to dev-host routes.");
   failed = true;
 }
 
@@ -566,8 +586,8 @@ if (/data-loading-state/.test(workbenchWorkspaceLayoutCss) || /^\s*\.app-sidebar
 }
 
 const packageJson = JSON.parse(fs.readFileSync(path.join(moduleRoot, "package.json"), "utf8"));
-if (!packageJson.scripts["check:model"] || !packageJson.scripts["check:structure"] || !packageJson.scripts["check:style-structure"] || !packageJson.scripts["check:syntax"] || !packageJson.scripts["check:payload-bridge"] || !packageJson.scripts["check:desktop-backend"] || !packageJson.scripts["check:static-assets"] || !packageJson.scripts["check:static-assets-http"] || !packageJson.scripts["check:node-map"] || !packageJson.scripts["check:node-map-http"] || !packageJson.scripts["check:references"] || !packageJson.scripts["check:references-http"] || !packageJson.scripts["check:semantic-parity-http"] || !packageJson.scripts["check:process-bridge"] || !packageJson.scripts["check:session-cache"] || !packageJson.scripts["check:session-cache-http"]) {
-  console.error("SelfHostedEditor package.json must expose check:model, check:structure, check:style-structure, check:syntax, check:payload-bridge, check:desktop-backend, check:static-assets, check:static-assets-http, check:node-map, check:node-map-http, check:references, check:references-http, check:semantic-parity-http, check:process-bridge, check:session-cache, and check:session-cache-http.");
+if (!packageJson.scripts["check:model"] || !packageJson.scripts["check:structure"] || !packageJson.scripts["check:style-structure"] || !packageJson.scripts["check:syntax"] || !packageJson.scripts["check:payload-bridge"] || !packageJson.scripts["check:backend-transport"] || !packageJson.scripts["check:desktop-backend"] || !packageJson.scripts["check:static-assets"] || !packageJson.scripts["check:static-assets-http"] || !packageJson.scripts["check:node-map"] || !packageJson.scripts["check:node-map-http"] || !packageJson.scripts["check:references"] || !packageJson.scripts["check:references-http"] || !packageJson.scripts["check:semantic-parity-http"] || !packageJson.scripts["check:process-bridge"] || !packageJson.scripts["check:session-cache"] || !packageJson.scripts["check:session-cache-http"]) {
+  console.error("SelfHostedEditor package.json must expose check:model, check:structure, check:style-structure, check:syntax, check:payload-bridge, check:backend-transport, check:desktop-backend, check:static-assets, check:static-assets-http, check:node-map, check:node-map-http, check:references, check:references-http, check:semantic-parity-http, check:process-bridge, check:session-cache, and check:session-cache-http.");
   failed = true;
 }
 if (packageJson.scripts["check:model"] !== "node DevScripts/SelfHostedEditorModelContractSuite.js") {
@@ -580,6 +600,10 @@ if (packageJson.scripts["check:syntax"] !== "node DevScripts/SelfHostedEditorSyn
 }
 if (packageJson.scripts["check:payload-bridge"] !== "node DevScripts/SelfHostedEditorPayloadBridgeContractCheck.js") {
   console.error("SelfHostedEditor check:payload-bridge must delegate to SelfHostedEditorPayloadBridgeContractCheck.js.");
+  failed = true;
+}
+if (packageJson.scripts["check:backend-transport"] !== "node DevScripts/SelfHostedEditorBackendTransportContractCheck.js") {
+  console.error("SelfHostedEditor check:backend-transport must delegate to SelfHostedEditorBackendTransportContractCheck.js.");
   failed = true;
 }
 if (packageJson.scripts["check:desktop-backend"] !== "node DevScripts/SelfHostedEditorDesktopBackendContractCheck.js") {

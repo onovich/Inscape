@@ -1,5 +1,6 @@
 import { EditorBackendLanguageSessionRequestModel } from "../Models/EditorBackendLanguageSessionRequestModel.js";
 import { EditorBackendSessionStatusModel } from "../Models/EditorBackendSessionStatusModel.js";
+import { EditorBackendTransportCommand } from "./EditorBackendTransport.js";
 import { SelfHostedEditorHttpBackendTransport } from "./SelfHostedEditorHttpBackendTransport.js";
 
 export class EditorBackendClient {
@@ -7,44 +8,44 @@ export class EditorBackendClient {
 
   constructor(options = {}) {
     this.#transport = options.transport || new SelfHostedEditorHttpBackendTransport(options);
-    if (!this.#transport || typeof this.#transport.postJson !== "function") {
-      throw new Error("EditorBackendClient requires a transport with postJson(path, payload).");
+    if (!this.#transport || typeof this.#transport.invoke !== "function") {
+      throw new Error("EditorBackendClient requires a transport with invoke(command, payload).");
     }
 
     this.sessionId = options.sessionId || this.#createSessionId();
     this.languageSession = Object.freeze({
-      completions: (request) => this.#postLanguageSession("/api/completions", "completions", request),
-      definition: (request) => this.#postLanguageSession("/api/definition", "definition", request),
-      diagnose: (request) => this.#postLanguageSession("/api/diagnostics", "diagnostics", request),
-      documentSymbols: (request) => this.#postLanguageSession("/api/document-symbols", "document-symbols", request),
-      hover: (request) => this.#postLanguageSession("/api/hover", "hover", request),
-      references: (request) => this.#postLanguageSession("/api/references", "references", request),
+      completions: (request) => this.#invokeLanguageSession(EditorBackendTransportCommand.LanguageCompletions, "completions", request),
+      definition: (request) => this.#invokeLanguageSession(EditorBackendTransportCommand.LanguageDefinition, "definition", request),
+      diagnose: (request) => this.#invokeLanguageSession(EditorBackendTransportCommand.LanguageDiagnostics, "diagnostics", request),
+      documentSymbols: (request) => this.#invokeLanguageSession(EditorBackendTransportCommand.LanguageDocumentSymbols, "document-symbols", request),
+      hover: (request) => this.#invokeLanguageSession(EditorBackendTransportCommand.LanguageHover, "hover", request),
+      references: (request) => this.#invokeLanguageSession(EditorBackendTransportCommand.LanguageReferences, "references", request),
     });
     this.hostCapabilities = Object.freeze({
-      bindingCapabilities: (request) => this.#post("/api/host-binding-capabilities", request),
-        schemaCapabilities: (request) => this.#post("/api/host-schema-capabilities", request),
-      });
+      bindingCapabilities: (request) => this.#invoke(EditorBackendTransportCommand.HostBindingCapabilities, request),
+      schemaCapabilities: (request) => this.#invoke(EditorBackendTransportCommand.HostSchemaCapabilities, request),
+    });
     this.storyGraph = Object.freeze({
-      compileProjectGraph: (request) => this.#post("/api/story-graph", request),
+      compileProjectGraph: (request) => this.#invoke(EditorBackendTransportCommand.StoryGraphCompileProject, request),
     });
     this.runtimeSession = Object.freeze({
-      startOrObserve: (request) => this.#post("/api/runtime-state", request),
-      step: (request) => this.#post("/api/runtime-action", request),
+      startOrObserve: (request) => this.#invoke(EditorBackendTransportCommand.RuntimeStartOrObserve, request),
+      step: (request) => this.#invoke(EditorBackendTransportCommand.RuntimeStep, request),
     });
     this.lineIdentitySession = Object.freeze({
-      refresh: (request) => this.#post("/api/line-map-refresh", request),
+      refresh: (request) => this.#invoke(EditorBackendTransportCommand.LineIdentityRefresh, request),
     });
     this.localizationSession = Object.freeze({
-      review: (request) => this.#post("/api/localization-review", request),
-      updateCsv: (request) => this.#post("/api/localization-update", request),
+      review: (request) => this.#invoke(EditorBackendTransportCommand.LocalizationReview, request),
+      updateCsv: (request) => this.#invoke(EditorBackendTransportCommand.LocalizationUpdateCsv, request),
     });
     this.stableNodeMap = Object.freeze({
-      applyCandidate: (request) => this.#post("/api/node-map-apply", request),
-      review: (request) => this.#post("/api/node-map-review", request),
+      applyCandidate: (request) => this.#invoke(EditorBackendTransportCommand.StableNodeMapApplyCandidate, request),
+      review: (request) => this.#invoke(EditorBackendTransportCommand.StableNodeMapReview, request),
     });
     this.projectSession = Object.freeze({
       status: async (request = {}) => EditorBackendSessionStatusModel.buildDevHostStatus(
-        await this.#post("/api/session-cache-status", {}),
+        await this.#invoke(EditorBackendTransportCommand.ProjectSessionStatus, {}),
         {
           sessionId: request.sessionId || this.sessionId,
           workspace: request.workspace || null,
@@ -58,17 +59,17 @@ export class EditorBackendClient {
     Object.freeze(this);
   }
 
-  async #post(path, request = {}) {
-    return await this.#transport.postJson(path, request || {});
+  async #invoke(command, request = {}) {
+    return await this.#transport.invoke(command, request || {});
   }
 
-  async #postLanguageSession(path, kind, request = {}) {
+  async #invokeLanguageSession(command, kind, request = {}) {
     const languageRequest = EditorBackendLanguageSessionRequestModel.build({
       kind,
       request,
       sessionId: this.sessionId,
     });
-    return await this.#post(path, EditorBackendLanguageSessionRequestModel.toDevHostPayload(languageRequest));
+    return await this.#invoke(command, EditorBackendLanguageSessionRequestModel.toDevHostPayload(languageRequest));
   }
 
   #createSessionId() {

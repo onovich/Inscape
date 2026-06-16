@@ -1,5 +1,6 @@
 const contractModules = [
   "./SelfHostedEditorModelContractCheck.js",
+  "./SelfHostedEditorBackendTransportContractCheck.js",
   "./SelfHostedEditorHttpBridgeContractCheck.js",
   "./SelfHostedEditorPayloadBridgeContractCheck.js",
   "./SelfHostedEditorStaticAssetBridgeContractCheck.js",
