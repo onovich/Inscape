@@ -10,12 +10,13 @@ const packageJson = readJson("package.json");
 const packageLock = readJson("package-lock.json");
 const appEntryText = readText("Desktop/ElectronAppEntry.js");
 const mainText = readText("Desktop/ElectronMain.js");
-const preloadText = readText("Desktop/ElectronPreload.js");
+const preloadText = readText("Desktop/ElectronPreload.cjs");
 const workbenchText = readText("Resources/Workbench/SelfHostedEditorWorkbenchDocument.html");
 
 assertEqual(packageJson.private, true, "desktop startup package is private");
 assertEqual(packageJson.type, "module", "desktop startup package is ESM");
 assertEqual(packageJson.scripts?.["smoke:desktop"], "node DevScripts/SelfHostedEditorDesktopV0Smoke.js", "desktop startup smoke includes v0 loop smoke");
+assertEqual(packageJson.scripts?.["smoke:desktop-gui-recovery"], "node DevScripts/SelfHostedEditorDesktopGuiRecoverySmoke.js", "desktop startup smoke includes GUI recovery smoke");
 assertEqual(packageJson.scripts?.["smoke:desktop-runtime"], "node DevScripts/SelfHostedEditorDesktopRuntimeSmoke.js", "desktop startup smoke includes Electron runtime smoke");
 assertEqual(packageJson.scripts?.["smoke:desktop-startup"], "node DevScripts/SelfHostedEditorDesktopStartupSmoke.js", "desktop startup smoke script");
 assertEqual(packageJson.scripts?.["check:desktop-package"], "node DevScripts/SelfHostedEditorDesktopPackageContractCheck.js", "desktop startup package contract check script");
@@ -36,6 +37,7 @@ assertEqual(readiness.electronRuntimeAvailable, true, "desktop startup has Elect
 assertEqual(readiness.desktopRuntimeSmoke, true, "desktop startup has Electron runtime smoke");
 assertEqual(readiness.windowsPackageScriptAvailable, true, "desktop startup has Windows package script");
 assertEqual(readiness.validationScripts.includes("smoke:desktop"), true, "desktop startup readiness includes v0 smoke");
+assertEqual(readiness.validationScripts.includes("smoke:desktop-gui-recovery"), true, "desktop startup readiness includes GUI recovery smoke");
 assertEqual(readiness.validationScripts.includes("smoke:desktop-runtime"), true, "desktop startup readiness includes runtime smoke");
 assertEqual(readiness.validationScripts.includes("check:desktop-package"), true, "desktop startup readiness includes package contract");
 assertEqual(readiness.validationScripts.includes("check:electron-shell"), true, "desktop startup readiness includes electron shell contract");
@@ -64,6 +66,7 @@ function buildStartupReadiness(packageManifest) {
     ],
     validationScripts: [
       "smoke:desktop",
+      "smoke:desktop-gui-recovery",
       "smoke:desktop-runtime",
       "check:desktop-package",
       "check:electron-shell",

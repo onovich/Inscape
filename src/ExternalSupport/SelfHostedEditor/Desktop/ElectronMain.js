@@ -43,7 +43,7 @@ export function buildSelfHostedEditorBrowserWindowOptions() {
       nodeIntegration: false,
       nodeIntegrationInSubFrames: false,
       nodeIntegrationInWorker: false,
-      preload: path.join(desktopRoot, "ElectronPreload.js"),
+      preload: path.join(desktopRoot, "ElectronPreload.cjs"),
       sandbox: true,
       webSecurity: true,
       webviewTag: false,

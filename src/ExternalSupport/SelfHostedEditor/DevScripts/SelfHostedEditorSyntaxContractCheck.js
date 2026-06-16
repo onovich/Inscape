@@ -17,7 +17,7 @@ function collectJavaScriptFiles(directory) {
     const fullPath = path.join(directory, entry.name);
     if (entry.isDirectory()) {
       files.push(...collectJavaScriptFiles(fullPath));
-    } else if (entry.isFile() && entry.name.endsWith(".js")) {
+    } else if (entry.isFile() && (entry.name.endsWith(".js") || entry.name.endsWith(".cjs"))) {
       files.push(fullPath);
     }
   }

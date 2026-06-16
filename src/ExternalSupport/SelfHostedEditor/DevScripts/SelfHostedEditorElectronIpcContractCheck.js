@@ -26,7 +26,7 @@ import {
 
 const moduleRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
-const preloadText = fs.readFileSync(path.join(moduleRoot, "Desktop/ElectronPreload.js"), "utf8");
+const preloadText = fs.readFileSync(path.join(moduleRoot, "Desktop/ElectronPreload.cjs"), "utf8");
 assertIncludesText(preloadText, "ipcRenderer", "preload uses Electron IPC internally");
 assertIncludesText(preloadText, "SelfHostedEditorElectronIpcChannel", "preload uses fixed SelfHostedEditor IPC channel");
 assertIncludesText(preloadText, "buildSelfHostedEditorElectronIpcEnvelope", "preload wraps command payloads in a fixed envelope");

@@ -10,6 +10,7 @@ const requiredDesktopPaths = [
   "Desktop/ElectronBackendIpc.js",
   "Desktop/ElectronIpcContract.js",
   "Desktop/ElectronMain.js",
+  "Desktop/ElectronPreload.cjs",
   "Desktop/ElectronPreloadApi.js",
   "Desktop/ElectronPreload.js",
   "Desktop/ElectronWorkspaceLifecycle.js",
@@ -31,7 +32,7 @@ assertNoText(appEntryText, "/api/", "Electron app entry must not know dev-host r
 
 const mainText = readModuleText("Desktop/ElectronMain.js");
 assertIncludesText(mainText, "BrowserWindow", "Electron main creates BrowserWindow");
-assertIncludesText(mainText, "ElectronPreload.js", "Electron main wires preload script");
+assertIncludesText(mainText, "ElectronPreload.cjs", "Electron main wires sandbox-compatible preload script");
 assertIncludesText(mainText, "SelfHostedEditorWorkbenchDocument.html", "Electron main loads workbench document");
 assertIncludesText(mainText, "inscape-self-hosted-editor", "Electron main defines app protocol");
 assertIncludesText(mainText, "buildSelfHostedEditorWorkbenchUrl", "Electron main builds app protocol workbench URL");
@@ -61,7 +62,7 @@ assertNoText(mainText, "/api/", "Electron main must not know dev-host routes");
 assertNoText(mainText, "localhost", "Electron main must not depend on localhost product API");
 assertNoText(mainText, "127.0.0.1", "Electron main must not depend on localhost product API");
 
-const preloadText = readModuleText("Desktop/ElectronPreload.js");
+const preloadText = readModuleText("Desktop/ElectronPreload.cjs");
 assertIncludesText(preloadText, "contextBridge", "Electron preload uses contextBridge");
 assertIncludesText(preloadText, "exposeInMainWorld", "Electron preload exposes a named API");
 assertIncludesText(preloadText, "createSelfHostedEditorPreloadApi", "Electron preload delegates API shape to whitelist module");

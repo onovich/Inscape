@@ -26,7 +26,7 @@ assertEqual(windowOptions.webPreferences?.nodeIntegrationInWorker, false, "runti
 assertEqual(windowOptions.webPreferences?.sandbox, true, "runtime probe sandbox");
 assertEqual(windowOptions.webPreferences?.webSecurity, true, "runtime probe web security");
 assertEqual(windowOptions.webPreferences?.webviewTag, false, "runtime probe webview tag");
-assert(windowOptions.webPreferences?.preload?.endsWith("ElectronPreload.js"), "runtime probe preload path");
+assert(windowOptions.webPreferences?.preload?.endsWith("ElectronPreload.cjs"), "runtime probe preload path");
 assertEqual(buildSelfHostedEditorWorkbenchUrl(), "inscape-self-hosted-editor://app/Resources/Workbench/SelfHostedEditorWorkbenchDocument.html", "runtime probe workbench URL");
 assertEqual(isSelfHostedEditorAllowedNavigation("inscape-self-hosted-editor://app/Resources/Workbench/SelfHostedEditorWorkbenchDocument.html"), true, "runtime probe app protocol navigation");
 assertEqual(isSelfHostedEditorAllowedNavigation("file:///tmp/workbench.html"), false, "runtime probe rejects file navigation");

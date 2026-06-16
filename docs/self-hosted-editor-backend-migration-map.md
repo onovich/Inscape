@@ -90,6 +90,8 @@
 
 2026-06-17 P1 post-40 recovery actions IO 补充：desktop-only `recovery.restore` / `recovery.discard` / `recovery.later` 已进入 shared command catalog、preload whitelist、`EditorBackendClient.recovery.*` 与 Electron dispatcher，但不映射 dev-host HTTP route。`restore` 会校验 snapshot relative path / content hash / text payload，把 snapshot 正文写回 `.inscape` 并清理 snapshot；`discard` 删除 snapshot；`later` 只更新当前 session 的 action state 并保留 snapshot。GUI edit-save-recovery smoke 仍待后续迁移。
 
+2026-06-17 P1 post-40 GUI recovery smoke 补充：`smoke:desktop-gui-recovery` 已启动真实 Electron BrowserWindow，加载 `inscape-self-hosted-editor://app/` Workbench 与 `ElectronPreload.cjs`，通过 renderer 可见 preload API 覆盖 open/read/edit/manual save/autosave/recovery restore/later/discard 的真实 IPC/main-process 路径。该轮修复 sandbox preload 不能加载 ESM preload 的问题；`ElectronPreloadApi.js` 保留为 ESM contract，实际 BrowserWindow 使用 CJS preload bundle。diagnostics / completion current-buffer GUI 验证仍待后续迁移。
+
 ## 状态分类
 
 | 分类 | 当前例子 | 未来归属 | 规则 |

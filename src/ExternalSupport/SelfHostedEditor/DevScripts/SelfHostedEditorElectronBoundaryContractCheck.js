@@ -26,7 +26,7 @@ for (const scriptPath of getJavaScriptFiles(rendererScriptsRoot)) {
   }
 }
 
-const preloadText = readModuleText("Desktop/ElectronPreload.js");
+const preloadText = readModuleText("Desktop/ElectronPreload.cjs");
 assertIncludesText(preloadText, "contextBridge", "preload uses contextBridge");
 assertIncludesText(preloadText, "ipcRenderer", "preload may use ipcRenderer only inside the fixed command bridge");
 assertIncludesText(preloadText, "SelfHostedEditorElectronIpcChannel", "preload uses the fixed SelfHostedEditor IPC channel");

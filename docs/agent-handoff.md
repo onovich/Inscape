@@ -503,6 +503,14 @@ P1 40 轮计划完成后，继续补上了真实 Electron preload -> main 的固
 - `check:electron-workspace` 现在覆盖 restore 写盘且响应不泄露 snapshot text、restore 后 cleanup、later 保留 snapshot、discard 删除 snapshot、recovery action response text-free。`check:backend-transport` / `check:preload-transport` / `check:electron-shell` 同步覆盖新 command 面。
 - 下一步应做真实 GUI edit-save-recovery smoke：打包或本机 Electron 打开 workspace、编辑、触发 recovery、点击 restore / discard / later，并验证 diagnostics / completion 使用恢复后的当前 buffer。
 
+### 2026-06-17 SelfHostedEditor P1 post-40 Electron GUI recovery smoke 快照
+
+本轮新增 `smoke:desktop-gui-recovery`，用真实 Electron BrowserWindow 加载 Workbench/app protocol/preload，并通过 renderer 可见的 `window.inscapeSelfHostedEditor` 窄 API 走 preload -> IPC -> main 的产品路径；仍不做 diagnostics / completion current-buffer GUI 验证。
+
+- 真实 GUI smoke 覆盖：open folder、显式 read、dirty edit、manual save 写盘、idle autosave 写盘、recovery snapshot 发现、restore 写回磁盘、later 保留 snapshot、discard 删除 snapshot，且 open/save/recovery action 响应不泄露正文。
+- 该轮同时发现并修复真实 preload 启动问题：sandboxed Electron preload 不能直接加载 ESM `ElectronPreload.js`，实际 BrowserWindow 改为加载 `ElectronPreload.cjs`；`ElectronPreloadApi.js` 继续作为 ESM contract/API 定义，contracts 同步覆盖 CJS preload path。
+- 下一步应把 diagnostics / completion 等 authoring command 接到 embedded backend 当前 buffer，或补 GUI 级验证证明这些 authoring 请求已使用恢复后的 buffer。
+
 ### 2026-06-14 SelfHostedEditor desktop backend v0 决策快照
 
 本轮已采纳 [ADR 0019](adr/0019-self-hosted-editor-embedded-backend-v0.md)：SelfHostedEditor desktop backend v0 采用嵌入式 EditorBackend，而不是独立 sidecar daemon。
