@@ -115,6 +115,11 @@ assertSurface(services.documentBufferStore, [
   "sessionId",
   "buildBuffer",
   "buildSummary",
+  "buildStore",
+  "listDocuments",
+  "getDocument",
+  "updateDocument",
+  "setActiveDocument",
   "buildWorkspaceBoundary",
   "buildSaveStatus",
   "buildRecoveryStatus",
@@ -164,6 +169,45 @@ assertEqual(documentBuffer.relativePath, "story/opening.inscape", "document buff
 assertEqual(documentBuffer.text, "# Opening", "document buffer owns text");
 const documentSummary = services.documentBufferStore.buildSummary(documentBuffer);
 assertEqual("text" in documentSummary, false, "document buffer summary must not expose text");
+const documentStore = services.documentBufferStore.buildStore({
+  activeRelativePath: "story/opening.inscape",
+  documents: [
+    documentBuffer,
+    {
+      relativePath: "story/branch.inscape",
+      revision: 2,
+      text: "# Branch",
+    },
+  ],
+  workspaceName: "story",
+});
+assertEqual(documentStore.sessionId, "service-session", "document buffer store session id");
+assertEqual(documentStore.documentCount, 2, "document buffer store document count");
+assertEqual(documentStore.activeRelativePath, "story/opening.inscape", "document buffer store active document");
+const documentList = services.documentBufferStore.listDocuments(documentStore);
+assertEqual(documentList.documentCount, 2, "document buffer list count");
+assertEqual(documentList.payloadContentExposed, false, "document buffer list hides text payloads");
+assertEqual(JSON.stringify(documentList).includes("# Opening"), false, "document buffer list must not expose opening text");
+assertEqual(JSON.stringify(documentList).includes("# Branch"), false, "document buffer list must not expose branch text");
+const documentGetResult = services.documentBufferStore.getDocument(documentStore, {
+  relativePath: "story/opening.inscape",
+});
+assertEqual(documentGetResult.ok, true, "document buffer get result ok");
+assertEqual(documentGetResult.document.text, "# Opening", "document buffer get returns document text");
+const documentUpdateResult = services.documentBufferStore.updateDocument(documentStore, {
+  relativePath: "story/opening.inscape",
+  text: "# Opening\nNarrator: Updated",
+});
+assertEqual(documentUpdateResult.ok, true, "document buffer update result ok");
+assertEqual(documentUpdateResult.document.revision > documentBuffer.revision, true, "document buffer update increments revision");
+assertEqual(documentUpdateResult.document.dirty, true, "document buffer update marks dirty");
+assertEqual(documentUpdateResult.store.revision >= documentUpdateResult.document.revision, true, "document buffer store revision tracks update");
+const activeDocumentResult = services.documentBufferStore.setActiveDocument(documentUpdateResult.store, {
+  relativePath: "story/branch.inscape",
+});
+assertEqual(activeDocumentResult.ok, true, "document buffer active document result ok");
+assertEqual(activeDocumentResult.store.activeRelativePath, "story/branch.inscape", "document buffer active document switches");
+assertEqual(activeDocumentResult.document.active, true, "document buffer active document is marked active");
 const workspaceBoundary = services.documentBufferStore.buildWorkspaceBoundary({
   relativePath: "assets/portrait.png",
   writeIntent: "create",

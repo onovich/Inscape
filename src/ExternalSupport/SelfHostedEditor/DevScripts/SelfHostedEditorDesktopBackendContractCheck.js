@@ -13,6 +13,11 @@ import {
   EditorBackendDocumentBufferModel,
 } from "../Scripts/Backend/Models/EditorBackendDocumentBufferModel.js";
 import {
+  EditorBackendDocumentBufferStoreFormat,
+  EditorBackendDocumentBufferStoreModel,
+  EditorBackendDocumentBufferListFormat,
+} from "../Scripts/Backend/Models/EditorBackendDocumentBufferStoreModel.js";
+import {
   EditorBackendProjectSessionLifecycleFormat,
 } from "../Scripts/Backend/Models/EditorBackendProjectSessionLifecycleModel.js";
 import {
@@ -52,6 +57,67 @@ const documentSummary = EditorBackendDesktopSessionModel.buildDocumentBufferSumm
 assertEqual(documentSummary.relativePath, "story/opening.inscape", "document summary relative path");
 assertEqual(documentSummary.dirty, true, "document summary dirty state");
 assertNotIncludes(JSON.stringify(documentSummary), "secret draft text", "document summary must not expose text");
+
+const bufferStore = EditorBackendDocumentBufferStoreModel.buildStore({
+  activeRelativePath: "story/opening.inscape",
+  documents: [
+    documentBuffer,
+    {
+      dirty: false,
+      existsOnDisk: true,
+      relativePath: "story/branch.inscape",
+      revision: 2,
+      text: "secret branch buffer text",
+    },
+  ],
+  revision: 3,
+  sessionId: "buffer session!?",
+  workspaceName: "Court Case",
+});
+assertEqual(bufferStore.format, EditorBackendDocumentBufferStoreFormat, "document buffer store format");
+assertEqual(bufferStore.sessionId, "buffer-session--", "document buffer store session id");
+assertEqual(bufferStore.workspaceName, "Court Case", "document buffer store workspace name");
+assertEqual(bufferStore.activeRelativePath, "story/opening.inscape", "document buffer store active path");
+assertEqual(bufferStore.documentCount, 2, "document buffer store count");
+assertEqual(bufferStore.documents[0].active, true, "document buffer store marks active document");
+assertEqual(bufferStore.revision, 5, "document buffer store revision follows highest document revision");
+const bufferList = EditorBackendDocumentBufferStoreModel.listDocuments(bufferStore);
+assertEqual(bufferList.format, EditorBackendDocumentBufferListFormat, "document buffer list format");
+assertEqual(bufferList.documentCount, 2, "document buffer list count");
+assertEqual(bufferList.payloadContentExposed, false, "document buffer list payload exposure flag");
+assertNotIncludes(JSON.stringify(bufferList), "secret draft text", "document buffer list must not expose active document text");
+assertNotIncludes(JSON.stringify(bufferList), "secret branch buffer text", "document buffer list must not expose secondary document text");
+const getBufferResult = EditorBackendDocumentBufferStoreModel.getDocument(bufferStore, {
+  relativePath: "story/opening.inscape",
+});
+assertEqual(getBufferResult.ok, true, "document buffer get ok");
+assertEqual(getBufferResult.document.text, "secret draft text", "document buffer get returns text");
+const missingBufferResult = EditorBackendDocumentBufferStoreModel.getDocument(bufferStore, {
+  relativePath: "story/missing.inscape",
+});
+assertEqual(missingBufferResult.ok, false, "document buffer get missing rejected");
+assertEqual(missingBufferResult.reason, "document-not-found", "document buffer get missing reason");
+const updateBufferResult = EditorBackendDocumentBufferStoreModel.updateDocument(bufferStore, {
+  relativePath: "story/opening.inscape",
+  text: "secret updated buffer text",
+});
+assertEqual(updateBufferResult.ok, true, "document buffer update ok");
+assertEqual(updateBufferResult.document.text, "secret updated buffer text", "document buffer update text");
+assertEqual(updateBufferResult.document.revision, 6, "document buffer update increments revision above store");
+assertEqual(updateBufferResult.document.dirty, true, "document buffer update dirty");
+assertEqual(updateBufferResult.store.revision, 6, "document buffer update store revision");
+assertNotIncludes(JSON.stringify(EditorBackendDocumentBufferStoreModel.listDocuments(updateBufferResult.store)), "secret updated buffer text", "updated list must not expose text");
+const activeBufferResult = EditorBackendDocumentBufferStoreModel.setActiveDocument(updateBufferResult.store, {
+  relativePath: "story/branch.inscape",
+});
+assertEqual(activeBufferResult.ok, true, "document buffer set active ok");
+assertEqual(activeBufferResult.store.activeRelativePath, "story/branch.inscape", "document buffer set active path");
+assertEqual(activeBufferResult.document.active, true, "document buffer set active document flag");
+const missingActiveResult = EditorBackendDocumentBufferStoreModel.setActiveDocument(updateBufferResult.store, {
+  relativePath: "story/missing.inscape",
+});
+assertEqual(missingActiveResult.ok, false, "document buffer set active missing rejected");
+assertEqual(missingActiveResult.reason, "document-not-found", "document buffer set active missing reason");
 
 const session = EditorBackendDesktopSessionModel.buildProjectSession({
   documents: [

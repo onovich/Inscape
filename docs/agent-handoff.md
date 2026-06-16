@@ -202,6 +202,19 @@ P1 Round 19 已完成 DocumentBuffer 独立 model 抽出，仍未实现 list / g
 - `check:desktop-backend` 覆盖 direct DocumentBuffer model 与 desktop session 组合路径，summary 继续禁止暴露 document text。
 - Round 19 当前已通过：SelfHostedEditor `check:syntax` / `check:structure` / `check:desktop-backend` / `check:backend-services` / `check:model`。下一步进入 Round 20：list / get / update / active document。
 
+### 2026-06-16 SelfHostedEditor P1 Round 20 DocumentBufferStore operations 快照
+
+P1 Round 20 已完成 DocumentBufferStore 纯 model 操作 contract，仍未接真实文件 IO、authoring / Preview buffer 输入或 Round 21 stale guard。
+
+- 新增 `EditorBackendDocumentBufferStoreModel`，定义 `inscape.self-hosted-editor.document-buffer-store` 与 `document-buffer-list` shape。
+- store 可持有多个 document buffer、session id、workspace name、active relative path、document count 与 store revision。
+- `listDocuments()` 返回 text-free summaries，并明确 `payloadContentExposed: false`。
+- `getDocument()` 按 relative path 返回单个 buffer；这是明确 document read path，可以携带 text。
+- `updateDocument()` 更新 text、标记 dirty，并把 document / store revision 推进到当前 store 之后；旧 revision stale guard 留给 Round 21。
+- `setActiveDocument()` 切换 active document；缺失文档返回 `document-not-found`。
+- `DocumentBufferStore` 窄服务已暴露 `buildStore`、`listDocuments`、`getDocument`、`updateDocument` 与 `setActiveDocument`。
+- Round 20 当前已通过：SelfHostedEditor `check:syntax` / `check:structure` / `check:desktop-backend` / `check:backend-services` / `check:model`。下一步进入 Round 21：baseRevision 与 stale guard。
+
 ### 2026-06-14 SelfHostedEditor desktop backend v0 决策快照
 
 本轮已采纳 [ADR 0019](adr/0019-self-hosted-editor-embedded-backend-v0.md)：SelfHostedEditor desktop backend v0 采用嵌入式 EditorBackend，而不是独立 sidecar daemon。
