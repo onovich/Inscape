@@ -1112,6 +1112,51 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 4. 本轮没有改变 Compiler / LanguageServer / Tooling / Runtime payload shape，也没有进入 P1.5 long-lived LanguageServer。
 5. 下一轮应进入 Round 31：`.inscape-workspace/` 策略。
 
+### 2026-06-16 Round 31：`.inscape-workspace/` 策略
+
+范围：建立 workspace 内部目录策略 contract，证明 open workspace 时 `.inscape-workspace/recovery`、`.inscape-workspace/backups`、`.inscape-workspace/cache` 可被发现或计划创建，并且 `.inscape-workspace/` 默认不进入 Git。本轮不执行真实 mkdir、不写 `.gitignore`。
+
+完成内容：
+
+1. `EditorBackendWorkspaceFolderModel.buildInternalWorkspacePlan()` 返回 `inscape.self-hosted-editor.workspace-internal-directory-plan`。
+2. plan 固定列出 recovery / backups / cache 三个内部目录，均标记为非 project truth、默认 Git ignored。
+3. existing relative paths 可标记已存在目录；缺失目录返回 `createRequired`。
+4. cache 目录标记 `recreatable: true`，表达 cache 删除后可重建且不影响项目 truth。
+5. `.gitignore` plan 默认建议追加 `.inscape-workspace/`；已有该条目时 action 为 `none`。
+6. `check:workspace-fs` 覆盖目录发现、创建计划、cache 可重建、非项目真相、默认 gitignore 和 no-text plan。
+
+验证：
+
+```powershell
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:desktop-backend
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:workspace-fs
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:backend-services
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:backend-transport
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:preload-transport
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:fake-embedded-transport
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:electron-boundary
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:runtime
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:runtime-http
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:structure
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
+npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
+node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js
+npm --prefix src\ExternalSupport\VSCode run check:structure
+git -c safe.directory=D:/LabProjects/Inscape diff --check
+dotnet build Inscape.slnx --no-restore
+dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build
+```
+
+架构对照结论：
+
+1. internal workspace plan 只描述可发现 / 可创建目录与 gitignore 建议，不直接访问文件系统。
+2. `.inscape-workspace/` 被明确标为 non-project-truth，防止 recovery / backup / cache 被当成可提交项目真相。
+3. 路径仍走 workspace-relative path guard；renderer 不获得 Node / fs / shell 能力。
+4. 本轮没有改变 Compiler / LanguageServer / Tooling / Runtime payload shape，也没有进入 P1.5 long-lived LanguageServer。
+5. 下一轮应进入 Round 32：write-back backup。
+
 ## 36 轮主计划
 
 ### A. Contract 与 transport 基础，Round 1-6

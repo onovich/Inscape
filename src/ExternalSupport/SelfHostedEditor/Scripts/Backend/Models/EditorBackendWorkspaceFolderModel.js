@@ -2,8 +2,30 @@ import { EditorBackendWorkspacePathModel } from "./EditorBackendWorkspacePathMod
 
 export const EditorBackendWorkspaceFolderFormat = "inscape.self-hosted-editor.workspace-folder";
 export const EditorBackendWorkspaceFolderDocumentFormat = "inscape.self-hosted-editor.workspace-folder-document";
+export const EditorBackendWorkspaceInternalDirectoryPlanFormat = "inscape.self-hosted-editor.workspace-internal-directory-plan";
 export const EditorBackendWorkspaceFolderOpenDecisionFormat = "inscape.self-hosted-editor.workspace-folder-open-decision";
 export const EditorBackendWorkspaceFolderFormatVersion = 1;
+
+const internalWorkspaceDirectoryPolicies = Object.freeze([
+  Object.freeze({
+    kind: "recovery",
+    projectTruth: false,
+    recreatable: false,
+    relativePath: ".inscape-workspace/recovery",
+  }),
+  Object.freeze({
+    kind: "backups",
+    projectTruth: false,
+    recreatable: false,
+    relativePath: ".inscape-workspace/backups",
+  }),
+  Object.freeze({
+    kind: "cache",
+    projectTruth: false,
+    recreatable: true,
+    relativePath: ".inscape-workspace/cache",
+  }),
+]);
 
 export class EditorBackendWorkspaceFolderModel {
   static buildOpenDecision({
@@ -69,6 +91,50 @@ export class EditorBackendWorkspaceFolderModel {
       workspaceRoot: openDecision.workspaceRoot,
     };
   }
+
+  static buildInternalWorkspacePlan({
+    existingRelativePaths = [],
+    gitIgnoreEntries = [],
+    selectedPathKind = "directory",
+    workspaceKind = "",
+    workspaceRoot = "",
+  } = {}) {
+    const openDecision = this.buildOpenDecision({
+      selectedPathKind,
+      workspaceKind,
+      workspaceRoot,
+    });
+    const existingPathSet = buildRelativePathSet(existingRelativePaths);
+    const directories = internalWorkspaceDirectoryPolicies.map((policy) => {
+      const pathBoundary = EditorBackendWorkspacePathModel.buildBoundary({
+        relativePath: policy.relativePath,
+        workspaceRoot: openDecision.workspaceRoot,
+      });
+      const exists = existingPathSet.has(policy.relativePath);
+      return {
+        createRequired: openDecision.allowed && pathBoundary.allowed && !exists,
+        exists,
+        gitIgnored: true,
+        kind: policy.kind,
+        pathBoundary,
+        projectTruth: policy.projectTruth,
+        recreatable: policy.recreatable,
+        relativePath: policy.relativePath,
+      };
+    });
+    const gitIgnore = buildInternalWorkspaceGitIgnorePlan(gitIgnoreEntries);
+
+    return {
+      directories,
+      format: EditorBackendWorkspaceInternalDirectoryPlanFormat,
+      formatVersion: EditorBackendWorkspaceFolderFormatVersion,
+      gitIgnore,
+      internalRootRelativePath: ".inscape-workspace",
+      openDecision,
+      payloadContentExposed: false,
+      workspaceRoot: openDecision.workspaceRoot,
+    };
+  }
 }
 
 function buildWorkspaceDocumentDecision(document, workspaceRoot) {
@@ -110,6 +176,28 @@ function buildRejectedDocument(pathBoundary, reason) {
   };
 }
 
+function buildInternalWorkspaceGitIgnorePlan(gitIgnoreEntries) {
+  const entries = Array.isArray(gitIgnoreEntries) ? gitIgnoreEntries : [];
+  const normalizedEntries = entries
+    .map((entry) => String(entry || "").trim().replace(/\\/g, "/"))
+    .filter(Boolean);
+  const alreadyIgnored = normalizedEntries.includes(".inscape-workspace/")
+    || normalizedEntries.includes(".inscape-workspace");
+
+  return {
+    action: alreadyIgnored ? "none" : "append-entry",
+    alreadyIgnored,
+    entries: [".inscape-workspace/"],
+    reason: "internal-workspace-not-project-truth",
+    relativePath: ".gitignore",
+  };
+}
+
+function buildRelativePathSet(relativePaths) {
+  const source = Array.isArray(relativePaths) ? relativePaths : [];
+  return new Set(source.map((relativePath) => normalizeRelativePath(relativePath)).filter(Boolean));
+}
+
 function deriveDocumentTitle(relativePath) {
   const fileName = String(relativePath || "").split("/").pop() || "";
   return fileName.replace(/\.inscape$/i, "") || "Untitled";
@@ -129,6 +217,15 @@ function getOpenRejectionReason(workspaceRoot, selectedPathKind) {
   }
 
   return "";
+}
+
+function normalizeRelativePath(relativePath) {
+  return String(relativePath || "")
+    .trim()
+    .replace(/\\/g, "/")
+    .replace(/^\.\//, "")
+    .replace(/\/+$/g, "")
+    .replace(/\/+/g, "/");
 }
 
 function normalizeDocumentTitle(title) {

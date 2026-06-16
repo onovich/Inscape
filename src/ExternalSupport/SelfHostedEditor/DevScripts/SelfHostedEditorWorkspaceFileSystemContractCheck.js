@@ -7,6 +7,7 @@ import {
   EditorBackendWorkspacePathModel,
 } from "../Scripts/Backend/Models/EditorBackendWorkspacePathModel.js";
 import {
+  EditorBackendWorkspaceInternalDirectoryPlanFormat,
   EditorBackendWorkspaceFolderFormat,
   EditorBackendWorkspaceFolderModel,
   EditorBackendWorkspaceFolderOpenDecisionFormat,
@@ -169,6 +170,41 @@ const missingRootOpenDecision = EditorBackendWorkspaceFolderModel.buildOpenDecis
 });
 assertEqual(missingRootOpenDecision.allowed, false, "workspace open rejects missing root");
 assertEqual(missingRootOpenDecision.reason, "workspace-root-required", "workspace open missing root reason");
+
+const internalWorkspacePlan = EditorBackendWorkspaceFolderModel.buildInternalWorkspacePlan({
+  existingRelativePaths: [
+    ".inscape-workspace/recovery/",
+  ],
+  gitIgnoreEntries: [
+    "node_modules/",
+  ],
+  selectedPathKind: "directory",
+  workspaceRoot,
+});
+assertEqual(internalWorkspacePlan.format, EditorBackendWorkspaceInternalDirectoryPlanFormat, "internal workspace plan format");
+assertEqual(internalWorkspacePlan.payloadContentExposed, false, "internal workspace plan text-free");
+assertEqual(internalWorkspacePlan.internalRootRelativePath, ".inscape-workspace", "internal workspace root path");
+assertEqual(internalWorkspacePlan.directories.length, 3, "internal workspace directory count");
+assertEqual(internalWorkspacePlan.directories[0].kind, "recovery", "internal workspace recovery kind");
+assertEqual(internalWorkspacePlan.directories[0].exists, true, "internal workspace detects existing recovery");
+assertEqual(internalWorkspacePlan.directories[0].createRequired, false, "internal workspace recovery does not need create");
+assertEqual(internalWorkspacePlan.directories[1].kind, "backups", "internal workspace backups kind");
+assertEqual(internalWorkspacePlan.directories[1].createRequired, true, "internal workspace backups create required");
+assertEqual(internalWorkspacePlan.directories[2].kind, "cache", "internal workspace cache kind");
+assertEqual(internalWorkspacePlan.directories[2].recreatable, true, "internal workspace cache recreatable");
+assertEqual(internalWorkspacePlan.directories.every((directory) => directory.projectTruth === false), true, "internal workspace dirs are not project truth");
+assertEqual(internalWorkspacePlan.directories.every((directory) => directory.gitIgnored === true), true, "internal workspace dirs git ignored");
+assertEqual(internalWorkspacePlan.gitIgnore.relativePath, ".gitignore", "internal workspace gitignore path");
+assertEqual(internalWorkspacePlan.gitIgnore.entries.join(","), ".inscape-workspace/", "internal workspace gitignore entry");
+assertEqual(internalWorkspacePlan.gitIgnore.action, "append-entry", "internal workspace gitignore append action");
+const alreadyIgnoredInternalWorkspacePlan = EditorBackendWorkspaceFolderModel.buildInternalWorkspacePlan({
+  gitIgnoreEntries: [
+    ".inscape-workspace/",
+  ],
+  workspaceRoot,
+});
+assertEqual(alreadyIgnoredInternalWorkspacePlan.gitIgnore.alreadyIgnored, true, "internal workspace already ignored");
+assertEqual(alreadyIgnoredInternalWorkspacePlan.gitIgnore.action, "none", "internal workspace no gitignore action when present");
 
 const workspaceFolder = EditorBackendWorkspaceFolderModel.buildWorkspaceFolder({
   activeRelativePath: "story/branch.inscape",

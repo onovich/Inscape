@@ -56,6 +56,8 @@
 
 2026-06-16 P1 Round 30 补充：recovery UI 先落为 ProjectSession summary projection 与 action request contract。session panel 只显示 recovery 状态和可恢复文件名；restore / discard / later 分别表达写回、抑制后续提示、保留 snapshot。真实扫描、删除 snapshot 和恢复写回仍待后续 IO 层。
 
+2026-06-16 P1 Round 31 补充：`.inscape-workspace/` 策略先落为 `buildInternalWorkspacePlan()` contract。plan 列出 recovery / backups / cache 内部目录，标记 non-project-truth、默认 git ignored、cache 可重建，并给出 `.gitignore` 追加 `.inscape-workspace/` 的建议。真实 mkdir / gitignore 写入仍待 IO 层。
+
 ## 状态分类
 
 | 分类 | 当前例子 | 未来归属 | 规则 |

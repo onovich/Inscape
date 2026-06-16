@@ -320,6 +320,17 @@ P1 Round 30 已建立 recovery UI/status/action contract。本轮只把 ProjectS
 - Workbench integration contract 覆盖 dev-host / embedded recovery status、panel display、action request 和 no-text projection。
 - Round 30 当前已通过：SelfHostedEditor `check:desktop-backend` / `check:workspace-fs` / `check:backend-services` / `check:backend-transport` / `check:preload-transport` / `check:fake-embedded-transport` / `check:electron-boundary` / `check:runtime` / `check:runtime-http` / `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity` / `check:structure`，`node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js`，`git diff --check`，`.NET build` 与 Internal tests。下一步进入 Round 31：`.inscape-workspace/` 策略。
 
+### 2026-06-16 SelfHostedEditor P1 Round 31 `.inscape-workspace/` 策略快照
+
+P1 Round 31 已建立 workspace 内部目录策略 contract。本轮只生成 discovery / creation / gitignore plan，不执行真实 mkdir，也不写 `.gitignore`。
+
+- `EditorBackendWorkspaceFolderModel.buildInternalWorkspacePlan()` 返回 `inscape.self-hosted-editor.workspace-internal-directory-plan`。
+- plan 固定列出 `.inscape-workspace/recovery`、`.inscape-workspace/backups`、`.inscape-workspace/cache`。
+- 三类目录都标记为 non-project-truth、默认 git ignored；cache 额外标记 `recreatable: true`。
+- existing relative paths 可让已存在目录不再 `createRequired`；缺失目录会计划创建。
+- `.gitignore` plan 默认建议追加 `.inscape-workspace/`；已有该条目时 action 为 `none`。
+- Round 31 当前已通过：SelfHostedEditor `check:desktop-backend` / `check:workspace-fs` / `check:backend-services` / `check:backend-transport` / `check:preload-transport` / `check:fake-embedded-transport` / `check:electron-boundary` / `check:runtime` / `check:runtime-http` / `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity` / `check:structure`，`node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js`，`git diff --check`，`.NET build` 与 Internal tests。下一步进入 Round 32：write-back backup。
+
 ### 2026-06-14 SelfHostedEditor desktop backend v0 决策快照
 
 本轮已采纳 [ADR 0019](adr/0019-self-hosted-editor-embedded-backend-v0.md)：SelfHostedEditor desktop backend v0 采用嵌入式 EditorBackend，而不是独立 sidecar daemon。
