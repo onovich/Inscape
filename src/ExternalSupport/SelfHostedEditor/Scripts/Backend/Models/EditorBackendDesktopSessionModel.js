@@ -2,6 +2,7 @@ import {
   EditorBackendProjectSessionFormat,
   EditorBackendProjectSessionFormatVersion,
 } from "./EditorBackendProjectSessionModel.js";
+import { EditorBackendWorkspacePathModel } from "./EditorBackendWorkspacePathModel.js";
 
 export const EditorBackendDesktopProjectSessionMode = "embedded-desktop";
 export const EditorBackendDocumentBufferFormat = "inscape.self-hosted-editor.document-buffer";
@@ -129,26 +130,33 @@ export class EditorBackendDesktopSessionModel {
   static buildWorkspaceFileBoundary({
     operation = "read",
     relativePath = "",
+    resolvedPath = "",
+    workspaceRoot = "",
   } = {}) {
-    const normalizedPath = normalizeRelativePath(relativePath);
-    const rejectionReason = getUnsafePathReason(relativePath, normalizedPath);
-    if (rejectionReason) {
+    const pathBoundary = EditorBackendWorkspacePathModel.buildBoundary({
+      relativePath,
+      resolvedPath,
+      workspaceRoot,
+    });
+    if (!pathBoundary.allowed) {
       return buildWorkspaceFileBoundaryDecision({
         allowed: false,
         operation,
-        reason: rejectionReason,
-        relativePath: normalizedPath,
+        pathBoundary,
+        reason: pathBoundary.reason,
+        relativePath: pathBoundary.relativePath,
         targetKind: "rejected",
       });
     }
 
-    const targetKind = resolveWriteTargetKind(normalizedPath);
+    const targetKind = resolveWriteTargetKind(pathBoundary.relativePath);
     if (!targetKind) {
       return buildWorkspaceFileBoundaryDecision({
         allowed: false,
         operation,
+        pathBoundary,
         reason: "write-target-not-whitelisted",
-        relativePath: normalizedPath,
+        relativePath: pathBoundary.relativePath,
         targetKind: "rejected",
       });
     }
@@ -156,8 +164,9 @@ export class EditorBackendDesktopSessionModel {
     return buildWorkspaceFileBoundaryDecision({
       allowed: true,
       operation,
+      pathBoundary,
       reason: "",
-      relativePath: normalizedPath,
+      relativePath: pathBoundary.relativePath,
       targetKind,
     });
   }
@@ -232,6 +241,7 @@ export class EditorBackendDesktopSessionModel {
 function buildWorkspaceFileBoundaryDecision({
   allowed,
   operation,
+  pathBoundary,
   reason,
   relativePath,
   targetKind,
@@ -241,10 +251,14 @@ function buildWorkspaceFileBoundaryDecision({
     format: EditorBackendWorkspaceFileBoundaryFormat,
     formatVersion: EditorBackendDesktopModelFormatVersion,
     operation: String(operation || "read"),
+    pathBoundary,
     reason,
     relativePath,
+    resolvedWorkspacePath: pathBoundary?.resolvedWorkspacePath || relativePath,
     targetKind,
-    workspaceRelative: Boolean(allowed),
+    withinWorkspace: Boolean(pathBoundary?.withinWorkspace && allowed),
+    workspaceRelative: Boolean(pathBoundary?.withinWorkspace && allowed),
+    workspaceRoot: pathBoundary?.workspaceRoot || "",
   };
 }
 
@@ -272,28 +286,6 @@ function buildSubSession(session, fallbackKind) {
     lastError: normalizeErrorSummary(session?.lastError),
     staleReason: String(session?.staleReason || ""),
   };
-}
-
-function getUnsafePathReason(originalPath, normalizedPath) {
-  const source = String(originalPath || "");
-  if (!source.trim()) {
-    return "empty-relative-path";
-  }
-
-  if (/^[A-Za-z]:[\\/]/.test(source) || source.startsWith("/") || source.startsWith("\\")) {
-    return "absolute-path-rejected";
-  }
-
-  const segments = normalizedPath.split("/");
-  if (segments.includes("..")) {
-    return "path-traversal-rejected";
-  }
-
-  if (normalizedPath.includes(":")) {
-    return "invalid-relative-path";
-  }
-
-  return "";
 }
 
 function resolveWriteTargetKind(relativePath) {

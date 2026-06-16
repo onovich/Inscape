@@ -131,24 +131,35 @@ for (const [relativePath, expectedTargetKind] of allowedBoundaries) {
   const boundary = EditorBackendDesktopSessionModel.buildWorkspaceFileBoundary({
     operation: "write",
     relativePath,
+    workspaceRoot: "C:/Case Files/Court Loop",
   });
   assertEqual(boundary.format, EditorBackendWorkspaceFileBoundaryFormat, `workspace boundary format: ${relativePath}`);
   assertEqual(boundary.allowed, true, `workspace boundary allowed: ${relativePath}`);
   assertEqual(boundary.workspaceRelative, true, `workspace boundary relative: ${relativePath}`);
+  assertEqual(boundary.withinWorkspace, true, `workspace boundary inside root: ${relativePath}`);
+  assertEqual(
+    boundary.resolvedWorkspacePath,
+    `C:/Case Files/Court Loop/${relativePath}`,
+    `workspace boundary resolved path: ${relativePath}`
+  );
   assertEqual(boundary.targetKind, expectedTargetKind, `workspace boundary target kind: ${relativePath}`);
 }
 
 const rejectedBoundaries = [
   ["", "empty-relative-path"],
   ["../escape.inscape", "path-traversal-rejected"],
+  ["story/../escape.inscape", "path-traversal-rejected"],
   ["C:/escape.inscape", "absolute-path-rejected"],
+  ["C:\\escape.inscape", "absolute-path-rejected"],
   ["/escape.inscape", "absolute-path-rejected"],
+  ["file:///escape.inscape", "absolute-path-rejected"],
   ["story/tool.exe", "write-target-not-whitelisted"],
 ];
 for (const [relativePath, expectedReason] of rejectedBoundaries) {
   const boundary = EditorBackendDesktopSessionModel.buildWorkspaceFileBoundary({
     operation: "write",
     relativePath,
+    workspaceRoot: "C:/Case Files/Court Loop",
   });
   assertEqual(boundary.allowed, false, `workspace boundary rejected: ${relativePath}`);
   assertEqual(boundary.workspaceRelative, false, `workspace boundary rejected relative flag: ${relativePath}`);

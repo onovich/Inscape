@@ -131,6 +131,16 @@ P1 Round 12 已完成 Electron / preload / renderer / desktop transport 边界 c
 - contract 验证 preload command whitelist 覆盖当前 `EditorBackendTransportCommand`，并且 preload transport 可处理所有当前 backend command。
 - Round 12 验证已通过：SelfHostedEditor `check:electron-boundary` / `check:preload-transport` / `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity`，`.NET build` 与 Internal tests。下一步进入 Round 13：workspace path guard。
 
+### 2026-06-16 SelfHostedEditor P1 Round 13 workspace path guard 快照
+
+P1 Round 13 已完成 backend workspace path guard contract，仍未接真实文件 IO、open workspace folder 或 autosave / recovery。
+
+- 新增 `EditorBackendWorkspacePathModel`，集中归一化 workspace root、workspace-relative path 与 resolved path 摘要。
+- path guard 拒绝空路径、Windows / POSIX / UNC / URI-like 绝对路径、`..` 越界、`.` segment、null byte 与解析后不在 workspace root 下的路径。
+- `EditorBackendDesktopSessionModel.buildWorkspaceFileBoundary()` 现在先通过 workspace path guard，再执行既有写回白名单；boundary 输出包含 `workspaceRoot`、`resolvedWorkspacePath`、`withinWorkspace` 与嵌入的 `pathBoundary`。
+- 新增 `check:workspace-fs` 并接入 `check:model`；`check:structure` 已守住新增 model / contract 文件与 package script。
+- Round 13 验证已通过：SelfHostedEditor `check:workspace-fs` / `check:desktop-backend` / `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity`，`.NET build` 与 Internal tests。下一步进入 Round 14：写回白名单。
+
 ### 2026-06-14 SelfHostedEditor desktop backend v0 决策快照
 
 本轮已采纳 [ADR 0019](adr/0019-self-hosted-editor-embedded-backend-v0.md)：SelfHostedEditor desktop backend v0 采用嵌入式 EditorBackend，而不是独立 sidecar daemon。

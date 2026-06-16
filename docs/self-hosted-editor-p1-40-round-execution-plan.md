@@ -459,6 +459,38 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 2. preload / desktop transport 与 `EditorBackendClient` command catalog 对齐，但仍未接真实 IPC / 文件 IO。
 3. 下一轮应进入 Round 13：workspace path guard，开始 backend workspace 文件系统边界 model / contract。
 
+### 2026-06-16 Round 13：workspace path guard
+
+范围：收束 backend workspace-relative path model / contract；不接真实文件 IO、不实现 open workspace folder、不扩展写回白名单范围。
+
+完成内容：
+
+1. 新增 `EditorBackendWorkspacePathModel`，集中归一化 workspace root、workspace-relative path 与 resolved path 摘要。
+2. path guard 拒绝空路径、Windows / POSIX / UNC / URI-like 绝对路径、`..` 越界、`.` segment、null byte 与解析后不在 workspace root 下的路径。
+3. `EditorBackendDesktopSessionModel.buildWorkspaceFileBoundary()` 现在先通过 workspace path guard，再执行既有写回白名单；boundary 输出包含 `workspaceRoot`、`resolvedWorkspacePath`、`withinWorkspace` 与嵌入的 `pathBoundary`。
+4. 新增 `check:workspace-fs`，覆盖允许的 workspace-relative path、绝对路径拒绝、路径穿越拒绝、resolved outside workspace 拒绝，以及未白名单写回仍被拒绝。
+5. `check:workspace-fs` 已接入 `check:model`；`check:structure` 已守住新增 model / contract 文件与 package script。
+
+本轮验证已通过：
+
+```powershell
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:workspace-fs
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:desktop-backend
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:structure
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
+npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
+dotnet build Inscape.slnx --no-restore
+dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build
+```
+
+架构对照结论：
+
+1. workspace path 判定位于 SelfHostedEditor backend model 层，没有把 Node / Electron / fs 能力暴露给 renderer 或 preload。
+2. 本轮只定义路径边界与 contract，不实现真实文件 IO、open folder、autosave、recovery 或 P1.5 long-lived LanguageServer。
+3. 下一轮应进入 Round 14：写回白名单，将允许写回的文件类型 / 目录从现有 model contract 进一步显式化。
+
 ## 36 轮主计划
 
 ### A. Contract 与 transport 基础，Round 1-6
@@ -487,7 +519,7 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 
 | 轮次 | 目标 | 完成标准 |
 |---|---|---|
-| 13 | workspace path guard | backend 只接受 workspace-relative path；拒绝绝对路径、`..` 越界、解析后不在 workspace 内的路径。 |
+| 13 | workspace path guard | 已完成。新增 `EditorBackendWorkspacePathModel` 与 `check:workspace-fs`；backend boundary 只接受 workspace-relative path，拒绝绝对路径、`..` 越界、非法 segment / null byte 与解析后不在 workspace 内的路径。 |
 | 14 | 写回白名单 | 明确允许的文件类型 / 目录：`.inscape` 文档、localization CSV、node-map sidecar、line-map sidecar、recovery、backup、cache、assets；其他写回默认拒绝。 |
 | 15 | open workspace folder | v0 只打开目录，列出 workspace 内多个 `.inscape` 文件；不提供正式打开单文件入口。 |
 | 16 | ProjectSession lifecycle | 建立一个窗口一个 active project session；session id、workspace root、active relative path、document count、revision、mode=`embedded-desktop` 可查询。 |
