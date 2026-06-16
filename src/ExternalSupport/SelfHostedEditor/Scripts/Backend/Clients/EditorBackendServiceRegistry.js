@@ -99,6 +99,10 @@ export class DocumentBufferStore {
     return EditorBackendDocumentBufferStoreModel.buildAutosavePlan(store, request);
   }
 
+  buildFlushPlan(store = {}, request = {}) {
+    return EditorBackendDocumentBufferStoreModel.buildFlushPlan(store, request);
+  }
+
   buildWorkspaceSnapshot(store = {}, request = {}) {
     return EditorBackendWorkspaceSnapshotModel.buildSnapshot({
       activeRelativePath: request.activeRelativePath,

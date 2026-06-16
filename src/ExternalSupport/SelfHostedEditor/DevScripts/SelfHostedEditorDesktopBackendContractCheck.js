@@ -14,6 +14,7 @@ import {
 } from "../Scripts/Backend/Models/EditorBackendDocumentBufferModel.js";
 import {
   EditorBackendDocumentBufferAutosavePlanFormat,
+  EditorBackendDocumentBufferFlushPlanFormat,
   EditorBackendDocumentBufferStoreFormat,
   EditorBackendDocumentBufferStoreModel,
   EditorBackendDocumentBufferListFormat,
@@ -285,6 +286,76 @@ const autosaveDisabledPlan = EditorBackendDocumentBufferStoreModel.buildAutosave
 assertEqual(autosaveDisabledPlan.autosaveEnabled, false, "autosave disabled plan flag");
 assertEqual(autosaveDisabledPlan.saveRequests.length, 0, "autosave disabled plan no save requests");
 assertEqual(autosaveDisabledPlan.skippedWrites[0].reason, "autosave-disabled", "autosave disabled plan reason");
+const flushStore = EditorBackendDocumentBufferStoreModel.buildStore({
+  documents: [
+    {
+      dirty: true,
+      lastSavedRevision: 6,
+      relativePath: "story/opening.inscape",
+      revision: 9,
+      text: "secret flush latest text",
+    },
+    {
+      dirty: false,
+      relativePath: "story/clean.inscape",
+      revision: 3,
+      text: "secret clean flush text",
+    },
+  ],
+});
+for (const trigger of ["manual-save", "close-window", "switch-workspace", "app-exit"]) {
+  const flushPlan = EditorBackendDocumentBufferStoreModel.buildFlushPlan(flushStore, {
+    trigger,
+    workspaceRoot: "C:/Case Files/Court Loop",
+  });
+  assertEqual(flushPlan.format, EditorBackendDocumentBufferFlushPlanFormat, `flush plan format ${trigger}`);
+  assertEqual(flushPlan.trigger, trigger, `flush plan trigger ${trigger}`);
+  assertEqual(flushPlan.continuationBlocked, true, `flush plan blocks continuation ${trigger}`);
+  assertEqual(flushPlan.flushRequestCount, 1, `flush plan request count ${trigger}`);
+  assertEqual(flushPlan.flushRequests[0].baseRevision, 9, `flush plan latest revision ${trigger}`);
+  assertEqual(flushPlan.flushRequests[0].lastSavedRevision, 6, `flush plan saved baseline ${trigger}`);
+  assertEqual(flushPlan.flushRequests[0].required, true, `flush plan required flag ${trigger}`);
+  assertEqual(flushPlan.flushRequests[0].writeTarget.targetKind, "inscape-document", `flush plan write target ${trigger}`);
+  assertEqual(flushPlan.uiVisibility.state, "flush-required", `flush plan UI state ${trigger}`);
+  assertEqual(flushPlan.payloadContentExposed, false, `flush plan payload exposure ${trigger}`);
+  assertNotIncludes(JSON.stringify(flushPlan), "secret flush latest text", `flush plan must not expose dirty text ${trigger}`);
+  assertNotIncludes(JSON.stringify(flushPlan), "secret clean flush text", `flush plan must not expose clean text ${trigger}`);
+}
+const failedFlushPlan = EditorBackendDocumentBufferStoreModel.buildFlushPlan(flushStore, {
+  saveResults: [
+    {
+      currentRevision: 9,
+      ok: false,
+      reason: "disk-conflict",
+      relativePath: "story/opening.inscape",
+      saveStatus: {
+        lastError: {
+          code: "disk-conflict",
+          message: "secret disk failure payload",
+        },
+        relativePath: "story/opening.inscape",
+        revision: 9,
+      },
+    },
+  ],
+  trigger: "app-exit",
+  workspaceRoot: "C:/Case Files/Court Loop",
+});
+assertEqual(failedFlushPlan.failedCount, 1, "flush plan failed count");
+assertEqual(failedFlushPlan.visibleFailures[0].reason, "disk-conflict", "flush plan visible failure reason");
+assertEqual(failedFlushPlan.uiVisibility.state, "save-error-visible", "flush plan failure UI state");
+assertEqual(failedFlushPlan.uiVisibility.requiresUserAction, true, "flush plan failure requires user action");
+assertNotIncludes(JSON.stringify(failedFlushPlan), "secret disk failure payload", "flush plan failure must not echo error payload");
+assertNotIncludes(JSON.stringify(failedFlushPlan), "secret flush latest text", "flush plan failure must not expose text");
+const blockedFlushPlan = EditorBackendDocumentBufferStoreModel.buildFlushPlan(unsafeSaveStore, {
+  trigger: "switch-workspace",
+  workspaceRoot: "C:/Case Files/Court Loop",
+});
+assertEqual(blockedFlushPlan.flushRequestCount, 0, "flush plan unsafe request count");
+assertEqual(blockedFlushPlan.blockingIssues[0].reason, "write-target-not-whitelisted", "flush plan unsafe reason");
+assertEqual(blockedFlushPlan.uiVisibility.state, "flush-blocked-visible", "flush plan unsafe UI state");
+assertEqual(blockedFlushPlan.continuationBlocked, true, "flush plan unsafe blocks continuation");
+assertNotIncludes(JSON.stringify(blockedFlushPlan), "secret executable draft text", "flush plan unsafe must not expose text");
 const activeBufferResult = EditorBackendDocumentBufferStoreModel.setActiveDocument(updateBufferResult.store, {
   relativePath: "story/branch.inscape",
 });

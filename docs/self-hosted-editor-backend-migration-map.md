@@ -50,6 +50,8 @@
 
 2026-06-16 P1 Round 27 补充：backend autosave 先落为 `buildAutosavePlan()` contract。plan 根据 autosave enabled、idle debounce 和 dirty `.inscape` buffer 生成 text-free save request，并把低于当前 revision 的 pending write 标为 `stale-autosave-revision`。真实 timer、文件写入、flush 和 recovery 仍待后续轮次。
 
+2026-06-16 P1 Round 28 补充：flush rules 先落为 `buildFlushPlan()` contract。plan 覆盖 manual Save、close window、switch workspace、app exit，用当前 dirty backend buffer 的 latest revision 生成 text-free flush request；unsafe write target 进入 blocking issue，save failure 进入 visible failure，真实文件 IO 和 recovery snapshot 仍待后续 embedded backend handler 落地。
+
 ## 状态分类
 
 | 分类 | 当前例子 | 未来归属 | 规则 |

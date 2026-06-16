@@ -948,8 +948,24 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 
 ```powershell
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:desktop-backend
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:workspace-fs
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:backend-services
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:backend-transport
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:preload-transport
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:fake-embedded-transport
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:electron-boundary
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:runtime
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:runtime-http
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:structure
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
+npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
+node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js
+npm --prefix src\ExternalSupport\VSCode run check:structure
+git -c safe.directory=D:/LabProjects/Inscape diff --check
+dotnet build Inscape.slnx --no-restore
+dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build
 ```
 
 架构对照结论：
@@ -959,6 +975,52 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
 3. autosave 设置输入仍是配置层/ProjectSession 将来应持有的行为参数；本轮没有把默认值散落到 feature controller。
 4. 本轮没有改变 Compiler / LanguageServer / Tooling / Runtime payload shape，也没有进入 P1.5 long-lived LanguageServer。
 5. 下一轮应进入 Round 28：flush rules，覆盖手动 Save、关闭窗口、切换 workspace、应用退出前 flush 最新 backend buffer。
+
+### 2026-06-16 Round 28：flush rules
+
+范围：建立 flush lifecycle 守门 contract，证明手动 Save、关闭窗口、切换 workspace 与 app exit 都必须先 flush 最新 backend buffer；失败或无法写回时 UI 可见并阻断静默丢失。本轮仍不做真实 Electron 文件 IO 或 recovery snapshot。
+
+完成内容：
+
+1. `EditorBackendDocumentBufferStoreModel.buildFlushPlan()` 返回 `inscape.self-hosted-editor.document-buffer-flush-plan`。
+2. Flush plan 识别 `manual-save`、`close-window`、`switch-workspace`、`app-exit` 四类 trigger。
+3. dirty document 会通过既有 workspace file boundary / write target catalog 生成 `flushRequests`，`baseRevision` / `documentRevision` 使用当前最新 buffer revision。
+4. 非白名单写回目标进入 `blockingIssues`，并把 `uiVisibility.state` 标为 `flush-blocked-visible`。
+5. save failure 可通过 `saveResults` 进入 text-free `visibleFailures`，并把 `uiVisibility.state` 标为 `save-error-visible` / `requiresUserAction`，避免关闭 / 切换 / 退出静默丢内容。
+6. `DocumentBufferStore` 窄服务新增 `buildFlushPlan()` helper；`check:desktop-backend` 与 `check:backend-services` 覆盖四种 trigger、latest revision、unsafe target、failure visibility 和 no-text result。
+
+验证：
+
+```powershell
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:desktop-backend
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:workspace-fs
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:backend-services
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:backend-transport
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:preload-transport
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:fake-embedded-transport
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:electron-boundary
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:runtime
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:runtime-http
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:structure
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
+npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
+node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js
+npm --prefix src\ExternalSupport\VSCode run check:structure
+git -c safe.directory=D:/LabProjects/Inscape diff --check
+dotnet build Inscape.slnx --no-restore
+dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build
+```
+
+架构对照结论：
+
+1. Flush plan 只做 lifecycle guard / UX visibility contract，不直接写文件，也不让 renderer 获得 Node / fs / shell 能力。
+2. 路径与写回目标继续复用 `EditorBackendDesktopSessionModel.buildWorkspaceFileBoundary()` 和 write target catalog，没有在 feature 层复制文件边界语义。
+3. “flush 最新 buffer” 通过当前 `baseRevision` / `documentRevision` 表达，继续沿用现有 revision guard。
+4. failure visibility 只暴露 sanitized save status / reason，不回显 document text 或任意错误 payload。
+5. 本轮没有改变 Compiler / LanguageServer / Tooling / Runtime payload shape，也没有进入 P1.5 long-lived LanguageServer。
+6. 下一轮应进入 Round 29：recovery snapshot。
 
 ## 36 轮主计划
 

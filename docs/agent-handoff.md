@@ -288,6 +288,17 @@ P1 Round 27 已建立 backend autosave idle-debounce 的计划模型。它只生
 - autosave disabled / debounce waiting 都有显式 skipped reason；plan / store summary 不暴露 buffer text。
 - Round 27 当前已通过：SelfHostedEditor `check:desktop-backend` / `check:workspace-fs` / `check:backend-services` / `check:backend-transport` / `check:preload-transport` / `check:fake-embedded-transport` / `check:electron-boundary` / `check:runtime` / `check:runtime-http` / `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity` / `check:structure`，`node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js`，`git diff --check`，`.NET build` 与 Internal tests。下一步进入 Round 28：flush rules。
 
+### 2026-06-16 SelfHostedEditor P1 Round 28 flush rules 快照
+
+P1 Round 28 已建立 flush lifecycle 守门 contract。它只生成 text-free flush plan，不执行真实文件 IO，也不实现 recovery snapshot。
+
+- `EditorBackendDocumentBufferStoreModel.buildFlushPlan()` 返回 `inscape.self-hosted-editor.document-buffer-flush-plan`。
+- plan 覆盖 `manual-save`、`close-window`、`switch-workspace`、`app-exit` 四类 trigger；dirty document 会生成使用当前最新 `baseRevision` / `documentRevision` 的 flush request。
+- flush request 继续走 workspace file boundary / write target catalog；非白名单目标进入 `blockingIssues`，UI state 为 `flush-blocked-visible`。
+- save failure 可通过 `saveResults` 进入 `visibleFailures`，UI state 为 `save-error-visible` 且 `requiresUserAction`，从 contract 层阻止静默关闭 / 切换 / 退出。
+- plan / failure summary 不暴露 buffer text，也不回显 arbitrary error payload。
+- Round 28 当前已通过：SelfHostedEditor `check:desktop-backend` / `check:workspace-fs` / `check:backend-services` / `check:backend-transport` / `check:preload-transport` / `check:fake-embedded-transport` / `check:electron-boundary` / `check:runtime` / `check:runtime-http` / `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity` / `check:structure`，`node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js`，`git diff --check`，`.NET build` 与 Internal tests。下一步进入 Round 29：recovery snapshot。
+
 ### 2026-06-14 SelfHostedEditor desktop backend v0 决策快照
 
 本轮已采纳 [ADR 0019](adr/0019-self-hosted-editor-embedded-backend-v0.md)：SelfHostedEditor desktop backend v0 采用嵌入式 EditorBackend，而不是独立 sidecar daemon。

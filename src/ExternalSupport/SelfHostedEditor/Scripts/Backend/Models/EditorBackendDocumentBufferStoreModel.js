@@ -4,6 +4,7 @@ import { EditorBackendDesktopSessionModel } from "./EditorBackendDesktopSessionM
 export const EditorBackendDocumentBufferStoreFormat = "inscape.self-hosted-editor.document-buffer-store";
 export const EditorBackendDocumentBufferListFormat = "inscape.self-hosted-editor.document-buffer-list";
 export const EditorBackendDocumentBufferAutosavePlanFormat = "inscape.self-hosted-editor.document-buffer-autosave-plan";
+export const EditorBackendDocumentBufferFlushPlanFormat = "inscape.self-hosted-editor.document-buffer-flush-plan";
 export const EditorBackendDocumentBufferSaveResultFormat = "inscape.self-hosted-editor.document-buffer-save-result";
 export const EditorBackendDocumentBufferSaveAllResultFormat = "inscape.self-hosted-editor.document-buffer-save-all-result";
 export const EditorBackendDocumentBufferStoreModelFormatVersion = 1;
@@ -283,6 +284,76 @@ export class EditorBackendDocumentBufferStoreModel {
       workspaceName: normalizedStore.workspaceName,
     };
   }
+
+  static buildFlushPlan(store = {}, request = {}) {
+    const normalizedStore = this.buildStore(store);
+    const trigger = normalizeFlushTrigger(request.trigger || request.operation);
+    const requestedPaths = normalizeRelativePathList(request.relativePaths);
+    const dirtyDocuments = normalizedStore.documents.filter((document) => (
+      document.dirty
+      && (
+        requestedPaths.length === 0
+        || requestedPaths.includes(document.relativePath)
+      )
+    ));
+    const flushRequests = [];
+    const blockingIssues = [];
+
+    for (const document of dirtyDocuments) {
+      const workspaceBoundary = EditorBackendDesktopSessionModel.buildWorkspaceFileBoundary({
+        operation: "write",
+        relativePath: document.relativePath,
+        workspaceRoot: request.workspaceRoot,
+      });
+      if (!workspaceBoundary.allowed) {
+        blockingIssues.push(buildFlushBlockingIssue({
+          document,
+          reason: workspaceBoundary.reason || "workspace-boundary-rejected",
+          workspaceBoundary,
+        }));
+        continue;
+      }
+
+      flushRequests.push({
+        baseRevision: document.revision,
+        documentRevision: document.revision,
+        lastSavedRevision: document.lastSavedRevision,
+        reason: "flush-latest-revision",
+        relativePath: document.relativePath,
+        required: true,
+        trigger,
+        workspaceBoundary,
+        writeTarget: workspaceBoundary.writeTarget || null,
+      });
+    }
+
+    const visibleFailures = buildFlushVisibleFailures(normalizedStore, request.saveResults ?? request.results);
+    const continuationBlocked = flushRequests.length > 0
+      || blockingIssues.length > 0
+      || visibleFailures.length > 0;
+
+    return {
+      blockingIssues,
+      continuationBlocked,
+      dirtyCount: dirtyDocuments.length,
+      failedCount: visibleFailures.length,
+      flushRequestCount: flushRequests.length,
+      flushRequests,
+      format: EditorBackendDocumentBufferFlushPlanFormat,
+      formatVersion: EditorBackendDocumentBufferStoreModelFormatVersion,
+      payloadContentExposed: false,
+      storeRevision: normalizedStore.revision,
+      storeSummary: this.listDocuments(normalizedStore),
+      trigger,
+      uiVisibility: buildFlushUiVisibility({
+        blockingIssues,
+        flushRequests,
+        visibleFailures,
+      }),
+      visibleFailures,
+      workspaceName: normalizedStore.workspaceName,
+    };
+  }
 }
 
 function buildSaveDocumentOutcome(store, request = {}) {
@@ -549,6 +620,132 @@ function buildAutosaveSkip(document, reason) {
 
 function isInscapeDocumentPath(relativePath) {
   return normalizeRelativePath(relativePath).toLowerCase().endsWith(".inscape");
+}
+
+function buildFlushBlockingIssue({
+  document,
+  reason,
+  workspaceBoundary = null,
+}) {
+  return {
+    documentRevision: document.revision,
+    latestRevision: document.revision,
+    reason: normalizeReasonToken(reason, "flush-blocked"),
+    relativePath: document.relativePath,
+    workspaceBoundary,
+    writeTarget: workspaceBoundary?.writeTarget || null,
+  };
+}
+
+function buildFlushVisibleFailures(store, saveResults) {
+  if (!Array.isArray(saveResults)) {
+    return [];
+  }
+
+  return saveResults
+    .filter((result) => result && result.ok === false)
+    .map((result) => {
+      const relativePath = normalizeRelativePath(
+        result.relativePath
+          ?? result.document?.relativePath
+          ?? result.saveStatus?.relativePath
+      );
+      const document = store.documents.find((item) => item.relativePath === relativePath) || null;
+      const reason = normalizeReasonToken(
+        result.reason
+          || result.saveStatus?.lastError?.code
+          || "flush-failed",
+        "flush-failed"
+      );
+      const documentRevision = normalizeRevision(
+        result.currentRevision
+          ?? result.document?.revision
+          ?? document?.revision
+          ?? result.saveStatus?.revision,
+        0
+      );
+
+      return {
+        documentRevision,
+        latestRevision: document?.revision || documentRevision,
+        reason,
+        relativePath,
+        saveStatus: EditorBackendDesktopSessionModel.buildSaveStatus({
+          dirty: true,
+          lastError: {
+            code: reason,
+            message: `Flush failed: ${reason}`,
+          },
+          lastSavedRevision: document?.lastSavedRevision ?? 0,
+          relativePath,
+          revision: documentRevision || document?.revision || store.revision,
+          state: "error",
+        }),
+      };
+    })
+    .filter((failure) => failure.relativePath);
+}
+
+function buildFlushUiVisibility({
+  blockingIssues = [],
+  flushRequests = [],
+  visibleFailures = [],
+} = {}) {
+  if (visibleFailures.length > 0) {
+    return {
+      messageKey: "save-error-visible",
+      requiresUserAction: true,
+      state: "save-error-visible",
+    };
+  }
+
+  if (blockingIssues.length > 0) {
+    return {
+      messageKey: "flush-blocked-visible",
+      requiresUserAction: true,
+      state: "flush-blocked-visible",
+    };
+  }
+
+  if (flushRequests.length > 0) {
+    return {
+      messageKey: "flush-required",
+      requiresUserAction: false,
+      state: "flush-required",
+    };
+  }
+
+  return {
+    messageKey: "clean",
+    requiresUserAction: false,
+    state: "clean",
+  };
+}
+
+function normalizeFlushTrigger(trigger) {
+  const normalizedTrigger = normalizeReasonToken(trigger, "manual-save");
+  if ([
+    "manual-save",
+    "close-window",
+    "switch-workspace",
+    "app-exit",
+  ].includes(normalizedTrigger)) {
+    return normalizedTrigger;
+  }
+
+  return "manual-save";
+}
+
+function normalizeReasonToken(reason, fallback) {
+  const normalizedReason = String(reason || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 80);
+
+  return normalizedReason || fallback;
 }
 
 function normalizePendingWrites(pendingWrites) {

@@ -136,6 +136,7 @@ assertSurface(services.documentBufferStore, [
   "saveAll",
   "saveAllToStore",
   "buildAutosavePlan",
+  "buildFlushPlan",
   "buildWorkspaceSnapshot",
   "buildActiveDocumentRequest",
   "buildWorkspaceBoundary",
@@ -277,6 +278,38 @@ assertEqual(autosavePlan.ready, true, "document buffer autosave plan ready");
 assertEqual(autosavePlan.saveRequests[0].baseRevision, documentUpdateResult.document.revision, "document buffer autosave plan latest revision");
 assertEqual(autosavePlan.skippedWrites[0].reason, "stale-autosave-revision", "document buffer autosave plan stale pending write");
 assertEqual(JSON.stringify(autosavePlan).includes("# Opening\nNarrator: Updated"), false, "document buffer autosave plan must not expose text");
+const flushPlan = services.documentBufferStore.buildFlushPlan(documentUpdateResult.store, {
+  trigger: "app-exit",
+  workspaceRoot: "C:/Case Files/Court Loop",
+});
+assertEqual(flushPlan.trigger, "app-exit", "document buffer flush plan trigger");
+assertEqual(flushPlan.continuationBlocked, true, "document buffer flush plan blocks continuation");
+assertEqual(flushPlan.flushRequests[0].baseRevision, documentUpdateResult.document.revision, "document buffer flush plan latest revision");
+assertEqual(flushPlan.uiVisibility.state, "flush-required", "document buffer flush plan UI state");
+assertEqual(JSON.stringify(flushPlan).includes("# Opening\nNarrator: Updated"), false, "document buffer flush plan must not expose text");
+const failedFlushPlan = services.documentBufferStore.buildFlushPlan(documentUpdateResult.store, {
+  saveResults: [
+    {
+      currentRevision: documentUpdateResult.document.revision,
+      ok: false,
+      reason: "disk-conflict",
+      relativePath: "story/opening.inscape",
+      saveStatus: {
+        lastError: {
+          code: "disk-conflict",
+          message: "# Opening\nNarrator: Updated",
+        },
+        relativePath: "story/opening.inscape",
+        revision: documentUpdateResult.document.revision,
+      },
+    },
+  ],
+  trigger: "close-window",
+  workspaceRoot: "C:/Case Files/Court Loop",
+});
+assertEqual(failedFlushPlan.failedCount, 1, "document buffer flush plan failed count");
+assertEqual(failedFlushPlan.uiVisibility.state, "save-error-visible", "document buffer flush plan failure visible");
+assertEqual(JSON.stringify(failedFlushPlan).includes("# Opening\nNarrator: Updated"), false, "document buffer flush plan failure must not expose text");
 const workspaceSnapshot = services.documentBufferStore.buildWorkspaceSnapshot(activeDocumentResult.store);
 assertEqual(workspaceSnapshot.source, "backend-buffer-store", "workspace snapshot source");
 assertEqual(workspaceSnapshot.currentFilePath, "story/branch.inscape", "workspace snapshot active path");
