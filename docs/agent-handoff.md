@@ -51,6 +51,16 @@ P1 Round 4 已完成 UI 侧业务窄接口 adapter，仍未接 Electron 或真�
 - 新增 `check:backend-services` 并接入 `check:model`；`check:structure` 已守住 service registry 与 Bridge narrow dependency。
 - Round 4 验证已通过：SelfHostedEditor `check:backend-services` / `check:syntax` / `check:model` / `check:structure` / `check:semantic-parity-http`，VSCode `check:semantic-parity`，`dotnet build Inscape.slnx --no-restore` 与 Internal tests。下一步进入 Round 5：fake embedded transport harness，证明 UI service layer 不依赖 HTTP path。
 
+### 2026-06-16 SelfHostedEditor P1 Round 5 fake embedded transport 快照
+
+P1 Round 5 已完成 fake embedded transport / direct harness，仍未接 Electron、preload 或真实文件 IO。
+
+- 新增 `SelfHostedEditorFakeEmbeddedTransport`，只实现 command-based `invoke(command, payload)`，不包含 `/api/*` route、`fetch()` 或 `postJson`。
+- 新增 `check:fake-embedded-transport`，通过 fake direct transport 驱动真实 `EditorBackendClient`、`EditorBackendServiceRegistry`、diagnostics / runtime / localization Bridge 与 project session status。
+- contract 验证 UI service layer 的 direct path 调用记录只包含 `EditorBackendTransportCommand`，不包含 dev-host route，并继续断言 project session status 不泄露 workspace document text。
+- `check:model` 与 `check:structure` 已纳入 fake embedded transport guard。
+- Round 5 验证已通过：SelfHostedEditor `check:fake-embedded-transport` / `check:syntax` / `check:model` / `check:structure` / `check:semantic-parity-http`，VSCode `check:semantic-parity`，`.NET build` 与 Internal tests。下一步进入 Round 6：structure guard 第一刀。
+
 ### 2026-06-14 SelfHostedEditor desktop backend v0 决策快照
 
 本轮已采纳 [ADR 0019](adr/0019-self-hosted-editor-embedded-backend-v0.md)：SelfHostedEditor desktop backend v0 采用嵌入式 EditorBackend，而不是独立 sidecar daemon。

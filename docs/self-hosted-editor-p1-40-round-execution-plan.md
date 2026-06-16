@@ -1,6 +1,6 @@
 # SelfHostedEditor P1 40 轮内执行方案
 
-状态：执行中（Round 1-4 已完成）
+状态：执行中（Round 1-5 已完成）
 
 日期：2026-06-15
 
@@ -215,6 +215,37 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
 2. `DocumentBufferStore` 本轮仍是 model-facing contract / adapter，不做真实持久化，也不声称 backend 已拥有磁盘文件 IO。
 3. 下一轮应进入 Round 5：建立 fake embedded transport / direct harness，用 contract 证明 UI service layer 不依赖 HTTP path。
 
+### 2026-06-16 Round 5：Fake embedded transport harness
+
+范围：新增 contract-only fake embedded transport / direct harness，不接 Electron，不新增产品 IPC，不改变 dev-host HTTP 默认路径或 shared payload shape。
+
+完成内容：
+
+1. 新增 `SelfHostedEditorFakeEmbeddedTransport`，实现 command-only `invoke(command, payload)`，用于测试 embedded-style direct transport。
+2. fake transport 不包含 `/api/*` route、`fetch()` 或 `postJson`，未知 command 会显式拒绝。
+3. 新增 `check:fake-embedded-transport`，通过 fake transport 驱动真实 `EditorBackendClient`、`EditorBackendServiceRegistry`、diagnostics / runtime / localization Bridge 与 project session status。
+4. contract 验证 fake direct path 的调用记录只包含 `EditorBackendTransportCommand`，不包含 dev-host route；project session status 仍不暴露 workspace document text。
+5. `check:model` 与 `check:structure` 已纳入 fake embedded transport guard。
+
+本轮验证已通过：
+
+```powershell
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:fake-embedded-transport
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:structure
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
+npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
+dotnet build Inscape.slnx --no-restore
+dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build
+```
+
+架构对照结论：
+
+1. 本轮证明 UI service layer 可以由非 HTTP transport 驱动；dev-host `/api/*` 仍只属于 HTTP adapter / DevScripts。
+2. fake embedded transport 只是测试 harness，不是 Electron preload 或正式 embedded backend 实现。
+3. 下一轮应进入 Round 6：structure guard 第一刀，继续把 renderer Node/Electron 禁止、transport 注入边界与 `/api/*` 直接调用限制做成常规检查。
+
 ## 36 轮主计划
 
 ### A. Contract 与 transport 基础，Round 1-6
@@ -225,7 +256,7 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
 | 2 | 定义 embedded backend v0 model contract | 已完成。`EditorBackendDesktopSessionModel` 与 `check:desktop-backend` 覆盖 `ProjectSession`、`DocumentBuffer`、workspace file boundary、save status、recovery status、settings summary；只定义 shape 与 guard，不接 Electron。 |
 | 3 | 抽出 `EditorBackendTransport` | 已完成。`EditorBackendClient` 现在调用 command-based `transport.invoke(command, payload)`；现有 HTTP dev host 作为默认 transport，由 `SelfHostedEditorHttpBackendTransport` 负责 command -> `/api/*` route 映射，现有 smoke 不变。 |
 | 4 | 定义业务窄接口 adapter | 已完成。`EditorBackendServiceRegistry` 现在把 `EditorBackendClient` 包装成 `ProjectSessionService`、`DocumentBufferStore`、`LanguageSessionClient`、`RuntimeSessionClient`、`LocalizationWorkflowClient` 等 UI 侧窄接口；feature Bridge 不再接收完整 backend client，也不获得 generic `call(method, payload)`。 |
-| 5 | Fake embedded transport harness | 增加 fake embedded transport / direct harness，用于 contract check；证明 UI 侧不依赖 HTTP path。 |
+| 5 | Fake embedded transport harness | 已完成。新增 `SelfHostedEditorFakeEmbeddedTransport` 与 `check:fake-embedded-transport`，通过真实 `EditorBackendClient`、service registry 和 Bridge direct path 证明 UI 侧不依赖 HTTP path；fake harness 本身不包含 `/api/*`、`fetch()` 或 `postJson`。 |
 | 6 | structure guard 第一刀 | `check:structure` 或等价检查覆盖：业务 `Scripts/` 不直接打 `/api/*`，生产 renderer 不直接 import Node / Electron runtime，transport 只从 `EditorBackendClient` 注入。 |
 
 ### B. Electron shell 与 preload 边界，Round 7-12
