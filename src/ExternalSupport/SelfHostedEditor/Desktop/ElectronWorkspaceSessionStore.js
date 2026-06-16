@@ -9,6 +9,9 @@ import {
 } from "../Scripts/Backend/Models/EditorBackendDocumentBufferStoreModel.js";
 import { EditorBackendLanguageSessionRequestModel } from "../Scripts/Backend/Models/EditorBackendLanguageSessionRequestModel.js";
 import { EditorBackendWorkspaceFolderModel } from "../Scripts/Backend/Models/EditorBackendWorkspaceFolderModel.js";
+import {
+  EditorBackendWorkspaceBackupPlanModel,
+} from "../Scripts/Backend/Models/EditorBackendWorkspaceBackupPlanModel.js";
 import { EditorBackendWorkspacePathModel } from "../Scripts/Backend/Models/EditorBackendWorkspacePathModel.js";
 import { EditorBackendWorkspaceSnapshotModel } from "../Scripts/Backend/Models/EditorBackendWorkspaceSnapshotModel.js";
 
@@ -17,6 +20,7 @@ export const SelfHostedEditorElectronWorkspaceReadResultFormat = "inscape.self-h
 export const SelfHostedEditorElectronAutosaveResultFormat = "inscape.self-hosted-editor.electron-autosave-result";
 export const SelfHostedEditorElectronFlushResultFormat = "inscape.self-hosted-editor.electron-flush-result";
 export const SelfHostedEditorElectronRecoveryActionResultFormat = "inscape.self-hosted-editor.electron-recovery-action-result";
+export const SelfHostedEditorElectronWriteBackBackupResultFormat = "inscape.self-hosted-editor.electron-write-back-backup-result";
 export const SelfHostedEditorElectronWorkspaceFormatVersion = 1;
 
 const defaultExcludedDirectoryNames = Object.freeze([
@@ -613,6 +617,47 @@ export class SelfHostedEditorElectronWorkspaceSessionStore {
     });
   }
 
+  async runWriteBackBackup(payload = {}) {
+    if (!this.#activeWorkspace) {
+      return buildWriteBackBackupExecutionResult({
+        plan: EditorBackendWorkspaceBackupPlanModel.buildPlan({
+          ...payload,
+          writeRequests: payload.writeRequests,
+        }),
+        reason: "workspace-not-open",
+        sessionId: this.#sessionId,
+      });
+    }
+
+    const workspaceRoot = this.#activeWorkspace.workspaceRoot;
+    const existingBackups = await scanWriteBackBackups({
+      fsImpl: this.#fs,
+      workspaceRoot,
+    });
+    const plan = EditorBackendWorkspaceBackupPlanModel.buildPlan({
+      ...payload,
+      existingBackups,
+      nowUtc: payload.nowUtc || new Date(this.#now()).toISOString(),
+      workspaceRoot,
+    });
+    const copyResults = [];
+    for (const backupRequest of plan.backupRequests) {
+      copyResults.push(await this.#copyWriteBackBackup(backupRequest));
+    }
+
+    const cleanupResults = [];
+    for (const cleanupCandidate of plan.cleanupCandidates) {
+      cleanupResults.push(await this.#cleanupWriteBackBackup(cleanupCandidate));
+    }
+
+    return buildWriteBackBackupExecutionResult({
+      cleanupResults,
+      copyResults,
+      plan,
+      sessionId: this.#sessionId,
+    });
+  }
+
   getProjectSessionStatus(payload = {}) {
     if (!this.#activeWorkspace) {
       return buildProjectSessionStatusFromPayload(payload, {
@@ -736,6 +781,92 @@ export class SelfHostedEditorElectronWorkspaceSessionStore {
     const absolutePath = resolveWorkspacePath(this.#activeWorkspace.workspaceRoot, relativePath);
     await this.#fs.mkdir(path.dirname(absolutePath), { recursive: true });
     await this.#fs.writeFile(absolutePath, String(text || ""), "utf8");
+  }
+
+  async #copyWriteBackBackup(backupRequest = {}) {
+    const sourceBoundary = EditorBackendDesktopSessionModel.buildWorkspaceFileBoundary({
+      operation: "write",
+      relativePath: backupRequest.sourceRelativePath,
+      workspaceRoot: this.#activeWorkspace.workspaceRoot,
+    });
+    const backupBoundary = EditorBackendDesktopSessionModel.buildWorkspaceFileBoundary({
+      operation: "write",
+      relativePath: backupRequest.backupRelativePath,
+      workspaceRoot: this.#activeWorkspace.workspaceRoot,
+    });
+    if (!sourceBoundary.allowed) {
+      return buildWriteBackBackupCopyResult({
+        backupRequest,
+        reason: sourceBoundary.reason || "backup-source-boundary-rejected",
+        sourceBoundary,
+      });
+    }
+
+    if (!backupBoundary.allowed || backupBoundary.targetKind !== "backup-artifact") {
+      return buildWriteBackBackupCopyResult({
+        backupBoundary,
+        backupRequest,
+        reason: backupBoundary.reason || "backup-target-boundary-rejected",
+        sourceBoundary,
+      });
+    }
+
+    const sourceAbsolutePath = resolveWorkspacePath(this.#activeWorkspace.workspaceRoot, sourceBoundary.relativePath);
+    const backupAbsolutePath = resolveWorkspacePath(this.#activeWorkspace.workspaceRoot, backupBoundary.relativePath);
+    try {
+      await this.#fs.mkdir(path.dirname(backupAbsolutePath), { recursive: true });
+      await this.#fs.copyFile(sourceAbsolutePath, backupAbsolutePath);
+      const stats = await this.#fs.stat(backupAbsolutePath);
+      return buildWriteBackBackupCopyResult({
+        backupBoundary,
+        backupRequest,
+        bytes: stats.size,
+        ok: true,
+        reason: "write-back-backup-copied",
+        sourceBoundary,
+      });
+    } catch (error) {
+      return buildWriteBackBackupCopyResult({
+        backupBoundary,
+        backupRequest,
+        error,
+        reason: error?.code === "ENOENT" ? "backup-source-not-found" : "backup-copy-failed",
+        sourceBoundary,
+      });
+    }
+  }
+
+  async #cleanupWriteBackBackup(cleanupCandidate = {}) {
+    const backupBoundary = EditorBackendDesktopSessionModel.buildWorkspaceFileBoundary({
+      operation: "write",
+      relativePath: cleanupCandidate.relativePath,
+      workspaceRoot: this.#activeWorkspace.workspaceRoot,
+    });
+    if (!backupBoundary.allowed || backupBoundary.targetKind !== "backup-artifact") {
+      return buildWriteBackBackupCleanupResult({
+        backupBoundary,
+        cleanupCandidate,
+        reason: backupBoundary.reason || "backup-cleanup-target-rejected",
+      });
+    }
+
+    try {
+      const absolutePath = resolveWorkspacePath(this.#activeWorkspace.workspaceRoot, backupBoundary.relativePath);
+      await this.#fs.rm(absolutePath, { force: true });
+      return buildWriteBackBackupCleanupResult({
+        backupBoundary,
+        cleanupCandidate,
+        ok: true,
+        reason: "write-back-backup-cleaned",
+      });
+    } catch (error) {
+      return buildWriteBackBackupCleanupResult({
+        backupBoundary,
+        cleanupCandidate,
+        error,
+        reason: "backup-cleanup-failed",
+      });
+    }
   }
 
   async #writeRecoverySnapshot(document) {
@@ -1193,6 +1324,125 @@ function buildRecoveryActionResult({
   };
 }
 
+function buildWriteBackBackupExecutionResult({
+  cleanupResults = [],
+  copyResults = [],
+  plan,
+  reason = "",
+  sessionId,
+}) {
+  const hardCopyFailures = copyResults.filter((result) => !result.ok && result.reason !== "backup-source-not-found");
+  const cleanupFailures = cleanupResults.filter((result) => !result.ok);
+  return {
+    backupPlan: plan,
+    cleanupCount: cleanupResults.filter((result) => result.ok).length,
+    cleanupResults,
+    copiedCount: copyResults.filter((result) => result.ok).length,
+    copyResults,
+    failedCount: hardCopyFailures.length + cleanupFailures.length,
+    format: SelfHostedEditorElectronWriteBackBackupResultFormat,
+    formatVersion: SelfHostedEditorElectronWorkspaceFormatVersion,
+    missingSourceCount: copyResults.filter((result) => result.reason === "backup-source-not-found").length,
+    ok: hardCopyFailures.length === 0 && cleanupFailures.length === 0 && reason !== "workspace-not-open",
+    operation: "workspace.write-back-backup",
+    payloadContentExposed: false,
+    reason: reason || (hardCopyFailures.length > 0 || cleanupFailures.length > 0 ? "one-or-more-backups-failed" : ""),
+    sessionId,
+    skippedWrites: plan?.skippedWrites || [],
+  };
+}
+
+function buildWriteBackBackupCopyResult({
+  backupBoundary = null,
+  backupRequest = {},
+  bytes = 0,
+  error = null,
+  ok = false,
+  reason,
+  sourceBoundary = null,
+}) {
+  return {
+    backupRelativePath: normalizeRelativePath(backupRequest.backupRelativePath),
+    backupTargetKind: backupBoundary?.targetKind || backupRequest.backupTargetKind || "",
+    bytes: ok ? bytes : 0,
+    errorCode: error?.code || "",
+    ok: Boolean(ok),
+    payloadContentExposed: false,
+    reason,
+    sourceRelativePath: normalizeRelativePath(backupRequest.sourceRelativePath),
+    sourceTargetKind: sourceBoundary?.targetKind || backupRequest.sourceTargetKind || "",
+  };
+}
+
+function buildWriteBackBackupCleanupResult({
+  backupBoundary = null,
+  cleanupCandidate = {},
+  error = null,
+  ok = false,
+  reason,
+}) {
+  return {
+    errorCode: error?.code || "",
+    ok: Boolean(ok),
+    payloadContentExposed: false,
+    reason,
+    relativePath: normalizeRelativePath(cleanupCandidate.relativePath),
+    sourceRelativePath: normalizeRelativePath(cleanupCandidate.sourceRelativePath),
+    targetKind: backupBoundary?.targetKind || "",
+  };
+}
+
+async function scanWriteBackBackups({
+  fsImpl,
+  workspaceRoot,
+}) {
+  const backupsRoot = resolveWorkspacePath(workspaceRoot, ".inscape-workspace/backups");
+  const backups = [];
+
+  async function walk(relativeDirectory = "") {
+    const absoluteDirectory = path.join(backupsRoot, ...normalizeRelativePath(relativeDirectory).split("/").filter(Boolean));
+    let entries = [];
+    try {
+      entries = await fsImpl.readdir(absoluteDirectory, { withFileTypes: true });
+    } catch {
+      return;
+    }
+
+    entries.sort((left, right) => left.name.localeCompare(right.name, "en"));
+    for (const entry of entries) {
+      const relativePath = joinRelativePath(relativeDirectory, entry.name);
+      if (entry.isDirectory()) {
+        await walk(relativePath);
+        continue;
+      }
+
+      if (!entry.isFile() || !relativePath.endsWith(".bak")) {
+        continue;
+      }
+
+      const workspaceRelativePath = joinRelativePath(".inscape-workspace/backups", relativePath);
+      const boundary = EditorBackendDesktopSessionModel.buildWorkspaceFileBoundary({
+        operation: "write",
+        relativePath: workspaceRelativePath,
+        workspaceRoot,
+      });
+      if (!boundary.allowed || boundary.targetKind !== "backup-artifact") {
+        continue;
+      }
+
+      const stats = await fsImpl.stat(path.join(absoluteDirectory, entry.name));
+      backups.push({
+        modifiedUtc: stats.mtime instanceof Date ? stats.mtime.toISOString() : "",
+        relativePath: workspaceRelativePath,
+        sourceRelativePath: deriveBackupSourceRelativePath(workspaceRelativePath),
+      });
+    }
+  }
+
+  await walk();
+  return backups;
+}
+
 async function scanRecoveryStatus({
   fsImpl,
   workspaceRoot,
@@ -1363,6 +1613,12 @@ function joinRelativePath(relativeDirectory, name) {
 
 function buildRecoverySnapshotRelativePath(relativePath) {
   return `.inscape-workspace/recovery/${normalizeRelativePath(relativePath)}.snapshot.json`;
+}
+
+function deriveBackupSourceRelativePath(backupRelativePath) {
+  return normalizeRelativePath(backupRelativePath)
+    .replace(/^\.inscape-workspace\/backups\//, "")
+    .replace(/\.[A-Za-z0-9_]+\.bak$/, "");
 }
 
 function normalizePositiveInteger(value, fallback) {

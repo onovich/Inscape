@@ -28,6 +28,13 @@ try {
   recoveryRouteRejected = String(error?.message || "").includes("does not have a dev-host HTTP route");
 }
 assertEqual(recoveryRouteRejected, true, "recovery restore command is desktop-only");
+let backupRouteRejected = false;
+try {
+  resolveEditorBackendDevHostRoute(EditorBackendTransportCommand.WorkspaceWriteBackBackup);
+} catch (error) {
+  backupRouteRejected = String(error?.message || "").includes("does not have a dev-host HTTP route");
+}
+assertEqual(backupRouteRejected, true, "write-back backup command is desktop-only");
 
 for (const route of listEditorBackendDevHostRoutes()) {
   assertEqual(commands.includes(route.command), true, `dev-host route command registered: ${route.command}`);
@@ -118,6 +125,15 @@ const workspaceOpen = await backendClient.workspace.openFolder({
 assertEqual(workspaceOpen.command, EditorBackendTransportCommand.WorkspaceOpenFolder, "backend client workspace open command");
 const workspaceList = await backendClient.workspace.listFiles();
 assertEqual(workspaceList.command, EditorBackendTransportCommand.WorkspaceListFiles, "backend client workspace list command");
+const workspaceBackup = await backendClient.workspace.writeBackBackup({
+  writeRequests: [
+    {
+      relativePath: "localization/zh-cn.csv",
+    },
+  ],
+});
+assertEqual(workspaceBackup.command, EditorBackendTransportCommand.WorkspaceWriteBackBackup, "backend client workspace backup command");
+assertEqual(workspaceBackup.payload.writeRequests[0].relativePath, "localization/zh-cn.csv", "backend client workspace backup payload");
 const recoveryRestore = await backendClient.recovery.restore({
   contentHash: "fnv1a32:restore",
   relativePath: "story/opening.inscape",

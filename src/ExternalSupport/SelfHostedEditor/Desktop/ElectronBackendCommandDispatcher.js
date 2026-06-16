@@ -81,6 +81,9 @@ export function createSelfHostedEditorBackendCommandHandlers(options = {}) {
     [EditorBackendTransportCommand.WorkspaceOpenFolder]: async (payload = {}) => {
       return await sessionStore.openFolder(payload);
     },
+    [EditorBackendTransportCommand.WorkspaceWriteBackBackup]: async (payload = {}) => {
+      return await sessionStore.runWriteBackBackup(payload);
+    },
   });
 }
 

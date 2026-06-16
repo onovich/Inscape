@@ -38,6 +38,7 @@ const SelfHostedEditorPreloadEditorCommand = Object.freeze({
   StoryGraphCompileProject: "story-graph.compile-project",
   WorkspaceListFiles: "workspace.list-files",
   WorkspaceOpenFolder: "workspace.open-folder",
+  WorkspaceWriteBackBackup: "workspace.write-back-backup",
 });
 
 const languagePayloadKeys = Object.freeze([
@@ -87,6 +88,7 @@ const preloadPayloadKeysByCommand = Object.freeze({
   [SelfHostedEditorPreloadEditorCommand.StoryGraphCompileProject]: scriptWorkspacePayloadKeys,
   [SelfHostedEditorPreloadEditorCommand.WorkspaceListFiles]: ["workspaceId"],
   [SelfHostedEditorPreloadEditorCommand.WorkspaceOpenFolder]: ["dialogTitle"],
+  [SelfHostedEditorPreloadEditorCommand.WorkspaceWriteBackBackup]: ["backupEnabled", "nowUtc", "retentionDays", "retentionLimit", "workspaceId", "writeRequests"],
 });
 
 function listSelfHostedEditorPreloadCommands() {
@@ -174,6 +176,7 @@ function createSelfHostedEditorPreloadApi(options = {}) {
     workspace: Object.freeze({
       listFiles: createEditorCommandHandler(SelfHostedEditorPreloadEditorCommand.WorkspaceListFiles, handlers),
       openFolder: createEditorCommandHandler(SelfHostedEditorPreloadEditorCommand.WorkspaceOpenFolder, handlers),
+      writeBackBackup: createEditorCommandHandler(SelfHostedEditorPreloadEditorCommand.WorkspaceWriteBackBackup, handlers),
     }),
   });
 }

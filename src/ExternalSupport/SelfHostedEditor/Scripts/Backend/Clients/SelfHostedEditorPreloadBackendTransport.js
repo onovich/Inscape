@@ -28,6 +28,7 @@ const preloadMethodsByCommand = Object.freeze({
   [EditorBackendTransportCommand.StoryGraphCompileProject]: ["storyGraph", "compileProjectGraph"],
   [EditorBackendTransportCommand.WorkspaceListFiles]: ["workspace", "listFiles"],
   [EditorBackendTransportCommand.WorkspaceOpenFolder]: ["workspace", "openFolder"],
+  [EditorBackendTransportCommand.WorkspaceWriteBackBackup]: ["workspace", "writeBackBackup"],
 });
 
 export class SelfHostedEditorPreloadBackendTransport {

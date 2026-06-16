@@ -9,6 +9,7 @@ import {
   SelfHostedEditorElectronAutosaveResultFormat,
   SelfHostedEditorElectronFlushResultFormat,
   SelfHostedEditorElectronRecoveryActionResultFormat,
+  SelfHostedEditorElectronWriteBackBackupResultFormat,
   SelfHostedEditorElectronWorkspaceOpenResultFormat,
   SelfHostedEditorElectronWorkspaceReadResultFormat,
 } from "../Desktop/ElectronWorkspaceSessionStore.js";
@@ -28,8 +29,21 @@ const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "inscape-electron-works
 try {
   await writeText(path.join(tempRoot, "story", "opening.inscape"), "# Opening\nNarrator: secret opening text");
   await writeText(path.join(tempRoot, "story", "branch.inscape"), "# Branch\nNarrator: secret branch text");
+  await writeText(path.join(tempRoot, "localization", "zh-cn.csv"), "anchor,text\nsecret-anchor,old translation");
+  await writeText(path.join(tempRoot, "inscape.node-map.json"), "{\n  \"secretNode\": true\n}");
+  await writeText(path.join(tempRoot, "metadata", "inscape.line-map.json"), "{\n  \"secretLine\": true\n}");
   await writeText(path.join(tempRoot, "notes", "readme.txt"), "secret notes text");
   await writeText(path.join(tempRoot, ".inscape-workspace", "recovery", "stale.inscape"), "secret recovery text");
+  const oldBackupPath = path.join(
+    tempRoot,
+    ".inscape-workspace",
+    "backups",
+    "localization",
+    "zh-cn.csv.20260610T000000000Z.bak"
+  );
+  await writeText(oldBackupPath, "secret old backup text");
+  const oldBackupDate = new Date("2026-06-10T00:00:00.000Z");
+  await fs.utimes(oldBackupPath, oldBackupDate, oldBackupDate);
 
   let desktopOnlyRouteRejected = false;
   try {
@@ -38,6 +52,13 @@ try {
     desktopOnlyRouteRejected = String(error?.message || "").includes("does not have a dev-host HTTP route");
   }
   assertEqual(desktopOnlyRouteRejected, true, "workspace open is desktop-only, not a dev-host route");
+  let backupRouteRejected = false;
+  try {
+    resolveEditorBackendDevHostRoute(EditorBackendTransportCommand.WorkspaceWriteBackBackup);
+  } catch (error) {
+    backupRouteRejected = String(error?.message || "").includes("does not have a dev-host HTTP route");
+  }
+  assertEqual(backupRouteRejected, true, "write-back backup is desktop-only, not a dev-host route");
 
   const languageSessionCalls = [];
   const sessionStore = createSelfHostedEditorElectronWorkspaceSessionStore({
@@ -72,6 +93,75 @@ try {
   assertEqual(JSON.stringify(openResult).includes("secret"), false, "workspace open result is text-free");
   assertEqual(JSON.stringify(openResult).includes("readme.txt"), false, "workspace open rejects non-inscape files");
   assertEqual(JSON.stringify(openResult).includes(".inscape-workspace/recovery"), false, "workspace open ignores internal workspace files");
+
+  const writeBackBackupResult = await dispatchSelfHostedEditorBackendCommand(
+    EditorBackendTransportCommand.WorkspaceWriteBackBackup,
+    {
+      nowUtc: "2026-06-17T01:02:03.000Z",
+      retentionDays: 1,
+      retentionLimit: 0,
+      writeRequests: [
+        { relativePath: "localization/zh-cn.csv" },
+        { relativePath: "inscape.node-map.json" },
+        { relativePath: "metadata/inscape.line-map.json" },
+        { relativePath: "story/opening.inscape" },
+      ],
+    },
+    {
+      sessionStore,
+    }
+  );
+  assertEqual(writeBackBackupResult.format, SelfHostedEditorElectronWriteBackBackupResultFormat, "write-back backup result format");
+  assertEqual(writeBackBackupResult.ok, true, "write-back backup ok");
+  assertEqual(writeBackBackupResult.copiedCount, 3, "write-back backup copies supported sidecars");
+  assertEqual(writeBackBackupResult.cleanupCount, 1, "write-back backup cleans old retained backup");
+  assertEqual(writeBackBackupResult.skippedWrites[0].reason, "backup-target-not-supported", "write-back backup skips inscape document");
+  assertEqual(JSON.stringify(writeBackBackupResult).includes("secret"), false, "write-back backup result is text-free");
+  const localizationBackupPath = path.join(
+    tempRoot,
+    ".inscape-workspace",
+    "backups",
+    "localization",
+    "zh-cn.csv.20260617T010203000Z.bak"
+  );
+  const nodeMapBackupPath = path.join(
+    tempRoot,
+    ".inscape-workspace",
+    "backups",
+    "inscape.node-map.json.20260617T010203000Z.bak"
+  );
+  const lineMapBackupPath = path.join(
+    tempRoot,
+    ".inscape-workspace",
+    "backups",
+    "metadata",
+    "inscape.line-map.json.20260617T010203000Z.bak"
+  );
+  assertEqual(await fileExists(localizationBackupPath), true, "write-back backup copies localization CSV");
+  assertEqual(await fileExists(nodeMapBackupPath), true, "write-back backup copies node-map sidecar");
+  assertEqual(await fileExists(lineMapBackupPath), true, "write-back backup copies line-map sidecar");
+  assertEqual(await fileExists(oldBackupPath), false, "write-back backup removes retention cleanup candidate");
+  assertEqual(
+    await fs.readFile(localizationBackupPath, "utf8"),
+    "anchor,text\nsecret-anchor,old translation",
+    "write-back backup preserves localization CSV bytes"
+  );
+
+  const disabledWriteBackBackupResult = await dispatchSelfHostedEditorBackendCommand(
+    EditorBackendTransportCommand.WorkspaceWriteBackBackup,
+    {
+      backupEnabled: false,
+      writeRequests: [
+        { relativePath: "localization/zh-cn.csv" },
+      ],
+    },
+    {
+      sessionStore,
+    }
+  );
+  assertEqual(disabledWriteBackBackupResult.ok, true, "disabled write-back backup remains non-blocking");
+  assertEqual(disabledWriteBackBackupResult.copiedCount, 0, "disabled write-back backup copies nothing");
+  assertEqual(disabledWriteBackBackupResult.skippedWrites[0].reason, "backup-disabled", "disabled write-back backup reason");
 
   const status = await dispatchSelfHostedEditorBackendCommand(
     EditorBackendTransportCommand.ProjectSessionStatus,

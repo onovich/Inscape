@@ -35,6 +35,10 @@ const backendClient = {
       calls.push({ method: "workspace.listFiles", payload });
       return { documents: [] };
     },
+    async writeBackBackup(payload) {
+      calls.push({ method: "workspace.writeBackBackup", payload });
+      return { copiedCount: 1, ok: true };
+    },
   },
   diagnostics: {
     async sessionStatus(payload) {
@@ -134,6 +138,7 @@ assertSurface(services.workspaceSessionClient, [
   "sessionId",
   "openFolder",
   "listFiles",
+  "writeBackBackup",
 ], "workspace session client");
 assertSurface(services.documentBufferStore, [
   "sessionId",
@@ -187,6 +192,7 @@ assertSurface(services.diagnosticsService, ["sessionId", "sessionStatus"], "diag
 await services.projectSessionService.status({ workspace: { currentFilePath: "story/opening.inscape" } });
 await services.workspaceSessionClient.openFolder({ dialogTitle: "Open workspace" });
 await services.workspaceSessionClient.listFiles();
+await services.workspaceSessionClient.writeBackBackup({ writeRequests: [{ relativePath: "localization/zh-cn.csv" }] });
 await services.languageSessionClient.diagnose({ scriptText: "# Opening" });
 await services.runtimeSessionClient.step({ action: "continue" });
 await services.localizationWorkflowClient.review({ scriptText: "# Opening" });
@@ -195,6 +201,7 @@ assertEqual(calls.map((call) => call.method).join(","), [
   "projectSession.status",
   "workspace.openFolder",
   "workspace.listFiles",
+  "workspace.writeBackBackup",
   "languageSession.diagnose",
   "runtimeSession.step",
   "localizationSession.review",

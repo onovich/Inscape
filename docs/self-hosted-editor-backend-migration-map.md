@@ -96,6 +96,8 @@
 
 2026-06-17 P1 post-40 packaged GUI smoke 补充：`smoke:desktop-package-gui` 在真实 `dist/win-unpacked/Inscape SelfHostedEditor.exe` 上运行受保护 smoke path，验证 packaged app 自身加载 Workbench/app protocol/preload 后可以打开临时 workspace、显式 read、edit、manual Save 写盘、recovery restore 写盘，并让 diagnostics / completions 使用 restore 后当前 buffer。该入口通过 env guard 与临时 result file 驱动，不引入 localhost 产品 API，也不把 `DevScripts/` 打进 loose package 目录。
 
+2026-06-17 P1 post-40 write-back backup IO 补充：desktop-only `workspace.write-back-backup` 已进入 shared command catalog、preload whitelist、`EditorBackendClient.workspace.writeBackBackup()` 与 Electron dispatcher，但不映射 dev-host HTTP route。Electron main process 会扫描 `.inscape-workspace/backups/`，复用 `EditorBackendWorkspaceBackupPlanModel` 为 localization CSV、node-map sidecar、line-map sidecar 生成 text-free backup plan，复制源文件到 backup artifact，并删除 retention cleanup candidates；`.inscape` 正文仍由 autosave / recovery 保护，backup 响应不暴露 CSV 或 sidecar 内容。
+
 ## 状态分类
 
 | 分类 | 当前例子 | 未来归属 | 规则 |

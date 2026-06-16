@@ -26,6 +26,7 @@ export const EditorBackendTransportCommand = Object.freeze({
   StoryGraphCompileProject: "story-graph.compile-project",
   WorkspaceListFiles: "workspace.list-files",
   WorkspaceOpenFolder: "workspace.open-folder",
+  WorkspaceWriteBackBackup: "workspace.write-back-backup",
 });
 
 const devHostRoutesByCommand = Object.freeze({

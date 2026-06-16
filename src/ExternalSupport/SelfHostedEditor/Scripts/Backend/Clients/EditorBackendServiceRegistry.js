@@ -43,6 +43,7 @@ export class WorkspaceSessionClient {
     this.#workspace = requireCapabilities(backendClient?.workspace, [
       "listFiles",
       "openFolder",
+      "writeBackBackup",
     ], "WorkspaceSessionClient");
     Object.freeze(this);
   }
@@ -53,6 +54,10 @@ export class WorkspaceSessionClient {
 
   async listFiles(request = {}) {
     return await this.#workspace.listFiles(request);
+  }
+
+  async writeBackBackup(request = {}) {
+    return await this.#workspace.writeBackBackup(request);
   }
 }
 

@@ -84,6 +84,13 @@ const preloadApi = createSelfHostedEditorPreloadApi({
         ok: true,
       };
     },
+    [EditorBackendTransportCommand.WorkspaceWriteBackBackup]: async (payload) => {
+      preloadCalls.push({ command: EditorBackendTransportCommand.WorkspaceWriteBackBackup, payload });
+      return {
+        copiedCount: 1,
+        ok: true,
+      };
+    },
   },
 });
 
@@ -136,6 +143,16 @@ const openWorkspaceResult = await preloadTransport.invoke(EditorBackendTransport
 assertEqual(openWorkspaceResult.ok, true, "preload transport workspace open payload");
 const workspaceOpenCall = preloadCalls.find((call) => call.command === EditorBackendTransportCommand.WorkspaceOpenFolder);
 assertEqual(workspaceOpenCall.payload.dialogTitle, "Open workspace", "preload transport workspace open command");
+const writeBackBackupResult = await preloadTransport.invoke(EditorBackendTransportCommand.WorkspaceWriteBackBackup, {
+  writeRequests: [
+    {
+      relativePath: "localization/zh-cn.csv",
+    },
+  ],
+});
+assertEqual(writeBackBackupResult.copiedCount, 1, "preload transport write-back backup payload");
+const writeBackBackupCall = preloadCalls.find((call) => call.command === EditorBackendTransportCommand.WorkspaceWriteBackBackup);
+assertEqual(writeBackBackupCall.payload.writeRequests[0].relativePath, "localization/zh-cn.csv", "preload transport write-back backup command");
 const recoveryRestoreResult = await preloadTransport.invoke(EditorBackendTransportCommand.RecoveryRestore, {
   contentHash: "fnv1a32:restore",
   relativePath: "story/opening.inscape",
@@ -189,6 +206,14 @@ const desktopWorkspaceOpen = await desktopBackendClient.workspace.openFolder({
   dialogTitle: "Open desktop workspace",
 });
 assertEqual(desktopWorkspaceOpen.ok, true, "desktop backend client workspace open preload payload");
+const desktopWriteBackBackup = await desktopBackendClient.workspace.writeBackBackup({
+  writeRequests: [
+    {
+      relativePath: "inscape.node-map.json",
+    },
+  ],
+});
+assertEqual(desktopWriteBackBackup.copiedCount, 1, "desktop backend client write-back backup preload payload");
 const desktopRecoveryRestore = await desktopBackendClient.recovery.restore({
   relativePath: "story/desktop.inscape",
 });

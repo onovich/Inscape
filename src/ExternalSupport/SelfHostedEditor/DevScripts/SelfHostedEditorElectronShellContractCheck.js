@@ -86,6 +86,7 @@ assertIncludesText(preloadApiText, "RecoveryDiscard", "Electron preload API whit
 assertIncludesText(preloadApiText, "RecoveryLater", "Electron preload API whitelists recovery later");
 assertIncludesText(preloadApiText, "DocumentBufferRead", "Electron preload API whitelists document-buffer read");
 assertIncludesText(preloadApiText, "WorkspaceOpenFolder", "Electron preload API whitelists workspace open folder");
+assertIncludesText(preloadApiText, "WorkspaceWriteBackBackup", "Electron preload API whitelists write-back backup");
 assertIncludesText(preloadApiText, "validateSelfHostedEditorPreloadCommandPayload", "Electron preload API validates command payloads");
 assertNoText(preloadApiText, "invoke", "Electron preload API must not expose generic invoke");
 assertNoText(preloadApiText, "send", "Electron preload API must not expose generic send");
@@ -137,9 +138,11 @@ assertEqual(preloadApi.capabilities.embeddedBackend, "workspace-session-v0-parti
 assertEqual(preloadApi.capabilities.workspaceFileSystem, "read-write-buffer-session", "Electron preload API workspace file capability");
 assertEqual(preloadApi.editorCommands.ProjectSessionStatus, "project-session.status", "Electron preload project-session command");
 assertEqual(preloadApi.editorCommands.RecoveryRestore, "recovery.restore", "Electron preload recovery restore command");
+assertEqual(preloadApi.editorCommands.WorkspaceWriteBackBackup, "workspace.write-back-backup", "Electron preload write-back backup command");
 assertEqual(typeof preloadApi.recovery.restore, "function", "Electron preload recovery restore method");
 assertEqual(typeof preloadApi.recovery.discard, "function", "Electron preload recovery discard method");
 assertEqual(typeof preloadApi.recovery.later, "function", "Electron preload recovery later method");
+assertEqual(typeof preloadApi.workspace.writeBackBackup, "function", "Electron preload write-back backup method");
 assertEqual(
   preloadApiModule.listSelfHostedEditorPreloadCommands().length,
   new Set(preloadApiModule.listSelfHostedEditorPreloadCommands()).size,

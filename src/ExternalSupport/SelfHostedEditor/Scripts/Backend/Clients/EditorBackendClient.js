@@ -57,6 +57,7 @@ export class EditorBackendClient {
     this.workspace = Object.freeze({
       listFiles: (request) => this.#invoke(EditorBackendTransportCommand.WorkspaceListFiles, request),
       openFolder: (request) => this.#invoke(EditorBackendTransportCommand.WorkspaceOpenFolder, request),
+      writeBackBackup: (request) => this.#invoke(EditorBackendTransportCommand.WorkspaceWriteBackBackup, request),
     });
     this.projectSession = Object.freeze({
       status: async (request = {}) => {

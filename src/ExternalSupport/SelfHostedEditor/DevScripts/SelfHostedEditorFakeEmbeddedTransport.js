@@ -94,6 +94,12 @@ export class SelfHostedEditorFakeEmbeddedTransport {
         ok: false,
         reason: "workspace-open-not-implemented",
       }),
+      [EditorBackendTransportCommand.WorkspaceWriteBackBackup]: async () => ({
+        copiedCount: 0,
+        ok: true,
+        payloadContentExposed: false,
+        skippedWrites: [],
+      }),
       ...options.handlers,
     });
   }

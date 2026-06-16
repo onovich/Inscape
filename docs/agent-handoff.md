@@ -519,6 +519,15 @@ P1 40 轮计划完成后，继续补上了真实 Electron preload -> main 的固
 - `Desktop/ElectronPackagedGuiSmoke.js` 只在 explicit env guard 下运行；它不认识 `/api/*` 或 localhost，也不向 renderer 暴露 Node/fs/shell。结果通过临时 JSON result file 回传给 `DevScripts/SelfHostedEditorDesktopPackageGuiSmoke.js`。
 - 本轮当前已通过：`package:windows`、`smoke:desktop-package-gui`、`smoke:desktop-package`、`check:desktop-package`、`smoke:desktop-gui-recovery`、Electron shell / boundary / IPC / workspace / lifecycle contracts、SelfHostedEditor syntax / structure / model、VSCode parity / structure、`.NET build` 与 Internal tests。下一步仍不应默认进入 P1.5，除非明确开始 workspace-scoped long-lived LanguageServer 里程碑。
 
+### 2026-06-17 SelfHostedEditor P1 post-40 write-back backup IO 快照
+
+本轮新增 desktop-only `workspace.write-back-backup` command，把 Round 32 的 backup plan 推进到 Electron main process 真实 IO。
+
+- `EditorBackendTransportCommand.WorkspaceWriteBackBackup`、preload whitelist、`EditorBackendClient.workspace.writeBackBackup()`、`WorkspaceSessionClient.writeBackBackup()` 和 Electron dispatcher 已对齐；该 command 不映射 dev-host `/api/*` route。
+- `ElectronWorkspaceSessionStore.runWriteBackBackup()` 会扫描 `.inscape-workspace/backups/`，复用 `EditorBackendWorkspaceBackupPlanModel` 为 localization CSV、`inscape.node-map.json`、`inscape.line-map.json` 生成 text-free backup plan，复制源文件到 `.inscape-workspace/backups/`，并删除 retention cleanup candidates。
+- `check:electron-workspace` 覆盖三类真实复制、旧 backup 清理、disabled backup skip、unsupported `.inscape` skip、desktop-only route 和 text-free response；`check:backend-services`、`check:backend-transport`、`check:preload-transport`、`check:electron-shell`、fake embedded transport 也已同步。
+- 当前仍未把外部资源导入复制到 workspace `assets/` 接成真实 IO；Preview 的真实 GUI / packaged 断言也仍可作为后续 P1 收口候选。不要把这两点误写成 P1.5 long-lived LanguageServer。
+
 ### 2026-06-14 SelfHostedEditor desktop backend v0 决策快照
 
 本轮已采纳 [ADR 0019](adr/0019-self-hosted-editor-embedded-backend-v0.md)：SelfHostedEditor desktop backend v0 采用嵌入式 EditorBackend，而不是独立 sidecar daemon。
