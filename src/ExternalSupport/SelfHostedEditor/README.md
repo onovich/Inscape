@@ -202,7 +202,7 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:language-session
 `check:backend-services` verifies the UI-side narrow backend service registry, service method surfaces, DocumentBufferStore model boundary, and that feature bridges no longer depend on the full `EditorBackendClient`.
 `check:backend-transport` verifies the command-based `EditorBackendTransport` contract, the HTTP dev-host command-to-route mapping, and that `EditorBackendClient` only sends business commands through an injected transport.
 `check:fake-embedded-transport` verifies the command-only fake embedded transport harness and proves the service layer plus representative bridges can run without dev-host HTTP paths.
-`check:preload-transport` verifies the renderer-side preload transport skeleton, `EditorBackendClient` desktop/default transport selection, and HTTP fallback when no preload API exists.
+`check:preload-transport` verifies the renderer-side preload transport skeleton, `EditorBackendClient` desktop/default transport selection, command/payload validation, and HTTP fallback when no preload API exists.
 `check:structure` also guards the renderer/backend boundary: production `Scripts/` must not know dev-host routes outside the transport catalog, must not import Node / Electron runtime APIs, and must keep transport details behind `EditorBackendClient`.
 `check:syntax` delegates to `DevScripts/SelfHostedEditorSyntaxContractCheck.js`, which recursively checks all JavaScript files under `Scripts/` and `DevScripts/` so package scripts stay short while coverage stays explicit at the DevScripts boundary.
 

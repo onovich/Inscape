@@ -1,6 +1,6 @@
 # SelfHostedEditor P1 40 轮内执行方案
 
-状态：执行中（Round 1-10 已完成）
+状态：执行中（Round 1-11 已完成）
 
 日期：2026-06-15
 
@@ -396,6 +396,37 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 2. preload transport 当前只走白名单 typed API，未引入 arbitrary IPC 或文件系统能力。
 3. 下一轮应进入 Round 11：preload / IPC validation，补 main / preload command name 与 payload 白名单校验 skeleton。
 
+### 2026-06-16 Round 11：preload / IPC validation skeleton
+
+范围：补 preload command name 与 payload 白名单校验 skeleton；仍不接真实 IPC channel，不接真实文件 IO。
+
+完成内容：
+
+1. `ElectronPreloadApi` 新增 `validateSelfHostedEditorPreloadCommandPayload(command, payload)`，未知 command 会被拒绝。
+2. preload command payload 现在按 command 维护 top-level key 白名单；payload 必须是普通 object，数组和多余字段会被拒绝。
+3. typed preload command handler 在调用 handler 前统一执行 validator；未接线 handler 仍显式报错。
+4. `check:preload-transport` 覆盖 unknown command 与非法 payload key；`check:electron-shell` 覆盖 preload API validator 存在且无 generic request surface。
+
+本轮验证已通过：
+
+```powershell
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:preload-transport
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:electron-shell
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:structure
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
+npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
+dotnet build Inscape.slnx --no-restore
+dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build
+```
+
+架构对照结论：
+
+1. 当前仍没有 arbitrary IPC channel；preload public surface 通过 typed namespace + command/payload whitelist 表达。
+2. payload validator 只做 transport 边界白名单，不复制 Compiler / Tooling / Runtime / LanguageServer 业务语义。
+3. 下一轮应进入 Round 12：Electron 边界 contract 收束，确保 renderer / preload / desktop transport 边界与窄接口一致。
+
 ## 36 轮主计划
 
 ### A. Contract 与 transport 基础，Round 1-6
@@ -417,7 +448,7 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 | 8 | BrowserWindow 安全配置 | 已完成。BrowserWindow options 集中定义并显式启用隔离 / sandbox / webSecurity，禁用 Node integration、worker/subframe Node、insecure content 与 webview；main process 默认阻止 window-open，并限制 navigation。 |
 | 9 | preload 白名单 API | 已完成。新增 `ElectronPreloadApi.js`，定义冻结的 `inscapeSelfHostedEditor` capability + editor command 白名单；不暴露 generic `invoke` / `send` / `request`，不接 `ipcRenderer` 或真实文件 IO。 |
 | 10 | Desktop invoke transport | 已完成。新增 `SelfHostedEditorPreloadBackendTransport`，`EditorBackendClient` 会在存在 `inscapeSelfHostedEditor` preload API 时选择 preload transport，否则保留 HTTP dev transport；新增 `check:preload-transport`。 |
-| 11 | preload / IPC validation | main / preload 对 command name 与 payload 做白名单校验；未知 command、非法 payload、arbitrary channel 被拒绝。 |
+| 11 | preload / IPC validation | 已完成。`ElectronPreloadApi` 新增 command/payload validator，未知 command、非 object payload 与多余 top-level key 被拒绝；当前仍不接真实 IPC channel。 |
 | 12 | Electron 边界 contract | 新增 structure / model check：renderer 不能直接访问 `fs`、`child_process`、Electron API 或 arbitrary IPC；preload public API 与窄接口一致。 |
 
 ### C. Workspace 文件系统边界与 ProjectSession，Round 13-18

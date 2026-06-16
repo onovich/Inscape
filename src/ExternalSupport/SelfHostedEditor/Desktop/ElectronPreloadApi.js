@@ -32,8 +32,74 @@ export const SelfHostedEditorPreloadEditorCommand = Object.freeze({
   WorkspaceOpenFolder: "workspace.open-folder",
 });
 
+const languagePayloadKeys = Object.freeze([
+  "activeRelativePath",
+  "definitionName",
+  "documentRevision",
+  "hoverKind",
+  "hoverName",
+  "kind",
+  "languageSession",
+  "referenceName",
+  "scriptText",
+  "sessionId",
+  "workspace",
+]);
+
+const scriptWorkspacePayloadKeys = Object.freeze([
+  "scriptText",
+  "workspace",
+]);
+
+const preloadPayloadKeysByCommand = Object.freeze({
+  [SelfHostedEditorPreloadEditorCommand.DocumentBufferList]: ["workspaceId"],
+  [SelfHostedEditorPreloadEditorCommand.DocumentBufferRead]: ["relativePath", "workspaceId"],
+  [SelfHostedEditorPreloadEditorCommand.DocumentBufferSave]: ["baseRevision", "relativePath", "workspaceId"],
+  [SelfHostedEditorPreloadEditorCommand.DocumentBufferUpdateDraft]: ["baseRevision", "relativePath", "text", "workspaceId"],
+  [SelfHostedEditorPreloadEditorCommand.HostBindingCapabilities]: scriptWorkspacePayloadKeys,
+  [SelfHostedEditorPreloadEditorCommand.HostSchemaCapabilities]: scriptWorkspacePayloadKeys,
+  [SelfHostedEditorPreloadEditorCommand.LanguageCompletions]: languagePayloadKeys,
+  [SelfHostedEditorPreloadEditorCommand.LanguageDefinition]: languagePayloadKeys,
+  [SelfHostedEditorPreloadEditorCommand.LanguageDiagnostics]: languagePayloadKeys,
+  [SelfHostedEditorPreloadEditorCommand.LanguageDocumentSymbols]: languagePayloadKeys,
+  [SelfHostedEditorPreloadEditorCommand.LanguageHover]: languagePayloadKeys,
+  [SelfHostedEditorPreloadEditorCommand.LanguageReferences]: languagePayloadKeys,
+  [SelfHostedEditorPreloadEditorCommand.LineIdentityRefresh]: ["existingLineMap", "scriptText", "sessionId", "workspace"],
+  [SelfHostedEditorPreloadEditorCommand.LocalizationReview]: ["previousCsv", "scriptText", "sessionId", "workspace"],
+  [SelfHostedEditorPreloadEditorCommand.LocalizationUpdateCsv]: ["previousCsv", "scriptText", "sessionId", "translationOverrides", "workspace"],
+  [SelfHostedEditorPreloadEditorCommand.ProjectSessionStatus]: [],
+  [SelfHostedEditorPreloadEditorCommand.RuntimeStartOrObserve]: ["scriptText", "sessionId", "workspace"],
+  [SelfHostedEditorPreloadEditorCommand.RuntimeStep]: ["action", "runtimeState", "scriptText", "sessionId", "workspace"],
+  [SelfHostedEditorPreloadEditorCommand.StableNodeMapApplyCandidate]: ["candidate", "dryRun", "item", "nodeMapPath", "scriptText", "workspace"],
+  [SelfHostedEditorPreloadEditorCommand.StableNodeMapReview]: scriptWorkspacePayloadKeys,
+  [SelfHostedEditorPreloadEditorCommand.StoryGraphCompileProject]: scriptWorkspacePayloadKeys,
+  [SelfHostedEditorPreloadEditorCommand.WorkspaceListFiles]: ["workspaceId"],
+  [SelfHostedEditorPreloadEditorCommand.WorkspaceOpenFolder]: ["dialogTitle"],
+});
+
 export function listSelfHostedEditorPreloadCommands() {
   return Object.values(SelfHostedEditorPreloadEditorCommand);
+}
+
+export function validateSelfHostedEditorPreloadCommandPayload(command, payload = {}) {
+  const allowedKeys = preloadPayloadKeysByCommand[command];
+  if (!Array.isArray(allowedKeys)) {
+    throw new Error(`Unknown SelfHostedEditor preload command: ${String(command || "")}`);
+  }
+
+  const normalizedPayload = payload || {};
+  if (typeof normalizedPayload !== "object" || Array.isArray(normalizedPayload)) {
+    throw new Error(`Invalid SelfHostedEditor preload payload for ${command}.`);
+  }
+
+  const allowedKeySet = new Set(allowedKeys);
+  for (const key of Object.keys(normalizedPayload)) {
+    if (!allowedKeySet.has(key)) {
+      throw new Error(`Unexpected SelfHostedEditor preload payload key for ${command}: ${key}`);
+    }
+  }
+
+  return normalizedPayload;
 }
 
 export function createSelfHostedEditorPreloadApi(options = {}) {
@@ -89,11 +155,12 @@ export function createSelfHostedEditorPreloadApi(options = {}) {
 
 function createEditorCommandHandler(command, handlers) {
   return async (payload = {}) => {
+    const normalizedPayload = validateSelfHostedEditorPreloadCommandPayload(command, payload);
     const handler = handlers[command];
     if (typeof handler !== "function") {
       throw new Error(`SelfHostedEditor preload command is not wired yet: ${command}`);
     }
 
-    return await handler(payload || {});
+    return await handler(normalizedPayload);
   };
 }

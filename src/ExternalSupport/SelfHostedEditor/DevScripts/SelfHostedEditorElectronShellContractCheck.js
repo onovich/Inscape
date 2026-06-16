@@ -62,6 +62,7 @@ assertIncludesText(preloadApiText, "workspaceFileSystem: false", "Electron prelo
 assertIncludesText(preloadApiText, "ProjectSessionStatus", "Electron preload API whitelists project-session status");
 assertIncludesText(preloadApiText, "DocumentBufferRead", "Electron preload API whitelists document-buffer read");
 assertIncludesText(preloadApiText, "WorkspaceOpenFolder", "Electron preload API whitelists workspace open folder");
+assertIncludesText(preloadApiText, "validateSelfHostedEditorPreloadCommandPayload", "Electron preload API validates command payloads");
 assertNoText(preloadApiText, "invoke", "Electron preload API must not expose generic invoke");
 assertNoText(preloadApiText, "send", "Electron preload API must not expose generic send");
 assertNoText(preloadApiText, "request", "Electron preload API must not expose generic request");

@@ -1,4 +1,7 @@
-import { createSelfHostedEditorPreloadApi } from "../Desktop/ElectronPreloadApi.js";
+import {
+  createSelfHostedEditorPreloadApi,
+  validateSelfHostedEditorPreloadCommandPayload,
+} from "../Desktop/ElectronPreloadApi.js";
 import { EditorBackendClient } from "../Scripts/Backend/Clients/EditorBackendClient.js";
 import { EditorBackendTransportCommand } from "../Scripts/Backend/Clients/EditorBackendTransport.js";
 import {
@@ -39,6 +42,25 @@ assertEqual(typeof preloadApi.send, "undefined", "preload API must not expose ge
 assertEqual(typeof preloadApi.request, "undefined", "preload API must not expose generic request");
 assertEqual(hasSelfHostedEditorPreloadApi({ inscapeSelfHostedEditor: preloadApi }), true, "preload API detection");
 assertEqual(hasSelfHostedEditorPreloadApi({}), false, "missing preload API detection");
+
+let unknownPreloadCommandRejected = false;
+try {
+  validateSelfHostedEditorPreloadCommandPayload("unknown.command", {});
+} catch {
+  unknownPreloadCommandRejected = true;
+}
+assertEqual(unknownPreloadCommandRejected, true, "preload API rejects unknown command");
+
+let invalidPreloadPayloadRejected = false;
+try {
+  await preloadApi.languageSession.diagnose({
+    arbitrary: true,
+    scriptText: "# Opening",
+  });
+} catch {
+  invalidPreloadPayloadRejected = true;
+}
+assertEqual(invalidPreloadPayloadRejected, true, "preload API rejects unexpected payload keys");
 
 const preloadTransport = new SelfHostedEditorPreloadBackendTransport({ preloadApi });
 const diagnosticsResult = await preloadTransport.invoke(EditorBackendTransportCommand.LanguageDiagnostics, {
