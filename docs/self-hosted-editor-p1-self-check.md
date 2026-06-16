@@ -127,6 +127,7 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:desktop-backend
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:workspace-fs
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:document-buffer
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:save-recovery
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:desktop-package
 npm --prefix src\ExternalSupport\SelfHostedEditor run smoke:desktop
 npm --prefix src\ExternalSupport\SelfHostedEditor run smoke:desktop-runtime
 npm --prefix src\ExternalSupport\SelfHostedEditor run smoke:desktop-startup
@@ -493,6 +494,7 @@ Commands passed:
 - workspace fs checks:
 - document buffer checks:
 - save / recovery checks:
+- desktop package checks:
 - smoke:desktop:
 - smoke:desktop-runtime:
 - smoke:desktop-startup:

@@ -18,6 +18,7 @@ const requiredPaths = [
   "DevScripts/SelfHostedEditorApiHandlerBridge.js",
   "DevScripts/SelfHostedEditorBackendTransportContractCheck.js",
   "DevScripts/SelfHostedEditorDesktopBackendContractCheck.js",
+  "DevScripts/SelfHostedEditorDesktopPackageContractCheck.js",
   "DevScripts/SelfHostedEditorDesktopRuntimeSmoke.js",
   "DevScripts/SelfHostedEditorDesktopStartupSmoke.js",
   "DevScripts/SelfHostedEditorDesktopV0Smoke.js",
@@ -741,8 +742,8 @@ if (/data-loading-state/.test(workbenchWorkspaceLayoutCss) || /^\s*\.app-sidebar
 }
 
 const packageJson = JSON.parse(fs.readFileSync(path.join(moduleRoot, "package.json"), "utf8"));
-if (!packageJson.scripts["check:model"] || !packageJson.scripts["check:structure"] || !packageJson.scripts["check:style-structure"] || !packageJson.scripts["check:syntax"] || !packageJson.scripts["check:payload-bridge"] || !packageJson.scripts["check:backend-services"] || !packageJson.scripts["check:backend-transport"] || !packageJson.scripts["check:fake-embedded-transport"] || !packageJson.scripts["check:preload-transport"] || !packageJson.scripts["check:desktop-backend"] || !packageJson.scripts["check:workspace-fs"] || !packageJson.scripts["check:electron-boundary"] || !packageJson.scripts["check:electron-shell"] || !packageJson.scripts["check:static-assets"] || !packageJson.scripts["check:static-assets-http"] || !packageJson.scripts["check:node-map"] || !packageJson.scripts["check:node-map-http"] || !packageJson.scripts["check:references"] || !packageJson.scripts["check:references-http"] || !packageJson.scripts["check:semantic-parity-http"] || !packageJson.scripts["check:process-bridge"] || !packageJson.scripts["check:session-cache"] || !packageJson.scripts["check:session-cache-http"] || !packageJson.scripts["smoke:desktop"] || !packageJson.scripts["smoke:desktop-runtime"] || !packageJson.scripts["smoke:desktop-startup"] || !packageJson.scripts["start:desktop"]) {
-  console.error("SelfHostedEditor package.json must expose check:model, check:structure, check:style-structure, check:syntax, check:payload-bridge, check:backend-services, check:backend-transport, check:fake-embedded-transport, check:preload-transport, check:desktop-backend, check:workspace-fs, check:electron-boundary, check:electron-shell, check:static-assets, check:static-assets-http, check:node-map, check:node-map-http, check:references, check:references-http, check:semantic-parity-http, check:process-bridge, check:session-cache, check:session-cache-http, smoke:desktop, smoke:desktop-runtime, smoke:desktop-startup, and start:desktop.");
+if (!packageJson.scripts["check:model"] || !packageJson.scripts["check:structure"] || !packageJson.scripts["check:style-structure"] || !packageJson.scripts["check:syntax"] || !packageJson.scripts["check:payload-bridge"] || !packageJson.scripts["check:backend-services"] || !packageJson.scripts["check:backend-transport"] || !packageJson.scripts["check:fake-embedded-transport"] || !packageJson.scripts["check:preload-transport"] || !packageJson.scripts["check:desktop-package"] || !packageJson.scripts["check:desktop-backend"] || !packageJson.scripts["check:workspace-fs"] || !packageJson.scripts["check:electron-boundary"] || !packageJson.scripts["check:electron-shell"] || !packageJson.scripts["check:static-assets"] || !packageJson.scripts["check:static-assets-http"] || !packageJson.scripts["check:node-map"] || !packageJson.scripts["check:node-map-http"] || !packageJson.scripts["check:references"] || !packageJson.scripts["check:references-http"] || !packageJson.scripts["check:semantic-parity-http"] || !packageJson.scripts["check:process-bridge"] || !packageJson.scripts["check:session-cache"] || !packageJson.scripts["check:session-cache-http"] || !packageJson.scripts["smoke:desktop"] || !packageJson.scripts["smoke:desktop-runtime"] || !packageJson.scripts["smoke:desktop-startup"] || !packageJson.scripts["package:windows"] || !packageJson.scripts["start:desktop"]) {
+  console.error("SelfHostedEditor package.json must expose check:model, check:structure, check:style-structure, check:syntax, check:payload-bridge, check:backend-services, check:backend-transport, check:fake-embedded-transport, check:preload-transport, check:desktop-package, check:desktop-backend, check:workspace-fs, check:electron-boundary, check:electron-shell, check:static-assets, check:static-assets-http, check:node-map, check:node-map-http, check:references, check:references-http, check:semantic-parity-http, check:process-bridge, check:session-cache, check:session-cache-http, smoke:desktop, smoke:desktop-runtime, smoke:desktop-startup, package:windows, and start:desktop.");
   failed = true;
 }
 if (packageJson.scripts["check:model"] !== "node DevScripts/SelfHostedEditorModelContractSuite.js") {
@@ -763,6 +764,14 @@ if (packageJson.scripts["smoke:desktop-runtime"] !== "node DevScripts/SelfHosted
 }
 if (packageJson.scripts["smoke:desktop-startup"] !== "node DevScripts/SelfHostedEditorDesktopStartupSmoke.js") {
   console.error("SelfHostedEditor smoke:desktop-startup must delegate to SelfHostedEditorDesktopStartupSmoke.js.");
+  failed = true;
+}
+if (packageJson.scripts["check:desktop-package"] !== "node DevScripts/SelfHostedEditorDesktopPackageContractCheck.js") {
+  console.error("SelfHostedEditor check:desktop-package must delegate to SelfHostedEditorDesktopPackageContractCheck.js.");
+  failed = true;
+}
+if (packageJson.scripts["package:windows"] !== "electron-builder --win dir --x64") {
+  console.error("SelfHostedEditor package:windows must build a Windows x64 unpacked directory with electron-builder.");
   failed = true;
 }
 if (packageJson.scripts["start:desktop"] !== "electron Desktop/ElectronMain.js") {

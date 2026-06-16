@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { buildSelfHostedEditorDesktopPackageReadiness } from "./SelfHostedEditorDesktopPackageContractCheck.js";
 
 export const SelfHostedEditorDesktopStartupSmokeFormat = "inscape.self-hosted-editor.desktop-startup-smoke";
 
@@ -17,6 +18,8 @@ assertEqual(packageJson.type, "module", "desktop startup package is ESM");
 assertEqual(packageJson.scripts?.["smoke:desktop"], "node DevScripts/SelfHostedEditorDesktopV0Smoke.js", "desktop startup smoke includes v0 loop smoke");
 assertEqual(packageJson.scripts?.["smoke:desktop-runtime"], "node DevScripts/SelfHostedEditorDesktopRuntimeSmoke.js", "desktop startup smoke includes Electron runtime smoke");
 assertEqual(packageJson.scripts?.["smoke:desktop-startup"], "node DevScripts/SelfHostedEditorDesktopStartupSmoke.js", "desktop startup smoke script");
+assertEqual(packageJson.scripts?.["check:desktop-package"], "node DevScripts/SelfHostedEditorDesktopPackageContractCheck.js", "desktop startup package contract check script");
+assertEqual(packageJson.scripts?.["package:windows"], "electron-builder --win dir --x64", "desktop startup Windows package script");
 assertEqual(packageJson.scripts?.["start:desktop"], "electron Desktop/ElectronMain.js", "desktop startup launch script");
 assertEqual(packageLock.name, packageJson.name, "desktop startup lockfile package name");
 assertIncludes(appEntryText, "Inscape SelfHostedEditor", "desktop startup app name");
@@ -31,12 +34,15 @@ assertEqual(readiness.format, SelfHostedEditorDesktopStartupSmokeFormat, "deskto
 assertEqual(readiness.equivalentLocalStartupSmoke, true, "desktop startup has equivalent local smoke");
 assertEqual(readiness.electronRuntimeAvailable, true, "desktop startup has Electron runtime");
 assertEqual(readiness.desktopRuntimeSmoke, true, "desktop startup has Electron runtime smoke");
+assertEqual(readiness.windowsPackageScriptAvailable, true, "desktop startup has Windows package script");
 assertEqual(readiness.validationScripts.includes("smoke:desktop"), true, "desktop startup readiness includes v0 smoke");
 assertEqual(readiness.validationScripts.includes("smoke:desktop-runtime"), true, "desktop startup readiness includes runtime smoke");
+assertEqual(readiness.validationScripts.includes("check:desktop-package"), true, "desktop startup readiness includes package contract");
 assertEqual(readiness.validationScripts.includes("check:electron-shell"), true, "desktop startup readiness includes electron shell contract");
 assertEqual(readiness.knownLimitations.includes("electron-runtime-not-installed"), false, "desktop startup no longer records missing Electron runtime");
-assertEqual(readiness.knownLimitations.includes("windows-package-not-generated"), true, "desktop startup still records missing Windows package");
-assertEqual(readiness.windowsPackageGenerated, false, "desktop startup does not claim a generated Windows package yet");
+if (!readiness.windowsPackageGenerated) {
+  assertEqual(readiness.knownLimitations.includes("windows-package-not-generated"), true, "desktop startup still records missing Windows package");
+}
 
 await import("./SelfHostedEditorDesktopRuntimeSmoke.js");
 await import("./SelfHostedEditorDesktopV0Smoke.js");
@@ -46,7 +52,7 @@ console.log("SelfHostedEditor desktop startup smoke ok");
 function buildStartupReadiness(packageManifest) {
   const hasElectronRuntime = Boolean(packageManifest.dependencies?.electron || packageManifest.devDependencies?.electron);
   const hasDesktopRuntimeSmoke = packageManifest.scripts?.["smoke:desktop-runtime"] === "node DevScripts/SelfHostedEditorDesktopRuntimeSmoke.js";
-  const hasWindowsPackageScript = Boolean(packageManifest.scripts?.["package:windows"] || packageManifest.scripts?.["dist:windows"]);
+  const packageReadiness = buildSelfHostedEditorDesktopPackageReadiness(packageManifest, { moduleRoot });
   return {
     desktopRuntimeSmoke: hasElectronRuntime && hasDesktopRuntimeSmoke,
     electronRuntimeAvailable: hasElectronRuntime,
@@ -54,16 +60,18 @@ function buildStartupReadiness(packageManifest) {
     format: SelfHostedEditorDesktopStartupSmokeFormat,
     knownLimitations: [
       ...(!hasElectronRuntime ? ["electron-runtime-not-installed"] : []),
-      ...(!hasWindowsPackageScript ? ["windows-package-not-generated"] : []),
+      ...packageReadiness.knownLimitations,
     ],
     validationScripts: [
       "smoke:desktop",
       "smoke:desktop-runtime",
+      "check:desktop-package",
       "check:electron-shell",
       "check:electron-boundary",
       "check:preload-transport",
     ],
-    windowsPackageGenerated: hasWindowsPackageScript && hasElectronRuntime,
+    windowsPackageGenerated: packageReadiness.windowsPackageGenerated,
+    windowsPackageScriptAvailable: packageReadiness.windowsPackageScriptAvailable,
   };
 }
 

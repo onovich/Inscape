@@ -401,6 +401,17 @@ P1 Round 37 已补真实 Electron runtime 与启动入口 smoke。本轮仍不�
 - 依赖安全观察：`npm audit` 当前报告 `monaco-editor` 依赖链中的 `dompurify` advisory；npm 的自动修复会降到 `monaco-editor@0.53.0` 且为 breaking change，本轮未混入强制降级。
 - Round 37 当前已通过：SelfHostedEditor `smoke:desktop-runtime` / `smoke:desktop-startup` / `smoke:desktop` / `check:electron-shell` / `check:electron-boundary` / `check:preload-transport` / `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity` / `check:structure`，`node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js`，`git diff --check`，`.NET build` 与 Internal tests。后续应补 Windows package script / package smoke 或真实 workspace IO，不要进入 P1.5。
 
+### 2026-06-17 SelfHostedEditor P1 Round 38 package config 快照
+
+P1 Round 38 已补 Windows package script 与 electron-builder config contract。本轮没有运行真实 packaging，也没有提交构建产物。
+
+- `SelfHostedEditor` package 新增 `main: "Desktop/ElectronMain.js"`、electron-builder dev dependency、`package:windows` 和 build config。
+- build config 使用 `appId: dev.inscape.self-hosted-editor`、`productName: Inscape SelfHostedEditor`、`asar: true`、`dist` 输出目录，以及 Windows `dir` x64 target。
+- package files 白名单只包含 `Desktop/`、`Resources/`、`Scripts/`、`package.json` 与 `node_modules/monaco-editor/**/*`；`DevScripts/` 不作为产品文件打包。
+- 新增 `DevScripts/SelfHostedEditorDesktopPackageContractCheck.js` 与 npm script `check:desktop-package`，验证 package entry、electron-builder 依赖、lockfile range、files 白名单、Windows target 与 artifact readiness。
+- `smoke:desktop-startup` 现在串起 package contract、runtime smoke 与 `smoke:desktop`；readiness 记录 `windowsPackageScriptAvailable: true`，但 artifact 未生成时仍保留 `windows-package-not-generated`。
+- Round 38 当前已通过：SelfHostedEditor `check:desktop-package` / `smoke:desktop-runtime` / `smoke:desktop-startup` / `smoke:desktop` / `check:electron-shell` / `check:electron-boundary` / `check:preload-transport` / `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity` / `check:structure`，`node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js`，`git diff --check`，`.NET build` 与 Internal tests。下一步应运行真实 `package:windows` 并补 artifact smoke，或推进真实 workspace IO。
+
 ### 2026-06-14 SelfHostedEditor desktop backend v0 决策快照
 
 本轮已采纳 [ADR 0019](adr/0019-self-hosted-editor-embedded-backend-v0.md)：SelfHostedEditor desktop backend v0 采用嵌入式 EditorBackend，而不是独立 sidecar daemon。

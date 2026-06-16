@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "main": "Desktop/ElectronMain.js",
   "license": "UNLICENSED",
   "description": "First-party Inscape authoring client shell.",
   "scripts": {
@@ -14,6 +15,7 @@
     "check:http-bridge": "node DevScripts/SelfHostedEditorHttpBridgeContractCheck.js",
     "check:payload-bridge": "node DevScripts/SelfHostedEditorPayloadBridgeContractCheck.js",
     "check:process-bridge": "node DevScripts/SelfHostedEditorProcessBridgeContractCheck.js",
+    "check:desktop-package": "node DevScripts/SelfHostedEditorDesktopPackageContractCheck.js",
     "check:desktop-backend": "node DevScripts/SelfHostedEditorDesktopBackendContractCheck.js",
     "check:workspace-fs": "node DevScripts/SelfHostedEditorWorkspaceFileSystemContractCheck.js",
     "check:electron-boundary": "node DevScripts/SelfHostedEditorElectronBoundaryContractCheck.js",
@@ -46,6 +48,7 @@
     "smoke:desktop": "node DevScripts/SelfHostedEditorDesktopV0Smoke.js",
     "smoke:desktop-runtime": "node DevScripts/SelfHostedEditorDesktopRuntimeSmoke.js",
     "smoke:desktop-startup": "node DevScripts/SelfHostedEditorDesktopStartupSmoke.js",
+    "package:windows": "electron-builder --win dir --x64",
     "start:desktop": "electron Desktop/ElectronMain.js",
     "start": "node DevScripts/StartSelfHostedEditorPreview.js"
   },
@@ -53,6 +56,32 @@
     "monaco-editor": "^0.55.1"
   },
   "devDependencies": {
-    "electron": "^42.4.0"
+    "electron": "^42.4.0",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "dev.inscape.self-hosted-editor",
+    "productName": "Inscape SelfHostedEditor",
+    "asar": true,
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "Desktop/**/*",
+      "Resources/**/*",
+      "Scripts/**/*",
+      "package.json",
+      "node_modules/monaco-editor/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "dir",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    }
   }
 }

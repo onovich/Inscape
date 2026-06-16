@@ -166,6 +166,7 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:references-http
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:node-map
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:node-map-http
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:process-bridge
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:desktop-package
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:static-assets
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:static-assets-http
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:session-cache
@@ -192,6 +193,7 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run smoke:desktop-startup
 `check:references` exercises the LanguageServer project references dev-host helper without requiring the local HTTP server to be started first, including cross-file references and current draft content.
 `check:references-http` starts the preview dev server in-process and performs a real HTTP request to `/api/references`, including workspace-relative source path normalization.
 `check:payload-bridge` verifies that compact dev-host payloads preserve shared localization presenter, node-map report, Runtime, and source-location shapes while trimming only transport fields.
+`check:desktop-package` verifies the Electron packaging contract: package main entry, electron-builder dependency and lockfile range, files whitelist, Windows `dir` x64 target, and whether the expected unpacked executable exists.
 `check:desktop-backend` verifies the P1 model-only embedded backend contract: `embedded-desktop` session status, standalone DocumentBuffer shape and non-text summaries, DocumentBufferStore list / get / update / stale-update / active-document / saveDocument / saveAll operations, saved revision baseline, disk-conflict save errors, autosave idle-debounce planning, flush lifecycle planning, recovery snapshot planning, backend workspace snapshot building, single-window active ProjectSession lifecycle summary, cleanup summary, workspace write target guards, save / recovery status, settings summary defaults, and the global/workspace settings schema. It does not launch Electron or perform real file IO.
 `check:workspace-fs` verifies the workspace path, write target, open-folder, internal workspace, write-back backup, and asset import guards used by backend file boundaries: only workspace-relative paths are accepted, absolute paths and traversal are rejected, resolved paths must stay under the workspace root, valid paths must match the explicit write target catalog, directory-owned targets such as `.inscape-workspace/**` and `assets/**` take precedence over extension rules, v0 workspace opening accepts directories while rejecting formal single-file mode, `.inscape-workspace/recovery|backups|cache` plus the default `.gitignore` entry are planned without treating them as project truth, CSV / node-map / line-map write-back backup requests target `.inscape-workspace/backups/` with count-and-age retention, and external image / audio / CSV imports plan copies into workspace `assets/` without persisting external paths.
 `check:electron-boundary` verifies that renderer scripts do not access Electron / Node / arbitrary IPC, preload does not expose generic system methods, and the preload command whitelist covers the backend command catalog.
@@ -226,6 +228,12 @@ Launch the Electron desktop shell locally:
 
 ```powershell
 npm --prefix src\ExternalSupport\SelfHostedEditor run start:desktop
+```
+
+Build the Windows unpacked package locally:
+
+```powershell
+npm --prefix src\ExternalSupport\SelfHostedEditor run package:windows
 ```
 
 Install dependencies when the package lock changes:

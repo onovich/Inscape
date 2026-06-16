@@ -70,6 +70,8 @@
 
 2026-06-17 P1 Round 37 补充：真实 Electron runtime / 启动入口先落为 `smoke:desktop-runtime`。该入口运行 Electron CLI `--version`，再以 `SELF_HOSTED_EDITOR_ELECTRON_AUTOSTART=false` 启动 runtime probe，验证 `Desktop/ElectronMain.js` 能在真实 Electron main process 中加载并保持 BrowserWindow 安全默认；真实 GUI launch、installer/package 与文件 IO smoke 仍待后续产品化轮次。
 
+2026-06-17 P1 Round 38 补充：Windows package 先落为 electron-builder config contract。`check:desktop-package` 验证 package main entry、`package:windows`、files 白名单、Windows `dir` x64 target 与 artifact readiness；当前只固定可复现打包入口，不提交构建产物，也不把 package artifact smoke 伪装为已完成。
+
 ## 状态分类
 
 | 分类 | 当前例子 | 未来归属 | 规则 |
