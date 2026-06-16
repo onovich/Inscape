@@ -1293,6 +1293,52 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 4. renderer 仍不获得 Node / fs / shell 能力；settings 持久化后续必须走受控 backend command。
 5. 下一轮应进入 Round 35：v0 最小闭环 smoke。
 
+### 2026-06-17 Round 35：v0 最小闭环 smoke
+
+范围：新增可重复运行的 desktop v0 最小闭环 smoke，串起已完成的 backend contract：打开目录、文件列表、编辑 `.inscape`、autosave plan、manual Save、recovery snapshot、diagnostics / completion bridge、Runtime preview choice action。本轮不启动 Electron、不做真实文件 IO、不生成 Windows package。
+
+完成内容：
+
+1. 新增 `DevScripts/SelfHostedEditorDesktopV0Smoke.js` 与 npm script `smoke:desktop`。
+2. smoke 构建 directory workspace，验证只接受 `.inscape` 文档、拒绝非脚本文件，并保证 workspace summary 不暴露文本。
+3. smoke 通过 `DocumentBufferStore` 模拟编辑、autosave ready、manual Save 成功与 recovery snapshot plan。
+4. smoke 构建 ProjectSession status 与 backend workspace snapshot，验证 status text-free、snapshot 明确携带 active buffer text。
+5. smoke 驱动 diagnostics / completion bridge，验证 authoring 请求优先使用 backend snapshot，而不是 legacy workspace context。
+6. smoke 驱动 Runtime bridge 的 `choose` action，覆盖 Preview choice click 的 backend payload 边界。
+7. `check:structure` 守住 `smoke:desktop` script 入口与文件存在性。
+
+验证：
+
+```powershell
+npm --prefix src\ExternalSupport\SelfHostedEditor run smoke:desktop
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:desktop-backend
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:workspace-fs
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:backend-services
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:backend-transport
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:preload-transport
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:fake-embedded-transport
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:electron-boundary
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:runtime
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:runtime-http
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:structure
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
+npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
+node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js
+npm --prefix src\ExternalSupport\VSCode run check:structure
+git -c safe.directory=D:/LabProjects/Inscape diff --check
+dotnet build Inscape.slnx --no-restore
+dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build
+```
+
+架构对照结论：
+
+1. `smoke:desktop` 组合既有 contract，不新增 Compiler / LanguageServer / Tooling / Runtime 语义。
+2. smoke 明确区分 text-free status 与 content-bearing backend request snapshot，避免状态接口泄露文档正文。
+3. smoke 不提供 renderer Node / fs / shell 能力，也不把 dev-host `/api/*` 当最终产品 API。
+4. 本轮不声明 Windows package 或真实 Electron smoke 已完成；下一轮应进入 Round 36：Windows internal package v0 / 等价本机启动 smoke。
+
 ## 36 轮主计划
 
 ### A. Contract 与 transport 基础，Round 1-6
@@ -1363,7 +1409,7 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 
 | 轮次 | 目标 | 完成标准 |
 |---|---|---|
-| 35 | v0 最小闭环 smoke | 自动化或半自动 smoke 覆盖：打开目录、文件列表、编辑 `.inscape`、autosave、manual Save、recovery、diagnostics / completion、Preview choice click。 |
+| 35 | v0 最小闭环 smoke | 已完成。新增 `smoke:desktop`，用 contract smoke 覆盖打开目录、文件列表、编辑 `.inscape`、autosave、manual Save、recovery、diagnostics / completion、Preview choice click；不启动 Electron、不做真实文件 IO。 |
 | 36 | Windows internal package v0 | 生成或启动 Windows 内部可用版；能打开 workspace、编辑保存、看到恢复提示、跑基础 LanguageServer authoring 能力；记录 smoke checklist 与已知限制。 |
 
 ## 4 轮缓冲

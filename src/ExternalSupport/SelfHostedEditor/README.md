@@ -171,6 +171,7 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:static-assets-http
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:session-cache
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:session-cache-http
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:language-session
+npm --prefix src\ExternalSupport\SelfHostedEditor run smoke:desktop
 ```
 
 `check:localization-review` exercises the full localization-review dev-host path for `samples/court-loop.inscape` without requiring the local HTTP server to be started first.
@@ -201,6 +202,7 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:language-session
 `check:session-cache` verifies the dev-host session cache TTL, per-cache capacity limit, eviction counters, and non-content status shape without starting a server.
 `check:session-cache-http` starts the preview dev server in-process, seeds Runtime, line-map, and localization baseline session caches through real HTTP APIs, then requests `/api/session-cache-status` and verifies the non-content language-session status summary.
 `check:language-session` starts the optional `Inscape.LanguageServer --stdio` bridge directly and verifies diagnostics plus document symbols can reuse the same process.
+`smoke:desktop` runs the desktop v0 contract smoke without launching Electron or doing real file IO. It covers directory workspace open, `.inscape` file listing, document edit, autosave planning, manual Save, recovery snapshot planning, diagnostics / completion bridge payloads, and Runtime choose action payloads.
 
 `check:model` keeps the historical entry point, but now delegates to `DevScripts/SelfHostedEditorModelContractSuite.js`; the main model assertions live under `DevScripts/ModelContracts/` by ownership: model shape, Host capability, StoryGraph, localization, node-map, Preview / Runtime, session panel status, recovery UI/action projection, and the shared fake DOM harness. The suite also runs bridge-level guards for HTTP, payload trimming, static assets, process output, and session cache boundaries.
 `check:backend-services` verifies the UI-side narrow backend service registry, service method surfaces, DocumentBufferStore model/list/get/update/stale-update/active-document/save/saved-revision/autosave-plan/flush-plan/recovery-snapshot-plan/backup-plan/asset-import-plan/settings-schema/snapshot boundary, LanguageServer authoring bridge snapshot priority, StoryGraph / Runtime bridge snapshot priority, and that feature bridges no longer depend on the full `EditorBackendClient`.

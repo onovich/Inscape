@@ -366,6 +366,18 @@ P1 Round 34 已建立 settings schema contract。本轮只定义 schema / defaul
 - `DocumentBufferStore` 窄服务新增 `buildSettingsSchema()` helper。
 - Round 34 当前已通过：SelfHostedEditor `check:desktop-backend` / `check:workspace-fs` / `check:backend-services` / `check:backend-transport` / `check:preload-transport` / `check:fake-embedded-transport` / `check:electron-boundary` / `check:runtime` / `check:runtime-http` / `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity` / `check:structure`，`node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js`，`git diff --check`，`.NET build` 与 Internal tests。下一步进入 Round 35：v0 最小闭环 smoke。
 
+### 2026-06-17 SelfHostedEditor P1 Round 35 v0 最小闭环 smoke 快照
+
+P1 Round 35 已新增 desktop v0 contract smoke。本轮只组合已完成 backend contracts，不启动 Electron、不做真实文件 IO、不生成 Windows package。
+
+- 新增 `DevScripts/SelfHostedEditorDesktopV0Smoke.js` 与 npm script `smoke:desktop`。
+- smoke 覆盖 directory workspace open、`.inscape` 文件列表、非脚本文件拒绝、DocumentBuffer edit、autosave ready、manual Save、recovery snapshot plan。
+- smoke 覆盖 ProjectSession text-free status 与 content-bearing backend workspace snapshot 的边界。
+- smoke 驱动 diagnostics / completion bridges，验证请求优先使用 backend snapshot 而不是 legacy workspace context。
+- smoke 驱动 Runtime bridge `choose` action，覆盖 Preview choice click 的 backend payload。
+- `check:structure` 已守住 `smoke:desktop` script 与文件存在性。
+- Round 35 当前已通过：SelfHostedEditor `smoke:desktop` / `check:desktop-backend` / `check:workspace-fs` / `check:backend-services` / `check:backend-transport` / `check:preload-transport` / `check:fake-embedded-transport` / `check:electron-boundary` / `check:runtime` / `check:runtime-http` / `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity` / `check:structure`，`node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js`，`git diff --check`，`.NET build` 与 Internal tests。下一步进入 Round 36：Windows internal package v0 / 等价本机启动 smoke。
+
 ### 2026-06-14 SelfHostedEditor desktop backend v0 决策快照
 
 本轮已采纳 [ADR 0019](adr/0019-self-hosted-editor-embedded-backend-v0.md)：SelfHostedEditor desktop backend v0 采用嵌入式 EditorBackend，而不是独立 sidecar daemon。

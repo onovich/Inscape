@@ -64,6 +64,8 @@
 
 2026-06-17 P1 Round 34 补充：settings 分层先落为 `EditorBackendSettingsSchemaModel.buildSchema()` contract。schema 集中 autosave、backup retention、默认资源目录、资源导入策略等默认值，并区分 global user preferences 与 workspace project behavior；设置页、配置文件读写和迁移仍待后续 backend command / IO 层。
 
+2026-06-17 P1 Round 35 补充：v0 最小闭环先落为 `smoke:desktop` contract smoke。该入口串起 open workspace、DocumentBuffer edit、autosave、manual Save、recovery snapshot、diagnostics / completion bridge、Runtime choose action，验证 backend payload 边界；不启动 Electron、不执行真实文件 IO、不替代 Windows package smoke。
+
 ## 状态分类
 
 | 分类 | 当前例子 | 未来归属 | 规则 |
