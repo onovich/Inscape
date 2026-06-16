@@ -61,6 +61,15 @@ P1 Round 5 已完成 fake embedded transport / direct harness，仍未接 Electr
 - `check:model` 与 `check:structure` 已纳入 fake embedded transport guard。
 - Round 5 验证已通过：SelfHostedEditor `check:fake-embedded-transport` / `check:syntax` / `check:model` / `check:structure` / `check:semantic-parity-http`，VSCode `check:semantic-parity`，`.NET build` 与 Internal tests。下一步进入 Round 6：structure guard 第一刀。
 
+### 2026-06-16 SelfHostedEditor P1 Round 6 structure guard 快照
+
+P1 Round 6 已完成 structure guard 第一刀，仍未接 Electron 工程骨架。
+
+- `check:structure` 现在禁止生产 `Scripts/` 除 `EditorBackendTransport` command catalog 外出现 dev-host `/api/*` route 字符串。
+- `check:structure` 现在禁止 renderer `Scripts/` 直接 import Node / Electron runtime、`ipcRenderer`、`contextBridge`、`BrowserWindow` 或 `child_process`；Monaco AMD loader 仍可用。
+- `check:structure` 现在守住 backend access：生产 `Scripts/` 只有 `EditorBackendClient` 与 `EditorBackendServiceRegistry` 可接触完整 backend client，transport 细节必须留在 client / adapter 内。
+- Round 6 验证已通过：SelfHostedEditor `check:structure` / `check:syntax` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity`，`.NET build` 与 Internal tests。下一步进入 Round 7：Electron 工程骨架，并保持 dev host 默认路径不变。
+
 ### 2026-06-14 SelfHostedEditor desktop backend v0 决策快照
 
 本轮已采纳 [ADR 0019](adr/0019-self-hosted-editor-embedded-backend-v0.md)：SelfHostedEditor desktop backend v0 采用嵌入式 EditorBackend，而不是独立 sidecar daemon。

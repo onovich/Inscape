@@ -166,6 +166,44 @@ const allowedScriptBusinesses = new Set([
   "WorkspaceLayout",
 ]);
 
+const allowedApiRouteScripts = new Set([
+  "Scripts/Backend/Clients/EditorBackendTransport.js",
+]);
+
+const allowedBackendClientScripts = new Set([
+  "Scripts/Backend/Clients/EditorBackendClient.js",
+  "Scripts/Backend/Clients/EditorBackendServiceRegistry.js",
+]);
+
+const allowedTransportScripts = new Set([
+  "Scripts/Backend/Clients/EditorBackendClient.js",
+  "Scripts/Backend/Clients/EditorBackendTransport.js",
+  "Scripts/Backend/Clients/SelfHostedEditorHttpBackendTransport.js",
+]);
+
+const forbiddenRendererRuntimePatterns = [
+  {
+    label: "node: import",
+    pattern: /from\s+["']node:/,
+  },
+  {
+    label: "Electron import",
+    pattern: /from\s+["']electron["']|import\s*\(\s*["']electron["']\s*\)/,
+  },
+  {
+    label: "Node require",
+    pattern: /\brequire\s*\(\s*["'](?:node:)?(?:fs|path|child_process|os|process|url)["']\s*\)/,
+  },
+  {
+    label: "Electron renderer IPC",
+    pattern: /\b(?:ipcRenderer|contextBridge|BrowserWindow)\b/,
+  },
+  {
+    label: "child_process",
+    pattern: /\bchild_process\b/,
+  },
+];
+
 let failed = false;
 
 for (const relativePath of requiredPaths) {
@@ -188,8 +226,37 @@ if (fs.existsSync(scriptsRoot)) {
   for (const scriptPath of getJavaScriptFiles(scriptsRoot)) {
     const relativeScriptPath = path.relative(moduleRoot, scriptPath).replace(/\\/g, "/");
     const scriptText = fs.readFileSync(scriptPath, "utf8");
+    if (scriptText.includes("/api/") && !allowedApiRouteScripts.has(relativeScriptPath)) {
+      console.error(`SelfHostedEditor production Scripts must not know dev-host API routes: ${relativeScriptPath}`);
+      failed = true;
+    }
+
     if (/fetch\s*\(\s*["']\/api\//.test(scriptText)) {
       console.error(`SelfHostedEditor UI code must route dev-host API calls through EditorBackendClient: ${relativeScriptPath}`);
+      failed = true;
+    }
+
+    for (const runtimePattern of forbiddenRendererRuntimePatterns) {
+      if (runtimePattern.pattern.test(scriptText)) {
+        console.error(`SelfHostedEditor renderer Scripts must not access ${runtimePattern.label}: ${relativeScriptPath}`);
+        failed = true;
+      }
+    }
+
+    if (scriptText.includes("EditorBackendClient") && !allowedBackendClientScripts.has(relativeScriptPath)) {
+      console.error(`SelfHostedEditor production Scripts must reach backend through narrow services, not EditorBackendClient: ${relativeScriptPath}`);
+      failed = true;
+    }
+
+    if (
+      !allowedTransportScripts.has(relativeScriptPath)
+      && (
+        scriptText.includes("EditorBackendTransport")
+        || scriptText.includes("SelfHostedEditorHttpBackendTransport")
+        || scriptText.includes(".invoke(")
+      )
+    ) {
+      console.error(`SelfHostedEditor transport details must stay behind EditorBackendClient: ${relativeScriptPath}`);
       failed = true;
     }
 

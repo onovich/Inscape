@@ -1,6 +1,6 @@
 # SelfHostedEditor P1 40 轮内执行方案
 
-状态：执行中（Round 1-5 已完成）
+状态：执行中（Round 1-6 已完成）
 
 日期：2026-06-15
 
@@ -246,6 +246,35 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 2. fake embedded transport 只是测试 harness，不是 Electron preload 或正式 embedded backend 实现。
 3. 下一轮应进入 Round 6：structure guard 第一刀，继续把 renderer Node/Electron 禁止、transport 注入边界与 `/api/*` 直接调用限制做成常规检查。
 
+### 2026-06-16 Round 6：structure guard 第一刀
+
+范围：只补结构检查，不接 Electron，不新增产品 renderer 能力，不改变现有 runtime / LanguageServer / Tooling payload shape。
+
+完成内容：
+
+1. `check:structure` 现在禁止生产 `Scripts/` 除 `EditorBackendTransport` command catalog 外出现 dev-host `/api/*` route 字符串。
+2. `check:structure` 现在禁止 renderer `Scripts/` 直接 import Node / Electron runtime、`ipcRenderer`、`contextBridge`、`BrowserWindow` 或 `child_process`；Monaco AMD loader 保持允许。
+3. `check:structure` 现在守住 backend access：生产 `Scripts/` 只有 `EditorBackendClient` 与 `EditorBackendServiceRegistry` 可接触 `EditorBackendClient`，transport 细节必须留在 `EditorBackendClient` / transport adapter 内。
+4. 这些守卫为 Round 7-12 的 Electron / preload 工作预留显式边界；后续如果新增 main / preload 文件，应位于 renderer `Scripts/` 之外或明确加入白名单。
+
+本轮验证已通过：
+
+```powershell
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:structure
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
+npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
+dotnet build Inscape.slnx --no-restore
+dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build
+```
+
+架构对照结论：
+
+1. renderer production `Scripts/` 仍不具备 Node / Electron / arbitrary IPC 能力。
+2. dev-host `/api/*` 仍只属于 transport catalog / DevScripts，不进入 feature controller。
+3. 下一轮应进入 Round 7：建立 Electron 工程骨架，但不改变 dev host 默认启动路径。
+
 ## 36 轮主计划
 
 ### A. Contract 与 transport 基础，Round 1-6
@@ -257,7 +286,7 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 | 3 | 抽出 `EditorBackendTransport` | 已完成。`EditorBackendClient` 现在调用 command-based `transport.invoke(command, payload)`；现有 HTTP dev host 作为默认 transport，由 `SelfHostedEditorHttpBackendTransport` 负责 command -> `/api/*` route 映射，现有 smoke 不变。 |
 | 4 | 定义业务窄接口 adapter | 已完成。`EditorBackendServiceRegistry` 现在把 `EditorBackendClient` 包装成 `ProjectSessionService`、`DocumentBufferStore`、`LanguageSessionClient`、`RuntimeSessionClient`、`LocalizationWorkflowClient` 等 UI 侧窄接口；feature Bridge 不再接收完整 backend client，也不获得 generic `call(method, payload)`。 |
 | 5 | Fake embedded transport harness | 已完成。新增 `SelfHostedEditorFakeEmbeddedTransport` 与 `check:fake-embedded-transport`，通过真实 `EditorBackendClient`、service registry 和 Bridge direct path 证明 UI 侧不依赖 HTTP path；fake harness 本身不包含 `/api/*`、`fetch()` 或 `postJson`。 |
-| 6 | structure guard 第一刀 | `check:structure` 或等价检查覆盖：业务 `Scripts/` 不直接打 `/api/*`，生产 renderer 不直接 import Node / Electron runtime，transport 只从 `EditorBackendClient` 注入。 |
+| 6 | structure guard 第一刀 | 已完成。`check:structure` 覆盖：生产 `Scripts/` 除 transport catalog 外不得包含 `/api/*` route，renderer 不得直接 import Node / Electron runtime / IPC，transport 细节必须留在 `EditorBackendClient` 与 transport adapter 内。 |
 
 ### B. Electron shell 与 preload 边界，Round 7-12
 
