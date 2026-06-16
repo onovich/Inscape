@@ -137,6 +137,7 @@ assertSurface(services.documentBufferStore, [
   "saveAllToStore",
   "buildAutosavePlan",
   "buildFlushPlan",
+  "buildRecoverySnapshotPlan",
   "buildWorkspaceSnapshot",
   "buildActiveDocumentRequest",
   "buildWorkspaceBoundary",
@@ -310,6 +311,27 @@ const failedFlushPlan = services.documentBufferStore.buildFlushPlan(documentUpda
 assertEqual(failedFlushPlan.failedCount, 1, "document buffer flush plan failed count");
 assertEqual(failedFlushPlan.uiVisibility.state, "save-error-visible", "document buffer flush plan failure visible");
 assertEqual(JSON.stringify(failedFlushPlan).includes("# Opening\nNarrator: Updated"), false, "document buffer flush plan failure must not expose text");
+const recoverySnapshotPlan = services.documentBufferStore.buildRecoverySnapshotPlan(documentUpdateResult.store, {
+  diskModifiedUtcByPath: {
+    "story/opening.inscape": "2026-06-16T00:59:00.000Z",
+  },
+  snapshotModifiedUtc: "2026-06-16T01:00:00.000Z",
+  workspaceRoot: "C:/Case Files/Court Loop",
+});
+assertEqual(recoverySnapshotPlan.snapshotWriteCount, 1, "document buffer recovery snapshot write count");
+assertEqual(recoverySnapshotPlan.snapshotWrites[0].text, "# Opening\nNarrator: Updated", "document buffer recovery snapshot carries text");
+assertEqual(recoverySnapshotPlan.snapshotWrites[0].writeTarget.targetKind, "recovery-snapshot", "document buffer recovery snapshot target");
+assertEqual(JSON.stringify(recoverySnapshotPlan.recoveryStatus).includes("# Opening\nNarrator: Updated"), false, "document buffer recovery status must not expose text");
+const recoveryCleanupPlan = services.documentBufferStore.buildRecoverySnapshotPlan(saveDocumentResult.storeSummary, {
+  saveResults: [
+    saveDocumentResult,
+  ],
+  workspaceRoot: "C:/Case Files/Court Loop",
+});
+assertEqual(recoveryCleanupPlan.snapshotWriteCount, 0, "document buffer recovery cleanup no write");
+assertEqual(recoveryCleanupPlan.cleanupRequests.length, 1, "document buffer recovery cleanup request count");
+assertEqual(recoveryCleanupPlan.payloadContentExposed, false, "document buffer recovery cleanup text-free");
+assertEqual(JSON.stringify(recoveryCleanupPlan).includes("# Opening\nNarrator: Updated"), false, "document buffer recovery cleanup must not expose text");
 const workspaceSnapshot = services.documentBufferStore.buildWorkspaceSnapshot(activeDocumentResult.store);
 assertEqual(workspaceSnapshot.source, "backend-buffer-store", "workspace snapshot source");
 assertEqual(workspaceSnapshot.currentFilePath, "story/branch.inscape", "workspace snapshot active path");

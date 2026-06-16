@@ -52,6 +52,8 @@
 
 2026-06-16 P1 Round 28 补充：flush rules 先落为 `buildFlushPlan()` contract。plan 覆盖 manual Save、close window、switch workspace、app exit，用当前 dirty backend buffer 的 latest revision 生成 text-free flush request；unsafe write target 进入 blocking issue，save failure 进入 visible failure，真实文件 IO 和 recovery snapshot 仍待后续 embedded backend handler 落地。
 
+2026-06-16 P1 Round 29 补充：recovery snapshot 先落为 `buildRecoverySnapshotPlan()` contract。plan 为 dirty backend buffer 生成含文本、mtime、revision、content hash 的 recovery snapshot write payload，同时提供 text-free `recoveryStatus` 和 save success cleanup request。真实磁盘写入、启动扫描和恢复 UI 仍待后续轮次。
+
 ## 状态分类
 
 | 分类 | 当前例子 | 未来归属 | 规则 |

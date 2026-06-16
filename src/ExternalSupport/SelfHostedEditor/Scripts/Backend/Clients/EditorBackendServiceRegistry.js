@@ -103,6 +103,10 @@ export class DocumentBufferStore {
     return EditorBackendDocumentBufferStoreModel.buildFlushPlan(store, request);
   }
 
+  buildRecoverySnapshotPlan(store = {}, request = {}) {
+    return EditorBackendDocumentBufferStoreModel.buildRecoverySnapshotPlan(store, request);
+  }
+
   buildWorkspaceSnapshot(store = {}, request = {}) {
     return EditorBackendWorkspaceSnapshotModel.buildSnapshot({
       activeRelativePath: request.activeRelativePath,

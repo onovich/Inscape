@@ -15,6 +15,8 @@ import {
 import {
   EditorBackendDocumentBufferAutosavePlanFormat,
   EditorBackendDocumentBufferFlushPlanFormat,
+  EditorBackendDocumentBufferRecoverySnapshotFormat,
+  EditorBackendDocumentBufferRecoverySnapshotPlanFormat,
   EditorBackendDocumentBufferStoreFormat,
   EditorBackendDocumentBufferStoreModel,
   EditorBackendDocumentBufferListFormat,
@@ -356,6 +358,55 @@ assertEqual(blockedFlushPlan.blockingIssues[0].reason, "write-target-not-whiteli
 assertEqual(blockedFlushPlan.uiVisibility.state, "flush-blocked-visible", "flush plan unsafe UI state");
 assertEqual(blockedFlushPlan.continuationBlocked, true, "flush plan unsafe blocks continuation");
 assertNotIncludes(JSON.stringify(blockedFlushPlan), "secret executable draft text", "flush plan unsafe must not expose text");
+const recoverySnapshotPlan = EditorBackendDocumentBufferStoreModel.buildRecoverySnapshotPlan(flushStore, {
+  diskModifiedUtcByPath: {
+    "story/opening.inscape": "2026-06-16T00:59:00.000Z",
+  },
+  snapshotModifiedUtc: "2026-06-16T01:00:00.000Z",
+  workspaceRoot: "C:/Case Files/Court Loop",
+});
+assertEqual(recoverySnapshotPlan.format, EditorBackendDocumentBufferRecoverySnapshotPlanFormat, "recovery snapshot plan format");
+assertEqual(recoverySnapshotPlan.snapshotWriteCount, 1, "recovery snapshot plan write count");
+assertEqual(recoverySnapshotPlan.payloadContentExposed, true, "recovery snapshot plan exposes backend payload");
+assertEqual(recoverySnapshotPlan.snapshotWrites[0].format, EditorBackendDocumentBufferRecoverySnapshotFormat, "recovery snapshot format");
+assertEqual(recoverySnapshotPlan.snapshotWrites[0].relativePath, "story/opening.inscape", "recovery snapshot source path");
+assertEqual(recoverySnapshotPlan.snapshotWrites[0].documentRevision, 9, "recovery snapshot revision");
+assertEqual(recoverySnapshotPlan.snapshotWrites[0].diskModifiedUtc, "2026-06-16T00:59:00.000Z", "recovery snapshot disk mtime");
+assertEqual(recoverySnapshotPlan.snapshotWrites[0].snapshotModifiedUtc, "2026-06-16T01:00:00.000Z", "recovery snapshot mtime");
+assertEqual(recoverySnapshotPlan.snapshotWrites[0].snapshotRelativePath, ".inscape-workspace/recovery/story/opening.inscape.snapshot.json", "recovery snapshot path");
+assertEqual(recoverySnapshotPlan.snapshotWrites[0].writeTarget.targetKind, "recovery-snapshot", "recovery snapshot write target");
+assertEqual(recoverySnapshotPlan.snapshotWrites[0].text, "secret flush latest text", "recovery snapshot carries backend text payload");
+assertEqual(recoverySnapshotPlan.snapshotWrites[0].contentHash.startsWith("fnv1a32:"), true, "recovery snapshot content hash");
+assertEqual(recoverySnapshotPlan.recoveryStatus.items[0].contentHash, recoverySnapshotPlan.snapshotWrites[0].contentHash, "recovery snapshot status hash");
+assertNotIncludes(JSON.stringify(recoverySnapshotPlan.recoveryStatus), "secret flush latest text", "recovery status must not expose snapshot text");
+assertNotIncludes(JSON.stringify(recoverySnapshotPlan.storeSummary), "secret flush latest text", "recovery plan store summary must not expose text");
+const recoveryCleanupStore = EditorBackendDocumentBufferStoreModel.buildStore({
+  documents: [
+    {
+      dirty: false,
+      lastSavedRevision: 9,
+      relativePath: "story/opening.inscape",
+      revision: 9,
+      text: "secret saved recovery text",
+    },
+  ],
+});
+const recoveryCleanupPlan = EditorBackendDocumentBufferStoreModel.buildRecoverySnapshotPlan(recoveryCleanupStore, {
+  saveResults: [
+    {
+      ok: true,
+      relativePath: "story/opening.inscape",
+      savedRevision: 9,
+    },
+  ],
+  workspaceRoot: "C:/Case Files/Court Loop",
+});
+assertEqual(recoveryCleanupPlan.snapshotWriteCount, 0, "recovery cleanup plan no snapshot writes");
+assertEqual(recoveryCleanupPlan.payloadContentExposed, false, "recovery cleanup plan text-free");
+assertEqual(recoveryCleanupPlan.cleanupRequests.length, 1, "recovery cleanup request count");
+assertEqual(recoveryCleanupPlan.cleanupRequests[0].reason, "saved-document-recovery-cleanup", "recovery cleanup reason");
+assertEqual(recoveryCleanupPlan.cleanupRequests[0].writeTarget.targetKind, "recovery-snapshot", "recovery cleanup target");
+assertNotIncludes(JSON.stringify(recoveryCleanupPlan), "secret saved recovery text", "recovery cleanup plan must not expose text");
 const activeBufferResult = EditorBackendDocumentBufferStoreModel.setActiveDocument(updateBufferResult.store, {
   relativePath: "story/branch.inscape",
 });

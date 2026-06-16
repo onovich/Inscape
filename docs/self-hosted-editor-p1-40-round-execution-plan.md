@@ -1022,6 +1022,51 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 5. 本轮没有改变 Compiler / LanguageServer / Tooling / Runtime payload shape，也没有进入 P1.5 long-lived LanguageServer。
 6. 下一轮应进入 Round 29：recovery snapshot。
 
+### 2026-06-16 Round 29：recovery snapshot
+
+范围：建立 recovery snapshot 写入 payload 与保存后 cleanup contract，证明 backend 可以从 dirty buffer 生成包含正文的 recovery snapshot，并且 recovery status / cleanup request 不暴露正文。本轮仍不执行真实文件 IO，不扫描下次启动的 recovery，也不实现恢复 UI。
+
+完成内容：
+
+1. `EditorBackendDocumentBufferStoreModel.buildRecoverySnapshotPlan()` 返回 `inscape.self-hosted-editor.document-buffer-recovery-snapshot-plan`。
+2. Dirty backend buffer 会生成 `inscape.self-hosted-editor.document-buffer-recovery-snapshot` write payload，记录 relative path、document revision、disk mtime、snapshot mtime、content hash 和文本。
+3. Snapshot 写入路径使用 `.inscape-workspace/recovery/<relativePath>.snapshot.json`，继续通过 workspace file boundary / write target catalog 判定为 `recovery-snapshot`。
+4. `recoveryStatus` 只投影 relative path、revision、mtime、content hash 与 action state，不包含 snapshot text。
+5. save success / `savedRelativePaths` 会生成 text-free `saved-document-recovery-cleanup` request，用于后续真实 IO 层清理正常保存后的 recovery snapshot。
+6. `DocumentBufferStore` 窄服务新增 `buildRecoverySnapshotPlan()` helper；`check:desktop-backend` 与 `check:backend-services` 覆盖 snapshot payload、status no-text、cleanup request 和 write target boundary。
+
+验证：
+
+```powershell
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:desktop-backend
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:workspace-fs
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:backend-services
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:backend-transport
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:preload-transport
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:fake-embedded-transport
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:electron-boundary
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:runtime
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:runtime-http
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:structure
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
+npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
+node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js
+npm --prefix src\ExternalSupport\VSCode run check:structure
+git -c safe.directory=D:/LabProjects/Inscape diff --check
+dotnet build Inscape.slnx --no-restore
+dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build
+```
+
+架构对照结论：
+
+1. Snapshot write payload 是 backend 内部持久化载荷，允许包含 document text；面向 UI 的 `recoveryStatus` 和 cleanup request 仍是 text-free。
+2. recovery 写入路径继续复用 workspace boundary / write target catalog，没有在 feature controller 复制路径规则。
+3. content hash 只用于 snapshot identity / comparison contract，不改变 Compiler / LanguageServer / Tooling / Runtime 语义。
+4. 本轮没有让 renderer 获取 Node / fs / shell 能力，也没有进入 P1.5 long-lived LanguageServer。
+5. 下一轮应进入 Round 30：recovery UI，覆盖打开 workspace 后发现 recovery、恢复 / 丢弃 / 稍后处理。
+
 ## 36 轮主计划
 
 ### A. Contract 与 transport 基础，Round 1-6

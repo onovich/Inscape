@@ -5,6 +5,8 @@ export const EditorBackendDocumentBufferStoreFormat = "inscape.self-hosted-edito
 export const EditorBackendDocumentBufferListFormat = "inscape.self-hosted-editor.document-buffer-list";
 export const EditorBackendDocumentBufferAutosavePlanFormat = "inscape.self-hosted-editor.document-buffer-autosave-plan";
 export const EditorBackendDocumentBufferFlushPlanFormat = "inscape.self-hosted-editor.document-buffer-flush-plan";
+export const EditorBackendDocumentBufferRecoverySnapshotFormat = "inscape.self-hosted-editor.document-buffer-recovery-snapshot";
+export const EditorBackendDocumentBufferRecoverySnapshotPlanFormat = "inscape.self-hosted-editor.document-buffer-recovery-snapshot-plan";
 export const EditorBackendDocumentBufferSaveResultFormat = "inscape.self-hosted-editor.document-buffer-save-result";
 export const EditorBackendDocumentBufferSaveAllResultFormat = "inscape.self-hosted-editor.document-buffer-save-all-result";
 export const EditorBackendDocumentBufferStoreModelFormatVersion = 1;
@@ -351,6 +353,84 @@ export class EditorBackendDocumentBufferStoreModel {
         visibleFailures,
       }),
       visibleFailures,
+      workspaceName: normalizedStore.workspaceName,
+    };
+  }
+
+  static buildRecoverySnapshotPlan(store = {}, request = {}) {
+    const normalizedStore = this.buildStore(store);
+    const requestedPaths = normalizeRelativePathList(request.relativePaths);
+    const dirtyDocuments = normalizedStore.documents.filter((document) => (
+      document.dirty
+      && (
+        requestedPaths.length === 0
+        || requestedPaths.includes(document.relativePath)
+      )
+    ));
+    const snapshotModifiedUtc = normalizeTimestamp(request.snapshotModifiedUtc || request.nowUtc);
+    const snapshotWrites = [];
+    const skippedDocuments = [];
+
+    for (const document of dirtyDocuments) {
+      const snapshotRelativePath = buildRecoverySnapshotRelativePath(document.relativePath);
+      const workspaceBoundary = EditorBackendDesktopSessionModel.buildWorkspaceFileBoundary({
+        operation: "write",
+        relativePath: snapshotRelativePath,
+        workspaceRoot: request.workspaceRoot,
+      });
+      if (!workspaceBoundary.allowed) {
+        skippedDocuments.push({
+          documentRevision: document.revision,
+          reason: workspaceBoundary.reason || "workspace-boundary-rejected",
+          relativePath: document.relativePath,
+          snapshotRelativePath,
+          workspaceBoundary,
+        });
+        continue;
+      }
+
+      const text = String(document.text || "");
+      snapshotWrites.push({
+        contentHash: buildTextContentHash(text),
+        diskModifiedUtc: resolveRecoveryDiskModifiedUtc(document, request),
+        documentRevision: document.revision,
+        format: EditorBackendDocumentBufferRecoverySnapshotFormat,
+        formatVersion: EditorBackendDocumentBufferStoreModelFormatVersion,
+        lastSavedRevision: document.lastSavedRevision,
+        payloadContentExposed: true,
+        reason: "dirty-buffer-recovery-snapshot",
+        relativePath: document.relativePath,
+        snapshotModifiedUtc,
+        snapshotRelativePath,
+        text,
+        workspaceBoundary,
+        writeTarget: workspaceBoundary.writeTarget || null,
+      });
+    }
+
+    const cleanupRequests = buildRecoveryCleanupRequests(normalizedStore, request);
+    const recoveryStatus = EditorBackendDesktopSessionModel.buildRecoveryStatus({
+      items: snapshotWrites.map((snapshot) => ({
+        contentHash: snapshot.contentHash,
+        diskModifiedUtc: snapshot.diskModifiedUtc,
+        relativePath: snapshot.relativePath,
+        revision: snapshot.documentRevision,
+        snapshotModifiedUtc: snapshot.snapshotModifiedUtc,
+      })),
+    });
+
+    return {
+      cleanupRequests,
+      dirtyCount: dirtyDocuments.length,
+      format: EditorBackendDocumentBufferRecoverySnapshotPlanFormat,
+      formatVersion: EditorBackendDocumentBufferStoreModelFormatVersion,
+      payloadContentExposed: snapshotWrites.length > 0,
+      recoveryStatus,
+      skippedDocuments,
+      snapshotWriteCount: snapshotWrites.length,
+      snapshotWrites,
+      storeRevision: normalizedStore.revision,
+      storeSummary: this.listDocuments(normalizedStore),
       workspaceName: normalizedStore.workspaceName,
     };
   }
@@ -746,6 +826,85 @@ function normalizeReasonToken(reason, fallback) {
     .slice(0, 80);
 
   return normalizedReason || fallback;
+}
+
+function buildRecoveryCleanupRequests(store, request = {}) {
+  const savedRelativePaths = new Set(normalizeRelativePathList(request.savedRelativePaths));
+  const saveResults = Array.isArray(request.saveResults ?? request.results)
+    ? request.saveResults ?? request.results
+    : [];
+  for (const result of saveResults) {
+    if (result?.ok === true) {
+      const relativePath = normalizeRelativePath(
+        result.relativePath
+          ?? result.document?.relativePath
+          ?? result.saveStatus?.relativePath
+      );
+      if (relativePath) {
+        savedRelativePaths.add(relativePath);
+      }
+    }
+  }
+
+  return [...savedRelativePaths].map((relativePath) => {
+    const document = store.documents.find((item) => item.relativePath === relativePath) || null;
+    const snapshotRelativePath = buildRecoverySnapshotRelativePath(relativePath);
+    const workspaceBoundary = EditorBackendDesktopSessionModel.buildWorkspaceFileBoundary({
+      operation: "delete",
+      relativePath: snapshotRelativePath,
+      workspaceRoot: request.workspaceRoot,
+    });
+
+    return {
+      documentRevision: document?.revision || 0,
+      payloadContentExposed: false,
+      reason: "saved-document-recovery-cleanup",
+      relativePath,
+      snapshotRelativePath,
+      workspaceBoundary,
+      writeTarget: workspaceBoundary.writeTarget || null,
+    };
+  });
+}
+
+function buildRecoverySnapshotRelativePath(relativePath) {
+  return `.inscape-workspace/recovery/${normalizeRelativePath(relativePath)}.snapshot.json`;
+}
+
+function resolveRecoveryDiskModifiedUtc(document, request = {}) {
+  const relativePath = document.relativePath;
+  const diskModifiedUtcByPath = request.diskModifiedUtcByPath || {};
+  if (diskModifiedUtcByPath && typeof diskModifiedUtcByPath === "object") {
+    const perPathTimestamp = diskModifiedUtcByPath[relativePath];
+    if (perPathTimestamp) {
+      return normalizeTimestamp(perPathTimestamp);
+    }
+  }
+
+  return normalizeTimestamp(request.diskModifiedUtc || document.lastLoadedUtc);
+}
+
+function buildTextContentHash(text) {
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < text.length; index += 1) {
+    hash = Math.imul(hash ^ text.charCodeAt(index), 0x01000193);
+  }
+
+  return `fnv1a32:${(hash >>> 0).toString(16).padStart(8, "0")}`;
+}
+
+function normalizeTimestamp(timestamp) {
+  const source = String(timestamp || "").trim();
+  if (!source) {
+    return "";
+  }
+
+  const parsed = new Date(source);
+  if (Number.isNaN(parsed.getTime())) {
+    return source;
+  }
+
+  return parsed.toISOString();
 }
 
 function normalizePendingWrites(pendingWrites) {

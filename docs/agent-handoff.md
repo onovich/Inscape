@@ -299,6 +299,16 @@ P1 Round 28 已建立 flush lifecycle 守门 contract。它只生成 text-free f
 - plan / failure summary 不暴露 buffer text，也不回显 arbitrary error payload。
 - Round 28 当前已通过：SelfHostedEditor `check:desktop-backend` / `check:workspace-fs` / `check:backend-services` / `check:backend-transport` / `check:preload-transport` / `check:fake-embedded-transport` / `check:electron-boundary` / `check:runtime` / `check:runtime-http` / `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity` / `check:structure`，`node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js`，`git diff --check`，`.NET build` 与 Internal tests。下一步进入 Round 29：recovery snapshot。
 
+### 2026-06-16 SelfHostedEditor P1 Round 29 recovery snapshot 快照
+
+P1 Round 29 已建立 recovery snapshot write payload 与 cleanup request contract。本轮只生成 backend 持久化载荷，不执行真实文件 IO，也不实现下次打开 workspace 的扫描 / 恢复 UI。
+
+- `EditorBackendDocumentBufferStoreModel.buildRecoverySnapshotPlan()` 返回 `inscape.self-hosted-editor.document-buffer-recovery-snapshot-plan`。
+- dirty buffer 会生成 `inscape.self-hosted-editor.document-buffer-recovery-snapshot` write payload，包含 relative path、revision、disk mtime、snapshot mtime、content hash 和文本；`payloadContentExposed` 明确为 true。
+- snapshot path 形如 `.inscape-workspace/recovery/story/opening.inscape.snapshot.json`，继续通过 workspace file boundary / write target catalog 判定为 `recovery-snapshot`。
+- `recoveryStatus` 和 cleanup request 仍是 text-free；save success / `savedRelativePaths` 生成 `saved-document-recovery-cleanup` request。
+- Round 29 当前已通过：SelfHostedEditor `check:desktop-backend` / `check:workspace-fs` / `check:backend-services` / `check:backend-transport` / `check:preload-transport` / `check:fake-embedded-transport` / `check:electron-boundary` / `check:runtime` / `check:runtime-http` / `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity` / `check:structure`，`node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js`，`git diff --check`，`.NET build` 与 Internal tests。下一步进入 Round 30：recovery UI。
+
 ### 2026-06-14 SelfHostedEditor desktop backend v0 决策快照
 
 本轮已采纳 [ADR 0019](adr/0019-self-hosted-editor-embedded-backend-v0.md)：SelfHostedEditor desktop backend v0 采用嵌入式 EditorBackend，而不是独立 sidecar daemon。
