@@ -98,6 +98,7 @@ const missingBufferResult = EditorBackendDocumentBufferStoreModel.getDocument(bu
 assertEqual(missingBufferResult.ok, false, "document buffer get missing rejected");
 assertEqual(missingBufferResult.reason, "document-not-found", "document buffer get missing reason");
 const updateBufferResult = EditorBackendDocumentBufferStoreModel.updateDocument(bufferStore, {
+  baseRevision: documentBuffer.revision,
   relativePath: "story/opening.inscape",
   text: "secret updated buffer text",
 });
@@ -107,6 +108,17 @@ assertEqual(updateBufferResult.document.revision, 6, "document buffer update inc
 assertEqual(updateBufferResult.document.dirty, true, "document buffer update dirty");
 assertEqual(updateBufferResult.store.revision, 6, "document buffer update store revision");
 assertNotIncludes(JSON.stringify(EditorBackendDocumentBufferStoreModel.listDocuments(updateBufferResult.store)), "secret updated buffer text", "updated list must not expose text");
+const staleBufferUpdateResult = EditorBackendDocumentBufferStoreModel.updateDocument(updateBufferResult.store, {
+  baseRevision: documentBuffer.revision,
+  relativePath: "story/opening.inscape",
+  text: "secret stale overwrite text",
+});
+assertEqual(staleBufferUpdateResult.ok, false, "document buffer stale update rejected");
+assertEqual(staleBufferUpdateResult.reason, "stale-document-revision", "document buffer stale update reason");
+assertEqual(staleBufferUpdateResult.baseRevision, 5, "document buffer stale update base revision");
+assertEqual(staleBufferUpdateResult.currentRevision, 6, "document buffer stale update current revision");
+assertNotIncludes(JSON.stringify(staleBufferUpdateResult), "secret stale overwrite text", "document buffer stale update must not echo rejected text");
+assertNotIncludes(JSON.stringify(staleBufferUpdateResult), "secret updated buffer text", "document buffer stale update must not expose current text");
 const activeBufferResult = EditorBackendDocumentBufferStoreModel.setActiveDocument(updateBufferResult.store, {
   relativePath: "story/branch.inscape",
 });

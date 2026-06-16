@@ -709,6 +709,33 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
 2. list/status 路径不泄露正文；只有明确 `getDocument()` / `updateDocument()` document path 携带 text。
 3. 下一轮应进入 Round 21：baseRevision 与 stale guard，拒绝旧 debounce / stale update 覆盖较新 revision。
 
+### 2026-06-16 Round 21：baseRevision 与 stale guard
+
+范围：给 `updateDocument()` 增加 baseRevision stale guard；不接真实 debounce、authoring endpoint 或文件 IO。
+
+完成内容：
+
+1. `EditorBackendDocumentBufferStoreModel.updateDocument()` 接受 `baseRevision`。
+2. 当 `baseRevision` 与当前 document revision 不一致时，更新被拒绝并返回 `stale-document-revision`。
+3. stale rejection 返回 `baseRevision`、`currentRevision` 与 text-free document summary，不回显被拒绝的新文本，也不暴露当前 document text。
+4. 正常 update 继续推进 document / store revision，保持 revision 只增不倒退。
+5. `check:desktop-backend` 与 `check:backend-services` 均覆盖正常 baseRevision update 与 stale update rejected。
+
+验证：
+
+```powershell
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:desktop-backend
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:backend-services
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
+```
+
+架构对照结论：
+
+1. stale guard 只保护 backend buffer revision ownership，不改变 Compiler / LanguageServer / Tooling / Runtime 语义。
+2. 旧 debounce / stale request 已有明确拒绝路径，不会覆盖较新 revision。
+3. 下一轮应进入 Round 22：workspace snapshot builder，让 LanguageServer / Runtime / Tooling 请求从 backend buffer 组 workspace snapshot。
+
 ## 36 轮主计划
 
 ### A. Contract 与 transport 基础，Round 1-6
@@ -750,7 +777,7 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
 |---|---|---|
 | 19 | DocumentBuffer model | 已完成。新增 `EditorBackendDocumentBufferModel`，backend buffer 记录 `relativePath`、text、disk hash、revision、dirty、existsOnDisk、lastLoadedUtc 与 active；desktop session 与 `DocumentBufferStore` 均复用该 shape，summary 不暴露正文。 |
 | 20 | list / get / update / active document | 已完成。新增 `EditorBackendDocumentBufferStoreModel`，可 build store、list summaries、get document、update text 并切换 active document；list 不暴露正文，update 推进 document / store revision，缺失文档返回 `document-not-found`。 |
-| 21 | baseRevision 与 stale guard | `updateDocument` 使用 `baseRevision` 或等价 stale guard；旧 debounce 不能覆盖更新 revision。 |
+| 21 | baseRevision 与 stale guard | 已完成。`updateDocument()` 支持 `baseRevision`，revision 不匹配时返回 `stale-document-revision`，并只回传 current/base revision 与 text-free summary；旧 debounce 不能覆盖较新 revision。 |
 | 22 | workspace snapshot builder | LanguageServer / Runtime / Tooling 请求从 backend buffer 组装 workspace snapshot，不再依赖前端每次上传完整 workspace truth。 |
 | 23 | authoring endpoint 接入 buffer | diagnostics / completions / definition / references / hover / documentSymbols 使用 backend buffer 当前内容；payload shape 仍与 shared LanguageServer contract 对齐。 |
 | 24 | Preview / Runtime 接入 buffer | Preview / Runtime 使用 backend buffer 当前 workspace state；Preview choice click invariant 保持不变。 |

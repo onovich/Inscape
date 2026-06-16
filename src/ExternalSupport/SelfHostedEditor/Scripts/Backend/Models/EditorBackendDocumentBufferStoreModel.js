@@ -87,6 +87,18 @@ export class EditorBackendDocumentBufferStoreModel {
       };
     }
 
+    const baseRevision = normalizeOptionalRevision(request.baseRevision);
+    if (baseRevision !== null && baseRevision !== currentDocument.revision) {
+      return {
+        baseRevision,
+        currentRevision: currentDocument.revision,
+        document: EditorBackendDocumentBufferModel.buildSummary(currentDocument),
+        ok: false,
+        reason: "stale-document-revision",
+        relativePath,
+      };
+    }
+
     const nextRevision = normalizeRevision(Math.max(
       normalizedStore.revision + 1,
       currentDocument.revision + 1,
@@ -188,6 +200,14 @@ function normalizeRevision(revision, fallback = 1) {
   }
 
   return Math.floor(value);
+}
+
+function normalizeOptionalRevision(revision) {
+  if (revision === null || typeof revision === "undefined") {
+    return null;
+  }
+
+  return normalizeRevision(revision);
 }
 
 function normalizeSessionId(sessionId) {

@@ -61,6 +61,7 @@ SelfHostedEditor desktop backend v0
 - [x] 完成 P1 Round 18 session panel / status 接入：新增 `ProjectWorkspaceSessionStatusModelBuilder`，UI panel 显示 backend mode、session id、workspace 摘要、revision、language / Runtime / line identity / localization 子状态，并通过 contract 禁止暴露正文、CSV、line-map 或 Runtime snapshot。
 - [x] 完成 P1 Round 19 DocumentBuffer model：新增 `EditorBackendDocumentBufferModel`，backend buffer shape 独立记录 `relativePath`、text、disk hash、revision、dirty、existsOnDisk、lastLoadedUtc 与 active；desktop session 与 `DocumentBufferStore` 复用该 shape，summary 不暴露正文。
 - [x] 完成 P1 Round 20 DocumentBufferStore 操作 contract：新增 `EditorBackendDocumentBufferStoreModel`，支持 build store、list summaries、get document、update text、set active document；list 不暴露正文，update 推进 document / store revision，缺失文档返回 `document-not-found`。
+- [x] 完成 P1 Round 21 baseRevision / stale guard：`updateDocument()` 接受 `baseRevision`，不匹配当前 revision 时返回 `stale-document-revision`，只回传 current/base revision 与 text-free summary，旧 debounce 不能覆盖较新 revision。
 - [ ] 建立 Electron preload 白名单边界：renderer 不直接访问 Node / fs / shell / arbitrary IPC；preload 只暴露受控 editor command。
 - [ ] 实现 workspace 文件系统边界：只接受 workspace-relative path，拒绝绝对路径、`..` 越界、workspace 外路径和未列入白名单的写回目标。
 - [ ] 实现 `ProjectSession v0`：一个窗口一个 active workspace folder，一个 active project session；不支持正式单文件打开。

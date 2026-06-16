@@ -195,6 +195,7 @@ const documentGetResult = services.documentBufferStore.getDocument(documentStore
 assertEqual(documentGetResult.ok, true, "document buffer get result ok");
 assertEqual(documentGetResult.document.text, "# Opening", "document buffer get returns document text");
 const documentUpdateResult = services.documentBufferStore.updateDocument(documentStore, {
+  baseRevision: documentBuffer.revision,
   relativePath: "story/opening.inscape",
   text: "# Opening\nNarrator: Updated",
 });
@@ -202,6 +203,15 @@ assertEqual(documentUpdateResult.ok, true, "document buffer update result ok");
 assertEqual(documentUpdateResult.document.revision > documentBuffer.revision, true, "document buffer update increments revision");
 assertEqual(documentUpdateResult.document.dirty, true, "document buffer update marks dirty");
 assertEqual(documentUpdateResult.store.revision >= documentUpdateResult.document.revision, true, "document buffer store revision tracks update");
+const staleDocumentUpdateResult = services.documentBufferStore.updateDocument(documentUpdateResult.store, {
+  baseRevision: documentBuffer.revision,
+  relativePath: "story/opening.inscape",
+  text: "# Opening\nNarrator: Stale overwrite",
+});
+assertEqual(staleDocumentUpdateResult.ok, false, "document buffer stale update rejected");
+assertEqual(staleDocumentUpdateResult.reason, "stale-document-revision", "document buffer stale update reason");
+assertEqual(staleDocumentUpdateResult.currentRevision, documentUpdateResult.document.revision, "document buffer stale update current revision");
+assertEqual(JSON.stringify(staleDocumentUpdateResult).includes("Stale overwrite"), false, "document buffer stale rejection must not echo stale text");
 const activeDocumentResult = services.documentBufferStore.setActiveDocument(documentUpdateResult.store, {
   relativePath: "story/branch.inscape",
 });

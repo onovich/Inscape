@@ -215,6 +215,17 @@ P1 Round 20 已完成 DocumentBufferStore 纯 model 操作 contract，仍未接�
 - `DocumentBufferStore` 窄服务已暴露 `buildStore`、`listDocuments`、`getDocument`、`updateDocument` 与 `setActiveDocument`。
 - Round 20 当前已通过：SelfHostedEditor `check:syntax` / `check:structure` / `check:desktop-backend` / `check:backend-services` / `check:model`。下一步进入 Round 21：baseRevision 与 stale guard。
 
+### 2026-06-16 SelfHostedEditor P1 Round 21 stale update guard 快照
+
+P1 Round 21 已完成 `updateDocument()` baseRevision / stale guard，仍未接真实 debounce、authoring endpoint、workspace snapshot builder 或文件 IO。
+
+- `EditorBackendDocumentBufferStoreModel.updateDocument()` 接受 `baseRevision`。
+- 当 `baseRevision` 与当前 document revision 不一致时，返回 `stale-document-revision`。
+- stale rejection 返回 `baseRevision`、`currentRevision` 与 text-free document summary，不回显被拒绝的新文本，也不暴露当前 document text。
+- 正常 update 继续推进 document / store revision，保持 revision 只增不倒退。
+- `check:desktop-backend` 与 `check:backend-services` 均覆盖正常 baseRevision update 与 stale update rejected。
+- Round 21 当前已通过：SelfHostedEditor `check:syntax` / `check:desktop-backend` / `check:backend-services` / `check:model`。下一步进入 Round 22：workspace snapshot builder。
+
 ### 2026-06-14 SelfHostedEditor desktop backend v0 决策快照
 
 本轮已采纳 [ADR 0019](adr/0019-self-hosted-editor-embedded-backend-v0.md)：SelfHostedEditor desktop backend v0 采用嵌入式 EditorBackend，而不是独立 sidecar daemon。
