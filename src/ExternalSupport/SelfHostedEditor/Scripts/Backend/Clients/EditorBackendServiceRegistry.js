@@ -1,6 +1,7 @@
 import { EditorBackendDesktopSessionModel } from "../Models/EditorBackendDesktopSessionModel.js";
 import { EditorBackendDocumentBufferModel } from "../Models/EditorBackendDocumentBufferModel.js";
 import { EditorBackendDocumentBufferStoreModel } from "../Models/EditorBackendDocumentBufferStoreModel.js";
+import { EditorBackendWorkspaceBackupPlanModel } from "../Models/EditorBackendWorkspaceBackupPlanModel.js";
 import { EditorBackendWorkspaceSnapshotModel } from "../Models/EditorBackendWorkspaceSnapshotModel.js";
 import { EditorBackendClient } from "./EditorBackendClient.js";
 
@@ -105,6 +106,10 @@ export class DocumentBufferStore {
 
   buildRecoverySnapshotPlan(store = {}, request = {}) {
     return EditorBackendDocumentBufferStoreModel.buildRecoverySnapshotPlan(store, request);
+  }
+
+  buildBackupPlan(request = {}) {
+    return EditorBackendWorkspaceBackupPlanModel.buildPlan(request);
   }
 
   buildWorkspaceSnapshot(store = {}, request = {}) {

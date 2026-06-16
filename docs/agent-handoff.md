@@ -331,6 +331,18 @@ P1 Round 31 已建立 workspace 内部目录策略 contract。本轮只生成 di
 - `.gitignore` plan 默认建议追加 `.inscape-workspace/`；已有该条目时 action 为 `none`。
 - Round 31 当前已通过：SelfHostedEditor `check:desktop-backend` / `check:workspace-fs` / `check:backend-services` / `check:backend-transport` / `check:preload-transport` / `check:fake-embedded-transport` / `check:electron-boundary` / `check:runtime` / `check:runtime-http` / `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity` / `check:structure`，`node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js`，`git diff --check`，`.NET build` 与 Internal tests。下一步进入 Round 32：write-back backup。
 
+### 2026-06-17 SelfHostedEditor P1 Round 32 write-back backup 快照
+
+P1 Round 32 已建立 CSV / node-map / line-map 写回前 backup plan contract。本轮只生成 text-free backup / cleanup plan，不执行真实文件复制或删除。
+
+- 新增 `EditorBackendWorkspaceBackupPlanModel.buildPlan()`，返回 `inscape.self-hosted-editor.workspace-backup-plan`。
+- backup source 只覆盖 localization CSV、`inscape.node-map.json`、`inscape.line-map.json`；`.inscape` 正文继续由 autosave / recovery 保护。
+- backup path 形如 `.inscape-workspace/backups/localization/zh-cn.csv.<timestamp>.bak`，继续由 workspace file boundary / write target catalog 判定为 `backup-artifact`。
+- backup 默认启用；禁用时进入 `backup-disabled` skippedWrites。
+- retention policy 为 `count-and-age`，支持 retention limit / days，并可从 existing backups 生成 text-free cleanup candidates。
+- `DocumentBufferStore` 窄服务新增 `buildBackupPlan()` helper。
+- Round 32 当前已通过：SelfHostedEditor `check:desktop-backend` / `check:workspace-fs` / `check:backend-services` / `check:backend-transport` / `check:preload-transport` / `check:fake-embedded-transport` / `check:electron-boundary` / `check:runtime` / `check:runtime-http` / `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，VSCode `check:semantic-parity` / `check:structure`，`node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js`，`git diff --check`，`.NET build` 与 Internal tests。下一步进入 Round 33：assets import policy。
+
 ### 2026-06-14 SelfHostedEditor desktop backend v0 决策快照
 
 本轮已采纳 [ADR 0019](adr/0019-self-hosted-editor-embedded-backend-v0.md)：SelfHostedEditor desktop backend v0 采用嵌入式 EditorBackend，而不是独立 sidecar daemon。

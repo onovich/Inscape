@@ -7,6 +7,10 @@ import {
   EditorBackendWorkspacePathModel,
 } from "../Scripts/Backend/Models/EditorBackendWorkspacePathModel.js";
 import {
+  EditorBackendWorkspaceBackupPlanFormat,
+  EditorBackendWorkspaceBackupPlanModel,
+} from "../Scripts/Backend/Models/EditorBackendWorkspaceBackupPlanModel.js";
+import {
   EditorBackendWorkspaceInternalDirectoryPlanFormat,
   EditorBackendWorkspaceFolderFormat,
   EditorBackendWorkspaceFolderModel,
@@ -205,6 +209,79 @@ const alreadyIgnoredInternalWorkspacePlan = EditorBackendWorkspaceFolderModel.bu
 });
 assertEqual(alreadyIgnoredInternalWorkspacePlan.gitIgnore.alreadyIgnored, true, "internal workspace already ignored");
 assertEqual(alreadyIgnoredInternalWorkspacePlan.gitIgnore.action, "none", "internal workspace no gitignore action when present");
+
+const backupPlan = EditorBackendWorkspaceBackupPlanModel.buildPlan({
+  existingBackups: [
+    {
+      createdUtc: "2026-06-16T00:00:00.000Z",
+      relativePath: ".inscape-workspace/backups/localization/zh-cn.csv.20260616T000000000Z.bak",
+      sourceRelativePath: "localization/zh-cn.csv",
+    },
+    {
+      createdUtc: "2026-06-10T00:00:00.000Z",
+      relativePath: ".inscape-workspace/backups/metadata/inscape.node-map.json.20260610T000000000Z.bak",
+      sourceRelativePath: "metadata/inscape.node-map.json",
+    },
+  ],
+  nowUtc: "2026-06-17T01:02:03.000Z",
+  retentionDays: 5,
+  retentionLimit: 1,
+  writeRequests: [
+    {
+      relativePath: "localization/zh-cn.csv",
+    },
+    {
+      relativePath: "metadata/inscape.node-map.json",
+    },
+    {
+      relativePath: "metadata/inscape.line-map.json",
+    },
+    {
+      relativePath: "story/opening.inscape",
+    },
+  ],
+  workspaceRoot,
+});
+assertEqual(backupPlan.format, EditorBackendWorkspaceBackupPlanFormat, "backup plan format");
+assertEqual(backupPlan.backupEnabled, true, "backup plan enabled by default");
+assertEqual(backupPlan.payloadContentExposed, false, "backup plan text-free");
+assertEqual(backupPlan.sourceCount, 4, "backup plan source count");
+assertEqual(backupPlan.backupRequests.length, 3, "backup plan request count");
+assertEqual(
+  backupPlan.backupRequests.map((request) => request.sourceTargetKind).join(","),
+  "localization-csv,node-map-sidecar,line-map-sidecar",
+  "backup plan source target kinds"
+);
+assertEqual(
+  backupPlan.backupRequests[0].backupRelativePath,
+  ".inscape-workspace/backups/localization/zh-cn.csv.20260617T010203000Z.bak",
+  "backup plan localization backup path"
+);
+assertEqual(
+  backupPlan.backupRequests.every((request) => request.backupTargetKind === "backup-artifact"),
+  true,
+  "backup plan target kind"
+);
+assertEqual(backupPlan.skippedWrites.length, 1, "backup plan skipped unsupported count");
+assertEqual(backupPlan.skippedWrites[0].reason, "backup-target-not-supported", "backup plan unsupported source reason");
+assertEqual(backupPlan.retentionPolicy.strategy, "count-and-age", "backup plan retention strategy");
+assertEqual(backupPlan.retentionPolicy.limit, 1, "backup plan retention limit");
+assertEqual(backupPlan.retentionPolicy.days, 5, "backup plan retention days");
+assertEqual(backupPlan.cleanupCandidates.length, 1, "backup plan cleanup count");
+assertEqual(backupPlan.cleanupCandidates[0].reason, "retention-limit-exceeded+retention-days-exceeded", "backup plan cleanup reason");
+assertNotIncludes(JSON.stringify(backupPlan), "secret", "backup plan must not expose payload text");
+const disabledBackupPlan = EditorBackendWorkspaceBackupPlanModel.buildPlan({
+  backupEnabled: false,
+  nowUtc: "2026-06-17T01:02:03.000Z",
+  writeRequests: [
+    {
+      relativePath: "localization/zh-cn.csv",
+    },
+  ],
+  workspaceRoot,
+});
+assertEqual(disabledBackupPlan.backupRequests.length, 0, "disabled backup plan no requests");
+assertEqual(disabledBackupPlan.skippedWrites[0].reason, "backup-disabled", "disabled backup reason");
 
 const workspaceFolder = EditorBackendWorkspaceFolderModel.buildWorkspaceFolder({
   activeRelativePath: "story/branch.inscape",

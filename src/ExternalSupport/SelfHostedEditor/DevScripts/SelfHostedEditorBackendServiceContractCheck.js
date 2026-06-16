@@ -138,6 +138,7 @@ assertSurface(services.documentBufferStore, [
   "buildAutosavePlan",
   "buildFlushPlan",
   "buildRecoverySnapshotPlan",
+  "buildBackupPlan",
   "buildWorkspaceSnapshot",
   "buildActiveDocumentRequest",
   "buildWorkspaceBoundary",
@@ -332,6 +333,26 @@ assertEqual(recoveryCleanupPlan.snapshotWriteCount, 0, "document buffer recovery
 assertEqual(recoveryCleanupPlan.cleanupRequests.length, 1, "document buffer recovery cleanup request count");
 assertEqual(recoveryCleanupPlan.payloadContentExposed, false, "document buffer recovery cleanup text-free");
 assertEqual(JSON.stringify(recoveryCleanupPlan).includes("# Opening\nNarrator: Updated"), false, "document buffer recovery cleanup must not expose text");
+const backupPlan = services.documentBufferStore.buildBackupPlan({
+  nowUtc: "2026-06-17T01:02:03.000Z",
+  retentionDays: 7,
+  retentionLimit: 2,
+  writeRequests: [
+    {
+      relativePath: "localization/zh-cn.csv",
+    },
+    {
+      relativePath: "story/opening.inscape",
+    },
+  ],
+  workspaceRoot: "C:/Case Files/Court Loop",
+});
+assertEqual(backupPlan.backupRequests.length, 1, "document buffer backup plan request count");
+assertEqual(backupPlan.backupRequests[0].sourceTargetKind, "localization-csv", "document buffer backup plan source target");
+assertEqual(backupPlan.backupRequests[0].backupTargetKind, "backup-artifact", "document buffer backup plan backup target");
+assertEqual(backupPlan.skippedWrites[0].reason, "backup-target-not-supported", "document buffer backup plan skips unsupported source");
+assertEqual(backupPlan.payloadContentExposed, false, "document buffer backup plan text-free");
+assertEqual(JSON.stringify(backupPlan).includes("# Opening\nNarrator: Updated"), false, "document buffer backup plan must not expose text");
 const workspaceSnapshot = services.documentBufferStore.buildWorkspaceSnapshot(activeDocumentResult.store);
 assertEqual(workspaceSnapshot.source, "backend-buffer-store", "workspace snapshot source");
 assertEqual(workspaceSnapshot.currentFilePath, "story/branch.inscape", "workspace snapshot active path");

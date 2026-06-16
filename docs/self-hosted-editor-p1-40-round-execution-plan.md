@@ -1157,6 +1157,52 @@ dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-buil
 4. 本轮没有改变 Compiler / LanguageServer / Tooling / Runtime payload shape，也没有进入 P1.5 long-lived LanguageServer。
 5. 下一轮应进入 Round 32：write-back backup。
 
+### 2026-06-17 Round 32：write-back backup
+
+范围：建立 CSV / node-map / line-map 写回前 backup plan contract，证明这些写回目标会先计划备份到 `.inscape-workspace/backups/`，并携带默认启用和“数量 + 天数”保留策略。本轮不执行真实文件复制、不写 `.gitignore`、不清理真实备份文件。
+
+完成内容：
+
+1. 新增 `EditorBackendWorkspaceBackupPlanModel.buildPlan()`，返回 `inscape.self-hosted-editor.workspace-backup-plan`。
+2. backup source 只覆盖 localization CSV、`inscape.node-map.json`、`inscape.line-map.json` 三类写回目标；`.inscape` 正文继续由 autosave / recovery 保护。
+3. backup path 生成到 `.inscape-workspace/backups/<source>.<timestamp>.bak`，并继续通过 workspace file boundary / write target catalog 判定为 `backup-artifact`。
+4. backup 默认启用；`backupEnabled: false` 时不生成 backup request，并返回 `backup-disabled` skip。
+5. retention policy 使用 `count-and-age`，支持 `retentionLimit` 与 `retentionDays`；existing backups 可产生 text-free cleanup candidates。
+6. `DocumentBufferStore` 窄服务新增 `buildBackupPlan()` helper；`check:workspace-fs` 与 `check:backend-services` 覆盖 backup path、三类 source target、unsupported source skip、禁用备份、保留策略与 no-text plan。
+
+验证：
+
+```powershell
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:desktop-backend
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:workspace-fs
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:backend-services
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:backend-transport
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:preload-transport
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:fake-embedded-transport
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:electron-boundary
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:runtime
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:runtime-http
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:structure
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:model
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
+npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
+node --check src\ExternalSupport\VSCode\Scripts\ExtensionManifestEntry.js
+npm --prefix src\ExternalSupport\VSCode run check:structure
+git -c safe.directory=D:/LabProjects/Inscape diff --check
+dotnet build Inscape.slnx --no-restore
+dotnet run --project tests\Internal\Inscape.Tests\Inscape.Tests.csproj --no-build
+```
+
+架构对照结论：
+
+1. backup plan 只编排写回前安全副本，不解析 localization / node-map / line-map 语义，不复制 Internal truth。
+2. 路径和 backup target 继续复用 workspace boundary / write target catalog，没有让 renderer 获取文件系统能力。
+3. `.inscape` 正文仍由 autosave / recovery snapshot 保护，不被本轮 backup 计划混淆。
+4. 保留策略作为配置输入进入 plan，默认值不散落在 feature controller。
+5. 本轮没有改变 Compiler / LanguageServer / Tooling / Runtime payload shape，也没有进入 P1.5 long-lived LanguageServer。
+6. 下一轮应进入 Round 33：assets import policy。
+
 ## 36 轮主计划
 
 ### A. Contract 与 transport 基础，Round 1-6

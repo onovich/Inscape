@@ -58,6 +58,8 @@
 
 2026-06-16 P1 Round 31 补充：`.inscape-workspace/` 策略先落为 `buildInternalWorkspacePlan()` contract。plan 列出 recovery / backups / cache 内部目录，标记 non-project-truth、默认 git ignored、cache 可重建，并给出 `.gitignore` 追加 `.inscape-workspace/` 的建议。真实 mkdir / gitignore 写入仍待 IO 层。
 
+2026-06-17 P1 Round 32 补充：write-back backup 先落为 `EditorBackendWorkspaceBackupPlanModel.buildPlan()` contract。plan 只覆盖 localization CSV、node-map sidecar、line-map sidecar 写回前 backup，生成 `.inscape-workspace/backups/` 下的 backup request 与 retention cleanup candidates；不复制文件、不删除旧备份，也不把 `.inscape` 正文混入该备份策略。
+
 ## 状态分类
 
 | 分类 | 当前例子 | 未来归属 | 规则 |
