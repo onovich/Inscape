@@ -1,12 +1,25 @@
 # Agent 接手指南
 
-状态：P3 Round 6 audit-host-integration-project minimal implementation complete
+状态：P3 Round 7 condition syntax contract / parser design complete
 
 最后更新：2026-06-18
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-18 SelfHostedEditor P3 Round 7 条件语法契约快照
+
+P3 Round 7 已完成 condition syntax contract / parser design，不宣称 P3 完成。
+
+- 契约见 [Condition Syntax Contract](condition-syntax-contract.md)，审计产物见 [SelfHostedEditor P3 Condition Syntax Contract Audit](self-hosted-editor-p3-condition-syntax-contract-audit.md)。
+- 第一刀作者语法固定为选项条件 `- [condition] option text -> target`、条件跳转 `? [condition] -> target` 和 fallback `-> target`。
+- `? text` 仍是选项提示；只有 `?` 后第一个非空白字符为 `[` 时才进入条件跳转解析。
+- 条件表达式第一版支持 `and`、`or`、`not`、括号、标量比较、字符串、数字、bool、query path 与 query call。
+- 不支持数组、列表、数学表达式、字符串拼接、赋值、`await`、action、任意成员调用、节点入口条件、行级条件或条件块。
+- Compiler 后续负责条件 parser / IR / diagnostics；VSCode、SelfHostedEditor 与 CLI 不应复制条件 parser。
+- Host Schema / Host Bridge 仍不进入 Compiler；unknown query / 参数对账 / bridge 缺失继续由 Usage Manifest 与 Host Integration Audit 后续处理。
+- 下一轮进入 P3 Round 8：condition syntax Compiler / IR minimal implementation，优先补 Compiler parser、source map、diagnostics 与 Internal tests。
 
 ### 2026-06-18 SelfHostedEditor P3 Round 6 Host Integration Audit 快照
 
@@ -18,7 +31,7 @@ P3 Round 6 已完成 `audit-host-integration-project` 最小实现，不宣称 P
 - Audit 串接 Usage Manifest、Host Schema capability catalog 与 Host Binding capability catalog，报告 unknown query / action、legacy event usage、参数数量 / 字面量类型不匹配、missing Host Bridge `ids[]`、missing Host Bridge `actions[]` / `queries[]` handler。
 - Host Binding capability catalog 现在读取 Host Bridge `actions[]`、`queries[]` 与迁移期 legacy `events[]` handler 名称；编辑器宿主仍应消费共享 capability，不应自行解析 Host Bridge JSON。
 - 本轮未实现条件 parser / IR、Runtime State、Runtime handler 执行、Save / Load 或完整回放。
-- 下一轮进入 P3 Round 7：condition syntax contract / parser design，保持 `[]` 为只读 query，`@` 为动作 / 控制移交。
+- P3 Round 7 已在后续快照完成 condition syntax contract / parser design；下一步进入 Compiler / IR 最小实现。
 
 ### 2026-06-18 SelfHostedEditor P3 Round 5 inspect-usage-project 快照
 
@@ -1429,23 +1442,27 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 
 建议优先做小而闭环的任务，不要直接跳到大规模重构。
 
-1. 继续推进 Stable Node ID / 本地化主线。
+1. 继续推进 P3 Round 8 condition syntax Compiler / IR minimal implementation。
+   - 从 [Condition Syntax Contract](condition-syntax-contract.md) 接上，优先在 `Inscape.Compiler` 中解析选项条件和条件跳转，新增条件表达式 IR、source map、diagnostics 与 Internal tests。
+   - VSCode / SelfHostedEditor / CLI 只消费 Compiler / LanguageServer / Tooling payload，不复制条件 parser。
+
+2. 继续推进 Stable Node ID / 本地化主线。
    - ADR 0013、sidecar 闭环、保守自动重命名识别、VSCode 显式 `Update Stable Node Map` 入口、插入标题后的自动同步、标题重命名人工确认 / 冲突报告、本地化 alignment / audit report，以及相似文本人工候选第一版都已落地。
    - 下一步建议细化候选评分和 review 展示，而不是扩展自动继承范围。
 
-2. 本地化 Diff / Alignment 后续。
+3. 本地化 Diff / Alignment 后续。
    - 状态机、CSV / report 字段、anchor + occurrence + diff 对齐流程已经完成设计，显式 `audit-l10n-alignment-project` 已落地。
    - 当前实现已把更宽松的相似文本匹配限制在人工候选 / review report，不进入默认 `update-l10n` 确认译文；Goal 15 第一版已把 line sidecar refresh result / status / line id 信息接入 alignment audit；candidate diff 也已作为 Tooling presenter 的二级动作进入 review。后续可以继续评估更强的 line identity 迁移契约或编辑器 review UI；批量审查已在 P2 Round 10 后置到 P2 之后。
 
-3. VSCode 重构守规继续收口。
+4. VSCode 重构守规继续收口。
    - 每完成一个 VSCode 功能节点后，立即做命名 / 分层 / 目录 / 入口厚度自检。
    - 对 Localization 尤其要继续区分宿主适配壳与宿主无关契约，避免 command 入口重新吸收 review UI 或可复用语义。
 
-4. Tooling 共享流程继续收敛。
+5. Tooling 共享流程继续收敛。
    - 继续落到 `DslScriptSources`、`ToolConfig`、`Preview`、`Localization`、`HostSchema`、`HostBinding` 等窄模块。
    - 不要新建泛化 `ProjectService`；如果要做，先挑一个仍重复的跨 Cli / VSCode / LanguageServer 流程做小闭环。
 
-5. Unity / Bird 只做准备和决策，暂不扩研发。
+6. Unity / Bird 只做准备和决策，暂不扩研发。
    - 待定：Bird 项目新增 importer 与 `InscapeGenerated` 资源提交策略。
    - 待验证：带真实 Timeline 绑定的 Bird Import Dry Run，确认 `talking.exit` 的 `TalkingEffectTM.PlayTimeline` 落地和其他 phase warning。
    - 低优先级：结合 Bird `L10N` 真实格式决定是否调整 Inscape CSV 字段和列顺序。
@@ -1467,7 +1484,7 @@ VSCode 工具                        docs/vscode-tooling.md, src/ExternalSupport
 防回归工作流                       docs/regression-workflow.md, docs/refactoring-plan.md
 HTML 预览                          src/Inscape.Tooling/PreviewHtmlRendererDomain.cs, docs/vscode-tooling.md
 本地化 / hash                      docs/hash-localization.md, docs/l10n-extraction.md
-宿主 Schema / 查询事件             docs/host-schema.md, docs/dsl-language.md, docs/open-questions.md, docs/todo.md
+宿主 Schema / 查询事件             docs/host-schema.md, docs/usage-manifest-contract.md, docs/condition-syntax-contract.md, docs/host-query-event-registration-strategy.md, docs/dsl-language.md, docs/open-questions.md, docs/todo.md
 Unity / Host Bridge                docs/unity-sample-adapter.md, docs/project-config.md, docs/runtime-unity.md, docs/architecture.md, docs/todo.md
 编辑器阶段                         docs/editor-design.md, docs/roadmap.md
 ```
