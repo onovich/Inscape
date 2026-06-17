@@ -14,12 +14,11 @@ SelfHostedEditor regression invariant: Preview choice clicks must advance the re
 
 本节整合近期对 `docs/todo.md`、`docs/open-questions.md`、SelfHostedEditor 架构评估、backend migration readiness 与 desktop backend v0 决策的判断。外部合作交流不纳入本节主线。
 
-当前主线已经完成进入 desktop backend v0 前的 current-stage 100% 收口，下一步按顺序进入：
+当前主线已经完成 SelfHostedEditor desktop backend v0 与 P1.5 workspace-scoped long-lived LanguageServer 收口；下一 phase 允许进入：
 
 ```text
-SelfHostedEditor desktop backend v0
-  -> backend 管理的 workspace-scoped long-lived LanguageServer
-  -> 再回到本地化 / stable identity / Host Bridge / Unity-Bird 等较低优先级工作
+P2 stable identity / localization review
+  -> Host Bridge / Unity-Bird 等后续较低优先级工作
 ```
 
 ### P0：进入 desktop backend v0 前的 current-stage 100% 收口

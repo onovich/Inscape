@@ -8,6 +8,15 @@
 
 ## 当前项目快照
 
+### 2026-06-17 SelfHostedEditor P1.5 文档收口快照
+
+SelfHostedEditor desktop backend v0 与 P1.5 workspace-scoped long-lived LanguageServer 已完成收口，当前文档口径统一为 `P1.5 long-lived LanguageServer: PASS` 与 `P2 stable identity / localization review entry allowed: YES`。本次只做文档同步，不启动 P2 行为。
+
+- P1.5 packaged build 已打入 `Inscape.LanguageServer` artifact，路径为 `resources/language-server`；packaged resolver 使用该 resource artifact，不再依赖源码树。
+- `smoke:desktop-package-language` 覆盖真实 packaged app + real long-lived LanguageServer path，验证 diagnostics / completions / definition / references / hover / document symbols 六类 authoring endpoint。
+- `check:electron-language-fallback` 已覆盖同一 LanguageServer artifact 上的 `process-per-request` fallback；fallback/health/restart/documentRevisionLag 等状态保持 text-free。
+- 当前剩余项只属于 hardening 与后续 P2 主线，不再阻塞 P1.5 验收。
+
 ### 2026-06-16 SelfHostedEditor P1 Round 1 基线审计快照
 
 P1 已从 P0 验收后进入 desktop backend v0 执行线；当前完成的是 Round 1 基线审计，未改产品行为。
