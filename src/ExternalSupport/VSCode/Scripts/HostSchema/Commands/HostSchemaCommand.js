@@ -4,13 +4,10 @@ class HostSchemaCommand {
 
     constructor(dependencies) {
         this.vscode = dependencies.vscode;
-        this.fs = dependencies.fs;
         this.selectWorkspaceFolder = dependencies.selectWorkspaceFolder;
-        this.readProjectConfigFromWorkspaceFolder = dependencies.readProjectConfigFromWorkspaceFolder;
-        this.resolveProjectConfigPath = dependencies.resolveProjectConfigPath;
+        this.hostSchemaCapabilityProvider = dependencies.hostSchemaCapabilityProvider;
         this.openLocation = dependencies.openLocation;
         this.locationFromPayload = dependencies.locationFromPayload;
-        this.escapeRegExp = dependencies.escapeRegExp;
     }
 
     async showCapabilities() {
@@ -19,27 +16,28 @@ class HostSchemaCommand {
             return;
         }
 
-        let schema;
+        let catalog;
         try {
-            schema = await this.readConfiguredSchema(workspaceFolder);
+            catalog = await this.hostSchemaCapabilityProvider.collectCapabilityCatalogForWorkspace(workspaceFolder);
         } catch (error) {
             this.vscode.window.showErrorMessage(error.message || String(error));
             return;
         }
 
-        if (!schema) {
-            this.vscode.window.showWarningMessage("Configure hostSchema in inscape.config.json before listing host capabilities.");
+        if (!catalog || !catalog.hostSchema || !catalog.hostSchema.loaded) {
+            const message = catalog?.hostSchema?.errorMessage || "Configure hostSchema in inscape.config.json before listing host capabilities.";
+            this.vscode.window.showWarningMessage(message);
             return;
         }
 
-        const items = this.createQuickPickItems(schema);
+        const items = this.createQuickPickItems(catalog);
         if (items.length === 0) {
-            this.vscode.window.showInformationMessage("Host schema has no queries or events.");
+            this.vscode.window.showInformationMessage("Host schema has no queries, actions, or legacy events.");
             return;
         }
 
         const selected = await this.vscode.window.showQuickPick(items, {
-            placeHolder: "Select an Inscape host query or event"
+            placeHolder: "Select an Inscape host query, action, or legacy event"
         });
         if (!selected || !selected.location) {
             return;
@@ -48,34 +46,11 @@ class HostSchemaCommand {
         await this.openLocation(this.locationFromPayload(selected.location));
     }
 
-    async readConfiguredSchema(workspaceFolder) {
-        const projectConfig = await this.readProjectConfigFromWorkspaceFolder(workspaceFolder);
-        if (!projectConfig || !projectConfig.configPath || !projectConfig.config) {
-            return undefined;
-        }
-
-        const configuredPath = projectConfig.config.hostSchema;
-        if (!configuredPath) {
-            return undefined;
-        }
-
-        const schemaPath = this.resolveProjectConfigPath(projectConfig.configPath, configuredPath);
-        if (!this.fs.existsSync(schemaPath)) {
-            throw new Error("Host schema not found: " + schemaPath);
-        }
-
-        const text = await this.fs.promises.readFile(schemaPath, "utf8");
-        return {
-            schemaPath,
-            text,
-            schema: JSON.parse(text)
-        };
-    }
-
-    createQuickPickItems(schemaInfo) {
+    createQuickPickItems(catalog) {
         const items = [];
-        const queries = Array.isArray(schemaInfo.schema.queries) ? schemaInfo.schema.queries : [];
-        const events = Array.isArray(schemaInfo.schema.events) ? schemaInfo.schema.events : [];
+        const queries = Array.isArray(catalog.queries) ? catalog.queries : [];
+        const actions = Array.isArray(catalog.actions) ? catalog.actions : [];
+        const events = Array.isArray(catalog.events) ? catalog.events : [];
 
         for (const query of queries) {
             if (!query || !query.name) {
@@ -86,7 +61,20 @@ class HostSchemaCommand {
                 label: query.name,
                 description: "query -> " + (query.returnType || "unknown"),
                 detail: this.formatParameters(query.parameters) + this.formatDescription(query.description),
-                location: this.findCapabilityLocation(schemaInfo, "queries", query.name)
+                location: this.createLocationPayload(query)
+            });
+        }
+
+        for (const action of actions) {
+            if (!action || !action.name) {
+                continue;
+            }
+
+            items.push({
+                label: action.name,
+                description: "action / " + (action.mode || "fire"),
+                detail: this.formatParameters(action.parameters) + this.formatDescription(action.description),
+                location: this.createLocationPayload(action)
             });
         }
 
@@ -97,9 +85,9 @@ class HostSchemaCommand {
 
             items.push({
                 label: event.name,
-                description: "event / " + (event.delivery || "fire-and-forget"),
+                description: "legacy event / " + (event.delivery || "fire-and-forget"),
                 detail: this.formatParameters(event.parameters) + this.formatDescription(event.description),
-                location: this.findCapabilityLocation(schemaInfo, "events", event.name)
+                location: this.createLocationPayload(event)
             });
         }
 
@@ -126,49 +114,12 @@ class HostSchemaCommand {
         return description ? " - " + description : "";
     }
 
-    findCapabilityLocation(schemaInfo, sectionName, capabilityName) {
-        const lines = schemaInfo.text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
-        const sectionPattern = new RegExp("\"" + this.escapeRegExp(sectionName) + "\"\\s*:");
-        const nextSectionPattern = sectionName === "queries"
-            ? /"events"\s*:/
-            : /"queries"\s*:/;
-        let inSection = false;
-
-        for (let line = 0; line < lines.length; line += 1) {
-            if (!inSection && sectionPattern.test(lines[line])) {
-                inSection = true;
-                continue;
-            }
-
-            if (inSection && nextSectionPattern.test(lines[line])) {
-                break;
-            }
-
-            if (!inSection) {
-                continue;
-            }
-
-            const nameIndex = lines[line].indexOf("\"name\"");
-            if (nameIndex < 0) {
-                continue;
-            }
-
-            const valueIndex = lines[line].indexOf("\"" + capabilityName + "\"", nameIndex);
-            if (valueIndex >= 0) {
-                return {
-                    sourcePath: schemaInfo.schemaPath,
-                    line,
-                    character: valueIndex + 1,
-                    length: capabilityName.length
-                };
-            }
-        }
-
+    createLocationPayload(capability) {
         return {
-            sourcePath: schemaInfo.schemaPath,
-            line: 0,
-            character: 0,
-            length: 0
+            sourcePath: capability.sourcePath || "",
+            line: Math.max(Number(capability.line || 1) - 1, 0),
+            character: Math.max(Number(capability.column || 1) - 1, 0),
+            length: Math.max(Number(capability.length || capability.name?.length || 1), 1)
         };
     }
 

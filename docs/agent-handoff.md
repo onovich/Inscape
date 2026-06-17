@@ -1,12 +1,23 @@
 # Agent 接手指南
 
-状态：P3 Round 2 Host Schema v2 contract complete
+状态：P3 Round 3 Host Schema action consumption complete
 
 最后更新：2026-06-18
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-18 SelfHostedEditor P3 Round 3 Host Schema action consumption 快照
+
+P3 Round 3 已完成 Host Schema `actions[]` consumption 兼容收口，不宣称 P3 完成。
+
+- 审计产物见 [SelfHostedEditor P3 Host Schema Compatibility Audit](self-hosted-editor-p3-host-schema-compatibility-audit.md)。
+- Tooling 新增 `HostSchemaActionReaderDomain`，`HostSchemaCapabilityCatalogDomain` 现在统一输出 `queries[]`、`actions[]` 与 deprecated legacy `events[]`。
+- CLI `inspect-host-schema-project` 与 LanguageServer `--host-schema-capabilities-project` 继续输出 `inscape.host-schema.capabilities`，当前 payload 区分 query、action 和 legacy event。
+- VSCode `Inscape: Show Host Schema Capabilities`、`[]` query hints 与 `@emit` authoring hints 只消费 shared capability catalog；`@emit` 优先使用 `actions[]`，同名 legacy event 会被 action 覆盖。
+- SelfHostedEditor Host Schema bridge、Host workbench view、completion 和 hover 同样消费 shared LanguageServer capability catalog，不在浏览器侧解析 Host Schema JSON。
+- 下一轮进入 P3 Round 4：Usage Manifest contract。不要把 Usage Manifest 当成权威 Host Schema，也不要把 Host Bridge 映射、Unity/Bird ID 或 Runtime 语义塞进 Compiler。
 
 ### 2026-06-18 SelfHostedEditor P3 Round 2 Host Schema v2 快照
 
@@ -919,7 +930,7 @@ P1 40 轮计划完成后，继续补上了真实 Electron preload -> main 的固
 - SelfHostedEditor 已消费 `/api/host-binding-capabilities`，补齐 speaker 与 `@timeline` 的 completion / hover / navigation；新增 `check:host-binding` 与 `check:host-binding-http`。speaker definition / references 和 `@timeline` Ctrl+Click 现在走同一 Host Binding capability，前端只做 Monaco target 识别与 source reveal。
 - SelfHostedEditor 已新增 `/api/node-map-review` 与顶栏 `Node Map` 入口：开发宿主运行共享 CLI `update-node-map-project --report`，返回 compact `inscape.self-hosted-editor.node-map-review`，前端展示 shared report 摘要和 item / candidate source jump，并可下载生成的 `inscape.node-map.json`。新增 `check:node-map` 与 `check:node-map-http` 守住直连 helper 和真实 HTTP；candidate apply 语义已下沉为 Tooling / CLI `apply-node-map-candidate-project`。dev-host 路径保持可下载 payload，Electron desktop 路径在二次确认和备份后写回 node-map sidecar。
 - SelfHostedEditor L10N 表格已消费 Tooling presenter 的 review actions：`/api/localization-review` compact payload 保留 `open-current` / `open-candidate` / `show-candidate-diff`，前端行内提供 Current / Candidate / Diff 动作，分别跳当前行、跳候选来源和展开候选 diff。这里仍只做宿主 UI 与 source reveal，不重算 alignment、候选评分或 CSV 语义；`check:model`、`check:localization-review`、`check:localization-review-http` 已覆盖 actions 传输与交互。
-- SelfHostedEditor 已新增 `Host` 视图作为 VSCode `Show Host Schema Capabilities` 的业务等价入口：它同时消费 Host Schema 与 Host Binding shared capability catalog，展示 query / event / speaker / timeline binding，并可跳到 schema、bridge 或脚本来源。前端只调用既有 bridge，不解析 Host Schema / Host Bridge JSON；`check:model`、`check:structure`、`check:host-schema-http`、`check:host-binding-http` 已覆盖入口与 transport。
+- SelfHostedEditor 已新增 `Host` 视图作为 VSCode `Show Host Schema Capabilities` 的业务等价入口：它同时消费 Host Schema 与 Host Binding shared capability catalog，展示 query / action / legacy event / speaker / timeline binding，并可跳到 schema、bridge 或脚本来源。前端只调用既有 bridge，不解析 Host Schema / Host Bridge JSON；`check:model`、`check:structure`、`check:host-schema-http`、`check:host-binding-http` 已覆盖入口与 transport。
 - 2026-06-02 最新：SelfHostedEditor refs overlay 已完成 VSCode CodeLens / References Peek 的业务等价验证第一刀。`/api/references` 继续调用 `LanguageServer --references-project`，但现在会把 dev-host 临时目录 sourcePath 转回 workspace 相对路径；新增 `check:references` 与 `check:references-http`，覆盖跨文件引用、当前未保存 draft 参与、引用数量和真实 HTTP transport。UI 不复制 CodeLens，守同一组引用结果和 source jump。
 - 2026-06-02 最新：SelfHostedEditor 新增 `check:semantic-parity-http`，用真实 HTTP 请求一次性守 diagnostics、completion、definition、references、hover、outline 六个 LanguageServer-backed 作者能力入口。该 smoke 覆盖当前 draft、跨文件节点、缺失目标诊断和 workspace-relative sourcePath；宿主层只做 payload 路径归一化与 transport，不新增语义真相。
 - 2026-06-02 最新：VSCode 新增 `check:semantic-parity`，复用同一组 current-draft / cross-file fixture，经由 VSCode diagnostics、completion、definition、references、hover、outline provider 层消费真实 `LanguageServer` 会话结果。VSCode 侧同步补了临时 override sourcePath 与 workspace-relative sourcePath 的路径还原；这仍只是宿主路径适配，不在 VSCode 里重写语义。
@@ -1303,7 +1314,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 - Bird/Unity 初步调研：已梳理 `StorySystem`、`TalkingTM`、`L10N_Talking`、`DirectorSystem` 和 `TimelineEffectTM` 的边界，详见 [Bird / Unity 调研记录](bird-unity-research.md)。
 - UnitySample Adapter 实验样例：`export-unity-sample-role-template`、`export-unity-sample-binding-template`、`export-unity-sample-project` 和 `merge-unity-sample-l10n` 保留早期固定数据结构导出验证。适配器位于 `src/ExternalSupport/UnityPlugin/Inscape.Adapters.UnitySample`，命令入口位于 `src/ExternalSupport/UnityPlugin/Inscape.UnitySample.Cli`；它们不得反向污染 Compiler 或 Internal CLI。详见 [UnitySample Adapter 实验样例](unity-sample-adapter.md)。
 - 项目配置：CLI 会自动读取项目根目录 `inscape.config.json`，也支持 `--config path`。当前配置为 UnitySample 样例命令提供默认值：`talkingIdStart`、`roleMap`、`bindingMap`、`existingRoleNameCsv`、`existingTimelineRoot`、`existingTalkingRoot`；命令行参数优先级更高。这仍不是最终 Host Bridge。详见 [项目配置草案](project-config.md)。
-- 宿主 Schema 草案：新增 `hostSchema` 项目配置字段与 `export-host-schema-template` CLI 命令，用于生成 `inscape.host-schema` JSON 模板，先描述纯查询和宿主事件清单，不改变当前 DSL 解析或 UnitySample 导出行为。VSCode 已提供 `inscape.host.schema.json` / `*.host.schema.json` 的 JSON Schema 校验，以及 `Inscape: Show Host Schema Capabilities` 命令读取并浏览当前 query / event。详见 [宿主 Schema 草案](host-schema.md)。
+- 宿主 Schema 草案：新增 `hostSchema` 项目配置字段与 `export-host-schema-template` CLI 命令，用于生成 `inscape.host-schema` JSON 模板，描述纯查询和宿主动作清单，不改变当前 DSL 解析或 UnitySample 导出行为。VSCode 已提供 `inscape.host.schema.json` / `*.host.schema.json` 的 JSON Schema 校验，以及 `Inscape: Show Host Schema Capabilities` 命令读取并浏览当前 query / action / legacy event。详见 [宿主 Schema 草案](host-schema.md)。
 - Bird 角色绑定审查：`export-bird-role-template` 支持 `--report`，输出 `unique`、`ambiguous`、`missing`、`unscanned` 状态。2026-04-30 用 Bird 当前 `L10N_RoleName.csv` 试跑，当前样例中 `旁白` 为 `ambiguous`，候选 `1050|10001`；`成步堂` 和 `证人` 为 `missing`。因此当前导出的 `bird-roles.csv` 仍全部为空，需要人工补齐或更换测试文本中的角色名。
 - Bird L10N 合并预览：`merge-bird-l10n <generated-L10N_Talking.csv> --from <existing-L10N_Talking.csv> --report report.csv -o merged.csv` 已实现。规则是保留 Bird 未涉及行、新增 Inscape 行、源文本未变时保留译文、源文本变化时清空目标语言列并把旧值写入 report。2026-04-29 已用 Bird 当前 `L10N_Talking.csv` 试跑，原表 270 行、合并预览 275 行、报告只包含 5 个 `added` 行，未改动 Bird 正式表。
 - Unity Editor Importer 原型：`src/ExternalSupport/UnityPlugin/unity-bird-importer/Editor/InscapeBirdManifestImporter.cs` 可复制到 Bird 项目 `Assets/Editor/`，读取 manifest 并创建 / 更新 `TalkingSO`，将 `phase=talking.exit` 的 Timeline Hook 映射为 `TalkingEffectTM.PlayTimeline`，其他 phase 只报告 unsupported warning 并跳过；已提供 `Dry Run Import Manifest...` 菜单、`DryRunImportManifestFromCommandLine` 和 `ImportManifestFromCommandLine` batchmode 入口。Dry Run 输出创建 / 更新 / 缺失引用计划，报告既有 `TalkingTM` 的字段级变化，并在 manifest 同目录写入带 Inscape 节点、锚点和源位置的 `bird-import-dry-run-report.txt`。真实 Import 可加 `-inscapeApplyAddressables` 显式调用 Bird 现有 `TalkingSO.ApplyAA()`，将资源加入 `TM_Talking` group / label。详见 [Unity Editor Importer 草案](unity-editor-importer.md)。

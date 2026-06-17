@@ -43,7 +43,7 @@ inscape.config.json
 - `export-unity-sample-binding-template`：读取 `existingTimelineRoot`。
 - `export-unity-sample-project`：读取 `talkingIdStart`、`roleMap`、`bindingMap`、`existingTalkingRoot`。
 - VSCode 扩展：读取 `hostBridge`，为 speaker 和宿主事件 / 时机 hook 提供补全、Hover 与 Ctrl+Click；没有 Host Bridge 时只回退扫描工作区脚本文本。
-- VSCode 扩展：读取 `hostSchema`，通过命令面板列出宿主 query / event，并为 `inscape.host.schema.json` / `*.host.schema.json` 提供 JSON Schema 校验。
+- VSCode 扩展：读取 `hostSchema`，通过命令面板列出宿主 query / action / legacy event，并为 `inscape.host.schema.json` / `*.host.schema.json` 提供 JSON Schema 校验。
 
 仍未放进配置的内容：
 

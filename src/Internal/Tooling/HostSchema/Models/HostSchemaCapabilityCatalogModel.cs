@@ -12,6 +12,8 @@ namespace Inscape.Tooling {
 
         public List<HostSchemaQueryCapabilityModel> Queries { get; set; } = new List<HostSchemaQueryCapabilityModel>();
 
+        public List<HostSchemaActionCapabilityModel> Actions { get; set; } = new List<HostSchemaActionCapabilityModel>();
+
         public List<HostSchemaEventCapabilityModel> Events { get; set; } = new List<HostSchemaEventCapabilityModel>();
 
     }

@@ -19,11 +19,19 @@ const workspace = {
     {
       relativePath: "config/inscape.host.schema.json",
       text: JSON.stringify({
+        actions: [
+          {
+            description: "Quest accepted action",
+            mode: "fire",
+            name: "quest.accepted",
+            parameters: [],
+          },
+        ],
         events: [
           {
             delivery: "fire-and-forget",
-            description: "Quest accepted event",
-            name: "quest.accepted",
+            description: "Legacy quest accepted event",
+            name: "legacy.quest.accepted",
           },
         ],
         queries: [
@@ -48,7 +56,9 @@ async function main() {
   assertEqual(catalog.hostSchema?.loaded, true, "host schema loaded");
   assertEqual(catalog.queries?.[0]?.name, "player.gold", "query name");
   assertEqual(catalog.queries?.[0]?.returnType, "number", "query return type");
-  assertEqual(catalog.events?.[0]?.name, "quest.accepted", "event name");
+  assertEqual(catalog.actions?.[0]?.name, "quest.accepted", "action name");
+  assertEqual(catalog.actions?.[0]?.mode, "fire", "action mode");
+  assertEqual(catalog.events?.[0]?.name, "legacy.quest.accepted", "event name");
   assertEqual(catalog.events?.[0]?.delivery, "fire-and-forget", "event delivery");
 
   console.log("SelfHostedEditor Host Schema smoke ok");

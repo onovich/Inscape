@@ -51,6 +51,7 @@ namespace Inscape.Tests {
                 AssertEqual("open_window", result.Events[0].Name, "First event name");
                 AssertEqual("blocking", result.Events[0].Delivery, "First event delivery");
                 AssertTrue(result.Events[0].SideEffects, "First event side effects");
+                AssertTrue(result.Events[0].IsLegacy, "Legacy events should be marked as legacy.");
                 AssertEqual(1, result.Events[0].Parameters.Count, "First event parameter count");
                 AssertEqual(schemaPath, result.Events[0].SourcePath, "First event source path");
                 AssertTrue(result.Events[0].Line > 0, "First event line should be 1-based.");

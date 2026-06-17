@@ -108,7 +108,7 @@ Workspace index 不可以做：
 
 ### Schema Capabilities
 
-用于 host schema query / event 浏览、补全和 hover。
+用于 host schema query / action / legacy event 浏览、补全和 hover。
 
 字段：
 

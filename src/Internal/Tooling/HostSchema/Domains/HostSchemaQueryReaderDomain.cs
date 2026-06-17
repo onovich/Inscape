@@ -74,7 +74,7 @@ namespace Inscape.Tooling {
                     continue;
                 }
 
-                if (inQueries && line.Contains("\"events\"")) {
+                if (inQueries && (line.Contains("\"actions\"") || line.Contains("\"events\""))) {
                     break;
                 }
 

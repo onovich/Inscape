@@ -7,11 +7,19 @@ import { assertEqual, assertIncludesText, FakeElement, findElementByClass, getTe
 installFakeDomEnvironment();
 
 export const hostSchemaCatalog = HostSchemaCapabilityModelMapper.mapCatalog({
+  actions: [
+    {
+      isNamedHostAction: true,
+      mode: "fire",
+      name: "quest.accepted",
+    },
+  ],
   events: [
     {
       delivery: "fire-and-forget",
       isNamedHostEvent: true,
-      name: "quest.accepted",
+      isLegacy: true,
+      name: "legacy.quest.accepted",
     },
   ],
   format: "inscape.host-schema.capabilities",
@@ -29,7 +37,10 @@ export const hostSchemaCatalog = HostSchemaCapabilityModelMapper.mapCatalog({
 });
 assertEqual(hostSchemaCatalog.hostSchema.loaded, true, "host schema mapper loaded");
 assertEqual(hostSchemaCatalog.queries[0].name, "player.gold", "host schema mapper query");
-assertEqual(hostSchemaCatalog.events[0].name, "quest.accepted", "host schema mapper event");
+assertEqual(hostSchemaCatalog.actions[0].name, "quest.accepted", "host schema mapper action");
+assertEqual(hostSchemaCatalog.actions[0].mode, "fire", "host schema mapper action mode");
+assertEqual(hostSchemaCatalog.events[0].name, "legacy.quest.accepted", "host schema mapper event");
+assertEqual(hostSchemaCatalog.events[0].isLegacy, true, "host schema mapper legacy event marker");
 export const hostBindingCatalog = HostBindingCapabilityModelMapper.mapCatalog({
   bindings: [
     {
@@ -130,6 +141,7 @@ assertIncludesText(getTextContent(hostCapabilityPanel), "Host Schema");
 assertIncludesText(getTextContent(hostCapabilityPanel), "Host Bridge");
 assertIncludesText(getTextContent(hostCapabilityPanel), "player.gold");
 assertIncludesText(getTextContent(hostCapabilityPanel), "quest.accepted");
+assertIncludesText(getTextContent(hostCapabilityPanel), "legacy.quest.accepted");
 assertIncludesText(getTextContent(hostCapabilityPanel), "Narrator");
 assertIncludesText(getTextContent(hostCapabilityPanel), "court_intro");
 findElementByClass(hostCapabilityPanel, "host-capability-source")?.click();

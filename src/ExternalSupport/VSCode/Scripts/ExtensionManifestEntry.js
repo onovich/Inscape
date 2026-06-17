@@ -440,12 +440,9 @@ editorAuthoringCommand = new EditorAuthoringCommand({
 
 hostSchemaCommand = new HostSchemaCommand({
     vscode,
-    fs,
     selectWorkspaceFolder,
-    readProjectConfigFromWorkspaceFolder: (folder) => editorAuthoringDataProvider.readProjectConfigFromWorkspaceFolder(folder),
-    resolveProjectConfigPath: (configPath, value) => editorAuthoringDataProvider.resolveProjectConfigPath(configPath, value),
-    ...locationServices,
-    escapeRegExp
+    hostSchemaCapabilityProvider,
+    ...locationServices
 });
 
 extensionRegistrationController = new ExtensionRegistrationController({

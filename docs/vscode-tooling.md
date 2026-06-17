@@ -90,7 +90,7 @@ Inscape 的默认阅读优先级应当是：
 - 为 VSCode Outline 提供当前文件节点列表。
 - 提供 `Inscape: Insert Node Title` 命令；命令创建同名标题时会自动追加 `_01` 这类后缀，手动改成重名则继续交给 Compiler diagnostics 报错。
 - 为 `inscape.host.schema.json` / `*.host.schema.json` 提供 JSON Schema 校验。
-- 提供命令 `Inscape: Show Host Schema Capabilities`，读取 `inscape.config.json` 的 `hostSchema` 并列出 query / event。
+- 提供命令 `Inscape: Show Host Schema Capabilities`，读取 `inscape.config.json` 的 `hostSchema` 并列出 query / action / legacy event。
 - 在正文 `[]` 查询插值位置提供 Host Schema query 补全和 Hover。当前只读取零参数简单 query，如 `[player.gold]` / `[itemName]`；Hover 显示 `returnType`、`isAsync`、description 和来源。未知 query 只作为作者提示，不升级为 Compiler 错误；带冒号的 bracket metadata 不再作为宿主绑定入口。
 - 提供命令 `Inscape: Open Preview`，以 VSCode custom editor 方式打开可玩预览；它默认会在源码旁边以侧边编辑器打开。如果当前活动 `.inscape` 文件未保存，会通过 `--override` 使用编辑器中的临时内容。
 - 编辑器右上角提供 `Inscape: Toggle Preview` 按钮，可以快速在源码和预览之间切换；当前实现会优先复用已有预览标签页，避免重复打开。扩展清单把 custom editor 设为 `option` 而不是 `default`，避免预览劫持源码标签页、Definition 跳转或普通文件打开行为。
@@ -205,7 +205,7 @@ inscape.host.schema.json
 
 - `Inscape: Show Host Schema Capabilities`
 
-该命令读取工作区根目录 `inscape.config.json` 的 `hostSchema` 字段，列出当前配置的 query / legacy event，并可跳转到 schema 文件里的对应 `name` 字段。VSCode 现在会把零参数简单 query 注入 `[]` 查询插值 completion / Hover；`actions[]` consumption、条件语法和函数式查询仍未注入脚本补全，因为对应语法和 capability reader 会在 P3 后续轮次收口。
+该命令读取工作区根目录 `inscape.config.json` 的 `hostSchema` 字段，列出当前配置的 query / action / legacy event，并可跳转到 schema 文件里的对应 `name` 字段。VSCode 现在会把零参数简单 query 注入 `[]` 查询插值 completion / Hover，并把 `actions[]` 注入 `@emit` action completion / Hover；legacy `events[]` 只作为迁移期兼容候选保留。条件语法和函数式查询仍未注入脚本补全，因为对应语法会在 P3 后续轮次收口。
 
 `[]` 查询插值的第一版工具路线见 [Query Interpolation Tooling Decision](query-interpolation-tooling-decision.md)：当前 VSCode 已基于 Host Schema 做 completion / Hover 原型，未知 query 只作为提示，不升级为 Compiler 错误；LanguageServer 后续再复用同一数据契约。
 

@@ -20,6 +20,14 @@ class HostSchemaCapabilityProvider {
             return undefined;
         }
 
+        return await this.collectCapabilityCatalogForWorkspace(workspaceFolder, document);
+    }
+
+    async collectCapabilityCatalogForWorkspace(workspaceFolder, document) {
+        if (!workspaceFolder || !workspaceFolder.uri || !workspaceFolder.uri.fsPath) {
+            return undefined;
+        }
+
         const workspacePath = workspaceFolder.uri.fsPath;
         const cached = this.cache.get(workspacePath);
         const now = Date.now();
@@ -27,7 +35,8 @@ class HostSchemaCapabilityProvider {
             return cached.catalog;
         }
 
-        const catalog = await this.invokeCapabilityEndpoint(document, workspacePath);
+        const requestDocument = document || { uri: workspaceFolder.uri };
+        const catalog = await this.invokeCapabilityEndpoint(requestDocument, workspacePath);
         this.cache.set(workspacePath, {
             expiresAt: now + 2000,
             catalog

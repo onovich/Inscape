@@ -20,6 +20,7 @@ export class HostCapabilityCatalogController {
     this.panelElement.replaceChildren(
       this.createSummary(hostSchemaCatalog, hostBindingCatalog),
       this.createQuerySection(hostSchemaCatalog),
+      this.createActionSection(hostSchemaCatalog),
       this.createEventSection(hostSchemaCatalog),
       this.createSpeakerSection(hostBindingCatalog),
       this.createBindingSection(hostBindingCatalog)
@@ -72,10 +73,19 @@ export class HostCapabilityCatalogController {
 
   createEventSection(catalog) {
     return this.createSection({
-      emptyText: "No Host Schema events found.",
+      emptyText: "No legacy Host Schema events found.",
       items: catalog.events,
       renderItem: (event) => this.createEventItem(event),
-      title: "Events",
+      title: "Legacy Events",
+    });
+  }
+
+  createActionSection(catalog) {
+    return this.createSection({
+      emptyText: "No Host Schema actions found.",
+      items: catalog.actions,
+      renderItem: (action) => this.createActionItem(action),
+      title: "Actions",
     });
   }
 
@@ -145,12 +155,25 @@ export class HostCapabilityCatalogController {
   createEventItem(event) {
     return this.createItem({
       detail: [
+        "legacy",
         event.delivery || "fire-and-forget",
         event.sideEffects ? "side effects" : "no side effects",
       ].join(" | "),
       locations: this.createSingleSourceLocation(event),
       meta: event.description,
       title: event.name,
+    });
+  }
+
+  createActionItem(action) {
+    return this.createItem({
+      detail: [
+        action.mode || "fire",
+        action.idKind ? `id ${action.idKind}` : "",
+      ].filter(Boolean).join(" | "),
+      locations: this.createSingleSourceLocation(action),
+      meta: action.description,
+      title: action.name,
     });
   }
 

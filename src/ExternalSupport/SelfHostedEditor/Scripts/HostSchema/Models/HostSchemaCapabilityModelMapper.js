@@ -5,6 +5,7 @@ export class HostSchemaCapabilityModelMapper {
       : {};
 
     return {
+      actions: this.mapActions(catalog.actions),
       events: this.mapEvents(catalog.events),
       format: catalog.format || "",
       formatVersion: Number(catalog.formatVersion || 0),
@@ -41,6 +42,30 @@ export class HostSchemaCapabilityModelMapper {
       .sort((left, right) => left.name.localeCompare(right.name));
   }
 
+  static mapActions(actions) {
+    if (!Array.isArray(actions)) {
+      return [];
+    }
+
+    return actions
+      .filter((action) => action && typeof action.name === "string")
+      .filter((action) => action.isNamedHostAction !== false)
+      .map((action) => ({
+        character: Math.max(Number(action.column || 1) - 1, 0),
+        description: action.description || "",
+        idKind: action.idKind || "",
+        isLegacy: false,
+        length: Math.max(Number(action.length || action.name.length || 1), 1),
+        line: Math.max(Number(action.line || 1) - 1, 0),
+        mode: action.mode || "fire",
+        name: action.name.trim(),
+        parameters: Array.isArray(action.parameters) ? action.parameters : [],
+        sourcePath: action.sourcePath || "",
+      }))
+      .filter((action) => action.name)
+      .sort((left, right) => left.name.localeCompare(right.name));
+  }
+
   static mapEvents(events) {
     if (!Array.isArray(events)) {
       return [];
@@ -53,6 +78,7 @@ export class HostSchemaCapabilityModelMapper {
         character: Math.max(Number(event.column || 1) - 1, 0),
         delivery: event.delivery || "fire-and-forget",
         description: event.description || "",
+        isLegacy: event.isLegacy !== false,
         length: Math.max(Number(event.length || event.name.length || 1), 1),
         line: Math.max(Number(event.line || 1) - 1, 0),
         name: event.name.trim(),

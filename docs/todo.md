@@ -1,6 +1,6 @@
 # TODO
 
-状态：持续维护，P3 Round 2 Host Schema v2 contract complete
+状态：持续维护，P3 Round 3 Host Schema action consumption complete
 
 SelfHostedEditor regression invariant: Preview choice clicks must advance the reading Preview to the target block and reveal the target block title in the editor. Compiler-project Preview data must never silently lose `previewLines`: if a returned Compiler graph has source lines but missing or mismatched `previewLines`, Preview must report a compiler graph contract error instead of falling back to the UI-only draft model. `npm --prefix src\ExternalSupport\SelfHostedEditor run check:model` covers both invariants so future Runtime / navigation work does not regress them.
 
@@ -197,7 +197,8 @@ npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
 - [x] P4 Log / Backlog 已确认进入优先范围：默认记录 `speaker`、`text`、`lineId`；选项记录作为可选扩展或开发模式信息，不要求普通玩家 Log 默认展示。
 - [x] 完成 P3 Round 1 基线审计。2026-06-18 审计结果见 [SelfHostedEditor P3 Baseline Audit](self-hosted-editor-p3-baseline-audit.md)；确认当前代码链路仍是 `queries[]` + `events[]`，Usage / Host Integration Audit / 条件语法 / P3 Runtime State 均未进入实现。下一轮进入 Host Schema v2 minimum contract。
 - [x] 完成 P3 Round 2 Host Schema v2 minimum contract。2026-06-18 审计结果见 [SelfHostedEditor P3 Host Schema v2 Contract Audit](self-hosted-editor-p3-host-schema-v2-contract-audit.md)；模板和 JSON Schema 已进入 `queries[]` / `actions[]` 口径，legacy `events[]` 继续作为 deprecated 兼容输入保留，当前 consumption 仍留给 Round 3。
-- [ ] 按 [SelfHostedEditor / P3 Goal 模式执行指南](self-hosted-editor-p3-goal-mode-execution-guide.md) 继续推进 P3，下一步优先完成 Host Schema Tooling / CLI / LanguageServer / VSCode / SelfHostedEditor 的 `actions[]` consumption 迁移与 legacy `events[]` 兼容，再进入 Usage Manifest、条件语法和 Runtime State 最小模型。
+- [x] 完成 P3 Round 3 Host Schema Tooling / CLI / LanguageServer compatibility。2026-06-18 审计结果见 [SelfHostedEditor P3 Host Schema Compatibility Audit](self-hosted-editor-p3-host-schema-compatibility-audit.md)；`HostSchemaActionReaderDomain`、CLI / LanguageServer capability catalog、VSCode / SelfHostedEditor Host Schema consumption 已消费 `actions[]`，legacy `events[]` 继续作为 deprecated 兼容提示保留。
+- [ ] 按 [SelfHostedEditor / P3 Goal 模式执行指南](self-hosted-editor-p3-goal-mode-execution-guide.md) 继续推进 P3，下一步优先进入 Usage Manifest contract，再推进 `inspect-usage-project`、Host Integration Audit、条件语法和 Runtime State 最小模型。
 - [ ] P4 开始前需要细化 Runtime MVP 验收样例、query receipt 记录粒度、`fire` / `wait` / `handoff` pending / resumed payload，以及 Runtime Inspector 只能改 mock query、不直接改正式 Runtime state 的产品边界。
 - [ ] P7 前继续评估 Rollback checkpoint 的准确粒度、跨宿主 action 时的回退阻断 / checkpoint 规则、Trace Replay、Flashback Playback 与时空穿越式特殊倒放；这些不进入 P3 / P4 第一刀实现。
 
@@ -709,7 +710,7 @@ npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
 - [x] 添加对白 speaker 的 Go to Definition 与 Find All References，优先连接 Host Bridge speaker，回退脚本对白引用。
 - [x] 修正 VSCode `wordPattern`，把全角冒号和常见中文标点视为词边界，避免 Ctrl+Click 角色名时把整行对白标为可跳转范围。
 - [x] 添加 block 级 CodeLens 双向导航：`入边` 追溯调用方，`出边` 跳转被调用方。
-- [x] 为宿主 Schema 文件提供 VSCode JSON Schema 校验，并增加命令查看当前 query / event 清单。
+- [x] 为宿主 Schema 文件提供 VSCode JSON Schema 校验，并增加命令查看当前 query / action / legacy event 清单。
 - [x] 实现 VSCode 编辑器内可玩预览视图第一版，复用 CLI / Core 的项目级编译结果，并支持源码侧边打开、选项点击、正文点击继续、Back、Restart、源码回跳、编辑防抖刷新和保存后自动刷新。
 - [x] 修正 VSCode 预览体验关键问题：custom editor 改为 `option` 避免劫持源码标签页；webview 显式启用 scripts；刷新尽量保留当前页进度；CLI 调用优先已构建可执行文件 / 程序集，减少等待时间。
 - [x] 为编辑器语法配色与预览 UI 提供独立样式配置文件，允许开发者通过 `inscape.config.json` 指向简洁 JSON 样式表并在本机快速调参。
@@ -733,12 +734,12 @@ npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
 - [x] 让 VSCode node definition / references 调用 LanguageServer project navigation：新增 `--definition-project` / `--references-project`，支持跨文件和 unsaved override，并删除对应 JS node definition / reference semantic fallback。
 - [x] 若后续准备删除 CLI fallback，先补一次 LanguageServer 不可用场景下的 CLI diagnostics fallback 专项 smoke test。
 - [x] 新增 diagnostics fallback 静态契约：`npm --prefix src/ExternalSupport/VSCode run check:diagnostics-fallback`，覆盖“LanguageServer 失败 -> CLI diagnose-project 成功”与 `diagnostics.backend=compiler` 跳过 LanguageServer。
-- [x] 设计补全数据来源：当前文件节点、项目节点、角色表、宿主绑定表、宿主 Schema 查询 / 事件清单。
-- [x] 将 `hostSchema` 中的事件清单接入 `.inscape` 脚本补全与 Hover，不改变当前 DSL 编译语义。
-- [x] 评估 VSCode JS query / event provider 是否应复用 `Inscape.Tooling` Host Schema reader / audit 契约：结论是 Tooling 先补齐 event reader，VSCode 暂保留轻量 JS reader；后续通过 LanguageServer 或显式 CLI capability endpoint 复用 Tooling，避免直接从扩展热路径启动 .NET。
+- [x] 设计补全数据来源：当前文件节点、项目节点、角色表、宿主绑定表、宿主 Schema 查询 / 动作清单。
+- [x] 将 `hostSchema` 中的事件清单接入 `.inscape` 脚本补全与 Hover，不改变当前 DSL 编译语义；P3 Round 3 已把新主路径迁到 `actions[]`，legacy `events[]` 只保留兼容。
+- [x] 评估 VSCode JS query / event provider 是否应复用 `Inscape.Tooling` Host Schema reader / audit 契约：历史结论是先补齐 event reader；P3 Round 3 已补 action reader，并让 VSCode 通过 LanguageServer-first capability endpoint 复用 Tooling。
 - [x] 设计并实现 Host Schema capability endpoint：Internal CLI 新增 `inspect-host-schema-project <root> [-o capabilities.json]`，输出 `inscape.host-schema.capabilities`，供 VSCode / LanguageServer 后续复用 Tooling reader。
-- [x] 让 VSCode 消费 Host Schema capability endpoint / Tooling 契约：query / event provider 优先调用 `inspect-host-schema-project`，失败时回退直接 JSON 读取。
-- [x] 按 [VSCode LanguageServer Migration Plan](vscode-language-server-migration-plan.md) 完成 Host Schema capability endpoint 收口：LanguageServer `--host-schema-capabilities-project` 已复用 Tooling 契约，VSCode query / event provider 已优先调用 LanguageServer，失败后回退 CLI，JS provider 的重复 JSON fallback 已移除并改为 output 日志。
+- [x] 让 VSCode 消费 Host Schema capability endpoint / Tooling 契约：query / event provider 最初优先调用 `inspect-host-schema-project`；后续已切到 LanguageServer-first capability endpoint。
+- [x] 按 [VSCode LanguageServer Migration Plan](vscode-language-server-migration-plan.md) 完成 Host Schema capability endpoint 收口：LanguageServer `--host-schema-capabilities-project` 已复用 Tooling 契约，VSCode query / action provider 已优先调用 LanguageServer，失败后回退 CLI，JS provider 的重复 JSON fallback 已移除并改为 output 日志。
 - [x] 定义第一版诊断清单：重复节点、非法节点名、缺失目标、不可达节点、空节点、选项语法问题。
 - [x] Compiler 支持 `# 标题`：当前已移除 `:: node.name` 兼容路径，新增标题唯一诊断、标题前缺空行 info 级 style hint，并覆盖中文标题跳转测试。
 - [x] VSCode 标题语法体验：TextMate 高亮、snippets、Outline / completion / definition / references 识别标题，以及 `Inscape: Insert Node Title` 命令在创建同名标题时自动生成 `_01` 编号。

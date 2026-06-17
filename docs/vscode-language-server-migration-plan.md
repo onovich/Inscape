@@ -8,7 +8,7 @@
 
 ## 背景
 
-`src/ExternalSupport/VSCode` 当前已经按 `DslScript`、`EditorAuthoring`、`HostBinding`、`HostSchema`、`Localization`、`Preview` 与 `Entries` 拆分，命令入口已归入各自业务目录。它仍然是一个轻量 JS 前端：诊断借道 CLI，节点、speaker、host binding、metadata、Host Schema query / event 等作者提示由扩展侧轻量扫描或 CLI capability endpoint 支撑。
+`src/ExternalSupport/VSCode` 当前已经按 `DslScript`、`EditorAuthoring`、`HostBinding`、`HostSchema`、`Localization`、`Preview` 与 `Entries` 拆分，命令入口已归入各自业务目录。它仍然是一个轻量 JS 前端：诊断借道 CLI，节点、speaker、host binding、metadata、Host Schema query / action 等作者提示由 LanguageServer-first capability endpoint 支撑。
 
 `src/Internal/LanguageServer` 已有第一版 C# 语义基线：diagnostics、definition、references、completion、document symbols、hover 的 probe 都直接复用 `Inscape.Compiler` 输出。2026-05-19 起，VSCode 已通过仓库内的 `LanguageServerSessionClient` 复用常驻 stdio 会话，不再为这些高频能力逐次启动新进程；它仍然不是完整 `vscode-languageclient` 栈下的标准 LSP transport。
 
@@ -21,7 +21,7 @@
 - VSCode 前端保留 VSCode API、Webview、样式、命令、preview reveal bridge 和用户交互 glue。
 - 第一次接入 LanguageServer 时不得同提交移除 JS fallback；删除 fallback 必须有独立节点和回归依据。
 - 正文 / 选项文本仍不得回退到 `DocumentLinkProvider`。Ctrl+Hover 链接态继续由 `DefinitionProvider` 路径承担，selection bridge 继续承担预览定位。
-- Host Schema query / event 与 Host Bridge binding 是作者提示能力，不是 Compiler diagnostic；未知 query / event 不能因为迁移 LanguageServer 而突然变成默认 Problems。
+- Host Schema query / action 与 Host Bridge binding 是作者提示能力，不是 Compiler diagnostic；未知 query / action 不能因为迁移 LanguageServer 而突然变成默认 Problems。
 - 任何涉及真实 VSCode 交互的切换，都要按 `src/ExternalSupport/VSCode/README.md` 的 Regression Checklist 重建 `.vsix` 并手动 smoke test。
 
 ## 接入顺序
@@ -80,12 +80,12 @@
 
 ### L5：Host Schema capability endpoint 收口
 
-当前 VSCode query / event provider 优先调用 CLI `inspect-host-schema-project`，失败时直接读 JSON。LanguageServer 已新增 `--host-schema-capabilities-project <root> [--config path]` probe，直接复用 `Inscape.Tooling` 的 `ToolConfigReaderDomain` 与 `HostSchemaCapabilityCatalogDomain`，并输出与 CLI endpoint 相同的 `inscape.host-schema.capabilities` capability view。
+当前 VSCode query / action provider 优先调用 LanguageServer session Host Schema capability endpoint，失败时回退 CLI `inspect-host-schema-project`。LanguageServer `--host-schema-capabilities-project <root> [--config path]` probe 直接复用 `Inscape.Tooling` 的 `ToolConfigReaderDomain` 与 `HostSchemaCapabilityCatalogDomain`，并输出与 CLI endpoint 相同的 `inscape.host-schema.capabilities` capability view。
 
 迁移顺序：
 
 1. 已完成：LanguageServer 增加 Host Schema capability endpoint。
-2. 已完成：VSCode query / event provider 优先调用 LanguageServer。
+2. 已完成：VSCode query / action provider 优先调用 LanguageServer。
 3. 当前保留：失败时回退 CLI `inspect-host-schema-project`。
 4. 已完成：移除 JS direct JSON reader。
 5. 已完成：LanguageServer / CLI 均失败时写入 output channel 日志，作者提示为空但不升级为 Compiler error。
@@ -108,7 +108,7 @@
 | Text-to-preview reveal | VSCode `DefinitionProvider` + `PreviewRevealBridge` | 显式 `Inscape: Open Preview` / reveal 命令 | 无预览定位但源码可编辑 |
 | Speaker authoring | VSCode / future LanguageServer Host Bridge provider | Host Bridge speaker ids | workspace dialogue scan |
 | Host binding authoring | VSCode / future LanguageServer Host Bridge provider | Host Bridge bindings | workspace occurrence |
-| Host Schema query / event | LanguageServer session host schema capabilities | CLI `inspect-host-schema-project` | 空提示 + output 日志 |
+| Host Schema query / action | LanguageServer session host schema capabilities | CLI `inspect-host-schema-project` | 空提示 + output 日志 |
 | Preview rendering | VSCode preview + CLI `preview-project` | CLI executable / DLL / `dotnet run` fallback | error HTML with diagnostics |
 
 ## 删除 fallback 的条件

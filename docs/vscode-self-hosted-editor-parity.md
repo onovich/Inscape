@@ -83,7 +83,7 @@ SelfHostedEditor 已补齐：
 
 SelfHostedEditor 仍缺：
 
-- 无。SelfHostedEditor 已用 `Host` 视图提供等价查看入口，UI 不是 Quick Pick，但展示同源 query / event / speaker / timeline 清单和 source jump。
+- 无。SelfHostedEditor 已用 `Host` 视图提供等价查看入口，UI 不是 Quick Pick，但展示同源 query / action / legacy event / speaker / timeline 清单和 source jump。
 
 建议下一步：继续守 `check:host-schema` / `check:host-schema-http` / `check:host-binding` / `check:host-binding-http`，避免 Host 视图退回宿主侧 JSON 解析。
 
@@ -176,10 +176,10 @@ VSCode 是专业编辑器，不需要一致视觉。但两边语义能力要一�
 | --- | --- | --- | --- |
 | Diagnostics | LanguageServer 常驻会话 + CLI fallback | dev-host HTTP + LanguageServer probe + fallback | 高，保持 |
 | Completion: node jump | 支持跨文件与未保存内容 | 已接 project probe，需继续验证跨文件 | 高 |
-| Host Schema / Host Binding capability 查看 | 命令面板查看 query / event，并能打开 schema 来源 | `Host` 视图展示 query / event / speaker / timeline，并能跳 schema / bridge / script 来源 | 已对齐，守回归 |
+| Host Schema / Host Binding capability 查看 | 命令面板查看 query / action / legacy event，并能打开 schema 来源 | `Host` 视图展示 query / action / legacy event / speaker / timeline，并能跳 schema / bridge / script 来源 | 已对齐，守回归 |
 | Completion: speaker | 支持 hostBridge / workspace fallback | 已通过 dev-host + LanguageServer Host Binding capability 对齐 | 已对齐，守回归 |
 | Completion: `[query]` | 支持 Host Schema query | 已通过 dev-host + LanguageServer Host Schema capability 对齐 | 已对齐，守回归 |
-| Completion: `@emit` | 支持 Host Schema event | 已通过 dev-host + LanguageServer Host Schema capability 对齐 | 已对齐，守回归 |
+| Completion: `@emit` | 支持 Host Schema action，兼容 legacy event | 已通过 dev-host + LanguageServer Host Schema capability 对齐 | 已对齐，守回归 |
 | Completion/Hover: `@timeline` | 支持 Host Bridge | 已通过 dev-host + LanguageServer Host Binding capability 对齐 | 已对齐，守回归 |
 | Definition / References: node | LanguageServer project navigation | 已接 project probe，refs overlay 已有 | 高，继续验证 |
 | Definition / References: speaker | 支持 hostBridge + workspace references | 已通过 Host Binding capability 对齐 | 已对齐，守回归 |

@@ -1,16 +1,14 @@
 namespace Inscape.Tooling {
 
-    public sealed class HostSchemaEventCapabilityModel {
+    public sealed class HostSchemaActionCapabilityModel {
 
         public string Name { get; set; } = string.Empty;
 
         public string Description { get; set; } = string.Empty;
 
-        public string Delivery { get; set; } = "fire-and-forget";
+        public string Mode { get; set; } = "fire";
 
-        public bool SideEffects { get; set; } = true;
-
-        public bool IsLegacy { get; set; } = true;
+        public string? IdKind { get; set; }
 
         public List<HostSchemaParameterModel> Parameters { get; set; } = new List<HostSchemaParameterModel>();
 
@@ -22,13 +20,13 @@ namespace Inscape.Tooling {
 
         public int Length { get; set; }
 
-        public bool IsNamedHostEvent {
+        public bool IsNamedHostAction {
             get {
-                return IsEventName(Name);
+                return IsActionName(Name);
             }
         }
 
-        static bool IsEventName(string value) {
+        static bool IsActionName(string value) {
             string trimmed = value.Trim();
             if (trimmed.Length == 0 || !IsIdentifierStart(trimmed[0])) {
                 return false;

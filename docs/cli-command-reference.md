@@ -41,7 +41,7 @@ dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- preview-
 | --- | --- | --- |
 | `export-host-schema-template` | 生成 P3 宿主查询 / 动作清单 JSON 模板 | JSON |
 | `audit-query-interpolation-project` | 显式审计项目中 `[]` 查询插值是否能被 Host Schema 解释 | text / JSON |
-| `inspect-host-schema-project` | 读取项目配置的 Host Schema，输出 query / legacy event 能力清单 | JSON |
+| `inspect-host-schema-project` | 读取项目配置的 Host Schema，输出 query / action / legacy event 能力清单 | JSON |
 
 ```powershell
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- export-host-schema-template -o config\inscape.host.schema.json
@@ -53,7 +53,7 @@ dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- inspect-
 
 `audit-query-interpolation-project` 会读取项目 `inscape.config.json` 的 `hostSchema`，扫描 `.inscape` 正文里的 `[query.path]`，并输出独立 `inscape.query-interpolation.audit` 报告。它不会修改 `diagnose-project`、`compile-project`、本地化提取或 VSCode 默认 Problems；warning / info 默认不造成非零退出码。
 
-`inspect-host-schema-project` 会读取项目 `hostSchema`，输出独立 `inscape.host-schema.capabilities` JSON，当前包含归一化后的 `queries[]`、legacy `events[]` 和 schema 读取状态。该命令面向 VSCode / LanguageServer 复用 Tooling reader，不编译 `.inscape`，也不扫描脚本内容；P3 Round 3 再补 `actions[]` capability consumption。
+`inspect-host-schema-project` 会读取项目 `hostSchema`，输出独立 `inscape.host-schema.capabilities` JSON，当前包含归一化后的 `queries[]`、`actions[]`、legacy `events[]` 和 schema 读取状态。该命令面向 VSCode / LanguageServer / SelfHostedEditor 复用 Tooling reader，不编译 `.inscape`，也不扫描脚本内容。
 
 ## 单文件命令
 

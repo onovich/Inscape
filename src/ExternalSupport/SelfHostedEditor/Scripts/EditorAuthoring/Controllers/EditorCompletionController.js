@@ -65,7 +65,7 @@ export class EditorCompletionController {
     const catalog = await this.hostSchemaBridge.getCapabilityCatalog(model.getValue());
     const candidates = completionTarget.kind === "query"
       ? catalog.queries
-      : catalog.events;
+      : this.selectHostActionCandidates(catalog);
     const normalizedPrefix = completionTarget.typedPrefix.toLowerCase();
     return candidates
       .filter((candidate) => candidate.name)
@@ -99,8 +99,8 @@ export class EditorCompletionController {
     }
 
     return [
-      "host event",
-      candidate.delivery || "fire-and-forget",
+      candidate.isLegacy ? "legacy host event" : "host action",
+      candidate.isLegacy ? candidate.delivery || "fire-and-forget" : candidate.mode || "fire",
       "Host Schema",
     ].join(" - ");
   }
@@ -119,14 +119,26 @@ export class EditorCompletionController {
     }
 
     return [
-      `**Inscape host event** \`${candidate.name}\``,
+      `${candidate.isLegacy ? "**Legacy Inscape host event**" : "**Inscape host action**"} \`${candidate.name}\``,
       "",
-      "`@emit` records a host event intent. Host Schema provides this authoring hint; Compiler behavior is unchanged.",
+      candidate.isLegacy
+        ? "`@emit` currently records a host event intent. This legacy Host Schema event is kept for migration compatibility; new P3 capabilities should use `actions[]`."
+        : "`@emit` currently records a host action intent. Host Schema `actions[]` provides this authoring hint; Compiler behavior is unchanged.",
       "",
-      `- **Delivery:** ${candidate.delivery || "fire-and-forget"}`,
-      `- **Side effects:** ${candidate.sideEffects === false ? "no" : "yes"}`,
+      candidate.isLegacy
+        ? `- **Delivery:** ${candidate.delivery || "fire-and-forget"}`
+        : `- **Mode:** ${candidate.mode || "fire"}`,
+      candidate.isLegacy ? `- **Side effects:** ${candidate.sideEffects === false ? "no" : "yes"}` : "",
+      !candidate.isLegacy && candidate.idKind ? `- **ID kind:** ${candidate.idKind}` : "",
       candidate.description ? `- **Description:** ${candidate.description}` : "",
     ].filter(Boolean).join("\n");
+  }
+
+  selectHostActionCandidates(catalog) {
+    const actions = Array.isArray(catalog.actions) ? catalog.actions : [];
+    const events = Array.isArray(catalog.events) ? catalog.events : [];
+    const names = new Set(actions.map((action) => action.name).filter(Boolean));
+    return actions.concat(events.filter((event) => event.name && !names.has(event.name)));
   }
 
   async createHostBindingSuggestions(model, position, completionTarget) {

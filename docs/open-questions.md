@@ -34,7 +34,7 @@
    - 需要解决 Inscape 可读 ID 与项目内部 ID 不一致的问题，例如 `hasItem("badge")` 在项目中可能对应整数、枚举、GUID 或服务器主键。
    - 需要明确哪些内容属于 Host Schema 能力清单，哪些属于资源 / 对象 / 事件处理器映射，哪些可以通过代码生成或项目扫描自动生成。
    - 已确认手写 schema 是兜底，长期优先支持宿主无关的自动化生成，例如 C# attribute / source generator、其他宿主语言声明生成或运行时注册后导出 schema；不把 Host Schema 维护绑定到 Unity Inspector。
-   - 已确认 Host Schema 是统一能力清单，包含 `queries[]` 与 `actions[]`；第一版最小字段不包含 rollback / replay / receipt / failure / timeout policy。P3 Round 2 已确认 `events[]` 到 `actions[]` 的兼容策略：模板和新 schema 优先 `actions[]`，legacy `events[]` 作为 deprecated 输入保留；仍需实现 action reader / capability consumption 迁移，以及 Usage / audit 输出格式。
+   - 已确认 Host Schema 是统一能力清单，包含 `queries[]` 与 `actions[]`；第一版最小字段不包含 rollback / replay / receipt / failure / timeout policy。P3 Round 3 已完成 action reader / CLI / LanguageServer / VSCode / SelfHostedEditor capability consumption 迁移；legacy `events[]` 作为 deprecated 输入和兼容提示保留。仍需实现 Usage / audit 输出格式。
 8. P2 后是否需要 batch review / multi-apply？
    - P2 Round 10 已决定本阶段不实现 batch review / multi-apply，只保留逐候选 dry-run / confirm / backup / write-back 闭环。
    - 若后续重启该能力，必须先设计共享 Tooling / CLI batch dry-run、batch result、per-item failure 与 rollback contract；宿主 UI 不得直接循环单候选 apply，也不得提供一键全量静默 apply。
@@ -91,7 +91,7 @@
 - 自定义指令如何注册、验证和调试；第一版暂不做。
 - 第二版查询回调方案已确认正式运行使用 delegate query；mock / recorded 用于测试、预览和调试复现。snapshot 仅作为低优先级实现细节或一次性上下文包，不作为每帧同步主链路。
 - 宿主事件清单是否由编译器 / 烘焙器自动生成，而不是人工维护。
-- 是否需要一定程度的代码生成，把 DSL 用到的 query / event 注册到宿主层。
+- 是否需要一定程度的代码生成，把 DSL 用到的 query / action 注册到宿主层。
 - Unity 支持层是否采用 `[Inscape]` 一类 C# Attribute 扫描项目类型和字段，并在 Unity 内生成待配置 Host Bridge 表。
 - Inscape 事件数据到达 Unity 上层后，应直接绑定事件回调、由上层轮询叙事状态，还是支持二者混合；目前不应写死为通用运行时模型。
 - Unity Addressables 不应作为第一版强依赖；需研究 Unity 插件如何适配不同项目的资源管理方案。

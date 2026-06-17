@@ -59,37 +59,81 @@ class DslScriptHostEventProvider {
         }
 
         const catalog = await this.hostSchemaCapabilityProvider.collectCapabilityCatalog(document);
-        if (!catalog || !catalog.hostSchema || catalog.hostSchema.loaded !== true || !Array.isArray(catalog.events)) {
+        if (!catalog || !catalog.hostSchema || catalog.hostSchema.loaded !== true) {
             return undefined;
         }
 
         const events = [];
-        for (const hostEvent of catalog.events) {
-            if (!hostEvent || typeof hostEvent.name !== "string") {
-                continue;
+        const seen = new Set();
+        for (const action of Array.isArray(catalog.actions) ? catalog.actions : []) {
+            const item = this.createCandidateFromAction(action);
+            if (item && !seen.has(item.name)) {
+                seen.add(item.name);
+                events.push(item);
             }
+        }
 
-            const name = hostEvent.name.trim();
-            if (!this.isEventName(name)) {
-                continue;
+        for (const hostEvent of Array.isArray(catalog.events) ? catalog.events : []) {
+            const item = this.createCandidateFromLegacyEvent(hostEvent);
+            if (item && !seen.has(item.name)) {
+                seen.add(item.name);
+                events.push(item);
             }
-
-            events.push({
-                name,
-                delivery: typeof hostEvent.delivery === "string" ? hostEvent.delivery : "fire-and-forget",
-                sideEffects: hostEvent.sideEffects !== false,
-                description: typeof hostEvent.description === "string" ? hostEvent.description : "",
-                parameters: Array.isArray(hostEvent.parameters) ? hostEvent.parameters : [],
-                sourcePath: typeof hostEvent.sourcePath === "string" ? hostEvent.sourcePath : "",
-                sourceLabel: "Host Schema",
-                sourceKind: "hostSchemaCapabilityEndpoint",
-                line: Math.max(0, (hostEvent.line || 1) - 1),
-                character: Math.max(0, (hostEvent.column || 1) - 1),
-                length: Math.max(hostEvent.length || name.length, 1)
-            });
         }
 
         return events.sort((left, right) => left.name.localeCompare(right.name));
+    }
+
+    createCandidateFromAction(action) {
+        if (!action || typeof action.name !== "string") {
+            return undefined;
+        }
+
+        const name = action.name.trim();
+        if (!this.isEventName(name)) {
+            return undefined;
+        }
+
+        return {
+            name,
+            mode: typeof action.mode === "string" ? action.mode : "fire",
+            description: typeof action.description === "string" ? action.description : "",
+            idKind: typeof action.idKind === "string" ? action.idKind : "",
+            isLegacy: false,
+            parameters: Array.isArray(action.parameters) ? action.parameters : [],
+            sourcePath: typeof action.sourcePath === "string" ? action.sourcePath : "",
+            sourceLabel: "Host Schema",
+            sourceKind: "hostSchemaCapabilityEndpoint",
+            line: Math.max(0, (action.line || 1) - 1),
+            character: Math.max(0, (action.column || 1) - 1),
+            length: Math.max(action.length || name.length, 1)
+        };
+    }
+
+    createCandidateFromLegacyEvent(hostEvent) {
+        if (!hostEvent || typeof hostEvent.name !== "string") {
+            return undefined;
+        }
+
+        const name = hostEvent.name.trim();
+        if (!this.isEventName(name)) {
+            return undefined;
+        }
+
+        return {
+            name,
+            delivery: typeof hostEvent.delivery === "string" ? hostEvent.delivery : "fire-and-forget",
+            sideEffects: hostEvent.sideEffects !== false,
+            description: typeof hostEvent.description === "string" ? hostEvent.description : "",
+            isLegacy: true,
+            parameters: Array.isArray(hostEvent.parameters) ? hostEvent.parameters : [],
+            sourcePath: typeof hostEvent.sourcePath === "string" ? hostEvent.sourcePath : "",
+            sourceLabel: "Host Schema legacy event",
+            sourceKind: "hostSchemaCapabilityEndpoint",
+            line: Math.max(0, (hostEvent.line || 1) - 1),
+            character: Math.max(0, (hostEvent.column || 1) - 1),
+            length: Math.max(hostEvent.length || name.length, 1)
+        };
     }
 
     createCompletionItem(hostEvent) {
@@ -103,10 +147,20 @@ class DslScriptHostEventProvider {
 
     createHoverMarkdown(hostEvent) {
         const markdown = new this.vscode.MarkdownString();
-        markdown.appendMarkdown("**Inscape host event** `" + hostEvent.name + "`\n\n");
-        markdown.appendMarkdown("`@emit` records a host event intent. Host Schema provides this authoring hint; Compiler behavior is unchanged.\n\n");
-        this.appendField(markdown, "Delivery", hostEvent.delivery || "fire-and-forget");
-        this.appendField(markdown, "Side effects", hostEvent.sideEffects === false ? "no" : "yes");
+        if (hostEvent.isLegacy) {
+            markdown.appendMarkdown("**Legacy Inscape host event** `" + hostEvent.name + "`\n\n");
+            markdown.appendMarkdown("`@emit` currently records a host event intent. This legacy Host Schema event is kept for migration compatibility; new P3 capabilities should use `actions[]`.\n\n");
+            this.appendField(markdown, "Delivery", hostEvent.delivery || "fire-and-forget");
+            this.appendField(markdown, "Side effects", hostEvent.sideEffects === false ? "no" : "yes");
+        } else {
+            markdown.appendMarkdown("**Inscape host action** `" + hostEvent.name + "`\n\n");
+            markdown.appendMarkdown("`@emit` currently records a host action intent. Host Schema `actions[]` provides this authoring hint; Compiler behavior is unchanged.\n\n");
+            this.appendField(markdown, "Mode", hostEvent.mode || "fire");
+            if (hostEvent.idKind) {
+                this.appendField(markdown, "ID kind", hostEvent.idKind);
+            }
+        }
+
         const parameterText = this.formatParameters(hostEvent.parameters);
         if (parameterText) {
             this.appendField(markdown, "Parameters", parameterText);
@@ -122,8 +176,8 @@ class DslScriptHostEventProvider {
 
     createUnknownHoverMarkdown(eventInfo) {
         const markdown = new this.vscode.MarkdownString();
-        markdown.appendMarkdown("**Unknown Inscape host event** `" + eventInfo.name + "`\n\n");
-        markdown.appendMarkdown("No event with this name was found in the configured Host Schema. This is an authoring hint, not a Compiler error.\n\n");
+        markdown.appendMarkdown("**Unknown Inscape host action** `" + eventInfo.name + "`\n\n");
+        markdown.appendMarkdown("No action or legacy event with this name was found in the configured Host Schema. This is an authoring hint, not a Compiler error.\n\n");
         markdown.appendMarkdown("Use `@emit` for event / action intent. Use `[]` only for read-only query interpolation.");
         return markdown;
     }
@@ -152,9 +206,12 @@ class DslScriptHostEventProvider {
     }
 
     createDetail(hostEvent) {
-        const parts = ["host event"];
-        if (hostEvent.delivery) {
+        const parts = [hostEvent.isLegacy ? "legacy host event" : "host action"];
+        if (hostEvent.isLegacy && hostEvent.delivery) {
             parts.push(hostEvent.delivery);
+        }
+        if (!hostEvent.isLegacy && hostEvent.mode) {
+            parts.push(hostEvent.mode);
         }
 
         parts.push(hostEvent.sourceLabel || "Host Schema");

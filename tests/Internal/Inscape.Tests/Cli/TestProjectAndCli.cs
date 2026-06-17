@@ -196,8 +196,11 @@ Narrator: Start.
   "queries": [
     { "name": "player.gold", "returnType": "int", "isAsync": false, "parameters": [] }
   ],
+  "actions": [
+    { "name": "open_window", "mode": "wait", "parameters": [{ "name": "windowId", "type": "string", "idKind": "ui-window" }] }
+  ],
   "events": [
-    { "name": "open_window", "delivery": "blocking", "sideEffects": true, "parameters": [{ "name": "windowId", "type": "string" }] }
+    { "name": "legacy_window", "delivery": "blocking", "sideEffects": true, "parameters": [{ "name": "windowId", "type": "string" }] }
   ]
 }
 """, Encoding.UTF8);
@@ -208,10 +211,15 @@ Narrator: Start.
                 AssertEqual("inscape.host-schema.capabilities", root.GetProperty("format").GetString(), "Host schema capabilities format");
                 AssertTrue(root.GetProperty("hostSchema").GetProperty("loaded").GetBoolean(), "Host schema should be loaded.");
                 AssertEqual(1, root.GetProperty("queries").GetArrayLength(), "Host schema capability query count");
+                AssertEqual(1, root.GetProperty("actions").GetArrayLength(), "Host schema capability action count");
                 AssertEqual(1, root.GetProperty("events").GetArrayLength(), "Host schema capability event count");
                 AssertEqual("player.gold", root.GetProperty("queries")[0].GetProperty("name").GetString(), "Host schema capability query name");
-                AssertEqual("open_window", root.GetProperty("events")[0].GetProperty("name").GetString(), "Host schema capability event name");
+                AssertEqual("open_window", root.GetProperty("actions")[0].GetProperty("name").GetString(), "Host schema capability action name");
+                AssertEqual("wait", root.GetProperty("actions")[0].GetProperty("mode").GetString(), "Host schema capability action mode");
+                AssertEqual("ui-window", root.GetProperty("actions")[0].GetProperty("parameters")[0].GetProperty("idKind").GetString(), "Host schema capability action parameter id kind");
+                AssertEqual("legacy_window", root.GetProperty("events")[0].GetProperty("name").GetString(), "Host schema capability event name");
                 AssertEqual("blocking", root.GetProperty("events")[0].GetProperty("delivery").GetString(), "Host schema capability event delivery");
+                AssertTrue(root.GetProperty("events")[0].GetProperty("isLegacy").GetBoolean(), "Host schema capability legacy event marker");
             } finally {
                 if (Directory.Exists(directory)) {
                     Directory.Delete(directory, true);

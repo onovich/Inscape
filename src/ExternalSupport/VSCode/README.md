@@ -25,7 +25,7 @@ The package is also a future split-repo candidate, so non-source extension asset
 - Provides dialogue speaker completions from `inscape.config.json` `hostBridge`, with workspace speaker fallback.
 - Provides host event / timing hook completions from `inscape.config.json` `hostBridge`, with workspace `@timeline...` fallback.
 - Provides `[]` query interpolation completions and Hover from configured Host Schema zero-parameter simple queries such as `[player.gold]`; unknown queries are authoring hints only, not compiler errors. The provider prefers the persistent LanguageServer Host Schema capability session path, falls back to CLI `inspect-host-schema-project`, and does not parse Host Schema JSON directly in JS.
-- Provides `@emit` host event completions and Hover from configured Host Schema `events[]`; unknown events are authoring hints only, not compiler errors. This uses the same LanguageServer-first capability session path with CLI fallback and does not parse Host Schema JSON directly in JS.
+- Provides `@emit` host action completions and Hover from configured Host Schema `actions[]`, with deprecated legacy `events[]` kept as compatibility hints; unknown actions are authoring hints only, not compiler errors. This uses the same LanguageServer-first capability session path with CLI fallback and does not parse Host Schema JSON directly in JS.
 - Highlights host hook lines such as `@timeline court_intro` without the always-on link look, while Hover / Ctrl+Click still jumps to the matching mapping row or workspace occurrence.
 - Supports Go to Definition / Ctrl+Click from jump targets to node declarations through the persistent LanguageServer session, and from dialogue speakers to configured Host Bridge speaker rows or dialogue references; the clickable text stays visually plain until Ctrl is held.
 - Treats full-width colons and common Chinese punctuation as word boundaries so Ctrl+Click link styling on Chinese dialogue only covers the speaker name.
@@ -130,7 +130,7 @@ Run one mode per VSCode window. Close the previous smoke window before starting 
 - Speaker completion, Hover, Go to Definition, and Find All References prefer `hostBridge` and fall back to workspace dialogue references.
 - `@timeline ...` host event / timing hook completion, Hover, and Ctrl+Click prefer `hostBridge` and fall back to workspace `@timeline...` occurrences.
 - `[query.path]` query interpolation completion and Hover read Host Schema queries.
-- `@emit eventName` completion and Hover read Host Schema events through the same LanguageServer-first capability endpoint as query interpolation and remain separate from `@timeline` Host Bridge bindings.
+- `@emit actionName` completion and Hover read Host Schema actions through the same LanguageServer-first capability endpoint as query interpolation, keep legacy Host Schema events as deprecated compatibility candidates, and remain separate from `@timeline` Host Bridge bindings.
 - Preview source buttons, diagnostics clicks, and metadata clicks still jump to the expected source location.
 
 If the environment cannot perform the manual click checks, say so in the handoff or final report instead of implying they were completed.
@@ -179,20 +179,20 @@ Host hook completion prefers `hostBridge` ids whose `kind` matches the authoring
 
 The supported contexts are host event / timing hooks such as `@timeline court_intro` and `@timeline.node.enter court_intro`. Hover explains `@entry` / `@scene` metadata lines, while Ctrl+Click on `@timeline ...` opens the corresponding bridge entry or first workspace occurrence when one exists. Compiler semantics come from `Inscape.Compiler`, while UnitySample export remains an experimental adapter.
 
-Host schema files named `inscape.host.schema.json` or `*.host.schema.json` are validated by the bundled JSON Schema. The schema now accepts P3 `actions[]` with `mode: fire | wait | handoff`, while still accepting deprecated legacy `events[]`. The command `Inscape: Show Host Schema Capabilities` reads `inscape.config.json` `hostSchema`, lists configured queries/events, and opens the selected capability in the schema file. The command still consumes the current legacy event capability endpoint until P3 action consumption lands.
+Host schema files named `inscape.host.schema.json` or `*.host.schema.json` are validated by the bundled JSON Schema. The schema accepts P3 `actions[]` with `mode: fire | wait | handoff`, while still accepting deprecated legacy `events[]`. The command `Inscape: Show Host Schema Capabilities` reads `inscape.config.json` `hostSchema`, lists configured queries, actions, and legacy events, and opens the selected capability in the schema file through the shared capability endpoint.
 
 Script authoring also reads the same configured Host Schema for `[]` query interpolation hints. In text such as `[player.gold]`, completion offers zero-parameter simple query names and Hover shows `returnType`, `isAsync`, description, and schema source. Unknown query Hover is deliberately informational: it means the current Host Schema did not declare that query, not that `Inscape.Compiler` rejects the script.
 
-For host events, `@emit eventName` completion currently offers legacy Host Schema `events[]` names and Hover shows delivery, side effect, parameter, description, and schema source information. This is still an authoring hint: `Inscape.Compiler` keeps treating the line as metadata, and `@timeline...` keeps using Host Bridge data because it references a timed host resource hook rather than a generic schema event. P3 new schema work should prefer `actions[]`; provider consumption migrates in a later round.
+For host actions, `@emit actionName` completion offers Host Schema `actions[]` names first and keeps legacy `events[]` names as deprecated compatibility candidates. Action Hover shows mode, optional id kind, parameters, description, and schema source; legacy event Hover still shows delivery, side effect, parameters, description, and schema source. This is still an authoring hint: `Inscape.Compiler` keeps treating the line as metadata, and `@timeline...` keeps using Host Bridge data because it references a timed host resource hook rather than a generic schema action.
 
-The query and event providers prefer the persistent LanguageServer capability session path, then fall back to the Internal CLI endpoint:
+The query and action providers prefer the persistent LanguageServer capability session path, then fall back to the Internal CLI endpoint:
 
 ```powershell
 dotnet run --project src\Internal\LanguageServer\Inscape.LanguageServer.csproj -- --host-schema-capabilities-project <workspace>
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- inspect-host-schema-project <workspace>
 ```
 
-If both endpoints cannot run, VSCode leaves query / event hints empty and logs the failure to the Inscape output channel. It does not parse Host Schema JSON directly in query / event providers.
+If both endpoints cannot run, VSCode leaves query / action hints empty and logs the failure to the Inscape output channel. It does not parse Host Schema JSON directly in query / action providers.
 
 ## Settings
 

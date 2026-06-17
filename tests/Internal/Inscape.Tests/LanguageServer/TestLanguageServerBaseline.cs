@@ -360,9 +360,17 @@ Narrator: unsaved node
       "description": "Current gold amount"
     }
   ],
-  "events": [
+  "actions": [
     {
       "name": "quest.accepted",
+      "description": "Quest accepted action",
+      "mode": "fire",
+      "parameters": []
+    }
+  ],
+  "events": [
+    {
+      "name": "legacy.quest.accepted",
       "description": "Quest accepted event",
       "delivery": "fire-and-forget"
     }
@@ -380,8 +388,12 @@ Narrator: unsaved node
                 AssertEqual("player.gold", catalog.GetProperty("queries")[0].GetProperty("name").GetString(), "Host schema query name");
                 AssertEqual("number", catalog.GetProperty("queries")[0].GetProperty("returnType").GetString(), "Host schema query return type");
                 AssertTrue(catalog.GetProperty("queries")[0].GetProperty("isSimpleTextInterpolationQuery").GetBoolean(), "Host schema query should expose Tooling computed property");
-                AssertEqual("quest.accepted", catalog.GetProperty("events")[0].GetProperty("name").GetString(), "Host schema event name");
+                AssertEqual("quest.accepted", catalog.GetProperty("actions")[0].GetProperty("name").GetString(), "Host schema action name");
+                AssertEqual("fire", catalog.GetProperty("actions")[0].GetProperty("mode").GetString(), "Host schema action mode");
+                AssertTrue(catalog.GetProperty("actions")[0].GetProperty("isNamedHostAction").GetBoolean(), "Host schema action should expose Tooling computed property");
+                AssertEqual("legacy.quest.accepted", catalog.GetProperty("events")[0].GetProperty("name").GetString(), "Host schema event name");
                 AssertTrue(catalog.GetProperty("events")[0].GetProperty("isNamedHostEvent").GetBoolean(), "Host schema event should expose Tooling computed property");
+                AssertTrue(catalog.GetProperty("events")[0].GetProperty("isLegacy").GetBoolean(), "Host schema event should expose legacy marker");
             } finally {
                 if (Directory.Exists(directory)) {
                     Directory.Delete(directory, true);
