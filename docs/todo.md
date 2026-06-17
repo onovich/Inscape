@@ -1,6 +1,6 @@
 # TODO
 
-状态：持续维护
+状态：持续维护，P2.5 已 PASS
 
 SelfHostedEditor regression invariant: Preview choice clicks must advance the reading Preview to the target block and reveal the target block title in the editor. Compiler-project Preview data must never silently lose `previewLines`: if a returned Compiler graph has source lines but missing or mismatched `previewLines`, Preview must report a compiler graph contract error instead of falling back to the UI-only draft model. `npm --prefix src\ExternalSupport\SelfHostedEditor run check:model` covers both invariants so future Runtime / navigation work does not regress them.
 
@@ -14,12 +14,14 @@ SelfHostedEditor regression invariant: Preview choice clicks must advance the re
 
 本节整合近期对 `docs/todo.md`、`docs/open-questions.md`、SelfHostedEditor 架构评估、backend migration readiness 与 desktop backend v0 决策的判断。外部合作交流不纳入本节主线。
 
-当前主线已经完成 SelfHostedEditor desktop backend v0、P1.5 workspace-scoped long-lived LanguageServer，以及 P2 stable identity / localization review 最终验证；后续 Host Bridge / Unity-Bird 可以作为 P2.5 进入：
+当前主线已经完成 SelfHostedEditor desktop backend v0、P1.5 workspace-scoped long-lived LanguageServer、P2 stable identity / localization review 最终验证，以及 P2.5 Host Schema / Host Bridge 与 Unity-Bird 适配收口；后续 P3 只能作为新阶段进入：
 
 ```text
 P2 stable identity / localization review
   -> PASS
-  -> Host Bridge / Unity-Bird 等后续较低优先级工作 only if P2 PASS
+P2.5 Host Schema / Host Bridge / Unity-Bird adaptation
+  -> PASS
+  -> P3 second syntax / Runtime / extension research only as a new scoped phase
 ```
 
 ### P0：进入 desktop backend v0 前的 current-stage 100% 收口
@@ -157,8 +159,9 @@ npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
 
 目标：保持 Inscape engine-agnostic 的 Host Schema / Host Bridge 边界，同时只对 Bird / Unity 做低风险验证和决策，不把 Bird 变成通用模型真相。
 
-入口条件：已满足。P2 Round 14 全量验证通过，handoff / TODO 已记录 `P2 PASS`。本节任务可以开启，但仍必须保持 Host Schema / Host Bridge / Unity-Bird 只作为 `ExternalSupport` / adapter 方向推进，不把宿主依赖或宿主 ID 真相引入 `Internal`。
+状态：已完成。P2.5 final validation 通过，详见 [SelfHostedEditor P2.5 Final Validation Report](self-hosted-editor-p2-5-final-validation-report.md)。后续仍必须保持 Host Schema / Host Bridge / Unity-Bird 只作为 `ExternalSupport` / adapter 方向推进，不把宿主依赖或宿主 ID 真相引入 `Internal`。
 
+- [x] 完成 P2.5 最终验证并确认 P3 entry allowed。2026-06-17 最终报告见 [SelfHostedEditor P2.5 Final Validation Report](self-hosted-editor-p2-5-final-validation-report.md)；最终矩阵、边界 grep、Bird dry-run 通过日志引用与 Bird 写盘状态均已收口。
 - [x] 决定 Bird 项目新增 importer 与 `InscapeGenerated` 资源提交策略。2026-06-17 策略见 [SelfHostedEditor P2.5 Bird Commit Strategy](self-hosted-editor-p2-5-bird-commit-strategy.md)；P2.5 只允许临时复制 importer 跑 Dry Run 并清理，不提交 Bird 文件、不执行真实 Import、不改 Addressables、不覆盖 Bird 正式 L10N。
 - [x] 用带真实 Timeline 绑定的样例再次执行 Bird Import Dry Run，确认 `talking.exit` 的 `TalkingEffectTM.PlayTimeline` 落地与其他 phase warning。2026-06-17 审计见 [SelfHostedEditor P2.5 Bird Dry Run Audit](self-hosted-editor-p2-5-bird-dry-run-audit.md)；`talking.exit` RESOLVE 到真实 TimelineSO，`node.enter` / `talking.enter` / `node.exit` 均输出 `UNSUPPORTED_PHASE`，Dry Run 后未留下 Bird 写盘。
 - [x] 低优先级评估 Bird `L10N` 真实格式是否需要影响 Inscape CSV 字段和列顺序；默认不要为 Bird 改动通用 CSV contract。2026-06-17 决策见 [SelfHostedEditor P2.5 Bird L10N Format Decision](self-hosted-editor-p2-5-bird-l10n-format-decision.md)；当前 Bird `ID,Desc,ZH_CN,EN_US`、`<pr>` 与 `L10N_TalkingOption` 都属于 adapter / merge 层问题，不改变通用 `anchor`-based localization CSV。
@@ -769,7 +772,7 @@ npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
 - [x] 将角色绑定信息接入 VSCode 补全和 Hover，减少写作阶段记忆压力。
 - [x] 设计 Timeline 引用的第一版最小表达方式，但不让 DSL 直接变成演出时间轴语言。
 - [x] 明确并实现 Timeline Hook phase 第一版：默认 `talking.exit`，可显式表达 `talking.enter`、`talking.exit`、`node.enter`、`node.exit`；Bird Importer 暂只落地 `talking.exit`。
-- [ ] 用带真实 Timeline 绑定的样例再次执行 Bird Import Dry Run，确认 `talking.exit` 的 `TalkingEffectTM.PlayTimeline` 落地与其他 phase warning。
+- [x] 用带真实 Timeline 绑定的样例再次执行 Bird Import Dry Run，确认 `talking.exit` 的 `TalkingEffectTM.PlayTimeline` 落地与其他 phase warning。2026-06-17 P2.5 已完成；报告见 [SelfHostedEditor P2.5 Bird Dry Run Audit](self-hosted-editor-p2-5-bird-dry-run-audit.md)。
 
 ## 变量与状态查询，第二版前置调研
 

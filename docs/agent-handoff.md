@@ -1,6 +1,6 @@
 # Agent 接手指南
 
-状态：P2.5 Round 6 PASS
+状态：P2.5 PASS
 
 最后更新：2026-06-17
 
@@ -8,9 +8,19 @@
 
 ## 当前项目快照
 
+### 2026-06-17 SelfHostedEditor P2.5 Final Validation 快照
+
+P2.5 Host Schema / Host Bridge 与 Unity-Bird 适配收口已完成最终验证，结论为 PASS；P3 entry allowed: YES。
+
+- 最终验收产物见 [SelfHostedEditor P2.5 Final Validation Report](self-hosted-editor-p2-5-final-validation-report.md)。
+- P2.5 已完成：Bird 提交策略、真实 Timeline 绑定导出、Bird Unity Import Dry Run、Bird L10N 格式决策、Host Schema / Host Bridge 边界收口，以及 Unity/Bird ExternalSupport 边界复核。
+- 最终验证矩阵通过：`.NET build`、Internal tests、UnitySample tests / builds、VSCode manifest / structure / semantic parity、SelfHostedEditor syntax / structure / model / Host Schema HTTP / Host Binding HTTP / semantic parity HTTP、边界 grep 和 `git diff --check`。
+- Bird dry-run 最新通过日志为 `artifacts/bird-trial/unity-dry-run-p2-5-phases-fixed-rerun.log`，报告为 `artifacts/bird-trial/phase-export/bird-import-dry-run-report.txt`；Bird 工作树未留下 P2.5 importer、`.meta`、`InscapeGenerated`、Addressables 或正式 L10N 写入。
+- 下一轮候选目标可以进入 P3 第二版语法 / Runtime / 扩展能力调研，但必须作为新阶段开启，不得把 Unity / Bird 假设回灌到 `Internal`。
+
 ### 2026-06-17 SelfHostedEditor P2.5 Round 6 边界收口快照
 
-P2.5 Round 6 已完成 Host Bridge / ExternalSupport 边界收口，不宣布 P2.5 完成。
+P2.5 Round 6 已完成 Host Bridge / ExternalSupport 边界收口；随后最终验证已宣布 P2.5 PASS。
 
 - 审计产物见 [SelfHostedEditor P2.5 Boundary Closure Audit](self-hosted-editor-p2-5-boundary-closure-audit.md)。
 - Host Schema / Host Bridge 口径已同步：Schema 是能力清单，Bridge / adapter artifact 才携带 Unity GUID、asset path、Addressables key、Bird ID 和 handler / query implementation 映射。
