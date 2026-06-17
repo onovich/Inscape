@@ -42,11 +42,13 @@ dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- preview-
 | `export-host-schema-template` | 生成 P3 宿主查询 / 动作清单 JSON 模板 | JSON |
 | `audit-query-interpolation-project` | 显式审计项目中 `[]` 查询插值是否能被 Host Schema 解释 | text / JSON |
 | `inspect-host-schema-project` | 读取项目配置的 Host Schema，输出 query / action / legacy event 能力清单 | JSON |
+| `inspect-usage-project` | 扫描 `.inscape` 脚本并输出 Usage / Requirement Manifest | JSON |
 
 ```powershell
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- export-host-schema-template -o config\inscape.host.schema.json
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- audit-query-interpolation-project samples --format json -o artifacts\query-audit.json
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- inspect-host-schema-project samples -o artifacts\host-schema-capabilities.json
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- inspect-usage-project samples -o artifacts\usage.json
 ```
 
 `export-host-schema-template` 不需要输入脚本，也不会改变当前 DSL 编译行为。它会生成 P3 `queries[]` / `actions[]` 模板；legacy `events[]` 仍可被当前工具读取，但新模板不再生成该字段。详见 [宿主 Schema 草案](host-schema.md)。
@@ -55,7 +57,7 @@ dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- inspect-
 
 `inspect-host-schema-project` 会读取项目 `hostSchema`，输出独立 `inscape.host-schema.capabilities` JSON，当前包含归一化后的 `queries[]`、`actions[]`、legacy `events[]` 和 schema 读取状态。该命令面向 VSCode / LanguageServer / SelfHostedEditor 复用 Tooling reader，不编译 `.inscape`，也不扫描脚本内容。
 
-P3 Round 4 已定义 [Usage Manifest Contract](usage-manifest-contract.md)。`inspect-usage-project` 是 P3 Round 5 计划命令，当前版本尚不可用；不要把它写入自动化脚本或验收矩阵。
+`inspect-usage-project` 已按 [Usage Manifest Contract](usage-manifest-contract.md) 输出 `inscape.usage` 最小 JSON。当前实现扫描 `.inscape` 脚本里的 `[]` query 插值、`@emit` action / legacy event 与 `@timeline...` hook，记录字面量参数、source location 与可由 Host Schema `idKind` 推导的 `requiredIds`。未知 query / action 仍会进入 usage，不导致非零退出码；条件 context 会在条件 parser 落地后接入。
 
 ## 单文件命令
 

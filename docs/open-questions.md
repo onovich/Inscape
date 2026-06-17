@@ -34,7 +34,7 @@
    - 需要解决 Inscape 可读 ID 与项目内部 ID 不一致的问题，例如 `hasItem("badge")` 在项目中可能对应整数、枚举、GUID 或服务器主键。
    - 需要明确哪些内容属于 Host Schema 能力清单，哪些属于资源 / 对象 / 事件处理器映射，哪些可以通过代码生成或项目扫描自动生成。
    - 已确认手写 schema 是兜底，长期优先支持宿主无关的自动化生成，例如 C# attribute / source generator、其他宿主语言声明生成或运行时注册后导出 schema；不把 Host Schema 维护绑定到 Unity Inspector。
-   - 已确认 Host Schema 是统一能力清单，包含 `queries[]` 与 `actions[]`；第一版最小字段不包含 rollback / replay / receipt / failure / timeout policy。P3 Round 3 已完成 action reader / CLI / LanguageServer / VSCode / SelfHostedEditor capability consumption 迁移；legacy `events[]` 作为 deprecated 输入和兼容提示保留。P3 Round 4 已定义 Usage Manifest contract；仍需实现 `inspect-usage-project` 与 Host Integration Audit 输出格式。
+   - 已确认 Host Schema 是统一能力清单，包含 `queries[]` 与 `actions[]`；第一版最小字段不包含 rollback / replay / receipt / failure / timeout policy。P3 Round 3 已完成 action reader / CLI / LanguageServer / VSCode / SelfHostedEditor capability consumption 迁移；legacy `events[]` 作为 deprecated 输入和兼容提示保留。P3 Round 4 已定义 Usage Manifest contract；P3 Round 5 已实现 `inspect-usage-project`，仍需实现 Host Integration Audit 输出格式。
 8. P2 后是否需要 batch review / multi-apply？
    - P2 Round 10 已决定本阶段不实现 batch review / multi-apply，只保留逐候选 dry-run / confirm / backup / write-back 闭环。
    - 若后续重启该能力，必须先设计共享 Tooling / CLI batch dry-run、batch result、per-item failure 与 rollback contract；宿主 UI 不得直接循环单候选 apply，也不得提供一键全量静默 apply。

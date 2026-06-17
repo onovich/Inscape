@@ -1,6 +1,6 @@
 # Usage Manifest Contract
 
-状态：P3 Round 4 contract
+状态：P3 Round 4 contract，P3 Round 5 minimal implementation available
 
 最后更新：2026-06-18
 
@@ -42,7 +42,7 @@ Host Integration Audit
 
 ## 命令边界
 
-Round 5 会实现：
+P3 Round 5 已实现最小命令：
 
 ```powershell
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- inspect-usage-project <root> -o usage.json
@@ -55,6 +55,8 @@ dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- inspect-
 - 未知 query / action 不导致非零退出码；它们仍作为 usage 记录，交给 Host Integration Audit 报告。
 - 只有项目读取失败、JSON 写出失败、参数错误等工具层错误才导致非零退出码。
 - 命令不编译成 Runtime，不执行 query，不调用 Host Bridge，不启动宿主。
+
+当前实现范围限于现有语法能稳定扫描的 `query-interpolation`、`action-line` 和 `timeline-hook`。`choice-condition` 与 `conditional-jump` 在条件语法 parser / IR 落地后接入同一契约。
 
 ## 顶层 JSON
 
@@ -236,7 +238,7 @@ Action usage 记录 `@` 行里的宿主动作、事件或 hook。
 - `timeline-hook`：`@timeline... alias`。
 - `metadata-line`：其他 `@...` 行中能识别为宿主 intent 的用法。
 
-Round 5 可以先实现当前语法能看到的 `query-interpolation`、`action-line` 和 `timeline-hook`。`choice-condition` 与 `conditional-jump` 在条件语法落地后接入同一 contract。
+P3 Round 5 已先实现当前语法能看到的 `query-interpolation`、`action-line` 和 `timeline-hook`。`choice-condition` 与 `conditional-jump` 在条件语法落地后接入同一 contract。
 
 ## Literal Argument
 

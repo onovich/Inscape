@@ -42,6 +42,11 @@
                                      "inscape inspect-host-schema-project <root> [-o capabilities.json]",
                                      "dotnet run --project src\\Internal\\Cli\\Inscape.Cli\\Inscape.Cli.csproj -- inspect-host-schema-project samples -o artifacts\\host-schema-capabilities.json",
                                      "This endpoint is for editor and LanguageServer integration. It does not compile .inscape files."),
+            new CliCommandModel("inspect-usage-project", "Host schema", true,
+                                     "Inspect .inscape scripts and write the Usage / Requirement Manifest as JSON.",
+                                     "inscape inspect-usage-project <root> [--config inscape.config.json] [-o usage.json]",
+                                     "dotnet run --project src\\Internal\\Cli\\Inscape.Cli\\Inscape.Cli.csproj -- inspect-usage-project samples -o artifacts\\usage.json",
+                                     "The manifest records script requirements only. Unknown query or action names do not make this command fail."),
             new CliCommandModel("update-node-map-project", "Project", true,
                                       "Create or update inscape.node-map.json for the current project.",
                                       "inscape update-node-map-project <root> [--config inscape.config.json] [-o inscape.node-map.json]",
@@ -113,6 +118,7 @@
             Console.WriteLine("  inscape export-host-schema-template [-o inscape.host.schema.json]");
             Console.WriteLine("  inscape audit-query-interpolation-project <root> [--format json|text] [-o audit.json]");
             Console.WriteLine("  inscape inspect-host-schema-project <root> [-o capabilities.json]");
+            Console.WriteLine("  inscape inspect-usage-project <root> [--config inscape.config.json] [-o usage.json]");
             Console.WriteLine("  inscape update-node-map-project <root> [--config inscape.config.json] [-o inscape.node-map.json]");
             Console.WriteLine("  inscape apply-node-map-candidate-project <root> --current-id node_NEW --current-title title --candidate-id node_OLD [--dry-run preview.json] [--result apply-result.json] [--config inscape.config.json] [-o inscape.node-map.json]");
             Console.WriteLine("  inscape audit-l10n-alignment-project <root> --from old.csv [--format json|text] [--config inscape.config.json] [-o l10n-review.json]");

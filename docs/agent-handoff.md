@@ -1,12 +1,24 @@
 # Agent 接手指南
 
-状态：P3 Round 4 Usage Manifest contract complete
+状态：P3 Round 5 inspect-usage-project minimal implementation complete
 
 最后更新：2026-06-18
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-18 SelfHostedEditor P3 Round 5 inspect-usage-project 快照
+
+P3 Round 5 已完成 `inspect-usage-project` 最小实现，不宣称 P3 完成。
+
+- 实现审计见 [SelfHostedEditor P3 Usage Manifest Implementation Audit](self-hosted-editor-p3-usage-manifest-implementation-audit.md)；契约仍见 [Usage Manifest Contract](usage-manifest-contract.md)。
+- 新增 `Internal/Tooling/UsageManifest`，由 `UsageManifestDomain` 与 manifest models 负责共享扫描和 `inscape.usage` payload 生成。
+- CLI 新增 `inspect-usage-project <root> [--config inscape.config.json] [-o usage.json]`；未传 `-o` 时写 stdout，传入 `-o` 时写文件。
+- 当前扫描现有语法：简单 `[]` query interpolation、`@emit` action / legacy event、`@timeline...` hook。
+- 命令读取 Host Schema capability catalog 只用于参数 `idKind` 推导 `requiredIds`；未知 query / action 会记录为 usage，不导致命令失败。
+- 本轮未实现条件 parser context、Runtime State、Host Integration Audit 或 Host Bridge 对账。
+- 下一轮进入 P3 Round 6：`audit-host-integration-project` 最小实现，继续保持 Tooling 共享逻辑、CLI 薄入口、Compiler 不读 Host Schema / Host Bridge。
 
 ### 2026-06-18 SelfHostedEditor P3 Round 4 Usage Manifest contract 快照
 
@@ -16,7 +28,7 @@ P3 Round 4 已完成 Usage / Requirement Manifest contract 收口，不宣称 P3
 - Usage Manifest 格式名固定为 `inscape.usage`，顶层包含 `workspace`、`summary`、`queries`、`actions` 与 `requiredIds`；source location 沿用 Tooling / Compiler 的 1-based `line` / `column` / `length`。
 - Usage Manifest 是剧本需求清单，不是 Host Schema、Host Bridge 或 Runtime 执行输入；unknown query / action 交给 Host Integration Audit 报告，不反向生成权威 Host Schema。
 - `@timeline...` 在 usage 中记录为 `usageKind = "host-binding-hook"`，优先对账 Host Bridge 的 timeline id，而不是误报为缺失 Host Schema action。
-- 本轮未实现 CLI、未扫描脚本、未改 Compiler parser。下一轮进入 P3 Round 5：`inspect-usage-project` 最小实现，优先在 `Internal/Tooling` 建 Usage Manifest model / domain，再由 CLI 输出 stdout / `-o`。
+- 本轮未实现 CLI、未扫描脚本、未改 Compiler parser。P3 Round 5 已在后续快照完成 `inspect-usage-project` 最小实现。
 
 ### 2026-06-18 SelfHostedEditor P3 Round 3 Host Schema action consumption 快照
 
@@ -47,7 +59,7 @@ P3 第一刀已完成 Round 1 baseline audit，不宣布 P3 完成。
 - 审计产物见 [SelfHostedEditor P3 Baseline Audit](self-hosted-editor-p3-baseline-audit.md)。
 - 当前可执行 Host Schema 链路仍是 `queries[]` + `events[]`：Tooling reader、`inspect-host-schema-project`、LanguageServer `--host-schema-capabilities-project`、VSCode / SelfHostedEditor Host capability UI 都仍消费 `events[]`。
 - P3 目标口径已由 ADR 0021 收敛为统一 `queries[]` + `actions[]`；下一轮必须先做 Host Schema v2 最小契约与 `events[] -> actions[]` 兼容策略，再改 Tooling / CLI / LanguageServer / editor host。
-- Usage / Requirement Manifest 与 Host Integration Audit 当时尚无 CLI 入口；当前 P3 Round 4 已定义 Usage Manifest contract，`inspect-usage-project` 与 `audit-host-integration-project` 的实现仍待 Round 5-6。
+- Usage / Requirement Manifest 与 Host Integration Audit 当时尚无 CLI 入口；当前 P3 Round 5 已实现 `inspect-usage-project`，`audit-host-integration-project` 仍待 Round 6。
 - 条件语法尚未进入 Compiler parser / IR；当前 `[]` 文本插值仍只支持简单 path，P3 条件表达式不得污染第一版文本插值契约。
 - 当前 `runtime-project` / `NarrativeRuntimeStateModel` 是 Player snapshot 链路，不是 P3 正式最小 Runtime State；`ExportState` / `ImportState` / `ValidateStateAgainstCurrentScript` 与 narrative facts 仍待 Round 10-11。
 - 下一轮进入 P3 Round 2：Host Schema v2 minimum contract，优先定义 `actions[]` 字段、legacy `events[]` projection、JSON schema / template / tests 的最小闭环。
@@ -65,7 +77,7 @@ P3 仍处于设计阶段，但已有一组可落实结论已沉淀到文档。�
 - Runtime / 存档 / Timeline 边界见 [运行时与 Unity 宿主](runtime-unity.md)：正式项目中宿主存档是权威，Inscape state 是宿主存档子状态；Log、Save / Load、Rollback、Trace Replay、Flashback Playback 已拆开命名；Timeline / 剧情 / 玩法系统按“同一段情节只有一个导演”交接控制权。
 - P3 之后阶段口径已确认：P4 先做 Runtime 可玩化，P5 再做 SelfHostedEditor Runtime authoring / 产品化接入，P6 做 Unity / Host SDK 第一版，P7 做 Rollback / Trace / 高级运行时调试，P8 再讨论 Presentation IR / 跨引擎 / 独立 Runtime。
 - P4 边界已确认：纳入 Runtime MVP、delegate query、action dispatcher、Log / Backlog、普通 Save / Load 子状态 blob 与 editor preview 测试存档；不纳入纯 Inscape 完整存档产品、完整 Rollback、Trace Replay、Flashback Playback。
-- 后续未决项已收敛到 [待确认问题](open-questions.md) 与 [TODO](todo.md) 的 P3 / P4 段，重点是 `inspect-usage-project` 实现、Host Integration Audit 输出格式、条件语法 parser / IR、Runtime State 最小 model / smoke、P4 Runtime MVP 样例、query receipt 粒度和 action pending / resume payload。
+- 后续未决项已收敛到 [待确认问题](open-questions.md) 与 [TODO](todo.md) 的 P3 / P4 段，重点是 Host Integration Audit 输出格式、条件语法 parser / IR、Runtime State 最小 model / smoke、P4 Runtime MVP 样例、query receipt 粒度和 action pending / resume payload。
 
 ### 2026-06-17 SelfHostedEditor P2.5 Final Validation 快照
 

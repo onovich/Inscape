@@ -71,6 +71,7 @@ Narrator: Start.
             AssertTrue(text.Contains("export-host-schema-template"), "Commands should list host schema template command.");
             AssertTrue(text.Contains("audit-query-interpolation-project"), "Commands should list query interpolation audit command.");
             AssertTrue(text.Contains("inspect-host-schema-project"), "Commands should list host schema inspection command.");
+            AssertTrue(text.Contains("inspect-usage-project"), "Commands should list usage manifest inspection command.");
             AssertTrue(text.Contains("update-node-map-project"), "Commands should list node map update command.");
             AssertTrue(text.Contains("apply-node-map-candidate-project"), "Commands should list node map candidate apply command.");
             AssertFalse(text.Contains("export-unity-sample-role-template"), "Internal CLI should not list UnitySample role template command.");
@@ -220,6 +221,67 @@ Narrator: Start.
                 AssertEqual("legacy_window", root.GetProperty("events")[0].GetProperty("name").GetString(), "Host schema capability event name");
                 AssertEqual("blocking", root.GetProperty("events")[0].GetProperty("delivery").GetString(), "Host schema capability event delivery");
                 AssertTrue(root.GetProperty("events")[0].GetProperty("isLegacy").GetBoolean(), "Host schema capability legacy event marker");
+            } finally {
+                if (Directory.Exists(directory)) {
+                    Directory.Delete(directory, true);
+                }
+            }
+        }
+
+        static void CliInspectUsageProjectEmitsJson() {
+            string directory = Path.Combine(Path.GetTempPath(), "inscape-cli-usage-" + Guid.NewGuid().ToString("N"));
+            string configDirectory = Path.Combine(directory, "config");
+            Directory.CreateDirectory(configDirectory);
+            try {
+                File.WriteAllText(Path.Combine(directory, "inscape.config.json"), """
+{
+  "hostSchema": "config/inscape.host.schema.json"
+}
+""", Encoding.UTF8);
+
+                File.WriteAllText(Path.Combine(configDirectory, "inscape.host.schema.json"), """
+{
+  "format": "inscape.host-schema",
+  "formatVersion": 1,
+  "queries": [
+    { "name": "player.name", "returnType": "string", "isAsync": false, "parameters": [] }
+  ],
+  "actions": [
+    { "name": "play_timeline", "mode": "wait", "parameters": [{ "name": "timelineId", "type": "string", "idKind": "timeline" }] }
+  ]
+}
+""", Encoding.UTF8);
+
+                File.WriteAllText(Path.Combine(directory, "story.inscape"), """
+# start
+@entry
+@timeline.talking.exit court_intro
+@emit play_timeline "mira_reveal"
+Narrator: [player.name] and [player.godl].
+""", Encoding.UTF8);
+
+                string output = RunCliForOutput(new[] { "inspect-usage-project", directory });
+                using (JsonDocument document = JsonDocument.Parse(output)) {
+                    JsonElement root = document.RootElement;
+                    AssertEqual("inscape.usage", root.GetProperty("format").GetString(), "Usage format");
+                    AssertEqual(1, root.GetProperty("formatVersion").GetInt32(), "Usage format version");
+                    AssertEqual(2, root.GetProperty("summary").GetProperty("queryCount").GetInt32(), "Usage query count");
+                    AssertEqual(2, root.GetProperty("summary").GetProperty("actionCount").GetInt32(), "Usage action count");
+                    AssertEqual(2, root.GetProperty("summary").GetProperty("requiredIdCount").GetInt32(), "Usage required id count");
+                    AssertEqual("player.godl", root.GetProperty("queries")[1].GetProperty("name").GetString(), "Unknown query should be preserved.");
+                    AssertEqual("story.inscape", root.GetProperty("queries")[0].GetProperty("source").GetProperty("path").GetString(), "Usage query source path.");
+                    AssertEqual("story.inscape", root.GetProperty("actions")[1].GetProperty("source").GetProperty("path").GetString(), "Usage action source path.");
+                    AssertFalse(root.GetProperty("actions")[1].GetProperty("arguments")[0].TryGetProperty("source", out JsonElement _), "Usage arguments should not expose internal source.");
+                    AssertEqual("story.inscape", root.GetProperty("requiredIds")[0].GetProperty("source").GetProperty("path").GetString(), "Usage required id source path.");
+                }
+
+                string usagePath = Path.Combine(configDirectory, "usage.json");
+                string fileOutput = RunCliForOutput(new[] { "inspect-usage-project", directory, "-o", usagePath });
+                AssertEqual("", fileOutput.Trim(), "Usage -o should not write JSON to stdout.");
+                AssertTrue(File.Exists(usagePath), "Usage -o should write output file.");
+                using (JsonDocument fileDocument = JsonDocument.Parse(File.ReadAllText(usagePath, Encoding.UTF8))) {
+                    AssertEqual("inscape.usage", fileDocument.RootElement.GetProperty("format").GetString(), "Usage output file format");
+                }
             } finally {
                 if (Directory.Exists(directory)) {
                     Directory.Delete(directory, true);

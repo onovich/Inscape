@@ -296,7 +296,7 @@ Audit
 工具对账：剧本用的，宿主有没有提供，Bridge 有没有映射。
 ```
 
-P3 Round 4 已在 [Usage Manifest Contract](usage-manifest-contract.md) 定义 `inscape.usage` 契约。后续按该契约新增两个工具入口：
+P3 Round 4 已在 [Usage Manifest Contract](usage-manifest-contract.md) 定义 `inscape.usage` 契约。P3 Round 5 已实现 usage 入口，后续继续补 Host Integration Audit：
 
 ```powershell
 inspect-usage-project <root> -o usage.json
@@ -391,7 +391,7 @@ Tooling / VSCode / LanguageServer 可以提供提示或显式 audit，但这些�
 
 1. 设计第二版条件表达式 IR 与诊断，不把表达式求值写进 VSCode 或 SelfHostedEditor。
 2. 将 Host Schema 最小字段收敛到 `queries[]` / `actions[]`，并处理现有 `events[]` 与未来 `actions[]` 的兼容 / 迁移口径。
-3. 实现 `inspect-usage-project`，并设计 / 实现 `audit-host-integration-project` 的 audit 输出格式。
+3. `inspect-usage-project` 已完成最小实现；下一步设计 / 实现 `audit-host-integration-project` 的 audit 输出格式。
 4. 定义 delegate / mock / recorded provider contract，并明确 snapshot 只作为低优先级实现细节。
 5. 定义内部叙事运行事实和内部只读查询函数的最小集合。
 6. 评估 C# attribute / source generator 的宿主无关 schema 生成流程。
