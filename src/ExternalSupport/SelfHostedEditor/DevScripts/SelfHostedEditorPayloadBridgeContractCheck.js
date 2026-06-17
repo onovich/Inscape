@@ -144,6 +144,11 @@ const localizationReport = relativizeLocalizationReviewPaths({
             length: 4,
             line: 4,
             sourcePath,
+            signals: [
+              { key: "similarity", label: "Similarity", severity: "info", value: "0.950" },
+              { key: "rank-penalty", label: "Rank Penalty", severity: "warning", value: "2" },
+              { key: "candidate-line-identity", label: "Candidate Line", severity: "info", value: "line line_OLD available fp oldfingerpri" },
+            ],
             summary: "Previous translation",
             title: "Candidate",
           },
@@ -174,6 +179,10 @@ const localizationReport = relativizeLocalizationReviewPaths({
           translation: "Hi",
         },
         line: 3,
+        signals: [
+          { key: "review-status", label: "Review", severity: "risk", value: "conflict/changed" },
+          { key: "current-line-identity", label: "Current Line", severity: "info", value: "line line_CURRENT available fp currentfinge" },
+        ],
         sourcePath,
         summary: "Changed translation",
         title: "Opening",
@@ -199,8 +208,12 @@ assert.equal(compactLocalizationPayload.presenter.items[0].sourcePath, "Stories/
 assert.equal(compactLocalizationPayload.presenter.items[0].item.lineId, "line_CURRENT");
 assert.equal(compactLocalizationPayload.presenter.items[0].item.lineIdentityStatus, "available");
 assert.equal(compactLocalizationPayload.presenter.items[0].item.lineFingerprint, "currentfingerprint012345");
+assert.equal(compactLocalizationPayload.presenter.items[0].signals[0].key, "review-status");
+assert.equal(compactLocalizationPayload.presenter.items[0].signals.length, 1);
 assert.equal(compactLocalizationPayload.presenter.items[0].actions[0].detail, "");
-assert.equal(compactLocalizationPayload.presenter.items[0].actions[1].actionStatus, "similarity 0.950 / rankPenalty 2 / same-line-id / line line_OLD available fp oldfingerpri");
+assert.equal(compactLocalizationPayload.presenter.items[0].actions[1].actionStatus, "");
+assert.equal(compactLocalizationPayload.presenter.items[0].actions[1].signals[0].key, "similarity");
+assert.equal(compactLocalizationPayload.presenter.items[0].actions[1].signals[1].value, "2");
 assert.equal(compactLocalizationPayload.presenter.items[0].actions[1].summary, "");
 assert.equal(compactLocalizationPayload.presenter.items[0].actions[1].detail, "");
 assert.equal(compactLocalizationPayload.presenter.items[0].actions[2].detail, "current: Hello | previous: Hi");

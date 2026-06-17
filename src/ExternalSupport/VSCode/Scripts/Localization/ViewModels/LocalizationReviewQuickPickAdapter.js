@@ -3,10 +3,11 @@
 class LocalizationReviewQuickPickAdapter {
 
     createQuickPickItem(model) {
+        const signalSummary = this.createSignalSummary(model);
         const item = {
             label: this.createQuickPickLabel(model),
-            description: model.summary,
-            detail: model.detail,
+            description: signalSummary || model.summary,
+            detail: signalSummary && model.detail ? signalSummary + " | " + model.detail : model.detail,
             item: model.item,
             model
         };
@@ -49,6 +50,14 @@ class LocalizationReviewQuickPickAdapter {
         }
 
         return "Review item";
+    }
+
+    createSignalSummary(model) {
+        const signals = Array.isArray(model.signals) ? model.signals : [];
+        return signals
+            .filter((signal) => signal && signal.key && signal.value)
+            .map((signal) => String(signal.key) + ": " + String(signal.value))
+            .join(" | ");
     }
 
 }

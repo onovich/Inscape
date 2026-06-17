@@ -75,6 +75,10 @@ const localizationController = new LocalizationEditorController({
                     actionStatus: "similarity 0.950",
                     detail: "samples/previous.inscape:12:1 | Previous text",
                     line: 12,
+                    signals: [
+                      { key: "similarity", severity: "info", value: "0.950" },
+                      { key: "rank-penalty", severity: "warning", value: "2" },
+                    ],
                     sourcePath: "samples/previous.inscape",
                     summary: "Previous translation",
                   },
@@ -100,6 +104,10 @@ const localizationController = new LocalizationEditorController({
                   text: "Compiler sourced row",
                   translation: "Previous translation",
                 },
+                signals: [
+                  { key: "review-status", severity: "warning", value: "changed/needs-review" },
+                  { key: "current-line-identity", severity: "info", value: "line line_DIALOGUE available" },
+                ],
                 summary: "translation: Previous translation",
                 title: "[changed] Opening - needs-review",
               },
@@ -147,8 +155,11 @@ assertNotIncludesText(getTextContent(localizationPanel), "Draft fallback row");
 assertEqual(localizationController.rows[0].lineId, "line_DIALOGUE", "localization review rows should preserve shared line identity id");
 assertEqual(localizationController.rows[0].lineIdentityStatus, "available", "localization review rows should preserve shared line identity status");
 assertEqual(localizationController.rows[0].lineFingerprint, "line-fingerprint-current", "localization review rows should preserve shared line fingerprint");
+assertEqual(localizationController.rows[0].signals[0].key, "review-status", "localization review rows should preserve shared item signals");
 const candidateReviewButton = findElementByClass(localizationPanel, "localization-review-action-candidate");
-assertIncludesText(candidateReviewButton?.title || "", "similarity 0.950", "candidate action tooltip should expose shared similarity status");
+assertEqual(localizationController.rows[0].actions[1].signals[0].key, "similarity", "localization review actions should preserve shared candidate signals");
+assertIncludesText(candidateReviewButton?.title || "", "similarity: 0.950", "candidate action tooltip should expose shared similarity signal");
+assertIncludesText(candidateReviewButton?.title || "", "rank-penalty: 2", "candidate action tooltip should expose shared rank signal");
 assertIncludesText(candidateReviewButton?.title || "", "Previous translation", "candidate action tooltip should expose shared candidate summary");
 candidateReviewButton?.click();
 assertEqual(selectedLocalizationSource?.sourcePath, "samples/previous.inscape", "localization candidate action should preserve candidate source path");

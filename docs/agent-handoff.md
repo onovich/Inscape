@@ -1,12 +1,23 @@
 # Agent 接手指南
 
-状态：P2 Round 3
+状态：P2 Round 4
 
 最后更新：2026-06-17
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-17 SelfHostedEditor P2 Round 4 Review Presenter 形状收敛快照
+
+P2 Round 4 已完成 review presenter shape 收敛，不宣布 P2 完成。
+
+- 审计产物见 [SelfHostedEditor P2 Review Presenter Shape Audit](self-hosted-editor-p2-review-presenter-shape-audit.md)。
+- `Internal/Tooling` 的 localization review presenter 现在通过 shared `signals` 表达 review status、candidate count、similarity、rank penalty、reason、current/candidate line identity 与 risk/warning。
+- SelfHostedEditor compact localization review payload 继续保留 row 的 `lineId`、`lineFingerprint`、`lineIdentityStatus`，item 级只携带 high-risk signals，`open-candidate` action 携带 structured candidate signals；普通 item detail 已压缩以控制 payload。
+- VSCode QuickPick 与 SelfHostedEditor table tooltip 都消费 shared `signals`，不解析旧 status 文本，也不计算 candidate ranking。
+- 真实 `court-loop` review payload 当前为 231521 bytes，低于 240000 bytes 上限；direct / HTTP localization review smoke 均通过。
+- 下一轮进入 P2 Round 5：SelfHostedEditor Localization Review UI；重点是把 candidate diff、rank reason、line identity、conflict/risk 状态产品化为可读 UI 审计信息，并进行人工 clear match / similar candidate / ambiguous candidate 检查。
 
 ### 2026-06-17 SelfHostedEditor P2 Round 3 Line Identity 信号加固快照
 

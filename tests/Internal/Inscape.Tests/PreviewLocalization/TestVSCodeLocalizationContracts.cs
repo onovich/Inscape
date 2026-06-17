@@ -50,6 +50,8 @@ namespace Inscape.Tests {
             AssertTrue(toolingPresenterBuilderSource.Contains("BuildLineIdentitySummary(candidate.LineId, candidate.LineIdentityStatus, candidate.LineFingerprint)"), "Tooling presenter model builder should expose candidate line identity status summaries for review UI.");
             AssertTrue(toolingPresenterBuilderSource.Contains("BuildLineFingerprintSummary(fingerprint)"), "Tooling presenter model builder should expose line fingerprint summaries for review UI.");
             AssertTrue(quickPickAdapterSource.Contains("createQuickPickLabel(model)"), "QuickPick adapter should own VSCode-facing action label mapping.");
+            AssertTrue(quickPickAdapterSource.Contains("createSignalSummary(model)"), "QuickPick adapter should consume shared presenter signals for review audit summaries.");
+            AssertTrue(quickPickAdapterSource.Contains("Array.isArray(model.signals)"), "QuickPick adapter should read shared presenter signal arrays instead of parsing status text.");
             AssertTrue(quickPickAdapterSource.Contains("Compare candidate "), "QuickPick adapter should own VSCode-facing candidate diff labels.");
             AssertTrue(reviewControllerSource.Contains("openLocation(this.locationFromPayload(selected.location))"), "Localization review controller should jump to source location.");
             AssertTrue(extensionSource.Contains("new LocalizationReviewQuickPickAdapter()"), "Extension entry should assemble a separate QuickPick adapter for VSCode label mapping.");

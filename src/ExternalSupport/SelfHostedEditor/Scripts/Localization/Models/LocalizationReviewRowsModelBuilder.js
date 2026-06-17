@@ -24,6 +24,7 @@ export class LocalizationReviewRowsModelBuilder {
         reviewDetail: presenterItem.detail || "",
         reviewStatus: status,
         reviewSummary: presenterItem.summary || "",
+        signals: this.normalizeReviewSignals(presenterItem.signals || presenterItem.Signals),
         sourcePath: presenterItem.sourcePath || item.sourcePath || "",
         sourceLine: Number(item.line || presenterItem.line || 1),
         speaker: item.speaker || "",
@@ -46,10 +47,25 @@ export class LocalizationReviewRowsModelBuilder {
       detail: action.detail || action.Detail || "",
       length: Number(action.length ?? action.Length ?? 0),
       line: Number(action.line ?? action.Line ?? 0),
+      signals: this.normalizeReviewSignals(action.signals || action.Signals),
       sourcePath: action.sourcePath || action.SourcePath || "",
       summary: action.summary || action.Summary || "",
       title: action.title || action.Title || "",
     }));
+  }
+
+  static normalizeReviewSignals(signals) {
+    if (!Array.isArray(signals)) {
+      return [];
+    }
+
+    return signals
+      .map((signal) => ({
+        key: signal.key || signal.Key || "",
+        severity: signal.severity || signal.Severity || "",
+        value: signal.value || signal.Value || "",
+      }))
+      .filter((signal) => signal.key && signal.value);
   }
 
   static normalizeKind(kind) {

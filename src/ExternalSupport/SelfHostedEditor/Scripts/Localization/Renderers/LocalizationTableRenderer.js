@@ -120,9 +120,19 @@ export class LocalizationTableRenderer {
   }
 
   createReviewActionTitle(action, fallback) {
-    return [action.actionStatus, action.detail, action.summary]
+    return [this.createSignalSummary(action.signals), action.actionStatus, action.detail, action.summary]
       .filter((value) => String(value || "").trim())
       .join(" | ") || fallback;
+  }
+
+  createSignalSummary(signals) {
+    if (!Array.isArray(signals) || signals.length === 0) {
+      return "";
+    }
+
+    return signals
+      .map((signal) => `${signal.key}: ${signal.value}`)
+      .join(" | ");
   }
 
   getReviewActionClass(action) {

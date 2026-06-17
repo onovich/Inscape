@@ -332,9 +332,11 @@ function compactLocalizationReviewItems(items) {
 
   return items.map((presenterItem) => {
     const item = presenterItem?.item || {};
-    return {
+    const signals = compactLocalizationReviewSignals(presenterItem?.signals || presenterItem?.Signals)
+      .filter((signal) => signal.severity === "risk");
+    const compactItem = {
       actions: compactLocalizationReviewActions(presenterItem?.actions || presenterItem?.Actions),
-      detail: presenterItem?.detail || "",
+      detail: signals.length > 0 ? presenterItem?.detail || "" : "",
       item: {
         anchor: item.anchor || "",
         kind: item.kind || "",
@@ -354,6 +356,11 @@ function compactLocalizationReviewItems(items) {
       summary: presenterItem?.summary || "",
       title: presenterItem?.title || "",
     };
+    if (signals.length > 0) {
+      compactItem.signals = signals;
+    }
+
+    return compactItem;
   });
 }
 
@@ -364,10 +371,13 @@ function compactLocalizationReviewActions(actions) {
 
   return actions.map((action) => {
     const actionKey = action?.actionKey || action?.ActionKey || "";
-    return {
+    const signals = actionKey === "open-candidate"
+      ? compactLocalizationReviewSignals(action?.signals || action?.Signals)
+      : [];
+    const compactAction = {
       actionIndex: Number(action?.actionIndex ?? action?.ActionIndex ?? 0),
       actionKey,
-      actionStatus: actionKey === "open-candidate" ? action?.actionStatus || action?.ActionStatus || "" : "",
+      actionStatus: actionKey === "open-candidate" && signals.length === 0 ? action?.actionStatus || action?.ActionStatus || "" : "",
       column: Number(action?.column ?? action?.Column ?? 0),
       detail: actionKey === "show-candidate-diff" ? action?.detail || action?.Detail || "" : "",
       length: Number(action?.length ?? action?.Length ?? 0),
@@ -376,5 +386,25 @@ function compactLocalizationReviewActions(actions) {
       summary: "",
       title: action?.title || action?.Title || "",
     };
+    if (signals.length > 0) {
+      compactAction.signals = signals;
+    }
+
+    return compactAction;
   });
+}
+
+function compactLocalizationReviewSignals(signals) {
+  if (!Array.isArray(signals)) {
+    return [];
+  }
+
+  return signals
+    .filter((signal) => signal && (signal.key || signal.Key))
+    .map((signal) => ({
+      key: signal.key || signal.Key || "",
+      severity: signal.severity || signal.Severity || "",
+      value: signal.value || signal.Value || "",
+    }))
+    .filter((signal) => signal.key && signal.value);
 }

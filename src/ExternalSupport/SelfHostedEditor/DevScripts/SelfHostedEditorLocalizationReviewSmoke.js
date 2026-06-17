@@ -35,8 +35,12 @@ async function main() {
     throw new Error("Expected localization review presenter actions to include candidate source jumps.");
   }
 
-  if (!presenterItems.some((item) => Array.isArray(item.actions) && item.actions.some((action) => action.actionKey === "open-candidate" && String(action.actionStatus || "").includes("rankPenalty ")))) {
-    throw new Error("Expected localization review candidate actions to preserve shared rank and line identity status.");
+  if (!presenterItems.some((item) => Array.isArray(item.actions) && item.actions.some((action) => (
+    action.actionKey === "open-candidate"
+    && Array.isArray(action.signals)
+    && action.signals.some((signal) => signal.key === "rank-penalty")
+  )))) {
+    throw new Error("Expected localization review candidate actions to preserve shared structured rank signal.");
   }
 
   if (!presenterItems.some((item) => Array.isArray(item.actions) && item.actions.some((action) => action.actionKey === "show-candidate-diff" && action.detail))) {

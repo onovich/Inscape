@@ -26,6 +26,8 @@ namespace Inscape.Tooling {
 
         public LocalizationAlignmentItemModel Item { get; set; } = new LocalizationAlignmentItemModel();
 
+        public List<LocalizationReviewSignalPresenterModel> Signals { get; set; } = new List<LocalizationReviewSignalPresenterModel>();
+
         public List<LocalizationReviewActionPresenterModel> Actions { get; set; } = new List<LocalizationReviewActionPresenterModel>();
 
     }
@@ -49,6 +51,20 @@ namespace Inscape.Tooling {
         public int Column { get; set; }
 
         public int Length { get; set; }
+
+        public List<LocalizationReviewSignalPresenterModel> Signals { get; set; } = new List<LocalizationReviewSignalPresenterModel>();
+
+    }
+
+    public sealed class LocalizationReviewSignalPresenterModel {
+
+        public string Key { get; set; } = string.Empty;
+
+        public string Label { get; set; } = string.Empty;
+
+        public string Value { get; set; } = string.Empty;
+
+        public string Severity { get; set; } = "info";
 
     }
 

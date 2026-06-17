@@ -29,6 +29,7 @@ namespace Inscape.Tooling {
                 Column = sourceColumn,
                 Length = item.Text.Length,
                 Item = item,
+                Signals = BuildItemSignals(item),
             };
 
             model.Actions.Add(new LocalizationReviewActionPresenterModel {
@@ -55,6 +56,7 @@ namespace Inscape.Tooling {
                     Line = candidateLine,
                     Column = candidateColumn,
                     Length = candidate.Text.Length,
+                    Signals = BuildCandidateSignals(candidate),
                 });
                 model.Actions.Add(new LocalizationReviewActionPresenterModel {
                     ActionKey = "show-candidate-diff",
@@ -62,6 +64,7 @@ namespace Inscape.Tooling {
                     ActionStatus = BuildCandidateStatus(candidate),
                     Summary = BuildCandidateDiffSummary(item, candidate),
                     Detail = BuildCandidateDiffDetail(item, candidate),
+                    Signals = BuildDiffSignals(item, candidate),
                 });
             }
 
@@ -71,6 +74,40 @@ namespace Inscape.Tooling {
         static string BuildItemTitle(LocalizationAlignmentItemModel item) {
             int candidateCount = item.Candidates.Count;
             return "[" + item.Status + "] " + item.NodeTitle + " - " + item.Review + BuildCandidateCountSummary(candidateCount);
+        }
+
+        static List<LocalizationReviewSignalPresenterModel> BuildItemSignals(LocalizationAlignmentItemModel item) {
+            List<LocalizationReviewSignalPresenterModel> signals = new List<LocalizationReviewSignalPresenterModel> {
+                CreateSignal("review-status", "Review", item.Status + "/" + item.Review, ReviewSeverity(item.Status)),
+            };
+
+            if (item.Candidates.Count > 0) {
+                signals.Add(CreateSignal("candidate-count", "Candidates", item.Candidates.Count.ToString(CultureInfo.InvariantCulture), item.Status == "conflict" ? "risk" : "warning"));
+            }
+
+            AddLineIdentitySignal(signals, "current-line-identity", "Current Line", item.LineId, item.LineIdentityStatus, item.LineFingerprint, LineIdentitySeverity(item.LineIdentityStatus));
+            return signals;
+        }
+
+        static List<LocalizationReviewSignalPresenterModel> BuildCandidateSignals(LocalizationAlignmentCandidateModel candidate) {
+            List<LocalizationReviewSignalPresenterModel> signals = new List<LocalizationReviewSignalPresenterModel>();
+            if (candidate.Similarity > 0) {
+                signals.Add(CreateSignal("similarity", "Similarity", candidate.Similarity.ToString("0.000", CultureInfo.InvariantCulture), "info"));
+            }
+
+            signals.Add(CreateSignal("rank-penalty", "Rank Penalty", candidate.RankPenalty.ToString(CultureInfo.InvariantCulture), candidate.RankPenalty > 0 ? "warning" : "info"));
+            if (!string.IsNullOrWhiteSpace(candidate.Reason)) {
+                signals.Add(CreateSignal("reason", "Reason", candidate.Reason, "info"));
+            }
+
+            AddLineIdentitySignal(signals, "candidate-line-identity", "Candidate Line", candidate.LineId, candidate.LineIdentityStatus, candidate.LineFingerprint, LineIdentitySeverity(candidate.LineIdentityStatus));
+            return signals;
+        }
+
+        static List<LocalizationReviewSignalPresenterModel> BuildDiffSignals(LocalizationAlignmentItemModel item, LocalizationAlignmentCandidateModel candidate) {
+            List<LocalizationReviewSignalPresenterModel> signals = BuildCandidateSignals(candidate);
+            AddLineIdentitySignal(signals, "current-line-identity", "Current Line", item.LineId, item.LineIdentityStatus, item.LineFingerprint, LineIdentitySeverity(item.LineIdentityStatus));
+            return signals;
         }
 
         static string BuildCandidateCountSummary(int candidateCount) {
@@ -134,6 +171,66 @@ namespace Inscape.Tooling {
 
             string status = string.IsNullOrWhiteSpace(candidate.LineIdentityStatus) ? string.Empty : " " + candidate.LineIdentityStatus;
             return " / line " + candidate.LineId + status + BuildLineFingerprintSummary(candidate.LineFingerprint);
+        }
+
+        static void AddLineIdentitySignal(List<LocalizationReviewSignalPresenterModel> signals,
+                                          string key,
+                                          string label,
+                                          string lineId,
+                                          string status,
+                                          string fingerprint,
+                                          string severity) {
+            string value = BuildLineIdentitySignalValue(lineId, status, fingerprint);
+            if (!string.IsNullOrWhiteSpace(value)) {
+                signals.Add(CreateSignal(key, label, value, severity));
+            }
+        }
+
+        static string BuildLineIdentitySignalValue(string lineId, string status, string fingerprint) {
+            List<string> parts = new List<string>();
+            if (!string.IsNullOrWhiteSpace(lineId)) {
+                parts.Add("line " + lineId);
+            }
+            if (!string.IsNullOrWhiteSpace(status)) {
+                parts.Add(status);
+            }
+            if (!string.IsNullOrWhiteSpace(fingerprint)) {
+                string trimmed = fingerprint.Trim();
+                parts.Add("fp " + trimmed.Substring(0, Math.Min(trimmed.Length, 12)));
+            }
+
+            return string.Join(" ", parts);
+        }
+
+        static LocalizationReviewSignalPresenterModel CreateSignal(string key, string label, string value, string severity) {
+            return new LocalizationReviewSignalPresenterModel {
+                Key = key,
+                Label = label,
+                Value = value,
+                Severity = severity,
+            };
+        }
+
+        static string ReviewSeverity(string status) {
+            switch (status) {
+                case "conflict":
+                    return "risk";
+                case "changed":
+                case "new":
+                case "removed":
+                case "stale":
+                    return "warning";
+                default:
+                    return "info";
+            }
+        }
+
+        static string LineIdentitySeverity(string status) {
+            if (string.IsNullOrWhiteSpace(status) || status == "available") {
+                return "info";
+            }
+
+            return status == "drift" ? "risk" : "warning";
         }
 
         static string BuildLineIdentitySummary(string lineId, string status, string fingerprint) {

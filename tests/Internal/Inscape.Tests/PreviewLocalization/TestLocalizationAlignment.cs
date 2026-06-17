@@ -85,6 +85,9 @@ Narrator: Shared line C.
                 .First(action => action.ActionKey == "open-candidate");
             AssertTrue(candidateAction.ActionStatus.Contains("rankPenalty ", StringComparison.Ordinal), "Review presenter should expose candidate rank penalty in action status.");
             AssertTrue(candidateAction.Detail.Contains("rankPenalty ", StringComparison.Ordinal), "Review presenter should expose candidate rank penalty in candidate detail.");
+            AssertTrue(candidateAction.Signals.Any(signal => signal.Key == "similarity" && signal.Value.Length > 0), "Review presenter should expose structured candidate similarity signal.");
+            AssertTrue(candidateAction.Signals.Any(signal => signal.Key == "rank-penalty" && signal.Value.Length > 0), "Review presenter should expose structured rank penalty signal.");
+            AssertTrue(candidateAction.Signals.Any(signal => signal.Key == "reason" && signal.Value.Contains("same-stable-node", StringComparison.Ordinal)), "Review presenter should expose structured candidate reason signal.");
         }
 
 
@@ -124,6 +127,8 @@ Narrator: Shared line C.
             AssertTrue(presenterItem.Detail.Contains("Candidate B.", StringComparison.Ordinal), "Review item summary should include the second candidate.");
             AssertTrue(presenterItem.Detail.Contains("+1 more", StringComparison.Ordinal), "Review item summary should expose omitted candidate count.");
             AssertFalse(presenterItem.Detail.Contains("Candidate C.", StringComparison.Ordinal), "Review item summary should keep longer candidate lists compact.");
+            AssertTrue(presenterItem.Signals.Any(signal => signal.Key == "review-status" && signal.Severity == "risk"), "Conflict review item should expose structured risk signal.");
+            AssertTrue(presenterItem.Signals.Any(signal => signal.Key == "candidate-count" && signal.Value == "3"), "Review item should expose structured candidate count signal.");
 
             LocalizationAlignmentItemModel singleCandidateItem = new LocalizationAlignmentItemModel {
                 Status = "changed",
@@ -483,13 +488,17 @@ Narrator: Ask clerk about lantern tonight.
             AssertTrue(!string.IsNullOrWhiteSpace(changed.LineFingerprint), "Current item should expose line fingerprint for review.");
             AssertTrue(!string.IsNullOrWhiteSpace(changed.Candidates[0].LineFingerprint), "Candidate item should expose line fingerprint for review.");
             LocalizationReviewItemPresenterModel reviewItem = report.Presenter.Items.First(item => item.Item.Status == "changed");
+            AssertTrue(reviewItem.Signals.Any(signal => signal.Key == "current-line-identity" && signal.Value.Contains(changed.LineId, StringComparison.Ordinal)), "Review presenter should expose current line identity as a structured item signal.");
             AssertTrue(reviewItem.Detail.Contains("<line " + changed.LineId + " available fp ", StringComparison.Ordinal), "Review presenter should expose current line identity status in item detail.");
             AssertTrue(reviewItem.Detail.Contains("fp " + changed.LineFingerprint.Substring(0, Math.Min(changed.LineFingerprint.Length, 12)), StringComparison.Ordinal), "Review presenter should expose current line fingerprint in item detail.");
             LocalizationReviewActionPresenterModel candidateAction = reviewItem.Actions.First(action => action.ActionKey == "open-candidate");
+            AssertTrue(candidateAction.Signals.Any(signal => signal.Key == "candidate-line-identity" && signal.Value.Contains(changed.Candidates[0].LineId, StringComparison.Ordinal)), "Review presenter should expose candidate line identity as a structured action signal.");
             AssertTrue(candidateAction.ActionStatus.Contains("line " + changed.Candidates[0].LineId + " available fp ", StringComparison.Ordinal), "Review presenter should expose candidate line identity status in action status.");
             AssertTrue(candidateAction.Detail.Contains("<line " + changed.Candidates[0].LineId + " available fp ", StringComparison.Ordinal), "Review presenter should expose candidate line identity status in action detail.");
             AssertTrue(candidateAction.Detail.Contains("fp " + changed.Candidates[0].LineFingerprint.Substring(0, Math.Min(changed.Candidates[0].LineFingerprint.Length, 12)), StringComparison.Ordinal), "Review presenter should expose candidate line fingerprint in action detail.");
             LocalizationReviewActionPresenterModel diffAction = reviewItem.Actions.First(action => action.ActionKey == "show-candidate-diff");
+            AssertTrue(diffAction.Signals.Any(signal => signal.Key == "current-line-identity" && signal.Value.Contains(changed.LineId, StringComparison.Ordinal)), "Review presenter should expose current line identity as a structured diff signal.");
+            AssertTrue(diffAction.Signals.Any(signal => signal.Key == "candidate-line-identity" && signal.Value.Contains(changed.Candidates[0].LineId, StringComparison.Ordinal)), "Review presenter should expose candidate line identity as a structured diff signal.");
             AssertTrue(diffAction.Summary.Contains("<line " + changed.LineId + " available fp ", StringComparison.Ordinal), "Review presenter diff summary should expose current line identity status.");
             AssertTrue(diffAction.Summary.Contains("<line " + changed.Candidates[0].LineId + " available fp ", StringComparison.Ordinal), "Review presenter diff summary should expose candidate line identity status.");
             AssertTrue(diffAction.Detail.Contains("<line " + changed.LineId + " available fp ", StringComparison.Ordinal), "Review presenter diff should expose current line identity status.");
