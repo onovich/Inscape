@@ -9,9 +9,6 @@ using Newtonsoft.Json;
 using UnityEditor;
 using UnityEngine;
 
-using BirdHorizontalAlignment = Bird.HorizontalAlignment;
-using BirdVerticalAlignment = Bird.VerticalAlignment;
-
 namespace Inscape.Unity.BirdImporter {
 
     public static class InscapeBirdManifestImporter {
@@ -131,6 +128,7 @@ namespace Inscape.Unity.BirdImporter {
             BirdManifest manifest = LoadManifest(manifestPath);
             Dictionary<int, TalkingSO> talkingsById = LoadTalkingAssetsById();
             Dictionary<int, TimelineSO> timelinesById = LoadTimelineAssetsById();
+            Dictionary<int, RoleSO> rolesById = LoadRoleAssetsById();
 
             for (int i = 0; i < manifest.talkings.Length; i += 1) {
                 BirdTalkingEntry entry = manifest.talkings[i];
@@ -143,7 +141,7 @@ namespace Inscape.Unity.BirdImporter {
             for (int i = 0; i < manifest.talkings.Length; i += 1) {
                 BirdTalkingEntry entry = manifest.talkings[i];
                 TalkingSO talkingSO = talkingsById[entry.talkingId];
-                talkingSO.tm = BuildTalkingTM(entry, manifest, talkingsById, timelinesById);
+                talkingSO.tm = BuildTalkingTM(entry, manifest, talkingsById, timelinesById, rolesById);
                 ApplyGuid(talkingSO);
                 if (applyAddressables) {
                     talkingSO.ApplyAA();
@@ -282,18 +280,15 @@ namespace Inscape.Unity.BirdImporter {
         static TalkingTM BuildTalkingTM(BirdTalkingEntry entry,
                                         BirdManifest manifest,
                                         Dictionary<int, TalkingSO> talkingsById,
-                                        Dictionary<int, TimelineSO> timelinesById) {
+                                        Dictionary<int, TimelineSO> timelinesById,
+                                        Dictionary<int, RoleSO> rolesById) {
             TalkingTM tm = new TalkingTM();
-            tm.talkingId = entry.talkingId;
             tm.nextTalking = ResolveTalking(entry.nextTalkingId, talkingsById);
             tm.isOption = entry.options != null && entry.options.Length > 0;
             tm.options = BuildOptions(entry.options, talkingsById);
-            tm.roleId = entry.roleId ?? 0;
-            tm.textAnchorIndex = entry.textAnchorIndex;
+            tm.role = ResolveRole(entry.roleId, rolesById);
             tm.textDisplayType = ParseTextDisplayType(entry.textDisplayType);
             tm.typewritingSpeed = 0;
-            tm.textVerticalAlignment = BirdVerticalAlignment.Middle;
-            tm.textHorizontalAlignment = BirdHorizontalAlignment.Left;
             tm.isAutoTalking = false;
             tm.autoTalkingInterval = 0;
             tm.effects = BuildEffects(entry.talkingId, manifest, timelinesById);
@@ -308,7 +303,6 @@ namespace Inscape.Unity.BirdImporter {
             TalkingOptionTM[] result = new TalkingOptionTM[options.Length];
             for (int i = 0; i < options.Length; i += 1) {
                 result[i] = new TalkingOptionTM {
-                    optionText = options[i].text ?? string.Empty,
                     nextTalking = ResolveTalking(options[i].nextTalkingId, talkingsById),
                     conditions = Array.Empty<OptionConditionTM>(),
                 };
@@ -386,6 +380,15 @@ namespace Inscape.Unity.BirdImporter {
             return talkingSO;
         }
 
+        static RoleSO ResolveRole(int? roleId, Dictionary<int, RoleSO> rolesById) {
+            if (!roleId.HasValue) {
+                return null;
+            }
+
+            rolesById.TryGetValue(roleId.Value, out RoleSO roleSO);
+            return roleSO;
+        }
+
         static TextDisplayType ParseTextDisplayType(string value) {
             if (!string.IsNullOrEmpty(value) && Enum.TryParse(value, out TextDisplayType parsed)) {
                 return parsed;
@@ -414,7 +417,7 @@ namespace Inscape.Unity.BirdImporter {
                 if (asset == null) {
                     continue;
                 }
-                result[asset.tm.talkingId] = asset;
+                result[asset.TalkingId] = asset;
             }
             return result;
         }
@@ -427,7 +430,21 @@ namespace Inscape.Unity.BirdImporter {
                 if (asset == null) {
                     continue;
                 }
-                result[asset.tm.timelineId] = asset;
+                result[asset.TimelineId] = asset;
+            }
+            return result;
+        }
+
+        static Dictionary<int, RoleSO> LoadRoleAssetsById() {
+            Dictionary<int, RoleSO> result = new Dictionary<int, RoleSO>();
+            string[] guids = AssetDatabase.FindAssets("t:RoleSO");
+            for (int i = 0; i < guids.Length; i += 1) {
+                RoleSO asset = AssetDatabase.LoadAssetAtPath<RoleSO>(AssetDatabase.GUIDToAssetPath(guids[i]));
+                if (asset == null) {
+                    continue;
+                }
+
+                result[asset.RoleId] = asset;
             }
             return result;
         }
@@ -507,9 +524,8 @@ namespace Inscape.Unity.BirdImporter {
 
         static void AppendCreateDetails(StringBuilder builder, BirdTalkingEntry entry) {
             BirdChoiceOptionEntry[] options = entry.options ?? Array.Empty<BirdChoiceOptionEntry>();
-            builder.AppendLine("    roleId: " + (entry.roleId ?? 0));
+            builder.AppendLine("    roleId: " + NullableIntText(entry.roleId));
             builder.AppendLine("    nextTalking: " + NullableIntText(entry.nextTalkingId));
-            builder.AppendLine("    textAnchorIndex: " + entry.textAnchorIndex);
             builder.AppendLine("    textDisplayType: " + ParseTextDisplayType(entry.textDisplayType));
             builder.AppendLine("    options: " + options.Length);
             for (int i = 0; i < options.Length; i += 1) {
@@ -524,20 +540,14 @@ namespace Inscape.Unity.BirdImporter {
             BirdChoiceOptionEntry[] expectedOptions = entry.options ?? Array.Empty<BirdChoiceOptionEntry>();
             TextDisplayType expectedTextDisplayType = ParseTextDisplayType(entry.textDisplayType);
 
-            AppendFieldChange(builder, ref changes, "roleId", talkingSO.tm.roleId.ToString(), (entry.roleId ?? 0).ToString());
+            AppendFieldChange(builder, ref changes, "roleId", NullableIntText(RoleIdOf(talkingSO.tm.role)), NullableIntText(entry.roleId));
             AppendFieldChange(builder, ref changes, "nextTalking", NullableIntText(TalkingIdOf(talkingSO.tm.nextTalking)), NullableIntText(entry.nextTalkingId));
-            AppendFieldChange(builder, ref changes, "textAnchorIndex", talkingSO.tm.textAnchorIndex.ToString(), entry.textAnchorIndex.ToString());
             AppendFieldChange(builder, ref changes, "textDisplayType", talkingSO.tm.textDisplayType.ToString(), expectedTextDisplayType.ToString());
             AppendFieldChange(builder, ref changes, "isOption", talkingSO.tm.isOption.ToString(), (expectedOptions.Length > 0).ToString());
             AppendFieldChange(builder, ref changes, "options.length", currentOptions.Length.ToString(), expectedOptions.Length.ToString());
 
             int sharedOptionCount = Math.Min(currentOptions.Length, expectedOptions.Length);
             for (int i = 0; i < sharedOptionCount; i += 1) {
-                AppendFieldChange(builder,
-                                  ref changes,
-                                  "options[" + i + "].text",
-                                  TextValue(currentOptions[i].optionText),
-                                  TextValue(expectedOptions[i].text ?? string.Empty));
                 AppendFieldChange(builder,
                                   ref changes,
                                   "options[" + i + "].nextTalking",
@@ -555,7 +565,15 @@ namespace Inscape.Unity.BirdImporter {
                 return null;
             }
 
-            return talkingSO.tm.talkingId;
+            return talkingSO.TalkingId;
+        }
+
+        static int? RoleIdOf(RoleSO roleSO) {
+            if (roleSO == null) {
+                return null;
+            }
+
+            return roleSO.RoleId;
         }
 
         static string TextValue(string value) {

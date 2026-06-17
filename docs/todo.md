@@ -160,7 +160,7 @@ npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
 入口条件：已满足。P2 Round 14 全量验证通过，handoff / TODO 已记录 `P2 PASS`。本节任务可以开启，但仍必须保持 Host Schema / Host Bridge / Unity-Bird 只作为 `ExternalSupport` / adapter 方向推进，不把宿主依赖或宿主 ID 真相引入 `Internal`。
 
 - [x] 决定 Bird 项目新增 importer 与 `InscapeGenerated` 资源提交策略。2026-06-17 策略见 [SelfHostedEditor P2.5 Bird Commit Strategy](self-hosted-editor-p2-5-bird-commit-strategy.md)；P2.5 只允许临时复制 importer 跑 Dry Run 并清理，不提交 Bird 文件、不执行真实 Import、不改 Addressables、不覆盖 Bird 正式 L10N。
-- [ ] 用带真实 Timeline 绑定的样例再次执行 Bird Import Dry Run，确认 `talking.exit` 的 `TalkingEffectTM.PlayTimeline` 落地与其他 phase warning。
+- [x] 用带真实 Timeline 绑定的样例再次执行 Bird Import Dry Run，确认 `talking.exit` 的 `TalkingEffectTM.PlayTimeline` 落地与其他 phase warning。2026-06-17 审计见 [SelfHostedEditor P2.5 Bird Dry Run Audit](self-hosted-editor-p2-5-bird-dry-run-audit.md)；`talking.exit` RESOLVE 到真实 TimelineSO，`node.enter` / `talking.enter` / `node.exit` 均输出 `UNSUPPORTED_PHASE`，Dry Run 后未留下 Bird 写盘。
 - [ ] 低优先级评估 Bird `L10N` 真实格式是否需要影响 Inscape CSV 字段和列顺序；默认不要为 Bird 改动通用 CSV contract。
 - [ ] 继续推进 Host Bridge 作为 Inscape 可读 ID 到宿主 ID / 资源 / handler / query implementation 的映射层；Host Schema 只描述能力清单，不承担资源映射。
 - [ ] Unity 支持层仍作为 ExternalSupport / 独立插件方向评估，不让 UnityEngine / UnityEditor 依赖进入 `Internal`。

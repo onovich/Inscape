@@ -2,7 +2,7 @@
 
 状态：原型草案
 
-本目录提供一个可复制到 Bird Unity 项目的 Editor Importer 原型。它读取 `export-bird-project` 生成的 `bird-manifest.json`，创建或更新 Bird `TalkingSO` 资源，并把 Timeline Hook 转换为 `TalkingEffectTM.PlayTimeline`。
+本目录提供一个可复制到 Bird Unity 项目的 Editor Importer 原型。它读取 Bird-compatible manifest，创建或更新 Bird `TalkingSO` 资源，并把 supported Timeline Hook 转换为 `TalkingEffectTM.PlayTimeline`。当前可执行导出入口是 `src/ExternalSupport/UnityPlugin/Inscape.UnitySample.Cli` 的 `export-unity-sample-*` 命令；历史 `export-bird-*` 文档仍只作为早期原型口径参考。
 
 它当前不是可发布 Unity package，因此暂不创建 `Scripts` / `Resources`。如果后续产品化，应先迁到明确包根，例如 `BirdImporter/`，再在该包根内建立 `Scripts/Editor` 与必要资源目录。
 
@@ -21,7 +21,7 @@ Bird 当前工程已经引用 `Newtonsoft.Json`。如果目标 Unity 项目没�
 1. 先在 Inscape 仓库导出 Bird 数据：
 
 ```powershell
-dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- export-bird-project samples --bird-binding-map config\bird-bindings.csv -o artifacts\bird-export
+dotnet run --project src\ExternalSupport\UnityPlugin\Inscape.UnitySample.Cli\Inscape.UnitySample.Cli.csproj -- export-unity-sample-project samples --unity-sample-binding-map artifacts\bird-trial\bird-bindings.csv -o artifacts\bird-trial\export
 ```
 
 2. 回到 Unity，点击菜单：
@@ -32,7 +32,7 @@ Inscape > Bird > Import Manifest...
 Inscape > Bird > Import Manifest And Apply Addressables...
 ```
 
-3. 先执行 `Dry Run Import Manifest...`，选择 `artifacts\bird-export\bird-manifest.json`。
+3. 先执行 `Dry Run Import Manifest...`，选择导出的 Bird-compatible manifest。P2.5 试跑使用 `artifacts\bird-trial\phase-export\bird-manifest-p2-5-phases.json`。
 4. 选择生成 `TalkingSO` 的 Unity 目录，例如：
 
 ```text
@@ -49,7 +49,7 @@ Assets/Resources_Runtime/Talking/InscapeGenerated
   -batchmode -quit `
   -projectPath "D:\UnityProjects\Bird" `
   -executeMethod Inscape.Unity.BirdImporter.InscapeBirdManifestImporter.DryRunImportManifestFromCommandLine `
-  -inscapeManifest "D:\LabProjects\Inscape\artifacts\bird-trial\export\bird-manifest.json" `
+  -inscapeManifest "D:\LabProjects\Inscape\artifacts\bird-trial\phase-export\bird-manifest-p2-5-phases.json" `
   -inscapeOutputFolder "Assets/Resources_Runtime/Talking/InscapeGenerated" `
   -logFile "D:\LabProjects\Inscape\artifacts\bird-trial\unity-dry-run.log"
 ```
@@ -85,7 +85,9 @@ Assets/Resources_Runtime/Talking/InscapeGenerated
 - 通过 `nextTalkingId` 串联 `TalkingTM.nextTalking`。
 - 通过 `options[].nextTalkingId` 生成 `TalkingOptionTM`。
 - 通过 `hostHooks` 中的 `kind=timeline` 生成 `TalkingEffectTM.PlayTimeline`。
-- Timeline 资源优先按 `unityGuid` 查找，其次按 `assetPath`，最后按 `birdId` 扫描现有 `TimelineSO.tm.timelineId`。
+- Timeline 资源优先按 `unityGuid` 查找，其次按 `assetPath`，最后按 `birdId` 扫描现有 `TimelineSO.TimelineId`。
+- 当前 Bird 项目的 ID 来自 `TalkingSO.TalkingId` / `TimelineSO.TimelineId` 文件名解析属性，而不是 `TalkingTM` / `TimelineTM` 内部字段。
+- 当前 Bird `TalkingOptionTM` 不保存选项文本；Importer 只写 `nextTalking` / `conditions`，选项文本继续留在 L10N / manifest 审查链路。
 - 生成的资源文件名为 `SO_Talking_Inscape_<talkingId>.asset`。
 - Dry Run 会输出创建 / 更新计划、既有 `TalkingTM` 的字段级变化、缺失 `nextTalkingId`、Timeline Hook 解析结果和 warning 计数，并在 manifest 同目录写入 `bird-import-dry-run-report.txt`，不修改 `.asset`。
 - Dry Run 报告会尽量附带 Inscape `node`、`kind`、`anchor` 和 `source`，方便从 Unity 导入计划追溯回 DSL 源文本。

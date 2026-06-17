@@ -1,12 +1,22 @@
 # Agent 接手指南
 
-状态：P2.5 Round 3 PASS
+状态：P2.5 Round 4 PASS
 
 最后更新：2026-06-17
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-17 SelfHostedEditor P2.5 Round 4 Bird Dry Run 快照
+
+P2.5 Round 4 已完成真实 Bird Unity Import Dry Run，不宣布 P2.5 完成。
+
+- 审计产物见 [SelfHostedEditor P2.5 Bird Dry Run Audit](self-hosted-editor-p2-5-bird-dry-run-audit.md)。
+- 当前 Bird API 已迁到 `TalkingSO.TalkingId` / `TimelineSO.TimelineId` 文件名解析属性，`TalkingTM` 不再保存 `talkingId`、`roleId`、`textAnchorIndex` 或选项文本；Bird importer 已在 `src/ExternalSupport/UnityPlugin/unity-bird-importer` 内最小适配。
+- Unity batchmode Dry Run 使用 `artifacts/bird-trial/phase-export/bird-manifest-p2-5-phases.json` 成功生成 report：4 个 timeline hooks，`talking.exit` RESOLVE 到 `Assets/Resources_Runtime/Timeline/SO_Timeline_0001.asset`，3 个非支持 phase 明确 `UNSUPPORTED_PHASE`，`unresolved timeline hooks: 0`。
+- Dry Run 后清理了临时 `Assets/Editor` importer / `.meta`，没有创建 `InscapeGenerated`，没有改 Addressables 或 Bird 正式 `L10N_Talking.csv`；Bird 工作树仍只剩进入前已有的两处字体 fallback 资产改动。
+- 下一轮进入 P2.5 Round 5：Bird L10N 真实格式决策，默认不改变通用 Inscape localization CSV contract。
 
 ### 2026-06-17 SelfHostedEditor P2.5 Round 3 Timeline 导出链路快照
 

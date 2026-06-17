@@ -156,6 +156,24 @@ Timeline Hook 计划会附带 `node`、`phase` 和源位置，便于确认 hook 
 
 ## Bird 项目试跑记录
 
+2026-06-17 P2.5 使用当前 Bird 项目重新执行了一次 batchmode Dry Run，输入为 ignored phase fixture 生成的兼容 manifest：
+
+```text
+Manifest: D:\LabProjects\Inscape\artifacts\bird-trial\phase-export\bird-manifest-p2-5-phases.json
+Log: D:\LabProjects\Inscape\artifacts\bird-trial\unity-dry-run-p2-5-phases-fixed-rerun.log
+Report: D:\LabProjects\Inscape\artifacts\bird-trial\phase-export\bird-import-dry-run-report.txt
+```
+
+本轮发现 Bird 当前 API 已从 `TalkingTM.talkingId` / `TimelineTM.timelineId` 迁到 `TalkingSO.TalkingId` / `TimelineSO.TimelineId` 文件名解析属性，`TalkingTM` 也不再保存 `roleId`、`textAnchorIndex` 和选项文本字段。Importer 已在 ExternalSupport 内适配当前 Bird API，不影响 Compiler、Host Schema 或通用 localization contract。
+
+P2.5 Dry Run 结果：
+
+- Unity 成功执行 `DryRunImportManifestFromCommandLine`。
+- 计划创建 `TalkingSO` 4 个，更新 0 个，但 Dry Run 未实际写入资源。
+- Timeline Hook 4 个：`talking.exit` 成功解析到 `Assets/Resources_Runtime/Timeline/SO_Timeline_0001.asset`；`node.enter`、`talking.enter`、`node.exit` 均输出 `UNSUPPORTED_PHASE` warning。
+- Warning 3 个，均来自 unsupported phase；`unresolved timeline hooks: 0`。
+- Dry Run 后已清理临时 `Assets/Editor/InscapeBirdManifestImporter.cs`、`.meta` 与 `Assets/Editor.meta`；未创建 `InscapeGenerated`，未修改 Addressables 或 `L10N_Talking.csv`。
+
 2026-04-29 已在本机 `D:\UnityProjects\Bird` 执行一次 batchmode Dry Run：
 
 ```text
@@ -211,9 +229,9 @@ Addressables 结果：
 - 每个条目均显示 `no field changes detected`。
 - Warning 0 个。
 
-注意：
+当时注意：
 
-- Bird 项目当前新增了 `Assets/Editor/InscapeBirdManifestImporter.cs`、Unity 生成的 `.meta`、`Assets/Resources_Runtime/Talking/InscapeGenerated/` 下的 5 个 `TalkingSO` 资源，并修改了 `TM_Talking.asset`，尚未在 Bird 仓库提交。
+- 2026-04-29 试跑曾在 Bird 项目新增 `Assets/Editor/InscapeBirdManifestImporter.cs`、Unity 生成的 `.meta`、`Assets/Resources_Runtime/Talking/InscapeGenerated/` 下的 5 个 `TalkingSO` 资源，并修改 `TM_Talking.asset`。截至 2026-06-17 P2.5 Dry Run 收口，这些试跑文件未留在 Bird 工作树；当前 Bird 仅保留两处既有字体 fallback 资产改动。
 - Unity 日志中出现过 Bird 既有脚本 `Assets\Scripts_Editor\MenuTool\CommonMenuTool.cs` 的一次增量编译错误记录，以及一次 Unity 网络 ping 异常；随后 `Assembly-CSharp` / `Assembly-CSharp-Editor` 构建成功，Importer Dry Run 正常执行。
 - Unity 退出时仍有 `Curl error 42: Callback aborted` 与 TMP fallback font 清理日志，目前未造成资源改动。
 
