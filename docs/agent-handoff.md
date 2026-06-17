@@ -1,12 +1,25 @@
 # Agent 接手指南
 
-状态：P3 Round 10 Runtime query provider and internal facts design complete
+状态：P3 Round 11 Runtime State minimal model complete
 
 最后更新：2026-06-18
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-18 SelfHostedEditor P3 Round 11 Runtime State 快照
+
+P3 Round 11 已完成 Runtime State 最小模型与 `ValidateStateAgainstCurrentScript` shape，不宣称 P3 完成。
+
+- 实现审计见 [SelfHostedEditor P3 Runtime State Audit](self-hosted-editor-p3-runtime-state-audit.md)。
+- `NarrativeRuntimeExportStateModel` 定义正式 `inscape.runtime-state` 最小 shape：`format`、`formatVersion`、`runtimeVersion`、`scriptVersion`、`position`、`flow`、`facts`、`random`、`host.checkpointId`。
+- `NarrativeRuntime.ExportState(scriptVersion, hostCheckpointId)` 从当前 Runtime 投影正式 Runtime State；`host.checkpointId` 只作为 opaque id 保存，不由 Inscape 解释。
+- `NarrativeRuntime.ValidateStateAgainstCurrentScript(state, currentScriptVersion)` 输出 `inscape.runtime-state-validation`，支持 `compatible` / `migratable` / `incompatible` 三档结果和结构化 diagnostics。
+- `runtime-project` 新增 `--export-state`、`--validate-state`、`--script-version` 与 `--host-checkpoint-id`，并保持旧 Player snapshot 的 `--state` 兼容。
+- Internal tests 已覆盖正式 state export、普通 state 不包含完整 Log / Rollback / Trace、validation 三态，以及 CLI export / validate / restore smoke。
+- 本轮未实现完整正式 Save / Load、query receipt、Log / Backlog、Rollback、Trace Replay、Flashback、条件 Runtime 求值或 action dispatcher。
+- 下一轮进入 P3 Round 12：Host Schema / Usage / Audit / 条件语法 / Runtime State 的最小端到端 smoke 与文档收口。
 
 ### 2026-06-18 SelfHostedEditor P3 Round 10 Runtime query provider / internal facts 快照
 
@@ -19,7 +32,7 @@ P3 Round 10 已完成 Runtime query provider 与内部叙事事实第一刀，�
 - `NarrativeRuntime` 现在在进入节点、显示正文、选择选项时记录内部 facts。
 - 内部 query 第一刀支持 `current_node()`、`previous_node()`、`visited(nodeId)`、`visit_count(nodeId)`、`seen(lineId)`、`choice_made(choiceId)`、`choice_count(choiceId)` 和 `last_choice(nodeId)`。
 - 本轮未实现条件 Runtime 求值、query receipt 持久化、action dispatcher、完整 Save / Load、Rollback、Trace Replay、Flashback 或用户自定义内部变量系统。
-- 下一轮进入 P3 Round 11：Runtime State 最小模型与 `ValidateStateAgainstCurrentScript` shape。
+- P3 Round 11 已在后续快照完成 Runtime State 最小模型；下一步进入端到端 smoke 与文档收口。
 
 ### 2026-06-18 SelfHostedEditor P3 Round 9 条件表达式消费快照
 
@@ -1482,9 +1495,9 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 
 建议优先做小而闭环的任务，不要直接跳到大规模重构。
 
-1. 继续推进 P3 Round 11 Runtime State 最小模型。
-   - 从 [SelfHostedEditor P3 Runtime Query Provider Audit](self-hosted-editor-p3-runtime-query-provider-audit.md)、[运行时与 Unity 宿主](runtime-unity.md) 和 ADR 0021 接上。
-   - 优先实现 `format`、`runtimeVersion`、`scriptVersion`、`position`、`flow`、`facts`、`random`、`host.checkpointId` 与 `ValidateStateAgainstCurrentScript` 的 compatible / migratable / incompatible shape。
+1. 继续推进 P3 Round 12 最小端到端 smoke 与文档收口。
+   - 从 [SelfHostedEditor P3 Runtime State Audit](self-hosted-editor-p3-runtime-state-audit.md)、[Usage Manifest Contract](usage-manifest-contract.md)、[Condition Syntax Contract](condition-syntax-contract.md)、[运行时与 Unity 宿主](runtime-unity.md) 和 ADR 0021 接上。
+   - 优先串起 Host Schema、Usage Manifest、Host Integration Audit、条件语法和 Runtime State 的最小样例 / smoke；不要宣布 P3 PASS，Round 12 后再进入缓冲修复或最终验证准备。
 
 2. 继续推进 Stable Node ID / 本地化主线。
    - ADR 0013、sidecar 闭环、保守自动重命名识别、VSCode 显式 `Update Stable Node Map` 入口、插入标题后的自动同步、标题重命名人工确认 / 冲突报告、本地化 alignment / audit report，以及相似文本人工候选第一版都已落地。

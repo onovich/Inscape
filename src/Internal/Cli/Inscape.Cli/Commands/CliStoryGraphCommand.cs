@@ -83,6 +83,23 @@ namespace Inscape.Cli {
                     NarrativeRuntime runtime = new NarrativeRuntime();
                     runtime.LoadGraph(result.Graph);
 
+                    string? validationStatePath = CliCore.ReadOption(args, "--validate-state");
+                    string scriptVersion = CliCore.ReadOption(args, "--script-version") ?? string.Empty;
+                    if (!string.IsNullOrWhiteSpace(validationStatePath)) {
+                        if (!TryReadRuntimeExportState(validationStatePath,
+                                                       jsonOptions,
+                                                       out NarrativeRuntimeExportStateModel exportState,
+                                                       out string? validationStateError)) {
+                            Console.Error.WriteLine(validationStateError);
+                            return 1;
+                        }
+
+                        NarrativeRuntimeStateValidationModel validation = runtime.ValidateStateAgainstCurrentScript(exportState,
+                                                                                                                   scriptVersion);
+                        CliCore.WriteOrPrint(outputPath, JsonSerializer.Serialize(validation, jsonOptions));
+                        return 0;
+                    }
+
                     string? statePath = CliCore.ReadOption(args, "--state");
                     if (string.IsNullOrWhiteSpace(statePath)) {
                         if (!runtime.Start(result.EntryNodeName)) {
@@ -100,6 +117,14 @@ namespace Inscape.Cli {
                     if (!ApplyRuntimeAction(runtime, args, out string? runtimeActionError)) {
                         Console.Error.WriteLine(runtimeActionError);
                         return 1;
+                    }
+
+                    if (HasOption(args, "--export-state")) {
+                        string hostCheckpointId = CliCore.ReadOption(args, "--host-checkpoint-id") ?? string.Empty;
+                        CliCore.WriteOrPrint(outputPath,
+                                             JsonSerializer.Serialize(runtime.ExportState(scriptVersion, hostCheckpointId),
+                                                                      jsonOptions));
+                        return 0;
                     }
 
                     CliCore.WriteOrPrint(outputPath, JsonSerializer.Serialize(runtime.CreateSnapshot(), jsonOptions));
@@ -248,6 +273,17 @@ namespace Inscape.Cli {
                 JsonElement stateElement = root.TryGetProperty("state", out JsonElement nestedState)
                     ? nestedState
                     : root;
+                if (stateElement.TryGetProperty("position", out _) && stateElement.TryGetProperty("flow", out _)) {
+                    NarrativeRuntimeExportStateModel? exportedState = stateElement.Deserialize<NarrativeRuntimeExportStateModel>(jsonOptions);
+                    if (exportedState == null) {
+                        errorMessage = "Runtime state file did not contain an export state object: " + fullPath;
+                        return false;
+                    }
+
+                    runtimeState = ConvertExportStateToRuntimeState(exportedState);
+                    return true;
+                }
+
                 NarrativeRuntimeStateModel? parsedState = stateElement.Deserialize<NarrativeRuntimeStateModel>(jsonOptions);
                 if (parsedState == null) {
                     errorMessage = "Runtime state file did not contain a state object: " + fullPath;
@@ -260,6 +296,57 @@ namespace Inscape.Cli {
                 errorMessage = "Runtime state file is not valid JSON: " + ex.Message;
                 return false;
             }
+        }
+
+        static bool TryReadRuntimeExportState(string statePath,
+                                              JsonSerializerOptions jsonOptions,
+                                              out NarrativeRuntimeExportStateModel exportState,
+                                              out string? errorMessage) {
+            exportState = new NarrativeRuntimeExportStateModel();
+            errorMessage = null;
+            string fullPath = Path.GetFullPath(statePath);
+            if (!File.Exists(fullPath)) {
+                errorMessage = "Runtime export state file not found: " + fullPath;
+                return false;
+            }
+
+            try {
+                using JsonDocument document = JsonDocument.Parse(File.ReadAllText(fullPath));
+                JsonElement root = document.RootElement;
+                JsonElement stateElement = root.TryGetProperty("state", out JsonElement nestedState)
+                    ? nestedState
+                    : root;
+                if (!stateElement.TryGetProperty("position", out _) || !stateElement.TryGetProperty("flow", out _)) {
+                    errorMessage = "Runtime export state file did not contain a formal runtime state object: " + fullPath;
+                    return false;
+                }
+
+                NarrativeRuntimeExportStateModel? parsedState = stateElement.Deserialize<NarrativeRuntimeExportStateModel>(jsonOptions);
+                if (parsedState == null) {
+                    errorMessage = "Runtime export state file did not contain a state object: " + fullPath;
+                    return false;
+                }
+
+                exportState = parsedState;
+                return true;
+            } catch (JsonException ex) {
+                errorMessage = "Runtime export state file is not valid JSON: " + ex.Message;
+                return false;
+            }
+        }
+
+        static NarrativeRuntimeStateModel ConvertExportStateToRuntimeState(NarrativeRuntimeExportStateModel exportState) {
+            NarrativeRuntimeStateModel runtimeState = new NarrativeRuntimeStateModel {
+                CurrentNodeName = exportState.Position.NodeId,
+                VisibleStepCount = exportState.Position.CommandIndex,
+                Facts = exportState.Facts,
+            };
+            runtimeState.Path.AddRange(exportState.Flow.Stack);
+            if (runtimeState.Path.Count == 0 && runtimeState.CurrentNodeName.Length > 0) {
+                runtimeState.Path.Add(runtimeState.CurrentNodeName);
+            }
+
+            return runtimeState;
         }
 
         static bool HasOption(string[] args, string optionName) {

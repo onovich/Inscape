@@ -116,6 +116,8 @@ dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- compile-
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- preview-project samples --entry court.cross_exam.loop -o artifacts\samples-project.html
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- runtime-project samples -o artifacts\runtime-state.json
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- runtime-project samples --state artifacts\runtime-state.json --choose 0 0 -o artifacts\runtime-state.next.json
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- runtime-project samples --export-state --script-version script-v1 --host-checkpoint-id checkpoint-1 -o artifacts\runtime-export-state.json
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- runtime-project samples --validate-state artifacts\runtime-export-state.json --script-version script-v1 -o artifacts\runtime-state-validation.json
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- extract-l10n-project samples -o artifacts\l10n.csv
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- update-l10n-project samples --from artifacts\old-l10n.csv -o artifacts\l10n.updated.csv
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- update-l10n-project samples --from artifacts\old-l10n.csv --translation-overrides artifacts\overrides.json -o artifacts\l10n.updated.csv
@@ -128,7 +130,9 @@ dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- audit-l1
 
 `audit-l10n-alignment-project` 会读取当前项目、旧 CSV 和 stable node map，输出 `inscape.localization-alignment` 审查报告。`--format json` 适合机器消费；`--format text` 会输出人工审查友好的摘要，列出 `kept`、`new`、`changed`、`removed`、`conflict`、`stale` 项及候选译文原因。VSCode 当前已接上最小入口：`Inscape: Review Localization Alignment` 会提示选择旧 CSV、输出格式和目标文件，然后直接打开生成的报告；如果选择 json，还可以直接弹出审查项列表并跳回源位置。
 
-`runtime-project` 会复用项目编译结果，把 Compiler graph 交给 `NarrativeRuntime`，并从项目入口 `Start` 后输出 `inscape.runtime-state` JSON。传入 `--state runtime-state.json` 时会先恢复上一帧状态，再执行 `--continue` 或 `--choose group option`，并输出推进后的新 snapshot。该命令面向自研编辑器 Player / Preview 运行态接入，不解析 `.inscape` 源文本。
+`runtime-project` 会复用项目编译结果，把 Compiler graph 交给 `NarrativeRuntime`，并从项目入口 `Start` 后输出 `inscape.runtime-state` JSON。默认输出仍是编辑器 Player snapshot；传入 `--state runtime-state.json` 时会先恢复上一帧 snapshot 或 P3 正式 Runtime State，再执行 `--continue`、`--advance-flow`、`--rewind`、`--rewind-flow` 或 `--choose group option`，并输出推进后的新 snapshot。
+
+加 `--export-state` 时，命令输出 P3 正式最小 Runtime State shape：`format`、`formatVersion`、`runtimeVersion`、`scriptVersion`、`position`、`flow`、`facts`、`random` 与 `host.checkpointId`。加 `--validate-state path` 时，命令输出 `inscape.runtime-state-validation`，报告 `compatible` / `migratable` / `incompatible` 和 diagnostics；validation 只报告，不静默修状态。该命令面向自研编辑器 Player / Preview 运行态接入和 P3 Runtime State smoke，不解析 `.inscape` 源文本，也不实现完整正式 Save / Load 产品系统。
 
 ## UnitySample 实验样例命令
 

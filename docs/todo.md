@@ -1,6 +1,6 @@
 # TODO
 
-状态：持续维护，P3 Round 10 Runtime query provider and internal facts design complete
+状态：持续维护，P3 Round 11 Runtime State minimal model complete
 
 SelfHostedEditor regression invariant: Preview choice clicks must advance the reading Preview to the target block and reveal the target block title in the editor. Compiler-project Preview data must never silently lose `previewLines`: if a returned Compiler graph has source lines but missing or mismatched `previewLines`, Preview must report a compiler graph contract error instead of falling back to the UI-only draft model. `npm --prefix src\ExternalSupport\SelfHostedEditor run check:model` covers both invariants so future Runtime / navigation work does not regress them.
 
@@ -205,7 +205,8 @@ npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
 - [x] 完成 P3 Round 8 condition syntax Compiler / IR 最小实现。2026-06-18 审计结果见 [SelfHostedEditor P3 Condition Syntax Implementation Audit](self-hosted-editor-p3-condition-syntax-implementation-audit.md)；新增 `DslScriptCondition*` parser / IR models，选项条件和条件跳转进入 Compiler graph，新增条件 edge、fallback diagnostic 与 Internal tests；该轮未实现 Runtime 求值，Usage Manifest 条件扫描已在 Round 9 补齐。
 - [x] 完成 P3 Round 9 condition expression Tooling / LanguageServer / Editor consumption。2026-06-18 审计结果见 [SelfHostedEditor P3 Condition Consumption Audit](self-hosted-editor-p3-condition-consumption-audit.md)；Usage Manifest 现在从 Compiler IR 抽取 `choice-condition` / `conditional-jump` query usage，继续按 Host Schema `idKind` 推导 `requiredIds`；VSCode / SelfHostedEditor parity 覆盖 `INS061` 且 ExternalSupport 未新增条件 parser。
 - [x] 完成 P3 Round 10 Runtime query provider 与 internal narrative facts 设计。2026-06-18 审计结果见 [SelfHostedEditor P3 Runtime Query Provider Audit](self-hosted-editor-p3-runtime-query-provider-audit.md)；`Internal/Runtime` 新增 delegate / mock / recorded query provider contract，`NarrativeRuntime` 记录 visited / seen / choice facts，并用 Internal tests 验证内部只读 query 与 provider source kind。
-- [ ] 按 [SelfHostedEditor / P3 Goal 模式执行指南](self-hosted-editor-p3-goal-mode-execution-guide.md) 继续推进 P3，下一步优先进入 P3 Round 11 Runtime State 最小模型，再推进 Round 12 最小端到端 smoke / docs closure。
+- [x] 完成 P3 Round 11 Runtime State 最小模型。2026-06-18 审计结果见 [SelfHostedEditor P3 Runtime State Audit](self-hosted-editor-p3-runtime-state-audit.md)；`NarrativeRuntime.ExportState` 输出 `format` / `runtimeVersion` / `scriptVersion` / `position` / `flow` / `facts` / `random` / `host.checkpointId`，`ValidateStateAgainstCurrentScript` 覆盖 compatible / migratable / incompatible，CLI `runtime-project` 支持 `--export-state` 与 `--validate-state` smoke。
+- [ ] 按 [SelfHostedEditor / P3 Goal 模式执行指南](self-hosted-editor-p3-goal-mode-execution-guide.md) 继续推进 P3，下一步优先进入 P3 Round 12 最小端到端 smoke / docs closure，再进入缓冲修复或最终验证准备。
 - [ ] P4 开始前需要细化 Runtime MVP 验收样例、query receipt 记录粒度、`fire` / `wait` / `handoff` pending / resumed payload，以及 Runtime Inspector 只能改 mock query、不直接改正式 Runtime state 的产品边界。
 - [ ] P7 前继续评估 Rollback checkpoint 的准确粒度、跨宿主 action 时的回退阻断 / checkpoint 规则、Trace Replay、Flashback Playback 与时空穿越式特殊倒放；这些不进入 P3 / P4 第一刀实现。
 

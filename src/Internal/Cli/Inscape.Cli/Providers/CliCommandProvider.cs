@@ -90,9 +90,9 @@
                                      "dotnet run --project src\\Internal\\Cli\\Inscape.Cli\\Inscape.Cli.csproj -- preview-project samples --entry court.cross_exam.loop -o artifacts\\samples-project.html"),
             new CliCommandModel("runtime-project", "Project", true,
                                      "Start or step a compiled project with NarrativeRuntime and write the current runtime state as JSON.",
-                                     "inscape runtime-project <root> [--entry node.name] [--state runtime-state.json] [--continue|--advance-flow|--rewind|--rewind-flow|--choose group option] [-o runtime-state.json]",
-                                     "dotnet run --project src\\Internal\\Cli\\Inscape.Cli\\Inscape.Cli.csproj -- runtime-project samples --state artifacts\\runtime-state.json --choose 0 0",
-                                     "This command is for editor Player integration. Runtime consumes Compiler graph output and does not parse .inscape source text."),
+                                     "inscape runtime-project <root> [--entry node.name] [--state runtime-state.json] [--continue|--advance-flow|--rewind|--rewind-flow|--choose group option] [--export-state] [--validate-state runtime-state.json] [--script-version version] [--host-checkpoint-id id] [-o runtime-state.json]",
+                                     "dotnet run --project src\\Internal\\Cli\\Inscape.Cli\\Inscape.Cli.csproj -- runtime-project samples --export-state --script-version script-v1 -o artifacts\\runtime-state.json",
+                                     "This command is for editor Player integration and P3 Runtime State smoke. Runtime consumes Compiler graph output and does not parse .inscape source text."),
             new CliCommandModel("extract-l10n-project", "Project", true,
                                      "Extract project localizable text to CSV.",
                                      "inscape extract-l10n-project <root> [--entry node.name] [--override source.inscape temp.inscape] [-o strings.csv]",
@@ -138,7 +138,7 @@
             Console.WriteLine("  inscape update-l10n-project <root> --from old.csv [--translation-overrides overrides.json] [--entry node.name] [--override source.inscape temp.inscape] [-o strings.csv]");
             Console.WriteLine("  inscape compile-project <root> [--entry node.name] [-o output.json]");
             Console.WriteLine("  inscape preview-project <root> [--entry node.name] [-o preview.html]");
-            Console.WriteLine("  inscape runtime-project <root> [--entry node.name] [--state runtime-state.json] [--continue|--advance-flow|--rewind|--rewind-flow|--choose group option] [-o runtime-state.json]");
+            Console.WriteLine("  inscape runtime-project <root> [--entry node.name] [--state runtime-state.json] [--continue|--advance-flow|--rewind|--rewind-flow|--choose group option] [--export-state] [--validate-state runtime-state.json] [--script-version version] [--host-checkpoint-id id] [-o runtime-state.json]");
             Console.WriteLine("  inscape compile <file.inscape> [-o output.json]");
             Console.WriteLine("  inscape preview <file.inscape> [-o preview.html]");
         }

@@ -19,7 +19,10 @@ Current baseline:
   - `Recorded` is for debug replay / trace evidence.
   - Internal facts such as `current_node()`, `visited(nodeId)`, `seen(lineId)`, and `last_choice(nodeId)` resolve before external provider sources.
 - `NarrativeRuntime.CreateSnapshot()` returns `inscape.runtime-state` data with the current state, current Compiler node, and `ReadingProgress` for editor Player integration.
+- `NarrativeRuntime.ExportState()` returns the P3 minimal formal Runtime State shape: `format`, `formatVersion`, `runtimeVersion`, `scriptVersion`, `position`, `flow`, `facts`, `random`, and `host.checkpointId`.
+- `NarrativeRuntime.ValidateStateAgainstCurrentScript()` reports `compatible`, `migratable`, or `incompatible` without silently repairing state.
 - `ReadingProgress` currently exposes `ContentStepCount`, `MaxVisibleStepCount`, `VisibleStepCount`, `CanAdvance`, `CanRewind`, `IsChoiceStageVisible`, and `IsContinueStageVisible`.
-- The CLI `runtime-project` command can start a project or restore a previous snapshot state and apply one `Continue` / `AdvanceFlow` / `Rewind` / `RewindFlow` / `Choose` action before returning the next snapshot.
+- The CLI `runtime-project` command can start a project or restore a previous snapshot / formal state and apply one `Continue` / `AdvanceFlow` / `Rewind` / `RewindFlow` / `Choose` action before returning the next snapshot. It can also emit formal state with `--export-state` and validate it with `--validate-state`.
+- Formal Runtime State does not include full Log, full Rollback stack, full Trace Replay, or gameplay state ownership.
 - Runtime does not parse `.inscape` text and does not know about VSCode, HTML Preview, UnitySample, or Host Bridge details.
 - Runtime does not own gameplay state such as inventory, quest stage, trust, combat result, player position, or economy values; those belong behind host delegate queries.

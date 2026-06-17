@@ -5,6 +5,8 @@ namespace Inscape.Runtime {
 
     public sealed class NarrativeRuntime {
 
+        public const string CurrentRuntimeVersion = "p3-runtime-state-v1";
+
         readonly Dictionary<string, StoryGraphNodeModel> nodesByName;
         DslScriptDocumentModel? graph;
 
@@ -158,6 +160,135 @@ namespace Inscape.Runtime {
             };
         }
 
+        public NarrativeRuntimeExportStateModel ExportState(string scriptVersion = "", string hostCheckpointId = "") {
+            NarrativeRuntimeExportStateModel state = new NarrativeRuntimeExportStateModel();
+            state.RuntimeVersion = CurrentRuntimeVersion;
+            state.ScriptVersion = scriptVersion;
+            state.Position = SnapshotExportPosition();
+            state.Flow.EntryNodeId = State.Path.Count > 0 ? State.Path[0] : State.CurrentNodeName;
+            state.Flow.Stack.AddRange(State.Path);
+            state.Facts = CloneFacts(State.Facts);
+            state.Host.CheckpointId = hostCheckpointId;
+            return state;
+        }
+
+        public NarrativeRuntimeStateValidationModel ValidateStateAgainstCurrentScript(NarrativeRuntimeExportStateModel state,
+                                                                                      string currentScriptVersion = "") {
+            NarrativeRuntimeStateValidationModel validation = new NarrativeRuntimeStateValidationModel {
+                Status = NarrativeRuntimeStateValidationStatusModel.Compatible,
+            };
+
+            if (graph == null) {
+                AddValidationDiagnostic(validation,
+                                        NarrativeRuntimeStateValidationStatusModel.Incompatible,
+                                        "IRT001",
+                                        "error",
+                                        "graph",
+                                        "Runtime graph is not loaded.");
+                return validation;
+            }
+
+            if (state.Format != "inscape.runtime-state") {
+                AddValidationDiagnostic(validation,
+                                        NarrativeRuntimeStateValidationStatusModel.Incompatible,
+                                        "IRT002",
+                                        "error",
+                                        "format",
+                                        "Runtime state format is not supported: " + state.Format);
+            }
+
+            if (state.FormatVersion > 1) {
+                AddValidationDiagnostic(validation,
+                                        NarrativeRuntimeStateValidationStatusModel.Incompatible,
+                                        "IRT003",
+                                        "error",
+                                        "formatVersion",
+                                        "Runtime state format version is newer than this Runtime can read.");
+            } else if (state.FormatVersion < 1) {
+                AddValidationDiagnostic(validation,
+                                        NarrativeRuntimeStateValidationStatusModel.Migratable,
+                                        "IRT004",
+                                        "warning",
+                                        "formatVersion",
+                                        "Runtime state uses an older format version and needs explicit migration.");
+            }
+
+            if (state.RuntimeVersion.Length > 0 && state.RuntimeVersion != CurrentRuntimeVersion) {
+                AddValidationDiagnostic(validation,
+                                        NarrativeRuntimeStateValidationStatusModel.Migratable,
+                                        "IRT005",
+                                        "warning",
+                                        "runtimeVersion",
+                                        "Runtime state was exported by a different Runtime version.");
+            }
+
+            if (currentScriptVersion.Length > 0
+                && state.ScriptVersion.Length > 0
+                && state.ScriptVersion != currentScriptVersion) {
+                AddValidationDiagnostic(validation,
+                                        NarrativeRuntimeStateValidationStatusModel.Migratable,
+                                        "IRT006",
+                                        "warning",
+                                        "scriptVersion",
+                                        "Runtime state script version differs from the current script version.");
+            }
+
+            if (state.Position.NodeId.Length == 0 || !nodesByName.ContainsKey(state.Position.NodeId)) {
+                AddValidationDiagnostic(validation,
+                                        NarrativeRuntimeStateValidationStatusModel.Incompatible,
+                                        "IRT007",
+                                        "error",
+                                        "position.nodeId",
+                                        "Runtime state current node does not exist in the current script.");
+                return validation;
+            }
+
+            StoryGraphNodeModel node = nodesByName[state.Position.NodeId];
+            int maxVisibleStepCount = GetMaxVisibleStepCount(node);
+            if (state.Position.CommandIndex < 0) {
+                AddValidationDiagnostic(validation,
+                                        NarrativeRuntimeStateValidationStatusModel.Incompatible,
+                                        "IRT008",
+                                        "error",
+                                        "position.commandIndex",
+                                        "Runtime state command index cannot be negative.");
+            } else if (state.Position.CommandIndex > maxVisibleStepCount) {
+                AddValidationDiagnostic(validation,
+                                        NarrativeRuntimeStateValidationStatusModel.Migratable,
+                                        "IRT009",
+                                        "warning",
+                                        "position.commandIndex",
+                                        "Runtime state command index is past the current node flow.");
+                validation.SuggestedPosition.NodeId = state.Position.NodeId;
+                validation.SuggestedPosition.CommandIndex = maxVisibleStepCount;
+                validation.SuggestedPosition.LineId = GetVisibleLineAnchor(node, maxVisibleStepCount);
+            }
+
+            if (state.Position.LineId.Length > 0 && !ContainsLineAnchor(node, state.Position.LineId)) {
+                AddValidationDiagnostic(validation,
+                                        NarrativeRuntimeStateValidationStatusModel.Migratable,
+                                        "IRT010",
+                                        "warning",
+                                        "position.lineId",
+                                        "Runtime state line anchor is no longer present in the current node.");
+                if (validation.SuggestedPosition.NodeId.Length == 0) {
+                    validation.SuggestedPosition.NodeId = state.Position.NodeId;
+                    validation.SuggestedPosition.CommandIndex = state.Position.CommandIndex <= maxVisibleStepCount
+                        ? state.Position.CommandIndex
+                        : maxVisibleStepCount;
+                    validation.SuggestedPosition.LineId = GetVisibleLineAnchor(node, validation.SuggestedPosition.CommandIndex);
+                }
+            }
+
+            if (validation.SuggestedPosition.NodeId.Length == 0) {
+                validation.SuggestedPosition.NodeId = state.Position.NodeId;
+                validation.SuggestedPosition.LineId = state.Position.LineId;
+                validation.SuggestedPosition.CommandIndex = state.Position.CommandIndex;
+            }
+
+            return validation;
+        }
+
         NarrativeRuntimeStateModel SnapshotState() {
             NarrativeRuntimeStateModel snapshot = new NarrativeRuntimeStateModel();
             snapshot.CurrentNodeName = State.CurrentNodeName;
@@ -165,6 +296,15 @@ namespace Inscape.Runtime {
             snapshot.VisibleStepCount = State.VisibleStepCount;
             snapshot.Facts = CloneFacts(State.Facts);
             return snapshot;
+        }
+
+        NarrativeRuntimeStatePositionModel SnapshotExportPosition() {
+            StoryGraphNodeModel? node = CurrentNode;
+            return new NarrativeRuntimeStatePositionModel {
+                NodeId = State.CurrentNodeName,
+                LineId = GetVisibleLineAnchor(node, State.VisibleStepCount),
+                CommandIndex = State.VisibleStepCount,
+            };
         }
 
         NarrativeRuntimeReadingProgressModel SnapshotReadingProgress() {
@@ -258,6 +398,24 @@ namespace Inscape.Runtime {
             return snapshot;
         }
 
+        static void AddValidationDiagnostic(NarrativeRuntimeStateValidationModel validation,
+                                            NarrativeRuntimeStateValidationStatusModel status,
+                                            string code,
+                                            string severity,
+                                            string path,
+                                            string message) {
+            if (validation.Status != NarrativeRuntimeStateValidationStatusModel.Incompatible) {
+                validation.Status = status;
+            }
+
+            validation.Diagnostics.Add(new NarrativeRuntimeStateValidationDiagnosticModel {
+                Code = code,
+                Severity = severity,
+                Path = path,
+                Message = message,
+            });
+        }
+
         static int GetContentStepCount(StoryGraphNodeModel? node) {
             if (node == null) {
                 return 0;
@@ -281,6 +439,36 @@ namespace Inscape.Runtime {
             int contentStepCount = GetContentStepCount(node);
             bool hasTerminalChoiceStage = node.Choices.Count > 0 || node.DefaultNext.Length > 0;
             return contentStepCount + (hasTerminalChoiceStage ? 1 : 0);
+        }
+
+        static bool ContainsLineAnchor(StoryGraphNodeModel node, string lineAnchor) {
+            foreach (DslScriptLineModel line in node.Lines) {
+                if (line.Anchor == lineAnchor) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        static string GetVisibleLineAnchor(StoryGraphNodeModel? node, int visibleStepCount) {
+            if (node == null || visibleStepCount <= 0) {
+                return string.Empty;
+            }
+
+            int contentIndex = 0;
+            foreach (DslScriptLineModel line in node.Lines) {
+                if (line.Kind == DslScriptLineKindModel.Metadata) {
+                    continue;
+                }
+
+                contentIndex += 1;
+                if (contentIndex == visibleStepCount) {
+                    return line.Anchor;
+                }
+            }
+
+            return string.Empty;
         }
 
     }

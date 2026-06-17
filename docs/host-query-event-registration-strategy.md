@@ -395,8 +395,9 @@ Tooling / VSCode / LanguageServer 可以提供提示或显式 audit，但这些�
 2. Host Schema 最小字段已收敛到 `queries[]` / `actions[]`，legacy `events[]` 继续作为 deprecated 兼容输入。
 3. `inspect-usage-project` 与 `audit-host-integration-project` 已完成最小实现，Usage Manifest 已接入 Compiler 条件 IR 中的 `choice-condition` / `conditional-jump`。
 4. Runtime 已定义 delegate / mock / recorded provider contract，并明确 snapshot 不作为生产主链路。
-5. Runtime 已定义内部叙事运行事实和内部只读查询函数的最小集合；下一步进入 Runtime State 最小模型。
-6. 评估 C# attribute / source generator 的宿主无关 schema 生成流程。
+5. Runtime 已定义内部叙事运行事实和内部只读查询函数的最小集合。
+6. Runtime State 最小模型和 `ValidateStateAgainstCurrentScript` shape 已完成；下一步进入 Host Schema / Usage / Audit / 条件语法 / Runtime State 的端到端 smoke。
+7. 评估 C# attribute / source generator 的宿主无关 schema 生成流程。
 
 Unity 相关代码生成和 Attribute 扫描只进入准备和计划文档；在设计方案落实前，不进行研发实现。
 

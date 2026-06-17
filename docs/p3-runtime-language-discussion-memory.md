@@ -532,6 +532,8 @@ incompatible
 
 它只报告能否加载、能否迁移、失败原因和可能的附近位置，不应静默修状态。
 
+P3 Round 11 已按该边界落地最小 Runtime State model / smoke：`NarrativeRuntime.ExportState()` 输出上述 shape，`ValidateStateAgainstCurrentScript()` 输出 compatible / migratable / incompatible 报告；普通 Runtime State 仍不默认包含完整 Log、完整 Rollback stack 或完整 query/action trace。
+
 ## ADR 需求
 
 这批决定已经超过普通 TODO，应新增 ADR：
@@ -593,7 +595,7 @@ P4 开始前仍需要细化三件事：
 1. Host Schema JSON Schema 与现有 `events[]` 到 `actions[]` 的迁移 / 兼容口径。
 2. 条件语法的 parser / IR 细节。
 3. Usage Manifest 的准确 JSON shape 与 audit report shape。
-4. Runtime State 最小模型的实际 model / smoke。
+4. Runtime State 最小模型已在 P3 Round 11 落地；后续仍需在 Round 12 端到端 smoke 中串起 Host Schema、Usage、Audit、条件语法和 Runtime State。
 5. 是否允许非常受限的用户自定义叙事局部变量。
 
 ## 未来 session 不要误读的点

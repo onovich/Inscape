@@ -121,6 +121,8 @@ Unity Editor Importer 的可复制原型位于 `src/ExternalSupport/UnityPlugin/
 
 P3 Round 10 已在 `Inscape.Runtime` 中落地最小 Runtime query provider / internal facts contract：正式玩法状态仍走 delegate query，mock / recorded 服务测试与复现，内部 facts 只覆盖 visited / seen / choice history 等叙事运行事实。
 
+P3 Round 11 已在 `Inscape.Runtime` 中落地最小 Runtime State shape：`ExportState` 输出 `format`、`formatVersion`、`runtimeVersion`、`scriptVersion`、`position`、`flow`、`facts`、`random` 与 `host.checkpointId`；`ValidateStateAgainstCurrentScript` 输出 compatible / migratable / incompatible 三档报告。该实现仍不是完整正式 Save / Load 产品系统。
+
 ## Command Pipeline 候选
 
 ```text
@@ -343,3 +345,5 @@ incompatible
 ```
 
 它只报告能否加载、能否迁移、失败原因和可能的附近位置，不应静默修状态。
+
+P3 Round 11 当前实现遵守该边界：普通 Runtime State 不默认包含完整 Log、完整 query/action trace 或完整 Rollback stack；宿主 checkpoint 只作为 opaque id 保存。

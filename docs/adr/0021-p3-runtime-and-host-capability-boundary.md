@@ -49,8 +49,8 @@ P2.5 已完成 Host Schema / Host Bridge 与 Unity-Bird 适配收口，P3 可以
 
 - `events[]` 到 `actions[]` 的兼容 / 迁移策略。
 - `inspect-usage-project` 与 `audit-host-integration-project` 的具体 JSON shape 已在 P3 Round 4-6 给出最小实现；后续仍需随条件语法和 Runtime State 扩展审计覆盖。
-- 条件语法 contract / parser design 已在 P3 Round 7 收口到 [Condition Syntax Contract](../condition-syntax-contract.md)；Compiler parser / IR 最小实现已在 P3 Round 8 完成，Tooling / LanguageServer / Editor consumption 已在 P3 Round 9 完成，Runtime query provider / internal facts 最小 contract 已在 P3 Round 10 完成。后续仍需实现 query receipt、Runtime State 与条件求值。
-- Runtime State model / smoke 的具体实现。
+- 条件语法 contract / parser design 已在 P3 Round 7 收口到 [Condition Syntax Contract](../condition-syntax-contract.md)；Compiler parser / IR 最小实现已在 P3 Round 8 完成，Tooling / LanguageServer / Editor consumption 已在 P3 Round 9 完成，Runtime query provider / internal facts 最小 contract 已在 P3 Round 10 完成，Runtime State 最小 model / validate shape 已在 P3 Round 11 完成。后续仍需实现 query receipt、条件 Runtime 求值和 action dispatcher。
+- Runtime State 自动迁移与正式 Save / Load 产品系统。
 - 受限用户自定义叙事局部变量。
 - Action rollback / replay / receipt 精细 policy。
 - Flashback Playback、完整 Trace Replay、时空穿越式特殊倒放。

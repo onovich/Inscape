@@ -40,6 +40,8 @@ namespace Inscape.Tests {
                 ("narrative runtime consumes compiler graph", NarrativeRuntimeConsumesCompilerGraph),
                 ("narrative runtime records internal narrative facts", NarrativeRuntimeRecordsInternalNarrativeFacts),
                 ("narrative runtime query provider uses delegate mock and recorded sources", NarrativeRuntimeQueryProviderUsesDelegateMockAndRecordedSources),
+                ("narrative runtime exports and validates minimal runtime state", NarrativeRuntimeExportsAndValidatesMinimalRuntimeState),
+                ("cli runtime-project exports and validates formal runtime state", CliRuntimeProjectExportsAndValidatesFormalRuntimeState),
                 ("cli runtime-project emits runtime state", CliRuntimeProjectEmitsRuntimeState),
                 ("cli runtime-project steps restored state", CliRuntimeProjectStepsRestoredState),
                 ("tool config resolves host bridge path", ToolConfigResolvesHostBridgePath),

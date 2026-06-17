@@ -149,6 +149,135 @@ Narrator: Second.
             AssertEqual(NarrativeRuntimeQuerySourceKindModel.InternalFact, currentNode.SourceKind, "Internal query source kind");
         }
 
+        static void NarrativeRuntimeExportsAndValidatesMinimalRuntimeState() {
+            DslScriptCompilationResultModel compilation = Compile("""
+# start
+Narrator: Start.
+? Next
+  - Go second -> second.node
+
+# second.node
+Narrator: Second.
+""");
+
+            NarrativeRuntime runtime = new NarrativeRuntime();
+            runtime.LoadGraph(compilation.Document);
+
+            AssertTrue(runtime.Start("start"), "Runtime should start before exporting state.");
+            AssertTrue(runtime.AdvanceFlow(), "Runtime should reveal a line before exporting state.");
+            string visibleLineAnchor = runtime.CurrentNode?.Lines[0].Anchor ?? string.Empty;
+
+            NarrativeRuntimeExportStateModel state = runtime.ExportState("script-v1", "checkpoint-opaque-1");
+            AssertEqual("inscape.runtime-state", state.Format, "Runtime export state format");
+            AssertEqual(1, state.FormatVersion, "Runtime export state version");
+            AssertEqual(NarrativeRuntime.CurrentRuntimeVersion, state.RuntimeVersion, "Runtime export runtime version");
+            AssertEqual("script-v1", state.ScriptVersion, "Runtime export script version");
+            AssertEqual("start", state.Position.NodeId, "Runtime export position node");
+            AssertEqual(visibleLineAnchor, state.Position.LineId, "Runtime export position line");
+            AssertEqual(1, state.Position.CommandIndex, "Runtime export command index");
+            AssertEqual("start", state.Flow.EntryNodeId, "Runtime export entry node");
+            AssertEqual(1, state.Flow.Stack.Count, "Runtime export flow stack count");
+            AssertEqual(1, state.Facts.VisitedNodes.Count, "Runtime export facts visit count");
+            AssertEqual("host", state.Random.Policy, "Runtime export random policy");
+            AssertEqual("checkpoint-opaque-1", state.Host.CheckpointId, "Runtime export host checkpoint id");
+
+            string serialized = JsonSerializer.Serialize(state);
+            AssertFalse(serialized.Contains("rollback", StringComparison.OrdinalIgnoreCase), "Runtime export state should not include rollback stack.");
+            AssertFalse(serialized.Contains("trace", StringComparison.OrdinalIgnoreCase), "Runtime export state should not include trace payload.");
+            AssertFalse(serialized.Contains("log", StringComparison.OrdinalIgnoreCase), "Runtime export state should not include full log payload.");
+
+            NarrativeRuntimeStateValidationModel compatible = runtime.ValidateStateAgainstCurrentScript(state, "script-v1");
+            AssertEqual(NarrativeRuntimeStateValidationStatusModel.Compatible, compatible.Status, "Runtime state should validate as compatible.");
+            AssertEqual(0, compatible.Diagnostics.Count, "Compatible runtime state diagnostics");
+
+            NarrativeRuntimeExportStateModel migratable = runtime.ExportState("script-v1", "checkpoint-opaque-1");
+            migratable.ScriptVersion = "script-v0";
+            NarrativeRuntimeStateValidationModel migration = runtime.ValidateStateAgainstCurrentScript(migratable, "script-v1");
+            AssertEqual(NarrativeRuntimeStateValidationStatusModel.Migratable, migration.Status, "Runtime state script drift should be migratable.");
+            AssertTrue(ValidationContains(migration, "IRT006"), "Runtime validation should report script version drift.");
+
+            NarrativeRuntimeExportStateModel incompatible = runtime.ExportState("script-v1", "checkpoint-opaque-1");
+            incompatible.Position.NodeId = "missing.node";
+            NarrativeRuntimeStateValidationModel invalid = runtime.ValidateStateAgainstCurrentScript(incompatible, "script-v1");
+            AssertEqual(NarrativeRuntimeStateValidationStatusModel.Incompatible, invalid.Status, "Runtime state missing node should be incompatible.");
+            AssertTrue(ValidationContains(invalid, "IRT007"), "Runtime validation should report missing current node.");
+        }
+
+        static void CliRuntimeProjectExportsAndValidatesFormalRuntimeState() {
+            string directory = Path.Combine(Path.GetTempPath(), "inscape-tests", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory);
+            string statePath = Path.Combine(directory, "runtime-export-state.json");
+            File.WriteAllText(Path.Combine(directory, "story.inscape"), """
+# start
+@entry
+Narrator: Start.
+? Next
+  - Go second -> second.node
+
+# second.node
+Narrator: Second.
+""", Encoding.UTF8);
+
+            try {
+                string json = RunCliForOutput(new[] {
+                    "runtime-project",
+                    directory,
+                    "--export-state",
+                    "--script-version",
+                    "script-v1",
+                    "--host-checkpoint-id",
+                    "checkpoint-opaque-1",
+                });
+                File.WriteAllText(statePath, json, Encoding.UTF8);
+
+                using (JsonDocument document = JsonDocument.Parse(json)) {
+                    JsonElement root = document.RootElement;
+                    AssertEqual("inscape.runtime-state", root.GetProperty("format").GetString(), "Runtime export CLI format");
+                    AssertEqual("script-v1", root.GetProperty("scriptVersion").GetString(), "Runtime export CLI script version");
+                    AssertEqual("start", root.GetProperty("position").GetProperty("nodeId").GetString(), "Runtime export CLI node");
+                    AssertEqual("checkpoint-opaque-1", root.GetProperty("host").GetProperty("checkpointId").GetString(), "Runtime export CLI checkpoint");
+                }
+
+                string compatibleJson = RunCliForOutput(new[] {
+                    "runtime-project",
+                    directory,
+                    "--validate-state",
+                    statePath,
+                    "--script-version",
+                    "script-v1",
+                });
+                using (JsonDocument compatibleDocument = JsonDocument.Parse(compatibleJson)) {
+                    AssertEqual("compatible", ReadLowerStatus(compatibleDocument), "Runtime validation CLI compatible status");
+                }
+
+                string migratableJson = RunCliForOutput(new[] {
+                    "runtime-project",
+                    directory,
+                    "--validate-state",
+                    statePath,
+                    "--script-version",
+                    "script-v2",
+                });
+                using (JsonDocument migratableDocument = JsonDocument.Parse(migratableJson)) {
+                    AssertEqual("migratable", ReadLowerStatus(migratableDocument), "Runtime validation CLI migratable status");
+                }
+
+                string restoredJson = RunCliForOutput(new[] {
+                    "runtime-project",
+                    directory,
+                    "--state",
+                    statePath,
+                    "--advance-flow",
+                });
+                using JsonDocument restoredDocument = JsonDocument.Parse(restoredJson);
+                JsonElement restoredRoot = restoredDocument.RootElement;
+                AssertEqual("start", restoredRoot.GetProperty("state").GetProperty("currentNodeName").GetString(), "Runtime CLI restores exported state node");
+                AssertEqual(1, restoredRoot.GetProperty("state").GetProperty("visibleStepCount").GetInt32(), "Runtime CLI restores exported state flow");
+            } finally {
+                Directory.Delete(directory, true);
+            }
+        }
+
         static void CliRuntimeProjectEmitsRuntimeState() {
             string directory = Path.Combine(Path.GetTempPath(), "inscape-tests", Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(directory);
@@ -276,6 +405,20 @@ Narrator: End.
             };
             entry.Arguments.Add(NarrativeRuntimeQueryValueModel.FromString(argument));
             return entry;
+        }
+
+        static bool ValidationContains(NarrativeRuntimeStateValidationModel validation, string code) {
+            for (int i = 0; i < validation.Diagnostics.Count; i += 1) {
+                if (validation.Diagnostics[i].Code == code) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        static string ReadLowerStatus(JsonDocument document) {
+            return (document.RootElement.GetProperty("status").GetString() ?? string.Empty).ToLowerInvariant();
         }
 
     }

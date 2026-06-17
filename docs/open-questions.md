@@ -90,6 +90,7 @@
 - 异步加载、Timeline、宿主 UI 选择、战斗 / 小游戏和服务器结果需要按 `fire` / `wait` / `handoff` 区分控制权交接；失败、取消或超时第一版统一作为宿主异常上报。
 - 自定义指令如何注册、验证和调试；第一版暂不做。
 - 第二版查询回调方案已确认正式运行使用 delegate query；mock / recorded 用于测试、预览和调试复现。snapshot 仅作为低优先级实现细节或一次性上下文包，不作为每帧同步主链路。P3 Round 10 已落地 Runtime provider 最小 contract 和内部叙事 facts 查询第一刀。
+- Runtime State 最小模型已在 P3 Round 11 落地：正式 state 包含 position / flow / facts / random / host checkpoint，validation 输出 compatible / migratable / incompatible；完整 Save / Load、完整 Log / Rollback / Trace 与自动迁移仍后置。
 - 宿主事件清单是否由编译器 / 烘焙器自动生成，而不是人工维护。
 - 是否需要一定程度的代码生成，把 DSL 用到的 query / action 注册到宿主层。
 - Unity 支持层是否采用 `[Inscape]` 一类 C# Attribute 扫描项目类型和字段，并在 Unity 内生成待配置 Host Bridge 表。
