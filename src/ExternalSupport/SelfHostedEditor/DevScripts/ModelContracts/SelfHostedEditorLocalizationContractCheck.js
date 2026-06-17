@@ -78,6 +78,8 @@ const localizationController = new LocalizationEditorController({
                     signals: [
                       { key: "similarity", severity: "info", value: "0.950" },
                       { key: "rank-penalty", severity: "warning", value: "2" },
+                      { key: "reason", severity: "info", value: "same-stable-node" },
+                      { key: "candidate-line-identity", severity: "warning", value: "missing" },
                     ],
                     sourcePath: "samples/previous.inscape",
                     summary: "Previous translation",
@@ -127,6 +129,53 @@ const localizationController = new LocalizationEditorController({
                 summary: "translation: Kept translation",
                 title: "[kept] Witness - aligned",
               },
+              {
+                actions: [
+                  {
+                    actionKey: "open-current",
+                    line: 14,
+                    sourcePath: "samples/court-loop.inscape",
+                  },
+                  {
+                    actionIndex: 0,
+                    actionKey: "open-candidate",
+                    line: 42,
+                    signals: [
+                      { key: "similarity", severity: "info", value: "0.810" },
+                      { key: "rank-penalty", severity: "warning", value: "4" },
+                      { key: "reason", severity: "info", value: "ambiguous-local-context" },
+                      { key: "candidate-line-identity", severity: "risk", value: "drift" },
+                    ],
+                    sourcePath: "samples/previous.inscape",
+                  },
+                  {
+                    actionIndex: 0,
+                    actionKey: "show-candidate-diff",
+                    detail: "current: Ambiguous row | previous: Maybe ambiguous row | translation: Candidate translation",
+                  },
+                ],
+                item: {
+                  anchor: "line_anchor_3",
+                  kind: "Dialogue",
+                  line: 14,
+                  lineFingerprint: "line-fingerprint-conflict",
+                  lineId: "line_CONFLICT",
+                  lineIdentityStatus: "drift",
+                  nodeTitle: "Cross examination",
+                  review: "choose-candidate",
+                  speaker: "Judge",
+                  status: "conflict",
+                  text: "Ambiguous row",
+                  translation: "",
+                },
+                signals: [
+                  { key: "review-status", severity: "risk", value: "conflict/choose-candidate" },
+                  { key: "candidate-count", severity: "risk", value: "2" },
+                  { key: "current-line-identity", severity: "risk", value: "line line_CONFLICT drift" },
+                ],
+                summary: "translation: (empty)",
+                title: "[conflict] Cross examination - choose-candidate",
+              },
             ],
           },
         },
@@ -149,8 +198,20 @@ assertIncludesText(getTextContent(localizationPanel), "Previous translation");
 assertIncludesText(getTextContent(localizationPanel), "changed");
 assertIncludesText(getTextContent(localizationPanel), "Candidate 1");
 assertIncludesText(getTextContent(localizationPanel), "Diff 1");
+assertIncludesText(getTextContent(localizationPanel), "Review changed/needs-review");
+assertIncludesText(getTextContent(localizationPanel), "Current line_DIALOGUE available");
+assertIncludesText(getTextContent(localizationPanel), "Match 0.950");
+assertIncludesText(getTextContent(localizationPanel), "Rank 2");
+assertIncludesText(getTextContent(localizationPanel), "Reason same-stable-node");
+assertIncludesText(getTextContent(localizationPanel), "Candidate missing");
 assertIncludesText(getTextContent(localizationPanel), "Already aligned row");
 assertIncludesText(getTextContent(localizationPanel), "kept");
+assertIncludesText(getTextContent(localizationPanel), "conflict");
+assertIncludesText(getTextContent(localizationPanel), "Review conflict/choose-candidate");
+assertIncludesText(getTextContent(localizationPanel), "Candidates 2");
+assertIncludesText(getTextContent(localizationPanel), "Rank 4");
+assertIncludesText(getTextContent(localizationPanel), "Reason ambiguous-local-context");
+assertIncludesText(getTextContent(localizationPanel), "Candidate drift");
 assertNotIncludesText(getTextContent(localizationPanel), "Draft fallback row");
 assertEqual(localizationController.rows[0].lineId, "line_DIALOGUE", "localization review rows should preserve shared line identity id");
 assertEqual(localizationController.rows[0].lineIdentityStatus, "available", "localization review rows should preserve shared line identity status");
@@ -167,7 +228,7 @@ assertEqual(selectedLocalizationSource?.lineNumber, 12, "localization candidate 
 findElementByClass(localizationPanel, "localization-review-action-diff")?.click();
 assertIncludesText(getTextContent(localizationPanel), "current: Compiler sourced row | previous: Previous text", "localization diff action should reveal shared presenter diff text");
 assertEqual(localizationSourceStatus.textContent, "Review baseline: current extract", "localization review should show default review baseline");
-assertEqual(localizationFilterSummary.textContent, "Showing 2 of 2 rows", "localization review should show all rows by default");
+assertEqual(localizationFilterSummary.textContent, "Showing 3 of 3 rows", "localization review should show all rows by default");
 assertEqual(localizationSessionStatus.textContent, "0 overrides in session | Updated export needs previous CSV | Replace needs linked baseline", "localization session status should explain missing baseline");
 assertEqual(localizationClearDraftsButton.disabled, true, "localization clear drafts button should stay disabled without visible drafts");
 assertEqual(localizationReplaceButton.disabled, true, "localization replace button should stay disabled without linked previous CSV");
@@ -179,7 +240,7 @@ localizationController.setFilterMode("changed");
 assertEqual(localizationFilterMode.value, "changed", "localization filter control should track current filter");
 assertEqual(localizationController.getVisibleRows().length, 1, "localization filter should keep only matching changed rows");
 assertEqual(localizationPanel.querySelectorAll("[data-source-line]").filter((row) => !row.hidden).length, 1, "localization filter should hide non-matching table rows");
-assertEqual(localizationFilterSummary.textContent, "Showing 1 of 2 rows | Changed", "localization filter summary should reflect narrowed rows");
+assertEqual(localizationFilterSummary.textContent, "Showing 1 of 3 rows | Changed", "localization filter summary should reflect narrowed rows");
 draftStore.setTranslation(localizationController.rows[0], "");
 localizationController.applyRowFilters();
 const localizationOverrides = localizationController.collectTranslationOverrides();
@@ -194,13 +255,13 @@ draftStore.setTranslation(localizationController.rows[1], "Fresh draft");
 localizationController.applyRowFilters();
 localizationController.setFilterMode("draft");
 assertEqual(localizationController.getVisibleRows().length, 2, "localization draft filter should surface anchor-based draft overrides");
-assertEqual(localizationFilterSummary.textContent, "Showing 2 of 2 rows | Drafts", "localization draft filter summary should reflect draft rows");
+assertEqual(localizationFilterSummary.textContent, "Showing 2 of 3 rows | Drafts", "localization draft filter summary should reflect draft rows");
 assertEqual(localizationSourceStatus.textContent, "Review baseline: baseline.csv | linked 2 unsaved", "linked baseline status should update with multiple unsaved drafts");
 assertEqual(localizationSessionStatus.textContent, "2 overrides in session | Updated export ready | Linked 2 unsaved", "localization session status should count visible draft overrides");
 assertEqual(localizationClearDraftsButton.disabled, false, "localization clear drafts button should enable when the current filter shows draft rows");
 await localizationController.clearVisibleDrafts();
 assertEqual(localizationController.getVisibleRows().length, 0, "localization clear visible drafts should empty the current draft filter");
-assertEqual(localizationFilterSummary.textContent, "Showing 0 of 2 rows | Drafts", "localization filter summary should reflect cleared visible drafts");
+assertEqual(localizationFilterSummary.textContent, "Showing 0 of 3 rows | Drafts", "localization filter summary should reflect cleared visible drafts");
 assertEqual(localizationSourceStatus.textContent, "Review baseline: baseline.csv | linked clean", "linked baseline status should reset after clearing visible drafts");
 assertEqual(localizationSessionStatus.textContent, "0 overrides in session | Updated export ready | Linked clean", "localization session status should reset after clearing visible drafts");
 assertEqual(localizationClearDraftsButton.disabled, true, "localization clear drafts button should disable after clearing visible drafts");

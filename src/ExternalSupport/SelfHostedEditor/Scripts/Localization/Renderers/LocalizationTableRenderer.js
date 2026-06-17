@@ -93,6 +93,10 @@ export class LocalizationTableRenderer {
       summary.title = item.reviewDetail;
     }
     review.append(summary);
+    const audit = this.createReviewAudit(item);
+    if (audit) {
+      review.append(audit);
+    }
 
     if (Array.isArray(item.actions) && item.actions.length > 0) {
       const actions = document.createElement("div");
@@ -117,6 +121,170 @@ export class LocalizationTableRenderer {
     }
 
     return review;
+  }
+
+  createReviewAudit(item) {
+    const audit = document.createElement("div");
+    audit.className = "localization-review-audit";
+    const itemSignals = this.createItemAuditSignals(item);
+    if (itemSignals.length > 0) {
+      audit.append(this.createSignalList(itemSignals, "localization-review-item-signals"));
+    }
+
+    const candidateAudit = this.createCandidateAudit(item.actions);
+    if (candidateAudit) {
+      audit.append(candidateAudit);
+    }
+
+    return audit.children.length > 0 ? audit : null;
+  }
+
+  createItemAuditSignals(item) {
+    const signals = Array.isArray(item.signals) ? [...item.signals] : [];
+    if (!signals.some((signal) => signal.key === "current-line-identity")) {
+      const lineSignal = this.createLineIdentitySignal(item);
+      if (lineSignal) {
+        signals.push(lineSignal);
+      }
+    }
+
+    return signals;
+  }
+
+  createLineIdentitySignal(item) {
+    const parts = [];
+    if (item.lineId) {
+      parts.push(`line ${item.lineId}`);
+    }
+    if (item.lineIdentityStatus) {
+      parts.push(item.lineIdentityStatus);
+    }
+    if (item.lineFingerprint) {
+      parts.push(`fp ${String(item.lineFingerprint).slice(0, 12)}`);
+    }
+
+    if (parts.length === 0) {
+      return null;
+    }
+
+    return {
+      key: "current-line-identity",
+      severity: "info",
+      value: parts.join(" "),
+    };
+  }
+
+  createCandidateAudit(actions) {
+    const candidateActions = Array.isArray(actions)
+      ? actions.filter((action) => action.actionKey === "open-candidate")
+      : [];
+    const candidateGroups = candidateActions
+      .map((action) => ({
+        action,
+        signals: this.filterCandidateAuditSignals(action.signals),
+      }))
+      .filter((group) => group.signals.length > 0);
+
+    if (candidateGroups.length === 0) {
+      return null;
+    }
+
+    const audit = document.createElement("div");
+    audit.className = "localization-review-candidate-audit";
+    for (const group of candidateGroups) {
+      const groupElement = document.createElement("div");
+      groupElement.className = "localization-review-candidate-group";
+      const label = document.createElement("span");
+      label.className = "localization-review-candidate-label";
+      label.textContent = `Candidate ${Number(group.action.actionIndex || 0) + 1}`;
+      groupElement.append(label, this.createSignalList(group.signals, "localization-review-candidate-signals"));
+      audit.append(groupElement);
+    }
+
+    return audit;
+  }
+
+  filterCandidateAuditSignals(signals) {
+    if (!Array.isArray(signals)) {
+      return [];
+    }
+
+    return signals.filter((signal) => {
+      if (!signal?.key || !signal?.value) {
+        return false;
+      }
+
+      if (signal.severity && signal.severity !== "info") {
+        return true;
+      }
+
+      if (signal.key === "similarity") {
+        return signal.value !== "1.000";
+      }
+
+      if (signal.key === "rank-penalty") {
+        return signal.value !== "0";
+      }
+
+      return signal.key === "reason";
+    });
+  }
+
+  createSignalList(signals, className) {
+    const list = document.createElement("div");
+    list.className = `localization-review-signals ${className}`;
+    for (const signal of signals) {
+      list.append(this.createSignalChip(signal));
+    }
+
+    return list;
+  }
+
+  createSignalChip(signal) {
+    const severity = this.normalizeSignalSeverity(signal.severity);
+    const chip = document.createElement("span");
+    chip.className = `localization-review-signal localization-review-signal-${severity}`;
+    chip.dataset.signalKey = signal.key || "";
+    chip.dataset.signalSeverity = severity;
+    const label = this.createSignalLabel(signal.key);
+    const value = this.createSignalDisplayValue(signal);
+    chip.textContent = `${label} ${value}`;
+    chip.title = `${label}: ${value}`;
+    return chip;
+  }
+
+  createSignalDisplayValue(signal) {
+    const value = String(signal.value || "");
+    if ((signal.key === "current-line-identity" || signal.key === "candidate-line-identity") && value.startsWith("line ")) {
+      return value.slice(5);
+    }
+
+    return value;
+  }
+
+  createSignalLabel(key) {
+    switch (key) {
+      case "review-status":
+        return "Review";
+      case "candidate-count":
+        return "Candidates";
+      case "current-line-identity":
+        return "Current";
+      case "candidate-line-identity":
+        return "Candidate";
+      case "similarity":
+        return "Match";
+      case "rank-penalty":
+        return "Rank";
+      case "reason":
+        return "Reason";
+      default:
+        return key;
+    }
+  }
+
+  normalizeSignalSeverity(severity) {
+    return ["risk", "warning", "info"].includes(severity) ? severity : "info";
   }
 
   createReviewActionTitle(action, fallback) {

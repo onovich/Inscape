@@ -20,7 +20,7 @@ export class SelfHostedEditorHttpBackendTransport {
       throw new Error("SelfHostedEditor backend transport requires a fetch implementation.");
     }
 
-    const response = await this.#fetchImpl(`${this.#baseUrl}${path}`, {
+    const response = await this.#fetchImpl.call(globalThis, `${this.#baseUrl}${path}`, {
       body: JSON.stringify(payload || {}),
       headers: {
         "Content-Type": "application/json",

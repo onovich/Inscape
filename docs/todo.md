@@ -137,7 +137,7 @@ npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
 - [x] 完成 P2 Round 2 Localization Scoring 契约审计。2026-06-17 审计结果见 [SelfHostedEditor P2 Localization Scoring Audit](self-hosted-editor-p2-localization-scoring-audit.md)；确认相似文本只作为人工候选，不静默复用旧译文，scoring / ranking 仍位于 `Internal/Tooling`。
 - [x] 完成 P2 Round 3 Line Identity 信号加固。2026-06-17 审计结果见 [SelfHostedEditor P2 Line Identity Signal Audit](self-hosted-editor-p2-line-identity-signal-audit.md)；SelfHostedEditor compact review payload 保留 line id / fingerprint / identity status 与 candidate `actionStatus`，真实 review payload 仍低于 compact 上限。
 - [x] 完成 P2 Round 4 Review Presenter 形状收敛。2026-06-17 审计结果见 [SelfHostedEditor P2 Review Presenter Shape Audit](self-hosted-editor-p2-review-presenter-shape-audit.md)；candidate / diff / rank / identity / risk 进入 shared structured `signals` contract，VSCode 与 SelfHostedEditor 一致消费，真实 review payload 为 231521 bytes。
-- [ ] 继续细化 localization review 展示：候选差异、rank reason、line identity、conflict / risk 状态需要产品化为更易读的 UI 审计信息。
+- [x] 完成 P2 Round 5 SelfHostedEditor Localization Review UI。2026-06-17 审计结果见 [SelfHostedEditor P2 Localization Review UI Audit](self-hosted-editor-p2-localization-review-ui-audit.md)；review row 现在显示 current/candidate line identity、rank、reason、risk/candidate count 等 compact audit chips，真实浏览器 hosted review 不再 fallback。
 - [ ] 评估批量审查 / multi-apply 是否必要；优先做可审计、可撤销的小闭环，不扩大自动继承范围。
 - [x] 继续收敛 Review Presenter 形状：candidate / diff / rank / identity / risk 信号已稳定为 shared `signals` contract，供 VSCode 与 SelfHostedEditor 一致消费。
 - [ ] 完成 stable node map review / apply 的产品化体验：人工确认、冲突报告、dry-run / apply、备份与恢复路径清晰。

@@ -152,11 +152,49 @@
   margin-bottom: 7px;
 }
 
-.localization-review-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
+.localization-review-audit,
+.localization-review-candidate-audit,
+.localization-review-candidate-group {
+  display: grid;
+  min-width: 0;
 }
+
+.localization-review-audit { gap: 5px; margin-bottom: 7px; }
+
+.localization-review-candidate-audit,
+.localization-review-candidate-group { gap: 4px; }
+
+.localization-review-signals,
+.localization-review-actions { display: flex; flex-wrap: wrap; }
+
+.localization-review-signals { gap: 4px; min-width: 0; }
+
+.localization-review-signal {
+  background: rgba(67, 96, 104, 0.09);
+  border: 1px solid rgba(67, 96, 104, 0.14);
+  border-radius: 999px;
+  color: #42646d;
+  display: inline-flex;
+  font-size: 9px;
+  line-height: 1.2;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  padding: 3px 6px;
+}
+
+.localization-review-signal-warning { background: rgba(144, 116, 74, 0.12); border-color: rgba(144, 116, 74, 0.18); color: #8a6230; }
+
+.localization-review-signal-risk { background: rgba(139, 74, 60, 0.12); border-color: rgba(139, 74, 60, 0.18); color: #8c4b3e; }
+
+.localization-review-candidate-group { align-items: flex-start; }
+
+.localization-review-candidate-label {
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1;
+}
+
+.localization-review-actions { gap: 5px; }
 
 .localization-review-action {
   background: rgba(255, 255, 255, 0.78);
@@ -169,6 +207,7 @@
   line-height: 1;
   min-height: 24px;
   padding: 5px 7px;
+  white-space: nowrap;
 }
 
 .localization-review-action:hover {

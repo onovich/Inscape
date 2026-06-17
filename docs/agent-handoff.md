@@ -1,12 +1,23 @@
 # Agent 接手指南
 
-状态：P2 Round 4
+状态：P2 Round 5
 
 最后更新：2026-06-17
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-17 SelfHostedEditor P2 Round 5 Localization Review UI 快照
+
+P2 Round 5 已完成 localization review UI 产品化第一刀，不宣布 P2 完成。
+
+- 审计产物见 [SelfHostedEditor P2 Localization Review UI Audit](self-hosted-editor-p2-localization-review-ui-audit.md)。
+- SelfHostedEditor localization review row 现在显示 compact audit chips：current line identity、review risk/candidate count，以及候选 action 的 shared similarity / rank penalty / reason / candidate line identity。
+- Diff 仍通过 Tooling presenter `show-candidate-diff.detail` 展开；浏览器只显示 shared diff，不重建 diff 或 candidate order。
+- 真实 in-app browser 检查发现并修复了 dev-host HTTP transport 默认 `fetch` 绑定丢失的问题；`SelfHostedEditorHttpBackendTransport` 现在用 `fetchImpl.call(globalThis, ...)`，hosted review 不再因 `Illegal invocation` fallback。
+- Debug 自检覆盖 clear match（真实 `court-loop` 170 rows）、similar candidate（model fixture `Match 0.950` / `Rank 2` / `Reason same-stable-node`）与 ambiguous candidate（model fixture `conflict/choose-candidate` / `Candidates 2` / `Rank 4` / `Candidate drift`）。
+- 下一轮进入 P2 Round 6：Stable Node Map 当前链路审计；重点是 dry-run、apply、冲突报告、备份/恢复路径与缺口清单。
 
 ### 2026-06-17 SelfHostedEditor P2 Round 4 Review Presenter 形状收敛快照
 

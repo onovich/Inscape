@@ -83,6 +83,22 @@ assertEqual(fetchCalls[0].url, "http://127.0.0.1:5178/api/diagnostics", "HTTP tr
 assertEqual(fetchCalls[0].method, "POST", "HTTP transport uses POST");
 assertEqual(JSON.parse(fetchCalls[0].body).scriptText, "# Opening", "HTTP transport serializes payload");
 
+const boundFetchTransport = new SelfHostedEditorHttpBackendTransport({
+  fetchImpl(url) {
+    assertEqual(this, globalThis, "HTTP transport keeps default fetch binding");
+    return {
+      ok: true,
+      async json() {
+        return {
+          url,
+        };
+      },
+    };
+  },
+});
+const boundFetchResult = await boundFetchTransport.invoke(EditorBackendTransportCommand.LanguageDiagnostics, {});
+assertEqual(boundFetchResult.url, "/api/diagnostics", "HTTP transport bound fetch result");
+
 const backendCalls = [];
 const backendClient = new EditorBackendClient({
   sessionId: "transport-session",
