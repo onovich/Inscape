@@ -322,6 +322,7 @@ export class StableNodeMapClient {
     this.#stableNodeMap = requireCapabilities(backendClient?.stableNodeMap, [
       "applyCandidate",
       "review",
+      "writeSidecar",
     ], "StableNodeMapClient");
     Object.freeze(this);
   }
@@ -332,6 +333,10 @@ export class StableNodeMapClient {
 
   async review(request = {}) {
     return await this.#stableNodeMap.review(request);
+  }
+
+  async writeSidecar(request = {}) {
+    return await this.#stableNodeMap.writeSidecar(request);
   }
 }
 

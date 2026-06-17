@@ -25,6 +25,7 @@ const preloadMethodsByCommand = Object.freeze({
   [EditorBackendTransportCommand.RuntimeStep]: ["runtimeSession", "step"],
   [EditorBackendTransportCommand.StableNodeMapApplyCandidate]: ["stableNodeMap", "applyCandidate"],
   [EditorBackendTransportCommand.StableNodeMapReview]: ["stableNodeMap", "review"],
+  [EditorBackendTransportCommand.StableNodeMapWriteSidecar]: ["stableNodeMap", "writeSidecar"],
   [EditorBackendTransportCommand.StoryGraphCompileProject]: ["storyGraph", "compileProjectGraph"],
   [EditorBackendTransportCommand.WorkspaceImportAssets]: ["workspace", "importAssets"],
   [EditorBackendTransportCommand.WorkspaceListFiles]: ["workspace", "listFiles"],

@@ -35,6 +35,13 @@ try {
   backupRouteRejected = String(error?.message || "").includes("does not have a dev-host HTTP route");
 }
 assertEqual(backupRouteRejected, true, "write-back backup command is desktop-only");
+let nodeMapSidecarWriteRouteRejected = false;
+try {
+  resolveEditorBackendDevHostRoute(EditorBackendTransportCommand.StableNodeMapWriteSidecar);
+} catch (error) {
+  nodeMapSidecarWriteRouteRejected = String(error?.message || "").includes("does not have a dev-host HTTP route");
+}
+assertEqual(nodeMapSidecarWriteRouteRejected, true, "node-map sidecar write command is desktop-only");
 let assetImportRouteRejected = false;
 try {
   resolveEditorBackendDevHostRoute(EditorBackendTransportCommand.WorkspaceImportAssets);
@@ -162,6 +169,12 @@ const workspaceBackup = await backendClient.workspace.writeBackBackup({
 });
 assertEqual(workspaceBackup.command, EditorBackendTransportCommand.WorkspaceWriteBackBackup, "backend client workspace backup command");
 assertEqual(workspaceBackup.payload.writeRequests[0].relativePath, "localization/zh-cn.csv", "backend client workspace backup payload");
+const nodeMapSidecarWrite = await backendClient.stableNodeMap.writeSidecar({
+  nodeMapText: "{}",
+  relativePath: "inscape.node-map.json",
+});
+assertEqual(nodeMapSidecarWrite.command, EditorBackendTransportCommand.StableNodeMapWriteSidecar, "backend client node-map sidecar write command");
+assertEqual(nodeMapSidecarWrite.payload.relativePath, "inscape.node-map.json", "backend client node-map sidecar write payload");
 const recoveryRestore = await backendClient.recovery.restore({
   contentHash: "fnv1a32:restore",
   relativePath: "story/opening.inscape",

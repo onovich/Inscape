@@ -53,6 +53,7 @@ export class EditorBackendClient {
     this.stableNodeMap = Object.freeze({
       applyCandidate: (request) => this.#invoke(EditorBackendTransportCommand.StableNodeMapApplyCandidate, request),
       review: (request) => this.#invoke(EditorBackendTransportCommand.StableNodeMapReview, request),
+      writeSidecar: (request) => this.#invoke(EditorBackendTransportCommand.StableNodeMapWriteSidecar, request),
     });
     this.workspace = Object.freeze({
       importAssets: (request) => this.#invoke(EditorBackendTransportCommand.WorkspaceImportAssets, request),

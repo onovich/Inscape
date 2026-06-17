@@ -1,12 +1,24 @@
 # Agent 接手指南
 
-状态：P2 Round 7
+状态：P2 Round 8
 
 最后更新：2026-06-17
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-17 SelfHostedEditor P2 Round 8 Stable Node Map UI 闭环快照
+
+P2 Round 8 已完成 stable node map manual-review apply 的 UI / workspace write-back 闭环，不宣布 P2 完成。
+
+- 审计产物见 [SelfHostedEditor P2 Stable Node Map UI Closure Audit](self-hosted-editor-p2-stable-node-map-ui-closure-audit.md)。
+- SelfHostedEditor node-map review UI 现在把 `Apply` 拆成 `Apply` -> `Confirm Apply` 两步；第一次点击只显示确认，不触发 real apply。
+- `Preview Apply` 仍是 dry-run + preview download，不调用 backup 或真实 sidecar write。
+- 新增 desktop-only `stable-node-map.write-sidecar` command，通过 preload whitelist / IPC / `ElectronWorkspaceSessionStore` 写回 `**/inscape.node-map.json`，结果 text-free。
+- Confirm apply 后先调用 `workspace.write-back-backup`，至少成功复制一个 node-map sidecar 备份后才写入 workspace sidecar；备份或写入失败时 UI 只显示 download-ready / write-back failed，不误报 workspace applied。
+- dev-host HTTP 路径仍无 sidecar write route，保持 downloadable payload 语义；真实 workspace write-back 仅属于 Electron desktop backend。
+- 下一轮进入 P2 Round 9：VSCode Parity 与共享边界；重点确认 VSCode / SelfHostedEditor 都只消费 shared Tooling / CLI contract，不在宿主端重复实现 stable identity 或 localization semantics。
 
 ### 2026-06-17 SelfHostedEditor P2 Round 7 Stable Node Map Contract 加固快照
 
@@ -735,13 +747,13 @@ P1 40 轮计划完成后，继续补上了真实 Electron preload -> main 的固
 - SelfHostedEditor 已通过开发宿主复用 `LanguageServer --host-schema-capabilities-project`，补齐 `[query]` 与 `@emit` 的 completion / hover；新增 `check:host-schema` 与 `check:host-schema-http` 守住直连 helper 和真实 HTTP。
 - Host Bridge 作者提示已从 VSCode 私有 JSON 解析上提到共享能力：`LanguageServer --host-binding-capabilities-project` 现在输出 `inscape.host-binding.capabilities`，Tooling 汇总 Host Bridge 配置行与 workspace 编译出的 speaker / `@timeline` 出现位置。
 - SelfHostedEditor 已消费 `/api/host-binding-capabilities`，补齐 speaker 与 `@timeline` 的 completion / hover / navigation；新增 `check:host-binding` 与 `check:host-binding-http`。speaker definition / references 和 `@timeline` Ctrl+Click 现在走同一 Host Binding capability，前端只做 Monaco target 识别与 source reveal。
-- SelfHostedEditor 已新增 `/api/node-map-review` 与顶栏 `Node Map` 入口：开发宿主运行共享 CLI `update-node-map-project --report`，返回 compact `inscape.self-hosted-editor.node-map-review`，前端展示 shared report 摘要和 item / candidate source jump，并可下载生成的 `inscape.node-map.json`。新增 `check:node-map` 与 `check:node-map-http` 守住直连 helper 和真实 HTTP；candidate apply 语义已下沉为 Tooling / CLI `apply-node-map-candidate-project`，SelfHostedEditor 现在通过 `/api/node-map-apply` 为 manual-review 候选提供 `Preview Apply` / `Apply`，浏览器只更新可下载 node map payload，不复制 VSCode 宿主 mutation 或声称已直接写项目 sidecar。
+- SelfHostedEditor 已新增 `/api/node-map-review` 与顶栏 `Node Map` 入口：开发宿主运行共享 CLI `update-node-map-project --report`，返回 compact `inscape.self-hosted-editor.node-map-review`，前端展示 shared report 摘要和 item / candidate source jump，并可下载生成的 `inscape.node-map.json`。新增 `check:node-map` 与 `check:node-map-http` 守住直连 helper 和真实 HTTP；candidate apply 语义已下沉为 Tooling / CLI `apply-node-map-candidate-project`。dev-host 路径保持可下载 payload，Electron desktop 路径在二次确认和备份后写回 node-map sidecar。
 - SelfHostedEditor L10N 表格已消费 Tooling presenter 的 review actions：`/api/localization-review` compact payload 保留 `open-current` / `open-candidate` / `show-candidate-diff`，前端行内提供 Current / Candidate / Diff 动作，分别跳当前行、跳候选来源和展开候选 diff。这里仍只做宿主 UI 与 source reveal，不重算 alignment、候选评分或 CSV 语义；`check:model`、`check:localization-review`、`check:localization-review-http` 已覆盖 actions 传输与交互。
 - SelfHostedEditor 已新增 `Host` 视图作为 VSCode `Show Host Schema Capabilities` 的业务等价入口：它同时消费 Host Schema 与 Host Binding shared capability catalog，展示 query / event / speaker / timeline binding，并可跳到 schema、bridge 或脚本来源。前端只调用既有 bridge，不解析 Host Schema / Host Bridge JSON；`check:model`、`check:structure`、`check:host-schema-http`、`check:host-binding-http` 已覆盖入口与 transport。
 - 2026-06-02 最新：SelfHostedEditor refs overlay 已完成 VSCode CodeLens / References Peek 的业务等价验证第一刀。`/api/references` 继续调用 `LanguageServer --references-project`，但现在会把 dev-host 临时目录 sourcePath 转回 workspace 相对路径；新增 `check:references` 与 `check:references-http`，覆盖跨文件引用、当前未保存 draft 参与、引用数量和真实 HTTP transport。UI 不复制 CodeLens，守同一组引用结果和 source jump。
 - 2026-06-02 最新：SelfHostedEditor 新增 `check:semantic-parity-http`，用真实 HTTP 请求一次性守 diagnostics、completion、definition、references、hover、outline 六个 LanguageServer-backed 作者能力入口。该 smoke 覆盖当前 draft、跨文件节点、缺失目标诊断和 workspace-relative sourcePath；宿主层只做 payload 路径归一化与 transport，不新增语义真相。
 - 2026-06-02 最新：VSCode 新增 `check:semantic-parity`，复用同一组 current-draft / cross-file fixture，经由 VSCode diagnostics、completion、definition、references、hover、outline provider 层消费真实 `LanguageServer` 会话结果。VSCode 侧同步补了临时 override sourcePath 与 workspace-relative sourcePath 的路径还原；这仍只是宿主路径适配，不在 VSCode 里重写语义。
-- 2026-06-02 最新：Stable Node Map manual-review candidate apply 已从 VSCode 私有 JS mutation 下沉到 `Internal/Tooling`，并通过 CLI `apply-node-map-candidate-project` 暴露 dry-run / 写回。VSCode review UI 现在只负责 Quick Pick、调用共享命令、`.review-backup.json` 与 revert 文件恢复；SelfHostedEditor 已接同一命令，`Preview Apply` / `Apply` 都通过 `/api/node-map-apply` 调用共享 CLI，浏览器阶段只更新可下载 sidecar payload，不在前端改写真实项目文件。
+- 2026-06-17 更新：Stable Node Map manual-review candidate apply 已从 VSCode 私有 JS mutation 下沉到 `Internal/Tooling`，并通过 CLI `apply-node-map-candidate-project` 暴露 dry-run / apply result。VSCode review UI 只负责 Quick Pick、调用共享命令、`.review-backup.json` 与 revert 文件恢复；SelfHostedEditor dev-host 路径仍只生成可下载 sidecar payload，Electron desktop 路径则要求 `Confirm Apply`，先调用 `workspace.write-back-backup`，再通过 desktop-only `stable-node-map.write-sidecar` 写回真实 node-map sidecar。
 - 2026-06-02 最新：VSCode 本地化 review -> update 核心闭环已补齐。`Review Localization Alignment` 写出报告后的成功动作现在提供 `Update CSV`，复用本次 review 已选择的旧 CSV，再调用共享 `update-l10n-project` 生成 updated CSV；VSCode 仍只做命令式宿主 glue，不接管 CSV 合并、alignment 或候选评分语义。
 - 2026-06-02 最新：Editor Backend 会话边界第一刀已落在 Runtime dev-host。`/api/runtime-state` 会按 `sessionId` 记住最新 compact Runtime snapshot，`/api/runtime-action` 可只带 `sessionId + action` 推进服务端会话；显式 `runtimeState` 仍保留为兼容 fallback。前端 Runtime bridge 不再默认每次 action 都上传整份 state，`check:runtime-http` 已覆盖真实 HTTP session 推进。这仍只是宿主会话状态，不改变共享 `Runtime` / CLI 剧情推进语义，也还不是正式桌面长驻 Runtime 进程。
 - 2026-06-02 最新：Editor Backend 会话边界第二刀已落在 line-map dev-host。`/api/line-map-refresh` 会按 `sessionId` 记住最新 Tooling line sidecar，前端 `SelfHostedEditorLineMapBridge` 默认只传 `sessionId + script/workspace`，显式 `existingLineMap` 保留为兼容 fallback；新增 `check:line-map` 与 `check:line-map-http` 覆盖直连和真实 HTTP session 继承。这仍只是宿主缓存上一轮 sidecar，不改变共享 `refresh-l10n-line-map-project` 的稳定行身份迁移语义。

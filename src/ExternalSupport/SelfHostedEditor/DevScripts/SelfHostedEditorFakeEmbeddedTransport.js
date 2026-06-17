@@ -83,6 +83,12 @@ export class SelfHostedEditorFakeEmbeddedTransport {
       [EditorBackendTransportCommand.StableNodeMapReview]: async () => ({
         items: [],
       }),
+      [EditorBackendTransportCommand.StableNodeMapWriteSidecar]: async () => ({
+        bytes: 0,
+        ok: true,
+        payloadContentExposed: false,
+        reason: "fake-node-map-sidecar-written",
+      }),
       [EditorBackendTransportCommand.StoryGraphCompileProject]: async () => ({
         graph: null,
       }),

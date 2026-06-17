@@ -32,6 +32,7 @@ export const SelfHostedEditorPreloadEditorCommand = Object.freeze({
   RuntimeStep: "runtime.step",
   StableNodeMapApplyCandidate: "stable-node-map.apply-candidate",
   StableNodeMapReview: "stable-node-map.review",
+  StableNodeMapWriteSidecar: "stable-node-map.write-sidecar",
   StoryGraphCompileProject: "story-graph.compile-project",
   WorkspaceImportAssets: "workspace.import-assets",
   WorkspaceListFiles: "workspace.list-files",
@@ -83,6 +84,7 @@ const preloadPayloadKeysByCommand = Object.freeze({
   [SelfHostedEditorPreloadEditorCommand.RuntimeStep]: ["action", "runtimeState", "scriptText", "sessionId", "workspace"],
   [SelfHostedEditorPreloadEditorCommand.StableNodeMapApplyCandidate]: ["candidate", "dryRun", "item", "nodeMapPath", "scriptText", "workspace"],
   [SelfHostedEditorPreloadEditorCommand.StableNodeMapReview]: scriptWorkspacePayloadKeys,
+  [SelfHostedEditorPreloadEditorCommand.StableNodeMapWriteSidecar]: ["nodeMapText", "relativePath", "workspaceId"],
   [SelfHostedEditorPreloadEditorCommand.StoryGraphCompileProject]: scriptWorkspacePayloadKeys,
   [SelfHostedEditorPreloadEditorCommand.WorkspaceImportAssets]: ["dialogTitle", "workspaceId"],
   [SelfHostedEditorPreloadEditorCommand.WorkspaceListFiles]: ["workspaceId"],
@@ -161,6 +163,7 @@ export function createSelfHostedEditorPreloadApi(options = {}) {
     stableNodeMap: Object.freeze({
       applyCandidate: createEditorCommandHandler(SelfHostedEditorPreloadEditorCommand.StableNodeMapApplyCandidate, handlers),
       review: createEditorCommandHandler(SelfHostedEditorPreloadEditorCommand.StableNodeMapReview, handlers),
+      writeSidecar: createEditorCommandHandler(SelfHostedEditorPreloadEditorCommand.StableNodeMapWriteSidecar, handlers),
     }),
     storyGraph: Object.freeze({
       compileProjectGraph: createEditorCommandHandler(SelfHostedEditorPreloadEditorCommand.StoryGraphCompileProject, handlers),

@@ -87,6 +87,9 @@ export function createSelfHostedEditorBackendCommandHandlers(options = {}) {
     [EditorBackendTransportCommand.WorkspaceWriteBackBackup]: async (payload = {}) => {
       return await sessionStore.runWriteBackBackup(payload);
     },
+    [EditorBackendTransportCommand.StableNodeMapWriteSidecar]: async (payload = {}) => {
+      return await sessionStore.writeNodeMapSidecar(payload);
+    },
   });
 }
 

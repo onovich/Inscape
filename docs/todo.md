@@ -140,9 +140,10 @@ npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
 - [x] 完成 P2 Round 5 SelfHostedEditor Localization Review UI。2026-06-17 审计结果见 [SelfHostedEditor P2 Localization Review UI Audit](self-hosted-editor-p2-localization-review-ui-audit.md)；review row 现在显示 current/candidate line identity、rank、reason、risk/candidate count 等 compact audit chips，真实浏览器 hosted review 不再 fallback。
 - [x] 完成 P2 Round 6 Stable Node Map 当前链路审计。2026-06-17 审计结果见 [SelfHostedEditor P2 Stable Node Map Chain Audit](self-hosted-editor-p2-stable-node-map-chain-audit.md)；确认 review/apply 仍复用 Tooling / CLI，direct / HTTP smoke 已守住 dry-run preview path 与 apply sidecar path，备份/恢复 metadata 与 richer conflict evidence 留给 Round 7/8。
 - [x] 完成 P2 Round 7 Stable Node Map Contract 加固。2026-06-17 审计结果见 [SelfHostedEditor P2 Stable Node Map Contract Audit](self-hosted-editor-p2-stable-node-map-contract-audit.md)；manual-review candidate 已携带共享 evidence / applyPreview，`apply-node-map-candidate-project --result` 输出 dry-run/apply result，SelfHostedEditor compact payload 暴露 changePreview、backup metadata 与 recoveryHint。下一步进入 Round 8：真实写回 UI 闭环与 `workspace.write-back-backup` 接入。
+- [x] 完成 P2 Round 8 Stable Node Map UI 闭环。2026-06-17 审计结果见 [SelfHostedEditor P2 Stable Node Map UI Closure Audit](self-hosted-editor-p2-stable-node-map-ui-closure-audit.md)；SelfHostedEditor `Apply` 现在需要 `Confirm Apply` 二次确认，Electron desktop 路径会先通过 `workspace.write-back-backup` 复制 sidecar 备份，再经 desktop-only `stable-node-map.write-sidecar` 写回 `inscape.node-map.json`；dev-host 路径仍如实显示 download-ready，不误报真实写盘。下一步进入 Round 9：VSCode parity 与共享边界复核。
 - [ ] 评估批量审查 / multi-apply 是否必要；优先做可审计、可撤销的小闭环，不扩大自动继承范围。
 - [x] 继续收敛 Review Presenter 形状：candidate / diff / rank / identity / risk 信号已稳定为 shared `signals` contract，供 VSCode 与 SelfHostedEditor 一致消费。
-- [ ] 完成 stable node map review / apply 的产品化体验：人工确认、冲突报告、dry-run / apply、备份与恢复路径清晰。
+- [x] 完成 stable node map review / apply 的产品化体验：人工确认、冲突报告、dry-run / apply、备份与恢复路径清晰；batch / multi-apply 是否进入 P2 仍留给 Round 10 决策。
 - [ ] 本地化 CSV 与宿主配置 CSV 继续保持界面模型分离，不把 localization review 做成通用表格编辑器。
 
 ### P2.5：Host Schema / Host Bridge 与 Unity-Bird 适配收口

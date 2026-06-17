@@ -183,6 +183,7 @@ node map 是可版本控制文件。合并策略：
 - CLI：提供显式命令，例如 `update-node-map-project` 与 `apply-node-map-candidate-project`，负责 sidecar 输出、`inscape.node-map-update-report` 审查报告和人工候选应用写回；如后续需要离线迁移器，再单独增加 `migrate-node-titles-project`。
 - LanguageServer：消费 Tooling 契约，提供编辑器 diagnostics、rename candidates 和 quick fix。
 - VSCode：提供创建标题 `_01` 自动编号、显式 stable node map 更新命令、显式 `Review Stable Node Map Changes` 审查入口、跳转、预览、backup / revert 等宿主体验；candidate apply 语义调用共享 CLI，不在扩展 JS 内改写 node map。
+- SelfHostedEditor：通过共享 CLI / Tooling contract 展示 stable node map review 与 candidate apply preview；dev-host 只提供 downloadable payload，Electron desktop 在人工确认后先调用 `workspace.write-back-backup`，再通过 desktop-only `stable-node-map.write-sidecar` 写回 node-map sidecar。
 - Runtime：只消费编译结果中的 stable node id 和 display title，不读取源码或 sidecar。
 
 ## Goal 1 自检

@@ -7,6 +7,7 @@ const nodeMapButton = new FakeElement("button");
 let appliedNodeMapPath = "";
 let lastDryRun = null;
 let selectedNodeMapLine = 0;
+let writeBackCallCount = 0;
 const nodeMapReviewController = new StoryNodeMapReviewController({
   reviewBridge: {
     async reviewNodeMap() {
@@ -118,6 +119,25 @@ const nodeMapReviewController = new StoryNodeMapReviewController({
         provider: "node-map-apply",
       };
     },
+    async writeBackNodeMap(applyPayload) {
+      writeBackCallCount += 1;
+      return {
+        provider: "node-map-write-back",
+        writeBack: {
+          appliedToWorkspace: true,
+          backup: {
+            copiedCount: 1,
+            ok: true,
+          },
+          ok: true,
+          reason: "node-map-sidecar-written",
+          write: {
+            ok: true,
+            relativePath: applyPayload.nodeMapPath,
+          },
+        },
+      };
+    },
   },
   reviewButtonElement: nodeMapButton,
 });
@@ -142,9 +162,13 @@ await Promise.resolve();
 await Promise.resolve();
 assertIncludesText(getTextContent(document.body), "Dry-run ready: node_NEW -> node_OLD");
 await findElementByClass(document.body, "node-map-review-candidate-apply")?.click();
+assertEqual(lastDryRun, true, "stable node map apply action should request confirmation before real apply");
+assertIncludesText(getTextContent(document.body), "Confirm Apply");
+await findElementByClass(document.body, "node-map-review-candidate-confirm-apply")?.click();
 assertEqual(lastDryRun, false, "stable node map apply action should request real apply");
 await Promise.resolve();
 await Promise.resolve();
 assertEqual(appliedNodeMapPath, "inscape.node-map.json", "stable node map apply should preserve the review node map path");
+assertEqual(writeBackCallCount, 1, "stable node map confirmed apply should request workspace write-back");
 assertIncludesText(nodeMapReviewController.currentReviewPayload.nodeMapText, "\"applied\": true", "stable node map apply should update the downloadable node map text");
-assertIncludesText(getTextContent(document.body), "Applied node_NEW -> node_OLD to downloadable node map; backup required-before-write-back");
+assertIncludesText(getTextContent(document.body), "Applied node_NEW -> node_OLD to workspace node map; backup copied (1)");

@@ -9,6 +9,7 @@ import {
   SelfHostedEditorElectronAssetImportResultFormat,
   SelfHostedEditorElectronAutosaveResultFormat,
   SelfHostedEditorElectronFlushResultFormat,
+  SelfHostedEditorElectronNodeMapSidecarWriteResultFormat,
   SelfHostedEditorElectronRecoveryActionResultFormat,
   SelfHostedEditorElectronWriteBackBackupResultFormat,
   SelfHostedEditorElectronWorkspaceOpenResultFormat,
@@ -70,6 +71,13 @@ try {
     backupRouteRejected = String(error?.message || "").includes("does not have a dev-host HTTP route");
   }
   assertEqual(backupRouteRejected, true, "write-back backup is desktop-only, not a dev-host route");
+  let nodeMapSidecarWriteRouteRejected = false;
+  try {
+    resolveEditorBackendDevHostRoute(EditorBackendTransportCommand.StableNodeMapWriteSidecar);
+  } catch (error) {
+    nodeMapSidecarWriteRouteRejected = String(error?.message || "").includes("does not have a dev-host HTTP route");
+  }
+  assertEqual(nodeMapSidecarWriteRouteRejected, true, "node-map sidecar write is desktop-only, not a dev-host route");
   let assetImportRouteRejected = false;
   try {
     resolveEditorBackendDevHostRoute(EditorBackendTransportCommand.WorkspaceImportAssets);
@@ -170,6 +178,39 @@ try {
     "anchor,text\nsecret-anchor,old translation",
     "write-back backup preserves localization CSV bytes"
   );
+  const nodeMapSidecarWriteResult = await dispatchSelfHostedEditorBackendCommand(
+    EditorBackendTransportCommand.StableNodeMapWriteSidecar,
+    {
+      nodeMapText: "{\n  \"format\": \"inscape.node-map\",\n  \"writtenBy\": \"electron-workspace-contract\"\n}",
+      relativePath: "inscape.node-map.json",
+    },
+    {
+      sessionStore,
+    }
+  );
+  assertEqual(nodeMapSidecarWriteResult.format, SelfHostedEditorElectronNodeMapSidecarWriteResultFormat, "node-map sidecar write result format");
+  assertEqual(nodeMapSidecarWriteResult.ok, true, "node-map sidecar write ok");
+  assertEqual(nodeMapSidecarWriteResult.targetKind, "node-map-sidecar", "node-map sidecar write target");
+  assertEqual(nodeMapSidecarWriteResult.payloadContentExposed, false, "node-map sidecar write result is text-free");
+  assertEqual(JSON.stringify(nodeMapSidecarWriteResult).includes("electron-workspace-contract"), false, "node-map sidecar write must not echo text");
+  assertEqual(
+    await fs.readFile(path.join(tempRoot, "inscape.node-map.json"), "utf8"),
+    "{\n  \"format\": \"inscape.node-map\",\n  \"writtenBy\": \"electron-workspace-contract\"\n}",
+    "node-map sidecar write replaces sidecar text after backup"
+  );
+  const rejectedNodeMapWrite = await dispatchSelfHostedEditorBackendCommand(
+    EditorBackendTransportCommand.StableNodeMapWriteSidecar,
+    {
+      nodeMapText: "{\"format\":\"inscape.node-map\"}",
+      relativePath: "story/opening.inscape",
+    },
+    {
+      sessionStore,
+    }
+  );
+  assertEqual(rejectedNodeMapWrite.ok, false, "node-map sidecar write rejects non-sidecar targets");
+  assertEqual(rejectedNodeMapWrite.reason, "node-map-sidecar-target-rejected", "node-map sidecar write rejection reason");
+  assertEqual(JSON.stringify(rejectedNodeMapWrite).includes("inscape.node-map"), false, "rejected node-map write is text-free");
 
   const assetImportResult = await dispatchSelfHostedEditorBackendCommand(
     EditorBackendTransportCommand.WorkspaceImportAssets,

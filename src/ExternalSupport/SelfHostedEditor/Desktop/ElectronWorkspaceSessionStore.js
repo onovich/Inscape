@@ -27,6 +27,7 @@ export const SelfHostedEditorElectronFlushResultFormat = "inscape.self-hosted-ed
 export const SelfHostedEditorElectronRecoveryActionResultFormat = "inscape.self-hosted-editor.electron-recovery-action-result";
 export const SelfHostedEditorElectronAssetImportResultFormat = "inscape.self-hosted-editor.electron-asset-import-result";
 export const SelfHostedEditorElectronWriteBackBackupResultFormat = "inscape.self-hosted-editor.electron-write-back-backup-result";
+export const SelfHostedEditorElectronNodeMapSidecarWriteResultFormat = "inscape.self-hosted-editor.electron-node-map-sidecar-write-result";
 export const SelfHostedEditorElectronWorkspaceFormatVersion = 1;
 
 const defaultExcludedDirectoryNames = Object.freeze([
@@ -686,6 +687,61 @@ export class SelfHostedEditorElectronWorkspaceSessionStore {
       plan,
       sessionId: this.#sessionId,
     });
+  }
+
+  async writeNodeMapSidecar(payload = {}) {
+    if (!this.#activeWorkspace) {
+      return buildNodeMapSidecarWriteResult({
+        reason: "workspace-not-open",
+        relativePath: payload.relativePath,
+        sessionId: this.#sessionId,
+      });
+    }
+
+    const boundary = EditorBackendDesktopSessionModel.buildWorkspaceFileBoundary({
+      operation: "write",
+      relativePath: payload.relativePath,
+      workspaceRoot: this.#activeWorkspace.workspaceRoot,
+    });
+    if (!boundary.allowed || boundary.targetKind !== "node-map-sidecar") {
+      return buildNodeMapSidecarWriteResult({
+        boundary,
+        reason: boundary.reason || "node-map-sidecar-target-rejected",
+        relativePath: payload.relativePath,
+        sessionId: this.#sessionId,
+      });
+    }
+
+    const text = String(payload.nodeMapText || "");
+    if (!text.trim()) {
+      return buildNodeMapSidecarWriteResult({
+        boundary,
+        reason: "node-map-text-empty",
+        relativePath: boundary.relativePath,
+        sessionId: this.#sessionId,
+      });
+    }
+
+    try {
+      await this.#writeDocumentText(boundary.relativePath, text);
+      const stats = await this.#fs.stat(resolveWorkspacePath(this.#activeWorkspace.workspaceRoot, boundary.relativePath));
+      return buildNodeMapSidecarWriteResult({
+        boundary,
+        bytes: stats.size,
+        ok: true,
+        reason: "node-map-sidecar-written",
+        relativePath: boundary.relativePath,
+        sessionId: this.#sessionId,
+      });
+    } catch (error) {
+      return buildNodeMapSidecarWriteResult({
+        boundary,
+        error,
+        reason: "node-map-sidecar-write-failed",
+        relativePath: boundary.relativePath,
+        sessionId: this.#sessionId,
+      });
+    }
   }
 
   async importAssets(payload = {}) {
@@ -1685,6 +1741,31 @@ function buildWriteBackBackupCopyResult({
     reason,
     sourceRelativePath: normalizeRelativePath(backupRequest.sourceRelativePath),
     sourceTargetKind: sourceBoundary?.targetKind || backupRequest.sourceTargetKind || "",
+  };
+}
+
+function buildNodeMapSidecarWriteResult({
+  boundary = null,
+  bytes = 0,
+  error = null,
+  ok = false,
+  reason,
+  relativePath = "",
+  sessionId,
+}) {
+  return {
+    bytes: ok ? bytes : 0,
+    errorCode: error?.code || "",
+    format: SelfHostedEditorElectronNodeMapSidecarWriteResultFormat,
+    formatVersion: SelfHostedEditorElectronWorkspaceFormatVersion,
+    ok: Boolean(ok),
+    operation: "stable-node-map.write-sidecar",
+    payloadContentExposed: false,
+    reason,
+    relativePath: normalizeRelativePath(relativePath || boundary?.relativePath),
+    sessionId,
+    targetKind: boundary?.targetKind || "",
+    workspaceBoundary: boundary,
   };
 }
 

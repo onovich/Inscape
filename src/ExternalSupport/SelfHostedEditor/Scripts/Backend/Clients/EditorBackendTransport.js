@@ -23,6 +23,7 @@ export const EditorBackendTransportCommand = Object.freeze({
   RuntimeStep: "runtime.step",
   StableNodeMapApplyCandidate: "stable-node-map.apply-candidate",
   StableNodeMapReview: "stable-node-map.review",
+  StableNodeMapWriteSidecar: "stable-node-map.write-sidecar",
   StoryGraphCompileProject: "story-graph.compile-project",
   WorkspaceImportAssets: "workspace.import-assets",
   WorkspaceListFiles: "workspace.list-files",

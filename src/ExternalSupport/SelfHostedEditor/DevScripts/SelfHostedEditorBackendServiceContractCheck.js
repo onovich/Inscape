@@ -127,6 +127,10 @@ const backendClient = {
       calls.push({ method: "stableNodeMap.review", payload });
       return { items: [] };
     },
+    async writeSidecar(payload) {
+      calls.push({ method: "stableNodeMap.writeSidecar", payload });
+      return { ok: true };
+    },
   },
 };
 
@@ -191,7 +195,7 @@ assertSurface(services.storyGraphClient, ["sessionId", "compileProjectGraph"], "
 assertSurface(services.runtimeSessionClient, ["sessionId", "startOrObserve", "step"], "runtime session client");
 assertSurface(services.lineIdentityClient, ["sessionId", "refresh"], "line identity client");
 assertSurface(services.localizationWorkflowClient, ["sessionId", "review", "updateCsv"], "localization workflow client");
-assertSurface(services.stableNodeMapClient, ["sessionId", "applyCandidate", "review"], "stable node-map client");
+assertSurface(services.stableNodeMapClient, ["sessionId", "applyCandidate", "review", "writeSidecar"], "stable node-map client");
 assertSurface(services.diagnosticsService, ["sessionId", "sessionStatus"], "diagnostics service");
 
 await services.projectSessionService.status({ workspace: { currentFilePath: "story/opening.inscape" } });
@@ -203,6 +207,7 @@ await services.languageSessionClient.diagnose({ scriptText: "# Opening" });
 await services.runtimeSessionClient.step({ action: "continue" });
 await services.localizationWorkflowClient.review({ scriptText: "# Opening" });
 await services.stableNodeMapClient.applyCandidate({ dryRun: true });
+await services.stableNodeMapClient.writeSidecar({ nodeMapText: "{}", relativePath: "inscape.node-map.json" });
 assertEqual(calls.map((call) => call.method).join(","), [
   "projectSession.status",
   "workspace.openFolder",
@@ -213,6 +218,7 @@ assertEqual(calls.map((call) => call.method).join(","), [
   "runtimeSession.step",
   "localizationSession.review",
   "stableNodeMap.applyCandidate",
+  "stableNodeMap.writeSidecar",
 ].join(","), "service delegation order");
 
 const documentBuffer = services.documentBufferStore.buildBuffer({

@@ -159,7 +159,7 @@ export class StoryNodeMapReviewController {
           applyButton.textContent = "Apply";
           applyButton.addEventListener("click", (event) => {
             event.stopPropagation();
-            void this.applyCandidate(item, candidate, reviewPayload, candidateRow);
+            this.requestCandidateApplyConfirmation(item, candidate, reviewPayload, candidateRow);
           });
 
           candidateRow.append(previewButton, applyButton);
@@ -199,6 +199,47 @@ export class StoryNodeMapReviewController {
     );
   }
 
+  requestCandidateApplyConfirmation(item, candidate, reviewPayload, container) {
+    if (!container) {
+      return;
+    }
+
+    if (container.querySelector(".node-map-review-candidate-confirm")) {
+      this.setCandidateStatus(container, "Confirm Apply to write after backup");
+      return;
+    }
+
+    const confirmation = document.createElement("div");
+    confirmation.className = "node-map-review-candidate-confirm";
+
+    const message = document.createElement("small");
+    message.className = "node-map-review-candidate-confirm-message";
+    message.textContent = "Confirm apply. Desktop workspaces write after creating a backup.";
+
+    const confirmButton = document.createElement("button");
+    confirmButton.type = "button";
+    confirmButton.className = "node-map-review-candidate-action node-map-review-candidate-confirm-apply";
+    confirmButton.textContent = "Confirm Apply";
+    confirmButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      void this.applyCandidate(item, candidate, reviewPayload, container);
+    });
+
+    const cancelButton = document.createElement("button");
+    cancelButton.type = "button";
+    cancelButton.className = "node-map-review-candidate-action node-map-review-candidate-cancel-apply";
+    cancelButton.textContent = "Cancel";
+    cancelButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      confirmation.remove();
+      this.setCandidateStatus(container, "Apply canceled");
+    });
+
+    confirmation.append(message, confirmButton, cancelButton);
+    container.append(confirmation);
+    this.setCandidateStatus(container, "Confirm Apply to continue");
+  }
+
   async applyCandidate(item, candidate, reviewPayload, container) {
     if (!this.reviewBridge || typeof this.reviewBridge.applyCandidate !== "function") {
       this.setCandidateStatus(container, "Candidate apply unavailable");
@@ -223,8 +264,28 @@ export class StoryNodeMapReviewController {
     reviewPayload.nodeMapPath = snapshot.apply.nodeMapPath || reviewPayload.nodeMapPath;
     reviewPayload.nodeMapText = snapshot.apply.nodeMapText || reviewPayload.nodeMapText;
     this.currentReviewPayload = reviewPayload;
-    const backupStatus = snapshot.apply.backup?.status ? `; backup ${snapshot.apply.backup.status}` : "";
-    this.setCandidateStatus(container, `Applied ${this.formatApplyPreview(snapshot.apply.changePreview) || snapshot.apply.candidateStableId || candidate.stableId || "candidate"} to downloadable node map${backupStatus}`);
+
+    const label = this.formatApplyPreview(snapshot.apply.changePreview) || snapshot.apply.candidateStableId || candidate.stableId || "candidate";
+    if (!snapshot.apply.result?.writesNodeMap) {
+      this.setCandidateStatus(container, `Download ready for ${label}; apply did not report a sidecar write`);
+      return;
+    }
+
+    if (!this.reviewBridge || typeof this.reviewBridge.writeBackNodeMap !== "function") {
+      this.setCandidateStatus(container, `Download ready for ${label}; workspace write-back unavailable${this.formatRecoveryHint(snapshot.apply)}`);
+      return;
+    }
+
+    this.setCandidateBusy(container, true);
+    const writeBackSnapshot = await this.reviewBridge.writeBackNodeMap(snapshot.apply);
+    this.setCandidateBusy(container, false);
+    if (writeBackSnapshot.provider === "node-map-write-back" && writeBackSnapshot.writeBack?.ok) {
+      this.setCandidateStatus(container, `Applied ${label} to workspace node map; backup copied${this.formatWriteBackBackupSuffix(writeBackSnapshot.writeBack)}${this.formatRecoveryHint(snapshot.apply)}`);
+      return;
+    }
+
+    const reason = writeBackSnapshot.writeBack?.reason || writeBackSnapshot.error || "workspace write-back failed";
+    this.setCandidateStatus(container, `Download ready for ${label}; workspace write-back failed: ${reason}${this.formatRecoveryHint(snapshot.apply)}`);
   }
 
   setCandidateBusy(container, isBusy) {
@@ -275,6 +336,20 @@ export class StoryNodeMapReviewController {
     }
 
     return `${removedStableId} -> ${appliedStableId}`;
+  }
+
+  formatWriteBackBackupSuffix(writeBack) {
+    const copiedCount = Number(writeBack?.backup?.copiedCount || 0);
+    if (copiedCount > 0) {
+      return ` (${copiedCount})`;
+    }
+
+    return "";
+  }
+
+  formatRecoveryHint(applyPayload) {
+    const hint = applyPayload?.recoveryHint || applyPayload?.result?.recoveryHint || "";
+    return hint ? `; ${hint}` : "";
   }
 
   downloadNodeMap(reviewPayload) {

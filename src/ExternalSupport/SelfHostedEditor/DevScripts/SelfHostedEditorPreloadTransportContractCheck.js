@@ -98,6 +98,13 @@ const preloadApi = createSelfHostedEditorPreloadApi({
         ok: true,
       };
     },
+    [EditorBackendTransportCommand.StableNodeMapWriteSidecar]: async (payload) => {
+      preloadCalls.push({ command: EditorBackendTransportCommand.StableNodeMapWriteSidecar, payload });
+      return {
+        ok: true,
+        reason: "node-map-sidecar-written",
+      };
+    },
   },
 });
 
@@ -166,6 +173,13 @@ const writeBackBackupResult = await preloadTransport.invoke(EditorBackendTranspo
 assertEqual(writeBackBackupResult.copiedCount, 1, "preload transport write-back backup payload");
 const writeBackBackupCall = preloadCalls.find((call) => call.command === EditorBackendTransportCommand.WorkspaceWriteBackBackup);
 assertEqual(writeBackBackupCall.payload.writeRequests[0].relativePath, "localization/zh-cn.csv", "preload transport write-back backup command");
+const nodeMapSidecarWriteResult = await preloadTransport.invoke(EditorBackendTransportCommand.StableNodeMapWriteSidecar, {
+  nodeMapText: "{}",
+  relativePath: "inscape.node-map.json",
+});
+assertEqual(nodeMapSidecarWriteResult.ok, true, "preload transport node-map sidecar write payload");
+const nodeMapSidecarWriteCall = preloadCalls.find((call) => call.command === EditorBackendTransportCommand.StableNodeMapWriteSidecar);
+assertEqual(nodeMapSidecarWriteCall.payload.relativePath, "inscape.node-map.json", "preload transport node-map sidecar write command");
 const recoveryRestoreResult = await preloadTransport.invoke(EditorBackendTransportCommand.RecoveryRestore, {
   contentHash: "fnv1a32:restore",
   relativePath: "story/opening.inscape",
@@ -231,6 +245,11 @@ const desktopWriteBackBackup = await desktopBackendClient.workspace.writeBackBac
   ],
 });
 assertEqual(desktopWriteBackBackup.copiedCount, 1, "desktop backend client write-back backup preload payload");
+const desktopNodeMapSidecarWrite = await desktopBackendClient.stableNodeMap.writeSidecar({
+  nodeMapText: "{}",
+  relativePath: "inscape.node-map.json",
+});
+assertEqual(desktopNodeMapSidecarWrite.ok, true, "desktop backend client node-map sidecar write preload payload");
 const desktopRecoveryRestore = await desktopBackendClient.recovery.restore({
   relativePath: "story/desktop.inscape",
 });
