@@ -1,12 +1,22 @@
 # Agent 接手指南
 
-状态：P2 Round 11
+状态：P2 Round 12
 
 最后更新：2026-06-17
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-17 SelfHostedEditor P2 Round 12 工作台集成 Smoke 快照
+
+P2 Round 12 已完成 workbench integration smoke 收口，不宣布 P2 完成。
+
+- 审计产物见 [SelfHostedEditor P2 Workbench Integration Smoke Audit](self-hosted-editor-p2-workbench-integration-smoke-audit.md)。
+- 新增 `npm --prefix src\ExternalSupport\SelfHostedEditor run check:workbench-integration-http`，在同一个 dev-host HTTP server 中串起 localization review / update、line-map refresh、stable node map review / apply。
+- 该 smoke 覆盖工作台需要的 success / empty / error / status payload：hosted empty localization review、missing baseline update error、session baseline update success、line-map session id 保留、node-map dry-run/apply result、backup metadata、recovery hint 与 session cache non-content status。
+- 架构边界未改变：localization update、line-map refresh、stable node map review/apply 仍分别复用 shared Tooling / CLI；SelfHostedEditor 只验证 bridge payload 与 UI 可消费状态，不重建 scoring、migration 或 apply 语义。
+- 下一轮进入 P2 Round 13：文档与 ADR 收口；重点清理状态口径、验证入口和后续 Host Schema / Host Bridge / Unity-Bird 的开启条件。
 
 ### 2026-06-17 SelfHostedEditor P2 Round 11 Localization Update Safety 快照
 

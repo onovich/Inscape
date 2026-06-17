@@ -43,6 +43,7 @@
     "check:localization-review": "node DevScripts/SelfHostedEditorLocalizationReviewSmoke.js",
     "check:runtime-http": "node DevScripts/SelfHostedEditorRuntimeHttpSmoke.js",
     "check:runtime": "node DevScripts/SelfHostedEditorRuntimeSmoke.js",
+    "check:workbench-integration-http": "node DevScripts/SelfHostedEditorWorkbenchIntegrationHttpSmoke.js",
     "check:semantic-parity-http": "node DevScripts/SelfHostedEditorSemanticParityHttpSmoke.js",
     "check:references-http": "node DevScripts/SelfHostedEditorReferencesHttpSmoke.js",
     "check:references": "node DevScripts/SelfHostedEditorReferencesSmoke.js",
