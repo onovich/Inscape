@@ -67,3 +67,5 @@ P3 应至少通过以下方式验证本 ADR：
 - Runtime State 最小 model / smoke 能输出 `ExportState` shape，并能做 `ValidateStateAgainstCurrentScript` 的 compatible / migratable / incompatible 判断。
 - 最小端到端 smoke 能证明条件 IR、Usage、Audit 与 Runtime State export / validate 共同工作。
 - `git diff --check`、`.NET build`、Internal tests、VSCode structure / semantic parity 和 SelfHostedEditor structure / model / semantic parity 保持通过。
+
+P3 final validation 已于 2026-06-18 通过，详见 [SelfHostedEditor P3 Final Validation Report](../self-hosted-editor-p3-final-validation-report.md)。

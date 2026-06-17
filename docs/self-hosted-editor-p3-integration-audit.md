@@ -8,7 +8,7 @@
 
 PASS：P3 Round 12 已完成 Host Schema、Usage Manifest、Host Integration Audit、条件语法与 Runtime State 最小模型的端到端 smoke。
 
-本轮不宣称 P3 完成。P3 仍需进入缓冲轮做最终验证前审计、缺口修复和全量矩阵复核。
+本轮不宣称 P3 完成。后续 P3 final validation 已通过，结论见 [SelfHostedEditor P3 Final Validation Report](self-hosted-editor-p3-final-validation-report.md)。
 
 ## 本轮范围
 
@@ -71,11 +71,11 @@ git diff --check
 
 结果：均通过。`check:structure` 仍输出既有 SelfHostedEditor feature CSS hard-coded color warning，但命令通过，且本轮未改该 CSS。
 
-## 下一轮入口
+## 后续状态
 
-P3 Round 13 进入缓冲修复 / 最终验证前审计：
+P3 final validation 已完成：
 
-1. 跑完整验证矩阵。
-2. 对照 ADR 0021 与 P3 goal guide 逐项检查 PASS 门槛。
-3. 若发现缺口，只修 Round 1-12 范围内的 defect / docs / parity，不引入 P4 功能。
-4. 若无缺口，准备 Round 16 最终验收所需报告素材。
+1. 完整验证矩阵已通过。
+2. ADR 0021 与 P3 goal guide 的 PASS 门槛已逐项对照。
+3. P3 第一刀已收口为 PASS。
+4. 下一阶段候选目标是 P4 Runtime playable MVP。

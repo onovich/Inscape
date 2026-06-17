@@ -64,8 +64,8 @@ PASS：P3 Round 11 已完成 Runtime State 最小模型与 `ValidateStateAgainst
 
 ## 下一轮入口
 
-P3 Round 13 优先完成：
+后续状态：
 
-1. 进入缓冲修复 / 最终验证前审计。
-2. 对照 ADR 0021 与 P3 goal guide 逐项检查 PASS 门槛。
-3. 只修 Round 1-12 范围内缺口，不引入 P4 Runtime 功能。
+1. P3 Round 12 已完成最小端到端 smoke。
+2. P3 final validation 已通过，详见 [SelfHostedEditor P3 Final Validation Report](self-hosted-editor-p3-final-validation-report.md)。
+3. 下一阶段候选目标是 P4 Runtime playable MVP。

@@ -1,6 +1,6 @@
 # Agent 接手指南
 
-状态：P3 Round 12 minimal integration smoke and docs closure complete
+状态：P3 first cut PASS
 
 最后更新：2026-06-18
 
@@ -8,9 +8,20 @@
 
 ## 当前项目快照
 
+### 2026-06-18 SelfHostedEditor P3 Final Validation 快照
+
+P3 第一刀最终验证已通过，结论为 PASS。
+
+- 最终验收产物见 [SelfHostedEditor P3 Final Validation Report](self-hosted-editor-p3-final-validation-report.md)。
+- P3 已完成第二版条件语法、Host Schema `queries[]` / `actions[]`、Usage Manifest、Host Integration Audit、Runtime query provider / internal facts、Runtime State 最小模型与 Round 12 integration smoke。
+- 最终验证矩阵通过：`.NET build`、Internal tests、VSCode manifest / structure / semantic parity、SelfHostedEditor syntax / structure / model / semantic parity HTTP、`git diff --check`。
+- 边界扫描通过：`Internal` 没有新增 Unity / Bird / Addressables 程序依赖；Host Schema 第一版没有新增 rollback / replay / receipt / failure / timeout policy 字段；ExternalSupport 没有新增 condition parser 或 Runtime 语义副本。
+- 后置范围保持不变：完整 Save / Load、Runtime 条件求值、action dispatcher、query / action receipt、完整 Log / Backlog、Rollback、Trace Replay、Flashback、Presentation IR 与通用 Unity / Host SDK。
+- 下一候选阶段为 P4 Runtime playable MVP；不要把 P4 目标回写成 P3 未完成项。
+
 ### 2026-06-18 SelfHostedEditor P3 Round 12 Integration Smoke 快照
 
-P3 Round 12 已完成最小端到端 smoke 与文档收口，不宣称 P3 完成。
+P3 Round 12 已完成最小端到端 smoke 与文档收口；随后 P3 final validation 已通过。
 
 - 实现审计见 [SelfHostedEditor P3 Integration Audit](self-hosted-editor-p3-integration-audit.md)。
 - 新增 `tests/Internal/Inscape.Tests/P3/TestP3IntegrationSmoke.cs`，用临时 workspace 串起 Host Schema、Host Bridge、`.inscape` story、Usage Manifest、Host Integration Audit 与 Runtime State。
@@ -18,7 +29,7 @@ P3 Round 12 已完成最小端到端 smoke 与文档收口，不宣称 P3 完成
 - CLI 链路已验证：`compile-project` 输出条件 IR，`inspect-usage-project` 输出 `query-interpolation` / `choice-condition` / `conditional-jump` usage，`audit-host-integration-project` 对账 diagnostic count 为 0。
 - Runtime 链路已验证：`runtime-project --export-state` 输出正式 `inscape.runtime-state`，`runtime-project --validate-state` 同版本返回 `compatible`。
 - 本轮未实现条件 Runtime 求值、action dispatcher、query receipt、完整 Save / Load、Rollback、Trace Replay、Flashback 或 Unity / Host SDK。
-- 下一轮进入 P3 Round 13 缓冲修复 / 最终验证前审计：跑完整矩阵，对照 ADR 0021 与 goal guide 检查 PASS 门槛，只修 Round 1-12 范围内缺口。
+- 后续状态见 P3 final validation 快照。
 
 ### 2026-06-18 SelfHostedEditor P3 Round 11 Runtime State 快照
 
@@ -31,7 +42,7 @@ P3 Round 11 已完成 Runtime State 最小模型与 `ValidateStateAgainstCurrent
 - `runtime-project` 新增 `--export-state`、`--validate-state`、`--script-version` 与 `--host-checkpoint-id`，并保持旧 Player snapshot 的 `--state` 兼容。
 - Internal tests 已覆盖正式 state export、普通 state 不包含完整 Log / Rollback / Trace、validation 三态，以及 CLI export / validate / restore smoke。
 - 本轮未实现完整正式 Save / Load、query receipt、Log / Backlog、Rollback、Trace Replay、Flashback、条件 Runtime 求值或 action dispatcher。
-- P3 Round 12 已在后续快照完成最小端到端 smoke 与文档收口；下一步进入缓冲修复 / 最终验证前审计。
+- P3 Round 12 已在后续快照完成最小端到端 smoke 与文档收口；P3 final validation 已通过。
 
 ### 2026-06-18 SelfHostedEditor P3 Round 10 Runtime query provider / internal facts 快照
 
@@ -1507,9 +1518,9 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 
 建议优先做小而闭环的任务，不要直接跳到大规模重构。
 
-1. 继续推进 P3 Round 13 缓冲修复 / 最终验证前审计。
-   - 从 [SelfHostedEditor P3 Integration Audit](self-hosted-editor-p3-integration-audit.md)、[SelfHostedEditor P3 Goal 模式执行指南](self-hosted-editor-p3-goal-mode-execution-guide.md)、[运行时与 Unity 宿主](runtime-unity.md) 和 ADR 0021 接上。
-   - 优先跑完整验证矩阵并对照 P3 PASS 门槛；只修 Round 1-12 范围内缺口，不宣布 P3 PASS，不引入 P4 Runtime 功能。
+1. 启动 P4 Runtime playable MVP 前置设计 / 第一刀。
+   - 从 [SelfHostedEditor P3 Final Validation Report](self-hosted-editor-p3-final-validation-report.md)、[P3 Runtime / Language Discussion Memory](p3-runtime-language-discussion-memory.md)、[运行时与 Unity 宿主](runtime-unity.md) 和 ADR 0021 接上。
+   - 优先细化 Runtime MVP 验收样例：条件表达式 Runtime 求值、delegate / mock / recorded query、`fire` / `wait` / `handoff` action dispatcher、Log / Backlog 与普通 Save / Load 子状态 blob；不要回头扩大 P3。
 
 2. 继续推进 Stable Node ID / 本地化主线。
    - ADR 0013、sidecar 闭环、保守自动重命名识别、VSCode 显式 `Update Stable Node Map` 入口、插入标题后的自动同步、标题重命名人工确认 / 冲突报告、本地化 alignment / audit report，以及相似文本人工候选第一版都已落地。

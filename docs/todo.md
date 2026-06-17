@@ -1,6 +1,6 @@
 # TODO
 
-状态：持续维护，P3 Round 12 minimal integration smoke and docs closure complete
+状态：持续维护，P3 first cut PASS
 
 SelfHostedEditor regression invariant: Preview choice clicks must advance the reading Preview to the target block and reveal the target block title in the editor. Compiler-project Preview data must never silently lose `previewLines`: if a returned Compiler graph has source lines but missing or mismatched `previewLines`, Preview must report a compiler graph contract error instead of falling back to the UI-only draft model. `npm --prefix src\ExternalSupport\SelfHostedEditor run check:model` covers both invariants so future Runtime / navigation work does not regress them.
 
@@ -207,8 +207,8 @@ npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
 - [x] 完成 P3 Round 10 Runtime query provider 与 internal narrative facts 设计。2026-06-18 审计结果见 [SelfHostedEditor P3 Runtime Query Provider Audit](self-hosted-editor-p3-runtime-query-provider-audit.md)；`Internal/Runtime` 新增 delegate / mock / recorded query provider contract，`NarrativeRuntime` 记录 visited / seen / choice facts，并用 Internal tests 验证内部只读 query 与 provider source kind。
 - [x] 完成 P3 Round 11 Runtime State 最小模型。2026-06-18 审计结果见 [SelfHostedEditor P3 Runtime State Audit](self-hosted-editor-p3-runtime-state-audit.md)；`NarrativeRuntime.ExportState` 输出 `format` / `runtimeVersion` / `scriptVersion` / `position` / `flow` / `facts` / `random` / `host.checkpointId`，`ValidateStateAgainstCurrentScript` 覆盖 compatible / migratable / incompatible，CLI `runtime-project` 支持 `--export-state` 与 `--validate-state` smoke。
 - [x] 完成 P3 Round 12 最小端到端 smoke / docs closure。2026-06-18 审计结果见 [SelfHostedEditor P3 Integration Audit](self-hosted-editor-p3-integration-audit.md)；新增 `tests/Internal/Inscape.Tests/P3/TestP3IntegrationSmoke.cs`，串起 `compile-project` 条件 IR、`inspect-usage-project` usage、`audit-host-integration-project` schema / bridge 对账，以及 `runtime-project --export-state` / `--validate-state`。
-- [ ] 按 [SelfHostedEditor / P3 Goal 模式执行指南](self-hosted-editor-p3-goal-mode-execution-guide.md) 继续推进 P3，下一步优先进入 P3 Round 13 缓冲修复 / 最终验证前审计；只修 Round 1-12 范围内 defect / docs / parity，不引入 P4 功能。
-- [ ] P4 开始前需要细化 Runtime MVP 验收样例、query receipt 记录粒度、`fire` / `wait` / `handoff` pending / resumed payload，以及 Runtime Inspector 只能改 mock query、不直接改正式 Runtime state 的产品边界。
+- [x] 完成 P3 最终验证并确认 P3 first cut PASS。2026-06-18 最终报告见 [SelfHostedEditor P3 Final Validation Report](self-hosted-editor-p3-final-validation-report.md)；最终矩阵、边界扫描、P3 PASS 门槛与文档接力入口均已收口。
+- [ ] 启动 P4 Runtime playable MVP 前置设计 / 第一刀；优先细化 Runtime MVP 验收样例、query receipt 记录粒度、`fire` / `wait` / `handoff` pending / resumed payload，以及 Runtime Inspector 只能改 mock query、不直接改正式 Runtime state 的产品边界。
 - [ ] P7 前继续评估 Rollback checkpoint 的准确粒度、跨宿主 action 时的回退阻断 / checkpoint 规则、Trace Replay、Flashback Playback 与时空穿越式特殊倒放；这些不进入 P3 / P4 第一刀实现。
 
 ### 暂停 / 明确后置

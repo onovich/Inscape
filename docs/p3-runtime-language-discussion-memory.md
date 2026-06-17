@@ -532,7 +532,7 @@ incompatible
 
 它只报告能否加载、能否迁移、失败原因和可能的附近位置，不应静默修状态。
 
-P3 Round 11 已按该边界落地最小 Runtime State model / smoke：`NarrativeRuntime.ExportState()` 输出上述 shape，`ValidateStateAgainstCurrentScript()` 输出 compatible / migratable / incompatible 报告；普通 Runtime State 仍不默认包含完整 Log、完整 Rollback stack 或完整 query/action trace。P3 Round 12 已进一步用最小端到端 smoke 串起 Host Schema、Host Bridge、Usage Manifest、Host Integration Audit、条件 IR 与 Runtime State export / validate。
+P3 Round 11 已按该边界落地最小 Runtime State model / smoke：`NarrativeRuntime.ExportState()` 输出上述 shape，`ValidateStateAgainstCurrentScript()` 输出 compatible / migratable / incompatible 报告；普通 Runtime State 仍不默认包含完整 Log、完整 Rollback stack 或完整 query/action trace。P3 Round 12 已进一步用最小端到端 smoke 串起 Host Schema、Host Bridge、Usage Manifest、Host Integration Audit、条件 IR 与 Runtime State export / validate。P3 final validation 已于 2026-06-18 通过，结论见 [SelfHostedEditor P3 Final Validation Report](self-hosted-editor-p3-final-validation-report.md)。
 
 ## ADR 需求
 
@@ -596,7 +596,7 @@ P4 开始前仍需要细化三件事：
 2. 条件语法的 parser / IR 细节。
 3. Usage Manifest 的准确 JSON shape 与 audit report shape。
 4. Runtime State 最小模型已在 P3 Round 11 落地；P3 Round 12 已完成 Host Schema、Usage、Audit、条件语法和 Runtime State 的最小端到端 smoke。
-5. 缓冲轮仍需做最终验证前审计，确认 P3 PASS 门槛无缺口。
+5. P3 第一刀最终验证已通过；P4 开始前仍需细化 Runtime MVP 验收样例、query receipt 粒度、action pending / resume payload 与 Runtime Inspector 边界。
 6. 是否允许非常受限的用户自定义叙事局部变量。
 
 ## 未来 session 不要误读的点

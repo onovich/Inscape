@@ -397,7 +397,7 @@ Tooling / VSCode / LanguageServer 可以提供提示或显式 audit，但这些�
 4. Runtime 已定义 delegate / mock / recorded provider contract，并明确 snapshot 不作为生产主链路。
 5. Runtime 已定义内部叙事运行事实和内部只读查询函数的最小集合。
 6. Runtime State 最小模型和 `ValidateStateAgainstCurrentScript` shape 已完成；Host Schema / Usage / Audit / 条件语法 / Runtime State 的最小端到端 smoke 已在 P3 Round 12 完成。
-7. 下一步进入缓冲修复 / 最终验证前审计；只修 P3 Round 1-12 范围内缺口，不引入 P4 Runtime 功能。
+7. P3 final validation 已通过；下一步进入 P4 Runtime playable MVP 前置设计 / 第一刀。
 8. 评估 C# attribute / source generator 的宿主无关 schema 生成流程。
 
 Unity 相关代码生成和 Attribute 扫描只进入准备和计划文档；在设计方案落实前，不进行研发实现。
