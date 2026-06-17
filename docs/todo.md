@@ -115,6 +115,7 @@ SelfHostedEditor desktop backend v0
 - [x] 保持与 VSCode authoring endpoint 的 semantic parity：SelfHostedEditor 与 VSCode 都消费同一组 shared payload shape。2026-06-17 第三刀：Electron workspace contract 明确断言 `inscape.self-hosted-editor.language-session-request` envelope 与 query kind，验证仍通过 SelfHostedEditor / VSCode semantic parity。
 - [x] packaged app 带上并解析 bundled LanguageServer artifact。2026-06-17 P1.5 打包第一刀：`package:windows` 会把 `Inscape.LanguageServer` runtime 复制到 `resources/language-server`，Electron packaged resolver 只从该资源目录启动，不回退到源码目录；`check:electron-language-artifact` 与 `smoke:desktop-package` 覆盖 artifact contract。
 - [x] packaged GUI smoke 覆盖真实 long-lived LanguageServer authoring path。2026-06-17 P1.5 打包第二刀：新增 `smoke:desktop-package-language`，启动 generated packaged exe，不注入 fake language handler，验证 packaged `long-lived` status、`packaged-*` artifact、dirty buffer override，以及 diagnostics / completions / definition / references / hover / documentSymbols 六类 endpoint。
+- [x] P1.5 final validation 通过。2026-06-17 收口验证已覆盖 SelfHostedEditor syntax / structure / model、language session artifact / fallback / long-lived session、Electron workspace / lifecycle、HTTP authoring / Runtime / localization / line-map / node-map / host capability smokes、Windows package + packaged GUI / language smokes、VSCode manifest / structure / semantic parity、`.NET build`、Internal tests、`npm audit --audit-level=moderate` 与 `git diff --check`。
 
 验收入口应至少覆盖：
 
