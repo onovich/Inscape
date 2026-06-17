@@ -172,10 +172,10 @@ bird-export-report.txt
 `L10N_Talking.csv` 使用 Bird 当前运行时格式：
 
 ```text
-ID,ZH_CN,EN_US,ES_ES
+ID,Desc,ZH_CN,EN_US
 ```
 
-第一语言列写入源文本，其余语言列暂留空。文本会按 Bird 当前约定做轻量转义：逗号转反引号、双引号转 `%`、换行转 `/br`。
+`Desc` 是 Bird 当前人工描述列，后续语言列由 Bird runtime 按 header 匹配。文本会按 Bird 当前约定做轻量转义：逗号转反引号、双引号转 `%`、换行转 `/br`，并支持 `<pr>` 拆成多个 `talkingIndex`。当前 UnitySample / Bird-compatible adapter 输出仍是早期 `ID,ZH_CN,EN_US,ES_ES` 草案，后续若继续 Bird adapter，应在 ExternalSupport 层补 `Desc` / 语言列配置，而不是修改 Inscape 通用 localization CSV。
 
 `inscape-bird-l10n-map.csv` 保留 Inscape 锚点到 Bird 输出坐标的审校映射：
 
@@ -202,12 +202,14 @@ dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- merge-bi
 - 同 ID 但源文本变化时，写入新源文本并清空目标语言列，避免旧翻译误套到新文本。
 - 旧源文本和旧译文会写入 `--report` 指定的审查 CSV，用于追溯和人工参考。
 
-2026-04-29 已用 Bird 当前 `L10N_Talking.csv` 和 `artifacts\bird-trial\export\L10N_Talking.csv` 试跑：
+2026-04-29 已用当时 Bird `L10N_Talking.csv` 和 `artifacts\bird-trial\export\L10N_Talking.csv` 试跑：
 
 - Bird 原表 270 行。
 - 合并预览表 275 行。
 - 审查报告只包含 5 个 `added` 行。
 - 未改动 Bird 项目正式 `L10N_Talking.csv`。
+
+2026-06-17 P2.5 再次核对当前 Bird L10N：正式表头为 `ID,Desc,ZH_CN,EN_US`，选择项文本由 `L10N_TalkingOption` 承载。用 phase fixture 输出跑 `merge-unity-sample-l10n` 只生成 ignored merge preview 与 4 个 `added` 审查行，未改动 Bird 正式表。结论见 [SelfHostedEditor P2.5 Bird L10N Format Decision](self-hosted-editor-p2-5-bird-l10n-format-decision.md)。
 
 ## 当前映射规则
 
@@ -237,7 +239,7 @@ dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- merge-bi
 - `roleId` 仅支持通过 CSV 手工绑定，尚不能从 Bird 资源自动扫描。
 - `export-bird-role-template` 可以从 `L10N_RoleName.csv` 辅助填充 `roleId`，但只做精确唯一匹配，不做模糊匹配。
 - `textAnchorIndex` 暂固定为 `0`，`textDisplayType` 暂固定为 `Instant`。
-- 选择项文本目前进入 manifest 和锚点映射表，但不进入 `L10N_Talking.csv`，因为 Bird 当前 `TalkingOptionTM.optionText` 是结构字段，不是 `L10N.Talking_Get` 坐标。
+- 选择项文本目前进入 manifest 和锚点映射表，但还没有生成 Bird 当前使用的 `L10N_TalkingOption`；这应作为 Bird adapter 后续问题处理，不影响 Inscape 通用 localization CSV。
 - 尚未合并多段文本到同一个 `talkingId + <pr>` 单元格。
 - 角色、资源、Timeline 目前仅有 CSV 绑定表，还没有项目配置文件或正式宿主 Schema。
 - 当前绑定表只覆盖 Bird 需要的字段，不代表通用 Host Bridge 的最终格式。
@@ -249,5 +251,5 @@ dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- merge-bi
 - 评估 `talking.enter`、`node.enter`、`node.exit` 是否需要 Bird 运行时或 importer 扩展，暂不把它们自动落为 `TalkingEffectTM`。
 - 设计通用 Host Bridge 草案，明确 Inscape 可读 ID 到项目内部 ID / 资源 / 处理器的映射方式。
 - 将 Timeline Hook 的长期模型转为宿主事件：Bird 可以保留 `timeline` 示例，但通用层应允许策划自定义事件和参数。
-- 决定选择项文本长期如何本地化：保留在 `TalkingOptionTM.optionText`，还是扩展 Bird L10N。
+- 决定选择项文本长期如何由 adapter 输出到 Bird `L10N_TalkingOption`，并提供对应 merge preview。
 - 评估是否把连续同配置文本合并为 `<pr>`，减少 `TalkingSO` 数量。

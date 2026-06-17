@@ -1,12 +1,22 @@
 # Agent 接手指南
 
-状态：P2.5 Round 4 PASS
+状态：P2.5 Round 5 PASS
 
 最后更新：2026-06-17
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-17 SelfHostedEditor P2.5 Round 5 Bird L10N 决策快照
+
+P2.5 Round 5 已完成 Bird L10N 格式决策，不宣布 P2.5 完成。
+
+- 决策产物见 [SelfHostedEditor P2.5 Bird L10N Format Decision](self-hosted-editor-p2-5-bird-l10n-format-decision.md)。
+- 当前 Bird `L10N_Talking.csv` 表头为 `ID,Desc,ZH_CN,EN_US`，runtime 支持 `<pr>` 拆段；选项文本走独立 `L10N_TalkingOption`，坐标是 `talkingId + optionIndex`。
+- UnitySample / Bird-compatible adapter 输出仍是早期 `ID,ZH_CN,EN_US,ES_ES` 草案，后续应在 ExternalSupport adapter / merge preview 层支持 `Desc`、项目语言列和 `L10N_TalkingOption`，不改变 Inscape 通用 localization CSV。
+- 本轮 merge preview 只写 ignored `artifacts/bird-trial/phase-export/L10N_Talking.p2-5.*`，未改动 Bird 正式 L10N。
+- 下一轮进入 P2.5 Round 6：Host Bridge / ExternalSupport 边界收口与最终前验证。
 
 ### 2026-06-17 SelfHostedEditor P2.5 Round 4 Bird Dry Run 快照
 

@@ -100,10 +100,10 @@ anchor,node,kind,speaker,text,translation,status,sourcePath,line,column
 Bird 当前 `L10N_Talking.csv` 不是按行级 hash 存储，而是按运行时对话坐标存储：
 
 ```text
-ID,ZH_CN,EN_US,ES_ES
+ID,Desc,ZH_CN,EN_US
 ```
 
-其中 `ID` 对应 `talkingId`，单元格文本可用 `<pr>` 切分为多个 `talkingIndex`。运行时最终通过 `L10N.Talking_Get(talkingId, talkingIndex)` 查询文本。
+其中 `ID` 对应 `talkingId`，`Desc` 是 Bird 当前人工描述列，后续语言列按 header 匹配。单元格文本可用 `<pr>` 切分为多个 `talkingIndex`。运行时最终通过 `L10N.Talking_Get(talkingId, talkingIndex)` 查询文本。Bird 当前选择项文本另走 `L10N_TalkingOption`，坐标是 `talkingId + optionIndex`。
 
 因此，Inscape 后续需要区分两种表：
 
