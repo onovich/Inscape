@@ -493,7 +493,7 @@ Usage Manifest 只记录能看懂的字面量，不执行表达式，也不调�
 
 ## Audit 对接
 
-Round 6 的 `audit-host-integration-project` 应使用 Usage Manifest 做以下对账：
+P3 Round 6 已实现 `audit-host-integration-project` 最小 JSON 输出，使用 Usage Manifest 做以下对账：
 
 - `queries[].name` 是否存在于 Host Schema `queries[]`。
 - `actions[usageKind = "schema-action"].name` 是否存在于 Host Schema `actions[]`，legacy `events[]` 只作为迁移兼容。
@@ -501,7 +501,7 @@ Round 6 的 `audit-host-integration-project` 应使用 Usage Manifest 做以下�
 - `arguments` 数量和字面量类型是否满足 Host Schema parameters。
 - `requiredIds` 是否能在 Host Bridge `ids[]` 找到对应 `kind` / `name`。
 
-Audit 可以报告 unknown query / action、参数类型不匹配和 missing bridge binding；Usage Manifest 本身不报告这些问题。
+Audit 可以报告 unknown query / action、legacy event usage、参数数量 / 类型不匹配、missing bridge id binding 和 missing bridge handler mapping；Usage Manifest 本身不报告这些问题。
 
 ## 架构边界
 

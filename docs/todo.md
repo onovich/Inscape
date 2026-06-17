@@ -1,6 +1,6 @@
 # TODO
 
-状态：持续维护，P3 Round 5 inspect-usage-project minimal implementation complete
+状态：持续维护，P3 Round 6 audit-host-integration-project minimal implementation complete
 
 SelfHostedEditor regression invariant: Preview choice clicks must advance the reading Preview to the target block and reveal the target block title in the editor. Compiler-project Preview data must never silently lose `previewLines`: if a returned Compiler graph has source lines but missing or mismatched `previewLines`, Preview must report a compiler graph contract error instead of falling back to the UI-only draft model. `npm --prefix src\ExternalSupport\SelfHostedEditor run check:model` covers both invariants so future Runtime / navigation work does not regress them.
 
@@ -200,7 +200,8 @@ npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
 - [x] 完成 P3 Round 3 Host Schema Tooling / CLI / LanguageServer compatibility。2026-06-18 审计结果见 [SelfHostedEditor P3 Host Schema Compatibility Audit](self-hosted-editor-p3-host-schema-compatibility-audit.md)；`HostSchemaActionReaderDomain`、CLI / LanguageServer capability catalog、VSCode / SelfHostedEditor Host Schema consumption 已消费 `actions[]`，legacy `events[]` 继续作为 deprecated 兼容提示保留。
 - [x] 完成 P3 Round 4 Usage Manifest contract。2026-06-18 审计结果见 [SelfHostedEditor P3 Usage Manifest Contract Audit](self-hosted-editor-p3-usage-manifest-contract-audit.md)；新增 [Usage Manifest Contract](usage-manifest-contract.md)，定义 `inscape.usage` 顶层 JSON、query/action usage、literal argument、context、source location 与 `requiredIds`；本轮未实现 CLI 或脚本扫描。
 - [x] 完成 P3 Round 5 `inspect-usage-project` 最小实现。2026-06-18 审计结果见 [SelfHostedEditor P3 Usage Manifest Implementation Audit](self-hosted-editor-p3-usage-manifest-implementation-audit.md)；新增 `Internal/Tooling/UsageManifest` 与 CLI 命令，当前扫描 `[]` query interpolation、`@emit` action / legacy event、`@timeline...` hook，并按 Host Schema `idKind` 推导 `requiredIds`；未知 query / action 不导致命令失败。
-- [ ] 按 [SelfHostedEditor / P3 Goal 模式执行指南](self-hosted-editor-p3-goal-mode-execution-guide.md) 继续推进 P3，下一步优先进入 `audit-host-integration-project` 最小实现，再推进条件语法和 Runtime State 最小模型。
+- [x] 完成 P3 Round 6 `audit-host-integration-project` 最小实现。2026-06-18 审计结果见 [SelfHostedEditor P3 Host Integration Audit](self-hosted-editor-p3-host-integration-audit.md)；新增 `Internal/Tooling/HostIntegrationAudit` 与 CLI 命令，对账 Usage Manifest、Host Schema capability、Host Bridge capability，报告 unknown query/action、legacy event、参数 mismatch、missing bridge id / handler。
+- [ ] 按 [SelfHostedEditor / P3 Goal 模式执行指南](self-hosted-editor-p3-goal-mode-execution-guide.md) 继续推进 P3，下一步优先进入 condition syntax contract / parser design，再推进 Compiler / IR 最小实现和 Runtime State 最小模型。
 - [ ] P4 开始前需要细化 Runtime MVP 验收样例、query receipt 记录粒度、`fire` / `wait` / `handoff` pending / resumed payload，以及 Runtime Inspector 只能改 mock query、不直接改正式 Runtime state 的产品边界。
 - [ ] P7 前继续评估 Rollback checkpoint 的准确粒度、跨宿主 action 时的回退阻断 / checkpoint 规则、Trace Replay、Flashback Playback 与时空穿越式特殊倒放；这些不进入 P3 / P4 第一刀实现。
 

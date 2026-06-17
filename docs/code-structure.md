@@ -27,6 +27,7 @@ src/
       HostSchema/               宿主 schema 模板导出
       HostBinding/              宿主绑定表、角色名和宿主资产扫描
       UsageManifest/            剧本宿主能力 usage / required id 清单生成
+      HostIntegrationAudit/     Usage / Host Schema / Host Bridge 对账报告
     Cli/
       Inscape.Cli/              当前 Cli 项目，已按 Entries / Commands / Providers / ViewModels 初步分目录
     LanguageServer/             当前 LanguageServer 基线项目，已接入 diagnostics / definition / references / completion 第一层
@@ -77,6 +78,7 @@ Internal/
     HostSchema/
     HostBinding/
     UsageManifest/
+    HostIntegrationAudit/
     EditorAuthoring/
 
   Cli/
@@ -159,6 +161,7 @@ Tooling 是共享用例层。它承接当前大量暂住在 `Inscape.Cli` 中的
 - `HostSchema`
 - `HostBinding`
 - `UsageManifest`
+- `HostIntegrationAudit`
 
 它可以调用 `Compiler`，也可以被 `Cli`、`VSCode`、`LanguageServer` 和未来外部支持复用。
 
@@ -234,7 +237,7 @@ UnityPlugin 不属于 Internal 五层之一。它是 Unity 环境下的外部支
 ## 当前代码映射
 
 - `src/Internal/Compiler/Inscape.Compiler.csproj` + `src/Internal/Compiler/{DslScript,StoryGraph,Localization,Diagnostics,TextContracts}/` → 当前 `Compiler` 项目，项目名、命名空间与旧类型名已完成收敛
-- `src/Internal/Tooling/Inscape.Tooling.csproj` + `src/Internal/Tooling/{DslScriptSources,ToolConfig,Preview,Localization,HostSchema,HostBinding,UsageManifest}/` → 当前 `Tooling` 项目，已开始按 Business / Role 目录落位
+- `src/Internal/Tooling/Inscape.Tooling.csproj` + `src/Internal/Tooling/{DslScriptSources,ToolConfig,Preview,Localization,HostSchema,HostBinding,UsageManifest,HostIntegrationAudit}/` → 当前 `Tooling` 项目，已开始按 Business / Role 目录落位
 - `src/Internal/Cli/Inscape.Cli/{Entries,Commands,Providers,ViewModels}/` → 当前 `Cli` 项目，已按入口、命令、命令元数据和输出 DTO 初步分目录
 - `src/ExternalSupport/VSCode/` → 当前 `VSCode` 前端，后续继续按 VSCode Layer 规则拆分
 - `src/ExternalSupport/SelfHostedEditor/` → 自研编辑器宿主目录；当前已有依赖为空的静态工作台壳，后续接入 Monaco / LanguageServer / Runtime
@@ -257,6 +260,7 @@ Tooling
   HostSchema
   HostBinding
   UsageManifest
+  HostIntegrationAudit
 
 Cli
   ConsoleEntry

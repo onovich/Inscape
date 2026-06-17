@@ -36,6 +36,14 @@ namespace Inscape.Tooling {
                 .ThenBy(binding => binding.Kind, StringComparer.Ordinal)
                 .ThenBy(binding => binding.Name, StringComparer.Ordinal)
                 .ToList();
+            catalog.Actions = catalog.Actions
+                .OrderBy(action => action.SourceRank)
+                .ThenBy(action => action.Name, StringComparer.Ordinal)
+                .ToList();
+            catalog.Queries = catalog.Queries
+                .OrderBy(query => query.SourceRank)
+                .ThenBy(query => query.Name, StringComparer.Ordinal)
+                .ToList();
 
             return catalog;
         }
@@ -53,58 +61,115 @@ namespace Inscape.Tooling {
             try {
                 string text = File.ReadAllText(hostBridgePath, Encoding.UTF8);
                 using JsonDocument document = JsonDocument.Parse(text);
-                if (!document.RootElement.TryGetProperty("ids", out JsonElement ids)
-                    || ids.ValueKind != JsonValueKind.Array) {
-                    catalog.HostBridge.Loaded = true;
-                    return;
-                }
-
                 catalog.HostBridge.Loaded = true;
-                foreach (JsonElement id in ids.EnumerateArray()) {
-                    string declaredKind = ReadString(id, "kind");
-                    string name = ReadString(id, "name").Trim();
-                    if (declaredKind.Length == 0 || name.Length == 0) {
-                        continue;
-                    }
 
-                    JsonElement host = id.TryGetProperty("host", out JsonElement hostValue)
-                        && hostValue.ValueKind == JsonValueKind.Object
-                        ? hostValue
-                        : default;
+                if (document.RootElement.TryGetProperty("ids", out JsonElement ids)
+                    && ids.ValueKind == JsonValueKind.Array) {
+                    foreach (JsonElement id in ids.EnumerateArray()) {
+                        string declaredKind = ReadString(id, "kind");
+                        string name = ReadString(id, "name").Trim();
+                        if (declaredKind.Length == 0 || name.Length == 0) {
+                            continue;
+                        }
 
-                    if (declaredKind == "speaker") {
-                        AddSpeaker(catalog.Speakers, new HostBindingSpeakerCapabilityModel {
-                            Name = name,
-                            DisplayName = ReadString(id, "displayName"),
-                            RoleId = ReadHostString(host, "roleId"),
-                            SourcePath = hostBridgePath,
-                            SourceLabel = "Host Bridge",
-                            SourceKind = "hostBridge",
-                            SourceRank = 0,
-                            Line = 0,
-                            Character = 0,
-                            Length = Math.Max(name.Length, 1),
-                        });
-                    } else {
-                        AddBinding(catalog.Bindings, new HostBindingResourceCapabilityModel {
-                            Kind = NormalizeBindingKind(declaredKind),
-                            Name = name,
-                            AssetId = ReadHostString(host, "assetId"),
-                            UnityGuid = ReadHostString(host, "unityGuid"),
-                            AddressableKey = ReadHostString(host, "addressableKey"),
-                            AssetPath = ReadHostString(host, "assetPath"),
-                            SourcePath = hostBridgePath,
-                            SourceLabel = "Host Bridge",
-                            SourceKind = "hostBridge",
-                            SourceRank = 0,
-                            Line = 0,
-                            Character = 0,
-                            Length = Math.Max(name.Length, 1),
-                        });
+                        JsonElement host = id.TryGetProperty("host", out JsonElement hostValue)
+                            && hostValue.ValueKind == JsonValueKind.Object
+                            ? hostValue
+                            : default;
+
+                        if (declaredKind == "speaker") {
+                            AddSpeaker(catalog.Speakers, new HostBindingSpeakerCapabilityModel {
+                                Name = name,
+                                DisplayName = ReadString(id, "displayName"),
+                                RoleId = ReadHostString(host, "roleId"),
+                                SourcePath = hostBridgePath,
+                                SourceLabel = "Host Bridge",
+                                SourceKind = "hostBridge",
+                                SourceRank = 0,
+                                Line = 0,
+                                Character = 0,
+                                Length = Math.Max(name.Length, 1),
+                            });
+                        } else {
+                            AddBinding(catalog.Bindings, new HostBindingResourceCapabilityModel {
+                                Kind = NormalizeBindingKind(declaredKind),
+                                Name = name,
+                                AssetId = ReadHostString(host, "assetId"),
+                                UnityGuid = ReadHostString(host, "unityGuid"),
+                                AddressableKey = ReadHostString(host, "addressableKey"),
+                                AssetPath = ReadHostString(host, "assetPath"),
+                                SourcePath = hostBridgePath,
+                                SourceLabel = "Host Bridge",
+                                SourceKind = "hostBridge",
+                                SourceRank = 0,
+                                Line = 0,
+                                Character = 0,
+                                Length = Math.Max(name.Length, 1),
+                            });
+                        }
                     }
                 }
+
+                AddConfiguredActionCapabilities(catalog.Actions, document.RootElement, hostBridgePath, "actions");
+                AddConfiguredActionCapabilities(catalog.Actions, document.RootElement, hostBridgePath, "events");
+                AddConfiguredQueryCapabilities(catalog.Queries, document.RootElement, hostBridgePath);
             } catch (Exception ex) {
                 catalog.HostBridge.ErrorMessage = "Invalid Host Bridge '" + hostBridgePath + "': " + ex.Message;
+            }
+        }
+
+        static void AddConfiguredActionCapabilities(List<HostBindingActionCapabilityModel> actions,
+                                                    JsonElement root,
+                                                    string hostBridgePath,
+                                                    string propertyName) {
+            if (!root.TryGetProperty(propertyName, out JsonElement actionArray)
+                || actionArray.ValueKind != JsonValueKind.Array) {
+                return;
+            }
+
+            foreach (JsonElement action in actionArray.EnumerateArray()) {
+                string name = ReadString(action, "name").Trim();
+                if (name.Length == 0) {
+                    continue;
+                }
+
+                AddAction(actions, new HostBindingActionCapabilityModel {
+                    Name = name,
+                    SourcePath = hostBridgePath,
+                    SourceLabel = propertyName == "events" ? "Host Bridge legacy event" : "Host Bridge action",
+                    SourceKind = "hostBridge",
+                    SourceRank = 0,
+                    Line = 0,
+                    Character = 0,
+                    Length = Math.Max(name.Length, 1),
+                });
+            }
+        }
+
+        static void AddConfiguredQueryCapabilities(List<HostBindingQueryCapabilityModel> queries,
+                                                   JsonElement root,
+                                                   string hostBridgePath) {
+            if (!root.TryGetProperty("queries", out JsonElement queryArray)
+                || queryArray.ValueKind != JsonValueKind.Array) {
+                return;
+            }
+
+            foreach (JsonElement query in queryArray.EnumerateArray()) {
+                string name = ReadString(query, "name").Trim();
+                if (name.Length == 0) {
+                    continue;
+                }
+
+                AddQuery(queries, new HostBindingQueryCapabilityModel {
+                    Name = name,
+                    SourcePath = hostBridgePath,
+                    SourceLabel = "Host Bridge query",
+                    SourceKind = "hostBridge",
+                    SourceRank = 0,
+                    Line = 0,
+                    Character = 0,
+                    Length = Math.Max(name.Length, 1),
+                });
             }
         }
 
@@ -199,6 +264,44 @@ namespace Inscape.Tooling {
 
             AddLocation(binding.Locations, location);
             bindings.Add(binding);
+        }
+
+        static void AddAction(List<HostBindingActionCapabilityModel> actions,
+                              HostBindingActionCapabilityModel action) {
+            HostBindingActionCapabilityModel? existing = actions.FirstOrDefault(candidate => candidate.Name == action.Name);
+            HostBindingCapabilityLocationModel location = CreateLocation(action.SourcePath,
+                                                                         action.SourceLabel,
+                                                                         action.SourceKind,
+                                                                         action.SourceRank,
+                                                                         action.Line,
+                                                                         action.Character,
+                                                                         action.Length);
+            if (existing != null) {
+                AddLocation(existing.Locations, location);
+                return;
+            }
+
+            AddLocation(action.Locations, location);
+            actions.Add(action);
+        }
+
+        static void AddQuery(List<HostBindingQueryCapabilityModel> queries,
+                             HostBindingQueryCapabilityModel query) {
+            HostBindingQueryCapabilityModel? existing = queries.FirstOrDefault(candidate => candidate.Name == query.Name);
+            HostBindingCapabilityLocationModel location = CreateLocation(query.SourcePath,
+                                                                         query.SourceLabel,
+                                                                         query.SourceKind,
+                                                                         query.SourceRank,
+                                                                         query.Line,
+                                                                         query.Character,
+                                                                         query.Length);
+            if (existing != null) {
+                AddLocation(existing.Locations, location);
+                return;
+            }
+
+            AddLocation(query.Locations, location);
+            queries.Add(query);
         }
 
         static HostBindingCapabilityLocationModel CreateLocation(string sourcePath,

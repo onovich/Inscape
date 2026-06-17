@@ -134,11 +134,13 @@ VSCode 编辑器扩展作者体验只读取 `hostBridge`。ExternalSupport 的 `
 
 ## Capability 输出
 
-`inscape.host-binding.capabilities` 是编辑器作者体验使用的只读视图。第一版包含：
+`inscape.host-binding.capabilities` 是编辑器作者体验和审计工具使用的只读视图。第一版包含：
 
 - `hostBridge`：配置路径、解析路径、是否加载成功和错误信息。
 - `speakers`：来自 Host Bridge `ids[kind="speaker"]` 的绑定角色，以及 workspace 编译结果中的对白 speaker 出现位置。
 - `bindings`：来自 Host Bridge `ids[]` 的非 speaker 资源绑定，以及 workspace 编译结果中的 `@timeline...` 出现位置。
+- `actions`：来自 Host Bridge `actions[]`，以及迁移期 legacy `events[]` 的 handler 映射名称。
+- `queries`：来自 Host Bridge `queries[]` 的 query implementation 映射名称。
 - `locations`：每个 speaker / binding 保留映射行与 workspace 出现位置。编辑器宿主用它做 definition / references / Ctrl+Click；若同名能力同时存在 Host Bridge 行和脚本出现位置，Host Bridge 行可作为定义位置，脚本出现位置作为引用位置。
 
 这个输出只服务补全、Hover 和导航。Compiler 仍不读取 Host Bridge，也不会因为缺少绑定而报 DSL 语法错误。
@@ -147,5 +149,5 @@ VSCode 编辑器扩展作者体验只读取 `hostBridge`。ExternalSupport 的 `
 
 - Host Schema 与 Host Bridge 分工明确：Schema 是能力清单，Bridge 是项目映射。
 - Host Bridge 能表达 UnitySample 当前 role map、binding map 和 timeline hook 需求，但不把 UnitySample 字段升级为通用模型。
-- Host Binding capability 已落到 Tooling / LanguageServer；编辑器宿主只消费共享输出，不各自复制 Host Bridge JSON 解析。
+- Host Binding capability 已落到 Tooling / LanguageServer；编辑器宿主和 Host Integration Audit 只消费共享输出，不各自复制 Host Bridge JSON 解析。
 - Goal 0 后，VSCode 编辑器扩展作者体验不再读取 UnitySample fallback；后续 UnitySample 迁移应走 ExternalSupport / Host Bridge 生成计划。

@@ -48,7 +48,7 @@ P2.5 已完成 Host Schema / Host Bridge 与 Unity-Bird 适配收口，P3 可以
 ## 延后问题
 
 - `events[]` 到 `actions[]` 的兼容 / 迁移策略。
-- `inspect-usage-project` 与 `audit-host-integration-project` 的具体 JSON shape。
+- `inspect-usage-project` 与 `audit-host-integration-project` 的具体 JSON shape 已在 P3 Round 4-6 给出最小实现；后续仍需随条件语法和 Runtime State 扩展审计覆盖。
 - Runtime State model / smoke 的具体实现。
 - 受限用户自定义叙事局部变量。
 - Action rollback / replay / receipt 精细 policy。

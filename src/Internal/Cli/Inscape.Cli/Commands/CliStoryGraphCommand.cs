@@ -15,6 +15,10 @@ namespace Inscape.Cli {
                 return RunUsageInspection(rootPath, args, outputPath, jsonOptions);
             }
 
+            if (command == "audit-host-integration-project") {
+                return RunHostIntegrationAudit(rootPath, args, outputPath, jsonOptions);
+            }
+
             if (command == "inspect-host-schema-project") {
                 return RunHostSchemaInspection(rootPath, args, outputPath, jsonOptions);
             }
@@ -320,6 +324,45 @@ namespace Inscape.Cli {
                                                                       sources,
                                                                       hostSchemaCatalog);
             CliCore.WriteOrPrint(outputPath, JsonSerializer.Serialize(manifest, jsonOptions));
+            return 0;
+        }
+
+        static int RunHostIntegrationAudit(string rootPath, string[] args, string? outputPath, JsonSerializerOptions jsonOptions) {
+            if (!Directory.Exists(rootPath)) {
+                Console.Error.WriteLine("Project root not found: " + rootPath);
+                return 3;
+            }
+
+            string? configuredPath = CliCore.ReadOption(args, "--config");
+            if (!ToolConfigReaderDomain.TryReadProjectConfig(rootPath,
+                                                             configuredPath,
+                                                             jsonOptions,
+                                                             out ToolConfigModel config,
+                                                             out string? errorMessage)) {
+                Console.Error.WriteLine(errorMessage);
+                return 3;
+            }
+
+            List<DslScriptSourceModel> sources = DslScriptSourcesLoaderDomain.Load(rootPath, null);
+            if (sources.Count == 0) {
+                Console.Error.WriteLine("No .inscape files found under: " + rootPath);
+                return 3;
+            }
+
+            HostSchemaCapabilityCatalogModel hostSchemaCatalog = HostSchemaCapabilityCatalogDomain.Read(rootPath, config.HostSchema, jsonOptions);
+            UsageManifestModel usage = UsageManifestDomain.Inspect(rootPath,
+                                                                   configuredPath,
+                                                                   sources,
+                                                                   hostSchemaCatalog);
+            HostBindingCapabilityCatalogModel hostBindingCatalog = HostBindingCapabilityCatalogDomain.Read(rootPath,
+                                                                                                           config.HostBridge,
+                                                                                                           sources);
+            HostIntegrationAuditModel audit = HostIntegrationAuditDomain.Audit(rootPath,
+                                                                              configuredPath,
+                                                                              usage,
+                                                                              hostSchemaCatalog,
+                                                                              hostBindingCatalog);
+            CliCore.WriteOrPrint(outputPath, JsonSerializer.Serialize(audit, jsonOptions));
             return 0;
         }
 

@@ -76,7 +76,7 @@
 ### Internal
 
 - `Compiler`：编译期真相层。只承载 DSLScript、StoryGraph、Localization 与诊断契约，不碰文件系统、命令行、VSCode 或 Unity API。
-- `Tooling`：共享用例层。承载脚本源加载、工具配置读取、预览构建、本地化流程、HostSchema / HostBinding / UsageManifest 流程等，可被 Cli、VSCode 和未来外部支持复用。
+- `Tooling`：共享用例层。承载脚本源加载、工具配置读取、预览构建、本地化流程、HostSchema / HostBinding / UsageManifest / HostIntegrationAudit 流程等，可被 Cli、VSCode 和未来外部支持复用。
 - `Cli`：命令行入口层。只负责 argv、stdout/stderr、退出码、命令目录和对 Tooling 的调用。
 - `LanguageServer`：C# 语义服务层。长期承担诊断、跳转、引用、补全、source map 等重语义能力。
 - `Runtime`：未来运行期层。只在进入真正运行时后承载 `System`、`Context`、`Events` 等长期状态与执行模型。
@@ -99,6 +99,7 @@
 - `HostSchema`
 - `HostBinding`
 - `UsageManifest`
+- `HostIntegrationAudit`
 - `EditorAuthoring`
 - `UnityPlugin` 仅限 `ExternalSupport`
 - `SelfHostedEditor` 仅限 `ExternalSupport`
@@ -206,7 +207,7 @@
 
 ### Tooling
 
-- 允许主语：`DslScriptSources`、`ToolConfig`、`Preview`、`Localization`、`HostSchema`、`HostBinding`、`UsageManifest`
+- 允许主语：`DslScriptSources`、`ToolConfig`、`Preview`、`Localization`、`HostSchema`、`HostBinding`、`UsageManifest`、`HostIntegrationAudit`
 - 终局后缀以 `Domain`、`Model`、`ViewModel`、`Controller` 为主
 - 这里拥有共享流程，不拥有编译期真相
 

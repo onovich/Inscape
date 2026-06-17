@@ -14,6 +14,10 @@ namespace Inscape.Tooling {
 
         public List<HostBindingResourceCapabilityModel> Bindings { get; set; } = new List<HostBindingResourceCapabilityModel>();
 
+        public List<HostBindingActionCapabilityModel> Actions { get; set; } = new List<HostBindingActionCapabilityModel>();
+
+        public List<HostBindingQueryCapabilityModel> Queries { get; set; } = new List<HostBindingQueryCapabilityModel>();
+
     }
 
     public sealed class HostBindingCapabilitySourceModel {
@@ -101,6 +105,50 @@ namespace Inscape.Tooling {
         public int Character { get; set; }
 
         public int Length { get; set; }
+
+    }
+
+    public sealed class HostBindingActionCapabilityModel {
+
+        public string Name { get; set; } = string.Empty;
+
+        public string SourcePath { get; set; } = string.Empty;
+
+        public string SourceLabel { get; set; } = string.Empty;
+
+        public string SourceKind { get; set; } = string.Empty;
+
+        public int SourceRank { get; set; }
+
+        public int Line { get; set; }
+
+        public int Character { get; set; }
+
+        public int Length { get; set; }
+
+        public List<HostBindingCapabilityLocationModel> Locations { get; set; } = new List<HostBindingCapabilityLocationModel>();
+
+    }
+
+    public sealed class HostBindingQueryCapabilityModel {
+
+        public string Name { get; set; } = string.Empty;
+
+        public string SourcePath { get; set; } = string.Empty;
+
+        public string SourceLabel { get; set; } = string.Empty;
+
+        public string SourceKind { get; set; } = string.Empty;
+
+        public int SourceRank { get; set; }
+
+        public int Line { get; set; }
+
+        public int Character { get; set; }
+
+        public int Length { get; set; }
+
+        public List<HostBindingCapabilityLocationModel> Locations { get; set; } = new List<HostBindingCapabilityLocationModel>();
 
     }
 

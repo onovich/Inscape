@@ -162,7 +162,7 @@ Audit
 工具对账：剧本用的，宿主有没有提供，Bridge 有没有映射。
 ```
 
-P3 Round 4 已在 [Usage Manifest Contract](usage-manifest-contract.md) 定义 `inscape.usage` 最小契约。P3 Round 5 已实现命令：
+P3 Round 4 已在 [Usage Manifest Contract](usage-manifest-contract.md) 定义 `inscape.usage` 最小契约。P3 Round 5 / 6 已实现命令：
 
 ```powershell
 inspect-usage-project <root> -o usage.json
@@ -197,4 +197,4 @@ kind,alias,birdId,unityGuid,addressableKey,assetPath
 5. 未来如果进入代码生成阶段，可以从 Schema 生成宿主注册代码，避免运行时才发现未注册能力。
 6. 按 [Host Bridge Contract](host-bridge-contract.md) 继续推进映射表、VSCode 展示和生成流程，解决 Inscape 可读 ID 与项目内部 ID 不一致的问题。
 7. P3 Round 3 已把 Tooling / CLI / LanguageServer / VSCode / SelfHostedEditor 的 Host Schema capability consumption 迁到 `actions[]`，并继续保留 legacy `events[]` 兼容路径。
-8. P3 Round 5 已实现 `inspect-usage-project`；后续还需实现 Host Integration Audit 输出格式以及 Runtime 最小 state shape。
+8. P3 Round 5 已实现 `inspect-usage-project`；P3 Round 6 已实现 `audit-host-integration-project` 最小输出；后续还需实现 Runtime 最小 state shape。

@@ -72,6 +72,7 @@ Narrator: Start.
             AssertTrue(text.Contains("audit-query-interpolation-project"), "Commands should list query interpolation audit command.");
             AssertTrue(text.Contains("inspect-host-schema-project"), "Commands should list host schema inspection command.");
             AssertTrue(text.Contains("inspect-usage-project"), "Commands should list usage manifest inspection command.");
+            AssertTrue(text.Contains("audit-host-integration-project"), "Commands should list host integration audit command.");
             AssertTrue(text.Contains("update-node-map-project"), "Commands should list node map update command.");
             AssertTrue(text.Contains("apply-node-map-candidate-project"), "Commands should list node map candidate apply command.");
             AssertFalse(text.Contains("export-unity-sample-role-template"), "Internal CLI should not list UnitySample role template command.");
@@ -281,6 +282,78 @@ Narrator: [player.name] and [player.godl].
                 AssertTrue(File.Exists(usagePath), "Usage -o should write output file.");
                 using (JsonDocument fileDocument = JsonDocument.Parse(File.ReadAllText(usagePath, Encoding.UTF8))) {
                     AssertEqual("inscape.usage", fileDocument.RootElement.GetProperty("format").GetString(), "Usage output file format");
+                }
+            } finally {
+                if (Directory.Exists(directory)) {
+                    Directory.Delete(directory, true);
+                }
+            }
+        }
+
+        static void CliAuditHostIntegrationProjectEmitsJson() {
+            string directory = Path.Combine(Path.GetTempPath(), "inscape-cli-host-integration-" + Guid.NewGuid().ToString("N"));
+            string configDirectory = Path.Combine(directory, "config");
+            Directory.CreateDirectory(configDirectory);
+            try {
+                File.WriteAllText(Path.Combine(directory, "inscape.config.json"), """
+{
+  "hostSchema": "config/inscape.host.schema.json",
+  "hostBridge": "config/inscape.host.bridge.json"
+}
+""", Encoding.UTF8);
+
+                File.WriteAllText(Path.Combine(configDirectory, "inscape.host.schema.json"), """
+{
+  "format": "inscape.host-schema",
+  "formatVersion": 1,
+  "queries": [
+    { "name": "player.name", "returnType": "string", "isAsync": false, "parameters": [] }
+  ],
+  "actions": [
+    { "name": "open_window", "mode": "fire", "parameters": [{ "name": "windowId", "type": "string", "idKind": "ui-window", "required": true }] }
+  ]
+}
+""", Encoding.UTF8);
+
+                File.WriteAllText(Path.Combine(configDirectory, "inscape.host.bridge.json"), """
+{
+  "format": "inscape.host-bridge",
+  "formatVersion": 1,
+  "ids": [
+    { "kind": "ui-window", "name": "inventory_panel", "host": { "assetId": 7 } }
+  ],
+  "actions": [
+    { "name": "open_window", "handler": { "kind": "test" } }
+  ],
+  "queries": [
+    { "name": "player.name", "handler": { "kind": "test" } }
+  ]
+}
+""", Encoding.UTF8);
+
+                File.WriteAllText(Path.Combine(directory, "story.inscape"), """
+# start
+@entry
+@emit open_window inventory_panel
+Narrator: [player.name].
+""", Encoding.UTF8);
+
+                string output = RunCliForOutput(new[] { "audit-host-integration-project", directory });
+                using (JsonDocument document = JsonDocument.Parse(output)) {
+                    JsonElement root = document.RootElement;
+                    AssertEqual("inscape.host-integration.audit", root.GetProperty("format").GetString(), "Host integration audit format");
+                    AssertEqual(1, root.GetProperty("summary").GetProperty("queryUsageCount").GetInt32(), "Host integration query usage count");
+                    AssertEqual(1, root.GetProperty("summary").GetProperty("actionUsageCount").GetInt32(), "Host integration action usage count");
+                    AssertEqual(1, root.GetProperty("summary").GetProperty("requiredIdCount").GetInt32(), "Host integration required id count");
+                    AssertEqual(0, root.GetProperty("summary").GetProperty("diagnosticCount").GetInt32(), "Host integration diagnostic count");
+                }
+
+                string auditPath = Path.Combine(configDirectory, "host-integration-audit.json");
+                string fileOutput = RunCliForOutput(new[] { "audit-host-integration-project", directory, "-o", auditPath });
+                AssertEqual("", fileOutput.Trim(), "Host integration audit -o should not write JSON to stdout.");
+                AssertTrue(File.Exists(auditPath), "Host integration audit -o should write output file.");
+                using (JsonDocument fileDocument = JsonDocument.Parse(File.ReadAllText(auditPath, Encoding.UTF8))) {
+                    AssertEqual("inscape.host-integration.audit", fileDocument.RootElement.GetProperty("format").GetString(), "Host integration audit output file format");
                 }
             } finally {
                 if (Directory.Exists(directory)) {
