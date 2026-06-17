@@ -539,6 +539,7 @@ const longLivedLanguageSession = EditorBackendDesktopSessionModel.buildProjectSe
       code: "language-server-request-timeout",
       message: "LanguageServer request timed out.",
     },
+    restartCount: 1,
     supportedEndpoints: ["diagnostics", "hover", "document-symbols"],
   },
   sessionId: "desktop-long-lived-session",
@@ -554,6 +555,7 @@ assertEqual(longLivedLanguageSession.languageSession.health, "ready", "desktop l
 assertEqual(longLivedLanguageSession.languageSession.documentRevisionLag, 2, "desktop language session revision lag");
 assertEqual(longLivedLanguageSession.languageSession.fallbackKind, "process-per-request", "desktop language session fallback kind");
 assertEqual(longLivedLanguageSession.languageSession.lastError.code, "language-server-request-timeout", "desktop language session last error code");
+assertEqual(longLivedLanguageSession.languageSession.restartCount, 1, "desktop language session restart count");
 assertEqual(
   longLivedLanguageSession.languageSession.supportedEndpoints.join(","),
   "diagnostics,hover,document-symbols",

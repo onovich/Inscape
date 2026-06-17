@@ -42,6 +42,7 @@ export class SelfHostedEditorElectronLanguageServerSessionBridge {
     this.latestDocumentRevision = 0;
     this.nextRequestId = 1;
     this.pendingRequests = new Map();
+    this.startCount = 0;
     this.stderrChunks = [];
     this.stdoutBuffer = Buffer.alloc(0);
     this.syncedDocumentRevision = 0;
@@ -178,6 +179,7 @@ export class SelfHostedEditorElectronLanguageServerSessionBridge {
         }
         : null;
     }
+    this.startCount = 0;
   }
 
   getProcessId() {
@@ -194,6 +196,7 @@ export class SelfHostedEditorElectronLanguageServerSessionBridge {
       health: this.health,
       kind: SelfHostedEditorElectronLanguageSessionKind,
       lastError: normalizeErrorSummary(this.lastError),
+      restartCount: Math.max(0, this.startCount - 1),
       staleReason: this.health === "ready" ? "" : this.health,
       supportedEndpoints: [...SelfHostedEditorElectronLanguageSessionEndpoints],
     };
@@ -261,6 +264,7 @@ export class SelfHostedEditorElectronLanguageServerSessionBridge {
       windowsHide: true,
     });
     this.child = child;
+    this.startCount += 1;
     this.health = "starting";
     this.lastError = null;
     child.stdout.on("data", (chunk) => {

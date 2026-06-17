@@ -267,6 +267,7 @@ function buildLanguageSession(languageSession) {
       health: normalizeLanguageSessionHealth(languageSession.health),
       kind: "long-lived",
       lastError: normalizeErrorSummary(languageSession.lastError),
+      restartCount: normalizeNonNegativeInteger(languageSession.restartCount),
       staleReason: String(languageSession.staleReason || ""),
       supportedEndpoints: normalizeEndpointList(languageSession.supportedEndpoints, defaultLanguageEndpoints),
     };

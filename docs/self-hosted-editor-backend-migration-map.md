@@ -104,7 +104,7 @@
 
 2026-06-17 P1 post-40 npm audit 补充：SelfHostedEditor 依赖安全轮次保留 `monaco-editor@0.55.1`，通过 npm `overrides` 将其间接 `dompurify` 从 `3.2.7` 提升到 `3.4.10`。这只影响包解析和 lockfile，不改变 EditorBackend、preload、renderer 或 Internal shared contract；`npm audit` 已报告 0 vulnerabilities。
 
-2026-06-17 P1.5 long-lived LanguageServer 第一刀补充：真实 Electron app 默认由 main process 创建 workspace-scoped `Inscape.LanguageServer --stdio` session。`ElectronWorkspaceSessionStore` 成功打开 workspace 后启动或复用 session，六个 language-session command 继续使用 `EditorBackendWorkspaceSnapshotModel` / `EditorBackendLanguageSessionRequestModel` 的 shared payload shape，并在请求前把当前 active backend buffer 写入临时 override 文件；ProjectSession status 报告 `kind: "long-lived"`、`health`、`lastError`、`documentRevisionLag`。workspace switch 会 dispose 旧进程并启动新进程，close-window / app-exit 成功 flush 后调用 session dispose hook。packaged app 仍未内置 LanguageServer artifact，崩溃后的自动 restart / `process-per-request` 降级仍待后续迁移。
+2026-06-17 P1.5 long-lived LanguageServer 第一刀 / 第二刀补充：真实 Electron app 默认由 main process 创建 workspace-scoped `Inscape.LanguageServer --stdio` session。`ElectronWorkspaceSessionStore` 成功打开 workspace 后启动或复用 session，六个 language-session command 继续使用 `EditorBackendWorkspaceSnapshotModel` / `EditorBackendLanguageSessionRequestModel` 的 shared payload shape，并在请求前把当前 active backend buffer 写入临时 override 文件；ProjectSession status 报告 `kind: "long-lived"`、`health`、`lastError`、`documentRevisionLag` 与 `restartCount`。workspace switch 会 dispose 旧进程并启动新进程，close-window / app-exit 成功 flush 后调用 session dispose hook；协议错误会停止当前进程，下一次 language request 会启动 replacement process 并恢复 ready。packaged app 仍未内置 LanguageServer artifact，`process-per-request` 降级可作为后续打包容灾增强。
 
 ## 状态分类
 

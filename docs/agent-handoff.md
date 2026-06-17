@@ -552,7 +552,8 @@ P1 40 轮计划完成后，继续补上了真实 Electron preload -> main 的固
 - `ElectronWorkspaceSessionStore` 在 workspace 成功打开后 ensure long-lived session；dirty buffer revision 会更新 revision lag，六个 language command 都用当前 `DocumentBufferStore` snapshot 进入同一个 bridge。diagnostics / completions / definition / references / hover 通过 `overrideSourcePath` / `overrideContentPath` 读当前 active buffer；documentSymbols 通过临时 active file 调 stdio 并把 symbol sourcePath 映射回原 workspace path。
 - workspace switch 会 dispose 旧 session 并启动新 session；close-window / app-exit 成功 flush 后 lifecycle 调用 `sessionStore.dispose()`。ProjectSession status 现在能表达 `languageSession.kind: "long-lived"`、`health`、`lastError` 和 `documentRevisionLag`，不暴露正文。
 - 新增 `check:electron-language-session`，真实拉起 `Inscape.LanguageServer --stdio`，覆盖 workspace open 启动、dirty buffer override、六类 authoring endpoint、同进程复用、revision lag 清零、workspace switch 替换进程和 dispose 停进程。
-- 已知剩余风险：还没有把 LanguageServer build artifact 打进 Windows packaged app；崩溃/超时后的自动 restart 与 `process-per-request` 降级策略仍待下一轮补齐。
+- 第二刀补充：ProjectSession status 现在还包含 `restartCount`；`check:electron-language-session` 会模拟协议错误，确认 status 进入 `health: "error"`、`lastError.code: "language-server-protocol-error"`，且下一次 language request 会启动 replacement process 并恢复 `health: "ready"`。
+- 已知剩余风险：还没有把 LanguageServer build artifact 打进 Windows packaged app；`process-per-request` 降级仍可作为后续打包容灾增强。
 
 ### 2026-06-17 SelfHostedEditor P1 post-40 assets import IO 快照
 

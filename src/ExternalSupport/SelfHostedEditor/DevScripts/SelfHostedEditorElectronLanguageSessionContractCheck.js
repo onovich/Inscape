@@ -176,6 +176,41 @@ Narrator: Unsaved node.`,
   assertEqual(cleanStatus.languageSession.documentRevisionLag, 0, "language request syncs dirty buffer revision");
   assertEqual(JSON.stringify(cleanStatus).includes("Unsaved node"), false, "language status remains text-free");
 
+  bridge.failSession(new Error("synthetic protocol failure"));
+  const failedStatus = await dispatchSelfHostedEditorBackendCommand(
+    EditorBackendTransportCommand.ProjectSessionStatus,
+    {},
+    {
+      sessionStore,
+    }
+  );
+  assertEqual(failedStatus.languageSession.health, "error", "protocol failure status health");
+  assertEqual(failedStatus.languageSession.lastError.code, "language-server-protocol-error", "protocol failure status error code");
+  assertEqual(bridge.getProcessId(), 0, "protocol failure stops current process");
+
+  const restartedDiagnostics = await dispatchSelfHostedEditorBackendCommand(
+    EditorBackendTransportCommand.LanguageDiagnostics,
+    {
+      activeRelativePath: "story/opening.inscape",
+    },
+    {
+      sessionStore,
+    }
+  );
+  const restartedProcessId = bridge.getProcessId();
+  assertEqual(restartedDiagnostics.format, "inscape.language-server-project-diagnostics", "restarted diagnostics format");
+  assertEqual(restartedProcessId > 0, true, "next language request restarts process");
+  assertEqual(restartedProcessId !== firstProcessId, true, "restarted process is a replacement process");
+  const restartedStatus = await dispatchSelfHostedEditorBackendCommand(
+    EditorBackendTransportCommand.ProjectSessionStatus,
+    {},
+    {
+      sessionStore,
+    }
+  );
+  assertEqual(restartedStatus.languageSession.health, "ready", "restarted status health");
+  assertEqual(restartedStatus.languageSession.restartCount, 1, "restarted status restart count");
+
   selectedWorkspaceRoot = secondWorkspaceRoot;
   const switched = await dispatchSelfHostedEditorBackendCommand(
     EditorBackendTransportCommand.WorkspaceOpenFolder,
@@ -187,7 +222,7 @@ Narrator: Unsaved node.`,
   assertEqual(switched.ok, true, "workspace switch succeeds");
   const secondProcessId = bridge.getProcessId();
   assertEqual(secondProcessId > 0, true, "workspace switch starts replacement process");
-  assertEqual(secondProcessId !== firstProcessId, true, "workspace switch replaces old LanguageServer process");
+  assertEqual(secondProcessId !== restartedProcessId, true, "workspace switch replaces old LanguageServer process");
   assertEqual(switched.projectSession.languageSession.health, "ready", "switched workspace language health");
 
   await sessionStore.dispose({
