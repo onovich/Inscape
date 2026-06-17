@@ -2,7 +2,7 @@
 
 状态：持续维护
 
-最后更新：2026-05-17
+最后更新：2026-06-17
 
 这里记录当前仍值得讨论的问题。已经解决的问题应更新对应文档，必要时新增 ADR。
 
@@ -31,6 +31,10 @@
    - 需要解决 Inscape 可读 ID 与项目内部 ID 不一致的问题，例如 `hasItem("badge")` 在项目中可能对应整数、枚举、GUID 或服务器主键。
    - 需要明确哪些内容属于 Host Schema 能力清单，哪些属于资源 / 对象 / 事件处理器映射，哪些可以通过代码生成或项目扫描自动生成。
    - 需要保证 Inscape 下层状态只被上层查询或内部使用，不反向查询上层业务。
+8. P2 后是否需要 batch review / multi-apply？
+   - P2 Round 10 已决定本阶段不实现 batch review / multi-apply，只保留逐候选 dry-run / confirm / backup / write-back 闭环。
+   - 若后续重启该能力，必须先设计共享 Tooling / CLI batch dry-run、batch result、per-item failure 与 rollback contract；宿主 UI 不得直接循环单候选 apply，也不得提供一键全量静默 apply。
+   - 详见 [SelfHostedEditor P2 Batch Review / Multi-Apply Decision](self-hosted-editor-p2-batch-multi-apply-decision.md)。
 
 ## 语法设计
 

@@ -1,12 +1,23 @@
 # Agent 接手指南
 
-状态：P2 Round 9
+状态：P2 Round 10
 
 最后更新：2026-06-17
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-17 SelfHostedEditor P2 Round 10 Batch Review / Multi-Apply 决策快照
+
+P2 Round 10 已完成 batch review / multi-apply 决策，不宣布 P2 完成。
+
+- 决策产物见 [SelfHostedEditor P2 Batch Review / Multi-Apply Decision](self-hosted-editor-p2-batch-multi-apply-decision.md)。
+- P2 不实现 batch review / multi-apply；保留并验收当前逐个 manual-review candidate 的可审计闭环：`Preview Apply` dry-run、`Apply` -> `Confirm Apply`、desktop 写回前 backup、dev-host download-ready。
+- 原因：当前共享契约只有单候选 apply result / backup / recovery metadata；若在宿主侧循环调用，会把 batch 语义、失败恢复和 candidate selection 策略复制进 VSCode 或 SelfHostedEditor。
+- 新增回归护栏：VSCode `check:semantic-parity` 会拒绝 VSCode / SelfHostedEditor node-map UI 或 bridge 中出现 `Apply All`、bulk、batch、multi-apply 类入口，防止 P2 混入半成品批量写回。
+- 开放问题：P2 后若重新评估 batch review / multi-apply，必须先设计共享 Tooling / CLI batch dry-run / result / rollback contract，只允许用户显式选择 candidates，不允许一键全量静默 apply。
+- 下一轮进入 P2 Round 11：Localization Update Safety；重点确认 localization CSV update 只经受控 shared contract 执行，并继续保持 localization CSV 与 host config CSV 的 UI model 分离。
 
 ### 2026-06-17 SelfHostedEditor P2 Round 9 VSCode Parity 与共享边界快照
 
@@ -826,7 +837,7 @@ P1 40 轮计划完成后，继续补上了真实 Electron preload -> main 的固
 - 已继续推进 Preview Runtime Player 第四小刀：Runtime 共享层现已新增 `rewind`，开发宿主 `/api/runtime-action` 与 SelfHostedEditor Runtime bridge 会原样透传它。阅读面板会显示轻量 Runtime path，并在 path 长度大于 1 时给出 Runtime-backed `Back` 按钮，点击后回退到上一个已访问节点并直接用返回 snapshot 重绘。这样“读过哪些节点、退回到哪一步”也开始挂到 Runtime 真相上；当前还没接上的主要只剩节点内 Flow 步进与步骤计数。
 - 已继续推进 Preview Runtime Player 第五小刀：节点内 Flow 步进现已开始挂到共享 Runtime。`NarrativeRuntime` 新增 `VisibleStepCount` 与 `ReadingProgress`，CLI `runtime-project` / 开发宿主 `/api/runtime-action` 新增 `advance-flow` / `rewind-flow`，SelfHostedEditor Preview 在 Runtime 可用时只透传这些动作并消费返回 snapshot，不再把“当前节点内读到第几步”继续保存在浏览器私有 presenter 里。现阶段仍保留本地 Flow fallback，只在 Runtime 不可用时使用。
 - HTTP smoke 当前结论：用 `curl --noproxy "*"`、无 BOM JSON、最小脚本 `# Opening / Narrator: Hello` 直接 POST `/api/localization-review` 已成功返回 presenter；PowerShell `Invoke-RestMethod` 曾因本机代理路径超时，不要把它误判为服务端阻塞。后续复查显示完整 `samples/court-loop.inscape` 的底层 CLI 链路并不慢：临时 workspace 下 `update-node-map-project`、`extract-l10n-project`、`audit-l10n-alignment-project` 合计约 10 秒，因此当前更值得怀疑的是 HTTP 客户端、响应体积或 dev-host 传输层，而不是 Tooling 算法本身。此前测试端口 `5182`、`5183`、`5184`、`5185`、`5187` 的残留监听已复查并清理。
-- 交接时如果继续本节点，建议第一件事执行：`npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax`、`check:structure`、`check:model`、`check:localization-review-http`、`check:localization-update-http`。若都通过，下一刀更适合继续补 L10N 的批量审校动作，或转去 Runtime 长会话边界。
+- 交接时如果继续本节点，建议第一件事执行：`npm --prefix src\ExternalSupport\SelfHostedEditor run check:syntax`、`check:structure`、`check:model`、`check:localization-review-http`、`check:localization-update-http`。P2 Round 10 已把 L10N 批量审校 / multi-apply 后置到 P2 之后；若继续本线，下一刀更适合转向 localization update safety 或 Runtime 长会话边界。
 
 已完成的关键收口：
 
@@ -867,7 +878,7 @@ P1 40 轮计划完成后，继续补上了真实 Electron preload -> main 的固
 - 诊断虽已优先走 LanguageServer project probe，但当前仍只把 diagnostics marker 贴回活动文件；真正的多文件 Problems、跨文件 rename、长期会话缓存和桌面后端进程仍待补。
 - Graph 节点位置仍是会话内 `savedPositions`，尚未写入 graph layout sidecar；画布缩放/平移、连接合法性反馈、端口命中高亮仍可继续细化。
 - line-map bridge 当前仍走开发预览服务器 + CLI 临时 workspace，是正确复用 Tooling 语义的第一步；现在已经有第一层 `sessionId` sidecar 记忆，但未来桌面客户端仍应改为正式 Editor Backend / Tooling 会话桥，而不是每轮通过 HTTP dev server 启动 CLI。
-- L10N 视图已接入真实 alignment review presenter，并已补上真实旧 CSV 选择、宿主侧 review 筛选、更清楚的 CSV 会话状态、linked baseline 的 clean / unsaved 宿主状态，以及真实 updated CSV 导出 / native file handle 直写：`/api/localization-review` 负责 review presenter，`/api/localization-update` 负责把旧 CSV 与 draft overrides 交回 CLI 产出 updated CSV，宿主层只在可用时负责把结果写回已链接文件。当前仍未完成的是批量审校动作。
+- L10N 视图已接入真实 alignment review presenter，并已补上真实旧 CSV 选择、宿主侧 review 筛选、更清楚的 CSV 会话状态、linked baseline 的 clean / unsaved 宿主状态，以及真实 updated CSV 导出 / native file handle 直写：`/api/localization-review` 负责 review presenter，`/api/localization-update` 负责把旧 CSV 与 draft overrides 交回 CLI 产出 updated CSV，宿主层只在可用时负责把结果写回已链接文件。P2 Round 10 已决定不在本阶段补批量审校动作，后续若重启应先补共享 batch contract。
 - Preview 内容已来自 Compiler project graph；当 Runtime 可用时，节点内 Static / Flow 进度也开始消费 Runtime 阅读状态。当前 Runtime dev-host 已有第一层 `sessionId` 状态边界；仍未落地的是桌面端真正长生命周期 Runtime 进程，以及 Runtime 不可用时如何继续缩小本地 fallback 面积。
 - `runtime-project` / `/api/runtime-state` / `/api/runtime-action` 现已覆盖 Start、`advance-flow` / `rewind-flow` / `continue` / `rewind` / `choose` 的最小 action 契约；HTTP dev-host 可以按 `sessionId` 记住最新 compact snapshot，Preview 的节点内 Flow 进度在 Runtime 可用时已受 Runtime state 驱动，但正式桌面端 Runtime 会话仍未落地。
 
@@ -1231,7 +1242,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 
 2. 本地化 Diff / Alignment 后续。
    - 状态机、CSV / report 字段、anchor + occurrence + diff 对齐流程已经完成设计，显式 `audit-l10n-alignment-project` 已落地。
-   - 当前实现已把更宽松的相似文本匹配限制在人工候选 / review report，不进入默认 `update-l10n` 确认译文；Goal 15 第一版已把 line sidecar refresh result / status / line id 信息接入 alignment audit；candidate diff 也已作为 Tooling presenter 的二级动作进入 review。后续可以继续评估更强的 line identity 迁移契约、批量审查或编辑器 review UI。
+   - 当前实现已把更宽松的相似文本匹配限制在人工候选 / review report，不进入默认 `update-l10n` 确认译文；Goal 15 第一版已把 line sidecar refresh result / status / line id 信息接入 alignment audit；candidate diff 也已作为 Tooling presenter 的二级动作进入 review。后续可以继续评估更强的 line identity 迁移契约或编辑器 review UI；批量审查已在 P2 Round 10 后置到 P2 之后。
 
 3. VSCode 重构守规继续收口。
    - 每完成一个 VSCode 功能节点后，立即做命名 / 分层 / 目录 / 入口厚度自检。

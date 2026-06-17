@@ -338,6 +338,8 @@ function assertP2SharedBoundaryContracts() {
     assertIncludesText(vscodeNodeMapReviewController, "applyCandidateStableIdToNodeMap", "VSCode node-map apply UI must delegate to the shared CLI invocation wrapper.");
     assertIncludesText(vscodeNodeMapReviewController, "previewCandidateStableIdToNodeMap", "VSCode node-map preview UI must delegate to the shared CLI invocation wrapper.");
     assertNotIncludesText(vscodeNodeMapReviewController, "JSON.parse", "VSCode node-map review UI must not parse and rewrite the node-map sidecar itself.");
+    assertNoP2BatchApplyEntrypoint(vscodeEditorAuthoringCommand, "VSCode stable node map command");
+    assertNoP2BatchApplyEntrypoint(vscodeNodeMapReviewController, "VSCode stable node map review UI");
 
     assertIncludesText(vscodeLocalizationCommand, "\"audit-l10n-alignment-project\"", "VSCode localization alignment review must keep using the shared audit-l10n-alignment-project CLI command.");
     assertIncludesText(vscodeLocalizationCommand, "\"update-l10n-project\"", "VSCode localization update must keep using the shared update-l10n-project CLI command.");
@@ -355,6 +357,8 @@ function assertP2SharedBoundaryContracts() {
     assertOrderedText(selfHostedNodeMapBridge, "workspaceSessionClient.writeBackBackup", "stableNodeMapClient.writeSidecar", "SelfHostedEditor node-map write-back must create a workspace backup before writing the sidecar.");
     assertIncludesText(selfHostedNodeMapReviewController, "Confirm Apply", "SelfHostedEditor node-map UI must keep explicit confirmation before real apply/write-back.");
     assertIncludesText(selfHostedNodeMapReviewController, "Preview Apply", "SelfHostedEditor node-map UI must keep dry-run preview separate from real apply.");
+    assertNoP2BatchApplyEntrypoint(selfHostedNodeMapBridge, "SelfHostedEditor stable node map bridge");
+    assertNoP2BatchApplyEntrypoint(selfHostedNodeMapReviewController, "SelfHostedEditor stable node map review UI");
     assertIncludesText(selfHostedLocalizationRowsModelBuilder, "normalizeReviewSignals", "SelfHostedEditor localization rows must preserve shared presenter signals.");
     assertIncludesText(selfHostedLocalizationRowsModelBuilder, "actionStatus", "SelfHostedEditor localization rows must preserve shared candidate actionStatus text.");
 }
@@ -615,6 +619,14 @@ function assertNotIncludesText(text, unexpected, message) {
 
 function assertNotMatchingText(text, pattern, message) {
     assert(!pattern.test(String(text || "")), message);
+}
+
+function assertNoP2BatchApplyEntrypoint(text, label) {
+    assertNotMatchingText(
+        text,
+        /\b(applyAll|apply-all|batchApply|batch-apply|bulkApply|bulk-apply|multiApply|multi-apply)\b|Apply All|Batch Apply|Bulk Apply|Multi Apply|Select All Candidates/i,
+        label + " must not expose batch / multi-apply entrypoints during P2."
+    );
 }
 
 function assertOrderedText(text, before, after, message) {

@@ -142,9 +142,10 @@ npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
 - [x] 完成 P2 Round 7 Stable Node Map Contract 加固。2026-06-17 审计结果见 [SelfHostedEditor P2 Stable Node Map Contract Audit](self-hosted-editor-p2-stable-node-map-contract-audit.md)；manual-review candidate 已携带共享 evidence / applyPreview，`apply-node-map-candidate-project --result` 输出 dry-run/apply result，SelfHostedEditor compact payload 暴露 changePreview、backup metadata 与 recoveryHint。下一步进入 Round 8：真实写回 UI 闭环与 `workspace.write-back-backup` 接入。
 - [x] 完成 P2 Round 8 Stable Node Map UI 闭环。2026-06-17 审计结果见 [SelfHostedEditor P2 Stable Node Map UI Closure Audit](self-hosted-editor-p2-stable-node-map-ui-closure-audit.md)；SelfHostedEditor `Apply` 现在需要 `Confirm Apply` 二次确认，Electron desktop 路径会先通过 `workspace.write-back-backup` 复制 sidecar 备份，再经 desktop-only `stable-node-map.write-sidecar` 写回 `inscape.node-map.json`；dev-host 路径仍如实显示 download-ready，不误报真实写盘。下一步进入 Round 9：VSCode parity 与共享边界复核。
 - [x] 完成 P2 Round 9 VSCode Parity 与共享边界复核。2026-06-17 审计结果见 [SelfHostedEditor P2 VSCode Parity Boundary Audit](self-hosted-editor-p2-vscode-parity-boundary-audit.md)；`check:semantic-parity` 现在守住 VSCode 只调用 shared CLI / presenter signals、不依赖 SelfHostedEditor desktop-only write-back command、不在宿主侧重算 localization candidate scoring；SelfHostedEditor dev-host 仍不暴露 sidecar write route。下一步进入 Round 10：batch review / multi-apply 决策。
-- [ ] 评估批量审查 / multi-apply 是否必要；优先做可审计、可撤销的小闭环，不扩大自动继承范围。
+- [x] 完成 P2 Round 10 Batch Review / Multi-Apply 决策。2026-06-17 决策见 [SelfHostedEditor P2 Batch Review / Multi-Apply Decision](self-hosted-editor-p2-batch-multi-apply-decision.md)；P2 不做 batch / multi-apply，保留逐候选 `Preview Apply` / `Confirm Apply` / backup / write-back 闭环，并用 `check:semantic-parity` 防止 P2 混入 `Apply All` / bulk / multi-apply 半成品入口。下一步进入 Round 11：Localization Update Safety。
 - [x] 继续收敛 Review Presenter 形状：candidate / diff / rank / identity / risk 信号已稳定为 shared `signals` contract，供 VSCode 与 SelfHostedEditor 一致消费。
-- [x] 完成 stable node map review / apply 的产品化体验：人工确认、冲突报告、dry-run / apply、备份与恢复路径清晰；batch / multi-apply 是否进入 P2 仍留给 Round 10 决策。
+- [x] 完成 stable node map review / apply 的产品化体验：人工确认、冲突报告、dry-run / apply、备份与恢复路径清晰；P2 明确不做 batch / multi-apply。
+- [ ] P2 后重新评估 batch review / multi-apply 的产品价值；若要做，先设计共享 Tooling / CLI batch dry-run、batch result、per-item failure 与 rollback contract，禁止宿主侧直接循环单候选 apply。
 - [ ] 本地化 CSV 与宿主配置 CSV 继续保持界面模型分离，不把 localization review 做成通用表格编辑器。
 
 ### P2.5：Host Schema / Host Bridge 与 Unity-Bird 适配收口
@@ -315,7 +316,7 @@ npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
 - 2026-06-13 已完成：SelfHostedEditor dev-host HTTP request body 第一轮硬化。`readJsonRequestBody()` 现在默认限制 JSON request body 为 4 MB，超限返回 413 JSON error；`check:http-bridge` 覆盖 BOM 剥离、超限 typed error 和 HTTP error status，并已接入 `check:model`。
 - 当前执行顺序（2026-06-01）：
 	1. 先巩固最近 SelfHostedEditor 回归边界：Preview 不得静默丢 `previewLines`，UTF-8 桥接不得再产生中文乱码，Flow 的 typewriter / wheel / `@` 标签行为和 loading 状态都要由 `check:model` / `check:structure` 继续守住。
-	2. 第一实施节点继续留在 L10N 视图：review actions parity 已完成；下一刀若继续本线，应评估批量审校动作，但仍不要把真实 CSV 语义搬回浏览器。
+	2. 第一实施节点继续留在 L10N 视图：review actions parity 已完成；P2 Round 10 已明确批量审校 / multi-apply 不进入本阶段。下一刀若继续本线，应转向 localization update safety，仍不要把真实 CSV 语义搬回浏览器。
 	3. 第二实施节点再推进 Preview Runtime Player：Runtime smoke 现在已经守住 `/api/runtime-state` / `/api/runtime-action` 的 compact payload，以及 `advance-flow` / `rewind-flow` / `choose` / `continue` / `rewind` 契约；Runtime dev-host 已有第一层 `sessionId` 状态边界，下一刀更适合继续缩小 Runtime 不可用时的本地 fallback，或把其它 dev-host 桥继续收向更接近桌面客户端的会话模型，而不是重新扩展前端 presenter 状态机。
 	4. 第三实施节点对齐 VSCode 与 SelfHostedEditor 的作者功能：先按 [VSCode / SelfHostedEditor 功能对齐盘点](vscode-self-hosted-editor-parity.md) 确认 diagnostics、completion、definition、references、hover、outline、本地化 review、stable node map、Host Schema / Host Bridge 提示等能力差异，再补高频作者入口。2026-06-01 已补 SelfHostedEditor `[query]` / `@emit` 的 Host Schema completion / hover、speaker / `@timeline` 的 Host Binding completion / hover / navigation、`Node Map` 稳定节点表 update / review 入口、L10N review actions parity，以及 Host Schema / Host Binding capability 查看视图；2026-06-02 已确认 refs overlay 作为 CodeLens / References Peek 的业务等价入口，并用 direct / HTTP smoke 守跨文件与未保存 draft；同日新增 SelfHostedEditor `check:semantic-parity-http` 与 VSCode `check:semantic-parity`，共同覆盖 diagnostics、completion、definition、references、hover、outline 六个作者语义入口；VSCode 侧也已补上本地化 review 后复用同一 previous CSV 继续 update 的命令式闭环；SelfHostedEditor 侧已补 Stable Node Map manual-review apply/dry-run，复用共享 CLI 并只更新可下载 sidecar payload。上述能力都走共享 LanguageServer capability 或 CLI / Tooling 契约。
 	5. 第四实施节点整理 Editor Backend 会话边界：Runtime、line-map、localization baseline/update 已完成第一层 `sessionId` 状态边界；后续继续把 LanguageServer 与 workspace 这些开发服务器 + CLI 临时 workspace 桥逐步收成更接近桌面客户端的会话模型。短期可保留 HTTP dev bridge，但前端不得新增语义真相。
@@ -345,7 +346,7 @@ npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
 1. **再推进 Stable Node ID 主线。**
 	- 已完成：ADR 0013、stable node id / title map 契约、`update-node-map-project` sidecar 闭环、保守自动重命名识别、VSCode 显式 `Update Stable Node Map` 入口、插入标题后的自动同步、`inscape.node-map-update-report` 审查报告、CLI `--report`、VSCode `Review Stable Node Map Changes` 入口。
 	- 下一步建议顺序：
-		- 已推进：标题重命名审查已有 review item 列表、candidate 跳转、node map / raw report 入口，以及 manual-review 项的显式 `Apply candidate stable id`；candidate apply 语义已下沉到 Tooling / CLI `apply-node-map-candidate-project`。VSCode 只做 Quick Pick、dry-run 调用、`.review-backup.json` 与 `Revert last applied stable id` 文件恢复；SelfHostedEditor 通过 `/api/node-map-apply` 复用同一命令，浏览器阶段只更新可下载 sidecar payload。下一步可再评估 multi-apply 或桌面壳真实写盘/revert。
+		- 已推进：标题重命名审查已有 review item 列表、candidate 跳转、node map / raw report 入口，以及 manual-review 项的显式 `Apply candidate stable id`；candidate apply 语义已下沉到 Tooling / CLI `apply-node-map-candidate-project`。VSCode 只做 Quick Pick、dry-run 调用、`.review-backup.json` 与 `Revert last applied stable id` 文件恢复；SelfHostedEditor desktop 路径已具备 `Confirm Apply`、write-back backup 与 sidecar write 窄闭环。multi-apply 后置到 P2 之后，若重启必须先补共享 batch contract。
 		- 已完成：G10.3 本地化 alignment / audit report。
 		- 已完成：G10.4 相似文本只作人工候选，不静默继承旧译文。
 2. **把本地化迁移闭环做实。**
@@ -353,7 +354,7 @@ npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
 	- 已完成：显式 alignment / audit report，保护旧译文，标记 `kept` / `new` / `changed` / `removed` / `conflict` / `stale`。
 	- 下一步建议顺序：
 		- 细化候选评分：sequence / context / line anchor 权重继续校准，减少“该 changed 还是 conflict”的灰区。
-		- 已推进：Quick Pick 已补主项摘要、candidate 二级跳转，以及 presenter 驱动的 candidate diff / secondary action；当前主项候选摘要也会在超过两个候选时显示 `+N more`，标题 candidate count 已按单复数显示。下一步可继续评估是否需要更强的批量审查或逐项查询能力。
+		- 已推进：Quick Pick 已补主项摘要、candidate 二级跳转，以及 presenter 驱动的 candidate diff / secondary action；当前主项候选摘要也会在超过两个候选时显示 `+N more`，标题 candidate count 已按单复数显示。P2 不继续扩展批量审查；后续若需要逐项查询能力，应保持 presenter 驱动，不新增浏览器侧语义。
 		- 已完成 Goal 15 第一版：line sidecar refresh result / status / line id 信息已接入本地化 alignment audit，后续只需继续评估更强的 line identity 迁移契约或 report 体验。
 		- 再评估是否给 `update-l10n-project` 增加可选 `--alignment-report`，但默认行为仍不应自动继承相似旧译文。
 	- 注意：这条实际上依赖 Goal 10 的 stable node id 维护进一步落地，所以优先级排在 Goal 10 后半段，而不是独立抢跑。
@@ -641,7 +642,7 @@ npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
 	- [x] VSCode 新增显式 `Inscape: Update Stable Node Map` 命令，调用 `update-node-map-project` 并把活动未保存文档通过 `--override` 传给 CLI。
 	- [x] VSCode `Inscape: Insert Node Title` 在插入成功后会静默同步 stable node map；同步失败只提示 warning，不回滚标题插入。
 	- [x] 标题重命名已具备审查报告、review item 列表、candidate 跳转、显式 apply / revert / preview 操作。
-	- [ ] 后续只需评估是否需要 multi-apply 或更强的批量审查流。
+	- [x] P2 Round 10 已决策：本阶段不实现 multi-apply 或更强的批量审查流；后续若重启，先补共享 batch dry-run / result / rollback contract。
 - [x] 定义并实现行级隐式 hash 的输入、规范化规则、版本号和碰撞处理。
 - [x] 实现第一版本地化 CSV 提取，覆盖旁白、对白、选择提示和选择项。
 - [x] 实现旧翻译表按锚点精确继承，并标记新增、保留、删除条目。

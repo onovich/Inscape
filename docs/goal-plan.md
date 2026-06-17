@@ -177,11 +177,11 @@
 小节点：
 
 - [x] G10.1 实现 stable node id sidecar 的创建、读取、更新、删除和冲突处理。
-- [~] G10.2 把标题创建 / 重命名流程接入 stable node id 维护；作者仍只写中文标题，机器 ID 由工具维护。当前标题创建、显式更新、自动同步和重命名审查入口都已落地，剩余只需评估是否继续补 multi-apply 或更强的批量审查流。
+- [~] G10.2 把标题创建 / 重命名流程接入 stable node id 维护；作者仍只写中文标题，机器 ID 由工具维护。当前标题创建、显式更新、自动同步、重命名审查入口和逐候选 apply 闭环都已落地；P2 Round 10 已决定不在本阶段补 multi-apply 或更强的批量审查流。
   - [x] G10.2.1 VSCode 新增显式 `Inscape: Update Stable Node Map` 入口，调用 `update-node-map-project`，并把活动未保存 `.inscape` 文档通过 `--override` 传给 CLI。
   - [x] G10.2.2 标题创建后自动同步 stable node map，插入标题成功后会对当前工作区静默执行一次 `update-node-map-project`，失败时只提示自动同步失败，不回滚插入动作。
 - [x] G10.2.3 标题重命名的人工确认 / 冲突报告入口：`StoryNodeMapUpdateDomain` 现在会输出 `inscape.node-map-update-report`，CLI `update-node-map-project` 新增 `--report`，VSCode 新增显式 `Inscape: Review Stable Node Map Changes`，并在显式 `Update Stable Node Map` 发现 `manual-review` / `conflict` 时给出审查入口。
-- [~] G10.2.4 细化标题重命名人工确认流：已补 review item 列表、candidate 跳转和 node map / raw report 打开入口；当前 manual-review 项已支持显式 `Apply candidate stable id`，candidate apply 语义已下沉到 Tooling / CLI `apply-node-map-candidate-project`，VSCode 只保留 `.review-backup.json`、`Revert last applied stable id` 与 dry-run 调用体验。下一步可继续评估 SelfHostedEditor apply UI 或 multi-apply。
+- [~] G10.2.4 细化标题重命名人工确认流：已补 review item 列表、candidate 跳转和 node map / raw report 打开入口；当前 manual-review 项已支持显式 `Apply candidate stable id`，candidate apply 语义已下沉到 Tooling / CLI `apply-node-map-candidate-project`，VSCode 只保留 `.review-backup.json`、`Revert last applied stable id` 与 dry-run 调用体验，SelfHostedEditor desktop 路径已有 `Confirm Apply` + write-back backup + sidecar write 窄闭环。multi-apply 后置到 P2 之后，若要重启必须先补共享 batch dry-run / result / rollback contract。
 - [x] G10.3 实现本地化 alignment / audit report，输出 `kept` / `new` / `changed` / `removed` / `conflict` / `stale`。
   - [x] Internal Tooling 新增 `LocalizationAlignmentAuditDomain` 和 `inscape.localization-alignment` JSON report model。
   - [x] Internal CLI 新增显式 `audit-l10n-alignment-project <root> --from old.csv [-o l10n-review.json]`，不改变 `update-l10n-project` 默认行为。
@@ -192,7 +192,7 @@
   - [x] 低置信相似文本不再被压成单候选 `changed`，而是保留为人工 `conflict` 审查项。
   - [x] CLI `audit-l10n-alignment-project` 新增 `--format text`；VSCode 新增 `Review Localization Alignment` 命令，先用文件输出方式补最小审查闭环。
   - [x] VSCode 对 json report 补了最小 source jump：生成后可直接弹出 alignment item Quick Pick，并跳回对应源位置。
-  - [~] G10.4.1 细化 alignment review Quick Pick：已补 candidate / similarity / reason 的更强摘要展示、超过两个候选时的 `+N more` 摘要、单复数正确的 candidate count、candidate 二级跳转，以及 Tooling presenter 提供的 `show-candidate-diff` 二级动作；VSCode 只负责展示该动作和跳转，不重新拼装 diff 语义。下一步可视需要继续评估更强的批量审查或逐项查询能力。
+  - [~] G10.4.1 细化 alignment review Quick Pick：已补 candidate / similarity / reason 的更强摘要展示、超过两个候选时的 `+N more` 摘要、单复数正确的 candidate count、candidate 二级跳转，以及 Tooling presenter 提供的 `show-candidate-diff` 二级动作；VSCode 只负责展示该动作和跳转，不重新拼装 diff 语义。批量审查已在 P2 Round 10 后置到 P2 之后；若继续补逐项查询能力，应保持 presenter 驱动。
   - [~] G10.4.2 继续调整 candidate scoring：sequence / context / line anchor 等信号更稳地影响 `changed` 与 `conflict` 分界；当前 report candidate 与 Tooling presenter 都已暴露 `rankPenalty`，Tooling presenter 也会在 review detail 中展示 current / candidate `lineId`、`lineIdentityStatus` 与短 line fingerprint 摘要，并在有 line id 的 candidate action status 与 diff action summary 中显示身份摘要。
 
 ## Goal 11：Fallback 与外部宿主收口
