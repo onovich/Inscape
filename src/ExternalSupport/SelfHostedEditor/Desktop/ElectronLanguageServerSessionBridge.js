@@ -44,6 +44,8 @@ export class SelfHostedEditorElectronLanguageServerSessionBridge {
     );
     this.child = null;
     this.health = "not-started";
+    this.fallbackCount = 0;
+    this.fallbackReason = "";
     this.lastError = null;
     this.latestDocumentRevision = 0;
     this.nextRequestId = 1;
@@ -83,9 +85,6 @@ export class SelfHostedEditorElectronLanguageServerSessionBridge {
     await this.ensureWorkspace(options.workspaceRoot || this.workspaceRoot, {
       documentRevision: payload.documentRevision,
     });
-    if (!this.child) {
-      throw new Error(this.lastError?.message || "LanguageServer session is unavailable.");
-    }
 
     const override = await this.prepareActiveDocumentOverride(payload);
     const commonProjectParams = {
@@ -93,42 +92,17 @@ export class SelfHostedEditorElectronLanguageServerSessionBridge {
       overrideSourcePath: override.sourcePath,
       rootPath: this.workspaceRoot,
     };
-    let result;
-    if (kind === "diagnostics") {
-      result = await this.request("inscape/diagnoseProject", commonProjectParams);
-    } else if (kind === "completions") {
-      result = await this.request("inscape/completionProject", commonProjectParams);
-    } else if (kind === "definition") {
-      result = await this.request("inscape/definitionProject", {
-        ...commonProjectParams,
-        target: readQueryValue(payload, "definitionName", "target"),
-      });
-    } else if (kind === "references") {
-      result = await this.request("inscape/referencesProject", {
-        ...commonProjectParams,
-        target: readQueryValue(payload, "referenceName", "target"),
-      });
-    } else if (kind === "hover") {
-      result = await this.request("inscape/hoverProject", {
-        ...commonProjectParams,
-        kind: readQueryValue(payload, "hoverKind", "kind") || "node",
-        target: readQueryValue(payload, "hoverName", "target"),
-      });
-    } else if (kind === "document-symbols") {
-      result = replaceDocumentSymbolSourcePath(
-        await this.request("inscape/documentSymbolsFile", {
-          sourcePath: override.contentPath,
-        }),
-        override.sourcePath
-      );
-    } else {
-      throw new Error(`Unsupported LanguageServer session command: ${kind}`);
-    }
+    try {
+      if (!this.child) {
+        throw new Error(this.lastError?.message || "LanguageServer session is unavailable.");
+      }
 
-    this.health = "ready";
-    this.lastError = null;
-    this.syncedDocumentRevision = Math.max(this.syncedDocumentRevision, override.documentRevision);
-    return result;
+      const result = await this.runLongLivedLanguageRequest(kind, payload, commonProjectParams, override);
+      this.markLanguageRequestSucceeded(override, "ready");
+      return result;
+    } catch (error) {
+      return await this.runProcessPerRequestFallback(kind, payload, override, error);
+    }
   }
 
   async diagnoseProject(rootPath) {
@@ -136,6 +110,80 @@ export class SelfHostedEditorElectronLanguageServerSessionBridge {
     return await this.request("inscape/diagnoseProject", {
       rootPath: this.workspaceRoot,
     });
+  }
+
+  async runLongLivedLanguageRequest(kind, payload, commonProjectParams, override) {
+    if (kind === "diagnostics") {
+      return await this.request("inscape/diagnoseProject", commonProjectParams);
+    }
+
+    if (kind === "completions") {
+      return await this.request("inscape/completionProject", commonProjectParams);
+    }
+
+    if (kind === "definition") {
+      return await this.request("inscape/definitionProject", {
+        ...commonProjectParams,
+        target: readQueryValue(payload, "definitionName", "target"),
+      });
+    }
+
+    if (kind === "references") {
+      return await this.request("inscape/referencesProject", {
+        ...commonProjectParams,
+        target: readQueryValue(payload, "referenceName", "target"),
+      });
+    }
+
+    if (kind === "hover") {
+      return await this.request("inscape/hoverProject", {
+        ...commonProjectParams,
+        kind: readQueryValue(payload, "hoverKind", "kind") || "node",
+        target: readQueryValue(payload, "hoverName", "target"),
+      });
+    }
+
+    if (kind === "document-symbols") {
+      return replaceDocumentSymbolSourcePath(
+        await this.request("inscape/documentSymbolsFile", {
+          sourcePath: override.contentPath,
+        }),
+        override.sourcePath
+      );
+    }
+
+    throw new Error(`Unsupported LanguageServer session command: ${kind}`);
+  }
+
+  async runProcessPerRequestFallback(kind, payload, override, cause) {
+    this.stopActiveSessionAfterFailure(cause);
+    const fallbackArgs = buildProcessPerRequestLanguageServerArgs(kind, payload, this.workspaceRoot, override);
+    const fallbackInvocation = normalizeInvocation(this.invocationResolver(fallbackArgs, this.invocationResolverOptions));
+    this.fallbackCount += 1;
+    this.fallbackReason = normalizeFallbackReason(cause, fallbackInvocation);
+    if (!fallbackInvocation.available) {
+      this.setError(
+        fallbackInvocation.reason || "language-server-fallback-unavailable",
+        fallbackInvocation.message || "LanguageServer process-per-request fallback is unavailable."
+      );
+      throw cause instanceof Error ? cause : new Error(String(cause || this.lastError?.message || "LanguageServer fallback is unavailable."));
+    }
+
+    try {
+      const result = await runLanguageServerProcessInvocation(fallbackInvocation, {
+        errorPreviewCharacterLimit: this.errorPreviewCharacterLimit,
+        timeoutMilliseconds: this.requestTimeoutMilliseconds,
+      });
+      this.health = "fallback";
+      this.lastError = normalizeErrorSummaryObject(cause, this.fallbackReason);
+      this.syncedDocumentRevision = Math.max(this.syncedDocumentRevision, override.documentRevision);
+      return kind === "document-symbols"
+        ? replaceDocumentSymbolSourcePath(result, override.sourcePath)
+        : result;
+    } catch (error) {
+      this.setError("language-server-fallback-failed", error.message || String(error));
+      throw error;
+    }
   }
 
   async documentSymbolsFile(sourcePath) {
@@ -175,6 +223,7 @@ export class SelfHostedEditorElectronLanguageServerSessionBridge {
     if (!options.keepStatus) {
       this.workspaceRoot = "";
       this.health = "disposed";
+      this.fallbackReason = "";
       this.lastError = null;
     } else {
       this.health = "not-started";
@@ -185,6 +234,7 @@ export class SelfHostedEditorElectronLanguageServerSessionBridge {
         }
         : null;
     }
+    this.fallbackCount = 0;
     this.startCount = 0;
   }
 
@@ -202,7 +252,9 @@ export class SelfHostedEditorElectronLanguageServerSessionBridge {
       artifactHealth: resolveArtifactHealth(invocation, this.health),
       artifactKind: invocation?.artifactKind || "unresolved",
       documentRevisionLag: Math.max(0, latestRevision - syncedRevision),
+      fallbackCount: this.fallbackCount,
       fallbackKind: "process-per-request",
+      fallbackReason: this.fallbackReason,
       health: this.health,
       kind: SelfHostedEditorElectronLanguageSessionKind,
       lastError: normalizeErrorSummary(this.lastError),
@@ -217,6 +269,23 @@ export class SelfHostedEditorElectronLanguageServerSessionBridge {
     if (normalizedRevision > this.latestDocumentRevision) {
       this.latestDocumentRevision = normalizedRevision;
     }
+  }
+
+  markLanguageRequestSucceeded(override, health) {
+    this.health = health;
+    this.fallbackReason = "";
+    this.lastError = null;
+    this.syncedDocumentRevision = Math.max(this.syncedDocumentRevision, override.documentRevision);
+  }
+
+  stopActiveSessionAfterFailure(error) {
+    if (this.child) {
+      this.child.kill();
+      this.child = null;
+    }
+
+    this.rejectPending(error instanceof Error ? error : new Error(String(error || "LanguageServer session failed.")));
+    this.stdoutBuffer = Buffer.alloc(0);
   }
 
   async prepareActiveDocumentOverride(payload = {}) {
@@ -431,7 +500,7 @@ export class SelfHostedEditorElectronLanguageServerSessionBridge {
   }
 
   setError(code, message) {
-    this.health = code === "language-server-invocation-unavailable" ? "unavailable" : "error";
+    this.health = isUnavailableErrorCode(code) ? "unavailable" : "error";
     this.lastError = {
       code,
       message: String(message || code).slice(0, this.errorPreviewCharacterLimit),
@@ -598,6 +667,131 @@ function resolveLanguageServerArtifactInvocation({
   };
 }
 
+function buildProcessPerRequestLanguageServerArgs(kind, payload, workspaceRoot, override) {
+  if (kind === "diagnostics") {
+    return withProjectOverride([
+      "--diagnose-project",
+      workspaceRoot,
+    ], override);
+  }
+
+  if (kind === "completions") {
+    return withProjectOverride([
+      "--completion-project",
+      workspaceRoot,
+    ], override);
+  }
+
+  if (kind === "definition") {
+    return withProjectOverride([
+      "--definition-project",
+      workspaceRoot,
+      readQueryValue(payload, "definitionName", "target"),
+    ], override);
+  }
+
+  if (kind === "references") {
+    return withProjectOverride([
+      "--references-project",
+      workspaceRoot,
+      readQueryValue(payload, "referenceName", "target"),
+    ], override);
+  }
+
+  if (kind === "hover") {
+    return withProjectOverride([
+      "--hover-project",
+      workspaceRoot,
+      readQueryValue(payload, "hoverKind", "kind") || "node",
+      readQueryValue(payload, "hoverName", "target"),
+    ], override);
+  }
+
+  if (kind === "document-symbols") {
+    return [
+      "--document-symbols-file",
+      override.contentPath,
+    ];
+  }
+
+  throw new Error(`Unsupported LanguageServer session command: ${kind}`);
+}
+
+function withProjectOverride(args, override) {
+  if (!override?.sourcePath || !override?.contentPath) {
+    return args;
+  }
+
+  return [
+    ...args,
+    "--override",
+    override.sourcePath,
+    override.contentPath,
+  ];
+}
+
+async function runLanguageServerProcessInvocation(invocation, options = {}) {
+  const timeoutMilliseconds = normalizePositiveInteger(
+    options.timeoutMilliseconds,
+    defaultRequestTimeoutMilliseconds
+  );
+  const errorPreviewCharacterLimit = normalizePositiveInteger(
+    options.errorPreviewCharacterLimit,
+    defaultErrorPreviewCharacterLimit
+  );
+  return await new Promise((resolve, reject) => {
+    let settled = false;
+    const stdoutChunks = [];
+    const stderrChunks = [];
+    const child = childProcess.spawn(invocation.command, invocation.args, {
+      cwd: invocation.cwd,
+      windowsHide: true,
+    });
+    const timeout = setTimeout(() => {
+      finish(new Error("LanguageServer process-per-request fallback timed out."));
+      child.kill();
+    }, timeoutMilliseconds);
+
+    child.stdout.on("data", (chunk) => {
+      stdoutChunks.push(Buffer.from(chunk));
+    });
+    child.stderr.on("data", (chunk) => {
+      stderrChunks.push(Buffer.from(chunk));
+    });
+    child.on("error", (error) => {
+      finish(error);
+    });
+    child.on("exit", (code, signal) => {
+      if (code !== 0) {
+        const stderrPreview = buildProcessPreview(stderrChunks, errorPreviewCharacterLimit);
+        finish(new Error(`LanguageServer process-per-request fallback exited with code ${code ?? "unknown"}${signal ? ` and signal ${signal}` : ""}. ${stderrPreview}`.trim()));
+        return;
+      }
+
+      try {
+        const stdoutText = Buffer.concat(stdoutChunks).toString("utf8").trim();
+        finish(null, JSON.parse(stdoutText));
+      } catch (error) {
+        finish(error instanceof Error ? error : new Error(String(error)));
+      }
+    });
+
+    function finish(error, result = null) {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      clearTimeout(timeout);
+      if (error) {
+        reject(error);
+      } else {
+        resolve(result);
+      }
+    }
+  });
+}
+
 function normalizeInvocation(invocation = {}) {
   if (invocation.available === false) {
     return {
@@ -683,6 +877,49 @@ function normalizeErrorSummary(error) {
     code: String(error.code || ""),
     message: String(error.message || "Unknown LanguageServer session error.").slice(0, 240),
   };
+}
+
+function normalizeErrorSummaryObject(error, fallbackCode) {
+  const errorSummary = normalizeErrorSummary(error);
+  return {
+    code: errorSummary?.code || fallbackCode || "language-server-session-failed",
+    message: errorSummary?.message || String(fallbackCode || "LanguageServer session failed."),
+  };
+}
+
+function normalizeFallbackReason(cause, fallbackInvocation) {
+  if (fallbackInvocation?.available === false) {
+    return fallbackInvocation.reason || "language-server-fallback-unavailable";
+  }
+
+  const message = String(cause?.message || cause || "");
+  if (message.includes("timed out")) {
+    return "language-server-request-timeout";
+  }
+
+  if (message.includes("Content-Length") || message.includes("JSON")) {
+    return "language-server-protocol-error";
+  }
+
+  return "language-server-session-failed";
+}
+
+function isUnavailableErrorCode(code) {
+  return [
+    "language-server-dev-artifact-missing",
+    "language-server-fallback-unavailable",
+    "language-server-invocation-unavailable",
+    "language-server-packaged-artifact-missing",
+  ].includes(String(code || ""));
+}
+
+function buildProcessPreview(chunks, limit) {
+  const text = Buffer.concat(chunks).toString("utf8").trim();
+  if (!text) {
+    return "";
+  }
+
+  return text.length > limit ? `${text.slice(0, limit)}...` : text;
 }
 
 function normalizeArtifactHealth(artifactHealth, fallback = "available") {

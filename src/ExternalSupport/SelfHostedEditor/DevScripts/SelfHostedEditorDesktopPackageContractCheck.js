@@ -10,6 +10,9 @@ const packageLock = readJson("package-lock.json");
 
 assertEqual(packageJson.main, "Desktop/ElectronMain.js", "desktop package main entry");
 assertEqual(packageJson.scripts?.["check:desktop-package"], "node DevScripts/SelfHostedEditorDesktopPackageContractCheck.js", "desktop package check script");
+assertEqual(packageJson.scripts?.["check:electron-language-artifact"], "node DevScripts/SelfHostedEditorElectronLanguageArtifactContractCheck.js", "desktop package LanguageServer artifact check script");
+assertEqual(packageJson.scripts?.["check:electron-language-fallback"], "node DevScripts/SelfHostedEditorElectronLanguageFallbackContractCheck.js", "desktop package LanguageServer fallback check script");
+assertEqual(packageJson.scripts?.["check:electron-language-session"], "node DevScripts/SelfHostedEditorElectronLanguageSessionContractCheck.js", "desktop package LanguageServer session check script");
 assertEqual(packageJson.scripts?.["package:windows"], "electron-builder --win dir --x64", "desktop package Windows script");
 assertEqual(packageJson.scripts?.["smoke:desktop-package-gui"], "node DevScripts/SelfHostedEditorDesktopPackageGuiSmoke.js", "desktop package GUI smoke script");
 assertEqual(packageJson.scripts?.["smoke:desktop-package-language"], "node DevScripts/SelfHostedEditorDesktopPackageLanguageSmoke.js", "desktop package LanguageServer smoke script");

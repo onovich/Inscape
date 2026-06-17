@@ -265,7 +265,9 @@ function buildLanguageSession(languageSession) {
       artifactHealth: normalizeLanguageArtifactHealth(languageSession.artifactHealth),
       artifactKind: normalizeLanguageArtifactKind(languageSession.artifactKind),
       documentRevisionLag: normalizeNonNegativeInteger(languageSession.documentRevisionLag),
+      fallbackCount: normalizeNonNegativeInteger(languageSession.fallbackCount),
       fallbackKind: String(languageSession.fallbackKind || "process-per-request"),
+      fallbackReason: String(languageSession.fallbackReason || ""),
       health: normalizeLanguageSessionHealth(languageSession.health),
       kind: "long-lived",
       lastError: normalizeErrorSummary(languageSession.lastError),
@@ -311,7 +313,7 @@ function normalizeEndpointList(endpoints, fallback) {
 
 function normalizeLanguageSessionHealth(health) {
   const normalized = String(health || "not-started");
-  if (["not-started", "starting", "ready", "error", "unavailable", "disposed"].includes(normalized)) {
+  if (["not-started", "starting", "ready", "fallback", "error", "unavailable", "disposed"].includes(normalized)) {
     return normalized;
   }
 

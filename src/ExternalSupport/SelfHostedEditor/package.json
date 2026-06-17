@@ -21,6 +21,7 @@
     "check:electron-boundary": "node DevScripts/SelfHostedEditorElectronBoundaryContractCheck.js",
     "check:electron-ipc": "node DevScripts/SelfHostedEditorElectronIpcContractCheck.js",
     "check:electron-language-artifact": "node DevScripts/SelfHostedEditorElectronLanguageArtifactContractCheck.js",
+    "check:electron-language-fallback": "node DevScripts/SelfHostedEditorElectronLanguageFallbackContractCheck.js",
     "check:electron-language-session": "node DevScripts/SelfHostedEditorElectronLanguageSessionContractCheck.js",
     "check:electron-lifecycle": "node DevScripts/SelfHostedEditorElectronLifecycleContractCheck.js",
     "check:electron-workspace": "node DevScripts/SelfHostedEditorElectronWorkspaceContractCheck.js",
