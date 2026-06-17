@@ -326,8 +326,11 @@ function assertP2SharedBoundaryContracts() {
     const vscodeLocalizationCommand = readRepositoryText("src", "ExternalSupport", "VSCode", "Scripts", "Localization", "Commands", "LocalizationCommand.js");
     const vscodeLocalizationReviewQuickPickAdapter = readRepositoryText("src", "ExternalSupport", "VSCode", "Scripts", "Localization", "ViewModels", "LocalizationReviewQuickPickAdapter.js");
     const selfHostedTransport = readRepositoryText("src", "ExternalSupport", "SelfHostedEditor", "Scripts", "Backend", "Clients", "EditorBackendTransport.js");
+    const selfHostedPayloadBridge = readRepositoryText("src", "ExternalSupport", "SelfHostedEditor", "DevScripts", "SelfHostedEditorPayloadBridge.js");
     const selfHostedNodeMapBridge = readRepositoryText("src", "ExternalSupport", "SelfHostedEditor", "Scripts", "EditorAuthoring", "Bridges", "SelfHostedEditorStoryNodeMapBridge.js");
     const selfHostedNodeMapReviewController = readRepositoryText("src", "ExternalSupport", "SelfHostedEditor", "Scripts", "EditorAuthoring", "Controllers", "StoryNodeMapReviewController.js");
+    const selfHostedLocalizationBridge = readRepositoryText("src", "ExternalSupport", "SelfHostedEditor", "Scripts", "Localization", "Bridges", "SelfHostedEditorLocalizationReviewBridge.js");
+    const selfHostedLocalizationCsvFileController = readRepositoryText("src", "ExternalSupport", "SelfHostedEditor", "Scripts", "Localization", "Controllers", "LocalizationCsvFileController.js");
     const selfHostedLocalizationRowsModelBuilder = readRepositoryText("src", "ExternalSupport", "SelfHostedEditor", "Scripts", "Localization", "Models", "LocalizationReviewRowsModelBuilder.js");
 
     assertIncludesText(vscodeEditorAuthoringCommand, "\"update-node-map-project\"", "VSCode stable node map review must keep using the shared update-node-map-project CLI command.");
@@ -344,6 +347,7 @@ function assertP2SharedBoundaryContracts() {
     assertIncludesText(vscodeLocalizationCommand, "\"audit-l10n-alignment-project\"", "VSCode localization alignment review must keep using the shared audit-l10n-alignment-project CLI command.");
     assertIncludesText(vscodeLocalizationCommand, "\"update-l10n-project\"", "VSCode localization update must keep using the shared update-l10n-project CLI command.");
     assertIncludesText(vscodeLocalizationCommand, "\"refresh-l10n-line-map-project\"", "VSCode line identity refresh must keep using the shared refresh-l10n-line-map-project CLI command.");
+    assertNotMatchingText(vscodeLocalizationCommand, /\bLocalizationDraftCsvBuilder\b|createObjectURL|previousCsvFileHandle/i, "VSCode localization update must not reuse SelfHostedEditor browser CSV export/replace paths.");
     assertIncludesText(vscodeLocalizationReviewQuickPickAdapter, "model.signals", "VSCode localization review UI must display shared presenter signals.");
     assertIncludesText(vscodeLocalizationReviewQuickPickAdapter, "model.actionStatus", "VSCode localization review UI may display shared candidate actionStatus text.");
     assertNotMatchingText(vscodeLocalizationReviewQuickPickAdapter, /\b(similarity|rankPenalty|rank-penalty|levenshtein|jaccard|scoreCandidate)\b/, "VSCode localization review UI must not recompute candidate scoring or ranking.");
@@ -359,6 +363,15 @@ function assertP2SharedBoundaryContracts() {
     assertIncludesText(selfHostedNodeMapReviewController, "Preview Apply", "SelfHostedEditor node-map UI must keep dry-run preview separate from real apply.");
     assertNoP2BatchApplyEntrypoint(selfHostedNodeMapBridge, "SelfHostedEditor stable node map bridge");
     assertNoP2BatchApplyEntrypoint(selfHostedNodeMapReviewController, "SelfHostedEditor stable node map review UI");
+    assertIncludesText(selfHostedLocalizationBridge, "localizationWorkflowClient.updateCsv", "SelfHostedEditor localization update bridge must use the backend localization workflow service.");
+    assertNotIncludesText(selfHostedLocalizationBridge, "\"/api/localization-update", "SelfHostedEditor localization bridge must not hard-code the dev-host localization update route.");
+    assertIncludesText(selfHostedPayloadBridge, "compactLocalizationUpdatePayload", "SelfHostedEditor dev-host localization update must return a compact safety payload.");
+    assertIncludesText(selfHostedPayloadBridge, "generatedBy: \"update-l10n-project\"", "SelfHostedEditor localization update payload must identify the shared CLI contract.");
+    assertIncludesText(selfHostedPayloadBridge, "writesWorkspaceFile: false", "SelfHostedEditor dev-host localization update payload must state that it does not write workspace files.");
+    assertIncludesText(selfHostedPayloadBridge, "not-written-by-dev-host", "SelfHostedEditor localization update payload must expose backup status for host-owned replacement.");
+    assertIncludesText(selfHostedLocalizationCsvFileController, "getUpdatedExportReadiness", "SelfHostedEditor localization replace/export must stay behind readiness checks.");
+    assertIncludesText(selfHostedLocalizationCsvFileController, "previousCsvFileHandle.createWritable", "SelfHostedEditor linked CSV replacement may remain a host-owned file-handle write.");
+    assertNotIncludesText(selfHostedLocalizationCsvFileController, "LocalizationDraftCsvBuilder", "SelfHostedEditor real localization update must not be built from the draft CSV exporter.");
     assertIncludesText(selfHostedLocalizationRowsModelBuilder, "normalizeReviewSignals", "SelfHostedEditor localization rows must preserve shared presenter signals.");
     assertIncludesText(selfHostedLocalizationRowsModelBuilder, "actionStatus", "SelfHostedEditor localization rows must preserve shared candidate actionStatus text.");
 }

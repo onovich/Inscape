@@ -65,6 +65,7 @@ export class SelfHostedEditorLocalizationReviewBridge {
         format: payload?.format || "",
         formatVersion: Number(payload?.formatVersion || 0),
         provider: "localization-update",
+        safety: payload?.safety || null,
       };
     } catch (error) {
       return {

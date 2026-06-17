@@ -45,6 +45,22 @@ async function main() {
     throw new Error(`Localization update smoke should reuse baseline from session, got ${String(updated?.baseline?.source || "")}.`);
   }
 
+  if (updated?.safety?.generatedBy !== "update-l10n-project") {
+    throw new Error("Localization update smoke should report the shared CLI update contract.");
+  }
+
+  if (updated?.safety?.writesWorkspaceFile !== false) {
+    throw new Error("Localization update smoke should report that dev-host update does not write workspace files.");
+  }
+
+  if (updated?.safety?.translationOverrideCount !== 1) {
+    throw new Error(`Localization update smoke should count translation overrides, got ${String(updated?.safety?.translationOverrideCount || "")}.`);
+  }
+
+  if (!String(updated?.safety?.recoveryHint || "").includes("keep the previous CSV")) {
+    throw new Error("Localization update smoke should include a recovery hint for host-owned replacement.");
+  }
+
   if (!updated.csv.includes("anchor,node,kind,speaker,text,translation,status,sourcePath,line,column")) {
     throw new Error("Localization update smoke should emit the real updated CSV header.");
   }
@@ -57,7 +73,29 @@ async function main() {
     throw new Error("Localization update smoke should not keep the old translation after overrides.");
   }
 
+  await assertRejectsHostConfigCsv();
+
   console.log("SelfHostedEditor localization update smoke ok");
+}
+
+async function assertRejectsHostConfigCsv() {
+  const hostConfigCsv = [
+    "query,returnType,description",
+    "player.name,string,Host config row",
+    "",
+  ].join("\n");
+
+  try {
+    await getUpdatedLocalizationCsvForScriptText(scriptText, null, hostConfigCsv, [], "localization-update-host-config-smoke");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!message.includes("Previous localization CSV must include anchor and translation columns")) {
+      throw new Error(`Localization update smoke should reject host config CSV with a specific error, got: ${message}`);
+    }
+    return;
+  }
+
+  throw new Error("Localization update smoke should reject host config CSV before generating updated localization output.");
 }
 
 main().catch((error) => {

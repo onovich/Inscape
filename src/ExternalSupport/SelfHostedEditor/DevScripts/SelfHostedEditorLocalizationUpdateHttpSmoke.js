@@ -103,6 +103,22 @@ async function main() {
       throw new Error(`Localization update HTTP smoke should reuse baseline from session, got ${String(update?.baseline?.source || "")}.`);
     }
 
+    if (update?.safety?.generatedBy !== "update-l10n-project") {
+      throw new Error("Localization update HTTP smoke should report the shared CLI update contract.");
+    }
+
+    if (update?.safety?.writesWorkspaceFile !== false) {
+      throw new Error("Localization update HTTP smoke should report that dev-host update does not write workspace files.");
+    }
+
+    if (update?.safety?.translationOverrideCount !== 1) {
+      throw new Error(`Localization update HTTP smoke should count translation overrides, got ${String(update?.safety?.translationOverrideCount || "")}.`);
+    }
+
+    if (!String(update?.safety?.recoveryHint || "").includes("keep the previous CSV")) {
+      throw new Error("Localization update HTTP smoke should include a recovery hint for host-owned replacement.");
+    }
+
     if (!String(update.csv || "").includes("Edited translation,current")) {
       throw new Error("Localization update HTTP smoke should apply translation overrides before merging.");
     }
@@ -111,9 +127,37 @@ async function main() {
       throw new Error("Localization update HTTP smoke should not keep the old translation after overrides.");
     }
 
+    await assertRejectsHostConfigCsv(address.port);
+
     console.log("SelfHostedEditor localization update HTTP smoke ok");
   } finally {
     await close(server);
+  }
+}
+
+async function assertRejectsHostConfigCsv(port) {
+  const hostConfigResponse = await fetch(`http://127.0.0.1:${port}/api/localization-update`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      previousCsv: [
+        "query,returnType,description",
+        "player.name,string,Host config row",
+        "",
+      ].join("\n"),
+      scriptText,
+      sessionId: "localization-update-host-config-http-smoke",
+    }),
+  });
+  const payload = await hostConfigResponse.json();
+  if (hostConfigResponse.ok) {
+    throw new Error("Localization update HTTP smoke should reject host config CSV before generating updated localization output.");
+  }
+
+  if (!String(payload?.error || "").includes("Previous localization CSV must include anchor and translation columns")) {
+    throw new Error(`Localization update HTTP smoke should expose the shared CSV guard error, got: ${String(payload?.error || "")}`);
   }
 }
 

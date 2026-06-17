@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   compactLocalizationReviewPayload,
+  compactLocalizationUpdatePayload,
   compactProjectGraphPayload,
   compactRuntimeStatePayload,
   compactStoryNodeMapApplyPayload,
@@ -217,6 +218,29 @@ assert.equal(compactLocalizationPayload.presenter.items[0].actions[1].signals[1]
 assert.equal(compactLocalizationPayload.presenter.items[0].actions[1].summary, "");
 assert.equal(compactLocalizationPayload.presenter.items[0].actions[1].detail, "");
 assert.equal(compactLocalizationPayload.presenter.items[0].actions[2].detail, "current: Hello | previous: Hi");
+
+const compactLocalizationUpdate = compactLocalizationUpdatePayload({
+  baseline: {
+    metadata: {
+      byteLength: 128,
+      source: "session",
+    },
+  },
+  csv: "anchor,node,kind,speaker,text,translation,status,sourcePath,line,column\nline_001,Opening,Dialogue,Narrator,Hello,Hi,current,story.inscape,2,1\n",
+  translationOverrides: [
+    { anchor: "line_001", translation: "Hi" },
+    { anchor: "", translation: "ignored" },
+  ],
+});
+assert.equal(compactLocalizationUpdate.format, "inscape.self-hosted-editor.localization-updated-csv");
+assert.equal(compactLocalizationUpdate.baseline.source, "session");
+assert.equal(compactLocalizationUpdate.safety.generatedBy, "update-l10n-project");
+assert.equal(compactLocalizationUpdate.safety.writesWorkspaceFile, false);
+assert.equal(compactLocalizationUpdate.safety.translationOverrideCount, 1);
+assert.equal(compactLocalizationUpdate.safety.backup.status, "not-written-by-dev-host");
+assert.equal(compactLocalizationUpdate.safety.backup.targetKind, "localization-csv");
+assert.equal(compactLocalizationUpdate.safety.csvByteLength, Buffer.byteLength(compactLocalizationUpdate.csv, "utf8"));
+assert.ok(compactLocalizationUpdate.safety.recoveryHint.includes("keep the previous CSV"));
 
 const nodeMapReport = relativizeStoryNodeMapReviewPaths({
   format: "inscape.node-map-update-report",

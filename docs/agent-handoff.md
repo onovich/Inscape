@@ -1,12 +1,23 @@
 # Agent 接手指南
 
-状态：P2 Round 10
+状态：P2 Round 11
 
 最后更新：2026-06-17
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-17 SelfHostedEditor P2 Round 11 Localization Update Safety 快照
+
+P2 Round 11 已完成 localization update safety 收口，不宣布 P2 完成。
+
+- 审计产物见 [SelfHostedEditor P2 Localization Update Safety Audit](self-hosted-editor-p2-localization-update-safety-audit.md)。
+- `Internal/Tooling` 的 previous localization CSV 读取入口现在会拒绝缺少 `anchor` 与 `translation` header 的 CSV；误把 host config CSV 传给 `update-l10n-project --from` 时不会生成伪 updated localization CSV。
+- SelfHostedEditor `/api/localization-update` 仍只调用共享 CLI `update-l10n-project`，并在 compact payload 中暴露 `safety` 摘要：`generatedBy`、`writesWorkspaceFile: false`、backup `not-written-by-dev-host`、CSV byte length、override count 与恢复提示。
+- direct / HTTP localization update smoke 已覆盖真实旧 CSV + anchor override、session baseline 复用、host config CSV 拒绝；Internal CLI test 覆盖同一共享 guard。
+- VSCode `check:semantic-parity` 继续确认 VSCode localization update 只走 shared CLI，不混入 SelfHostedEditor file-handle / draft CSV builder；SelfHostedEditor bridge 只通过 backend workflow service 调 update command。
+- 下一轮进入 P2 Round 12：工作台集成 Smoke；重点串起 localization review/update、line map、node map review/apply 的真实工作流，并修 UI loading / error / empty / success report 断点。
 
 ### 2026-06-17 SelfHostedEditor P2 Round 10 Batch Review / Multi-Apply 决策快照
 

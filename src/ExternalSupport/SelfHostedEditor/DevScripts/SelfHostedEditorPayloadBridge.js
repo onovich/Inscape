@@ -108,6 +108,28 @@ export function compactLocalizationReviewPayload(report, baseline = null) {
   };
 }
 
+export function compactLocalizationUpdatePayload({ baseline = null, csv = "", translationOverrides = [] }) {
+  const text = String(csv || "");
+  return {
+    baseline: baseline?.metadata || null,
+    csv: text,
+    format: "inscape.self-hosted-editor.localization-updated-csv",
+    formatVersion: 1,
+    safety: {
+      backup: {
+        required: false,
+        status: "not-written-by-dev-host",
+        targetKind: "localization-csv",
+      },
+      csvByteLength: Buffer.byteLength(text, "utf8"),
+      generatedBy: "update-l10n-project",
+      recoveryHint: "Dev-host localization update only generates CSV; keep the previous CSV until host-owned export or linked-file replacement succeeds.",
+      translationOverrideCount: countLocalizationTranslationOverrides(translationOverrides),
+      writesWorkspaceFile: false,
+    },
+  };
+}
+
 export function compactStoryNodeMapReviewPayload({ nodeMap, nodeMapPath, nodeMapText, report, tempRoot }) {
   return {
     format: "inscape.self-hosted-editor.node-map-review",
@@ -482,4 +504,14 @@ function compactLocalizationReviewSignals(signals) {
       value: signal.value || signal.Value || "",
     }))
     .filter((signal) => signal.key && signal.value);
+}
+
+function countLocalizationTranslationOverrides(translationOverrides) {
+  if (!Array.isArray(translationOverrides)) {
+    return 0;
+  }
+
+  return translationOverrides.filter((item) =>
+    item && typeof item === "object" && String(item.anchor || "").trim()
+  ).length;
 }

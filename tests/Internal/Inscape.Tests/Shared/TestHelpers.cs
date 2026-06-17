@@ -117,6 +117,26 @@ namespace Inscape.Tests {
             return output.ToString();
         }
 
+        static (int ExitCode, string Stdout, string Stderr) RunCliForFailure(string[] args) {
+            TextWriter originalOut = Console.Out;
+            TextWriter originalError = Console.Error;
+            StringWriter output = new StringWriter();
+            StringWriter error = new StringWriter();
+
+            int exitCode;
+            try {
+                Console.SetOut(output);
+                Console.SetError(error);
+                exitCode = CliCore.Main(args);
+            } finally {
+                Console.SetOut(originalOut);
+                Console.SetError(originalError);
+            }
+
+            AssertTrue(exitCode != 0, "CLI command should fail");
+            return (exitCode, output.ToString(), error.ToString());
+        }
+
         static string RepositoryFile(string relativePath) {
             DirectoryInfo? directory = new DirectoryInfo(AppContext.BaseDirectory);
             while (directory != null) {

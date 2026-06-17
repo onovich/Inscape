@@ -59,9 +59,43 @@ namespace Inscape.Tooling {
                 return false;
             }
 
+            string csv = File.ReadAllText(previousLocalizationPath, Encoding.UTF8);
+            if (!LooksLikeLocalizationCsv(csv)) {
+                errorMessage = "Previous localization CSV must include anchor and translation columns: " + previousLocalizationPath;
+                return false;
+            }
+
             LocalizationCsvReaderDomain reader = new LocalizationCsvReaderDomain();
-            entries = reader.Read(File.ReadAllText(previousLocalizationPath, Encoding.UTF8));
+            entries = reader.Read(csv);
             return true;
+        }
+
+        static bool LooksLikeLocalizationCsv(string csv) {
+            string[] lines = csv.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');
+            for (int i = 0; i < lines.Length; i += 1) {
+                string line = lines[i].Trim();
+                if (line.Length == 0) {
+                    continue;
+                }
+
+                bool hasAnchor = false;
+                bool hasTranslation = false;
+                string[] columns = line.Split(',');
+                for (int columnIndex = 0; columnIndex < columns.Length; columnIndex += 1) {
+                    string column = columns[columnIndex].Trim().Trim('"');
+                    if (string.Equals(column, "anchor", System.StringComparison.OrdinalIgnoreCase)) {
+                        hasAnchor = true;
+                    }
+
+                    if (string.Equals(column, "translation", System.StringComparison.OrdinalIgnoreCase)) {
+                        hasTranslation = true;
+                    }
+                }
+
+                return hasAnchor && hasTranslation;
+            }
+
+            return false;
         }
 
         static LocalizationEntryModel Copy(LocalizationEntryModel entry) {

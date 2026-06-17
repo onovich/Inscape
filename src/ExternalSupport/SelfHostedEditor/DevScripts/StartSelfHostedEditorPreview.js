@@ -7,6 +7,7 @@ import {
 } from "./SelfHostedEditorApiHandlerBridge.js";
 import {
   compactLocalizationReviewPayload,
+  compactLocalizationUpdatePayload,
   compactProjectGraphPayload,
   compactRuntimeStatePayload,
   compactStoryNodeMapApplyPayload,
@@ -356,12 +357,11 @@ export async function getUpdatedLocalizationCsvForScriptText(scriptText, workspa
     }
 
     const result = await runCliCommand(cliArgs, "CLI localization project update");
-    return {
-      baseline: baseline.metadata,
+    return compactLocalizationUpdatePayload({
+      baseline,
       csv: result.stdout,
-      format: "inscape.self-hosted-editor.localization-updated-csv",
-      formatVersion: 1,
-    };
+      translationOverrides,
+    });
   });
 }
 

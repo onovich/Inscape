@@ -143,10 +143,11 @@ npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
 - [x] 完成 P2 Round 8 Stable Node Map UI 闭环。2026-06-17 审计结果见 [SelfHostedEditor P2 Stable Node Map UI Closure Audit](self-hosted-editor-p2-stable-node-map-ui-closure-audit.md)；SelfHostedEditor `Apply` 现在需要 `Confirm Apply` 二次确认，Electron desktop 路径会先通过 `workspace.write-back-backup` 复制 sidecar 备份，再经 desktop-only `stable-node-map.write-sidecar` 写回 `inscape.node-map.json`；dev-host 路径仍如实显示 download-ready，不误报真实写盘。下一步进入 Round 9：VSCode parity 与共享边界复核。
 - [x] 完成 P2 Round 9 VSCode Parity 与共享边界复核。2026-06-17 审计结果见 [SelfHostedEditor P2 VSCode Parity Boundary Audit](self-hosted-editor-p2-vscode-parity-boundary-audit.md)；`check:semantic-parity` 现在守住 VSCode 只调用 shared CLI / presenter signals、不依赖 SelfHostedEditor desktop-only write-back command、不在宿主侧重算 localization candidate scoring；SelfHostedEditor dev-host 仍不暴露 sidecar write route。下一步进入 Round 10：batch review / multi-apply 决策。
 - [x] 完成 P2 Round 10 Batch Review / Multi-Apply 决策。2026-06-17 决策见 [SelfHostedEditor P2 Batch Review / Multi-Apply Decision](self-hosted-editor-p2-batch-multi-apply-decision.md)；P2 不做 batch / multi-apply，保留逐候选 `Preview Apply` / `Confirm Apply` / backup / write-back 闭环，并用 `check:semantic-parity` 防止 P2 混入 `Apply All` / bulk / multi-apply 半成品入口。下一步进入 Round 11：Localization Update Safety。
+- [x] 完成 P2 Round 11 Localization Update Safety。2026-06-17 审计结果见 [SelfHostedEditor P2 Localization Update Safety Audit](self-hosted-editor-p2-localization-update-safety-audit.md)；`Internal/Tooling` 现在拒绝缺少 `anchor` 与 `translation` header 的 previous localization CSV，避免 host config CSV 被误当作本地化旧表；SelfHostedEditor updated CSV payload 明确 `generatedBy: "update-l10n-project"`、`writesWorkspaceFile: false`、backup `not-written-by-dev-host` 与恢复提示。下一步进入 Round 12：工作台集成 Smoke。
 - [x] 继续收敛 Review Presenter 形状：candidate / diff / rank / identity / risk 信号已稳定为 shared `signals` contract，供 VSCode 与 SelfHostedEditor 一致消费。
 - [x] 完成 stable node map review / apply 的产品化体验：人工确认、冲突报告、dry-run / apply、备份与恢复路径清晰；P2 明确不做 batch / multi-apply。
 - [ ] P2 后重新评估 batch review / multi-apply 的产品价值；若要做，先设计共享 Tooling / CLI batch dry-run、batch result、per-item failure 与 rollback contract，禁止宿主侧直接循环单候选 apply。
-- [ ] 本地化 CSV 与宿主配置 CSV 继续保持界面模型分离，不把 localization review 做成通用表格编辑器。
+- [x] 本地化 CSV 与宿主配置 CSV 继续保持界面模型分离：localization update 入口现在由 shared Tooling guard 拒绝 host config CSV，SelfHostedEditor / VSCode 不把 localization review 做成通用表格编辑器。
 
 ### P2.5：Host Schema / Host Bridge 与 Unity-Bird 适配收口
 

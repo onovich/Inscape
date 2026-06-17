@@ -217,6 +217,39 @@ Narrator: Project start.
         }
 
 
+        static void CliUpdateL10nProjectRejectsNonLocalizationCsv() {
+            string directory = Path.Combine(Path.GetTempPath(), "inscape-tests", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory);
+            string storyPath = Path.Combine(directory, "00-start.inscape");
+            string hostConfigCsvPath = Path.Combine(directory, "host-config.csv");
+
+            File.WriteAllText(storyPath, """
+# start
+@entry
+Narrator: Project start.
+""", Encoding.UTF8);
+            File.WriteAllText(hostConfigCsvPath,
+                              "query,returnType,description\n"
+                              + "player.name,string,Host config row\n",
+                              Encoding.UTF8);
+
+            (int exitCode, string stdout, string stderr) result;
+            try {
+                result = RunCliForFailure(new[] {
+                    "update-l10n-project",
+                    directory,
+                    "--from",
+                    hostConfigCsvPath,
+                });
+            } finally {
+                Directory.Delete(directory, true);
+            }
+
+            AssertEqual("", result.stdout.Trim(), "Rejected localization update should not emit CSV stdout.");
+            AssertTrue(result.stderr.Contains("Previous localization CSV must include anchor and translation columns", StringComparison.Ordinal), "Project update should reject host config CSV before producing updated localization output.");
+        }
+
+
         static void CliAuditL10nAlignmentProjectEmitsJson() {
             string directory = Path.Combine(Path.GetTempPath(), "inscape-tests", Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(directory);
