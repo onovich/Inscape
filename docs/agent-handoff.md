@@ -536,6 +536,14 @@ P1 40 轮计划完成后，继续补上了真实 Electron preload -> main 的固
 - smoke 点击真实 Preview choice `查看证物`，确认 reading Preview 进入 `证物桌`，并通过 `.script-editor[data-active-source-line]` 验证 editor reveal 到目标标题 source line。
 - `EditorSurfaceController` 现在在编辑器容器上同步 `data-active-source-line`，这是 UI 状态暴露，不改变 Compiler / LanguageServer / Runtime / Tooling 语义边界。
 
+### 2026-06-17 SelfHostedEditor P1 post-40 npm audit 快照
+
+本轮收口 SelfHostedEditor `monaco-editor` / `dompurify` npm audit advisory，不进入 P1.5，也不改变 EditorBackend / preload / renderer 架构。
+
+- 本地 `npm audit` 报告风险来自 `monaco-editor@0.55.1` 间接锁定的 `dompurify@3.2.7`；`npm audit fix --force` 会降级到 `monaco-editor@0.53.0`，因此没有采用该 breaking-change 路线。
+- `src/ExternalSupport/SelfHostedEditor/package.json` 新增 npm `overrides`，将间接 `dompurify` 解析到 `3.4.10`；`monaco-editor` 保持 `0.55.1`。
+- `npm audit` 已清零；后续 GUI / packaged smoke 继续作为 Monaco/Electron 实际可用性验证。下一步可开始 P1.5 workspace-scoped long-lived LanguageServer，仍需保持 shared payload shape 与 VSCode semantic parity。
+
 ### 2026-06-17 SelfHostedEditor P1 post-40 assets import IO 快照
 
 本轮新增 desktop-only `workspace.import-assets` command，把 Round 33 的 asset import plan 推进到 Electron main process 真实 IO。

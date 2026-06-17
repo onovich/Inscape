@@ -567,6 +567,7 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
 - 2026-06-17 P1 post-40 已补真实 write-back backup IO：新增 desktop-only `workspace.write-back-backup` command，经 preload whitelist / Electron dispatcher 进入 `ElectronWorkspaceSessionStore.runWriteBackBackup()`；main process 复用 shared backup plan，把 localization CSV、node-map sidecar、line-map sidecar 复制到 `.inscape-workspace/backups/`，并执行 count-and-age retention cleanup。`check:electron-workspace` 覆盖三类真实复制、旧 backup 清理、禁用 backup、unsupported `.inscape` skip、desktop-only route 和 text-free response。
 - 2026-06-17 P1 post-40 已补真实 assets import IO：新增 desktop-only `workspace.import-assets` command，经 preload whitelist / Electron dispatcher 进入 `ElectronWorkspaceSessionStore.importAssets()`；renderer payload 不传 workspace 外 source path，main process 通过原生多文件选择器或测试注入 selector 临时持有外部路径，复用 shared asset import plan，把图片、音频、CSV 复制到 workspace `assets/images|audio|data`。`check:electron-workspace` 覆盖真实 image/audio/CSV 复制、重名后缀、unsupported skip、取消导入、缺失源失败不留下目标文件、desktop-only route 和不持久化外部路径。
 - 2026-06-17 P1 post-40 已补真实 GUI Preview smoke：`smoke:desktop-gui-recovery` 与 `smoke:desktop-package-gui` 现在都会在真实 Workbench / packaged exe 中确认 Preview 渲染默认样例、点击 choice 推进到目标 block，并验证 editor active source line reveal；该覆盖完成 v0 最小闭环里的 Preview GUI 验收。
+- 2026-06-17 P1 post-40 已收口 SelfHostedEditor npm audit advisory：保留 `monaco-editor@0.55.1`，用 npm `overrides` 将间接 `dompurify` 提升到 `3.4.10`，避免 `npm audit fix --force` 降到 `monaco-editor@0.53.0`；`npm audit` 已清零。
 
 验收：
 

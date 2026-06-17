@@ -102,6 +102,8 @@
 
 2026-06-17 P1 post-40 GUI Preview smoke 补充：`smoke:desktop-gui-recovery` 与 `smoke:desktop-package-gui` 已共用真实 renderer Preview 断言。smoke 等待 Workbench handler ready，读取 `.story-preview` 的 provider / title / choice DOM，点击 `查看证物` choice 后确认 Preview 进入 `证物桌`，并通过 `.script-editor[data-active-source-line]` 验证 editor source reveal 到目标标题。该断言不新增 backend 语义，不把 offline fallback 伪装成 Compiler / Runtime success。
 
+2026-06-17 P1 post-40 npm audit 补充：SelfHostedEditor 依赖安全轮次保留 `monaco-editor@0.55.1`，通过 npm `overrides` 将其间接 `dompurify` 从 `3.2.7` 提升到 `3.4.10`。这只影响包解析和 lockfile，不改变 EditorBackend、preload、renderer 或 Internal shared contract；`npm audit` 已报告 0 vulnerabilities。
+
 ## 状态分类
 
 | 分类 | 当前例子 | 未来归属 | 规则 |

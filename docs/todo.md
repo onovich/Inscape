@@ -99,7 +99,7 @@ SelfHostedEditor desktop backend v0
 - [x] 落地 settings 分层：全局偏好与 workspace / project 行为分开；即使设置页后置，配置 schema 也先稳定。
 - [x] 打通 v0 最小可用闭环的真实 GUI Preview 验证：`smoke:desktop-gui-recovery` 与 `smoke:desktop-package-gui` 现在都会在真实 Workbench / packaged exe 中等待 Preview 渲染默认样例、点击 `查看证物` choice、确认阅读面板进入 `证物桌`，并验证编辑器 active source line reveal 到目标标题。
 - [x] 做 Windows internal package v0 smoke：`package:windows` 生成 unpacked package 后，`smoke:desktop-package-gui` 已验证 packaged exe 能启动、打开 workspace、编辑保存、恢复，并跑基础 diagnostics / completions authoring 能力。
-- [ ] 评估 SelfHostedEditor `monaco-editor` / `dompurify` npm audit advisory：当前 `npm audit fix --force` 会降到 `monaco-editor@0.53.0` 且为 breaking change，应单独依赖安全轮次决策。
+- [x] 评估 SelfHostedEditor `monaco-editor` / `dompurify` npm audit advisory：保留 `monaco-editor@0.55.1`，通过 npm `overrides` 将间接 `dompurify` 提升到 `3.4.10`；未采用 `npm audit fix --force` 的 `monaco-editor@0.53.0` 降级路线，`npm audit` 已清零。
 
 细化执行以 [SelfHostedEditor desktop backend v0 实施计划](self-hosted-editor-desktop-backend-v0-plan.md)、[ADR 0019](adr/0019-self-hosted-editor-embedded-backend-v0.md) 与 [ADR 0020](adr/0020-self-hosted-editor-electron-workspace-and-save-strategy.md) 为准。
 
