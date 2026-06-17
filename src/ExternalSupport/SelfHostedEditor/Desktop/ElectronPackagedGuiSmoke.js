@@ -3,9 +3,11 @@ import path from "node:path";
 import { assertSelfHostedEditorElectronGuiPreview } from "./ElectronGuiPreviewSmokeAssertions.js";
 
 export const SelfHostedEditorElectronPackagedGuiSmokeFormat = "inscape.self-hosted-editor.electron-packaged-gui-smoke";
+export const SelfHostedEditorElectronPackagedLanguageSmokeFormat = "inscape.self-hosted-editor.electron-packaged-language-smoke";
 
 export function isSelfHostedEditorElectronPackagedGuiSmokeEnabled(env = process.env) {
-  return env.SELF_HOSTED_EDITOR_ELECTRON_PACKAGED_GUI_SMOKE === "true";
+  return env.SELF_HOSTED_EDITOR_ELECTRON_PACKAGED_GUI_SMOKE === "true"
+    || env.SELF_HOSTED_EDITOR_ELECTRON_PACKAGED_LANGUAGE_SMOKE === "true";
 }
 
 export function buildSelfHostedEditorElectronPackagedGuiSmokeOptions(env = process.env) {
@@ -17,7 +19,7 @@ export function buildSelfHostedEditorElectronPackagedGuiSmokeOptions(env = proce
   return {
     autosaveDebounceMs: 50,
     autosaveIntervalMs: 25,
-    languageSessionHandlers: state.languageSessionHandlers,
+    ...(state.languageSessionHandlers ? { languageSessionHandlers: state.languageSessionHandlers } : {}),
     packagedGuiSmoke: state,
     selectWorkspaceRoot: async () => state.workspaceRoot,
     showOnReady: false,
@@ -27,9 +29,14 @@ export function buildSelfHostedEditorElectronPackagedGuiSmokeOptions(env = proce
 export function createSelfHostedEditorElectronPackagedGuiSmokeState(env = process.env) {
   const state = {
     languageSessionCalls: [],
+    languageSmokeMode: env.SELF_HOSTED_EDITOR_ELECTRON_PACKAGED_LANGUAGE_SMOKE === "true" ? "long-lived" : "fake-handler",
     resultPath: String(env.SELF_HOSTED_EDITOR_ELECTRON_SMOKE_RESULT_PATH || ""),
     workspaceRoot: String(env.SELF_HOSTED_EDITOR_ELECTRON_SMOKE_WORKSPACE_ROOT || ""),
   };
+  if (state.languageSmokeMode === "long-lived") {
+    return state;
+  }
+
   state.languageSessionHandlers = Object.freeze({
     async completions(payload = {}) {
       state.languageSessionCalls.push({ kind: "completions", payload });
@@ -159,28 +166,15 @@ export async function runSelfHostedEditorElectronPackagedGuiSmoke({
     assertEqual(await readOpeningText(state.workspaceRoot), restoreText, "Packaged GUI smoke restore writes disk");
     assertNotIncludes(JSON.stringify(restoreResult), "packaged restore text", "Packaged GUI smoke restore response is text-free");
 
-    const directLanguageCallStart = state.languageSessionCalls.length;
-    const diagnosticsResult = await invokePreload(browserWindow, "languageSession.diagnose", {
-      scriptText: "# Stale\nNarrator: packaged stale diagnostics text",
-    });
-    assertEqual(diagnosticsResult.diagnostics[0].code, "PKG001", "Packaged GUI smoke diagnostics result");
-    const completionsResult = await invokePreload(browserWindow, "languageSession.completions", {
-      scriptText: "# Stale\nNarrator: packaged stale completions text",
-    });
-    assertEqual(completionsResult.completions[0].label, "PackagedRestoredTarget", "Packaged GUI smoke completions result");
-    const directLanguageCalls = state.languageSessionCalls.slice(directLanguageCallStart);
-    assertEqual(directLanguageCalls.length, 2, "Packaged GUI smoke direct language call count");
-    for (const call of directLanguageCalls) {
-      const activePayloadDocument = call.payload.workspace.documents.find((document) => document.relativePath === call.payload.activeRelativePath);
-      assertEqual(call.payload.activeRelativePath, "story/opening.inscape", `Packaged GUI smoke ${call.kind} active path`);
-      assertEqual(call.payload.scriptText, restoreText, `Packaged GUI smoke ${call.kind} uses restored buffer`);
-      assertEqual(activePayloadDocument.text, restoreText, `Packaged GUI smoke ${call.kind} snapshot text`);
-      assertNotIncludes(JSON.stringify(call.payload), "packaged stale", `Packaged GUI smoke ${call.kind} ignores stale renderer text`);
-    }
+    const languageResult = state.languageSmokeMode === "long-lived"
+      ? await runPackagedLongLivedLanguageSmoke(browserWindow, state, restoreText)
+      : await runPackagedFakeLanguageSmoke(browserWindow, state, restoreText);
 
     await writeSmokeResult(state, {
-      format: SelfHostedEditorElectronPackagedGuiSmokeFormat,
-      languageCallCount: directLanguageCalls.length,
+      format: state.languageSmokeMode === "long-lived"
+        ? SelfHostedEditorElectronPackagedLanguageSmokeFormat
+        : SelfHostedEditorElectronPackagedGuiSmokeFormat,
+      ...languageResult,
       ok: true,
       preview: previewResult,
       reason: "",
@@ -190,13 +184,122 @@ export async function runSelfHostedEditorElectronPackagedGuiSmoke({
   } catch (error) {
     await writeSmokeResult(state, {
       error: error instanceof Error ? error.stack || error.message : String(error),
-      format: SelfHostedEditorElectronPackagedGuiSmokeFormat,
+      format: state?.languageSmokeMode === "long-lived"
+        ? SelfHostedEditorElectronPackagedLanguageSmokeFormat
+        : SelfHostedEditorElectronPackagedGuiSmokeFormat,
       ok: false,
       reason: "packaged-gui-smoke-failed",
     });
     console.error(error instanceof Error ? error.stack || error.message : String(error));
     electronApp?.exit?.(1);
   }
+}
+
+async function runPackagedFakeLanguageSmoke(browserWindow, state, restoreText) {
+  const directLanguageCallStart = state.languageSessionCalls.length;
+  const diagnosticsResult = await invokePreload(browserWindow, "languageSession.diagnose", {
+    scriptText: "# Stale\nNarrator: packaged stale diagnostics text",
+  });
+  assertEqual(diagnosticsResult.diagnostics[0].code, "PKG001", "Packaged GUI smoke diagnostics result");
+  const completionsResult = await invokePreload(browserWindow, "languageSession.completions", {
+    scriptText: "# Stale\nNarrator: packaged stale completions text",
+  });
+  assertEqual(completionsResult.completions[0].label, "PackagedRestoredTarget", "Packaged GUI smoke completions result");
+  const directLanguageCalls = state.languageSessionCalls.slice(directLanguageCallStart);
+  assertEqual(directLanguageCalls.length, 2, "Packaged GUI smoke direct language call count");
+  for (const call of directLanguageCalls) {
+    const activePayloadDocument = call.payload.workspace.documents.find((document) => document.relativePath === call.payload.activeRelativePath);
+    assertEqual(call.payload.activeRelativePath, "story/opening.inscape", `Packaged GUI smoke ${call.kind} active path`);
+    assertEqual(call.payload.scriptText, restoreText, `Packaged GUI smoke ${call.kind} uses restored buffer`);
+    assertEqual(activePayloadDocument.text, restoreText, `Packaged GUI smoke ${call.kind} snapshot text`);
+    assertNotIncludes(JSON.stringify(call.payload), "packaged stale", `Packaged GUI smoke ${call.kind} ignores stale renderer text`);
+  }
+
+  return {
+    languageCallCount: directLanguageCalls.length,
+  };
+}
+
+async function runPackagedLongLivedLanguageSmoke(browserWindow, state, restoreText) {
+  const beforeDirtyStatus = await invokePreload(browserWindow, "projectSession.status", {});
+  assertEqual(beforeDirtyStatus.languageSession.kind, "long-lived", "Packaged language smoke status kind");
+  assertEqual(beforeDirtyStatus.languageSession.health, "ready", "Packaged language smoke status health");
+  assertEqual(beforeDirtyStatus.languageSession.artifactHealth, "available", "Packaged language smoke artifact health");
+  assertEqual(beforeDirtyStatus.languageSession.artifactKind.startsWith("packaged-"), true, "Packaged language smoke artifact kind");
+
+  const dirtyText = `${restoreText}
+-> Evidence
+-> MissingPackagedTarget
+
+# DraftOnlyPackaged
+Narrator: packaged dirty buffer only text.`;
+  const dirtyRead = await invokePreload(browserWindow, "documentBuffer.read", {
+    relativePath: "story/opening.inscape",
+  });
+  const dirtyUpdate = await invokePreload(browserWindow, "documentBuffer.updateDraft", {
+    baseRevision: dirtyRead.document.revision,
+    relativePath: "story/opening.inscape",
+    text: dirtyText,
+  });
+  assertEqual(dirtyUpdate.ok, true, "Packaged language smoke writes dirty draft");
+  assertEqual(await readOpeningText(state.workspaceRoot), restoreText, "Packaged language smoke leaves dirty draft off disk");
+
+  const dirtyStatus = await invokePreload(browserWindow, "projectSession.status", {});
+  assertEqual(dirtyStatus.languageSession.documentRevisionLag > 0, true, "Packaged language smoke dirty status revision lag");
+  assertNotIncludes(JSON.stringify(dirtyStatus), "DraftOnlyPackaged", "Packaged language smoke status is text-free");
+
+  const diagnosticsResult = await invokePreload(browserWindow, "languageSession.diagnose", {
+    scriptText: "# Stale\nNarrator: packaged stale diagnostics text",
+  });
+  assertEqual(diagnosticsResult.format, "inscape.language-server-project-diagnostics", "Packaged language smoke diagnostics format");
+  assertIncludesDiagnostic(diagnosticsResult.diagnostics, "INS020", "story/opening.inscape");
+  assertNotIncludes(JSON.stringify(diagnosticsResult), "packaged stale", "Packaged language smoke diagnostics ignores stale renderer text");
+
+  const completionsResult = await invokePreload(browserWindow, "languageSession.completions", {
+    scriptText: "# Stale\nNarrator: packaged stale completions text",
+  });
+  assertEqual(completionsResult.format, "inscape.language-server-project-completions", "Packaged language smoke completions format");
+  assertEqual(Array.isArray(completionsResult.completions), true, "Packaged language smoke completions array");
+
+  const definitionResult = await invokePreload(browserWindow, "languageSession.definition", {
+    definitionName: "Evidence",
+  });
+  assertEqual(definitionResult.format, "inscape.language-server-project-definition", "Packaged language smoke definition format");
+
+  const referencesResult = await invokePreload(browserWindow, "languageSession.references", {
+    referenceName: "Evidence",
+  });
+  assertEqual(referencesResult.format, "inscape.language-server-project-references", "Packaged language smoke references format");
+
+  const hoverResult = await invokePreload(browserWindow, "languageSession.hover", {
+    hoverKind: "node",
+    hoverName: "Evidence",
+  });
+  assertEqual(hoverResult.format, "inscape.language-server-project-hover", "Packaged language smoke hover format");
+
+  const symbolsResult = await invokePreload(browserWindow, "languageSession.documentSymbols", {
+    activeRelativePath: "story/opening.inscape",
+  });
+  assertEqual(symbolsResult.format, "inscape.language-server-document-symbols", "Packaged language smoke document symbols format");
+  assertIncludesSymbol(symbolsResult.symbols, "DraftOnlyPackaged", "story/opening.inscape");
+
+  const finalStatus = await invokePreload(browserWindow, "projectSession.status", {});
+  assertEqual(finalStatus.languageSession.kind, "long-lived", "Packaged language smoke final status kind");
+  assertEqual(finalStatus.languageSession.health, "ready", "Packaged language smoke final status health");
+  assertEqual(finalStatus.languageSession.documentRevisionLag, 0, "Packaged language smoke final revision lag");
+  assertEqual(finalStatus.languageSession.artifactKind.startsWith("packaged-"), true, "Packaged language smoke final artifact kind");
+
+  return {
+    endpointFormats: {
+      completions: completionsResult.format,
+      definition: definitionResult.format,
+      diagnostics: diagnosticsResult.format,
+      documentSymbols: symbolsResult.format,
+      hover: hoverResult.format,
+      references: referencesResult.format,
+    },
+    languageSession: finalStatus.languageSession,
+  };
 }
 
 async function waitForWindowLoad(browserWindow) {
@@ -269,6 +372,26 @@ function assert(condition, label) {
 function assertEqual(actual, expected, label) {
   if (actual !== expected) {
     throw new Error(`${label}: expected ${expected}, got ${actual}`);
+  }
+}
+
+function assertIncludesDiagnostic(diagnostics, code, sourcePath) {
+  const found = Array.isArray(diagnostics) && diagnostics.some((diagnostic) =>
+    diagnostic?.code === code
+    && String(diagnostic.location?.sourcePath || "").replace(/\\/g, "/").endsWith(sourcePath)
+  );
+  if (!found) {
+    throw new Error(`Missing diagnostic ${code} at ${sourcePath}`);
+  }
+}
+
+function assertIncludesSymbol(symbols, name, sourcePath) {
+  const found = Array.isArray(symbols) && symbols.some((symbol) =>
+    symbol?.name === name
+    && String(symbol.location?.sourcePath || "").replace(/\\/g, "/").endsWith(sourcePath)
+  );
+  if (!found) {
+    throw new Error(`Missing document symbol ${name} at ${sourcePath}`);
   }
 }
 

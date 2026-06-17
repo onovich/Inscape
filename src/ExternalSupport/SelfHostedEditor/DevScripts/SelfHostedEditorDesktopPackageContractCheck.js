@@ -12,6 +12,7 @@ assertEqual(packageJson.main, "Desktop/ElectronMain.js", "desktop package main e
 assertEqual(packageJson.scripts?.["check:desktop-package"], "node DevScripts/SelfHostedEditorDesktopPackageContractCheck.js", "desktop package check script");
 assertEqual(packageJson.scripts?.["package:windows"], "electron-builder --win dir --x64", "desktop package Windows script");
 assertEqual(packageJson.scripts?.["smoke:desktop-package-gui"], "node DevScripts/SelfHostedEditorDesktopPackageGuiSmoke.js", "desktop package GUI smoke script");
+assertEqual(packageJson.scripts?.["smoke:desktop-package-language"], "node DevScripts/SelfHostedEditorDesktopPackageLanguageSmoke.js", "desktop package LanguageServer smoke script");
 assert(packageJson.devDependencies?.electron, "desktop package requires Electron dev dependency");
 assert(packageJson.devDependencies?.["electron-builder"], "desktop package requires electron-builder dev dependency");
 

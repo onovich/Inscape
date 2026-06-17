@@ -555,7 +555,8 @@ P1 40 轮计划完成后，继续补上了真实 Electron preload -> main 的固
 - 第二刀补充：ProjectSession status 现在还包含 `restartCount`；`check:electron-language-session` 会模拟协议错误，确认 status 进入 `health: "error"`、`lastError.code: "language-server-protocol-error"`，且下一次 language request 会启动 replacement process 并恢复 `health: "ready"`。
 - 第三刀补充：`check:electron-workspace` 现在断言 Electron language payload 仍携带 `inscape.self-hosted-editor.language-session-request` envelope 与 shared query kind；SelfHostedEditor HTTP semantic parity 与 VSCode semantic parity 继续通过。
 - 第四刀补充：Windows `package:windows` 现在会把 `Inscape.LanguageServer` runtime 复制到 packaged `resources/language-server`；Electron packaged resolver 只从该资源目录启动 bundled artifact，不回退源码目录。新增 `check:electron-language-artifact` 覆盖 dev build、dev project、packaged exe/dll 与 packaged missing resolver contract；`smoke:desktop-package` 会断言 generated package 内存在 LanguageServer dll/exe/runtimeconfig。
-- 已知剩余风险：真实 packaged GUI language smoke 仍需改为不注入 fake handler，并验证 packaged app 内的 long-lived LanguageServer 路径；`process-per-request` 降级仍可作为后续打包容灾增强。
+- 第五刀补充：新增 `smoke:desktop-package-language`，启动 generated packaged exe 且不注入 fake language handler，验证 packaged app 内的 `long-lived` status、`packaged-*` artifact、dirty buffer override，以及 diagnostics / completions / definition / references / hover / documentSymbols 六类 endpoint。
+- 已知剩余风险：`process-per-request` 降级仍可作为后续打包容灾增强；后续 fallback 需保证不改变 shared LanguageServer payload shape，也不把 Compiler / Tooling 语义复制进 EditorBackend。
 
 ### 2026-06-17 SelfHostedEditor P1 post-40 assets import IO 快照
 
