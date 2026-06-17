@@ -31,6 +31,7 @@ namespace Inscape.Runtime {
             State.CurrentNodeName = string.Empty;
             State.Path.Clear();
             State.VisibleStepCount = 0;
+            State.Facts = new NarrativeRuntimeFactsModel();
 
             foreach (StoryGraphNodeModel node in narrativeGraph.Nodes) {
                 if (!nodesByName.ContainsKey(node.Name)) {
@@ -69,7 +70,23 @@ namespace Inscape.Runtime {
             }
 
             string target = group.Options[optionIndex].Target;
-            return target.Length > 0 && EnterNode(target, false);
+            if (target.Length == 0 || !nodesByName.ContainsKey(target)) {
+                return false;
+            }
+
+            DslScriptChoiceOptionModel option = group.Options[optionIndex];
+            if (!EnterNode(target, false)) {
+                return false;
+            }
+
+            State.Facts.ChoiceHistory.Add(new NarrativeRuntimeChoiceFactModel {
+                NodeName = node.Name,
+                GroupIndex = groupIndex,
+                OptionIndex = optionIndex,
+                OptionAnchor = option.Anchor,
+                TargetNodeName = target,
+            });
+            return true;
         }
 
         public bool AdvanceFlow() {
@@ -84,6 +101,7 @@ namespace Inscape.Runtime {
             }
 
             State.VisibleStepCount += 1;
+            RecordSeenLine(node, State.VisibleStepCount);
             return true;
         }
 
@@ -128,6 +146,7 @@ namespace Inscape.Runtime {
             State.Path.Clear();
             State.Path.AddRange(state.Path);
             State.VisibleStepCount = state.VisibleStepCount;
+            State.Facts = CloneFacts(state.Facts);
             return true;
         }
 
@@ -144,6 +163,7 @@ namespace Inscape.Runtime {
             snapshot.CurrentNodeName = State.CurrentNodeName;
             snapshot.Path.AddRange(State.Path);
             snapshot.VisibleStepCount = State.VisibleStepCount;
+            snapshot.Facts = CloneFacts(State.Facts);
             return snapshot;
         }
 
@@ -173,7 +193,69 @@ namespace Inscape.Runtime {
                 State.Path.Clear();
             }
             State.Path.Add(nodeName);
+            RecordNodeVisit(nodeName);
             return true;
+        }
+
+        void RecordNodeVisit(string nodeName) {
+            for (int i = 0; i < State.Facts.VisitedNodes.Count; i += 1) {
+                if (State.Facts.VisitedNodes[i].NodeName == nodeName) {
+                    State.Facts.VisitedNodes[i].Count += 1;
+                    return;
+                }
+            }
+
+            State.Facts.VisitedNodes.Add(new NarrativeRuntimeNodeVisitFactModel {
+                NodeName = nodeName,
+                Count = 1,
+            });
+        }
+
+        void RecordSeenLine(StoryGraphNodeModel node, int visibleStepCount) {
+            if (visibleStepCount <= 0) {
+                return;
+            }
+
+            int contentIndex = 0;
+            foreach (DslScriptLineModel line in node.Lines) {
+                if (line.Kind == DslScriptLineKindModel.Metadata) {
+                    continue;
+                }
+
+                contentIndex += 1;
+                if (contentIndex == visibleStepCount) {
+                    if (line.Anchor.Length > 0 && !State.Facts.SeenLineAnchors.Contains(line.Anchor)) {
+                        State.Facts.SeenLineAnchors.Add(line.Anchor);
+                    }
+                    return;
+                }
+            }
+        }
+
+        static NarrativeRuntimeFactsModel CloneFacts(NarrativeRuntimeFactsModel facts) {
+            NarrativeRuntimeFactsModel snapshot = new NarrativeRuntimeFactsModel();
+            for (int i = 0; i < facts.VisitedNodes.Count; i += 1) {
+                NarrativeRuntimeNodeVisitFactModel visit = facts.VisitedNodes[i];
+                snapshot.VisitedNodes.Add(new NarrativeRuntimeNodeVisitFactModel {
+                    NodeName = visit.NodeName,
+                    Count = visit.Count,
+                });
+            }
+
+            snapshot.SeenLineAnchors.AddRange(facts.SeenLineAnchors);
+
+            for (int i = 0; i < facts.ChoiceHistory.Count; i += 1) {
+                NarrativeRuntimeChoiceFactModel choice = facts.ChoiceHistory[i];
+                snapshot.ChoiceHistory.Add(new NarrativeRuntimeChoiceFactModel {
+                    NodeName = choice.NodeName,
+                    GroupIndex = choice.GroupIndex,
+                    OptionIndex = choice.OptionIndex,
+                    OptionAnchor = choice.OptionAnchor,
+                    TargetNodeName = choice.TargetNodeName,
+                });
+            }
+
+            return snapshot;
         }
 
         static int GetContentStepCount(StoryGraphNodeModel? node) {

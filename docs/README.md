@@ -9,7 +9,7 @@
 - 查当前实现边界：读 [代码结构规划](code-structure.md)、[编码与命名规范](coding-conventions.md) 和 [渐进式重构计划](refactoring-plan.md)，再进入对应源码目录。
 - 查未定事项：读 [待确认问题](open-questions.md)，避免把草案当成规范。
 - 查 P3 第二版语法 / Runtime 讨论脉络：读 [P3 Runtime / Language Discussion Memory](p3-runtime-language-discussion-memory.md)，再读对应正式 contract 文档。
-- 执行 P3 goal：读 [P3 第二版语法 / Runtime / 宿主能力 Goal 模式执行指南](self-hosted-editor-p3-goal-mode-execution-guide.md)，并从 [P3 Baseline Audit](self-hosted-editor-p3-baseline-audit.md)、[P3 Host Schema v2 Contract Audit](self-hosted-editor-p3-host-schema-v2-contract-audit.md)、[P3 Host Schema Compatibility Audit](self-hosted-editor-p3-host-schema-compatibility-audit.md)、[P3 Usage Manifest Contract Audit](self-hosted-editor-p3-usage-manifest-contract-audit.md)、[P3 Usage Manifest Implementation Audit](self-hosted-editor-p3-usage-manifest-implementation-audit.md)、[P3 Host Integration Audit](self-hosted-editor-p3-host-integration-audit.md)、[P3 Condition Syntax Contract Audit](self-hosted-editor-p3-condition-syntax-contract-audit.md)、[P3 Condition Syntax Implementation Audit](self-hosted-editor-p3-condition-syntax-implementation-audit.md) 与 [P3 Condition Consumption Audit](self-hosted-editor-p3-condition-consumption-audit.md) 接上当前实现状态。
+- 执行 P3 goal：读 [P3 第二版语法 / Runtime / 宿主能力 Goal 模式执行指南](self-hosted-editor-p3-goal-mode-execution-guide.md)，并从 [P3 Baseline Audit](self-hosted-editor-p3-baseline-audit.md)、[P3 Host Schema v2 Contract Audit](self-hosted-editor-p3-host-schema-v2-contract-audit.md)、[P3 Host Schema Compatibility Audit](self-hosted-editor-p3-host-schema-compatibility-audit.md)、[P3 Usage Manifest Contract Audit](self-hosted-editor-p3-usage-manifest-contract-audit.md)、[P3 Usage Manifest Implementation Audit](self-hosted-editor-p3-usage-manifest-implementation-audit.md)、[P3 Host Integration Audit](self-hosted-editor-p3-host-integration-audit.md)、[P3 Condition Syntax Contract Audit](self-hosted-editor-p3-condition-syntax-contract-audit.md)、[P3 Condition Syntax Implementation Audit](self-hosted-editor-p3-condition-syntax-implementation-audit.md)、[P3 Condition Consumption Audit](self-hosted-editor-p3-condition-consumption-audit.md) 与 [P3 Runtime Query Provider Audit](self-hosted-editor-p3-runtime-query-provider-audit.md) 接上当前实现状态。
 
 ## 阅读路径
 
@@ -45,12 +45,13 @@
 28. [P3 Condition Syntax Contract Audit](self-hosted-editor-p3-condition-syntax-contract-audit.md)
 29. [P3 Condition Syntax Implementation Audit](self-hosted-editor-p3-condition-syntax-implementation-audit.md)
 30. [P3 Condition Consumption Audit](self-hosted-editor-p3-condition-consumption-audit.md)
-31. [Bird / Unity 调研记录](bird-unity-research.md)
-32. [Bird Adapter 原型](bird-adapter.md)
-33. [Unity Editor Importer 草案](unity-editor-importer.md)
-34. [路线图](roadmap.md)
-35. [TODO](todo.md)
-36. [待确认问题](open-questions.md)
+31. [P3 Runtime Query Provider Audit](self-hosted-editor-p3-runtime-query-provider-audit.md)
+32. [Bird / Unity 调研记录](bird-unity-research.md)
+33. [Bird Adapter 原型](bird-adapter.md)
+34. [Unity Editor Importer 草案](unity-editor-importer.md)
+35. [路线图](roadmap.md)
+36. [TODO](todo.md)
+37. [待确认问题](open-questions.md)
 
 ## 按任务检索
 
@@ -66,7 +67,7 @@ CLI 命令速查         cli-command-reference.md, README.md
 本地化               hash-localization.md, l10n-extraction.md, ADR 0006
 宿主 Schema/查询事件 host-schema.md, usage-manifest-contract.md, condition-syntax-contract.md, host-query-event-registration-strategy.md, p3-runtime-language-discussion-memory.md, open-questions.md, todo.md
 P3 Runtime/存档/回滚  p3-runtime-language-discussion-memory.md, runtime-unity.md, host-query-event-registration-strategy.md, open-questions.md, todo.md
-P3 Goal 执行         self-hosted-editor-p3-goal-mode-execution-guide.md, self-hosted-editor-p3-baseline-audit.md, self-hosted-editor-p3-host-schema-v2-contract-audit.md, self-hosted-editor-p3-host-schema-compatibility-audit.md, self-hosted-editor-p3-usage-manifest-contract-audit.md, self-hosted-editor-p3-usage-manifest-implementation-audit.md, self-hosted-editor-p3-host-integration-audit.md, self-hosted-editor-p3-condition-syntax-contract-audit.md, self-hosted-editor-p3-condition-syntax-implementation-audit.md, self-hosted-editor-p3-condition-consumption-audit.md, condition-syntax-contract.md, p3-runtime-language-discussion-memory.md, ADR 0021, todo.md
+P3 Goal 执行         self-hosted-editor-p3-goal-mode-execution-guide.md, self-hosted-editor-p3-baseline-audit.md, self-hosted-editor-p3-host-schema-v2-contract-audit.md, self-hosted-editor-p3-host-schema-compatibility-audit.md, self-hosted-editor-p3-usage-manifest-contract-audit.md, self-hosted-editor-p3-usage-manifest-implementation-audit.md, self-hosted-editor-p3-host-integration-audit.md, self-hosted-editor-p3-condition-syntax-contract-audit.md, self-hosted-editor-p3-condition-syntax-implementation-audit.md, self-hosted-editor-p3-condition-consumption-audit.md, self-hosted-editor-p3-runtime-query-provider-audit.md, condition-syntax-contract.md, p3-runtime-language-discussion-memory.md, ADR 0021, todo.md
 Unity/Bird 适配      bird-adapter.md, unity-editor-importer.md, bird-unity-research.md, runtime-unity.md, architecture.md, todo.md
 编辑器阶段           editor-design.md, roadmap.md
 长期设计决策         adr/README.md
@@ -108,6 +109,7 @@ docs/
   self-hosted-editor-p3-condition-syntax-contract-audit.md P3 Round 7 条件语法 contract / parser 设计审计
   self-hosted-editor-p3-condition-syntax-implementation-audit.md P3 Round 8 条件语法 Compiler / IR 实现审计
   self-hosted-editor-p3-condition-consumption-audit.md P3 Round 9 条件表达式 Tooling / LanguageServer / Editor 消费审计
+  self-hosted-editor-p3-runtime-query-provider-audit.md P3 Round 10 Runtime query provider / internal facts 审计
   vscode-tooling.md      VSCode 阶段的轻工具链设计与使用方式
   cli-command-reference.md CLI 命令、参数、产物和验证命令速查
   l10n-extraction.md     CSV 本地化提取命令与字段说明

@@ -119,6 +119,8 @@ Unity Editor Importer 的可复制原型位于 `src/ExternalSupport/UnityPlugin/
 
 第一版不应默认把 Inscape 做成完整业务变量系统。用户自定义内部变量、复杂内部函数和玩法状态托管可以作为后续扩展评估；当前优先保证宿主 delegate query 与 Inscape 内部叙事事实的边界清楚。
 
+P3 Round 10 已在 `Inscape.Runtime` 中落地最小 Runtime query provider / internal facts contract：正式玩法状态仍走 delegate query，mock / recorded 服务测试与复现，内部 facts 只覆盖 visited / seen / choice history 等叙事运行事实。
+
 ## Command Pipeline 候选
 
 ```text

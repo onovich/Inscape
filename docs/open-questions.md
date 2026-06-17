@@ -15,7 +15,7 @@
    - P3 第一刀条件语法已确认：选项条件 `- [condition] text -> target`，条件跳转 `? [condition] -> target`，默认 fallback `-> target`；节点入口条件和行级条件后置。详见 [ADR 0021](adr/0021-p3-runtime-and-host-capability-boundary.md)。
 2. `@` 与 `[]` 如何分工？
    - 已确认当前方向：`@` 主要表达事件 / 动作 / 时机 / 状态变化，`[]` 主要表达查询 / 读取 / 文本插值。
-   - P3 讨论进一步确认：`[]` 不允许副作用；`@` 可按 `fire`、`wait`、`handoff` 三类动作模式设计。查询正式接入主路径是 delegate，mock / recorded 主要服务测试、预览和调试复现；snapshot 不作为生产主能力。
+   - P3 讨论进一步确认：`[]` 不允许副作用；`@` 可按 `fire`、`wait`、`handoff` 三类动作模式设计。查询正式接入主路径是 delegate，mock / recorded 主要服务测试、预览和调试复现；snapshot 不作为生产主能力。P3 Round 10 已在 Runtime 内定义 delegate / mock / recorded provider contract。
    - 详见 [Authoring Marker Contract](authoring-marker-contract.md)、[Authoring Query Interpolation Contract](authoring-query-interpolation-contract.md) 与 [Query Interpolation Data Contract](query-interpolation-data-contract.md)。
    - Goal 0 后，旧 `[timeline: ...]`、`[bg: ...]`、`[kind: alias]` 不再是当前主路径；如果需要处理旧文件，应通过离线迁移或历史审计文档说明。
 3. 节点重命名、重复文本插入和文本微调如何迁移锚点？
@@ -89,7 +89,7 @@
 - 随机数策略由宿主决定，Inscape 不判断公平性；影响分支的随机结果如果需要复现，应记录 receipt。
 - 异步加载、Timeline、宿主 UI 选择、战斗 / 小游戏和服务器结果需要按 `fire` / `wait` / `handoff` 区分控制权交接；失败、取消或超时第一版统一作为宿主异常上报。
 - 自定义指令如何注册、验证和调试；第一版暂不做。
-- 第二版查询回调方案已确认正式运行使用 delegate query；mock / recorded 用于测试、预览和调试复现。snapshot 仅作为低优先级实现细节或一次性上下文包，不作为每帧同步主链路。
+- 第二版查询回调方案已确认正式运行使用 delegate query；mock / recorded 用于测试、预览和调试复现。snapshot 仅作为低优先级实现细节或一次性上下文包，不作为每帧同步主链路。P3 Round 10 已落地 Runtime provider 最小 contract 和内部叙事 facts 查询第一刀。
 - 宿主事件清单是否由编译器 / 烘焙器自动生成，而不是人工维护。
 - 是否需要一定程度的代码生成，把 DSL 用到的 query / action 注册到宿主层。
 - Unity 支持层是否采用 `[Inscape]` 一类 C# Attribute 扫描项目类型和字段，并在 Unity 内生成待配置 Host Bridge 表。

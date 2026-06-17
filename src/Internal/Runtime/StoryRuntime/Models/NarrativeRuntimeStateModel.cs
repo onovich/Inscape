@@ -10,10 +10,13 @@ namespace Inscape.Runtime {
 
         public int VisibleStepCount { get; set; }
 
+        public NarrativeRuntimeFactsModel Facts { get; set; }
+
         public NarrativeRuntimeStateModel() {
             CurrentNodeName = string.Empty;
             Path = new List<string>();
             VisibleStepCount = 0;
+            Facts = new NarrativeRuntimeFactsModel();
         }
 
     }

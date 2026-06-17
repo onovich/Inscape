@@ -38,6 +38,8 @@ namespace Inscape.Tests {
                 ("language server host binding capabilities use tooling contract", LanguageServerHostBindingCapabilitiesUseToolingContract),
                 ("language server stdio session serves project requests", LanguageServerStdioSessionServesProjectRequests),
                 ("narrative runtime consumes compiler graph", NarrativeRuntimeConsumesCompilerGraph),
+                ("narrative runtime records internal narrative facts", NarrativeRuntimeRecordsInternalNarrativeFacts),
+                ("narrative runtime query provider uses delegate mock and recorded sources", NarrativeRuntimeQueryProviderUsesDelegateMockAndRecordedSources),
                 ("cli runtime-project emits runtime state", CliRuntimeProjectEmitsRuntimeState),
                 ("cli runtime-project steps restored state", CliRuntimeProjectStepsRestoredState),
                 ("tool config resolves host bridge path", ToolConfigResolvesHostBridgePath),

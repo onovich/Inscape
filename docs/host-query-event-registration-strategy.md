@@ -298,7 +298,7 @@ Audit
 工具对账：剧本用的，宿主有没有提供，Bridge 有没有映射。
 ```
 
-P3 Round 4 已在 [Usage Manifest Contract](usage-manifest-contract.md) 定义 `inscape.usage` 契约。P3 Round 5 已实现 usage 入口，P3 Round 6 已实现 Host Integration Audit 最小入口，P3 Round 7 已完成条件语法 contract / parser design，P3 Round 8 已完成 Compiler / IR 最小实现；`choice-condition` 与 `conditional-jump` 的实际 usage 扫描仍待后续 Tooling 轮次：
+P3 Round 4 已在 [Usage Manifest Contract](usage-manifest-contract.md) 定义 `inscape.usage` 契约。P3 Round 5 已实现 usage 入口，P3 Round 6 已实现 Host Integration Audit 最小入口，P3 Round 7 已完成条件语法 contract / parser design，P3 Round 8 已完成 Compiler / IR 最小实现，P3 Round 9 已接入 `choice-condition` 与 `conditional-jump` 的实际 usage 扫描：
 
 ```powershell
 inspect-usage-project <root> -o usage.json
@@ -391,11 +391,11 @@ Tooling / VSCode / LanguageServer 可以提供提示或显式 audit，但这些�
 
 后续非 Unity 实现建议：
 
-1. 按 [Condition Syntax Contract](condition-syntax-contract.md) 实现 Compiler 条件 parser / IR 与诊断，不把表达式求值写进 VSCode 或 SelfHostedEditor。
-2. 将 Host Schema 最小字段收敛到 `queries[]` / `actions[]`，并处理现有 `events[]` 与未来 `actions[]` 的兼容 / 迁移口径。
-3. `inspect-usage-project` 与 `audit-host-integration-project` 已完成最小实现；下一步让 Usage Manifest 接入 Compiler 条件 IR 中的 `choice-condition` / `conditional-jump`。
-4. 定义 delegate / mock / recorded provider contract，并明确 snapshot 只作为低优先级实现细节。
-5. 定义内部叙事运行事实和内部只读查询函数的最小集合。
+1. Compiler 条件 parser / IR 与 diagnostics 已按 [Condition Syntax Contract](condition-syntax-contract.md) 落地，VSCode / SelfHostedEditor 不复制表达式 parser。
+2. Host Schema 最小字段已收敛到 `queries[]` / `actions[]`，legacy `events[]` 继续作为 deprecated 兼容输入。
+3. `inspect-usage-project` 与 `audit-host-integration-project` 已完成最小实现，Usage Manifest 已接入 Compiler 条件 IR 中的 `choice-condition` / `conditional-jump`。
+4. Runtime 已定义 delegate / mock / recorded provider contract，并明确 snapshot 不作为生产主链路。
+5. Runtime 已定义内部叙事运行事实和内部只读查询函数的最小集合；下一步进入 Runtime State 最小模型。
 6. 评估 C# attribute / source generator 的宿主无关 schema 生成流程。
 
 Unity 相关代码生成和 Attribute 扫描只进入准备和计划文档；在设计方案落实前，不进行研发实现。

@@ -1,12 +1,25 @@
 # Agent 接手指南
 
-状态：P3 Round 9 condition expression Tooling / LanguageServer / Editor consumption complete
+状态：P3 Round 10 Runtime query provider and internal facts design complete
 
 最后更新：2026-06-18
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-18 SelfHostedEditor P3 Round 10 Runtime query provider / internal facts 快照
+
+P3 Round 10 已完成 Runtime query provider 与内部叙事事实第一刀，不宣称 P3 完成。
+
+- 实现审计见 [SelfHostedEditor P3 Runtime Query Provider Audit](self-hosted-editor-p3-runtime-query-provider-audit.md)。
+- `Internal/Runtime/HostBridge` 新增 query provider 最小 contract：`Delegate` 是正式宿主接入主路径，`Mock` 服务编辑器预览 / 测试 / CI，`Recorded` 服务调试复现 / Trace Replay。
+- `NarrativeRuntimeQueryProviderDomain` 优先解析 Inscape 内部叙事事实，再按 provider kind 解析 delegate / mock / recorded；没有新增 snapshot 生产主链路。
+- `NarrativeRuntimeStateModel` 新增 `Facts`，记录 visited node / visit count、seen line anchors 与 choice history。
+- `NarrativeRuntime` 现在在进入节点、显示正文、选择选项时记录内部 facts。
+- 内部 query 第一刀支持 `current_node()`、`previous_node()`、`visited(nodeId)`、`visit_count(nodeId)`、`seen(lineId)`、`choice_made(choiceId)`、`choice_count(choiceId)` 和 `last_choice(nodeId)`。
+- 本轮未实现条件 Runtime 求值、query receipt 持久化、action dispatcher、完整 Save / Load、Rollback、Trace Replay、Flashback 或用户自定义内部变量系统。
+- 下一轮进入 P3 Round 11：Runtime State 最小模型与 `ValidateStateAgainstCurrentScript` shape。
 
 ### 2026-06-18 SelfHostedEditor P3 Round 9 条件表达式消费快照
 
@@ -19,7 +32,7 @@ P3 Round 9 已完成 condition expression Tooling / LanguageServer / Editor cons
 - LanguageServer diagnostics 继续透传 Compiler 条件诊断；Internal tests、VSCode `check:semantic-parity` 与 SelfHostedEditor `check:semantic-parity-http` 均覆盖 `INS061`。
 - VSCode semantic parity 静态断言 ExternalSupport editor runtime 没有新增独立 condition expression parser。
 - 本轮未实现 Runtime 条件求值、Preview / Runtime 条件选项过滤、条件 query completion / hover、Runtime State、Save / Load 或 query receipt。
-- 下一轮进入 P3 Round 10：Runtime query provider 与内部叙事事实设计。
+- P3 Round 10 已在后续快照完成 Runtime query provider 与内部叙事事实第一刀；下一步进入 Runtime State 最小模型。
 
 ### 2026-06-18 SelfHostedEditor P3 Round 8 条件语法 Compiler / IR 快照
 
@@ -1469,9 +1482,9 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 
 建议优先做小而闭环的任务，不要直接跳到大规模重构。
 
-1. 继续推进 P3 Round 10 Runtime query provider 与内部叙事事实设计。
-   - 从 [SelfHostedEditor P3 Condition Consumption Audit](self-hosted-editor-p3-condition-consumption-audit.md)、[Condition Syntax Contract](condition-syntax-contract.md) 和 [Host Query and Event Registration Strategy](host-query-event-registration-strategy.md) 接上。
-   - 优先定义 delegate / mock / recorded query provider contract、内部叙事事实最小模型和 query receipt 边界；不要把业务玩法状态托管给 Inscape。
+1. 继续推进 P3 Round 11 Runtime State 最小模型。
+   - 从 [SelfHostedEditor P3 Runtime Query Provider Audit](self-hosted-editor-p3-runtime-query-provider-audit.md)、[运行时与 Unity 宿主](runtime-unity.md) 和 ADR 0021 接上。
+   - 优先实现 `format`、`runtimeVersion`、`scriptVersion`、`position`、`flow`、`facts`、`random`、`host.checkpointId` 与 `ValidateStateAgainstCurrentScript` 的 compatible / migratable / incompatible shape。
 
 2. 继续推进 Stable Node ID / 本地化主线。
    - ADR 0013、sidecar 闭环、保守自动重命名识别、VSCode 显式 `Update Stable Node Map` 入口、插入标题后的自动同步、标题重命名人工确认 / 冲突报告、本地化 alignment / audit report，以及相似文本人工候选第一版都已落地。

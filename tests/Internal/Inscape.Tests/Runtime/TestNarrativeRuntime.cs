@@ -47,6 +47,108 @@ namespace Inscape.Tests {
             AssertEqual(3, runtime.State.Path.Count, "Runtime path count");
         }
 
+        static void NarrativeRuntimeRecordsInternalNarrativeFacts() {
+            DslScriptCompilationResultModel compilation = Compile("""
+# start
+Narrator: Start.
+? Next
+  - Go second -> second.node
+
+# second.node
+Narrator: Second.
+""");
+
+            NarrativeRuntime runtime = new NarrativeRuntime();
+            runtime.LoadGraph(compilation.Document);
+
+            AssertTrue(runtime.Start("start"), "Runtime should start at explicit entry.");
+            AssertEqual(1, runtime.State.Facts.VisitedNodes.Count, "Runtime visit fact count after start");
+            AssertEqual("start", runtime.State.Facts.VisitedNodes[0].NodeName, "Runtime visit fact node");
+            AssertEqual(1, runtime.State.Facts.VisitedNodes[0].Count, "Runtime visit fact count");
+
+            string firstLineAnchor = runtime.CurrentNode?.Lines[0].Anchor ?? string.Empty;
+            string optionAnchor = runtime.CurrentNode?.Choices[0].Options[0].Anchor ?? string.Empty;
+
+            AssertTrue(runtime.AdvanceFlow(), "Runtime should reveal the first content line.");
+            AssertEqual(1, runtime.State.Facts.SeenLineAnchors.Count, "Runtime seen line fact count");
+            AssertEqual(firstLineAnchor, runtime.State.Facts.SeenLineAnchors[0], "Runtime seen line anchor");
+
+            AssertTrue(runtime.Choose(0, 0), "Runtime should choose a valid option.");
+            AssertEqual(2, runtime.State.Facts.VisitedNodes.Count, "Runtime visit fact count after choice");
+            AssertEqual("second.node", runtime.State.Facts.VisitedNodes[1].NodeName, "Runtime second visit node");
+            AssertEqual(1, runtime.State.Facts.ChoiceHistory.Count, "Runtime choice fact count");
+            AssertEqual("start", runtime.State.Facts.ChoiceHistory[0].NodeName, "Runtime choice fact source node");
+            AssertEqual(optionAnchor, runtime.State.Facts.ChoiceHistory[0].OptionAnchor, "Runtime choice fact option anchor");
+            AssertEqual("second.node", runtime.State.Facts.ChoiceHistory[0].TargetNodeName, "Runtime choice fact target");
+
+            NarrativeRuntimeQueryProviderModel provider = new NarrativeRuntimeQueryProviderModel {
+                Kind = NarrativeRuntimeQueryProviderKindModel.Mock,
+            };
+            NarrativeRuntimeQueryResultModel visited = NarrativeRuntimeQueryProviderDomain.Resolve(
+                CreateQueryRequest("visited", "start"),
+                runtime.State,
+                provider);
+            NarrativeRuntimeQueryResultModel seen = NarrativeRuntimeQueryProviderDomain.Resolve(
+                CreateQueryRequest("seen", firstLineAnchor),
+                runtime.State,
+                provider);
+            NarrativeRuntimeQueryResultModel lastChoice = NarrativeRuntimeQueryProviderDomain.Resolve(
+                CreateQueryRequest("last_choice", "start"),
+                runtime.State,
+                provider);
+
+            AssertTrue(visited.Found && visited.Value.BoolValue, "Runtime internal query should report visited node.");
+            AssertTrue(seen.Found && seen.Value.BoolValue, "Runtime internal query should report seen line.");
+            AssertEqual(optionAnchor, lastChoice.Value.StringValue, "Runtime internal query should report last choice.");
+            AssertEqual(NarrativeRuntimeQuerySourceKindModel.InternalFact, lastChoice.SourceKind, "Runtime internal query source kind");
+        }
+
+        static void NarrativeRuntimeQueryProviderUsesDelegateMockAndRecordedSources() {
+            NarrativeRuntimeStateModel state = new NarrativeRuntimeStateModel();
+            state.CurrentNodeName = "start";
+            state.Path.Add("start");
+
+            NarrativeRuntimeQueryRequestModel request = CreateQueryRequest("has_item", "silver_key");
+
+            NarrativeRuntimeQueryProviderModel delegateProvider = new NarrativeRuntimeQueryProviderModel {
+                Kind = NarrativeRuntimeQueryProviderKindModel.Delegate,
+                DelegateQuery = _ => new NarrativeRuntimeQueryResultModel {
+                    Found = true,
+                    Value = NarrativeRuntimeQueryValueModel.FromBool(true),
+                },
+            };
+            delegateProvider.MockValues.Add(CreateValueEntry("has_item", "silver_key", NarrativeRuntimeQueryValueModel.FromBool(false)));
+            NarrativeRuntimeQueryResultModel delegated = NarrativeRuntimeQueryProviderDomain.Resolve(request, state, delegateProvider);
+            AssertTrue(delegated.Found && delegated.Value.BoolValue, "Delegate provider should use host delegate truth.");
+            AssertEqual(NarrativeRuntimeQuerySourceKindModel.Delegate, delegated.SourceKind, "Delegate provider source kind");
+            AssertFalse(delegated.IsDeterministic, "Delegate provider result is not guaranteed deterministic by Runtime.");
+
+            NarrativeRuntimeQueryProviderModel mockProvider = new NarrativeRuntimeQueryProviderModel {
+                Kind = NarrativeRuntimeQueryProviderKindModel.Mock,
+            };
+            mockProvider.MockValues.Add(CreateValueEntry("has_item", "silver_key", NarrativeRuntimeQueryValueModel.FromBool(false)));
+            NarrativeRuntimeQueryResultModel mocked = NarrativeRuntimeQueryProviderDomain.Resolve(request, state, mockProvider);
+            AssertTrue(mocked.Found && !mocked.Value.BoolValue, "Mock provider should use editor/test values.");
+            AssertEqual(NarrativeRuntimeQuerySourceKindModel.Mock, mocked.SourceKind, "Mock provider source kind");
+            AssertTrue(mocked.IsReadOnly && mocked.IsDeterministic, "Mock provider values should be read-only and deterministic.");
+
+            NarrativeRuntimeQueryProviderModel recordedProvider = new NarrativeRuntimeQueryProviderModel {
+                Kind = NarrativeRuntimeQueryProviderKindModel.Recorded,
+            };
+            recordedProvider.RecordedValues.Add(CreateValueEntry("has_item", "silver_key", NarrativeRuntimeQueryValueModel.FromBool(true)));
+            NarrativeRuntimeQueryResultModel recorded = NarrativeRuntimeQueryProviderDomain.Resolve(request, state, recordedProvider);
+            AssertTrue(recorded.Found && recorded.Value.BoolValue, "Recorded provider should use replay values.");
+            AssertEqual(NarrativeRuntimeQuerySourceKindModel.Recorded, recorded.SourceKind, "Recorded provider source kind");
+
+            NarrativeRuntimeQueryResultModel currentNode = NarrativeRuntimeQueryProviderDomain.Resolve(
+                CreateQueryRequest("current_node"),
+                state,
+                recordedProvider);
+            AssertTrue(currentNode.Found, "Internal facts should resolve before external provider sources.");
+            AssertEqual("start", currentNode.Value.StringValue, "Internal current node query value");
+            AssertEqual(NarrativeRuntimeQuerySourceKindModel.InternalFact, currentNode.SourceKind, "Internal query source kind");
+        }
+
         static void CliRuntimeProjectEmitsRuntimeState() {
             string directory = Path.Combine(Path.GetTempPath(), "inscape-tests", Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(directory);
@@ -152,6 +254,28 @@ Narrator: End.
             string rewindStatePath = Path.Combine(directory, "runtime-rewind-state.json");
             File.WriteAllText(rewindStatePath, rewindJson, Encoding.UTF8);
             return rewindStatePath;
+        }
+
+        static NarrativeRuntimeQueryRequestModel CreateQueryRequest(string name, params string[] arguments) {
+            NarrativeRuntimeQueryRequestModel request = new NarrativeRuntimeQueryRequestModel {
+                Name = name,
+            };
+            for (int i = 0; i < arguments.Length; i += 1) {
+                request.Arguments.Add(NarrativeRuntimeQueryValueModel.FromString(arguments[i]));
+            }
+
+            return request;
+        }
+
+        static NarrativeRuntimeQueryValueEntryModel CreateValueEntry(string name,
+                                                                     string argument,
+                                                                     NarrativeRuntimeQueryValueModel value) {
+            NarrativeRuntimeQueryValueEntryModel entry = new NarrativeRuntimeQueryValueEntryModel {
+                Name = name,
+                Value = value,
+            };
+            entry.Arguments.Add(NarrativeRuntimeQueryValueModel.FromString(argument));
+            return entry;
         }
 
     }
