@@ -1,6 +1,6 @@
 # Usage Manifest Contract
 
-状态：P3 Round 4 contract，P3 Round 5 minimal implementation available，P3 Round 7 condition context design complete
+状态：P3 Round 4 contract，P3 Round 5 minimal implementation available，P3 Round 8 condition IR available
 
 最后更新：2026-06-18
 
@@ -56,7 +56,7 @@ dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- inspect-
 - 只有项目读取失败、JSON 写出失败、参数错误等工具层错误才导致非零退出码。
 - 命令不编译成 Runtime，不执行 query，不调用 Host Bridge，不启动宿主。
 
-当前实现范围限于现有语法能稳定扫描的 `query-interpolation`、`action-line` 和 `timeline-hook`。P3 Round 7 已在 [Condition Syntax Contract](condition-syntax-contract.md) 收口 `choice-condition` 与 `conditional-jump` 的语法和 parser 设计；实际扫描在条件语法 Compiler parser / IR 落地后接入同一契约。
+当前实现范围限于现有语法能稳定扫描的 `query-interpolation`、`action-line` 和 `timeline-hook`。P3 Round 8 已按 [Condition Syntax Contract](condition-syntax-contract.md) 落地 `choice-condition` 与 `conditional-jump` 的 Compiler IR；实际 usage 扫描将在 Tooling / LanguageServer / Editor consumption 轮次接入同一契约。
 
 ## 顶层 JSON
 
@@ -238,7 +238,7 @@ Action usage 记录 `@` 行里的宿主动作、事件或 hook。
 - `timeline-hook`：`@timeline... alias`。
 - `metadata-line`：其他 `@...` 行中能识别为宿主 intent 的用法。
 
-P3 Round 5 已先实现当前语法能看到的 `query-interpolation`、`action-line` 和 `timeline-hook`。P3 Round 7 已定义 `choice-condition` 与 `conditional-jump` 的条件语法 contract；实际 usage 扫描在 Compiler parser / IR 落地后接入同一 contract。
+P3 Round 5 已先实现当前语法能看到的 `query-interpolation`、`action-line` 和 `timeline-hook`。P3 Round 8 已实现 `choice-condition` 与 `conditional-jump` 的 Compiler IR；实际 usage 扫描将在后续 Tooling 轮次接入同一 contract。
 
 ## Literal Argument
 
@@ -489,7 +489,7 @@ Usage Manifest 只记录能看懂的字面量，不执行表达式，也不调�
 }
 ```
 
-该 sample 包含 P3 Round 7 已定义、但尚未实现的条件语法，用来说明 contract。它不表示当前 Compiler 已经支持条件表达式。
+该 sample 包含 P3 Round 8 已进入 Compiler IR、但尚未接入 Usage Manifest 扫描的条件语法，用来说明 contract。
 
 ## Audit 对接
 

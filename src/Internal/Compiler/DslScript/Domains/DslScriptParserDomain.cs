@@ -18,6 +18,7 @@ namespace Inscape.Compiler.Parsing {
 
             StoryGraphNodeModel? currentNode = null;
             DslScriptChoiceGroupModel? currentChoice = null;
+            ConditionalJumpFallbackState? pendingConditionalJumpFallback = null;
             Dictionary<string, int>? currentAnchorOccurrences = null;
             string[] lines = SplitLines(source);
 
@@ -31,6 +32,7 @@ namespace Inscape.Compiler.Parsing {
                 }
 
                 if (trimmed.StartsWith("#", StringComparison.Ordinal)) {
+                    ReportMissingConditionalFallback(diagnostics, ref pendingConditionalJumpFallback);
                     AddMissingBlankBeforeTitleDiagnostic(diagnostics, sourcePath, lineNumber, raw, lines, i);
                     currentNode = ParseTitleNode(document, diagnostics, nodesByName, sourcePath, lineNumber, raw, trimmed);
                     currentAnchorOccurrences = currentNode == null ? null : new Dictionary<string, int>(StringComparer.Ordinal);
@@ -49,24 +51,37 @@ namespace Inscape.Compiler.Parsing {
                 }
 
                 if (trimmed.StartsWith("?", StringComparison.Ordinal)) {
+                    if (IsConditionalJumpLine(raw, trimmed)) {
+                        currentChoice = null;
+                        ParseConditionalJump(document, diagnostics, currentNode, sourcePath, lineNumber, raw, trimmed);
+                        pendingConditionalJumpFallback ??= new ConditionalJumpFallbackState(sourcePath, lineNumber, FirstNonWhitespaceColumn(raw));
+                        continue;
+                    }
+
+                    ReportMissingConditionalFallback(diagnostics, ref pendingConditionalJumpFallback);
                     currentChoice = ParseDslScriptChoiceGroupModel(currentNode, currentAnchorOccurrences!, sourcePath, lineNumber, raw, trimmed);
                     continue;
                 }
 
                 if (trimmed.StartsWith("->", StringComparison.Ordinal)) {
                     ParseJump(document, diagnostics, currentNode, sourcePath, lineNumber, raw, trimmed);
+                    pendingConditionalJumpFallback = null;
                     currentChoice = null;
                     continue;
                 }
 
                 if (trimmed.StartsWith("-", StringComparison.Ordinal)) {
+                    ReportMissingConditionalFallback(diagnostics, ref pendingConditionalJumpFallback);
                     currentChoice = ParseDslScriptChoiceOptionModel(document, diagnostics, currentNode, currentChoice, currentAnchorOccurrences!, sourcePath, lineNumber, raw, trimmed);
                     continue;
                 }
 
+                ReportMissingConditionalFallback(diagnostics, ref pendingConditionalJumpFallback);
                 currentChoice = null;
                 currentNode.Lines.Add(ParseLine(currentNode, currentAnchorOccurrences!, sourcePath, lineNumber, raw, trimmed));
             }
+
+            ReportMissingConditionalFallback(diagnostics, ref pendingConditionalJumpFallback);
 
             if (document.Nodes.Count == 0) {
                 diagnostics.Add(new DiagnosticModel("INS008",
@@ -174,11 +189,34 @@ namespace Inscape.Compiler.Parsing {
                                              string raw,
                                              string trimmed) {
             DslScriptChoiceGroupModel group = currentChoice ?? CreateImplicitDslScriptChoiceGroupModel(currentNode, diagnostics, sourcePath, lineNumber, raw);
-            string body = trimmed.Substring(1).Trim();
+            int bodyStart = FindMarkerBodyStart(raw, '-');
+            int bodyContentStart = FindTrimmedBodyStart(raw, bodyStart);
+            string body = raw.Substring(bodyContentStart).Trim();
+            DslScriptConditionModel? condition = null;
+            int bodyAfterConditionStart = bodyContentStart;
+
+            if (body.StartsWith("[", StringComparison.Ordinal)) {
+                int openBracket = raw.IndexOf('[', bodyContentStart);
+                int closeBracket = FindConditionClosingBracket(raw, openBracket);
+                if (closeBracket < 0) {
+                    diagnostics.Add(new DiagnosticModel("INS051",
+                                                   DiagnosticSeverityModel.Error,
+                                                   "Condition expression is missing a closing ']'.",
+                                                   sourcePath,
+                                                   lineNumber,
+                                                   openBracket + 1));
+                } else {
+                    condition = ParseCondition(diagnostics, sourcePath, lineNumber, raw, openBracket, closeBracket);
+                    bodyAfterConditionStart = closeBracket + 1;
+                    body = raw.Substring(bodyAfterConditionStart).Trim();
+                }
+            }
+
             int arrowIndex = body.IndexOf("->", StringComparison.Ordinal);
 
             DslScriptChoiceOptionModel option = new DslScriptChoiceOptionModel();
             option.Source = new SourceSpanModel(sourcePath, lineNumber, FirstNonWhitespaceColumn(raw));
+            option.Condition = condition;
 
             if (arrowIndex < 0) {
                 option.Text = body;
@@ -191,20 +229,21 @@ namespace Inscape.Compiler.Parsing {
             } else {
                 option.Text = body.Substring(0, arrowIndex).Trim();
                 option.Target = body.Substring(arrowIndex + 2).Trim();
+                int absoluteArrowIndex = bodyAfterConditionStart + raw.Substring(bodyAfterConditionStart).IndexOf("->", StringComparison.Ordinal);
                 if (option.Target.Length == 0) {
                     diagnostics.Add(new DiagnosticModel("INS004",
                                                    DiagnosticSeverityModel.Error,
                                                    "Jump target is required after '->'.",
                                                    sourcePath,
                                                    lineNumber,
-                                                   raw.IndexOf("->", StringComparison.Ordinal) + 3));
+                                                   absoluteArrowIndex + 3));
                 } else if (!IsValidNodeReference(option.Target)) {
                     diagnostics.Add(new DiagnosticModel("INS010",
                                                    DiagnosticSeverityModel.Error,
                                                    "Invalid jump target '" + option.Target + "'. Use a valid '# Title' target.",
                                                    sourcePath,
                                                    lineNumber,
-                                                   raw.IndexOf("->", StringComparison.Ordinal) + 3));
+                                                   absoluteArrowIndex + 3));
                 }
             }
 
@@ -218,6 +257,7 @@ namespace Inscape.Compiler.Parsing {
                 edge.Kind = StoryGraphEdgeKindModel.Choice;
                 edge.Label = option.Text;
                 edge.Source = option.Source;
+                edge.Condition = option.Condition;
                 document.Edges.Add(edge);
             }
 
@@ -278,6 +318,82 @@ namespace Inscape.Compiler.Parsing {
             document.Edges.Add(edge);
         }
 
+        static void ParseConditionalJump(DslScriptDocumentModel document,
+                                         List<DiagnosticModel> diagnostics,
+                                         StoryGraphNodeModel currentNode,
+                                         string sourcePath,
+                                         int lineNumber,
+                                         string raw,
+                                         string trimmed) {
+            int bodyStart = FindMarkerBodyStart(raw, '?');
+            int bodyContentStart = FindTrimmedBodyStart(raw, bodyStart);
+            int openBracket = raw.IndexOf('[', bodyContentStart);
+            int closeBracket = FindConditionClosingBracket(raw, openBracket);
+            DslScriptConditionModel condition = new DslScriptConditionModel();
+
+            if (closeBracket < 0) {
+                diagnostics.Add(new DiagnosticModel("INS051",
+                                               DiagnosticSeverityModel.Error,
+                                               "Condition expression is missing a closing ']'.",
+                                               sourcePath,
+                                               lineNumber,
+                                               openBracket + 1));
+            } else {
+                condition = ParseCondition(diagnostics, sourcePath, lineNumber, raw, openBracket, closeBracket);
+            }
+
+            int afterConditionStart = closeBracket < 0 ? raw.Length : closeBracket + 1;
+            string afterCondition = raw.Substring(afterConditionStart).Trim();
+
+            DslScriptConditionalJumpModel jump = new DslScriptConditionalJumpModel();
+            jump.Condition = condition;
+            jump.Source = new SourceSpanModel(sourcePath, lineNumber, FirstNonWhitespaceColumn(raw));
+
+            if (!afterCondition.StartsWith("->", StringComparison.Ordinal)) {
+                diagnostics.Add(new DiagnosticModel("INS060",
+                                               DiagnosticSeverityModel.Error,
+                                               "Conditional jump must include a target, for example '? [condition] -> target'.",
+                                               sourcePath,
+                                               lineNumber,
+                                               afterConditionStart + 1));
+                currentNode.ConditionalJumps.Add(jump);
+                return;
+            }
+
+            int absoluteArrowIndex = afterConditionStart + raw.Substring(afterConditionStart).IndexOf("->", StringComparison.Ordinal);
+            string target = afterCondition.Substring(2).Trim();
+            jump.Target = target;
+
+            if (target.Length == 0) {
+                diagnostics.Add(new DiagnosticModel("INS060",
+                                               DiagnosticSeverityModel.Error,
+                                               "Conditional jump target is required after '->'.",
+                                               sourcePath,
+                                               lineNumber,
+                                               absoluteArrowIndex + 3));
+            } else if (!IsValidNodeReference(target)) {
+                diagnostics.Add(new DiagnosticModel("INS010",
+                                               DiagnosticSeverityModel.Error,
+                                               "Invalid jump target '" + target + "'. Use a valid '# Title' target.",
+                                               sourcePath,
+                                               lineNumber,
+                                               absoluteArrowIndex + 3));
+            }
+
+            currentNode.ConditionalJumps.Add(jump);
+
+            if (jump.Target.Length > 0) {
+                StoryGraphEdgeModel edge = new StoryGraphEdgeModel();
+                edge.From = currentNode.Name;
+                edge.To = jump.Target;
+                edge.Kind = StoryGraphEdgeKindModel.Conditional;
+                edge.Label = condition.Raw;
+                edge.Source = jump.Source;
+                edge.Condition = condition;
+                document.Edges.Add(edge);
+            }
+        }
+
         static DslScriptLineModel ParseLine(StoryGraphNodeModel currentNode,
                                        Dictionary<string, int> anchorOccurrences,
                                        string sourcePath,
@@ -326,6 +442,103 @@ namespace Inscape.Compiler.Parsing {
             return trimmed.StartsWith("[", StringComparison.Ordinal) && trimmed.EndsWith("]", StringComparison.Ordinal);
         }
 
+        static bool IsConditionalJumpLine(string raw, string trimmed) {
+            if (!trimmed.StartsWith("?", StringComparison.Ordinal)) {
+                return false;
+            }
+
+            int bodyStart = FindMarkerBodyStart(raw, '?');
+            int bodyContentStart = FindTrimmedBodyStart(raw, bodyStart);
+            return bodyContentStart < raw.Length && raw[bodyContentStart] == '[';
+        }
+
+        static DslScriptConditionModel ParseCondition(List<DiagnosticModel> diagnostics,
+                                                      string sourcePath,
+                                                      int lineNumber,
+                                                      string raw,
+                                                      int openBracket,
+                                                      int closeBracket) {
+            string conditionRaw = raw.Substring(openBracket + 1, closeBracket - openBracket - 1);
+            DslScriptConditionParserDomain parser = new DslScriptConditionParserDomain();
+            return parser.Parse(conditionRaw, sourcePath, lineNumber, openBracket + 2, diagnostics);
+        }
+
+        static void ReportMissingConditionalFallback(List<DiagnosticModel> diagnostics,
+                                                     ref ConditionalJumpFallbackState? pending) {
+            if (pending == null) {
+                return;
+            }
+
+            diagnostics.Add(new DiagnosticModel("INS061",
+                                           DiagnosticSeverityModel.Error,
+                                           "Conditional jump group must end with a fallback '-> target'.",
+                                           pending.SourcePath,
+                                           pending.Line,
+                                           pending.Column));
+            pending = null;
+        }
+
+        static int FindMarkerBodyStart(string raw, char marker) {
+            int markerIndex = raw.IndexOf(marker);
+            if (markerIndex < 0) {
+                return raw.Length;
+            }
+
+            return markerIndex + 1;
+        }
+
+        static int FindTrimmedBodyStart(string raw, int bodyStart) {
+            int offset = bodyStart;
+            while (offset < raw.Length && char.IsWhiteSpace(raw[offset])) {
+                offset += 1;
+            }
+
+            return offset;
+        }
+
+        static int FindConditionClosingBracket(string raw, int openBracket) {
+            if (openBracket < 0) {
+                return -1;
+            }
+
+            bool inString = false;
+            int nestedSquareDepth = 0;
+            for (int i = openBracket + 1; i < raw.Length; i += 1) {
+                char current = raw[i];
+                if (inString) {
+                    if (current == '\\' && i + 1 < raw.Length) {
+                        i += 1;
+                        continue;
+                    }
+
+                    if (current == '"') {
+                        inString = false;
+                    }
+                    continue;
+                }
+
+                if (current == '"') {
+                    inString = true;
+                    continue;
+                }
+
+                if (current == '[') {
+                    nestedSquareDepth += 1;
+                    continue;
+                }
+
+                if (current == ']') {
+                    if (nestedSquareDepth == 0) {
+                        return i;
+                    }
+
+                    nestedSquareDepth -= 1;
+                }
+            }
+
+            return -1;
+        }
+
         static bool IsValidNodeReference(string target) {
             return DslScriptNodeTitleValidatorDomain.IsValid(target);
         }
@@ -355,6 +568,22 @@ namespace Inscape.Compiler.Parsing {
         static string[] SplitLines(string source) {
             string normalized = source.Replace("\r\n", "\n").Replace('\r', '\n');
             return normalized.Split(new[] { '\n' }, StringSplitOptions.None);
+        }
+
+        sealed class ConditionalJumpFallbackState {
+
+            public string SourcePath { get; }
+
+            public int Line { get; }
+
+            public int Column { get; }
+
+            public ConditionalJumpFallbackState(string sourcePath, int line, int column) {
+                SourcePath = sourcePath;
+                Line = line;
+                Column = column;
+            }
+
         }
 
     }

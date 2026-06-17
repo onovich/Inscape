@@ -263,6 +263,117 @@ Narrator: Repeated text.
             AssertSource("memory://source-map.inscape", 7, 1, result.Document.Edges[2].Source, "Default jump edge source");
         }
 
+        static void ParsesChoiceConditionsIntoIr() {
+            string source = """
+# start
+? Choose action
+- [has_item("silver_key") and trust("mira") >= 3] Use silver key -> gate.open
+- Leave -> leave
+
+# gate.open
+Narrator: Gate opens.
+
+# leave
+Narrator: Leave.
+""";
+
+            DslScriptCompilationResultModel result = Compile(source);
+            AssertFalse(result.HasErrors, "Choice condition fixture should compile.");
+
+            StoryGraphNodeModel start = result.Document.Nodes[0];
+            DslScriptChoiceOptionModel option = start.Choices[0].Options[0];
+            AssertEqual("Use silver key", option.Text, "Condition option text");
+            AssertEqual("gate.open", option.Target, "Condition option target");
+            AssertTrue(option.Condition != null, "Choice option condition should be present.");
+            AssertEqual("has_item(\"silver_key\") and trust(\"mira\") >= 3", option.Condition!.Raw, "Choice condition raw");
+            AssertSource("memory://test.inscape", 3, 4, option.Condition.Source, "Choice condition source");
+
+            DslScriptConditionExpressionModel expression = option.Condition.Expression ?? throw new InvalidOperationException("Condition expression missing.");
+            AssertEqual(DslScriptConditionExpressionKindModel.Binary, expression.Kind, "Choice condition root kind");
+            AssertEqual("and", expression.Operator, "Choice condition root operator");
+            AssertEqual(DslScriptConditionExpressionKindModel.Query, expression.Left!.Kind, "Choice condition left kind");
+            AssertEqual("has_item", expression.Left.Query!.Name, "Choice condition left query");
+            AssertEqual(DslScriptConditionQuerySyntaxModel.Call, expression.Left.Query.Syntax, "Choice condition left query syntax");
+            AssertEqual("silver_key", expression.Left.Query.Arguments[0].StringValue, "Choice condition literal argument");
+            AssertEqual(DslScriptConditionExpressionKindModel.Comparison, expression.Right!.Kind, "Choice condition right kind");
+            AssertEqual(">=", expression.Right.Operator, "Choice condition comparison operator");
+            AssertEqual("trust", expression.Right.Left!.Query!.Name, "Choice condition comparison query");
+
+            AssertEqual(2, result.Document.Edges.Count, "Choice condition edge count");
+            AssertEqual(StoryGraphEdgeKindModel.Choice, result.Document.Edges[0].Kind, "Choice condition edge kind");
+            AssertEqual("Use silver key", result.Document.Edges[0].Label, "Choice condition edge label");
+            AssertTrue(result.Document.Edges[0].Condition != null, "Choice edge condition should be present.");
+        }
+
+        static void ParsesConditionalJumpsIntoIr() {
+            string source = """
+# start
+? [has_item("silver_key")] -> gate.open
+? [lockpick_level() >= 2] -> gate.pick
+-> gate.locked
+
+# gate.open
+Narrator: Open.
+
+# gate.pick
+Narrator: Pick.
+
+# gate.locked
+Narrator: Locked.
+""";
+
+            DslScriptCompilationResultModel result = Compile(source);
+            AssertFalse(result.HasErrors, "Conditional jump fixture should compile.");
+
+            StoryGraphNodeModel start = result.Document.Nodes[0];
+            AssertEqual(2, start.ConditionalJumps.Count, "Conditional jump count");
+            AssertEqual("gate.open", start.ConditionalJumps[0].Target, "First conditional jump target");
+            AssertEqual("has_item(\"silver_key\")", start.ConditionalJumps[0].Condition.Raw, "First conditional jump raw");
+            AssertSource("memory://test.inscape", 2, 4, start.ConditionalJumps[0].Condition.Source, "First conditional source");
+            AssertEqual("gate.locked", start.DefaultNext, "Conditional fallback target");
+
+            AssertEqual(3, result.Document.Edges.Count, "Conditional edge count");
+            AssertEqual(StoryGraphEdgeKindModel.Conditional, result.Document.Edges[0].Kind, "First conditional edge kind");
+            AssertEqual(StoryGraphEdgeKindModel.Conditional, result.Document.Edges[1].Kind, "Second conditional edge kind");
+            AssertEqual(StoryGraphEdgeKindModel.Default, result.Document.Edges[2].Kind, "Fallback edge kind");
+            AssertEqual("gate.locked", result.Document.Edges[2].To, "Fallback edge target");
+        }
+
+        static void DiagnosesConditionalJumpMissingFallback() {
+            string source = """
+# start
+? [has_item("silver_key")] -> gate.open
+
+# gate.open
+Narrator: Open.
+""";
+
+            DslScriptCompilationResultModel result = Compile(source);
+            AssertTrue(result.HasErrors, "Conditional jump without fallback should be an error.");
+            AssertTrue(ContainsCode(result, "INS061"), "Expected INS061 missing conditional fallback diagnostic.");
+        }
+
+        static void DiagnosesUnsupportedConditionSyntax() {
+            string source = """
+# start
+? Choose action
+- [gold() + 1 > 3] Math -> target
+- [has_any(["silver_key"])] Array -> target
+- [flag = true] Assign -> target
+- [@emit door_open] Action -> target
+
+# target
+Narrator: Target.
+""";
+
+            DslScriptCompilationResultModel result = Compile(source);
+            AssertTrue(result.HasErrors, "Unsupported condition syntax should produce errors.");
+            AssertTrue(ContainsCode(result, "INS053"), "Expected INS053 unsupported operator diagnostic.");
+            AssertTrue(ContainsCode(result, "INS054"), "Expected INS054 unsupported array diagnostic.");
+            AssertTrue(ContainsCode(result, "INS055"), "Expected INS055 unsupported assignment diagnostic.");
+            AssertTrue(ContainsCode(result, "INS058"), "Expected INS058 unsupported action diagnostic.");
+        }
+
         static void ProjectDiagnosticsPreserveCrossFileSource() {
             StoryGraphCompilerDomain compiler = new StoryGraphCompilerDomain();
             StoryGraphCompilationResultModel result = compiler.Compile(new List<DslScriptSourceModel> {

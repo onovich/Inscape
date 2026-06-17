@@ -58,7 +58,7 @@ Runtime Host executes implementation.
 
 P3 可以把条件表达式作为第二版语法重点，但第一刀应保持保守：
 
-P3 Round 7 已将作者语法、表达式 grammar、Compiler IR shape 与 diagnostics 收口到 [Condition Syntax Contract](condition-syntax-contract.md)。本文保留查询 / 动作边界口径，具体 parser 设计以后者为准。
+P3 Round 7 已将作者语法、表达式 grammar、Compiler IR shape 与 diagnostics 收口到 [Condition Syntax Contract](condition-syntax-contract.md)，P3 Round 8 已完成 Compiler / IR 最小实现。本文保留查询 / 动作边界口径，具体 parser 设计以后者为准。
 
 - 支持 `and`、`or`、`not`。
 - 支持括号。
@@ -298,7 +298,7 @@ Audit
 工具对账：剧本用的，宿主有没有提供，Bridge 有没有映射。
 ```
 
-P3 Round 4 已在 [Usage Manifest Contract](usage-manifest-contract.md) 定义 `inscape.usage` 契约。P3 Round 5 已实现 usage 入口，P3 Round 6 已实现 Host Integration Audit 最小入口，P3 Round 7 已完成条件语法 contract / parser design；`choice-condition` 与 `conditional-jump` 的实际扫描仍待 Compiler parser / IR 落地：
+P3 Round 4 已在 [Usage Manifest Contract](usage-manifest-contract.md) 定义 `inscape.usage` 契约。P3 Round 5 已实现 usage 入口，P3 Round 6 已实现 Host Integration Audit 最小入口，P3 Round 7 已完成条件语法 contract / parser design，P3 Round 8 已完成 Compiler / IR 最小实现；`choice-condition` 与 `conditional-jump` 的实际 usage 扫描仍待后续 Tooling 轮次：
 
 ```powershell
 inspect-usage-project <root> -o usage.json
@@ -393,7 +393,7 @@ Tooling / VSCode / LanguageServer 可以提供提示或显式 audit，但这些�
 
 1. 按 [Condition Syntax Contract](condition-syntax-contract.md) 实现 Compiler 条件 parser / IR 与诊断，不把表达式求值写进 VSCode 或 SelfHostedEditor。
 2. 将 Host Schema 最小字段收敛到 `queries[]` / `actions[]`，并处理现有 `events[]` 与未来 `actions[]` 的兼容 / 迁移口径。
-3. `inspect-usage-project` 与 `audit-host-integration-project` 已完成最小实现；下一步推进条件表达式 Compiler / IR 最小实现，并让后续 Usage Manifest 接入 `choice-condition` / `conditional-jump`。
+3. `inspect-usage-project` 与 `audit-host-integration-project` 已完成最小实现；下一步让 Usage Manifest 接入 Compiler 条件 IR 中的 `choice-condition` / `conditional-jump`。
 4. 定义 delegate / mock / recorded provider contract，并明确 snapshot 只作为低优先级实现细节。
 5. 定义内部叙事运行事实和内部只读查询函数的最小集合。
 6. 评估 C# attribute / source generator 的宿主无关 schema 生成流程。

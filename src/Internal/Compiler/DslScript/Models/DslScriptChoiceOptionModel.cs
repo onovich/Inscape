@@ -10,6 +10,8 @@
 
         public SourceSpanModel Source { get; set; }
 
+        public DslScriptConditionModel? Condition { get; set; }
+
         public DslScriptChoiceOptionModel() {
             Text = string.Empty;
             Target = string.Empty;

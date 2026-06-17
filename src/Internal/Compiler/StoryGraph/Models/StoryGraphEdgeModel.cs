@@ -12,6 +12,8 @@
 
         public SourceSpanModel Source { get; set; }
 
+        public DslScriptConditionModel? Condition { get; set; }
+
         public StoryGraphEdgeModel() {
             From = string.Empty;
             To = string.Empty;

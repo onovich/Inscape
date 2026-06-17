@@ -1,12 +1,12 @@
 # Condition Syntax Contract
 
-状态：P3 Round 7 contract / parser design
+状态：P3 Round 7 contract / parser design，P3 Round 8 Compiler / IR minimal implementation available
 
 最后更新：2026-06-18
 
 本文定义 P3 第一刀条件语法、表达式 grammar、Compiler parser / IR 设计边界和诊断契约。它是 [ADR 0021](adr/0021-p3-runtime-and-host-capability-boundary.md)、[Host Query and Event Registration Strategy](host-query-event-registration-strategy.md) 与 [Usage Manifest Contract](usage-manifest-contract.md) 的落地补充。
 
-本轮只收口 contract 与 parser design；Compiler 实现、Runtime 求值、编辑器消费和端到端 smoke 进入后续轮次。
+P3 Round 8 已完成 Compiler parser / IR 最小实现；Runtime 求值、Usage Manifest 条件扫描、编辑器消费和端到端 smoke 进入后续轮次。
 
 ## 目标
 
@@ -138,9 +138,9 @@ bool           := "true" | "false"
 
 ## IR 设计
 
-Compiler 应把条件解析为只读表达式 IR，并保留 source range 与 raw text。建议后续实现放在 `Inscape.Compiler` 的 DSL script / story graph 模型附近，而不是 Tooling、LanguageServer、VSCode 或 SelfHostedEditor。
+Compiler 已把条件解析为只读表达式 IR，并保留 source 起点与 raw text。实现位于 `Inscape.Compiler` 的 DSL script / story graph 模型附近，而不是 Tooling、LanguageServer、VSCode 或 SelfHostedEditor。
 
-建议模型角色：
+当前模型角色：
 
 ```text
 DslScriptConditionModel
@@ -168,10 +168,10 @@ DslScriptConditionLiteralModel
 
 节点 / 边承载建议：
 
-- 选项 IR 在现有 option model 上增加可空 `condition`。
-- 条件跳转 IR 可以作为独立 edge / transition group，保留顺序。
-- fallback 仍使用现有跳转 target，但需要能表达它属于同一条件跳转组。
-- source map 继续使用 1-based line / column / length。
+- 选项 IR 在现有 option model 上增加可空 `Condition`。
+- 条件跳转 IR 使用 `DslScriptConditionalJumpModel`，并生成 `StoryGraphEdgeKindModel.Conditional` edge，保留顺序。
+- fallback 仍使用现有 default jump / default edge。
+- source map 继续使用现有 1-based line / column 起点；length 仍待全局 source location contract 后续扩展。
 
 Compiler 不应：
 
@@ -182,7 +182,7 @@ Compiler 不应：
 
 ## Usage Manifest 对接
 
-条件 parser 落地后，Usage Manifest 应从 Compiler IR 或共享 Tooling adapter 抽取 query usage：
+条件 parser 已落地；后续 Usage Manifest 应从 Compiler IR 或共享 Tooling adapter 抽取 query usage：
 
 - 选项条件使用 context `choice-condition`。
 - 条件跳转使用 context `conditional-jump`。
@@ -195,21 +195,20 @@ Usage Manifest 仍只是剧本需求清单，不参与 Runtime 执行，也不�
 
 ## Diagnostics 契约
 
-第一版诊断建议覆盖：
+第一版诊断覆盖：
 
 ```text
-condition.empty
-condition.missing-closing-bracket
-condition.unexpected-token
-condition.trailing-token
-condition.unsupported-operator
-condition.unsupported-assignment
-condition.unsupported-array-or-list
-condition.unsupported-call-argument
-condition.unsupported-action
-condition.unclosed-string
-conditional-jump.missing-target
-conditional-jump.missing-fallback
+INS050 condition.empty
+INS051 condition.missing-closing-bracket
+INS052 condition.unexpected-token / condition.trailing-token
+INS053 condition.unsupported-operator
+INS054 condition.unsupported-array-or-list
+INS055 condition.unsupported-assignment
+INS056 condition.unsupported-call-argument
+INS057 condition.unclosed-string
+INS058 condition.unsupported-action
+INS060 conditional-jump.missing-target
+INS061 conditional-jump.missing-fallback
 ```
 
 诊断原则：
@@ -249,13 +248,13 @@ conditional-jump.missing-fallback
 
 ## Parser 实现建议
 
-Round 8 建议使用小型 recursive descent 或 Pratt parser：
+Round 8 已采用小型 recursive descent parser：
 
-- 先在 Compiler 内识别选项行和条件跳转行的外层 `[...]`。
-- 条件内部用 token stream 解析 expression，保留 raw span。
+- Compiler 内识别选项行和条件跳转行的外层 `[...]`。
+- 条件内部用 token stream 解析 expression，保留 raw text 和 source 起点。
 - 外层 DSL line parser 负责区分 `? text` 提示和 `? [condition] -> target` 条件跳转。
 - Parser 只产 IR 和 diagnostics，不接 Host Schema、Host Bridge 或 Runtime Host。
-- 测试优先覆盖 precedence、括号、source location、unsupported syntax、选项条件、条件跳转顺序和 fallback。
+- Internal tests 覆盖 precedence 入口、source location、unsupported syntax、选项条件、条件跳转顺序和 fallback。
 
 ## 架构自检
 

@@ -1,12 +1,26 @@
 # Agent 接手指南
 
-状态：P3 Round 7 condition syntax contract / parser design complete
+状态：P3 Round 8 condition syntax Compiler / IR minimal implementation complete
 
 最后更新：2026-06-18
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-18 SelfHostedEditor P3 Round 8 条件语法 Compiler / IR 快照
+
+P3 Round 8 已完成 condition syntax Compiler / IR minimal implementation，不宣称 P3 完成。
+
+- 实现审计见 [SelfHostedEditor P3 Condition Syntax Implementation Audit](self-hosted-editor-p3-condition-syntax-implementation-audit.md)，契约仍见 [Condition Syntax Contract](condition-syntax-contract.md)。
+- `Inscape.Compiler` 新增 `DslScriptCondition*` parser / IR models；条件表达式只进入 IR，不执行 query。
+- 选项条件 `- [condition] option text -> target` 解析为 `DslScriptChoiceOptionModel.Condition`，对应 choice edge 也保留同一 condition。
+- 条件跳转 `? [condition] -> target` 解析为 `DslScriptConditionalJumpModel`，并生成 `StoryGraphEdgeKindModel.Conditional` edge。
+- fallback `-> target` 继续复用现有 default jump / default edge；条件跳转组缺 fallback 时产生 `INS061`。
+- 本轮新增 diagnostics 覆盖 empty condition、missing `]`、unexpected / trailing token、unsupported operator、array/list、assignment、call argument、unclosed string、action marker、conditional jump missing target / fallback。
+- Compiler 仍不读取 Host Schema / Host Bridge；unknown query、参数数量 / 类型 mismatch 和 missing bridge binding 继续留给 Usage Manifest / Host Integration Audit 后续对账。
+- 本轮未实现 Runtime 条件求值、Usage Manifest 条件扫描、LanguageServer / editor 条件提示、Preview / Runtime 条件选项过滤或 Runtime State。
+- 下一轮进入 P3 Round 9：condition expression Tooling / LanguageServer / Editor consumption，重点是从 Compiler IR 抽取 `choice-condition` / `conditional-jump` usage，并证明编辑器宿主不复制 parser。
 
 ### 2026-06-18 SelfHostedEditor P3 Round 7 条件语法契约快照
 
@@ -19,7 +33,7 @@ P3 Round 7 已完成 condition syntax contract / parser design，不宣称 P3 �
 - 不支持数组、列表、数学表达式、字符串拼接、赋值、`await`、action、任意成员调用、节点入口条件、行级条件或条件块。
 - Compiler 后续负责条件 parser / IR / diagnostics；VSCode、SelfHostedEditor 与 CLI 不应复制条件 parser。
 - Host Schema / Host Bridge 仍不进入 Compiler；unknown query / 参数对账 / bridge 缺失继续由 Usage Manifest 与 Host Integration Audit 后续处理。
-- 下一轮进入 P3 Round 8：condition syntax Compiler / IR minimal implementation，优先补 Compiler parser、source map、diagnostics 与 Internal tests。
+- P3 Round 8 已在后续快照完成 condition syntax Compiler / IR minimal implementation；下一步进入 Tooling / LanguageServer / Editor consumption。
 
 ### 2026-06-18 SelfHostedEditor P3 Round 6 Host Integration Audit 快照
 
@@ -1442,8 +1456,8 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 
 建议优先做小而闭环的任务，不要直接跳到大规模重构。
 
-1. 继续推进 P3 Round 8 condition syntax Compiler / IR minimal implementation。
-   - 从 [Condition Syntax Contract](condition-syntax-contract.md) 接上，优先在 `Inscape.Compiler` 中解析选项条件和条件跳转，新增条件表达式 IR、source map、diagnostics 与 Internal tests。
+1. 继续推进 P3 Round 9 condition expression Tooling / LanguageServer / Editor consumption。
+   - 从 [Condition Syntax Contract](condition-syntax-contract.md) 和 [SelfHostedEditor P3 Condition Syntax Implementation Audit](self-hosted-editor-p3-condition-syntax-implementation-audit.md) 接上，优先让 Tooling / Usage Manifest 从 Compiler IR 抽取条件 query usage。
    - VSCode / SelfHostedEditor / CLI 只消费 Compiler / LanguageServer / Tooling payload，不复制条件 parser。
 
 2. 继续推进 Stable Node ID / 本地化主线。

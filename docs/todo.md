@@ -1,6 +1,6 @@
 # TODO
 
-状态：持续维护，P3 Round 7 condition syntax contract / parser design complete
+状态：持续维护，P3 Round 8 condition syntax Compiler / IR minimal implementation complete
 
 SelfHostedEditor regression invariant: Preview choice clicks must advance the reading Preview to the target block and reveal the target block title in the editor. Compiler-project Preview data must never silently lose `previewLines`: if a returned Compiler graph has source lines but missing or mismatched `previewLines`, Preview must report a compiler graph contract error instead of falling back to the UI-only draft model. `npm --prefix src\ExternalSupport\SelfHostedEditor run check:model` covers both invariants so future Runtime / navigation work does not regress them.
 
@@ -202,7 +202,8 @@ npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
 - [x] 完成 P3 Round 5 `inspect-usage-project` 最小实现。2026-06-18 审计结果见 [SelfHostedEditor P3 Usage Manifest Implementation Audit](self-hosted-editor-p3-usage-manifest-implementation-audit.md)；新增 `Internal/Tooling/UsageManifest` 与 CLI 命令，当前扫描 `[]` query interpolation、`@emit` action / legacy event、`@timeline...` hook，并按 Host Schema `idKind` 推导 `requiredIds`；未知 query / action 不导致命令失败。
 - [x] 完成 P3 Round 6 `audit-host-integration-project` 最小实现。2026-06-18 审计结果见 [SelfHostedEditor P3 Host Integration Audit](self-hosted-editor-p3-host-integration-audit.md)；新增 `Internal/Tooling/HostIntegrationAudit` 与 CLI 命令，对账 Usage Manifest、Host Schema capability、Host Bridge capability，报告 unknown query/action、legacy event、参数 mismatch、missing bridge id / handler。
 - [x] 完成 P3 Round 7 condition syntax contract / parser design。2026-06-18 审计结果见 [SelfHostedEditor P3 Condition Syntax Contract Audit](self-hosted-editor-p3-condition-syntax-contract-audit.md)；新增 [Condition Syntax Contract](condition-syntax-contract.md)，定义选项条件、条件跳转、fallback、表达式 grammar、Compiler IR shape、Usage Manifest 对接与 diagnostics；本轮未实现 Compiler parser。
-- [ ] 按 [SelfHostedEditor / P3 Goal 模式执行指南](self-hosted-editor-p3-goal-mode-execution-guide.md) 继续推进 P3，下一步优先进入 P3 Round 8 condition syntax Compiler / IR 最小实现，再推进条件 Tooling / LanguageServer / Editor 消费和 Runtime State 最小模型。
+- [x] 完成 P3 Round 8 condition syntax Compiler / IR 最小实现。2026-06-18 审计结果见 [SelfHostedEditor P3 Condition Syntax Implementation Audit](self-hosted-editor-p3-condition-syntax-implementation-audit.md)；新增 `DslScriptCondition*` parser / IR models，选项条件和条件跳转进入 Compiler graph，新增条件 edge、fallback diagnostic 与 Internal tests；本轮未实现 Runtime 求值或 Usage Manifest 条件扫描。
+- [ ] 按 [SelfHostedEditor / P3 Goal 模式执行指南](self-hosted-editor-p3-goal-mode-execution-guide.md) 继续推进 P3，下一步优先进入 P3 Round 9 condition expression Tooling / LanguageServer / Editor consumption，再推进 Runtime query provider / internal facts 和 Runtime State 最小模型。
 - [ ] P4 开始前需要细化 Runtime MVP 验收样例、query receipt 记录粒度、`fire` / `wait` / `handoff` pending / resumed payload，以及 Runtime Inspector 只能改 mock query、不直接改正式 Runtime state 的产品边界。
 - [ ] P7 前继续评估 Rollback checkpoint 的准确粒度、跨宿主 action 时的回退阻断 / checkpoint 规则、Trace Replay、Flashback Playback 与时空穿越式特殊倒放；这些不进入 P3 / P4 第一刀实现。
 

@@ -4,6 +4,7 @@
 
         Default = 0,
         Choice = 1,
+        Conditional = 2,
 
     }
 
