@@ -356,6 +356,8 @@ try {
   for (const call of languageSessionCalls) {
     const activePayloadDocument = call.payload.workspace.documents.find((document) => document.relativePath === call.payload.activeRelativePath);
     assertEqual(call.payload.activeRelativePath, "story/opening.inscape", `workspace ${call.kind} active path`);
+    assertEqual(call.payload.languageSession.format, "inscape.self-hosted-editor.language-session-request", `workspace ${call.kind} shared language envelope`);
+    assertEqual(call.payload.languageSession.query.kind, call.kind, `workspace ${call.kind} shared language query kind`);
     assertEqual(call.payload.scriptText, "# Opening\nNarrator: secret updated text", `workspace ${call.kind} uses current buffer`);
     assertEqual(activePayloadDocument.text, "# Opening\nNarrator: secret updated text", `workspace ${call.kind} snapshot includes current buffer`);
     assertEqual(JSON.stringify(call.payload).includes("stale renderer"), false, `workspace ${call.kind} ignores stale renderer text`);

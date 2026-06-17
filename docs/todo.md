@@ -112,7 +112,7 @@ SelfHostedEditor desktop backend v0
 - [x] diagnostics / completions / definition / references / hover / documentSymbols 从同一份 workspace state 读取。2026-06-17 第一刀：Electron dispatcher 六个 language command 都通过当前 `DocumentBufferStore` snapshot 进入同一个 long-lived bridge。
 - [x] LanguageServer 崩溃、超时或协议错误时，backend 显示健康状态、last error summary、document revision lag，并支持重启或降级到 `process-per-request`。2026-06-17 第二刀：`health` / `lastError` / `documentRevisionLag` / `restartCount` 已进入 ProjectSession status，协议错误会停止当前进程，下一次 language request 会启动 replacement process；`process-per-request` 降级仍可作为后续打包容灾增强。
 - [x] 切换 workspace / 关闭窗口时，backend 停止 LanguageServer 并清理 session。2026-06-17 第一刀：workspace switch 会 dispose 旧 session 并启动新 session，close-window / app-exit 成功 flush 后调用 session dispose hook。
-- [ ] 保持与 VSCode authoring endpoint 的 semantic parity：SelfHostedEditor 与 VSCode 都消费同一组 shared payload shape。
+- [x] 保持与 VSCode authoring endpoint 的 semantic parity：SelfHostedEditor 与 VSCode 都消费同一组 shared payload shape。2026-06-17 第三刀：Electron workspace contract 明确断言 `inscape.self-hosted-editor.language-session-request` envelope 与 query kind，验证仍通过 SelfHostedEditor / VSCode semantic parity。
 
 验收入口应至少覆盖：
 
