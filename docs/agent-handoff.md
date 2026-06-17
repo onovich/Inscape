@@ -1,12 +1,22 @@
 # Agent 接手指南
 
-状态：P2.5 Round 1 PASS
+状态：P2.5 Round 2 PASS
 
 最后更新：2026-06-17
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-17 SelfHostedEditor P2.5 Round 2 Bird 提交策略快照
+
+P2.5 Round 2 已完成 Bird 提交策略与试跑边界，不宣布 P2.5 完成。
+
+- 策略产物见 [SelfHostedEditor P2.5 Bird Commit Strategy](self-hosted-editor-p2-5-bird-commit-strategy.md)。
+- 当前 Bird 仓库只有两处字体 fallback 资产改动；`Assets/Editor/InscapeBirdManifestImporter.cs` 与 `Assets/Resources_Runtime/Talking/InscapeGenerated/` 均不存在。
+- P2.5 Dry Run 允许临时复制 importer 到 Bird `Assets/Editor/` 并在结束后清理；P2.5 不提交 Bird 文件、不执行真实 Import、不使用 `-inscapeApplyAddressables`、不覆盖 Bird 正式 `L10N_Talking.csv`。
+- 后续真实 Import / Addressables 变更必须另行确认，并应分别成组审查，不与 importer 或 dry-run report 混在一起。
+- 下一轮进入 P2.5 Round 3：重新生成带真实 Timeline 绑定的 Bird manifest，优先复用 `samples/court-loop.inscape` 的 `@timeline.talking.exit court_intro`。
 
 ### 2026-06-17 SelfHostedEditor P2.5 Round 1 基线审计快照
 
