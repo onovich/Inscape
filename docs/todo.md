@@ -134,7 +134,8 @@ npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
 目标：在编辑器和 backend 基线稳定后，继续提高 stable node / line identity 与 localization review 的产品可用性。
 
 - [x] 完成 P2 Round 1 基线审计。2026-06-17 审计结果见 [SelfHostedEditor P2 Baseline Audit](self-hosted-editor-p2-baseline-audit.md)；SelfHostedEditor `check:syntax` / `check:structure` / `check:model` / `check:localization-review` / `check:line-map` / `check:node-map` 已通过。下一步进入 Localization Scoring 契约审计。
-- [ ] 继续细化 localization candidate scoring 与 review 展示：保持相似文本只作为人工候选，不静默复用旧译文。
+- [x] 完成 P2 Round 2 Localization Scoring 契约审计。2026-06-17 审计结果见 [SelfHostedEditor P2 Localization Scoring Audit](self-hosted-editor-p2-localization-scoring-audit.md)；确认相似文本只作为人工候选，不静默复用旧译文，scoring / ranking 仍位于 `Internal/Tooling`。
+- [ ] 继续细化 localization review 展示：候选差异、rank reason、line identity、conflict / risk 状态需要产品化为更易读的 UI 审计信息。
 - [ ] 评估批量审查 / multi-apply 是否必要；优先做可审计、可撤销的小闭环，不扩大自动继承范围。
 - [ ] 继续强化 line identity 迁移契约：围绕 line id、fingerprint、local context、rank penalty 与 diff detail 做 review UI 可读性收口。
 - [ ] 完成 stable node map review / apply 的产品化体验：人工确认、冲突报告、dry-run / apply、备份与恢复路径清晰。

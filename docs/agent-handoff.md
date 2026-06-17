@@ -1,12 +1,23 @@
 # Agent 接手指南
 
-状态：基线
+状态：P2 Round 2
 
-最后更新：2026-06-15
+最后更新：2026-06-17
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-17 SelfHostedEditor P2 Round 2 Localization Scoring 契约审计快照
+
+P2 Round 2 已完成 localization candidate scoring 契约审计，不宣布 P2 完成。
+
+- 审计产物见 [SelfHostedEditor P2 Localization Scoring Audit](self-hosted-editor-p2-localization-scoring-audit.md)。
+- 当前证据显示 `LocalizationAlignmentAuditDomain` 仍是 candidate similarity、rank penalty、reason、line identity 与候选排序的共享真相。
+- 相似文本不会静默复用旧译文：只有 `kept / confirmed` 会填入 previous translation；`changed` / `conflict` 当前 item 保持空 translation，旧译文只作为 candidate 暴露给人工 review。
+- 现有 Internal tests 已覆盖 confirmed translation、changed candidate 不继承、low-confidence conflict、same-line rewrite、exact line identity priority、context / keyword / neighbor / local context ranking reason；本轮未新增重复测试。
+- SelfHostedEditor 只消费 shared presenter items/actions 并渲染 Current / Candidate / Diff，不计算 similarity、rank penalty 或候选排序。
+- 下一轮进入 P2 Round 3：Line Identity 信号加固；继续检查 line id、fingerprint、local context、rank penalty 与 diff detail 的可审计展示。
 
 ### 2026-06-17 SelfHostedEditor P2 Round 1 基线审计快照
 
