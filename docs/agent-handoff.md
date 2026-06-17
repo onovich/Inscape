@@ -1,6 +1,6 @@
 # Agent 接手指南
 
-状态：P2 Round 13
+状态：P2 PASS
 
 最后更新：2026-06-17
 
@@ -8,15 +8,24 @@
 
 ## 当前项目快照
 
+### 2026-06-17 SelfHostedEditor P2 Final Validation 快照
+
+P2 stable identity / localization review 已完成最终验证，结论为 PASS；Post-P2 host integration work allowed: YES。
+
+- 最终验收产物见 [SelfHostedEditor P2 Final Validation Report](self-hosted-editor-p2-final-validation-report.md)。
+- Round 14 全量验证通过：`.NET build`、Internal tests、VSCode manifest / structure / semantic parity、SelfHostedEditor syntax / structure / model、localization review/update direct + HTTP、line-map direct + HTTP、node-map direct + HTTP、semantic parity HTTP、workbench integration HTTP、`git diff --check`。
+- P2 验收结论：localization review/productization、line identity、stable node map review/apply、localization update safety、VSCode/SelfHostedEditor shared-boundary parity 均已闭环；P2 不实现 batch / multi-apply，后续若重启必须先补共享 batch contract。
+- 后续可以进入 P2.5 Host Schema / Host Bridge / Unity-Bird，但必须继续保持 `Internal` 语义真相、`ExternalSupport` 宿主适配、Bird L10N / Host Config / Inscape localization CSV 模型分离。
+- 下一轮候选目标：开启 P2.5 前先重读 Host Schema / Host Bridge / Unity-Bird 相关合同与 TODO，确认第一刀只做低风险验证或决策，不把 Unity/Bird 依赖引入 `Internal`。
+
 ### 2026-06-17 SelfHostedEditor P2 Round 13 文档与 ADR 收口快照
 
-P2 Round 13 已完成文档、契约和接力入口收口，不宣布 P2 完成。
+P2 Round 13 已完成文档、契约和接力入口收口；随后 Round 14 已完成最终验证并宣布 P2 PASS。
 
 - 审计产物见 [SelfHostedEditor P2 Documentation And ADR Closure Audit](self-hosted-editor-p2-doc-adr-closure-audit.md)。
 - P1.5 文档收口方案已标记 PASS：`P1.5 long-lived LanguageServer: PASS`，`P2 stable identity / localization review entry allowed: YES`；旧的 packaged LanguageServer artifact 与 fallback 阻塞口径未再命中当前文档。
 - 本轮不新增 ADR：P2 仍落在 ADR 0013 / 0017 / 0018 / 0019 / 0020 的既有决策内；长期变化已同步到 stable node id、localization diff alignment 与 l10n extraction contract 文档。
-- 后续 Host Schema / Host Bridge / Unity-Bird 只能在 Round 14 完整 P2 验证通过并记录 `P2 PASS` 后启动；若 Round 14 失败，则进入第 15-18 轮缓冲修复，不开启 P2.5。
-- 下一轮进入 P2 Round 14：全量验证与首轮修复；重点跑完整 P2 验证矩阵并给出 PASS/FAIL 初判。
+- 后续 Host Schema / Host Bridge / Unity-Bird 已满足入口条件，可以作为 P2.5 启动；仍不得把 Host integration 或 P3 内容回灌到 P2。
 
 ### 2026-06-17 SelfHostedEditor P2 Round 12 工作台集成 Smoke 快照
 

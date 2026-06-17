@@ -4,6 +4,8 @@
 
 日期：2026-06-17
 
+后续补充：P2 Round 14 已完成最终验证并宣布 PASS，详见 [SelfHostedEditor P2 Final Validation Report](self-hosted-editor-p2-final-validation-report.md)。本文保留 Round 13 当时的文档 / ADR 收口判断。
+
 ## 本轮目标
 
 P2 Round 13 只做文档、契约和交接口径收口，不新增 Host Schema / Host Bridge / Unity-Bird 功能，也不宣布 P2 PASS。P2 PASS 仍需要 Round 14 全量验证后判断。
