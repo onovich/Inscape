@@ -90,6 +90,9 @@ const localizationController = new LocalizationEditorController({
                   anchor: "line_anchor_1",
                   kind: "Dialogue",
                   line: 3,
+                  lineFingerprint: "line-fingerprint-current",
+                  lineId: "line_DIALOGUE",
+                  lineIdentityStatus: "available",
                   nodeTitle: "Opening",
                   review: "needs-review",
                   speaker: "Narrator",
@@ -141,7 +144,13 @@ assertIncludesText(getTextContent(localizationPanel), "Diff 1");
 assertIncludesText(getTextContent(localizationPanel), "Already aligned row");
 assertIncludesText(getTextContent(localizationPanel), "kept");
 assertNotIncludesText(getTextContent(localizationPanel), "Draft fallback row");
-findElementByClass(localizationPanel, "localization-review-action-candidate")?.click();
+assertEqual(localizationController.rows[0].lineId, "line_DIALOGUE", "localization review rows should preserve shared line identity id");
+assertEqual(localizationController.rows[0].lineIdentityStatus, "available", "localization review rows should preserve shared line identity status");
+assertEqual(localizationController.rows[0].lineFingerprint, "line-fingerprint-current", "localization review rows should preserve shared line fingerprint");
+const candidateReviewButton = findElementByClass(localizationPanel, "localization-review-action-candidate");
+assertIncludesText(candidateReviewButton?.title || "", "similarity 0.950", "candidate action tooltip should expose shared similarity status");
+assertIncludesText(candidateReviewButton?.title || "", "Previous translation", "candidate action tooltip should expose shared candidate summary");
+candidateReviewButton?.click();
 assertEqual(selectedLocalizationSource?.sourcePath, "samples/previous.inscape", "localization candidate action should preserve candidate source path");
 assertEqual(selectedLocalizationSource?.lineNumber, 12, "localization candidate action should jump to candidate source line");
 findElementByClass(localizationPanel, "localization-review-action-diff")?.click();

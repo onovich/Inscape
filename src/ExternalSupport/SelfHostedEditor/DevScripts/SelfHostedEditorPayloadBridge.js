@@ -339,6 +339,9 @@ function compactLocalizationReviewItems(items) {
         anchor: item.anchor || "",
         kind: item.kind || "",
         line: Number(item.line || presenterItem?.line || 0),
+        lineFingerprint: item.lineFingerprint || item.LineFingerprint || "",
+        lineId: item.lineId || item.LineId || "",
+        lineIdentityStatus: item.lineIdentityStatus || item.LineIdentityStatus || "",
         nodeTitle: item.nodeTitle || "",
         review: item.review || "",
         speaker: item.speaker || "",
@@ -364,7 +367,7 @@ function compactLocalizationReviewActions(actions) {
     return {
       actionIndex: Number(action?.actionIndex ?? action?.ActionIndex ?? 0),
       actionKey,
-      actionStatus: "",
+      actionStatus: actionKey === "open-candidate" ? action?.actionStatus || action?.ActionStatus || "" : "",
       column: Number(action?.column ?? action?.Column ?? 0),
       detail: actionKey === "show-candidate-diff" ? action?.detail || action?.Detail || "" : "",
       length: Number(action?.length ?? action?.Length ?? 0),

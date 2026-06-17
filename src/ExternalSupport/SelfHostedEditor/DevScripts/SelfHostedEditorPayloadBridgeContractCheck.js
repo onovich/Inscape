@@ -136,7 +136,19 @@ const localizationReport = relativizeLocalizationReviewPaths({
             title: "Current",
           },
           {
-            ActionIndex: 2,
+            actionIndex: 2,
+            actionKey: "open-candidate",
+            actionStatus: "similarity 0.950 / rankPenalty 2 / same-line-id / line line_OLD available fp oldfingerpri",
+            column: 3,
+            detail: "trim candidate detail",
+            length: 4,
+            line: 4,
+            sourcePath,
+            summary: "Previous translation",
+            title: "Candidate",
+          },
+          {
+            ActionIndex: 3,
             ActionKey: "show-candidate-diff",
             Column: 4,
             Detail: "current: Hello | previous: Hi",
@@ -151,6 +163,9 @@ const localizationReport = relativizeLocalizationReviewPaths({
           anchor: "line_001",
           kind: "dialogue",
           line: 3,
+          lineFingerprint: "currentfingerprint012345",
+          lineId: "line_CURRENT",
+          lineIdentityStatus: "available",
           nodeTitle: "Opening",
           review: "changed",
           speaker: "Narrator",
@@ -181,8 +196,14 @@ assert.equal(Object.hasOwn(compactLocalizationPayload, "items"), false);
 assert.equal(Object.hasOwn(compactLocalizationPayload, "debugSections"), false);
 assert.equal(compactLocalizationPayload.presenter.items.length, 1);
 assert.equal(compactLocalizationPayload.presenter.items[0].sourcePath, "Stories/opening.inscape");
+assert.equal(compactLocalizationPayload.presenter.items[0].item.lineId, "line_CURRENT");
+assert.equal(compactLocalizationPayload.presenter.items[0].item.lineIdentityStatus, "available");
+assert.equal(compactLocalizationPayload.presenter.items[0].item.lineFingerprint, "currentfingerprint012345");
 assert.equal(compactLocalizationPayload.presenter.items[0].actions[0].detail, "");
-assert.equal(compactLocalizationPayload.presenter.items[0].actions[1].detail, "current: Hello | previous: Hi");
+assert.equal(compactLocalizationPayload.presenter.items[0].actions[1].actionStatus, "similarity 0.950 / rankPenalty 2 / same-line-id / line line_OLD available fp oldfingerpri");
+assert.equal(compactLocalizationPayload.presenter.items[0].actions[1].summary, "");
+assert.equal(compactLocalizationPayload.presenter.items[0].actions[1].detail, "");
+assert.equal(compactLocalizationPayload.presenter.items[0].actions[2].detail, "current: Hello | previous: Hi");
 
 const nodeMapReport = relativizeStoryNodeMapReviewPaths({
   format: "inscape.node-map-update-report",

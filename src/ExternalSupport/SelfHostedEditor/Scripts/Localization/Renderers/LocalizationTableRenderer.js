@@ -105,7 +105,7 @@ export class LocalizationTableRenderer {
         button.type = "button";
         button.className = `localization-review-action localization-review-action-${this.getReviewActionClass(action)}`;
         button.textContent = this.createReviewActionLabel(action);
-        button.title = action.detail || action.summary || button.textContent;
+        button.title = this.createReviewActionTitle(action, button.textContent);
         button.addEventListener("click", (event) => {
           event.stopPropagation();
           this.onReviewAction(action, item, detail);
@@ -117,6 +117,12 @@ export class LocalizationTableRenderer {
     }
 
     return review;
+  }
+
+  createReviewActionTitle(action, fallback) {
+    return [action.actionStatus, action.detail, action.summary]
+      .filter((value) => String(value || "").trim())
+      .join(" | ") || fallback;
   }
 
   getReviewActionClass(action) {
