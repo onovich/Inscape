@@ -8,6 +8,16 @@
 
 ## 当前项目快照
 
+### 2026-06-17 SelfHostedEditor P2 Round 1 基线审计快照
+
+P2 stable identity / localization review 主线已开始，当前只完成基线审计，不宣布 P2 完成。
+
+- 基线产物见 [SelfHostedEditor P2 Baseline Audit](self-hosted-editor-p2-baseline-audit.md)。
+- 已验证 SelfHostedEditor `check:syntax` / `check:structure` / `check:model` / `check:localization-review` / `check:line-map` / `check:node-map`。
+- 当前证据显示 localization alignment scoring、line identity、stable node map review/apply 的核心语义位于 `Internal/Tooling` 与共享 CLI；SelfHostedEditor 仍只做 bridge / UI / confirmation。
+- 主要缺口：localization scoring 专项审计、review UI 结构化审计展示、line identity risk 可读性、stable node map apply backup/recovery metadata、batch/multi-apply 决策、VSCode parity 与最终验证。
+- 下一轮进入 P2 Round 2：Localization Scoring 契约审计；不得提前进入 P2.5 Host Schema / Host Bridge / Unity-Bird 或 P3。
+
 ### 2026-06-17 SelfHostedEditor P1.5 文档收口快照
 
 SelfHostedEditor desktop backend v0 与 P1.5 workspace-scoped long-lived LanguageServer 已完成收口，当前文档口径统一为 `P1.5 long-lived LanguageServer: PASS` 与 `P2 stable identity / localization review entry allowed: YES`。本次只做文档同步，不启动 P2 行为。
