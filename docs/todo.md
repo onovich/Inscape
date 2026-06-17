@@ -1,6 +1,6 @@
 # TODO
 
-状态：持续维护，P2.5 已 PASS
+状态：持续维护，P3 Round 1 baseline audit complete
 
 SelfHostedEditor regression invariant: Preview choice clicks must advance the reading Preview to the target block and reveal the target block title in the editor. Compiler-project Preview data must never silently lose `previewLines`: if a returned Compiler graph has source lines but missing or mismatched `previewLines`, Preview must report a compiler graph contract error instead of falling back to the UI-only draft model. `npm --prefix src\ExternalSupport\SelfHostedEditor run check:model` covers both invariants so future Runtime / navigation work does not regress them.
 
@@ -22,6 +22,11 @@ P2 stable identity / localization review
 P2.5 Host Schema / Host Bridge / Unity-Bird adaptation
   -> PASS
   -> P3 second syntax / Runtime / extension research only as a new scoped phase
+  -> P4 Runtime playable MVP
+  -> P5 SelfHostedEditor Runtime authoring/productization
+  -> P6 Unity / Host SDK first cut
+  -> P7 rollback / trace / advanced runtime debugging
+  -> P8 Presentation IR / cross-engine exploration
 ```
 
 ### P0：进入 desktop backend v0 前的 current-stage 100% 收口
@@ -172,12 +177,28 @@ npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
 
 ### P3：第二版语法 / Runtime / 扩展能力的后续调研
 
-目标：这些仍属中长期设计，不应抢在 SelfHostedEditor backend 与 long-lived LanguageServer 前面。
+目标：P2.5 已 PASS 后，P3 可以作为新的设计阶段进入；第一目标是收口第二版语法、Runtime 状态和宿主控制权边界，不应直接进入大规模实现。
 
-- [ ] 条件表达式与 Host Query 语法继续保持设计态；第一版不把变量、条件和自定义指令提前塞入 DSL 主路径。
-- [ ] 查询默认无副作用，事件和状态变化继续归 `@` / Runtime Host；不让 `[]` 查询插值触发动作。
-- [ ] Runtime 存档、Action 日志、随机数、异步加载、Time Travel、热重载 Patch 等继续保持开放问题，等 RuntimeSession / backend session 基础稳定后再定。
-- [ ] Timeline 继续作为外部资源引用 / 宿主事件示例；长期是否演化为 Presentation IR 后置讨论。
+- [x] P3 前置讨论脉络已写入 [P3 Runtime / Language Discussion Memory](p3-runtime-language-discussion-memory.md)，后续 session 需要恢复上下文时应先读该文，再读正式 contract 文档。
+- [x] P3 长期边界已新增 ADR 0021：[P3 Runtime 与宿主能力边界](adr/0021-p3-runtime-and-host-capability-boundary.md)。
+- [x] P3 前置讨论已确认：条件表达式需要 `and` / `or` / `not`、括号、标量比较、字符串、数字、bool；暂不支持数组、列表和复杂表达式。详见 [Host Query and Event Registration Strategy](host-query-event-registration-strategy.md)。
+- [x] P3 前置讨论已确认：`[]` 查询只读且无副作用；`@` 负责动作 / 事件 / 状态变化，可按 `fire` / `wait` / `handoff` 三类模式设计。
+- [x] P3 前置讨论已确认：正式运行优先 delegate query；mock / recorded values 服务编辑器预览、测试、CI 和调试复现；snapshot 降为低优先级实现细节，不作为每帧同步主链路。
+- [x] P3 前置讨论已确认：Inscape 可以保存和查询内部叙事运行事实，例如 visited / seen / last_choice / log / rollback 栈；背包、任务、好感度、战斗结果等业务玩法状态默认归宿主。
+- [x] P3 前置讨论已确认：正式项目中宿主存档是权威，Inscape state 是宿主存档的子状态 blob；普通存档、Log / Backlog、Rollback、Trace Replay、Flashback Playback 必须拆开命名。
+- [x] P3 前置讨论已确认：Timeline / 剧情 / 玩法系统的关系按“同一段情节只有一个导演”处理；对话段可由 Inscape 驱动 Timeline，电影化演出段可由 Timeline 驱动 Inscape，玩法段可由宿主 handoff 后恢复剧情。详见 [运行时与 Unity 宿主](runtime-unity.md)。
+- [x] P3 前置讨论已确认：Host Schema 是统一能力清单，包含 `queries[]` 与 `actions[]`；Query 最小字段为 `name` / `parameters` / `returnType`，Action 最小字段为 `name` / `parameters` / `mode`，`idKind` 与 `description` 可选。
+- [x] P3 前置讨论已确认：条件第一刀优先选项条件 `- [condition] text -> target` 与条件跳转 `? [condition] -> target` / `-> fallback`，节点入口条件和行级条件后置。
+- [x] P3 前置讨论已确认：Usage / Requirement Manifest 是机器可读对账清单，倾向 `inspect-usage-project` 生成 `inscape.usage`，`audit-host-integration-project` 对账 Usage + Host Schema + Host Bridge。
+- [x] P3 前置讨论已确认：Runtime State 第一版先做设计 + 最小 model / smoke，不做完整正式 Save / Load、完整 Rollback、完整 Trace Replay 或 Flashback。
+- [x] P3 前置讨论已确认：异步 action 失败、取消或超时统一作为宿主异常抛出 / 上报；第一版不为每个 action 配复杂 failure / timeout policy。
+- [x] P3 之后阶段顺序已确认：P4 先做 Runtime 可玩化，P5 再做 SelfHostedEditor 产品化接入，P6 做 Unity / Host SDK 第一版，P7 做 Rollback / Trace 等高级运行时调试，P8 再讨论 Presentation IR / 跨引擎 / 独立 Runtime。
+- [x] P4 边界已确认：优先实现 Runtime MVP、delegate query、action dispatcher、Log / Backlog、普通 Save / Load 子状态 blob 与 editor preview 测试存档；不做纯 Inscape 完整存档产品、不做完整 Rollback / Trace Replay / Flashback。
+- [x] P4 Log / Backlog 已确认进入优先范围：默认记录 `speaker`、`text`、`lineId`；选项记录作为可选扩展或开发模式信息，不要求普通玩家 Log 默认展示。
+- [x] 完成 P3 Round 1 基线审计。2026-06-18 审计结果见 [SelfHostedEditor P3 Baseline Audit](self-hosted-editor-p3-baseline-audit.md)；确认当前代码链路仍是 `queries[]` + `events[]`，Usage / Host Integration Audit / 条件语法 / P3 Runtime State 均未进入实现。下一轮进入 Host Schema v2 minimum contract。
+- [ ] 按 [SelfHostedEditor / P3 Goal 模式执行指南](self-hosted-editor-p3-goal-mode-execution-guide.md) 继续推进 P3，下一步优先完成 Host Schema v2 `queries[]` / `actions[]` 草案与 legacy `events[]` 兼容，再进入 Usage Manifest、条件语法和 Runtime State 最小模型。
+- [ ] P4 开始前需要细化 Runtime MVP 验收样例、query receipt 记录粒度、`fire` / `wait` / `handoff` pending / resumed payload，以及 Runtime Inspector 只能改 mock query、不直接改正式 Runtime state 的产品边界。
+- [ ] P7 前继续评估 Rollback checkpoint 的准确粒度、跨宿主 action 时的回退阻断 / checkpoint 规则、Trace Replay、Flashback Playback 与时空穿越式特殊倒放；这些不进入 P3 / P4 第一刀实现。
 
 ### 暂停 / 明确后置
 

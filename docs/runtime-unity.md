@@ -1,6 +1,8 @@
 ﻿# 运行时与 Unity 宿主
 
-状态：草案
+状态：草案，P3 Runtime 前置边界
+
+最后更新：2026-06-18
 
 ## 目标
 
@@ -35,6 +37,27 @@ Bird 是 Unity 支持层设计的重要参考需求方，不是 Inscape 的唯�
 这层也负责把宿主事件映射到项目已有代码结构。Inscape 可以表达“触发事件并传参”，但不直接调用 Unity API、业务服务或 Timeline 播放器。上层项目拿到事件数据后如何处理，取决于项目自己的运行时和工具链。
 
 下层状态是被查询对象：宿主可以通过 Schema 提供查询能力读取叙事状态或项目状态，Inscape 不反向查询具体上层业务系统，也不要求业务系统暴露内部实现细节。
+
+## Inscape 状态与宿主状态
+
+接入真实游戏项目时，宿主存档应是正式游戏存档的权威；Inscape 的运行状态应作为宿主存档里的一个子状态 blob 保存和恢复。宿主负责恢复 Unity 场景、实体、背包、任务、战斗和资源系统；Inscape 负责恢复叙事执行位置、内部叙事运行事实和必要的 query / action receipt。
+
+建议 Runtime 提供：
+
+```text
+ExportState()
+ImportState(state)
+ValidateStateAgainstCurrentScript(state)
+```
+
+而不是另起一套正式存档槽与宿主抢权威。
+
+例外：
+
+- 纯 Inscape 游戏或独立 Runtime 可以由 Inscape 自己管理完整存档。
+- 编辑器 Preview / 测试可以使用临时测试存档，服务调试，不代表正式项目存档策略。
+
+业务玩法状态默认归宿主，例如背包、任务阶段、好感度、战斗结果、NPC 生死、玩家位置和经济数值。Inscape 只默认保存叙事运行事实，例如当前 node、执行位置、visited / seen / choice 历史、Log、Runtime checkpoint 和本轮 rollback 栈。
 
 ## Unity 代码生成式桥接草案
 
@@ -88,11 +111,13 @@ Unity Editor Importer 的可复制原型位于 `src/ExternalSupport/UnityPlugin/
 
 - 加载编译后的 IR。
 - 顺序执行对白、旁白和演出标签。
-- 处理基础变量、条件和选择。
-- 通过状态 Store 保存叙事变量和执行位置。
+- 处理基础条件和选择。
+- 通过状态 Store 保存执行位置和 Inscape 内部叙事运行事实。
 - 调用 Unity UI 显示文本和选项。
 - 调用资源系统切换背景、立绘和音频。
 - 支持基础存档和读档。
+
+第一版不应默认把 Inscape 做成完整业务变量系统。用户自定义内部变量、复杂内部函数和玩法状态托管可以作为后续扩展评估；当前优先保证宿主 delegate query 与 Inscape 内部叙事事实的边界清楚。
 
 ## Command Pipeline 候选
 
@@ -151,14 +176,168 @@ Unity 支持层后续应作为独立插件 / 适配包研究，而不是混在 V
 - 如果未来自研引擎对标 Ren'Py，Timeline 是否会演化为独立的 Presentation IR。
 - Unity ScriptableObject 是否只是 Adapter 输出格式，还是作为第一版唯一运行格式。
 
+## Timeline / 宿主异步控制权
+
+P3 结论：同一段情节里必须只有一个“导演”。Inscape、Timeline、小游戏 / 战斗系统都可以成为主控，但同一时刻不应互相抢控制权。
+
+推荐按场景分工：
+
+```text
+对话 / 分支 / 选项为主：
+Inscape 当导演，Timeline 作为 @action 被触发，可选择 wait。
+
+电影化演出为主：
+Timeline 当导演，通过 Signal / Marker 让宿主 Bridge 调用 Inscape 播一小段剧情；如需要等待对白结束，由宿主暂停并恢复 Timeline。
+
+玩法段为主：
+宿主或玩法系统当导演。Inscape 可 handoff 给战斗、小游戏、探索或地图 UI，宿主结束后再恢复剧情。
+```
+
+统一控制权协议可以设计为：
+
+```text
+Host -> Inscape:
+RunNode(nodeId)
+RunNodeAndWait(nodeId)
+Resume(token, result)
+
+Inscape -> Host:
+@action(..., mode: fire)
+@action(..., mode: wait)
+@action(..., mode: handoff)
+```
+
+三种 action mode：
+
+- `fire`：发出后继续。适合音效、打点、轻量震屏、非关键动画。
+- `wait`：暂停剧情，等待宿主返回完成 / 失败 / 取消。适合 Timeline、角色动画、淡入淡出、资源加载、宿主 UI 选择。
+- `handoff`：把控制权交给宿主，宿主稍后决定何时恢复剧情。适合战斗、小游戏、探索段落、场景切换和长演出。
+
+异步适用场景：
+
+- 播放 Timeline，等播完再继续对白。
+- 等待角色动画、镜头动画或淡入淡出完成。
+- 等待宿主 UI 选择，例如地图点选或项目自己的选择面板。
+- 等待大资源加载完成。
+- 等待服务器结果；优先级低于单机，但协议应留出 timeout / error。
+- 等待战斗或小游戏结束；这类通常更适合 `handoff`，避免 Inscape 管理玩法过程。
+
+Timeline 可以驱动剧情，剧情也可以驱动 Timeline；关键不是固定谁驱动谁，而是每段内容的主控权必须明确，并通过 Host Bridge / Runtime Host 做控制权交接。
+
+P3 第一版不把异步失败设计成剧情可分支处理的普通结果。资源加载和网络请求的失败 / 超时在业务上较可理解，但也应由宿主负责重试、fallback、断线提示或中断流程。对 Inscape 来说，`wait` / `handoff` action 失败、取消或超时都统一视为宿主异常：Runtime 抛出 / 上报 action error，错误包含 node、lineId、action name、args、requestId 和 host error，上层决定如何处理。
+
+因此第一版不需要为每个 action 配复杂 `failurePolicy` / `timeoutPolicy`；全局默认可以是 `throw`。
+
 ## 存档策略草案
 
 存档至少需要包含：
 
 - 当前脚本锚点或节点锚点。
 - 当前指令偏移。
-- 叙事 Store 快照。
+- Inscape 内部叙事运行事实快照。
 - 编译器和 IR 版本。
-- 必要的执行历史或 Action 日志。
+- 必要的 query / action receipt。
+- 宿主 checkpoint id 或宿主存档引用。
 
-是否需要完整 Action 回放，取决于性能、存档体积和确定性需求。
+正式项目里，普通存档不应默认等于完整 Action 日志。普通存档目标是“恢复到可继续游玩的状态”，因此应尽量小；完整 Action / query trace 更适合作为调试复现能力，并应有上限、压缩或仅开发模式启用。
+
+P3 建议拆开以下概念：
+
+```text
+Log / Backlog
+查看聊天记录，只看已经实际呈现过的内容，不重新执行脚本。
+
+Save / Load
+正式存档。宿主存档是权威，Inscape state 是其中的子状态 blob。
+
+Rollback
+倒退到过去关键点并继续玩。有限数量，只存在内存，读档后清空。
+
+Trace Replay
+调试复现。记录玩家选择、query 结果、随机结果和 action 结果，用来解释为什么走到某个分支。
+
+Flashback Playback
+剧情表现用的回忆画面。像播放过去发生过的一段内容，不让玩家重新选择。
+```
+
+优先级：
+
+- 高优先级：Log / Backlog、普通 Save / Load。
+- 中优先级：有限内存 Rollback 的设计边界。
+- 低优先级：Trace Replay 的完整实现。
+- 更低优先级：Flashback Playback。
+- 项目自定义：时空穿越式特殊倒放机制，例如大部分状态重置但少数状态保留。
+
+2026-06-18 P3 后续阶段口径已确认：P4 先做 Runtime 可玩化，P5 再做 SelfHostedEditor Runtime authoring / 产品化接入，P6 做 Unity / Host SDK 第一版，P7 才做 Rollback / Trace / 高级运行时调试，P8 再讨论 Presentation IR / 跨引擎 / 独立 Inscape Runtime。
+
+P4 的 Save / Load 只要求正式项目中的 Inscape state 子状态 blob 与 editor preview 测试存档；纯 Inscape 独立游戏的完整存档产品后置。P4 应包含 Log / Backlog，默认记录 `speaker`、`text`、`lineId`，选项记录作为可选扩展或开发模式信息。
+
+Log 第一版建议保存 `speaker`、`text`、`lineId`。选项信息可作为可选扩展：默认 UI 可以只显示对白；开发模式或项目配置可以记录并显示 presented choices / chosen choice，便于复盘选择和调试。
+
+Rollback checkpoint 默认应在每次显示文本前创建；显示选项前也必须可作为 checkpoint。跨会改变宿主状态的 `@action` 时，Runtime 应要求宿主 checkpoint / receipt，或阻止跨越该动作回退。Rollback 栈只保存在内存中，数量有限，读档后清空。
+
+P3 第一版不为低优先级 Rollback / Replay 把 Action Schema 做胖。默认规则：
+
+- Trace Replay 不真实重放 `@action`，只展示当时记录。
+- Rollback 遇到改变宿主状态的 `@action` 默认作为 barrier。
+- 纯表现 action 是否允许跨越、业务 action 是否可 undo / idempotent / checkpoint，由后续更细 action policy 设计决定。
+
+Trace Replay 不应重新向宿主查询已经影响分支的值，而应使用当时记录的 query receipt。例如当时 `[has_item("silver_key")] => true`，回放解释路径时使用这个历史结果；完整游戏世界回放则必须由宿主 checkpoint / 输入重放系统当权威，Inscape 只能作为参与者。
+
+随机数策略由宿主决定。Inscape 不判断“公平性”或是否防 S/L，只提供策略接口：宿主随机、固定种子、实时随机源或 recorded random。影响分支的随机结果如果需要调试复现，应记录 receipt。
+
+## 版本兼容与迁移
+
+Runtime state、Log、Trace、Host Schema 和 Host Bridge 都应带版本：
+
+```text
+saveFormatVersion
+runtimeVersion
+scriptVersion
+schemaVersion
+hostProtocolVersion
+```
+
+加载时按三档处理：
+
+- `compatible`：直接加载。
+- `migratable`：执行显式迁移。
+- `incompatible`：提示用户重载、回到最近可定位节点，或由宿主拒绝加载。
+
+编辑器热更新主要服务测试，不承诺完美恢复。若 `lineId` 仍存在，可以尽量停在附近；若 `lineId` 消失，应提示状态失效并提供 reload all。Log 记录 `lineId`，显示时按当前文本解析；如果项目需要保留旧文本，应作为更高成本的历史快照能力另行设计。
+
+## Runtime State 第一版边界
+
+P3 第一刀不做完整正式存档系统。目标是先设计并验证最小 shape：
+
+```text
+必须输出 Runtime State 设计文档。
+可以实现最小 model / smoke。
+不实现完整 Save / Load 产品体验。
+不实现完整 Rollback / Trace Replay / Flashback。
+```
+
+`ExportState()` 第一版最小模型倾向包含：
+
+```text
+format / formatVersion
+runtimeVersion
+scriptVersion
+position: nodeId / lineId / commandIndex
+flow: entryNodeId / stack
+facts: visitedNodes / seenLines / choices
+random: policy 或 seed/state
+host: checkpointId
+```
+
+普通 Runtime State 不默认包含完整 Log，也不默认包含完整 query/action trace。Log / Backlog、Rollback Stack、Trace 都应是独立状态或可选调试产物。普通存档只存继续剧情所需的最小叙事状态。
+
+`ValidateStateAgainstCurrentScript()` 倾向输出：
+
+```text
+compatible
+migratable
+incompatible
+```
+
+它只报告能否加载、能否迁移、失败原因和可能的附近位置，不应静默修状态。

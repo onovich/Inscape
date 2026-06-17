@@ -8,6 +8,8 @@
 - 查长期决策：读 [ADR](adr/README.md)，不要只看当前实现推断设计意图。
 - 查当前实现边界：读 [代码结构规划](code-structure.md)、[编码与命名规范](coding-conventions.md) 和 [渐进式重构计划](refactoring-plan.md)，再进入对应源码目录。
 - 查未定事项：读 [待确认问题](open-questions.md)，避免把草案当成规范。
+- 查 P3 第二版语法 / Runtime 讨论脉络：读 [P3 Runtime / Language Discussion Memory](p3-runtime-language-discussion-memory.md)，再读对应正式 contract 文档。
+- 执行 P3 goal：读 [P3 第二版语法 / Runtime / 宿主能力 Goal 模式执行指南](self-hosted-editor-p3-goal-mode-execution-guide.md)，并从 [P3 Baseline Audit](self-hosted-editor-p3-baseline-audit.md) 接上当前实现状态。
 
 ## 阅读路径
 
@@ -30,12 +32,15 @@
 15. [编辑器设计草案](editor-design.md)
 16. [运行时与 Unity 宿主](runtime-unity.md)
 17. [宿主 Schema 草案](host-schema.md)
-18. [Bird / Unity 调研记录](bird-unity-research.md)
-19. [Bird Adapter 原型](bird-adapter.md)
-20. [Unity Editor Importer 草案](unity-editor-importer.md)
-21. [路线图](roadmap.md)
-22. [TODO](todo.md)
-23. [待确认问题](open-questions.md)
+18. [P3 Runtime / Language Discussion Memory](p3-runtime-language-discussion-memory.md)
+19. [P3 第二版语法 / Runtime / 宿主能力 Goal 模式执行指南](self-hosted-editor-p3-goal-mode-execution-guide.md)
+20. [P3 Baseline Audit](self-hosted-editor-p3-baseline-audit.md)
+21. [Bird / Unity 调研记录](bird-unity-research.md)
+22. [Bird Adapter 原型](bird-adapter.md)
+23. [Unity Editor Importer 草案](unity-editor-importer.md)
+24. [路线图](roadmap.md)
+25. [TODO](todo.md)
+26. [待确认问题](open-questions.md)
 
 ## 按任务检索
 
@@ -49,7 +54,9 @@ VSCode 目录命名审计  vscode-directory-naming-audit.md
 模块资源脚本边界     module-resource-script-boundary-plan.md
 CLI 命令速查         cli-command-reference.md, README.md
 本地化               hash-localization.md, l10n-extraction.md, ADR 0006
-宿主 Schema/查询事件 host-schema.md, dsl-language.md, open-questions.md, todo.md
+宿主 Schema/查询事件 host-schema.md, host-query-event-registration-strategy.md, p3-runtime-language-discussion-memory.md, open-questions.md, todo.md
+P3 Runtime/存档/回滚  p3-runtime-language-discussion-memory.md, runtime-unity.md, host-query-event-registration-strategy.md, open-questions.md, todo.md
+P3 Goal 执行         self-hosted-editor-p3-goal-mode-execution-guide.md, self-hosted-editor-p3-baseline-audit.md, p3-runtime-language-discussion-memory.md, ADR 0021, todo.md
 Unity/Bird 适配      bird-adapter.md, unity-editor-importer.md, bird-unity-research.md, runtime-unity.md, architecture.md, todo.md
 编辑器阶段           editor-design.md, roadmap.md
 长期设计决策         adr/README.md
@@ -78,6 +85,9 @@ docs/
   dsl-syntax-guide.md    面向作者的当前语法说明与写法示例
   dsl-language.md        DSL 语言设计草案与语法待确认项
   host-schema.md         宿主查询、事件清单与连接层 Schema 草案
+  p3-runtime-language-discussion-memory.md P3 Runtime / 语言讨论脉络与上下文记忆
+  self-hosted-editor-p3-goal-mode-execution-guide.md P3 goal 模式执行指南
+  self-hosted-editor-p3-baseline-audit.md P3 Round 1 基线审计
   vscode-tooling.md      VSCode 阶段的轻工具链设计与使用方式
   cli-command-reference.md CLI 命令、参数、产物和验证命令速查
   l10n-extraction.md     CSV 本地化提取命令与字段说明

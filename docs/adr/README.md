@@ -30,3 +30,4 @@ ADR 用于记录影响项目长期方向的决定。每条 ADR 应说明背景�
 - [0018：SelfHostedEditor backend 使用业务窄接口并区分 session 状态](0018-self-hosted-editor-backend-session-boundary.md)
 - [0019：SelfHostedEditor desktop backend v0 采用嵌入式 EditorBackend](0019-self-hosted-editor-embedded-backend-v0.md)
 - [0020：SelfHostedEditor v0 采用 Electron、目录 workspace 与分层保存恢复策略](0020-self-hosted-editor-electron-workspace-and-save-strategy.md)
+- [0021：P3 Runtime 与宿主能力边界](0021-p3-runtime-and-host-capability-boundary.md)
