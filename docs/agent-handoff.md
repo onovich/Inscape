@@ -1,12 +1,22 @@
 # Agent 接手指南
 
-状态：P2.5 Round 2 PASS
+状态：P2.5 Round 3 PASS
 
 最后更新：2026-06-17
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-17 SelfHostedEditor P2.5 Round 3 Timeline 导出链路快照
+
+P2.5 Round 3 已完成真实 Timeline 绑定导出链路，不宣布 P2.5 完成。
+
+- 审计产物见 [SelfHostedEditor P2.5 Timeline Export Audit](self-hosted-editor-p2-5-timeline-export-audit.md)。
+- 当前可执行导出入口是 `src/ExternalSupport/UnityPlugin/Inscape.UnitySample.Cli` 的 `export-unity-sample-*`，不是历史 `export-bird-*`；这保持 adapter 位于 ExternalSupport，不进入 Internal CLI。
+- `samples/court-loop.inscape` 的 `@timeline.talking.exit court_intro` 已导出为 1 个 hostHook，绑定真实 Bird Timeline GUID `b07842ff2fa161e459e024dc1a9fae7f` 与 `Assets/Resources_Runtime/Timeline/SO_Timeline_0001.asset`。
+- 为 Round 4 unsupported phase 验证，ignored `artifacts/bird-trial/timeline-phase-fixture/phase-fixture.inscape` 生成 4 个 hook：`node.enter`、`talking.exit`、`talking.enter`、`node.exit`；兼容 manifest 位于 `artifacts/bird-trial/phase-export/bird-manifest-p2-5-phases.json`。
+- 下一轮进入 P2.5 Round 4：临时复制 importer 到 Bird，执行 Unity batchmode Dry Run，跑完清理临时 importer / `.meta` 并核对 Bird git status。
 
 ### 2026-06-17 SelfHostedEditor P2.5 Round 2 Bird 提交策略快照
 
