@@ -20,6 +20,7 @@
     "check:workspace-fs": "node DevScripts/SelfHostedEditorWorkspaceFileSystemContractCheck.js",
     "check:electron-boundary": "node DevScripts/SelfHostedEditorElectronBoundaryContractCheck.js",
     "check:electron-ipc": "node DevScripts/SelfHostedEditorElectronIpcContractCheck.js",
+    "check:electron-language-session": "node DevScripts/SelfHostedEditorElectronLanguageSessionContractCheck.js",
     "check:electron-lifecycle": "node DevScripts/SelfHostedEditorElectronLifecycleContractCheck.js",
     "check:electron-workspace": "node DevScripts/SelfHostedEditorElectronWorkspaceContractCheck.js",
     "check:electron-shell": "node DevScripts/SelfHostedEditorElectronShellContractCheck.js",

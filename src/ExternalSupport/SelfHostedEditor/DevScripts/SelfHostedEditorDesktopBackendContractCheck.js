@@ -527,6 +527,38 @@ assertEqual(
   "diagnostics,completions,definition,references,hover,document-symbols",
   "desktop project session language endpoints"
 );
+const longLivedLanguageSession = EditorBackendDesktopSessionModel.buildProjectSession({
+  documents: [
+    documentBuffer,
+  ],
+  languageSession: {
+    documentRevisionLag: 2,
+    health: "ready",
+    kind: "long-lived",
+    lastError: {
+      code: "language-server-request-timeout",
+      message: "LanguageServer request timed out.",
+    },
+    supportedEndpoints: ["diagnostics", "hover", "document-symbols"],
+  },
+  sessionId: "desktop-long-lived-session",
+  workspace: {
+    activeRelativePath: "story/opening.inscape",
+    revision: 6,
+    workspaceName: "Court Case",
+    workspaceRoot: "C:\\Case Files\\Court Loop",
+  },
+});
+assertEqual(longLivedLanguageSession.languageSession.kind, "long-lived", "desktop language session supports long-lived status");
+assertEqual(longLivedLanguageSession.languageSession.health, "ready", "desktop language session long-lived health");
+assertEqual(longLivedLanguageSession.languageSession.documentRevisionLag, 2, "desktop language session revision lag");
+assertEqual(longLivedLanguageSession.languageSession.fallbackKind, "process-per-request", "desktop language session fallback kind");
+assertEqual(longLivedLanguageSession.languageSession.lastError.code, "language-server-request-timeout", "desktop language session last error code");
+assertEqual(
+  longLivedLanguageSession.languageSession.supportedEndpoints.join(","),
+  "diagnostics,hover,document-symbols",
+  "desktop language session long-lived endpoint summary"
+);
 assertEqual(session.runtimeSession.kind, "not-started", "desktop runtime session default kind");
 assertEqual(session.lineIdentitySession.kind, "not-started", "desktop line identity session default kind");
 assertEqual(session.localizationSession.kind, "not-started", "desktop localization session default kind");

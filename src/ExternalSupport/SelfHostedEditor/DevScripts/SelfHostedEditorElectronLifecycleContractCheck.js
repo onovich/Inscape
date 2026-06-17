@@ -51,6 +51,12 @@ try {
     },
   });
   const sessionStore = lifecycle.sessionStore;
+  const disposeCalls = [];
+  const originalDispose = sessionStore.dispose.bind(sessionStore);
+  sessionStore.dispose = async (payload = {}) => {
+    disposeCalls.push(payload);
+    await originalDispose(payload);
+  };
 
   const timerStatus = lifecycle.startAutosaveTimer();
   assertEqual(timerStatus.format, SelfHostedEditorElectronLifecycleStatusFormat, "lifecycle status format");
@@ -122,6 +128,7 @@ try {
   assertEqual(closeEvent.prevented, true, "window close prevents default before flush");
   assertEqual(closeFlush.format, SelfHostedEditorElectronFlushResultFormat, "window close flush result format");
   assertEqual(closeFlush.trigger, "close-window", "window close flush trigger");
+  assertEqual(disposeCalls[0].trigger, "close-window", "window close disposes backend sessions");
   assertEqual(fakeWindow.closeCount, 1, "window closes after successful flush");
   assertEqual(
     await fs.readFile(path.join(workspaceA, "story", "opening.inscape"), "utf8"),
@@ -173,6 +180,7 @@ try {
   assertEqual(appEvent.prevented, true, "app exit prevents default before flush");
   assertEqual(appExitFlush.format, SelfHostedEditorElectronFlushResultFormat, "app-exit flush result format");
   assertEqual(appExitFlush.trigger, "app-exit", "app-exit flush trigger");
+  assertEqual(disposeCalls[1].trigger, "app-exit", "app exit disposes backend sessions");
   assertEqual(fakeApp.quitCount, 1, "app quit resumes after successful flush");
   assertEqual(clearedIntervals.length, 1, "app exit stops autosave timer");
   assertEqual(

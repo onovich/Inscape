@@ -203,7 +203,10 @@ function resolveFileInsideRoot(root, relativePath) {
 
 export function registerSelfHostedEditorElectronApp(electronApp = app, options = {}) {
   registerSelfHostedEditorProtocolScheme();
-  const workspaceLifecycle = options.workspaceLifecycle || createSelfHostedEditorElectronWorkspaceLifecycle(options);
+  const workspaceLifecycle = options.workspaceLifecycle || createSelfHostedEditorElectronWorkspaceLifecycle({
+    ...options,
+    enableLongLivedLanguageSession: options.enableLongLivedLanguageSession ?? true,
+  });
   registerSelfHostedEditorBackendIpc(undefined, {
     ...options,
     sessionStore: options.sessionStore || workspaceLifecycle.sessionStore,

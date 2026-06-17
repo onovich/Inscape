@@ -101,6 +101,9 @@ export class SelfHostedEditorElectronWorkspaceLifecycle {
     event.preventDefault?.();
     const flushResult = await this.flushForTrigger("close-window");
     if (canContinueAfterLifecycleFlush(flushResult) && browserWindow?.close) {
+      await this.#sessionStore.dispose?.({
+        trigger: "close-window",
+      });
       this.#windowCloseContinuations.add(browserWindow);
       browserWindow.close();
     }
@@ -117,6 +120,9 @@ export class SelfHostedEditorElectronWorkspaceLifecycle {
     this.stopAutosaveTimer();
     const flushResult = await this.flushForTrigger("app-exit");
     if (canContinueAfterLifecycleFlush(flushResult) && electronApp?.quit) {
+      await this.#sessionStore.dispose?.({
+        trigger: "app-exit",
+      });
       this.#appQuitContinuation = true;
       electronApp.quit();
     }

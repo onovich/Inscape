@@ -107,17 +107,18 @@ SelfHostedEditor desktop backend v0
 
 目标：在 desktop backend v0 基础稳定后，把 LanguageServer 从 request-driven / process-per-request 迁到 backend 管理的 workspace-scoped long-lived session。用户已确认这是 v0 后关键下一步，不应降级为普通性能优化。
 
-- [ ] backend 打开 workspace 时启动或复用对应 LanguageServer session。
-- [ ] `DocumentBufferStore` revision 更新后同步文档变化到 LanguageServer。
-- [ ] diagnostics / completions / definition / references / hover / documentSymbols 从同一份 workspace state 读取。
-- [ ] LanguageServer 崩溃、超时或协议错误时，backend 显示健康状态、last error summary、document revision lag，并支持重启或降级到 `process-per-request`。
-- [ ] 切换 workspace / 关闭窗口时，backend 停止 LanguageServer 并清理 session。
+- [x] backend 打开 workspace 时启动或复用对应 LanguageServer session。2026-06-17 第一刀：真实 Electron app 默认启用 main-process workspace-scoped `Inscape.LanguageServer --stdio`，测试/packaged smoke 仍可用 fake handler 覆盖。
+- [x] `DocumentBufferStore` revision 更新后同步文档变化到 LanguageServer。2026-06-17 第一刀：backend 记录 revision lag，并在每次 authoring 请求前把当前 active buffer 作为 `overrideSourcePath` / `overrideContentPath` 临时同步给长驻 stdio session。
+- [x] diagnostics / completions / definition / references / hover / documentSymbols 从同一份 workspace state 读取。2026-06-17 第一刀：Electron dispatcher 六个 language command 都通过当前 `DocumentBufferStore` snapshot 进入同一个 long-lived bridge。
+- [ ] LanguageServer 崩溃、超时或协议错误时，backend 显示健康状态、last error summary、document revision lag，并支持重启或降级到 `process-per-request`。2026-06-17 已有 `health` / `lastError` / `documentRevisionLag` 摘要；自动 restart 与降级策略待下一轮补齐。
+- [x] 切换 workspace / 关闭窗口时，backend 停止 LanguageServer 并清理 session。2026-06-17 第一刀：workspace switch 会 dispose 旧 session 并启动新 session，close-window / app-exit 成功 flush 后调用 session dispose hook。
 - [ ] 保持与 VSCode authoring endpoint 的 semantic parity：SelfHostedEditor 与 VSCode 都消费同一组 shared payload shape。
 
 验收入口应至少覆盖：
 
 ```powershell
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:language-session
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:electron-language-session
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:references-http
 npm --prefix src\ExternalSupport\VSCode run check:semantic-parity

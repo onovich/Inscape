@@ -260,6 +260,18 @@ function buildWorkspaceFileBoundaryDecision({
 }
 
 function buildLanguageSession(languageSession) {
+  if (languageSession?.kind === "long-lived") {
+    return {
+      documentRevisionLag: normalizeNonNegativeInteger(languageSession.documentRevisionLag),
+      fallbackKind: String(languageSession.fallbackKind || "process-per-request"),
+      health: normalizeLanguageSessionHealth(languageSession.health),
+      kind: "long-lived",
+      lastError: normalizeErrorSummary(languageSession.lastError),
+      staleReason: String(languageSession.staleReason || ""),
+      supportedEndpoints: normalizeEndpointList(languageSession.supportedEndpoints, defaultLanguageEndpoints),
+    };
+  }
+
   if (languageSession?.kind === "stdio-spike") {
     return {
       fallbackKind: "process-per-request",
@@ -292,6 +304,24 @@ function normalizeEndpointList(endpoints, fallback) {
     .filter((endpoint) => defaultLanguageEndpoints.includes(endpoint));
   const unique = [...new Set(normalized)];
   return unique.length > 0 ? unique : [...fallback];
+}
+
+function normalizeLanguageSessionHealth(health) {
+  const normalized = String(health || "not-started");
+  if (["not-started", "starting", "ready", "error", "unavailable", "disposed"].includes(normalized)) {
+    return normalized;
+  }
+
+  return "error";
+}
+
+function normalizeNonNegativeInteger(value) {
+  const numericValue = Number(value || 0);
+  if (!Number.isFinite(numericValue) || numericValue < 0) {
+    return 0;
+  }
+
+  return Math.floor(numericValue);
 }
 
 function normalizeErrorSummary(error) {

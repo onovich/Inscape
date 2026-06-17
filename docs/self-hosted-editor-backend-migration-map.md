@@ -104,6 +104,8 @@
 
 2026-06-17 P1 post-40 npm audit 补充：SelfHostedEditor 依赖安全轮次保留 `monaco-editor@0.55.1`，通过 npm `overrides` 将其间接 `dompurify` 从 `3.2.7` 提升到 `3.4.10`。这只影响包解析和 lockfile，不改变 EditorBackend、preload、renderer 或 Internal shared contract；`npm audit` 已报告 0 vulnerabilities。
 
+2026-06-17 P1.5 long-lived LanguageServer 第一刀补充：真实 Electron app 默认由 main process 创建 workspace-scoped `Inscape.LanguageServer --stdio` session。`ElectronWorkspaceSessionStore` 成功打开 workspace 后启动或复用 session，六个 language-session command 继续使用 `EditorBackendWorkspaceSnapshotModel` / `EditorBackendLanguageSessionRequestModel` 的 shared payload shape，并在请求前把当前 active backend buffer 写入临时 override 文件；ProjectSession status 报告 `kind: "long-lived"`、`health`、`lastError`、`documentRevisionLag`。workspace switch 会 dispose 旧进程并启动新进程，close-window / app-exit 成功 flush 后调用 session dispose hook。packaged app 仍未内置 LanguageServer artifact，崩溃后的自动 restart / `process-per-request` 降级仍待后续迁移。
+
 ## 状态分类
 
 | 分类 | 当前例子 | 未来归属 | 规则 |
@@ -124,12 +126,12 @@
 | `/api/document-buffer-update-draft` | 对请求内 `store` 应用 text update 与 `baseRevision` guard | `DocumentBufferStore.updateDraft` | Backend project session | P1 Round 26 saved revision baseline | 真实实现应更新 backend buffer truth，旧 debounce 不能覆盖较新 revision，edit 不能覆盖 `lastSavedRevision` baseline。 |
 | `/api/document-buffer-save` | 对请求内 `store` 构造 text-free save result，不写盘 | `DocumentBufferStore.saveDocument` | Backend project session | P1 Round 26 saved revision baseline | 真实实现必须从 ProjectSession 取 workspace root 和 buffer text，走 backend 文件边界写盘；成功刷新 `lastSavedRevision`，磁盘 hash 冲突返回 save error。 |
 | `/api/document-buffer-save-all` | 对请求内 `store` 构造 text-free save-all result，不写盘 | `DocumentBufferStore.saveAll` | Backend project session | P1 Round 26 saved revision baseline | 真实实现必须只写回最新 dirty revision，并保持 save status / error / disk conflict 可见。 |
-| `/api/diagnostics` | 用当前 script/workspace 调 LanguageServer diagnostics | `LanguageSessionClient.diagnose` | Backend project session | A3 language-session request model | 走常驻 LanguageServer；保持 diagnostics payload shape。 |
-| `/api/hover` | 用 hover kind/name 调 LanguageServer hover | `LanguageSessionClient.hover` | Backend project session | A3 language-session request model | 只传定位/target，不在前端重算 hover 文案。 |
-| `/api/definition` | 用 definitionName 调 LanguageServer definition | `LanguageSessionClient.definition` | Backend project session | A3 language-session request model | sourcePath 继续 workspace-relative。 |
-| `/api/references` | 用 referenceName 调 LanguageServer references | `LanguageSessionClient.references` | Backend project session | A3 language-session request model | 保留 current draft 参与和跨文件结果。 |
-| `/api/completions` | 用 current draft 调 LanguageServer completions | `LanguageSessionClient.completions` | Backend project session | A3 language-session request model | 常驻会话可增量优化，但 payload 不改名。 |
-| `/api/document-symbols` | 用 current draft 调 LanguageServer document symbols | `LanguageSessionClient.documentSymbols` | Backend project session | A3 language-session request model | Outline 只消费 shared symbols。 |
+| `/api/diagnostics` | 用当前 script/workspace 调 LanguageServer diagnostics | `LanguageSessionClient.diagnose` | Backend project session | P1.5 long-lived first cut | Electron 走 workspace-scoped stdio session + current-buffer override；dev-host HTTP 保持原 route / payload shape。 |
+| `/api/hover` | 用 hover kind/name 调 LanguageServer hover | `LanguageSessionClient.hover` | Backend project session | P1.5 long-lived first cut | Electron 走 workspace-scoped stdio session + current-buffer override；只传定位/target，不在前端重算 hover 文案。 |
+| `/api/definition` | 用 definitionName 调 LanguageServer definition | `LanguageSessionClient.definition` | Backend project session | P1.5 long-lived first cut | Electron 走 workspace-scoped stdio session + current-buffer override；sourcePath 继续 workspace-relative。 |
+| `/api/references` | 用 referenceName 调 LanguageServer references | `LanguageSessionClient.references` | Backend project session | P1.5 long-lived first cut | Electron 走 workspace-scoped stdio session + current-buffer override；保留 current draft 参与和跨文件结果。 |
+| `/api/completions` | 用 current draft 调 LanguageServer completions | `LanguageSessionClient.completions` | Backend project session | P1.5 long-lived first cut | Electron 走 workspace-scoped stdio session + current-buffer override；payload 不改名。 |
+| `/api/document-symbols` | 用 current draft 调 LanguageServer document symbols | `LanguageSessionClient.documentSymbols` | Backend project session | P1.5 long-lived first cut | Electron 走 workspace-scoped stdio session + 临时 active file，并把 symbol sourcePath 映射回 workspace path；Outline 只消费 shared symbols。 |
 | `/api/host-schema-capabilities` | 调共享 HostSchema capability 流程 | `HostCapabilityClient.schemaCapabilities` | Backend project session / cache | A1 backend client adapter | 可缓存 catalog，但 schema 真相仍来自 Tooling / LanguageServer。 |
 | `/api/host-binding-capabilities` | 调共享 HostBinding capability 流程 | `HostCapabilityClient.bindingCapabilities` | Backend project session / cache | A1 backend client adapter | 不解析 Host Bridge JSON 到前端私有模型。 |
 | `/api/story-graph` | 调 CLI `compile-project` 并 compact graph payload | `StoryGraphClient.compileProjectGraph` | Backend project session | A1 backend client adapter | Compiler graph 仍是图真相；UI graph layout 另做 view state。 |

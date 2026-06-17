@@ -471,10 +471,13 @@ npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
 
 ```powershell
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:language-session
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:electron-language-session
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:references-http
 npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
 ```
+
+2026-06-17 第一刀状态：真实 Electron app 已默认启用 main-process workspace-scoped `Inscape.LanguageServer --stdio` session；open workspace 启动 / 复用、六个 authoring endpoint 的 current-buffer override、ProjectSession `long-lived` status、workspace switch dispose / restart、close-window / app-exit dispose hook 已有 contract。packaged app 尚未内置 LanguageServer artifact，崩溃后自动 restart 与 `process-per-request` 降级仍待后续补齐。
 
 新增 smoke 应覆盖：
 

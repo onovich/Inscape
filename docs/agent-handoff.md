@@ -544,6 +544,16 @@ P1 40 轮计划完成后，继续补上了真实 Electron preload -> main 的固
 - `src/ExternalSupport/SelfHostedEditor/package.json` 新增 npm `overrides`，将间接 `dompurify` 解析到 `3.4.10`；`monaco-editor` 保持 `0.55.1`。
 - `npm audit` 已清零；后续 GUI / packaged smoke 继续作为 Monaco/Electron 实际可用性验证。下一步可开始 P1.5 workspace-scoped long-lived LanguageServer，仍需保持 shared payload shape 与 VSCode semantic parity。
 
+### 2026-06-17 SelfHostedEditor P1.5 long-lived LanguageServer 第一刀
+
+本轮开始 P1.5：真实 Electron app 默认由 main process 管理 workspace-scoped `Inscape.LanguageServer --stdio` session；测试和 packaged GUI smoke 仍可用 `languageSessionHandlers` 注入 fake handler，避免把 packaged artifact 问题混入当前 contract。
+
+- 新增 `Desktop/ElectronLanguageServerSessionBridge.js`，负责启动/复用/停止 stdio LanguageServer、LSP framing、临时 active-buffer override 文件、health / lastError / documentRevisionLag 摘要。它只转发 shared LanguageServer request，不复制 Compiler / Tooling / Runtime 语义。
+- `ElectronWorkspaceSessionStore` 在 workspace 成功打开后 ensure long-lived session；dirty buffer revision 会更新 revision lag，六个 language command 都用当前 `DocumentBufferStore` snapshot 进入同一个 bridge。diagnostics / completions / definition / references / hover 通过 `overrideSourcePath` / `overrideContentPath` 读当前 active buffer；documentSymbols 通过临时 active file 调 stdio 并把 symbol sourcePath 映射回原 workspace path。
+- workspace switch 会 dispose 旧 session 并启动新 session；close-window / app-exit 成功 flush 后 lifecycle 调用 `sessionStore.dispose()`。ProjectSession status 现在能表达 `languageSession.kind: "long-lived"`、`health`、`lastError` 和 `documentRevisionLag`，不暴露正文。
+- 新增 `check:electron-language-session`，真实拉起 `Inscape.LanguageServer --stdio`，覆盖 workspace open 启动、dirty buffer override、六类 authoring endpoint、同进程复用、revision lag 清零、workspace switch 替换进程和 dispose 停进程。
+- 已知剩余风险：还没有把 LanguageServer build artifact 打进 Windows packaged app；崩溃/超时后的自动 restart 与 `process-per-request` 降级策略仍待下一轮补齐。
+
 ### 2026-06-17 SelfHostedEditor P1 post-40 assets import IO 快照
 
 本轮新增 desktop-only `workspace.import-assets` command，把 Round 33 的 asset import plan 推进到 Electron main process 真实 IO。

@@ -15,6 +15,10 @@ import {
 } from "../Scripts/Backend/Models/EditorBackendWorkspaceBackupPlanModel.js";
 import { EditorBackendWorkspacePathModel } from "../Scripts/Backend/Models/EditorBackendWorkspacePathModel.js";
 import { EditorBackendWorkspaceSnapshotModel } from "../Scripts/Backend/Models/EditorBackendWorkspaceSnapshotModel.js";
+import {
+  createSelfHostedEditorElectronLanguageServerSessionBridge,
+  SelfHostedEditorElectronLanguageSessionEndpoints,
+} from "./ElectronLanguageServerSessionBridge.js";
 
 export const SelfHostedEditorElectronWorkspaceOpenResultFormat = "inscape.self-hosted-editor.electron-workspace-open-result";
 export const SelfHostedEditorElectronWorkspaceReadResultFormat = "inscape.self-hosted-editor.electron-workspace-read-result";
@@ -38,6 +42,7 @@ export class SelfHostedEditorElectronWorkspaceSessionStore {
   #activeWorkspace = null;
   #fs;
   #lastDraftUpdatedAtMs = 0;
+  #languageServerSessionBridge;
   #languageSessionHandlers;
   #maxDocuments;
   #now;
@@ -48,6 +53,11 @@ export class SelfHostedEditorElectronWorkspaceSessionStore {
   constructor(options = {}) {
     this.#fs = options.fsImpl || fs.promises;
     this.#languageSessionHandlers = options.languageSessionHandlers || {};
+    this.#languageServerSessionBridge = options.languageServerSessionBridge || (
+      !options.languageSessionHandlers && options.enableLongLivedLanguageSession
+        ? createSelfHostedEditorElectronLanguageServerSessionBridge(options.languageServerSessionOptions)
+        : null
+    );
     this.#now = typeof options.now === "function" ? options.now : Date.now;
     this.#maxDocuments = normalizePositiveInteger(options.maxDocuments, 500);
     this.#selectAssetImportSources = options.selectAssetImportSources || buildStaticAssetImportSelector(options.assetImportSources);
@@ -57,6 +67,7 @@ export class SelfHostedEditorElectronWorkspaceSessionStore {
 
   async openFolder(payload = {}) {
     let switchFlush = null;
+    const previousWorkspaceRoot = this.#activeWorkspace?.workspaceRoot || "";
     if (this.#activeWorkspace) {
       switchFlush = await this.flushDirtyDocuments({
         ...payload,
@@ -131,6 +142,11 @@ export class SelfHostedEditorElectronWorkspaceSessionStore {
       fsImpl: this.#fs,
       workspaceRoot,
     });
+    if (previousWorkspaceRoot && normalizeWorkspaceRoot(previousWorkspaceRoot) !== workspaceRoot) {
+      await this.#disposeLanguageServerSession({
+        reason: "workspace-switched",
+      });
+    }
     this.#activeWorkspace = {
       documentStore,
       recoveryStatus,
@@ -138,6 +154,7 @@ export class SelfHostedEditorElectronWorkspaceSessionStore {
       workspaceRoot,
     };
     this.#lastDraftUpdatedAtMs = 0;
+    await this.#ensureLanguageServerSession();
 
     return this.#buildOpenResult({
       documentStore,
@@ -237,6 +254,7 @@ export class SelfHostedEditorElectronWorkspaceSessionStore {
         ...this.#activeWorkspace,
         documentStore: result.store,
       };
+      this.#noteLanguageSessionRevision(result.store.revision);
       this.#lastDraftUpdatedAtMs = this.#now();
       recoveryWrite = await this.#writeRecoverySnapshot(result.document);
       this.#activeWorkspace = {
@@ -337,6 +355,7 @@ export class SelfHostedEditorElectronWorkspaceSessionStore {
       ...this.#activeWorkspace,
       documentStore: nextStore,
     };
+    this.#noteLanguageSessionRevision(nextStore.revision);
     const recoveryCleanup = await this.#cleanupRecoverySnapshot(relativePath);
     this.#activeWorkspace = {
       ...this.#activeWorkspace,
@@ -474,6 +493,12 @@ export class SelfHostedEditorElectronWorkspaceSessionStore {
     });
   }
 
+  async dispose(payload = {}) {
+    await this.#disposeLanguageServerSession({
+      reason: payload.reason || payload.trigger || "dispose",
+    });
+  }
+
   async restoreRecoverySnapshot(payload = {}) {
     if (!this.#activeWorkspace) {
       return buildRecoveryActionResult({
@@ -527,6 +552,7 @@ export class SelfHostedEditorElectronWorkspaceSessionStore {
       ...this.#activeWorkspace,
       documentStore: nextStore,
     };
+    this.#noteLanguageSessionRevision(nextStore.revision);
     const recoveryCleanup = await this.#cleanupRecoverySnapshot(relativePath);
     const recoveryStatus = await this.#refreshRecoveryStatus();
 
@@ -720,6 +746,7 @@ export class SelfHostedEditorElectronWorkspaceSessionStore {
     const { documentStore, workspaceFolder, workspaceRoot } = this.#activeWorkspace;
     return EditorBackendDesktopSessionModel.buildProjectSession({
       documents: documentStore.documents,
+      languageSession: this.#buildLanguageSessionStatus(),
       recoveryStatus: this.#activeWorkspace.recoveryStatus,
       sessionId: documentStore.sessionId || this.#sessionId,
       workspace: {
@@ -735,7 +762,13 @@ export class SelfHostedEditorElectronWorkspaceSessionStore {
     const requestPayload = this.buildLanguageSessionRequest(kind, payload);
     const handler = this.#languageSessionHandlers[kind];
     if (typeof handler !== "function") {
-      throw new Error(`SelfHostedEditor Electron language session handler is not configured: ${kind}`);
+      if (!this.#languageServerSessionBridge) {
+        throw new Error(`SelfHostedEditor Electron language session handler is not configured: ${kind}`);
+      }
+
+      return await this.#languageServerSessionBridge.run(kind, requestPayload, {
+        workspaceRoot: this.#activeWorkspace.workspaceRoot,
+      });
     }
 
     return await handler(requestPayload);
@@ -1117,6 +1150,47 @@ export class SelfHostedEditorElectronWorkspaceSessionStore {
       recoveryStatus,
     };
     return recoveryStatus;
+  }
+
+  #buildLanguageSessionStatus() {
+    if (this.#languageServerSessionBridge) {
+      return this.#languageServerSessionBridge.getStatus({
+        latestDocumentRevision: this.#activeWorkspace?.documentStore?.revision || 0,
+      });
+    }
+
+    const handlerEndpoints = Object.keys(this.#languageSessionHandlers || {})
+      .filter((endpoint) => SelfHostedEditorElectronLanguageSessionEndpoints.includes(endpoint));
+    return {
+      kind: "process-per-request",
+      supportedEndpoints: handlerEndpoints.length > 0
+        ? handlerEndpoints
+        : [...SelfHostedEditorElectronLanguageSessionEndpoints],
+    };
+  }
+
+  async #disposeLanguageServerSession(payload = {}) {
+    if (!this.#languageServerSessionBridge) {
+      return;
+    }
+
+    await this.#languageServerSessionBridge.dispose({
+      reason: payload.reason || "dispose",
+    });
+  }
+
+  async #ensureLanguageServerSession() {
+    if (!this.#languageServerSessionBridge || !this.#activeWorkspace) {
+      return null;
+    }
+
+    return await this.#languageServerSessionBridge.ensureWorkspace(this.#activeWorkspace.workspaceRoot, {
+      documentRevision: this.#activeWorkspace.documentStore.revision,
+    });
+  }
+
+  #noteLanguageSessionRevision(revision) {
+    this.#languageServerSessionBridge?.noteDocumentRevision(revision);
   }
 
   #resolveDirtyIdleElapsedMs() {
