@@ -322,6 +322,8 @@ Narrator: Same line.
             try {
                 string nodeMapPath = Path.Combine(configDirectory, "inscape.node-map.json");
                 string previewPath = Path.Combine(configDirectory, "inscape.node-map-preview.json");
+                string previewResultPath = Path.Combine(configDirectory, "inscape.node-map-preview-result.json");
+                string applyResultPath = Path.Combine(configDirectory, "inscape.node-map-apply-result.json");
                 File.WriteAllText(Path.Combine(directory, "inscape.config.json"), """
 {
   "nodeMap": "config/inscape.node-map.json"
@@ -377,11 +379,22 @@ Narrator: Same line.
                     "node_OLD",
                     "--dry-run",
                     previewPath,
+                    "--result",
+                    previewResultPath,
                 });
 
                 AssertEqual(Path.GetFullPath(previewPath), dryRunOutput.Trim(), "Dry run should print preview path.");
                 AssertTrue(File.Exists(previewPath), "Dry run preview should be written.");
+                AssertTrue(File.Exists(previewResultPath), "Dry run result should be written.");
                 AssertEqual("node_CURRENT", ReadNodeMapNodeId(nodeMapPath, "courtroom.intro"), "Dry run should not mutate original node map.");
+                using (JsonDocument previewResult = JsonDocument.Parse(File.ReadAllText(previewResultPath, Encoding.UTF8))) {
+                    JsonElement root = previewResult.RootElement;
+                    AssertEqual("inscape.node-map-candidate-apply-result", root.GetProperty("format").GetString(), "Dry run result format");
+                    AssertTrue(root.GetProperty("dryRun").GetBoolean(), "Dry run result should keep dry-run state.");
+                    AssertFalse(root.GetProperty("writesNodeMap").GetBoolean(), "Dry run result should not claim sidecar writes.");
+                    AssertEqual("node_CURRENT", root.GetProperty("changePreview").GetProperty("removedStableId").GetString(), "Dry run result should preview removed stable id.");
+                    AssertEqual("not-required-dry-run", root.GetProperty("backup").GetProperty("status").GetString(), "Dry run result backup status.");
+                }
 
                 string applyOutput = RunCliForOutput(new[] {
                     "apply-node-map-candidate-project",
@@ -392,11 +405,22 @@ Narrator: Same line.
                     "courtroom.intro",
                     "--candidate-id",
                     "node_OLD",
+                    "--result",
+                    applyResultPath,
                 });
 
                 AssertEqual(Path.GetFullPath(nodeMapPath), applyOutput.Trim(), "Apply should print node map path.");
+                AssertTrue(File.Exists(applyResultPath), "Apply result should be written.");
                 AssertEqual("node_OLD", ReadNodeMapNodeId(nodeMapPath, "courtroom.intro"), "Apply should reuse candidate stable id.");
                 AssertFalse(NodeMapContainsTitle(nodeMapPath, "intro"), "Apply should remove candidate duplicate entry.");
+                using (JsonDocument applyResult = JsonDocument.Parse(File.ReadAllText(applyResultPath, Encoding.UTF8))) {
+                    JsonElement root = applyResult.RootElement;
+                    AssertFalse(root.GetProperty("dryRun").GetBoolean(), "Apply result should keep real apply state.");
+                    AssertTrue(root.GetProperty("writesNodeMap").GetBoolean(), "Apply result should state that it writes the node map sidecar.");
+                    AssertEqual("required-before-write-back", root.GetProperty("backup").GetProperty("status").GetString(), "Apply result backup status.");
+                    AssertEqual("node-map-sidecar", root.GetProperty("backup").GetProperty("targetKind").GetString(), "Apply result backup target kind.");
+                    AssertTrue(root.GetProperty("recoveryHint").GetString()?.Contains(".inscape-workspace/backups", StringComparison.Ordinal) == true, "Apply result should include backup recovery hint.");
+                }
 
                 using JsonDocument document = JsonDocument.Parse(File.ReadAllText(nodeMapPath, Encoding.UTF8));
                 JsonElement node = FindNodeMapJsonNode(document.RootElement, "courtroom.intro");

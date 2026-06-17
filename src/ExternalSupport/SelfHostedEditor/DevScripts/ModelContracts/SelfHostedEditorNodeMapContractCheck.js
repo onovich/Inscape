@@ -20,6 +20,25 @@ const nodeMapReviewController = new StoryNodeMapReviewController({
               {
                 candidates: [
                   {
+                    applyPreview: {
+                      appliedStableId: "node_OLD",
+                      candidateStableId: "node_OLD",
+                      candidateTitle: "Opening",
+                      currentStableId: "node_NEW",
+                      currentTitle: "Court Opening",
+                      operation: "reuse-candidate-stable-id",
+                      previousTitlesAfterApply: ["Opening"],
+                      removedStableId: "node_NEW",
+                      removesCandidateEntry: true,
+                      resultTitle: "Court Opening",
+                    },
+                    evidence: [
+                      {
+                        kind: "source-path",
+                        label: "Source path",
+                        value: "story.inscape",
+                      },
+                    ],
                     score: 23,
                     sourceLine: 4,
                     sourcePath: "story.inscape",
@@ -56,7 +75,26 @@ const nodeMapReviewController = new StoryNodeMapReviewController({
       lastDryRun = dryRun;
       return {
         apply: {
+          backup: {
+            required: !dryRun,
+            sourcePath: nodeMapPath,
+            status: dryRun ? "not-required-dry-run" : "required-before-write-back",
+            suggestedBackupDirectory: ".inscape-workspace/backups",
+            targetKind: "node-map-sidecar",
+          },
           candidateStableId: candidate.stableId,
+          changePreview: {
+            appliedStableId: candidate.stableId,
+            candidateStableId: candidate.stableId,
+            candidateTitle: candidate.title,
+            currentStableId: item.stableId,
+            currentTitle: item.title,
+            operation: "reuse-candidate-stable-id",
+            previousTitlesAfterApply: [candidate.title],
+            removedStableId: item.stableId,
+            removesCandidateEntry: true,
+            resultTitle: item.title,
+          },
           dryRun,
           itemStableId: item.stableId,
           nodeMap: {
@@ -70,6 +108,12 @@ const nodeMapReviewController = new StoryNodeMapReviewController({
           },
           nodeMapPath,
           nodeMapText: "{\n  \"format\": \"inscape.node-map\",\n  \"applied\": true\n}",
+          recoveryHint: dryRun ? "Dry-run writes a preview node map only." : "Before replacing the node map sidecar, keep a workspace write-back backup under .inscape-workspace/backups.",
+          result: {
+            dryRun,
+            format: "inscape.node-map-candidate-apply-result",
+            writesNodeMap: !dryRun,
+          },
         },
         provider: "node-map-apply",
       };
@@ -86,6 +130,7 @@ assertIncludesText(getTextContent(document.body), "Stable Node Map");
 assertIncludesText(getTextContent(document.body), "Court Opening");
 assertIncludesText(getTextContent(document.body), "manual-review");
 assertIncludesText(getTextContent(document.body), "Opening · score 23");
+assertIncludesText(getTextContent(document.body), "node_NEW -> node_OLD");
 assertIncludesText(getTextContent(document.body), "Preview Apply");
 assertIncludesText(getTextContent(document.body), "Apply");
 const nodeMapReviewItemButton = findElementByClass(document.body, "node-map-review-item-main");
@@ -95,11 +140,11 @@ await findElementByClass(document.body, "node-map-review-candidate-preview")?.cl
 assertEqual(lastDryRun, true, "stable node map preview action should request dry-run apply");
 await Promise.resolve();
 await Promise.resolve();
-assertIncludesText(getTextContent(document.body), "Dry-run ready for node_OLD");
+assertIncludesText(getTextContent(document.body), "Dry-run ready: node_NEW -> node_OLD");
 await findElementByClass(document.body, "node-map-review-candidate-apply")?.click();
 assertEqual(lastDryRun, false, "stable node map apply action should request real apply");
 await Promise.resolve();
 await Promise.resolve();
 assertEqual(appliedNodeMapPath, "inscape.node-map.json", "stable node map apply should preserve the review node map path");
 assertIncludesText(nodeMapReviewController.currentReviewPayload.nodeMapText, "\"applied\": true", "stable node map apply should update the downloadable node map text");
-assertIncludesText(getTextContent(document.body), "Applied node_OLD to downloadable node map");
+assertIncludesText(getTextContent(document.body), "Applied node_NEW -> node_OLD to downloadable node map; backup required-before-write-back");

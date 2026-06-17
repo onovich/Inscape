@@ -125,9 +125,12 @@ export function compactStoryNodeMapReviewPayload({ nodeMap, nodeMapPath, nodeMap
   };
 }
 
-export function compactStoryNodeMapApplyPayload({ candidateStableId, dryRun, itemStableId, nodeMap, nodeMapPath, nodeMapText, tempRoot }) {
+export function compactStoryNodeMapApplyPayload({ candidateStableId, dryRun, itemStableId, nodeMap, nodeMapPath, nodeMapText, result, tempRoot }) {
+  const compactResult = compactStoryNodeMapApplyResult(result, tempRoot);
   return {
+    backup: compactResult?.backup || null,
     candidateStableId,
+    changePreview: compactResult?.changePreview || null,
     dryRun: Boolean(dryRun),
     format: "inscape.self-hosted-editor.node-map-apply",
     formatVersion: 1,
@@ -135,6 +138,8 @@ export function compactStoryNodeMapApplyPayload({ candidateStableId, dryRun, ite
     nodeMap,
     nodeMapPath: relativizeSourcePath(nodeMapPath, tempRoot),
     nodeMapText,
+    recoveryHint: compactResult?.recoveryHint || "",
+    result: compactResult,
   };
 }
 
@@ -308,6 +313,8 @@ function compactStoryNodeMapReviewItems(items) {
 
   return items.map((item) => ({
     candidates: (Array.isArray(item?.candidates) ? item.candidates : []).map((candidate) => ({
+      applyPreview: compactStoryNodeMapApplyPreview(candidate?.applyPreview),
+      evidence: compactStoryNodeMapCandidateEvidence(candidate?.evidence),
       score: Number(candidate?.score || 0),
       sourceLine: Number(candidate?.sourceLine || 0),
       sourcePath: candidate?.sourcePath || "",
@@ -322,6 +329,74 @@ function compactStoryNodeMapReviewItems(items) {
     stableId: item?.stableId || "",
     status: item?.status || "",
     title: item?.title || "",
+  }));
+}
+
+function compactStoryNodeMapApplyResult(result, tempRoot) {
+  if (!result || typeof result !== "object") {
+    return null;
+  }
+
+  return {
+    appliedStableId: result.appliedStableId || "",
+    backup: compactStoryNodeMapApplyBackup(result.backup, tempRoot),
+    changePreview: compactStoryNodeMapApplyPreview(result.changePreview),
+    dryRun: Boolean(result.dryRun),
+    format: result.format || "inscape.node-map-candidate-apply-result",
+    formatVersion: Number(result.formatVersion || 0),
+    nodeMapPath: result.nodeMapPath ? relativizeSourcePath(result.nodeMapPath, tempRoot) : "",
+    outputPath: result.outputPath ? relativizeSourcePath(result.outputPath, tempRoot) : "",
+    recoveryHint: result.recoveryHint || "",
+    removedStableId: result.removedStableId || "",
+    title: result.title || "",
+    writesNodeMap: Boolean(result.writesNodeMap),
+  };
+}
+
+function compactStoryNodeMapApplyPreview(preview) {
+  if (!preview || typeof preview !== "object") {
+    return null;
+  }
+
+  return {
+    appliedStableId: preview.appliedStableId || "",
+    candidateStableId: preview.candidateStableId || "",
+    candidateTitle: preview.candidateTitle || "",
+    currentStableId: preview.currentStableId || "",
+    currentTitle: preview.currentTitle || "",
+    operation: preview.operation || "",
+    previousTitlesAfterApply: Array.isArray(preview.previousTitlesAfterApply)
+      ? preview.previousTitlesAfterApply.map((title) => String(title || ""))
+      : [],
+    removedStableId: preview.removedStableId || "",
+    removesCandidateEntry: Boolean(preview.removesCandidateEntry),
+    resultTitle: preview.resultTitle || "",
+  };
+}
+
+function compactStoryNodeMapApplyBackup(backup, tempRoot) {
+  if (!backup || typeof backup !== "object") {
+    return null;
+  }
+
+  return {
+    required: Boolean(backup.required),
+    sourcePath: backup.sourcePath ? relativizeSourcePath(backup.sourcePath, tempRoot) : "",
+    status: backup.status || "",
+    suggestedBackupDirectory: backup.suggestedBackupDirectory || "",
+    targetKind: backup.targetKind || "",
+  };
+}
+
+function compactStoryNodeMapCandidateEvidence(evidence) {
+  if (!Array.isArray(evidence)) {
+    return [];
+  }
+
+  return evidence.map((item) => ({
+    kind: item?.kind || "",
+    label: item?.label || "",
+    value: item?.value || "",
   }));
 }
 

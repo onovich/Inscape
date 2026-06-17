@@ -273,6 +273,9 @@ export async function getStoryNodeMapCandidateApplyForScriptText(scriptText, wor
     const outputPath = dryRun
       ? path.join(path.dirname(nodeMapPath), "inscape.node-map-candidate-preview.json")
       : nodeMapPath;
+    const resultPath = path.join(path.dirname(nodeMapPath), dryRun
+      ? "inscape.node-map-candidate-preview-result.json"
+      : "inscape.node-map-apply-result.json");
     const result = await runCliCommand([
       "apply-node-map-candidate-project",
       tempRoot,
@@ -284,10 +287,13 @@ export async function getStoryNodeMapCandidateApplyForScriptText(scriptText, wor
       String(candidate?.stableId || ""),
       "-o",
       nodeMapPath,
+      "--result",
+      resultPath,
       ...(dryRun ? ["--dry-run", outputPath] : []),
     ], "CLI stable node map candidate apply");
     const writtenPath = String(result.stdout || "").trim().split(/\r?\n/).filter(Boolean).at(-1) || outputPath;
     const nodeMapText = await fsp.readFile(writtenPath, "utf8");
+    const applyResultText = await fsp.readFile(resultPath, "utf8");
     return compactStoryNodeMapApplyPayload({
       candidateStableId: candidate?.stableId || "",
       dryRun,
@@ -295,6 +301,7 @@ export async function getStoryNodeMapCandidateApplyForScriptText(scriptText, wor
       nodeMap: parseJsonFileText(nodeMapText),
       nodeMapPath: writtenPath,
       nodeMapText,
+      result: parseJsonFileText(applyResultText),
       tempRoot,
     });
   });

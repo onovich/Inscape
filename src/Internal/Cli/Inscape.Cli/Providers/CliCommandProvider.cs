@@ -49,8 +49,8 @@
                                       "By default the command writes to inscape.node-map.json next to inscape.config.json, or to the workspace root when no config file exists."),
             new CliCommandModel("apply-node-map-candidate-project", "Project", true,
                                       "Apply a manual review candidate stable node id to the project node map.",
-                                      "inscape apply-node-map-candidate-project <root> --current-id node_NEW --current-title title --candidate-id node_OLD [--dry-run preview.json] [--config inscape.config.json] [-o inscape.node-map.json]",
-                                      "dotnet run --project src\\Internal\\Cli\\Inscape.Cli\\Inscape.Cli.csproj -- apply-node-map-candidate-project samples --current-id node_NEW --current-title courtroom.intro --candidate-id node_OLD --dry-run artifacts\\node-map-preview.json",
+                                      "inscape apply-node-map-candidate-project <root> --current-id node_NEW --current-title title --candidate-id node_OLD [--dry-run preview.json] [--result apply-result.json] [--config inscape.config.json] [-o inscape.node-map.json]",
+                                      "dotnet run --project src\\Internal\\Cli\\Inscape.Cli\\Inscape.Cli.csproj -- apply-node-map-candidate-project samples --current-id node_NEW --current-title courtroom.intro --candidate-id node_OLD --dry-run artifacts\\node-map-preview.json --result artifacts\\node-map-apply-result.json",
                                       "This command only applies an explicit review decision. It does not re-run rename matching or infer candidates."),
             new CliCommandModel("audit-l10n-alignment-project", "Project", true,
                                       "Audit project localization alignment against a previous CSV without updating translations.",
@@ -114,7 +114,7 @@
             Console.WriteLine("  inscape audit-query-interpolation-project <root> [--format json|text] [-o audit.json]");
             Console.WriteLine("  inscape inspect-host-schema-project <root> [-o capabilities.json]");
             Console.WriteLine("  inscape update-node-map-project <root> [--config inscape.config.json] [-o inscape.node-map.json]");
-            Console.WriteLine("  inscape apply-node-map-candidate-project <root> --current-id node_NEW --current-title title --candidate-id node_OLD [--dry-run preview.json] [--config inscape.config.json] [-o inscape.node-map.json]");
+            Console.WriteLine("  inscape apply-node-map-candidate-project <root> --current-id node_NEW --current-title title --candidate-id node_OLD [--dry-run preview.json] [--result apply-result.json] [--config inscape.config.json] [-o inscape.node-map.json]");
             Console.WriteLine("  inscape audit-l10n-alignment-project <root> --from old.csv [--format json|text] [--config inscape.config.json] [-o l10n-review.json]");
             Console.WriteLine("  inscape check <file.inscape>");
             Console.WriteLine("  inscape diagnose <file.inscape> [-o diagnostics.json]");

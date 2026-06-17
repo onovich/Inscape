@@ -135,6 +135,14 @@ export class StoryNodeMapReviewController {
         });
         candidateRow.append(candidateButton);
 
+        const applyPreview = this.formatApplyPreview(candidate.applyPreview);
+        if (applyPreview) {
+          const previewLabel = document.createElement("small");
+          previewLabel.className = "node-map-review-candidate-plan";
+          previewLabel.textContent = applyPreview;
+          candidateRow.append(previewLabel);
+        }
+
         if (item.kind === "manual-review") {
           const previewButton = document.createElement("button");
           previewButton.type = "button";
@@ -184,7 +192,7 @@ export class StoryNodeMapReviewController {
       return;
     }
 
-    this.setCandidateStatus(container, `Dry-run ready for ${snapshot.apply.candidateStableId || candidate.stableId || "candidate"}`);
+    this.setCandidateStatus(container, `Dry-run ready: ${this.formatApplyPreview(snapshot.apply.changePreview) || snapshot.apply.candidateStableId || candidate.stableId || "candidate"}`);
     this.downloadNodeMapText(
       snapshot.apply.nodeMapText,
       `preview-${this.fileNameFromPath(snapshot.apply.nodeMapPath || "inscape.node-map.json")}`
@@ -215,7 +223,8 @@ export class StoryNodeMapReviewController {
     reviewPayload.nodeMapPath = snapshot.apply.nodeMapPath || reviewPayload.nodeMapPath;
     reviewPayload.nodeMapText = snapshot.apply.nodeMapText || reviewPayload.nodeMapText;
     this.currentReviewPayload = reviewPayload;
-    this.setCandidateStatus(container, `Applied ${snapshot.apply.candidateStableId || candidate.stableId || "candidate"} to downloadable node map`);
+    const backupStatus = snapshot.apply.backup?.status ? `; backup ${snapshot.apply.backup.status}` : "";
+    this.setCandidateStatus(container, `Applied ${this.formatApplyPreview(snapshot.apply.changePreview) || snapshot.apply.candidateStableId || candidate.stableId || "candidate"} to downloadable node map${backupStatus}`);
   }
 
   setCandidateBusy(container, isBusy) {
@@ -252,6 +261,20 @@ export class StoryNodeMapReviewController {
       lineNumber: Math.max(1, Number(item.sourceLine || 1)),
       sourcePath: item.sourcePath || "",
     });
+  }
+
+  formatApplyPreview(preview) {
+    if (!preview || typeof preview !== "object") {
+      return "";
+    }
+
+    const removedStableId = preview.removedStableId || preview.currentStableId || "";
+    const appliedStableId = preview.appliedStableId || preview.candidateStableId || "";
+    if (!removedStableId || !appliedStableId) {
+      return "";
+    }
+
+    return `${removedStableId} -> ${appliedStableId}`;
   }
 
   downloadNodeMap(reviewPayload) {

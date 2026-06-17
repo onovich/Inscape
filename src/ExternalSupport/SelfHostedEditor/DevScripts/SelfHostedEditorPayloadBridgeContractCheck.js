@@ -274,10 +274,46 @@ const compactNodeMapApplyPayload = compactStoryNodeMapApplyPayload({
   },
   nodeMapPath: sidecarPath,
   nodeMapText: "{}",
+  result: {
+    appliedStableId: "node_existing",
+    backup: {
+      required: false,
+      sourcePath: sidecarPath,
+      status: "not-required-dry-run",
+      suggestedBackupDirectory: ".inscape-workspace/backups",
+      targetKind: "node-map-sidecar",
+    },
+    changePreview: {
+      appliedStableId: "node_existing",
+      candidateStableId: "node_existing",
+      candidateTitle: "Opening",
+      currentStableId: "node_opening",
+      currentTitle: "Opening Revised",
+      operation: "reuse-candidate-stable-id",
+      previousTitlesAfterApply: ["Opening"],
+      removedStableId: "node_opening",
+      removesCandidateEntry: true,
+      resultTitle: "Opening Revised",
+    },
+    dryRun: true,
+    format: "inscape.node-map-candidate-apply-result",
+    formatVersion: 1,
+    nodeMapPath: sidecarPath,
+    outputPath: path.join(tempRoot, "inscape.node-map-candidate-preview.json"),
+    recoveryHint: "Dry-run writes a preview node map only.",
+    removedStableId: "node_opening",
+    title: "Opening Revised",
+    writesNodeMap: false,
+  },
   tempRoot,
 });
 assert.equal(compactNodeMapApplyPayload.format, "inscape.self-hosted-editor.node-map-apply");
 assert.equal(compactNodeMapApplyPayload.nodeMapPath, "inscape.node-map.json");
+assert.equal(compactNodeMapApplyPayload.result.format, "inscape.node-map-candidate-apply-result");
+assert.equal(compactNodeMapApplyPayload.result.outputPath, "inscape.node-map-candidate-preview.json");
+assert.equal(compactNodeMapApplyPayload.changePreview.removedStableId, "node_opening");
+assert.equal(compactNodeMapApplyPayload.backup.targetKind, "node-map-sidecar");
+assert.equal(compactNodeMapApplyPayload.backup.sourcePath, "inscape.node-map.json");
 
 const languageServerPayload = relativizeLanguageServerSemanticPaths({
   definition: {

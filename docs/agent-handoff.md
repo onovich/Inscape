@@ -1,12 +1,24 @@
 # Agent 接手指南
 
-状态：P2 Round 6
+状态：P2 Round 7
 
 最后更新：2026-06-17
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-17 SelfHostedEditor P2 Round 7 Stable Node Map Contract 加固快照
+
+P2 Round 7 已完成 stable node map review/apply contract 加固，不宣布 P2 完成。
+
+- 审计产物见 [SelfHostedEditor P2 Stable Node Map Contract Audit](self-hosted-editor-p2-stable-node-map-contract-audit.md)。
+- `Internal/Tooling` 现在为 manual-review candidate 输出共享 `evidence` 与 `applyPreview`：候选证据来自评分过程，apply preview 明确 `removedStableId -> appliedStableId`、候选标题、结果标题、previousTitles 与是否移除候选 entry。
+- `StoryNodeMapReviewActionDomain` / `StoryNodeMapReviewCandidateApplyResultModel` 现在输出 `inscape.node-map-candidate-apply-result`，包含 dry-run/apply mode、`writesNodeMap`、`changePreview`、`backup` metadata 与 `recoveryHint`。
+- CLI `apply-node-map-candidate-project` 新增 `--result <json>`；stdout 仍保持写出路径，dry-run 写 preview sidecar + result，apply 写 node-map sidecar + result。
+- SelfHostedEditor `/api/node-map-apply` 读取 CLI result 并只做 compact：payload 暴露 `changePreview`、`backup`、`recoveryHint` 与 result metadata；浏览器 UI 只显示共享字段，不推断候选语义，也不直接改写工作区 sidecar。
+- Direct / HTTP / model / Internal tests 已覆盖 candidate evidence、apply preview、dry-run result、apply result、backup metadata 与 recovery hint。
+- 下一轮进入 P2 Round 8：Stable Node Map UI 闭环；重点是真实 workspace write-back 与 downloadable payload 的状态区分、接入 `workspace.write-back-backup`、人工确认与错误恢复，不提前扩展 batch/multi-apply 或 Host integration。
 
 ### 2026-06-17 SelfHostedEditor P2 Round 6 Stable Node Map 当前链路审计快照
 

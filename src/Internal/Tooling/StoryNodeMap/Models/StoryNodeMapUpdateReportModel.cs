@@ -74,6 +74,20 @@ namespace Inscape.Tooling {
 
         public int Score { get; set; }
 
+        public List<StoryNodeMapReviewCandidateEvidenceModel> Evidence { get; set; } = new List<StoryNodeMapReviewCandidateEvidenceModel>();
+
+        public StoryNodeMapCandidateApplyPreviewModel ApplyPreview { get; set; } = new StoryNodeMapCandidateApplyPreviewModel();
+
+    }
+
+    public sealed class StoryNodeMapReviewCandidateEvidenceModel {
+
+        public string Kind { get; set; } = string.Empty;
+
+        public string Label { get; set; } = string.Empty;
+
+        public string Value { get; set; } = string.Empty;
+
     }
 
 }

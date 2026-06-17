@@ -8,6 +8,22 @@ namespace Inscape.Tooling {
                                                      string candidateStableId,
                                                      out StoryNodeMapReviewCandidateApplyResultModel result,
                                                      out string? errorMessage) {
+            return TryApplyCandidateStableId(nodeMap,
+                                             currentStableId,
+                                             currentTitle,
+                                             candidateStableId,
+                                             null,
+                                             out result,
+                                             out errorMessage);
+        }
+
+        public static bool TryApplyCandidateStableId(StoryNodeMapModel nodeMap,
+                                                     string currentStableId,
+                                                     string currentTitle,
+                                                     string candidateStableId,
+                                                     StoryNodeMapReviewCandidateApplyRequestModel? request,
+                                                     out StoryNodeMapReviewCandidateApplyResultModel result,
+                                                     out string? errorMessage) {
             result = new StoryNodeMapReviewCandidateApplyResultModel();
             errorMessage = null;
 
@@ -36,6 +52,10 @@ namespace Inscape.Tooling {
             }
 
             string removedStableId = currentNode.Id;
+            StoryNodeMapCandidateApplyPreviewModel changePreview = BuildChangePreview(currentNode,
+                                                                                      candidateNode,
+                                                                                      previousTitles,
+                                                                                      candidateIndex != currentIndex);
             currentNode.Id = candidateNode.Id;
             currentNode.PreviousTitles = previousTitles;
             if (!string.IsNullOrWhiteSpace(candidateNode.CreatedAt)) {
@@ -52,12 +72,58 @@ namespace Inscape.Tooling {
             copy.FormatVersion = 1;
 
             result = new StoryNodeMapReviewCandidateApplyResultModel {
+                ChangePreview = changePreview,
                 NodeMap = copy,
                 AppliedStableId = currentNode.Id,
                 RemovedStableId = removedStableId,
                 Title = currentNode.Title,
             };
+            PopulateWriteMetadata(result, request);
             return true;
+        }
+
+        static StoryNodeMapCandidateApplyPreviewModel BuildChangePreview(StoryNodeMapEntryModel currentNode,
+                                                                         StoryNodeMapEntryModel candidateNode,
+                                                                         List<string> previousTitles,
+                                                                         bool removesCandidateEntry) {
+            return new StoryNodeMapCandidateApplyPreviewModel {
+                AppliedStableId = candidateNode.Id,
+                CandidateStableId = candidateNode.Id,
+                CandidateTitle = candidateNode.Title,
+                CurrentStableId = currentNode.Id,
+                CurrentTitle = currentNode.Title,
+                PreviousTitlesAfterApply = new List<string>(previousTitles),
+                RemovedStableId = currentNode.Id,
+                RemovesCandidateEntry = removesCandidateEntry,
+                ResultTitle = currentNode.Title,
+            };
+        }
+
+        static void PopulateWriteMetadata(StoryNodeMapReviewCandidateApplyResultModel result, StoryNodeMapReviewCandidateApplyRequestModel? request) {
+            if (request == null) {
+                result.Backup = new StoryNodeMapReviewBackupMetadataModel {
+                    Required = false,
+                    Status = "not-requested",
+                };
+                result.RecoveryHint = "This shared action updated an in-memory node map only. Use a workspace write-back backup before replacing the sidecar.";
+                return;
+            }
+
+            string nodeMapPath = request.NodeMapPath ?? string.Empty;
+            string outputPath = string.IsNullOrWhiteSpace(request.OutputPath) ? nodeMapPath : request.OutputPath;
+            bool dryRun = request.DryRun;
+            result.DryRun = dryRun;
+            result.WritesNodeMap = !dryRun;
+            result.NodeMapPath = nodeMapPath;
+            result.OutputPath = outputPath;
+            result.Backup = new StoryNodeMapReviewBackupMetadataModel {
+                Required = !dryRun,
+                SourcePath = nodeMapPath,
+                Status = dryRun ? "not-required-dry-run" : "required-before-write-back",
+            };
+            result.RecoveryHint = dryRun
+                ? "Dry-run writes a preview node map only. The original sidecar is unchanged; discard the preview to recover."
+                : "Before replacing the node map sidecar, keep a workspace write-back backup under .inscape-workspace/backups. Restore that backup to recover the previous stable id assignment.";
         }
 
         static int FindCurrentNodeIndex(List<StoryNodeMapEntryModel> nodes, string stableId, string title) {

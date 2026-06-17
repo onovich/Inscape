@@ -393,26 +393,47 @@ namespace Inscape.Cli {
                 return 3;
             }
 
+            string? dryRunPath = CliCore.ReadOption(args, "--dry-run");
+            string applyOutputPath = string.IsNullOrWhiteSpace(dryRunPath)
+                ? nodeMapPath
+                : Path.GetFullPath(dryRunPath);
             if (!StoryNodeMapReviewActionDomain.TryApplyCandidateStableId(existingMap,
                                                                            currentStableId,
                                                                            currentTitle,
                                                                            candidateStableId,
+                                                                           new StoryNodeMapReviewCandidateApplyRequestModel {
+                                                                               DryRun = !string.IsNullOrWhiteSpace(dryRunPath),
+                                                                               NodeMapPath = nodeMapPath,
+                                                                               OutputPath = applyOutputPath,
+                                                                           },
                                                                            out StoryNodeMapReviewCandidateApplyResultModel apply,
                                                                            out string? applyError)) {
                 Console.Error.WriteLine(applyError);
                 return 3;
             }
 
-            string? dryRunPath = CliCore.ReadOption(args, "--dry-run");
+            string? resultPath = CliCore.ReadOption(args, "--result");
             if (!string.IsNullOrWhiteSpace(dryRunPath)) {
-                StoryNodeMapWriterDomain.Write(dryRunPath, apply.NodeMap, jsonOptions);
-                Console.WriteLine(Path.GetFullPath(dryRunPath));
+                StoryNodeMapWriterDomain.Write(applyOutputPath, apply.NodeMap, jsonOptions);
+                WriteNodeMapCandidateApplyResult(resultPath, apply, jsonOptions);
+                Console.WriteLine(applyOutputPath);
                 return 0;
             }
 
             StoryNodeMapWriterDomain.Write(nodeMapPath, apply.NodeMap, jsonOptions);
+            WriteNodeMapCandidateApplyResult(resultPath, apply, jsonOptions);
             Console.WriteLine(nodeMapPath);
             return 0;
+        }
+
+        static void WriteNodeMapCandidateApplyResult(string? resultPath,
+                                                     StoryNodeMapReviewCandidateApplyResultModel apply,
+                                                     JsonSerializerOptions jsonOptions) {
+            if (string.IsNullOrWhiteSpace(resultPath)) {
+                return;
+            }
+
+            CliCore.WriteOrPrint(resultPath, JsonSerializer.Serialize(apply, jsonOptions));
         }
 
         static int RunLocalizationAlignmentAudit(string rootPath, string[] args, string? outputPath, JsonSerializerOptions jsonOptions) {

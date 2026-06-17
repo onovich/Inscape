@@ -71,6 +71,13 @@ async function main() {
   if (!manualItem || !manualCandidate) {
     throw new Error("Expected stable node map review to expose a manual candidate.");
   }
+  if (!Array.isArray(manualCandidate.evidence) || manualCandidate.evidence.length === 0) {
+    throw new Error("Expected stable node map manual candidate to expose shared match evidence.");
+  }
+  if (manualCandidate.applyPreview?.removedStableId !== manualItem.stableId
+    || manualCandidate.applyPreview?.appliedStableId !== manualCandidate.stableId) {
+    throw new Error("Expected stable node map manual candidate to expose shared apply preview.");
+  }
 
   const appliedPreview = await getStoryNodeMapCandidateApplyForScriptText(
     manualRenamedScript,
@@ -170,6 +177,28 @@ function assertApplyPayload(apply, expectedCandidateStableId, expectedDryRun) {
 
   if (apply?.dryRun !== expectedDryRun) {
     throw new Error("Stable node map apply should preserve dry-run state.");
+  }
+  if (apply?.result?.format !== "inscape.node-map-candidate-apply-result") {
+    throw new Error("Stable node map apply should include the shared apply result contract.");
+  }
+  if (apply.result.dryRun !== expectedDryRun) {
+    throw new Error("Stable node map apply result should preserve dry-run state.");
+  }
+  if (apply.result.writesNodeMap !== !expectedDryRun) {
+    throw new Error("Stable node map apply result should describe whether the node map sidecar is written.");
+  }
+  if (apply?.changePreview?.appliedStableId !== expectedCandidateStableId
+    || apply?.changePreview?.removedStableId !== apply?.itemStableId) {
+    throw new Error("Stable node map apply should expose the shared change preview.");
+  }
+  if (expectedDryRun && apply?.backup?.status !== "not-required-dry-run") {
+    throw new Error("Stable node map dry-run should report that backup is not required.");
+  }
+  if (!expectedDryRun && (apply?.backup?.targetKind !== "node-map-sidecar" || apply?.backup?.status !== "required-before-write-back")) {
+    throw new Error("Stable node map apply should expose sidecar backup metadata.");
+  }
+  if (!String(apply?.recoveryHint || "").includes(expectedDryRun ? "preview" : ".inscape-workspace/backups")) {
+    throw new Error("Stable node map apply should expose a recovery hint.");
   }
 
   if (apply?.candidateStableId !== expectedCandidateStableId) {

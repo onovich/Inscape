@@ -210,31 +210,31 @@ namespace Inscape.Tooling {
                     continue;
                 }
 
-                int score = EvaluateRenameCandidate(candidate, snapshot);
-                if (score <= 0) {
+                StoryNodeMapRenameCandidateScore score = EvaluateRenameCandidate(candidate, snapshot);
+                if (score.Score <= 0) {
                     continue;
                 }
 
-                if (score > bestScore) {
+                if (score.Score > bestScore) {
                     matches.Clear();
-                    bestScore = score;
+                    bestScore = score.Score;
                 }
 
-                if (score == bestScore) {
-                    matches.Add(new StoryNodeMapRenameCandidateScore {
-                        Entry = candidate,
-                        Score = score,
-                    });
+                if (score.Score == bestScore) {
+                    matches.Add(score);
                 }
             }
 
             return matches;
         }
 
-        static int EvaluateRenameCandidate(StoryNodeMapEntryModel candidate, StoryNodeMapNodeSnapshot snapshot) {
+        static StoryNodeMapRenameCandidateScore EvaluateRenameCandidate(StoryNodeMapEntryModel candidate, StoryNodeMapNodeSnapshot snapshot) {
+            StoryNodeMapRenameCandidateScore result = new StoryNodeMapRenameCandidateScore {
+                Entry = candidate,
+            };
             if (string.IsNullOrWhiteSpace(candidate.SourcePath)
                 || !string.Equals(candidate.SourcePath, snapshot.SourcePath, System.StringComparison.Ordinal)) {
-                return 0;
+                return result;
             }
 
             bool fingerprintMatches = !string.IsNullOrWhiteSpace(candidate.FirstContentFingerprint)
@@ -243,19 +243,40 @@ namespace Inscape.Tooling {
                 && candidate.NeighborFingerprint == snapshot.NeighborFingerprint;
             int anchorOverlap = CountAnchorOverlap(candidate.LineAnchorSamples, snapshot.LineAnchorSamples);
             if (!fingerprintMatches && !neighborMatches && anchorOverlap == 0) {
-                return 0;
+                return result;
             }
 
             int score = 10;
+            result.Evidence.Add(new StoryNodeMapReviewCandidateEvidenceModel {
+                Kind = "source-path",
+                Label = "Source path",
+                Value = candidate.SourcePath,
+            });
+
             if (fingerprintMatches) {
                 score += 8;
+                result.Evidence.Add(new StoryNodeMapReviewCandidateEvidenceModel {
+                    Kind = "first-content-fingerprint",
+                    Label = "First content fingerprint",
+                    Value = "matched",
+                });
             }
 
             if (neighborMatches) {
                 score += 4;
+                result.Evidence.Add(new StoryNodeMapReviewCandidateEvidenceModel {
+                    Kind = "neighbor-fingerprint",
+                    Label = "Neighbor fingerprint",
+                    Value = "matched",
+                });
             }
 
             score += Math.Min(anchorOverlap, 3) * 2;
+            result.Evidence.Add(new StoryNodeMapReviewCandidateEvidenceModel {
+                Kind = "line-anchor-overlap",
+                Label = "Line anchor overlap",
+                Value = anchorOverlap.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            });
 
             int lineDistance = Math.Abs(candidate.SourceLine - snapshot.SourceLine);
             if (lineDistance <= 3) {
@@ -266,7 +287,13 @@ namespace Inscape.Tooling {
                 score += 1;
             }
 
-            return score;
+            result.Evidence.Add(new StoryNodeMapReviewCandidateEvidenceModel {
+                Kind = "source-line-distance",
+                Label = "Source line distance",
+                Value = lineDistance.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            });
+            result.Score = score;
+            return result;
         }
 
         static int CountAnchorOverlap(List<string> left, List<string> right) {
@@ -345,16 +372,53 @@ namespace Inscape.Tooling {
                 for (int i = 0; i < resolution.Candidates.Count; i += 1) {
                     StoryNodeMapRenameCandidateScore candidate = resolution.Candidates[i];
                     item.Candidates.Add(new StoryNodeMapReviewCandidateModel {
+                        ApplyPreview = BuildCandidateApplyPreview(updated, candidate.Entry),
                         StableId = candidate.Entry.Id,
                         Title = candidate.Entry.Title,
                         SourcePath = candidate.Entry.SourcePath,
                         SourceLine = candidate.Entry.SourceLine,
                         Score = candidate.Score,
+                        Evidence = CloneEvidence(candidate.Evidence),
                     });
                 }
 
                 report.Items.Add(item);
             }
+        }
+
+        static StoryNodeMapCandidateApplyPreviewModel BuildCandidateApplyPreview(StoryNodeMapEntryModel currentNode, StoryNodeMapEntryModel candidateNode) {
+            List<string> previousTitles = new List<string>(candidateNode.PreviousTitles);
+            if (!string.IsNullOrWhiteSpace(candidateNode.Title)
+                && candidateNode.Title != currentNode.Title
+                && !previousTitles.Contains(candidateNode.Title, StringComparer.Ordinal)) {
+                previousTitles.Add(candidateNode.Title);
+            }
+
+            return new StoryNodeMapCandidateApplyPreviewModel {
+                AppliedStableId = candidateNode.Id,
+                CandidateStableId = candidateNode.Id,
+                CandidateTitle = candidateNode.Title,
+                CurrentStableId = currentNode.Id,
+                CurrentTitle = currentNode.Title,
+                PreviousTitlesAfterApply = previousTitles,
+                RemovedStableId = currentNode.Id,
+                RemovesCandidateEntry = candidateNode.Id != currentNode.Id,
+                ResultTitle = currentNode.Title,
+            };
+        }
+
+        static List<StoryNodeMapReviewCandidateEvidenceModel> CloneEvidence(List<StoryNodeMapReviewCandidateEvidenceModel> evidence) {
+            List<StoryNodeMapReviewCandidateEvidenceModel> copy = new List<StoryNodeMapReviewCandidateEvidenceModel>(evidence.Count);
+            for (int i = 0; i < evidence.Count; i += 1) {
+                StoryNodeMapReviewCandidateEvidenceModel item = evidence[i];
+                copy.Add(new StoryNodeMapReviewCandidateEvidenceModel {
+                    Kind = item.Kind,
+                    Label = item.Label,
+                    Value = item.Value,
+                });
+            }
+
+            return copy;
         }
 
         static void AddRetainedNodeReportItem(StoryNodeMapUpdateReportModel report, StoryNodeMapEntryModel entry) {
@@ -605,6 +669,8 @@ namespace Inscape.Tooling {
             public StoryNodeMapEntryModel Entry { get; set; } = new StoryNodeMapEntryModel();
 
             public int Score { get; set; }
+
+            public List<StoryNodeMapReviewCandidateEvidenceModel> Evidence { get; set; } = new List<StoryNodeMapReviewCandidateEvidenceModel>();
 
         }
 

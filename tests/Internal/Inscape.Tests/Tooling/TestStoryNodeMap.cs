@@ -229,6 +229,10 @@ Narrator: Same line.
             AssertEqual(2, reviewItem.Candidates.Count, "Manual review item should list tied rename candidates.");
             AssertEqual("node.a", reviewItem.Candidates[0].Title, "Manual review should keep the first candidate title.");
             AssertEqual("node.b", reviewItem.Candidates[1].Title, "Manual review should keep the second candidate title.");
+            AssertTrue(reviewItem.Candidates[0].Evidence.Count > 0, "Manual review candidate should include shared match evidence.");
+            AssertEqual("node.a", reviewItem.Candidates[0].ApplyPreview.CandidateTitle, "Candidate apply preview should describe the selected old title.");
+            AssertEqual(reviewItem.StableId, reviewItem.Candidates[0].ApplyPreview.RemovedStableId, "Candidate apply preview should identify the new stable id that would be replaced.");
+            AssertEqual(reviewItem.Candidates[0].StableId, reviewItem.Candidates[0].ApplyPreview.AppliedStableId, "Candidate apply preview should identify the reused stable id.");
         }
 
         static void StoryNodeMapUpdateReportIncludesRenamedItems() {
@@ -301,6 +305,13 @@ Narrator: Second line.
             AssertTrue(applied, errorMessage ?? "Candidate should apply.");
             AssertEqual("node_OLD", result.AppliedStableId, "Applied result stable id");
             AssertEqual("node_CURRENT", result.RemovedStableId, "Applied result removed temporary id");
+            AssertEqual("inscape.node-map-candidate-apply-result", result.Format, "Applied result should expose shared result format.");
+            AssertEqual("node_CURRENT", result.ChangePreview.CurrentStableId, "Applied result should expose current stable id before apply.");
+            AssertEqual("node_OLD", result.ChangePreview.CandidateStableId, "Applied result should expose candidate stable id before apply.");
+            AssertEqual("node_CURRENT", result.ChangePreview.RemovedStableId, "Applied result should expose removed stable id in the change preview.");
+            AssertFalse(result.WritesNodeMap, "Shared domain apply should not claim a sidecar write without write metadata.");
+            AssertEqual("node-map-sidecar", result.Backup.TargetKind, "Apply result backup metadata should target the node map sidecar.");
+            AssertTrue(result.RecoveryHint.Contains("backup", StringComparison.OrdinalIgnoreCase), "Apply result should include a recovery hint.");
             AssertEqual(1, result.NodeMap.Nodes.Count, "Candidate duplicate entry should be removed.");
 
             StoryNodeMapEntryModel updated = FindNode(result.NodeMap, "庭审序幕");
