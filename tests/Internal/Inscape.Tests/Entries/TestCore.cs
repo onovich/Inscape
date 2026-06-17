@@ -42,6 +42,7 @@ namespace Inscape.Tests {
                 ("narrative runtime query provider uses delegate mock and recorded sources", NarrativeRuntimeQueryProviderUsesDelegateMockAndRecordedSources),
                 ("narrative runtime exports and validates minimal runtime state", NarrativeRuntimeExportsAndValidatesMinimalRuntimeState),
                 ("cli runtime-project exports and validates formal runtime state", CliRuntimeProjectExportsAndValidatesFormalRuntimeState),
+                ("p3 integration smoke connects usage audit conditions and runtime state", P3IntegrationSmokeConnectsUsageAuditConditionsAndRuntimeState),
                 ("cli runtime-project emits runtime state", CliRuntimeProjectEmitsRuntimeState),
                 ("cli runtime-project steps restored state", CliRuntimeProjectStepsRestoredState),
                 ("tool config resolves host bridge path", ToolConfigResolvesHostBridgePath),

@@ -8,7 +8,7 @@
 
 PASS：P3 Round 11 已完成 Runtime State 最小模型与 `ValidateStateAgainstCurrentScript` shape。
 
-本轮不宣称 P3 完成。下一轮进入 P3 Round 12：最小端到端 smoke 与文档收口。
+本轮不宣称 P3 完成。P3 Round 12 已在 [SelfHostedEditor P3 Integration Audit](self-hosted-editor-p3-integration-audit.md) 完成最小端到端 smoke 与文档收口。
 
 ## 本轮范围
 
@@ -50,7 +50,7 @@ PASS：P3 Round 11 已完成 Runtime State 最小模型与 `ValidateStateAgainst
 
 本轮先实现模型、Runtime domain 和 CLI smoke，再跑 `.NET build` 与 Internal tests。第一次验证未遇到编译或测试失败。
 
-当前无已知未解决实现 bug。需要留意：旧 `runtime-project` snapshot 与正式 Runtime State 目前共享 `inscape.runtime-state` 格式名；CLI 已保持旧 snapshot 的 `state` 嵌套读取兼容，并用 `--export-state` 明确要求正式 state 输出。Round 12 端到端 smoke 应继续证明两条用途没有混淆。
+当前无已知未解决实现 bug。需要留意：旧 `runtime-project` snapshot 与正式 Runtime State 目前共享 `inscape.runtime-state` 格式名；CLI 已保持旧 snapshot 的 `state` 嵌套读取兼容，并用 `--export-state` 明确要求正式 state 输出。Round 12 端到端 smoke 已继续覆盖正式 Runtime State export / validate 主路。
 
 ## 架构自检
 
@@ -64,8 +64,8 @@ PASS：P3 Round 11 已完成 Runtime State 最小模型与 `ValidateStateAgainst
 
 ## 下一轮入口
 
-P3 Round 12 优先完成：
+P3 Round 13 优先完成：
 
-1. 串起 Host Schema、Usage Manifest、Host Integration Audit、条件语法和 Runtime State 的最小端到端样例 / smoke。
-2. 更新 handoff / TODO / README / ADR，使 P3 Round 1-12 当前状态一致。
-3. 不宣布 P3 PASS；Round 12 后进入缓冲修复或最终验证准备。
+1. 进入缓冲修复 / 最终验证前审计。
+2. 对照 ADR 0021 与 P3 goal guide 逐项检查 PASS 门槛。
+3. 只修 Round 1-12 范围内缺口，不引入 P4 Runtime 功能。

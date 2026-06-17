@@ -48,8 +48,8 @@ P2.5 已完成 Host Schema / Host Bridge 与 Unity-Bird 适配收口，P3 可以
 ## 延后问题
 
 - `events[]` 到 `actions[]` 的兼容 / 迁移策略。
-- `inspect-usage-project` 与 `audit-host-integration-project` 的具体 JSON shape 已在 P3 Round 4-6 给出最小实现；后续仍需随条件语法和 Runtime State 扩展审计覆盖。
-- 条件语法 contract / parser design 已在 P3 Round 7 收口到 [Condition Syntax Contract](../condition-syntax-contract.md)；Compiler parser / IR 最小实现已在 P3 Round 8 完成，Tooling / LanguageServer / Editor consumption 已在 P3 Round 9 完成，Runtime query provider / internal facts 最小 contract 已在 P3 Round 10 完成，Runtime State 最小 model / validate shape 已在 P3 Round 11 完成。后续仍需实现 query receipt、条件 Runtime 求值和 action dispatcher。
+- `inspect-usage-project` 与 `audit-host-integration-project` 的具体 JSON shape 已在 P3 Round 4-6 给出最小实现；P3 Round 12 已用最小端到端 smoke 证明 Usage、Audit、条件语法与 Runtime State 可以串接。
+- 条件语法 contract / parser design 已在 P3 Round 7 收口到 [Condition Syntax Contract](../condition-syntax-contract.md)；Compiler parser / IR 最小实现已在 P3 Round 8 完成，Tooling / LanguageServer / Editor consumption 已在 P3 Round 9 完成，Runtime query provider / internal facts 最小 contract 已在 P3 Round 10 完成，Runtime State 最小 model / validate shape 已在 P3 Round 11 完成，最小 integration smoke 已在 P3 Round 12 完成。后续仍需实现 query receipt、条件 Runtime 求值和 action dispatcher。
 - Runtime State 自动迁移与正式 Save / Load 产品系统。
 - 受限用户自定义叙事局部变量。
 - Action rollback / replay / receipt 精细 policy。
@@ -65,4 +65,5 @@ P3 应至少通过以下方式验证本 ADR：
 - Host integration audit 能对账 Usage、Host Schema 与 Host Bridge。
 - 条件表达式 IR / 诊断不复制进 VSCode 或 SelfHostedEditor。
 - Runtime State 最小 model / smoke 能输出 `ExportState` shape，并能做 `ValidateStateAgainstCurrentScript` 的 compatible / migratable / incompatible 判断。
+- 最小端到端 smoke 能证明条件 IR、Usage、Audit 与 Runtime State export / validate 共同工作。
 - `git diff --check`、`.NET build`、Internal tests、VSCode structure / semantic parity 和 SelfHostedEditor structure / model / semantic parity 保持通过。
