@@ -24,6 +24,7 @@ export const EditorBackendTransportCommand = Object.freeze({
   StableNodeMapApplyCandidate: "stable-node-map.apply-candidate",
   StableNodeMapReview: "stable-node-map.review",
   StoryGraphCompileProject: "story-graph.compile-project",
+  WorkspaceImportAssets: "workspace.import-assets",
   WorkspaceListFiles: "workspace.list-files",
   WorkspaceOpenFolder: "workspace.open-folder",
   WorkspaceWriteBackBackup: "workspace.write-back-backup",

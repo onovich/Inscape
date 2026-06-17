@@ -31,6 +31,10 @@ const backendClient = {
       calls.push({ method: "workspace.openFolder", payload });
       return { ok: true };
     },
+    async importAssets(payload) {
+      calls.push({ method: "workspace.importAssets", payload });
+      return { copiedCount: 1, ok: true };
+    },
     async listFiles(payload) {
       calls.push({ method: "workspace.listFiles", payload });
       return { documents: [] };
@@ -137,6 +141,7 @@ assertSurface(services.projectSessionService, ["sessionId", "status"], "project 
 assertSurface(services.workspaceSessionClient, [
   "sessionId",
   "openFolder",
+  "importAssets",
   "listFiles",
   "writeBackBackup",
 ], "workspace session client");
@@ -191,6 +196,7 @@ assertSurface(services.diagnosticsService, ["sessionId", "sessionStatus"], "diag
 
 await services.projectSessionService.status({ workspace: { currentFilePath: "story/opening.inscape" } });
 await services.workspaceSessionClient.openFolder({ dialogTitle: "Open workspace" });
+await services.workspaceSessionClient.importAssets({ dialogTitle: "Import assets" });
 await services.workspaceSessionClient.listFiles();
 await services.workspaceSessionClient.writeBackBackup({ writeRequests: [{ relativePath: "localization/zh-cn.csv" }] });
 await services.languageSessionClient.diagnose({ scriptText: "# Opening" });
@@ -200,6 +206,7 @@ await services.stableNodeMapClient.applyCandidate({ dryRun: true });
 assertEqual(calls.map((call) => call.method).join(","), [
   "projectSession.status",
   "workspace.openFolder",
+  "workspace.importAssets",
   "workspace.listFiles",
   "workspace.writeBackBackup",
   "languageSession.diagnose",

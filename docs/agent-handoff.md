@@ -526,7 +526,16 @@ P1 40 轮计划完成后，继续补上了真实 Electron preload -> main 的固
 - `EditorBackendTransportCommand.WorkspaceWriteBackBackup`、preload whitelist、`EditorBackendClient.workspace.writeBackBackup()`、`WorkspaceSessionClient.writeBackBackup()` 和 Electron dispatcher 已对齐；该 command 不映射 dev-host `/api/*` route。
 - `ElectronWorkspaceSessionStore.runWriteBackBackup()` 会扫描 `.inscape-workspace/backups/`，复用 `EditorBackendWorkspaceBackupPlanModel` 为 localization CSV、`inscape.node-map.json`、`inscape.line-map.json` 生成 text-free backup plan，复制源文件到 `.inscape-workspace/backups/`，并删除 retention cleanup candidates。
 - `check:electron-workspace` 覆盖三类真实复制、旧 backup 清理、disabled backup skip、unsupported `.inscape` skip、desktop-only route 和 text-free response；`check:backend-services`、`check:backend-transport`、`check:preload-transport`、`check:electron-shell`、fake embedded transport 也已同步。
-- 当前仍未把外部资源导入复制到 workspace `assets/` 接成真实 IO；Preview 的真实 GUI / packaged 断言也仍可作为后续 P1 收口候选。不要把这两点误写成 P1.5 long-lived LanguageServer。
+- 当前 Preview 的真实 GUI / packaged 断言仍可作为后续 P1 收口候选；不要把它误写成 P1.5 long-lived LanguageServer。
+
+### 2026-06-17 SelfHostedEditor P1 post-40 assets import IO 快照
+
+本轮新增 desktop-only `workspace.import-assets` command，把 Round 33 的 asset import plan 推进到 Electron main process 真实 IO。
+
+- `EditorBackendTransportCommand.WorkspaceImportAssets`、preload whitelist、`EditorBackendClient.workspace.importAssets()`、`WorkspaceSessionClient.importAssets()` 和 Electron dispatcher 已对齐；该 command 不映射 dev-host `/api/*` route。
+- renderer payload 只允许 `dialogTitle` / `workspaceId`，不会传入 workspace 外 source path；真实外部路径由 Electron main process 原生多文件选择器或测试注入 selector 临时持有。
+- `ElectronWorkspaceSessionStore.importAssets()` 会扫描 workspace 内既有 `assets/**`，复用 `EditorBackendWorkspaceAssetImportPlanModel` 生成 text-free copy plan，并复制图片 / 音频 / CSV 到 workspace `assets/images|audio|data`；重名目标走 `-1` suffix，unsupported extension 进入 skip。
+- `check:electron-workspace` 覆盖真实 image/audio/CSV 复制、重名避让、unsupported skip、取消导入、缺失源失败不留下目标文件、desktop-only route 和 response 不持久化外部路径；`check:backend-services`、`check:backend-transport`、`check:preload-transport`、`check:electron-shell`、fake embedded transport 也已同步。
 
 ### 2026-06-14 SelfHostedEditor desktop backend v0 决策快照
 

@@ -55,6 +55,7 @@ export class EditorBackendClient {
       review: (request) => this.#invoke(EditorBackendTransportCommand.StableNodeMapReview, request),
     });
     this.workspace = Object.freeze({
+      importAssets: (request) => this.#invoke(EditorBackendTransportCommand.WorkspaceImportAssets, request),
       listFiles: (request) => this.#invoke(EditorBackendTransportCommand.WorkspaceListFiles, request),
       openFolder: (request) => this.#invoke(EditorBackendTransportCommand.WorkspaceOpenFolder, request),
       writeBackBackup: (request) => this.#invoke(EditorBackendTransportCommand.WorkspaceWriteBackBackup, request),

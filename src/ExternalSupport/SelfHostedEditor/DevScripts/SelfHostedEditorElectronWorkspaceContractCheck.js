@@ -6,6 +6,7 @@ import {
 } from "../Desktop/ElectronBackendCommandDispatcher.js";
 import {
   createSelfHostedEditorElectronWorkspaceSessionStore,
+  SelfHostedEditorElectronAssetImportResultFormat,
   SelfHostedEditorElectronAutosaveResultFormat,
   SelfHostedEditorElectronFlushResultFormat,
   SelfHostedEditorElectronRecoveryActionResultFormat,
@@ -25,6 +26,7 @@ import {
 } from "../Scripts/Backend/Models/EditorBackendWorkspaceFolderModel.js";
 
 const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "inscape-electron-workspace-"));
+const assetSourceRoot = await fs.mkdtemp(path.join(os.tmpdir(), "inscape-electron-asset-sources-"));
 
 try {
   await writeText(path.join(tempRoot, "story", "opening.inscape"), "# Opening\nNarrator: secret opening text");
@@ -32,8 +34,17 @@ try {
   await writeText(path.join(tempRoot, "localization", "zh-cn.csv"), "anchor,text\nsecret-anchor,old translation");
   await writeText(path.join(tempRoot, "inscape.node-map.json"), "{\n  \"secretNode\": true\n}");
   await writeText(path.join(tempRoot, "metadata", "inscape.line-map.json"), "{\n  \"secretLine\": true\n}");
+  await writeText(path.join(tempRoot, "assets", "images", "court-portrait.png"), "existing asset bytes");
   await writeText(path.join(tempRoot, "notes", "readme.txt"), "secret notes text");
   await writeText(path.join(tempRoot, ".inscape-workspace", "recovery", "stale.inscape"), "secret recovery text");
+  const assetImageSourcePath = path.join(assetSourceRoot, "court portrait.png");
+  const assetAudioSourcePath = path.join(assetSourceRoot, "theme song.wav");
+  const assetCsvSourcePath = path.join(assetSourceRoot, "dialogue rows.csv");
+  const assetUnsupportedSourcePath = path.join(assetSourceRoot, "author notes.txt");
+  await writeText(assetImageSourcePath, "secret imported image bytes");
+  await writeText(assetAudioSourcePath, "secret imported audio bytes");
+  await writeText(assetCsvSourcePath, "secret imported,csv bytes");
+  await writeText(assetUnsupportedSourcePath, "secret unsupported asset bytes");
   const oldBackupPath = path.join(
     tempRoot,
     ".inscape-workspace",
@@ -59,6 +70,13 @@ try {
     backupRouteRejected = String(error?.message || "").includes("does not have a dev-host HTTP route");
   }
   assertEqual(backupRouteRejected, true, "write-back backup is desktop-only, not a dev-host route");
+  let assetImportRouteRejected = false;
+  try {
+    resolveEditorBackendDevHostRoute(EditorBackendTransportCommand.WorkspaceImportAssets);
+  } catch (error) {
+    assetImportRouteRejected = String(error?.message || "").includes("does not have a dev-host HTTP route");
+  }
+  assertEqual(assetImportRouteRejected, true, "asset import is desktop-only, not a dev-host route");
 
   const languageSessionCalls = [];
   const sessionStore = createSelfHostedEditorElectronWorkspaceSessionStore({
@@ -72,6 +90,12 @@ try {
         return { diagnostics: [] };
       },
     },
+    selectAssetImportSources: async () => [
+      assetImageSourcePath,
+      assetAudioSourcePath,
+      assetCsvSourcePath,
+      assetUnsupportedSourcePath,
+    ],
     selectWorkspaceRoot: async () => tempRoot,
     sessionId: "electron-workspace-session",
   });
@@ -146,6 +170,58 @@ try {
     "anchor,text\nsecret-anchor,old translation",
     "write-back backup preserves localization CSV bytes"
   );
+
+  const assetImportResult = await dispatchSelfHostedEditorBackendCommand(
+    EditorBackendTransportCommand.WorkspaceImportAssets,
+    {
+      dialogTitle: "Import smoke assets",
+    },
+    {
+      sessionStore,
+    }
+  );
+  assertEqual(assetImportResult.format, SelfHostedEditorElectronAssetImportResultFormat, "asset import result format");
+  assertEqual(assetImportResult.ok, true, "asset import ok");
+  assertEqual(assetImportResult.copiedCount, 3, "asset import copies supported files");
+  assertEqual(assetImportResult.skippedImports[0].reason, "asset-extension-not-supported", "asset import skips unsupported extension");
+  assertEqual(JSON.stringify(assetImportResult).includes("secret"), false, "asset import result is content-free");
+  assertEqual(JSON.stringify(assetImportResult).includes(assetSourceRoot.replace(/\\/g, "/")), false, "asset import result does not persist source root");
+  const importedImagePath = path.join(tempRoot, "assets", "images", "court-portrait-1.png");
+  const importedAudioPath = path.join(tempRoot, "assets", "audio", "theme-song.wav");
+  const importedCsvPath = path.join(tempRoot, "assets", "data", "dialogue-rows.csv");
+  const unsupportedAssetTargetPath = path.join(tempRoot, "assets", "data", "author-notes.txt");
+  assertEqual(await fileExists(importedImagePath), true, "asset import copies image with collision suffix");
+  assertEqual(await fileExists(importedAudioPath), true, "asset import copies audio");
+  assertEqual(await fileExists(importedCsvPath), true, "asset import copies CSV data");
+  assertEqual(await fileExists(unsupportedAssetTargetPath), false, "asset import does not copy unsupported txt");
+  assertEqual(await fs.readFile(importedImagePath, "utf8"), "secret imported image bytes", "asset import preserves image bytes");
+  assertEqual(await fs.readFile(importedAudioPath, "utf8"), "secret imported audio bytes", "asset import preserves audio bytes");
+  assertEqual(await fs.readFile(importedCsvPath, "utf8"), "secret imported,csv bytes", "asset import preserves CSV bytes");
+
+  const missingAssetStore = createSelfHostedEditorElectronWorkspaceSessionStore({
+    selectAssetImportSources: async () => [
+      path.join(assetSourceRoot, "missing portrait.png"),
+    ],
+    selectWorkspaceRoot: async () => tempRoot,
+    sessionId: "electron-workspace-missing-asset",
+  });
+  await dispatchSelfHostedEditorBackendCommand(
+    EditorBackendTransportCommand.WorkspaceOpenFolder,
+    {},
+    {
+      sessionStore: missingAssetStore,
+    }
+  );
+  const missingAssetResult = await dispatchSelfHostedEditorBackendCommand(
+    EditorBackendTransportCommand.WorkspaceImportAssets,
+    {},
+    {
+      sessionStore: missingAssetStore,
+    }
+  );
+  assertEqual(missingAssetResult.ok, false, "asset import reports missing source failure");
+  assertEqual(missingAssetResult.copyResults[0].reason, "asset-source-not-found", "asset import missing source reason");
+  assertEqual(await fileExists(path.join(tempRoot, "assets", "images", "missing-portrait.png")), false, "asset import failure leaves no target file");
 
   const disabledWriteBackBackupResult = await dispatchSelfHostedEditorBackendCommand(
     EditorBackendTransportCommand.WorkspaceWriteBackBackup,
@@ -646,6 +722,7 @@ try {
   assertEqual(JSON.stringify(discardResult).includes("secret later recovery text"), false, "recovery discard response is text-free");
 
   const canceledStore = createSelfHostedEditorElectronWorkspaceSessionStore({
+    selectAssetImportSources: async () => [],
     selectWorkspaceRoot: async () => "",
   });
   const canceledOpen = await dispatchSelfHostedEditorBackendCommand(
@@ -657,6 +734,28 @@ try {
   );
   assertEqual(canceledOpen.ok, false, "workspace open canceled rejected");
   assertEqual(canceledOpen.reason, "workspace-open-canceled", "workspace open canceled reason");
+
+  const canceledAssetStore = createSelfHostedEditorElectronWorkspaceSessionStore({
+    selectAssetImportSources: async () => [],
+    selectWorkspaceRoot: async () => tempRoot,
+  });
+  await dispatchSelfHostedEditorBackendCommand(
+    EditorBackendTransportCommand.WorkspaceOpenFolder,
+    {},
+    {
+      sessionStore: canceledAssetStore,
+    }
+  );
+  const canceledAssetImport = await dispatchSelfHostedEditorBackendCommand(
+    EditorBackendTransportCommand.WorkspaceImportAssets,
+    {},
+    {
+      sessionStore: canceledAssetStore,
+    }
+  );
+  assertEqual(canceledAssetImport.ok, true, "asset import cancel is non-blocking");
+  assertEqual(canceledAssetImport.reason, "asset-import-canceled", "asset import cancel reason");
+  assertEqual(canceledAssetImport.copiedCount, 0, "asset import cancel copies nothing");
 
   const fileStore = createSelfHostedEditorElectronWorkspaceSessionStore({
     selectWorkspaceRoot: async () => path.join(tempRoot, "story", "opening.inscape"),
@@ -674,6 +773,7 @@ try {
   console.log("SelfHostedEditor Electron workspace contract ok");
 } finally {
   await fs.rm(tempRoot, { force: true, recursive: true });
+  await fs.rm(assetSourceRoot, { force: true, recursive: true });
 }
 
 async function writeText(filePath, text) {

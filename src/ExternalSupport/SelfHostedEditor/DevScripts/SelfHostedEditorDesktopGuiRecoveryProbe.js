@@ -119,6 +119,7 @@ async function runProbe() {
     );
     assertNotIncludes(JSON.stringify(restoreResult), "GUI smoke restore text", "GUI probe restore response is text-free");
 
+    const directLanguageCallStart = languageSessionCalls.length;
     const diagnosticsResult = await invokePreload(browserWindow, "languageSession.diagnose", {
       scriptText: "# Stale\nNarrator: stale renderer diagnostics text",
     });
@@ -129,8 +130,9 @@ async function runProbe() {
     });
     assertEqual(completionsResult.completions[0].label, "GuiRestoredTarget", "GUI probe completions result");
     assertNotIncludes(JSON.stringify(completionsResult), "GUI smoke restore text", "GUI probe completions response is text-free");
-    assertEqual(languageSessionCalls.length, 2, "GUI probe language session call count");
-    for (const call of languageSessionCalls) {
+    const directLanguageCalls = languageSessionCalls.slice(directLanguageCallStart);
+    assertEqual(directLanguageCalls.length, 2, "GUI probe direct language session call count");
+    for (const call of directLanguageCalls) {
       assertEqual(call.payload.activeRelativePath, "story/opening.inscape", `GUI probe ${call.kind} active path`);
       assertEqual(call.payload.scriptText, restoreText, `GUI probe ${call.kind} uses restored current buffer`);
       assertEqual(call.payload.workspace.documents[0].text, restoreText, `GUI probe ${call.kind} workspace snapshot text`);
@@ -188,6 +190,12 @@ function createGuiRecoveryLanguageSessionHandlers(calls) {
           },
         ],
         format: "inscape.language-server-project-completions",
+      };
+    },
+    async "document-symbols"() {
+      return {
+        format: "inscape.language-server-document-symbols",
+        symbols: [],
       };
     },
     async diagnostics(payload = {}) {

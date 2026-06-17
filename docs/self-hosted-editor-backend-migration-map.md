@@ -98,6 +98,8 @@
 
 2026-06-17 P1 post-40 write-back backup IO 补充：desktop-only `workspace.write-back-backup` 已进入 shared command catalog、preload whitelist、`EditorBackendClient.workspace.writeBackBackup()` 与 Electron dispatcher，但不映射 dev-host HTTP route。Electron main process 会扫描 `.inscape-workspace/backups/`，复用 `EditorBackendWorkspaceBackupPlanModel` 为 localization CSV、node-map sidecar、line-map sidecar 生成 text-free backup plan，复制源文件到 backup artifact，并删除 retention cleanup candidates；`.inscape` 正文仍由 autosave / recovery 保护，backup 响应不暴露 CSV 或 sidecar 内容。
 
+2026-06-17 P1 post-40 assets import IO 补充：desktop-only `workspace.import-assets` 已进入 shared command catalog、preload whitelist、`EditorBackendClient.workspace.importAssets()`、`WorkspaceSessionClient.importAssets()` 与 Electron dispatcher，但不映射 dev-host HTTP route。renderer payload 不携带 workspace 外 source path；Electron main process 通过原生多文件选择器或测试注入 selector 临时持有外部路径，复用 `EditorBackendWorkspaceAssetImportPlanModel` 生成 text-free copy plan，并复制图片 / 音频 / CSV 到 workspace `assets/images|audio|data`。响应不持久化外部路径，unsupported extension 进入 skip，缺失源失败会清理目标文件。
+
 ## 状态分类
 
 | 分类 | 当前例子 | 未来归属 | 规则 |

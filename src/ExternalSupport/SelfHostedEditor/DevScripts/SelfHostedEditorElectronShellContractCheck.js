@@ -86,6 +86,7 @@ assertIncludesText(preloadApiText, "RecoveryDiscard", "Electron preload API whit
 assertIncludesText(preloadApiText, "RecoveryLater", "Electron preload API whitelists recovery later");
 assertIncludesText(preloadApiText, "DocumentBufferRead", "Electron preload API whitelists document-buffer read");
 assertIncludesText(preloadApiText, "WorkspaceOpenFolder", "Electron preload API whitelists workspace open folder");
+assertIncludesText(preloadApiText, "WorkspaceImportAssets", "Electron preload API whitelists asset import");
 assertIncludesText(preloadApiText, "WorkspaceWriteBackBackup", "Electron preload API whitelists write-back backup");
 assertIncludesText(preloadApiText, "validateSelfHostedEditorPreloadCommandPayload", "Electron preload API validates command payloads");
 assertNoText(preloadApiText, "invoke", "Electron preload API must not expose generic invoke");
@@ -105,11 +106,13 @@ assertNoText(ipcDispatcherText, "/api/", "Electron backend dispatcher must not k
 const ipcMainText = readModuleText("Desktop/ElectronBackendIpc.js");
 assertIncludesText(ipcMainText, "ipcMain", "Electron backend IPC module owns ipcMain access");
 assertIncludesText(ipcMainText, "showOpenDialog", "Electron backend IPC selects workspace folders through native dialog");
+assertIncludesText(ipcMainText, "selectSelfHostedEditorAssetImportSources", "Electron backend IPC selects asset import files through native dialog");
 assertIncludesText(ipcMainText, "SelfHostedEditorElectronIpcChannel", "Electron backend IPC uses fixed channel");
 assertNoText(ipcMainText, "/api/", "Electron backend IPC module must not know dev-host routes");
 
 const workspaceStoreText = readModuleText("Desktop/ElectronWorkspaceSessionStore.js");
 assertIncludesText(workspaceStoreText, "node:fs", "Electron workspace store owns filesystem access");
+assertIncludesText(workspaceStoreText, "EditorBackendWorkspaceAssetImportPlanModel", "Electron workspace store reuses asset import plan model");
 assertIncludesText(workspaceStoreText, "EditorBackendWorkspacePathModel", "Electron workspace store reuses workspace path guard");
 assertIncludesText(workspaceStoreText, "EditorBackendDocumentBufferStoreModel", "Electron workspace store reuses document buffer store model");
 assertIncludesText(workspaceStoreText, "EditorBackendWorkspaceSnapshotModel", "Electron workspace store reuses workspace snapshot model for authoring requests");
@@ -138,10 +141,12 @@ assertEqual(preloadApi.capabilities.embeddedBackend, "workspace-session-v0-parti
 assertEqual(preloadApi.capabilities.workspaceFileSystem, "read-write-buffer-session", "Electron preload API workspace file capability");
 assertEqual(preloadApi.editorCommands.ProjectSessionStatus, "project-session.status", "Electron preload project-session command");
 assertEqual(preloadApi.editorCommands.RecoveryRestore, "recovery.restore", "Electron preload recovery restore command");
+assertEqual(preloadApi.editorCommands.WorkspaceImportAssets, "workspace.import-assets", "Electron preload asset import command");
 assertEqual(preloadApi.editorCommands.WorkspaceWriteBackBackup, "workspace.write-back-backup", "Electron preload write-back backup command");
 assertEqual(typeof preloadApi.recovery.restore, "function", "Electron preload recovery restore method");
 assertEqual(typeof preloadApi.recovery.discard, "function", "Electron preload recovery discard method");
 assertEqual(typeof preloadApi.recovery.later, "function", "Electron preload recovery later method");
+assertEqual(typeof preloadApi.workspace.importAssets, "function", "Electron preload asset import method");
 assertEqual(typeof preloadApi.workspace.writeBackBackup, "function", "Electron preload write-back backup method");
 assertEqual(
   preloadApiModule.listSelfHostedEditorPreloadCommands().length,

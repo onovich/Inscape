@@ -35,6 +35,13 @@ try {
   backupRouteRejected = String(error?.message || "").includes("does not have a dev-host HTTP route");
 }
 assertEqual(backupRouteRejected, true, "write-back backup command is desktop-only");
+let assetImportRouteRejected = false;
+try {
+  resolveEditorBackendDevHostRoute(EditorBackendTransportCommand.WorkspaceImportAssets);
+} catch (error) {
+  assetImportRouteRejected = String(error?.message || "").includes("does not have a dev-host HTTP route");
+}
+assertEqual(assetImportRouteRejected, true, "asset import command is desktop-only");
 
 for (const route of listEditorBackendDevHostRoutes()) {
   assertEqual(commands.includes(route.command), true, `dev-host route command registered: ${route.command}`);
@@ -125,6 +132,11 @@ const workspaceOpen = await backendClient.workspace.openFolder({
 assertEqual(workspaceOpen.command, EditorBackendTransportCommand.WorkspaceOpenFolder, "backend client workspace open command");
 const workspaceList = await backendClient.workspace.listFiles();
 assertEqual(workspaceList.command, EditorBackendTransportCommand.WorkspaceListFiles, "backend client workspace list command");
+const workspaceAssetImport = await backendClient.workspace.importAssets({
+  dialogTitle: "Import assets",
+});
+assertEqual(workspaceAssetImport.command, EditorBackendTransportCommand.WorkspaceImportAssets, "backend client workspace asset import command");
+assertEqual(workspaceAssetImport.payload.dialogTitle, "Import assets", "backend client workspace asset import payload");
 const workspaceBackup = await backendClient.workspace.writeBackBackup({
   writeRequests: [
     {

@@ -9,6 +9,7 @@ import {
 } from "../Scripts/Backend/Models/EditorBackendDocumentBufferStoreModel.js";
 import { EditorBackendLanguageSessionRequestModel } from "../Scripts/Backend/Models/EditorBackendLanguageSessionRequestModel.js";
 import { EditorBackendWorkspaceFolderModel } from "../Scripts/Backend/Models/EditorBackendWorkspaceFolderModel.js";
+import { EditorBackendWorkspaceAssetImportPlanModel } from "../Scripts/Backend/Models/EditorBackendWorkspaceAssetImportPlanModel.js";
 import {
   EditorBackendWorkspaceBackupPlanModel,
 } from "../Scripts/Backend/Models/EditorBackendWorkspaceBackupPlanModel.js";
@@ -20,6 +21,7 @@ export const SelfHostedEditorElectronWorkspaceReadResultFormat = "inscape.self-h
 export const SelfHostedEditorElectronAutosaveResultFormat = "inscape.self-hosted-editor.electron-autosave-result";
 export const SelfHostedEditorElectronFlushResultFormat = "inscape.self-hosted-editor.electron-flush-result";
 export const SelfHostedEditorElectronRecoveryActionResultFormat = "inscape.self-hosted-editor.electron-recovery-action-result";
+export const SelfHostedEditorElectronAssetImportResultFormat = "inscape.self-hosted-editor.electron-asset-import-result";
 export const SelfHostedEditorElectronWriteBackBackupResultFormat = "inscape.self-hosted-editor.electron-write-back-backup-result";
 export const SelfHostedEditorElectronWorkspaceFormatVersion = 1;
 
@@ -39,6 +41,7 @@ export class SelfHostedEditorElectronWorkspaceSessionStore {
   #languageSessionHandlers;
   #maxDocuments;
   #now;
+  #selectAssetImportSources;
   #selectWorkspaceRoot;
   #sessionId;
 
@@ -47,6 +50,7 @@ export class SelfHostedEditorElectronWorkspaceSessionStore {
     this.#languageSessionHandlers = options.languageSessionHandlers || {};
     this.#now = typeof options.now === "function" ? options.now : Date.now;
     this.#maxDocuments = normalizePositiveInteger(options.maxDocuments, 500);
+    this.#selectAssetImportSources = options.selectAssetImportSources || buildStaticAssetImportSelector(options.assetImportSources);
     this.#selectWorkspaceRoot = options.selectWorkspaceRoot || buildStaticWorkspaceSelector(options.workspaceRoot);
     this.#sessionId = normalizeSessionId(options.sessionId || "desktop-main");
   }
@@ -658,6 +662,54 @@ export class SelfHostedEditorElectronWorkspaceSessionStore {
     });
   }
 
+  async importAssets(payload = {}) {
+    if (!this.#activeWorkspace) {
+      return buildAssetImportExecutionResult({
+        plan: EditorBackendWorkspaceAssetImportPlanModel.buildPlan(),
+        reason: "workspace-not-open",
+        sessionId: this.#sessionId,
+      });
+    }
+
+    const workspaceRoot = this.#activeWorkspace.workspaceRoot;
+    const selectedSources = normalizeAssetImportSources(await this.#selectAssetImportSources(payload || {}));
+    const existingAssetRelativePaths = await scanWorkspaceAssetRelativePaths({
+      fsImpl: this.#fs,
+      workspaceRoot,
+    });
+    const sourceDescriptors = await buildAssetImportSourceDescriptors({
+      fsImpl: this.#fs,
+      selectedSources,
+    });
+    const plan = EditorBackendWorkspaceAssetImportPlanModel.buildPlan({
+      existingAssetRelativePaths,
+      imports: sourceDescriptors.map((source) => source.importRequest),
+      workspaceRoot,
+    });
+    if (selectedSources.length === 0) {
+      return buildAssetImportExecutionResult({
+        plan,
+        reason: "asset-import-canceled",
+        sessionId: this.#sessionId,
+      });
+    }
+
+    const sourcesByReferenceId = new Map(sourceDescriptors.map((source) => [
+      source.importRequest.sourceReferenceId,
+      source,
+    ]));
+    const copyResults = [];
+    for (const copyRequest of plan.copyRequests) {
+      copyResults.push(await this.#copyImportedAsset(copyRequest, sourcesByReferenceId));
+    }
+
+    return buildAssetImportExecutionResult({
+      copyResults,
+      plan,
+      sessionId: this.#sessionId,
+    });
+  }
+
   getProjectSessionStatus(payload = {}) {
     if (!this.#activeWorkspace) {
       return buildProjectSessionStatusFromPayload(payload, {
@@ -781,6 +833,73 @@ export class SelfHostedEditorElectronWorkspaceSessionStore {
     const absolutePath = resolveWorkspacePath(this.#activeWorkspace.workspaceRoot, relativePath);
     await this.#fs.mkdir(path.dirname(absolutePath), { recursive: true });
     await this.#fs.writeFile(absolutePath, String(text || ""), "utf8");
+  }
+
+  async #copyImportedAsset(copyRequest = {}, sourcesByReferenceId = new Map()) {
+    const source = sourcesByReferenceId.get(copyRequest.sourceReferenceId) || null;
+    const targetBoundary = EditorBackendDesktopSessionModel.buildWorkspaceFileBoundary({
+      operation: "write",
+      relativePath: copyRequest.targetRelativePath,
+      workspaceRoot: this.#activeWorkspace.workspaceRoot,
+    });
+    if (!targetBoundary.allowed || targetBoundary.targetKind !== "asset-copy") {
+      return buildAssetImportCopyResult({
+        copyRequest,
+        reason: targetBoundary.reason || "asset-target-boundary-rejected",
+        targetBoundary,
+      });
+    }
+
+    if (!source?.sourcePath) {
+      return buildAssetImportCopyResult({
+        copyRequest,
+        reason: "asset-source-not-found",
+        targetBoundary,
+      });
+    }
+
+    const sourceAbsolutePath = path.resolve(source.sourcePath);
+    const targetAbsolutePath = resolveWorkspacePath(this.#activeWorkspace.workspaceRoot, targetBoundary.relativePath);
+    try {
+      const sourceStats = await this.#fs.stat(sourceAbsolutePath);
+      if (!sourceStats.isFile()) {
+        return buildAssetImportCopyResult({
+          copyRequest,
+          reason: "asset-source-not-file",
+          targetBoundary,
+        });
+      }
+
+      await this.#fs.mkdir(path.dirname(targetAbsolutePath), { recursive: true });
+      await this.#fs.copyFile(sourceAbsolutePath, targetAbsolutePath, fs.constants.COPYFILE_EXCL);
+      const targetStats = await this.#fs.stat(targetAbsolutePath);
+      return buildAssetImportCopyResult({
+        bytes: targetStats.size,
+        copyRequest,
+        ok: true,
+        reason: "asset-import-copied",
+        targetBoundary,
+      });
+    } catch (error) {
+      if (error?.code !== "EEXIST") {
+        try {
+          await this.#fs.rm(targetAbsolutePath, { force: true });
+        } catch {
+          // Cleanup is best-effort after a failed copy.
+        }
+      }
+
+      return buildAssetImportCopyResult({
+        copyRequest,
+        error,
+        reason: error?.code === "ENOENT"
+          ? "asset-source-not-found"
+          : error?.code === "EEXIST"
+            ? "asset-target-already-exists"
+            : "asset-copy-failed",
+        targetBoundary,
+      });
+    }
   }
 
   async #copyWriteBackBackup(backupRequest = {}) {
@@ -1116,6 +1235,81 @@ async function readDocumentBuffers({
   return buffers;
 }
 
+async function scanWorkspaceAssetRelativePaths({
+  fsImpl,
+  workspaceRoot,
+}) {
+  const assetPaths = [];
+  const assetsRoot = resolveWorkspacePath(workspaceRoot, "assets");
+
+  async function walk(relativeDirectory = "") {
+    const absoluteDirectory = path.join(
+      assetsRoot,
+      ...normalizeRelativePath(relativeDirectory).split("/").filter(Boolean)
+    );
+    let entries = [];
+    try {
+      entries = await fsImpl.readdir(absoluteDirectory, { withFileTypes: true });
+    } catch {
+      return;
+    }
+
+    entries.sort((left, right) => left.name.localeCompare(right.name, "en"));
+    for (const entry of entries) {
+      const relativePath = joinRelativePath(relativeDirectory, entry.name);
+      if (entry.isDirectory()) {
+        await walk(relativePath);
+        continue;
+      }
+
+      if (!entry.isFile()) {
+        continue;
+      }
+
+      const workspaceRelativePath = joinRelativePath("assets", relativePath);
+      const boundary = EditorBackendDesktopSessionModel.buildWorkspaceFileBoundary({
+        operation: "write",
+        relativePath: workspaceRelativePath,
+        workspaceRoot,
+      });
+      if (boundary.allowed && boundary.targetKind === "asset-copy") {
+        assetPaths.push(workspaceRelativePath);
+      }
+    }
+  }
+
+  await walk();
+  return assetPaths;
+}
+
+async function buildAssetImportSourceDescriptors({
+  fsImpl,
+  selectedSources,
+}) {
+  const descriptors = [];
+  for (const [index, source] of selectedSources.entries()) {
+    const sourceReferenceId = `selected-asset-${index + 1}`;
+    let byteLength = 0;
+    try {
+      const stats = await fsImpl.stat(source.sourcePath);
+      byteLength = stats.isFile() ? stats.size : 0;
+    } catch {
+      byteLength = 0;
+    }
+
+    descriptors.push({
+      importRequest: {
+        byteLength,
+        sourceName: path.basename(source.sourcePath),
+        sourceReferenceId,
+      },
+      sourcePath: source.sourcePath,
+    });
+  }
+
+  return descriptors;
+}
+
 function buildOpenFailureCommon({
   pathBoundary = null,
   reason,
@@ -1321,6 +1515,52 @@ function buildRecoveryActionResult({
     sessionId,
     snapshotRelativePath,
     storeSummary: store ? EditorBackendDocumentBufferStoreModel.listDocuments(store) : null,
+  };
+}
+
+function buildAssetImportExecutionResult({
+  copyResults = [],
+  plan,
+  reason = "",
+  sessionId,
+}) {
+  const failed = copyResults.filter((result) => !result.ok);
+  return {
+    assetImportPlan: plan,
+    copiedCount: copyResults.filter((result) => result.ok).length,
+    copyResults,
+    failedCount: failed.length,
+    format: SelfHostedEditorElectronAssetImportResultFormat,
+    formatVersion: SelfHostedEditorElectronWorkspaceFormatVersion,
+    ok: failed.length === 0 && reason !== "workspace-not-open",
+    operation: "workspace.import-assets",
+    payloadContentExposed: false,
+    reason: reason || (failed.length > 0 ? "one-or-more-assets-failed" : ""),
+    sessionId,
+    skippedImports: plan?.skippedImports || [],
+    sourceCount: plan?.sourceCount || 0,
+  };
+}
+
+function buildAssetImportCopyResult({
+  bytes = 0,
+  copyRequest = {},
+  error = null,
+  ok = false,
+  reason,
+  targetBoundary = null,
+}) {
+  return {
+    assetKind: copyRequest.assetKind || "unsupported",
+    bytes: ok ? bytes : 0,
+    errorCode: error?.code || "",
+    ok: Boolean(ok),
+    payloadContentExposed: false,
+    reason,
+    sourceName: copyRequest.sourceName || "",
+    sourceReferenceId: copyRequest.sourceReferenceId || "",
+    targetKind: targetBoundary?.targetKind || copyRequest.targetKind || "",
+    targetRelativePath: normalizeRelativePath(copyRequest.targetRelativePath),
   };
 }
 
@@ -1589,6 +1829,38 @@ function buildStaticWorkspaceSelector(workspaceRoot) {
   return async () => workspaceRoot || "";
 }
 
+function buildStaticAssetImportSelector(assetImportSources) {
+  return async () => assetImportSources || [];
+}
+
+function normalizeAssetImportSources(sources) {
+  const sourceList = Array.isArray(sources)
+    ? sources
+    : Array.isArray(sources?.filePaths)
+      ? sources.filePaths
+      : [];
+  const normalizedSourcePaths = [];
+  const seen = new Set();
+  for (const source of sourceList) {
+    const sourcePath = normalizeExternalFilePath(
+      typeof source === "string"
+        ? source
+        : source?.sourcePath || source?.filePath || source?.path
+    );
+    const sourceKey = sourcePath.toLowerCase();
+    if (!sourcePath || seen.has(sourceKey)) {
+      continue;
+    }
+
+    seen.add(sourceKey);
+    normalizedSourcePaths.push({
+      sourcePath,
+    });
+  }
+
+  return normalizedSourcePaths;
+}
+
 function buildTextHash(text) {
   return `sha256:${crypto.createHash("sha256").update(String(text || ""), "utf8").digest("hex")}`;
 }
@@ -1652,6 +1924,15 @@ function normalizeSessionId(sessionId) {
     .trim()
     .replace(/[^A-Za-z0-9._:-]/g, "-")
     .slice(0, 120) || "desktop-main";
+}
+
+function normalizeExternalFilePath(filePath) {
+  const normalized = String(filePath || "").trim();
+  if (!normalized) {
+    return "";
+  }
+
+  return path.resolve(normalized);
 }
 
 function normalizeWorkspaceRoot(workspaceRoot) {

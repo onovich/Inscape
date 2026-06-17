@@ -84,6 +84,13 @@ const preloadApi = createSelfHostedEditorPreloadApi({
         ok: true,
       };
     },
+    [EditorBackendTransportCommand.WorkspaceImportAssets]: async (payload) => {
+      preloadCalls.push({ command: EditorBackendTransportCommand.WorkspaceImportAssets, payload });
+      return {
+        copiedCount: 1,
+        ok: true,
+      };
+    },
     [EditorBackendTransportCommand.WorkspaceWriteBackBackup]: async (payload) => {
       preloadCalls.push({ command: EditorBackendTransportCommand.WorkspaceWriteBackBackup, payload });
       return {
@@ -143,6 +150,12 @@ const openWorkspaceResult = await preloadTransport.invoke(EditorBackendTransport
 assertEqual(openWorkspaceResult.ok, true, "preload transport workspace open payload");
 const workspaceOpenCall = preloadCalls.find((call) => call.command === EditorBackendTransportCommand.WorkspaceOpenFolder);
 assertEqual(workspaceOpenCall.payload.dialogTitle, "Open workspace", "preload transport workspace open command");
+const importAssetsResult = await preloadTransport.invoke(EditorBackendTransportCommand.WorkspaceImportAssets, {
+  dialogTitle: "Import assets",
+});
+assertEqual(importAssetsResult.copiedCount, 1, "preload transport asset import payload");
+const importAssetsCall = preloadCalls.find((call) => call.command === EditorBackendTransportCommand.WorkspaceImportAssets);
+assertEqual(importAssetsCall.payload.dialogTitle, "Import assets", "preload transport asset import command");
 const writeBackBackupResult = await preloadTransport.invoke(EditorBackendTransportCommand.WorkspaceWriteBackBackup, {
   writeRequests: [
     {
@@ -206,6 +219,10 @@ const desktopWorkspaceOpen = await desktopBackendClient.workspace.openFolder({
   dialogTitle: "Open desktop workspace",
 });
 assertEqual(desktopWorkspaceOpen.ok, true, "desktop backend client workspace open preload payload");
+const desktopImportAssets = await desktopBackendClient.workspace.importAssets({
+  dialogTitle: "Import desktop assets",
+});
+assertEqual(desktopImportAssets.copiedCount, 1, "desktop backend client asset import preload payload");
 const desktopWriteBackBackup = await desktopBackendClient.workspace.writeBackBackup({
   writeRequests: [
     {

@@ -90,6 +90,11 @@ const fakeDocumentSave = await backendClient.documentBuffer.saveDocument({
 assertEqual(fakeDocumentSave.ok, true, "fake embedded document save result");
 assertEqual(fakeDocumentSave.saveStatus.state, "saved", "fake embedded document save status");
 assertEqual(JSON.stringify(fakeDocumentSave).includes("secret fake embedded buffer text"), false, "fake embedded document save must not expose text");
+const fakeAssetImport = await backendClient.workspace.importAssets({
+  dialogTitle: "Import fake assets",
+});
+assertEqual(fakeAssetImport.ok, true, "fake embedded asset import result");
+assertEqual(fakeAssetImport.payloadContentExposed, false, "fake embedded asset import text-free");
 const diagnosticsBridge = new SelfHostedEditorDiagnosticsBridge({
   languageSessionClient: services.languageSessionClient,
 });
@@ -134,6 +139,7 @@ assertEqual(JSON.stringify(projectStatus).includes("secret draft text"), false, 
 const calledCommands = fakeTransport.calls.map((call) => call.command);
 assertEqual(calledCommands.includes(EditorBackendTransportCommand.LanguageDiagnostics), true, "fake embedded diagnostics command called");
 assertEqual(calledCommands.includes(EditorBackendTransportCommand.DocumentBufferSave), true, "fake embedded document save command called");
+assertEqual(calledCommands.includes(EditorBackendTransportCommand.WorkspaceImportAssets), true, "fake embedded asset import command called");
 assertEqual(calledCommands.includes(EditorBackendTransportCommand.RuntimeStep), true, "fake embedded runtime command called");
 assertEqual(calledCommands.includes(EditorBackendTransportCommand.LocalizationReview), true, "fake embedded localization command called");
 assertEqual(calledCommands.includes(EditorBackendTransportCommand.ProjectSessionStatus), true, "fake embedded project-session command called");

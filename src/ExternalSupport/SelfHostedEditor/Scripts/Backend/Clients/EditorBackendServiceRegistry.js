@@ -41,6 +41,7 @@ export class WorkspaceSessionClient {
   constructor(backendClient) {
     this.sessionId = backendClient?.sessionId || "";
     this.#workspace = requireCapabilities(backendClient?.workspace, [
+      "importAssets",
       "listFiles",
       "openFolder",
       "writeBackBackup",
@@ -50,6 +51,10 @@ export class WorkspaceSessionClient {
 
   async openFolder(request = {}) {
     return await this.#workspace.openFolder(request);
+  }
+
+  async importAssets(request = {}) {
+    return await this.#workspace.importAssets(request);
   }
 
   async listFiles(request = {}) {

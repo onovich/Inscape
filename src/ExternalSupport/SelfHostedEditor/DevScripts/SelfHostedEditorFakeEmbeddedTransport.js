@@ -90,6 +90,12 @@ export class SelfHostedEditorFakeEmbeddedTransport {
         documentCount: 0,
         documents: [],
       }),
+      [EditorBackendTransportCommand.WorkspaceImportAssets]: async () => ({
+        copiedCount: 0,
+        ok: true,
+        payloadContentExposed: false,
+        skippedImports: [],
+      }),
       [EditorBackendTransportCommand.WorkspaceOpenFolder]: async () => ({
         ok: false,
         reason: "workspace-open-not-implemented",
