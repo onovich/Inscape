@@ -1,6 +1,6 @@
 ﻿# 本地化提取
 
-状态：基线 + 草案
+状态：基线 + P2 安全收口
 
 本阶段提供第一版无引擎本地化提取能力，用来验证行级隐式 hash 是否能稳定服务翻译流转。
 
@@ -45,6 +45,8 @@ dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- update-l
   }
 ]
 ```
+
+2026-06-17 P2 安全补充：`update-l10n` / `update-l10n-project --from` 读取 previous localization CSV 时必须看到 `anchor` 与 `translation` header。缺少这两个列的 CSV 会被共享 Tooling 入口拒绝，避免 Host Schema / Host Config / 宿主绑定表被误当成本地化旧表，并生成伪 updated localization CSV。编辑器仍可以通过 `--translation-overrides` 传入会话草稿译文，但真实 CSV 合并语义必须留在 CLI / Tooling。
 
 ## CSV 字段
 

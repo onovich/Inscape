@@ -2,7 +2,7 @@
 
 状态：Accepted
 
-最后更新：2026-05-19
+最后更新：2026-06-17
 
 本文完成 `/goal` Goal 1：把 [ADR 0013](adr/0013-author-title-and-stable-node-id.md) 落成可实现的数据契约。它只定义身份、落盘和迁移规则，不改变 parser 行为。
 
@@ -11,6 +11,8 @@ Goal 0 后，`:: node.name` 不再是当前 parser / editor 主路径。本文�
 2026-05-19 补充：Goal 10 的第一刀已经落地 `update-node-map-project`。当前实现会创建/读取/更新 `inscape.node-map.json`，按当前标题精确命中复用 stable node id，把消失节点标成 `missing`，并把 sidecar 内重复 `id` / `title` 标成 `conflict`。source/content/neighbor 指纹已开始落盘；同日又补了第一版“保守自动重命名识别”：当 `sourcePath` 稳定，且 content / neighbor / line anchors 能形成唯一候选时，会复用旧 id 并把旧标题写入 `previousTitles`。VSCode 当前也已新增显式 `Inscape: Update Stable Node Map` 入口，并会把活动未保存 `.inscape` 文档通过 `--override` 传给 CLI。Goal 10.2.3 现已落地：`update-node-map-project --report` 会输出 `inscape.node-map-update-report`，列出 `renamed`、`new`、`missing`、`conflict` 与 `manual-review` 项；VSCode 也提供显式 `Inscape: Review Stable Node Map Changes` 入口。
 
 2026-06-02 补充：manual-review 候选应用语义已落地为 Tooling 共享动作与 CLI `apply-node-map-candidate-project`。该动作只执行作者明确选择的候选：把候选 stable id 应用到当前标题，继承候选历史标题，追加候选旧标题，并移除重复候选条目。VSCode 已改为调用该共享命令；SelfHostedEditor 后续若需要 apply UI，也应复用该命令或同一 Tooling action。
+
+2026-06-17 P2 补充：SelfHostedEditor 已完成 stable node map review/apply 的 P2 可审计闭环。manual-review candidate 的 evidence、apply preview、dry-run/apply result、backup metadata 与 recovery hint 继续由 `Internal/Tooling` / CLI 产生；SelfHostedEditor 只 compact payload 并显示 UI。dev-host HTTP 路径保持 download-ready，不写工作区 sidecar；Electron desktop 路径必须先由用户显式 `Confirm Apply`，再调用 `workspace.write-back-backup`，最后通过 desktop-only `stable-node-map.write-sidecar` 写回。P2 不实现 batch review / multi-apply；后续若重启批量能力，必须先补共享 Tooling / CLI batch dry-run、batch result、per-item failure 与 rollback contract，宿主不能循环单候选 apply 来伪造批量语义。
 
 ## 目标
 

@@ -2,9 +2,11 @@
 
 状态：Accepted
 
-最后更新：2026-05-17
+最后更新：2026-06-17
 
 本文完成 `/goal` Goal 2：设计本地化 diff / alignment 迁移。它只定义后续 `update-l10n` 增强的状态机、报告和对齐规则，不改变当前 CLI 行为。
+
+2026-06-17 P2 补充：`audit-l10n-alignment-project`、Tooling presenter 与编辑器 review UI 已落地本契约主路径。相似文本仍只作为人工候选暴露，`changed` / `conflict` 不会静默复用旧译文；candidate similarity、rank penalty、reason、line identity 与 diff detail 由 `Internal/Tooling` 产生，VSCode 与 SelfHostedEditor 只消费 presenter signals。`update-l10n` / `update-l10n-project --from` 的 previous CSV 输入现在必须包含 `anchor` 与 `translation` header；Host Schema / Host Config CSV 不能被当成本地化旧表继续生成 updated localization CSV。
 
 ## 目标
 

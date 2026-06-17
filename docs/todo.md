@@ -14,11 +14,12 @@ SelfHostedEditor regression invariant: Preview choice clicks must advance the re
 
 本节整合近期对 `docs/todo.md`、`docs/open-questions.md`、SelfHostedEditor 架构评估、backend migration readiness 与 desktop backend v0 决策的判断。外部合作交流不纳入本节主线。
 
-当前主线已经完成 SelfHostedEditor desktop backend v0 与 P1.5 workspace-scoped long-lived LanguageServer 收口；下一 phase 允许进入：
+当前主线已经完成 SelfHostedEditor desktop backend v0、P1.5 workspace-scoped long-lived LanguageServer，以及 P2 Round 13 文档 / ADR 收口；下一步是 P2 Round 14 全量验证。后续 Host Bridge / Unity-Bird 只能在 P2 PASS 后进入：
 
 ```text
 P2 stable identity / localization review
-  -> Host Bridge / Unity-Bird 等后续较低优先级工作
+  -> Round 14 full validation
+  -> Host Bridge / Unity-Bird 等后续较低优先级工作 only if P2 PASS
 ```
 
 ### P0：进入 desktop backend v0 前的 current-stage 100% 收口
@@ -145,6 +146,7 @@ npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
 - [x] 完成 P2 Round 10 Batch Review / Multi-Apply 决策。2026-06-17 决策见 [SelfHostedEditor P2 Batch Review / Multi-Apply Decision](self-hosted-editor-p2-batch-multi-apply-decision.md)；P2 不做 batch / multi-apply，保留逐候选 `Preview Apply` / `Confirm Apply` / backup / write-back 闭环，并用 `check:semantic-parity` 防止 P2 混入 `Apply All` / bulk / multi-apply 半成品入口。下一步进入 Round 11：Localization Update Safety。
 - [x] 完成 P2 Round 11 Localization Update Safety。2026-06-17 审计结果见 [SelfHostedEditor P2 Localization Update Safety Audit](self-hosted-editor-p2-localization-update-safety-audit.md)；`Internal/Tooling` 现在拒绝缺少 `anchor` 与 `translation` header 的 previous localization CSV，避免 host config CSV 被误当作本地化旧表；SelfHostedEditor updated CSV payload 明确 `generatedBy: "update-l10n-project"`、`writesWorkspaceFile: false`、backup `not-written-by-dev-host` 与恢复提示。下一步进入 Round 12：工作台集成 Smoke。
 - [x] 完成 P2 Round 12 工作台集成 Smoke。2026-06-17 审计结果见 [SelfHostedEditor P2 Workbench Integration Smoke Audit](self-hosted-editor-p2-workbench-integration-smoke-audit.md)；新增 `check:workbench-integration-http`，用同一个 dev-host HTTP server 串起 localization review/update、line-map refresh、stable node map review/apply，并覆盖 hosted empty、missing-baseline error、session status non-content、dry-run/apply result、backup metadata 与 recovery hint。下一步进入 Round 13：文档与 ADR 收口。
+- [x] 完成 P2 Round 13 文档与 ADR 收口。2026-06-17 审计结果见 [SelfHostedEditor P2 Documentation And ADR Closure Audit](self-hosted-editor-p2-doc-adr-closure-audit.md)；P1.5 文档收口为 PASS，P2 没有引入需要新 ADR 的长期决策，既有 stable node id / localization / l10n contract 已同步 P2 口径。下一步进入 Round 14：P2 全量验证与 PASS/FAIL 初判。
 - [x] 继续收敛 Review Presenter 形状：candidate / diff / rank / identity / risk 信号已稳定为 shared `signals` contract，供 VSCode 与 SelfHostedEditor 一致消费。
 - [x] 完成 stable node map review / apply 的产品化体验：人工确认、冲突报告、dry-run / apply、备份与恢复路径清晰；P2 明确不做 batch / multi-apply。
 - [ ] P2 后重新评估 batch review / multi-apply 的产品价值；若要做，先设计共享 Tooling / CLI batch dry-run、batch result、per-item failure 与 rollback contract，禁止宿主侧直接循环单候选 apply。
@@ -153,6 +155,8 @@ npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
 ### P2.5：Host Schema / Host Bridge 与 Unity-Bird 适配收口
 
 目标：保持 Inscape engine-agnostic 的 Host Schema / Host Bridge 边界，同时只对 Bird / Unity 做低风险验证和决策，不把 Bird 变成通用模型真相。
+
+入口条件：必须先完成 P2 Round 14 全量验证，并在 handoff / TODO 中明确记录 `P2 PASS`。若 Round 14 失败，则第 15-18 轮只用于修复 P2，不开启本节任务。
 
 - [ ] 决定 Bird 项目新增 importer 与 `InscapeGenerated` 资源提交策略。
 - [ ] 用带真实 Timeline 绑定的样例再次执行 Bird Import Dry Run，确认 `talking.exit` 的 `TalkingEffectTM.PlayTimeline` 落地与其他 phase warning。
@@ -171,7 +175,7 @@ npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
 
 ### 暂停 / 明确后置
 
-- [ ] 外部合作线不进入当前研发 TODO；当前研发仍以 SelfHostedEditor current-stage readiness、desktop backend v0 与 long-lived LanguageServer 为主。
+- [ ] 外部合作线不进入当前研发 TODO；当前研发仍以 SelfHostedEditor P2 全量验证、P2 缓冲修复和后续 P2.5 入口条件为主。
 - [ ] 不做 sidecar daemon，除非出现 ADR 0019 中列出的多宿主复用、多窗口共享、后台 daemon、崩溃隔离、跨重启 session restore 等触发条件。
 - [ ] 不做正式单文件工作模式；只提供打开目录 / workspace。
 - [ ] 不做首发 macOS、签名、自动更新和完整安装器体验；v0 只要求 Windows 内部可用包。
@@ -203,7 +207,7 @@ npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
 - [x] 决定设置分层：UI 主题、autosave、backup 保留偏全局；项目入口、资源路径、导出配置、Git/checkpoint 策略偏 workspace / project。
 - [x] 用户已显式确认上述 v0 架构判断；其中 LanguageServer long-lived 虽不作为 v0 阻塞项，但必须作为 v0 之后的关键下一步，不降级为普通优化。
 - [x] 进入 v0 实现前，先完成当前阶段 100% 收口：CSS warning 清零、Summary fallback 分类关闭、fallback contract 再硬化、project-session status 真实性、LanguageSession stdio spike 支持范围决策。
-- [ ] desktop backend v0 基础稳定后，推进 backend 管理的 workspace-scoped long-lived LanguageServer：统一 workspace state、增量文档同步、崩溃重启 / 回退、状态可观测和 semantic parity 验收。
+- [x] desktop backend v0 基础稳定后，推进 backend 管理的 workspace-scoped long-lived LanguageServer：P1.5 已完成 workspace state、当前 buffer override、崩溃重启 / fallback、状态可观测、packaged artifact 与 semantic parity 验收；后续只保留非阻塞 hardening。
 
 ## 2026-06-13 SelfHostedEditor long-lived backend / fallback 10 轮执行状态
 

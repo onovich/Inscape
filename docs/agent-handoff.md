@@ -1,12 +1,22 @@
 # Agent 接手指南
 
-状态：P2 Round 12
+状态：P2 Round 13
 
 最后更新：2026-06-17
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-17 SelfHostedEditor P2 Round 13 文档与 ADR 收口快照
+
+P2 Round 13 已完成文档、契约和接力入口收口，不宣布 P2 完成。
+
+- 审计产物见 [SelfHostedEditor P2 Documentation And ADR Closure Audit](self-hosted-editor-p2-doc-adr-closure-audit.md)。
+- P1.5 文档收口方案已标记 PASS：`P1.5 long-lived LanguageServer: PASS`，`P2 stable identity / localization review entry allowed: YES`；旧的 packaged LanguageServer artifact 与 fallback 阻塞口径未再命中当前文档。
+- 本轮不新增 ADR：P2 仍落在 ADR 0013 / 0017 / 0018 / 0019 / 0020 的既有决策内；长期变化已同步到 stable node id、localization diff alignment 与 l10n extraction contract 文档。
+- 后续 Host Schema / Host Bridge / Unity-Bird 只能在 Round 14 完整 P2 验证通过并记录 `P2 PASS` 后启动；若 Round 14 失败，则进入第 15-18 轮缓冲修复，不开启 P2.5。
+- 下一轮进入 P2 Round 14：全量验证与首轮修复；重点跑完整 P2 验证矩阵并给出 PASS/FAIL 初判。
 
 ### 2026-06-17 SelfHostedEditor P2 Round 12 工作台集成 Smoke 快照
 

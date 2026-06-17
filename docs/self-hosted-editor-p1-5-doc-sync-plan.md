@@ -1,8 +1,18 @@
 # SelfHostedEditor P1.5 文档收口方案
 
-状态：待执行
+状态：已完成
 
 日期：2026-06-17
+
+## 收口结果
+
+```text
+P1.5 document sync: PASS
+P2 entry allowed: YES
+Blocking reason if NO: none
+```
+
+2026-06-17 已确认 README、P1 执行计划、handoff 与 TODO 对 P1.5 的状态一致：packaged build 已随包携带 `Inscape.LanguageServer`，`smoke:desktop-package-language` 覆盖真实 packaged long-lived path，`process-per-request` fallback 只作为已覆盖的回退能力，不再是 P1.5 阻塞项。
 
 ## 背景
 
