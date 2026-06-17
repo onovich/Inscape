@@ -10,6 +10,8 @@ Host Bridge 是 Inscape 与具体宿主项目之间的映射契约。它位于 [
 
 Compiler 不读取 Host Bridge，也不依赖任何宿主字段。
 
+P2.5 收口结论：Unity GUID、asset path、Addressables key、Bird `talkingId` / `birdId` 只能出现在 Host Bridge / adapter artifact / 外部项目配置中，不进入 Host Schema 或 Compiler contract。
+
 ## 文件命名
 
 推荐默认文件名：

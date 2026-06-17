@@ -336,7 +336,7 @@ MonoBehaviour:
                 AssertFalse(l10n.Contains("Continue"), "UnitySample L10N should not put option text into L10N_Talking yet.");
 
                 string map = File.ReadAllText(mapPath, Encoding.UTF8);
-                AssertTrue(map.Contains("TalkingOptionTM.optionText"), "Anchor map should include option text mapping.");
+                AssertTrue(map.Contains("L10N_TalkingOption.pending"), "Anchor map should include pending option text localization mapping.");
                 AssertTrue(map.Contains("Continue"), "Anchor map should preserve option source text.");
 
                 string report = File.ReadAllText(reportPath, Encoding.UTF8);

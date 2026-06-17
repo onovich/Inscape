@@ -73,7 +73,7 @@ Inscape Project
 - `L10N_Talking.csv`：生成 Bird 当前 `L10N` 可读取的对话文本表。
 - 可选审校表：保留 Inscape `anchor,node,kind,speaker,text` 等字段，服务翻译和迁移。
 
-当前已经有 CLI 原型：`export-bird-project <root> -o <output-dir>`。细节见 [Bird Adapter 原型](bird-adapter.md)。
+早期 CLI 原型曾写作 `export-bird-project <root> -o <output-dir>`；当前可执行入口已迁到 ExternalSupport 的 `export-unity-sample-project`，并通过 Bird-compatible ignored manifest 完成 P2.5 dry run。细节见 [Bird Adapter 原型](bird-adapter.md)、[SelfHostedEditor P2.5 Timeline Export Audit](self-hosted-editor-p2-5-timeline-export-audit.md) 和 [SelfHostedEditor P2.5 Bird Dry Run Audit](self-hosted-editor-p2-5-bird-dry-run-audit.md)。
 
 Unity Editor Importer 的可复制原型位于 `src/ExternalSupport/UnityPlugin/unity-bird-importer/`，设计说明见 [Unity Editor Importer 草案](unity-editor-importer.md)。它读取 `bird-manifest.json` 并生成 / 更新 Bird `TalkingSO`，但不让 `Inscape.Compiler` 依赖 Unity。
 

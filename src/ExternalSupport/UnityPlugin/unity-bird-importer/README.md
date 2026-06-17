@@ -61,7 +61,7 @@ Assets/Resources_Runtime/Talking/InscapeGenerated
   -batchmode -quit `
   -projectPath "D:\UnityProjects\Bird" `
   -executeMethod Inscape.Unity.BirdImporter.InscapeBirdManifestImporter.ImportManifestFromCommandLine `
-  -inscapeManifest "D:\LabProjects\Inscape\artifacts\bird-trial\export\bird-manifest.json" `
+  -inscapeManifest "D:\LabProjects\Inscape\artifacts\bird-trial\phase-export\bird-manifest-p2-5-phases.json" `
   -inscapeOutputFolder "Assets/Resources_Runtime/Talking/InscapeGenerated" `
   -logFile "D:\LabProjects\Inscape\artifacts\bird-trial\unity-import.log"
 ```
@@ -73,7 +73,7 @@ Assets/Resources_Runtime/Talking/InscapeGenerated
   -batchmode -quit `
   -projectPath "D:\UnityProjects\Bird" `
   -executeMethod Inscape.Unity.BirdImporter.InscapeBirdManifestImporter.ImportManifestFromCommandLine `
-  -inscapeManifest "D:\LabProjects\Inscape\artifacts\bird-trial\export\bird-manifest.json" `
+  -inscapeManifest "D:\LabProjects\Inscape\artifacts\bird-trial\phase-export\bird-manifest-p2-5-phases.json" `
   -inscapeOutputFolder "Assets/Resources_Runtime/Talking/InscapeGenerated" `
   -inscapeApplyAddressables `
   -logFile "D:\LabProjects\Inscape\artifacts\bird-trial\unity-import-aa.log"

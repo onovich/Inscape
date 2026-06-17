@@ -4,6 +4,8 @@
 
 最后更新：2026-05-01
 
+P2.5 更新：本文保留早期 `export-bird-*` 原型语境。当前仓库的可执行实现已迁到 `src/ExternalSupport/UnityPlugin/Inscape.UnitySample.Cli`，命令名为 `export-unity-sample-*` / `merge-unity-sample-l10n`。Bird-specific dry run 通过 ignored Bird-compatible manifest 验证，详见 [SelfHostedEditor P2.5 Timeline Export Audit](self-hosted-editor-p2-5-timeline-export-audit.md)、[SelfHostedEditor P2.5 Bird Dry Run Audit](self-hosted-editor-p2-5-bird-dry-run-audit.md) 与 [SelfHostedEditor P2.5 Bird L10N Format Decision](self-hosted-editor-p2-5-bird-l10n-format-decision.md)。
+
 本文记录第一版 Bird 导出原型。它用于验证 Inscape Project IR 能否低侵入地转换为 Bird 当前可消费的数据，不代表最终 Unity 导入流程，也不代表 Inscape 只能服务 Bird、Addressables 或 ScriptableObject 项目。
 
 Bird 在这里是一个真实需求方和参考适配器：它帮助暴露角色 ID、Timeline 资源、L10N 表、TalkingSO 等项目桥接问题。通用方案应抽象为 Host Schema / Host Bridge / 项目 Adapter，而不是把 Bird 的数据结构写进 Core。

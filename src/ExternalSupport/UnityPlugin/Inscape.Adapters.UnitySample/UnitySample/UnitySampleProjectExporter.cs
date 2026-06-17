@@ -241,7 +241,7 @@ namespace Inscape.Adapters.UnitySample {
                             Text = option.Text,
                             TalkingId = terminalTalking.TalkingId,
                             TalkingIndex = null,
-                            UnitySampleField = "TalkingOptionTM.optionText",
+                            UnitySampleField = "L10N_TalkingOption.pending",
                             Source = option.Source,
                         });
                     }
@@ -525,4 +525,3 @@ namespace Inscape.Adapters.UnitySample {
     }
 
 }
-

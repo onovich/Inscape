@@ -10,6 +10,8 @@
 
 `UnityPlugin` 不是一个具体 Unity package，而是 ExternalSupport 下的 Unity 相关工作区。不要在 `src/ExternalSupport/UnityPlugin` 顶层建立通用 `Scripts` 或 `Resources`。
 
+P2.5 更新：Bird importer 已完成 dry-run 验证和当前 Bird API 适配，但仍保持 `unity-bird-importer/` 原型形态；不创建真实 Unity package，不新增顶层 `Scripts` / `Resources`，也不把 Bird importer 或 `InscapeGenerated` 资源提交策略升级为通用 Unity 支持层。
+
 当前目录含义：
 
 ```text

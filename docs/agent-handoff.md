@@ -1,12 +1,22 @@
 # Agent 接手指南
 
-状态：P2.5 Round 5 PASS
+状态：P2.5 Round 6 PASS
 
 最后更新：2026-06-17
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-17 SelfHostedEditor P2.5 Round 6 边界收口快照
+
+P2.5 Round 6 已完成 Host Bridge / ExternalSupport 边界收口，不宣布 P2.5 完成。
+
+- 审计产物见 [SelfHostedEditor P2.5 Boundary Closure Audit](self-hosted-editor-p2-5-boundary-closure-audit.md)。
+- Host Schema / Host Bridge 口径已同步：Schema 是能力清单，Bridge / adapter artifact 才携带 Unity GUID、asset path、Addressables key、Bird ID 和 handler / query implementation 映射。
+- 当前可执行 Unity/Bird 导出入口已统一记录为 ExternalSupport `export-unity-sample-*`，历史 `export-bird-*` 仅保留早期原型语境。
+- UnityPlugin 仍不是通用 Unity package；Bird importer 保持 `unity-bird-importer/` 原型形态，不创建顶层 `Scripts` / `Resources`。
+- 下一轮进入最终验证与 P2.5 PASS/FAIL 收口；P3 只有在最终矩阵通过后才允许启动。
 
 ### 2026-06-17 SelfHostedEditor P2.5 Round 5 Bird L10N 决策快照
 

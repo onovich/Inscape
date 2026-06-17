@@ -16,10 +16,10 @@ src/ExternalSupport/UnityPlugin/unity-bird-importer/Editor/InscapeBirdManifestIm
 
 ## 输入
 
-Importer 读取 `export-bird-project` 生成的：
+Importer 读取 Bird-compatible manifest。当前可执行导出入口是 ExternalSupport 的 `export-unity-sample-project`；历史 `export-bird-project` 只作为早期原型口径参考。P2.5 dry run 使用从 `unity-sample-manifest.json` 派生的：
 
 ```text
-bird-manifest.json
+bird-manifest-p2-5-phases.json
 ```
 
 导入前建议同时查看：
@@ -54,12 +54,12 @@ TalkingSO / TalkingTM
 映射规则：
 
 ```text
-manifest talking.talkingId       -> TalkingTM.talkingId
+manifest talking.talkingId       -> TalkingSO 文件名 ID / TalkingSO.TalkingId
 manifest talking.nextTalkingId   -> TalkingTM.nextTalking
-manifest talking.roleId          -> TalkingTM.roleId
-manifest talking.textAnchorIndex -> TalkingTM.textAnchorIndex
+manifest talking.roleId          -> TalkingTM.role / RoleSO
+manifest talking.textAnchorIndex -> 当前 Bird API 不再写入；文本位置由 Bird 运行时 / 角色配置处理
 manifest talking.textDisplayType -> TalkingTM.textDisplayType
-manifest talking.options         -> TalkingTM.options
+manifest talking.options         -> TalkingTM.options.nextTalking / conditions
 manifest hostHooks timeline      -> TalkingTM.effects PlayTimeline
 ```
 
@@ -67,7 +67,7 @@ Timeline 解析优先级：
 
 1. `hostHook.unityGuid`
 2. `hostHook.assetPath`
-3. `hostHook.birdId` 对应现有 `TimelineSO.tm.timelineId`
+3. `hostHook.birdId` 对应现有 `TimelineSO.TimelineId`
 
 当前只生成 `phase=talking.exit` 的 Timeline effect。`talking.enter`、`node.enter` 和 `node.exit` 会在 Dry Run 中报告 `UNSUPPORTED_PHASE`，真实 Import 时跳过并输出 warning；它们先作为 manifest 数据保留，等待 Bird/DirectorSystem 后续扩展。
 
@@ -111,7 +111,7 @@ Dry Run 也提供命令行入口，方便之后接入 CI 或本地自动化：
   -batchmode -quit `
   -projectPath "D:\UnityProjects\Bird" `
   -executeMethod Inscape.Unity.BirdImporter.InscapeBirdManifestImporter.DryRunImportManifestFromCommandLine `
-  -inscapeManifest "D:\LabProjects\Inscape\artifacts\bird-trial\export\bird-manifest.json" `
+  -inscapeManifest "D:\LabProjects\Inscape\artifacts\bird-trial\phase-export\bird-manifest-p2-5-phases.json" `
   -inscapeOutputFolder "Assets/Resources_Runtime/Talking/InscapeGenerated" `
   -logFile "D:\LabProjects\Inscape\artifacts\bird-trial\unity-dry-run.log"
 ```
@@ -125,7 +125,7 @@ Dry Run 也提供命令行入口，方便之后接入 CI 或本地自动化：
   -batchmode -quit `
   -projectPath "D:\UnityProjects\Bird" `
   -executeMethod Inscape.Unity.BirdImporter.InscapeBirdManifestImporter.ImportManifestFromCommandLine `
-  -inscapeManifest "D:\LabProjects\Inscape\artifacts\bird-trial\export\bird-manifest.json" `
+  -inscapeManifest "D:\LabProjects\Inscape\artifacts\bird-trial\phase-export\bird-manifest-p2-5-phases.json" `
   -inscapeOutputFolder "Assets/Resources_Runtime/Talking/InscapeGenerated" `
   -logFile "D:\LabProjects\Inscape\artifacts\bird-trial\unity-import.log"
 ```
@@ -137,7 +137,7 @@ Dry Run 也提供命令行入口，方便之后接入 CI 或本地自动化：
   -batchmode -quit `
   -projectPath "D:\UnityProjects\Bird" `
   -executeMethod Inscape.Unity.BirdImporter.InscapeBirdManifestImporter.ImportManifestFromCommandLine `
-  -inscapeManifest "D:\LabProjects\Inscape\artifacts\bird-trial\export\bird-manifest.json" `
+  -inscapeManifest "D:\LabProjects\Inscape\artifacts\bird-trial\phase-export\bird-manifest-p2-5-phases.json" `
   -inscapeOutputFolder "Assets/Resources_Runtime/Talking/InscapeGenerated" `
   -inscapeApplyAddressables `
   -logFile "D:\LabProjects\Inscape\artifacts\bird-trial\unity-import-aa.log"

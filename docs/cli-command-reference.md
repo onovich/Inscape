@@ -182,7 +182,7 @@ unity-sample-export-report.txt
 - 新增 Inscape 行会追加到表尾。
 - 同 ID 且源文本未变时，保留现有译文。
 - 同 ID 但源文本变化时，写入新源文本并清空目标语言列，旧源文本和旧译文写入 `--report` 报告供人工参考。
-- 不处理选择项文本；选择项仍在 `TalkingOptionTM.optionText` 和 `inscape-unity-sample-l10n-map.csv` 中审查。
+- 不生成选择项文本 L10N 表；选择项文本目前以 `L10N_TalkingOption.pending` 留在 `inscape-unity-sample-l10n-map.csv` 中审查，后续由 Bird adapter 决定是否输出 `L10N_TalkingOption`。
 
 ## Unity / Bird Importer 命令
 
@@ -191,10 +191,12 @@ unity-sample-export-report.txt
 生成一份可用于 Bird dry-run 的最小导出包：
 
 ```powershell
-dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- export-bird-role-template samples --bird-existing-role-name-csv D:\UnityProjects\Bird\Assets\Resources_Runtime\Localization\L10N_RoleName.csv -o artifacts\bird-trial\bird-roles.csv
-dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- export-bird-binding-template samples --bird-existing-timeline-root D:\UnityProjects\Bird\Assets\Resources_Runtime\Timeline -o artifacts\bird-trial\bird-bindings.csv
-dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- export-bird-project samples --bird-existing-talking-root D:\UnityProjects\Bird\Assets\Resources_Runtime\Talking --bird-binding-map artifacts\bird-trial\bird-bindings.csv -o artifacts\bird-trial\export
+dotnet run --project src\ExternalSupport\UnityPlugin\Inscape.UnitySample.Cli\Inscape.UnitySample.Cli.csproj -- export-unity-sample-role-template samples --unity-sample-existing-role-name-csv D:\UnityProjects\Bird\Assets\Resources_Runtime\Localization\L10N_RoleName.csv -o artifacts\bird-trial\bird-roles.csv
+dotnet run --project src\ExternalSupport\UnityPlugin\Inscape.UnitySample.Cli\Inscape.UnitySample.Cli.csproj -- export-unity-sample-binding-template samples --unity-sample-existing-timeline-root D:\UnityProjects\Bird\Assets\Resources_Runtime\Timeline -o artifacts\bird-trial\bird-bindings.csv
+dotnet run --project src\ExternalSupport\UnityPlugin\Inscape.UnitySample.Cli\Inscape.UnitySample.Cli.csproj -- export-unity-sample-project samples --unity-sample-existing-talking-root D:\UnityProjects\Bird\Assets\Resources_Runtime\Talking --unity-sample-binding-map artifacts\bird-trial\bird-bindings.csv -o artifacts\bird-trial\export
 ```
+
+P2.5 dry run 使用从 `unity-sample-manifest.json` 派生的 Bird-compatible ignored manifest；当前验证输入为 `artifacts\bird-trial\phase-export\bird-manifest-p2-5-phases.json`。
 
 用 Unity batchmode 执行 Importer Dry Run：
 
@@ -203,7 +205,7 @@ dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- export-b
   -batchmode -quit `
   -projectPath "D:\UnityProjects\Bird" `
   -executeMethod Inscape.Unity.BirdImporter.InscapeBirdManifestImporter.DryRunImportManifestFromCommandLine `
-  -inscapeManifest "D:\LabProjects\Inscape\artifacts\bird-trial\export\bird-manifest.json" `
+  -inscapeManifest "D:\LabProjects\Inscape\artifacts\bird-trial\phase-export\bird-manifest-p2-5-phases.json" `
   -inscapeOutputFolder "Assets/Resources_Runtime/Talking/InscapeGenerated" `
   -logFile "D:\LabProjects\Inscape\artifacts\bird-trial\unity-dry-run.log"
 ```
@@ -211,29 +213,29 @@ dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- export-b
 Dry Run 成功后会生成：
 
 ```text
-artifacts\bird-trial\export\bird-import-dry-run-report.txt
+artifacts\bird-trial\phase-export\bird-import-dry-run-report.txt
 ```
 
-确认 Dry Run 报告后执行真实 Import：
+确认 Dry Run 报告后执行真实 Import。P2.5 不执行真实 Import，以下命令只作为后续人工确认后的参考：
 
 ```powershell
 & "D:\UnityEditors\Unity 2023.2.22f1\Editor\Unity.exe" `
   -batchmode -quit `
   -projectPath "D:\UnityProjects\Bird" `
   -executeMethod Inscape.Unity.BirdImporter.InscapeBirdManifestImporter.ImportManifestFromCommandLine `
-  -inscapeManifest "D:\LabProjects\Inscape\artifacts\bird-trial\export\bird-manifest.json" `
+  -inscapeManifest "D:\LabProjects\Inscape\artifacts\bird-trial\phase-export\bird-manifest-p2-5-phases.json" `
   -inscapeOutputFolder "Assets/Resources_Runtime/Talking/InscapeGenerated" `
   -logFile "D:\LabProjects\Inscape\artifacts\bird-trial\unity-import.log"
 ```
 
-真实 Import 后同步设置 Bird Addressables：
+真实 Import 后同步设置 Bird Addressables。该动作必须显式确认，不能与 Dry Run 混用：
 
 ```powershell
 & "D:\UnityEditors\Unity 2023.2.22f1\Editor\Unity.exe" `
   -batchmode -quit `
   -projectPath "D:\UnityProjects\Bird" `
   -executeMethod Inscape.Unity.BirdImporter.InscapeBirdManifestImporter.ImportManifestFromCommandLine `
-  -inscapeManifest "D:\LabProjects\Inscape\artifacts\bird-trial\export\bird-manifest.json" `
+  -inscapeManifest "D:\LabProjects\Inscape\artifacts\bird-trial\phase-export\bird-manifest-p2-5-phases.json" `
   -inscapeOutputFolder "Assets/Resources_Runtime/Talking/InscapeGenerated" `
   -inscapeApplyAddressables `
   -logFile "D:\LabProjects\Inscape\artifacts\bird-trial\unity-import-aa.log"
