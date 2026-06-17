@@ -46,6 +46,8 @@ Narrator: Second workspace.`);
   assertEqual(openResult.ok, true, "long-lived language workspace opens");
   assertEqual(openResult.projectSession.languageSession.kind, "long-lived", "workspace status language kind");
   assertEqual(openResult.projectSession.languageSession.health, "ready", "workspace status language health");
+  assertEqual(openResult.projectSession.languageSession.artifactHealth, "available", "workspace status language artifact health");
+  assertEqual(openResult.projectSession.languageSession.artifactKind.startsWith("dev-"), true, "workspace status language artifact kind");
   assertEqual(openResult.projectSession.languageSession.documentRevisionLag, 0, "workspace status initial language revision lag");
   const firstProcessId = bridge.getProcessId();
   assertEqual(firstProcessId > 0, true, "workspace open starts LanguageServer process");

@@ -262,6 +262,8 @@ function buildWorkspaceFileBoundaryDecision({
 function buildLanguageSession(languageSession) {
   if (languageSession?.kind === "long-lived") {
     return {
+      artifactHealth: normalizeLanguageArtifactHealth(languageSession.artifactHealth),
+      artifactKind: normalizeLanguageArtifactKind(languageSession.artifactKind),
       documentRevisionLag: normalizeNonNegativeInteger(languageSession.documentRevisionLag),
       fallbackKind: String(languageSession.fallbackKind || "process-per-request"),
       health: normalizeLanguageSessionHealth(languageSession.health),
@@ -314,6 +316,22 @@ function normalizeLanguageSessionHealth(health) {
   }
 
   return "error";
+}
+
+function normalizeLanguageArtifactHealth(artifactHealth) {
+  const normalized = String(artifactHealth || "unresolved");
+  if (["available", "incomplete", "missing", "unresolved"].includes(normalized)) {
+    return normalized;
+  }
+
+  return "unresolved";
+}
+
+function normalizeLanguageArtifactKind(artifactKind) {
+  return String(artifactKind || "unresolved")
+    .trim()
+    .replace(/[^A-Za-z0-9._:-]/g, "-")
+    .slice(0, 80) || "unresolved";
 }
 
 function normalizeNonNegativeInteger(value) {

@@ -12,12 +12,19 @@ const readiness = buildSelfHostedEditorDesktopPackageReadiness(packageJson, { mo
 assertEqual(readiness.format, "inscape.self-hosted-editor.desktop-package-readiness", "desktop package readiness format");
 assertEqual(readiness.windowsPackageScriptAvailable, true, "desktop package script availability");
 assertEqual(readiness.windowsPackageGenerated, true, "desktop package artifact generated");
+assertEqual(readiness.languageServerArtifactGenerated, true, "desktop package LanguageServer artifact generated");
 assertEqual(readiness.knownLimitations.includes("windows-package-not-generated"), false, "desktop package generated limitation");
+assertEqual(readiness.knownLimitations.includes("language-server-artifact-not-generated"), false, "desktop package LanguageServer generated limitation");
 
 assertFileSizeAtLeast(readiness.expectedExecutablePath, 50 * 1024 * 1024, "desktop package executable");
 const appAsarPath = path.join(moduleRoot, "dist", "win-unpacked", "resources", "app.asar");
 assertFileSizeAtLeast(appAsarPath, 1024 * 1024, "desktop package app.asar");
 assertFileSizeAtLeast(path.join(moduleRoot, "dist", "win-unpacked", "resources", "samples", "court-loop.inscape"), 1, "desktop package sample workspace");
+assertFileSizeAtLeast(readiness.expectedLanguageServerDllPath, 1, "desktop package LanguageServer dll");
+assertFileSizeAtLeast(readiness.expectedLanguageServerRuntimeConfigPath, 1, "desktop package LanguageServer runtime config");
+if (fs.existsSync(readiness.expectedLanguageServerExecutablePath)) {
+  assertFileSizeAtLeast(readiness.expectedLanguageServerExecutablePath, 1, "desktop package LanguageServer executable");
+}
 assertPathMissing(path.join(moduleRoot, "dist", "win-unpacked", "DevScripts"), "desktop package must not expose DevScripts as a loose directory");
 
 const builderDebugPath = path.join(moduleRoot, "dist", "builder-debug.yml");

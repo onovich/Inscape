@@ -113,11 +113,13 @@ SelfHostedEditor desktop backend v0
 - [x] LanguageServer 崩溃、超时或协议错误时，backend 显示健康状态、last error summary、document revision lag，并支持重启或降级到 `process-per-request`。2026-06-17 第二刀：`health` / `lastError` / `documentRevisionLag` / `restartCount` 已进入 ProjectSession status，协议错误会停止当前进程，下一次 language request 会启动 replacement process；`process-per-request` 降级仍可作为后续打包容灾增强。
 - [x] 切换 workspace / 关闭窗口时，backend 停止 LanguageServer 并清理 session。2026-06-17 第一刀：workspace switch 会 dispose 旧 session 并启动新 session，close-window / app-exit 成功 flush 后调用 session dispose hook。
 - [x] 保持与 VSCode authoring endpoint 的 semantic parity：SelfHostedEditor 与 VSCode 都消费同一组 shared payload shape。2026-06-17 第三刀：Electron workspace contract 明确断言 `inscape.self-hosted-editor.language-session-request` envelope 与 query kind，验证仍通过 SelfHostedEditor / VSCode semantic parity。
+- [x] packaged app 带上并解析 bundled LanguageServer artifact。2026-06-17 P1.5 打包第一刀：`package:windows` 会把 `Inscape.LanguageServer` runtime 复制到 `resources/language-server`，Electron packaged resolver 只从该资源目录启动，不回退到源码目录；`check:electron-language-artifact` 与 `smoke:desktop-package` 覆盖 artifact contract。
 
 验收入口应至少覆盖：
 
 ```powershell
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:language-session
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:electron-language-artifact
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:electron-language-session
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:references-http

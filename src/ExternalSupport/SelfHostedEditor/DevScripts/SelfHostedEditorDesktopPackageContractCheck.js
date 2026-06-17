@@ -32,10 +32,22 @@ assertArrayIncludes(buildConfig.files, "Scripts/**/*", "desktop package files");
 assertArrayIncludes(buildConfig.files, "package.json", "desktop package files");
 assertArrayIncludes(buildConfig.files, "node_modules/monaco-editor/**/*", "desktop package files");
 assertArrayExcludes(buildConfig.files, "DevScripts/**/*", "desktop package files");
-const samplesResource = buildConfig.extraResources?.[0] || {};
+const samplesResource = findResourceByTarget(buildConfig.extraResources, "samples");
 assertEqual(samplesResource.from, "../../../samples", "desktop package samples resource source");
 assertEqual(samplesResource.to, "samples", "desktop package samples resource target");
 assertArrayIncludes(samplesResource.filter, "**/*", "desktop package samples resource filter");
+const languageServerResource = findResourceByTarget(buildConfig.extraResources, "language-server");
+assertEqual(languageServerResource.from, "../../../src/Internal/LanguageServer/bin/Debug/net10.0", "desktop package LanguageServer resource source");
+assertEqual(languageServerResource.to, "language-server", "desktop package LanguageServer resource target");
+assertEqual(path.isAbsolute(languageServerResource.from), false, "desktop package LanguageServer resource source is relative");
+assertArrayIncludes(languageServerResource.filter, "Inscape.Compiler.dll", "desktop package LanguageServer resource filter");
+assertArrayIncludes(languageServerResource.filter, "Inscape.LanguageServer.deps.json", "desktop package LanguageServer resource filter");
+assertArrayIncludes(languageServerResource.filter, "Inscape.LanguageServer.dll", "desktop package LanguageServer resource filter");
+assertArrayIncludes(languageServerResource.filter, "Inscape.LanguageServer.exe", "desktop package LanguageServer resource filter");
+assertArrayIncludes(languageServerResource.filter, "Inscape.LanguageServer.runtimeconfig.json", "desktop package LanguageServer resource filter");
+assertArrayIncludes(languageServerResource.filter, "Inscape.Tooling.dll", "desktop package LanguageServer resource filter");
+assertArrayIncludes(languageServerResource.filter, "Resources/**/*", "desktop package LanguageServer resource filter");
+assertArrayExcludes(languageServerResource.filter, "../../../src/Internal/LanguageServer/Inscape.LanguageServer.csproj", "desktop package LanguageServer resource filter");
 
 const winTarget = buildConfig.win?.target?.[0] || {};
 assertEqual(winTarget.target, "dir", "desktop package Windows target");
@@ -45,8 +57,12 @@ const readiness = buildSelfHostedEditorDesktopPackageReadiness(packageJson);
 assertEqual(readiness.format, SelfHostedEditorDesktopPackageReadinessFormat, "desktop package readiness format");
 assertEqual(readiness.windowsPackageScriptAvailable, true, "desktop package script availability");
 assertEqual(readiness.expectedExecutableName, "Inscape SelfHostedEditor.exe", "desktop package expected executable name");
+assertEqual(readiness.expectedLanguageServerDirectoryName, "language-server", "desktop package LanguageServer resource directory name");
 if (!readiness.windowsPackageGenerated) {
   assertArrayIncludes(readiness.knownLimitations, "windows-package-not-generated", "desktop package known limitations");
+}
+if (readiness.windowsPackageGenerated && !readiness.languageServerArtifactGenerated) {
+  assertArrayIncludes(readiness.knownLimitations, "language-server-artifact-not-generated", "desktop package known limitations");
 }
 
 console.log("SelfHostedEditor desktop package contract ok");
@@ -58,14 +74,29 @@ export function buildSelfHostedEditorDesktopPackageReadiness(packageManifest, op
   const expectedPackageDirectory = path.join(options.moduleRoot || moduleRoot, outputDirectoryName, "win-unpacked");
   const expectedExecutablePath = path.join(expectedPackageDirectory, expectedExecutableName);
   const windowsPackageGenerated = fs.existsSync(expectedExecutablePath);
+  const expectedLanguageServerDirectoryName = "language-server";
+  const expectedLanguageServerDirectoryPath = path.join(expectedPackageDirectory, "resources", expectedLanguageServerDirectoryName);
+  const expectedLanguageServerExecutablePath = path.join(expectedLanguageServerDirectoryPath, "Inscape.LanguageServer.exe");
+  const expectedLanguageServerDllPath = path.join(expectedLanguageServerDirectoryPath, "Inscape.LanguageServer.dll");
+  const expectedLanguageServerRuntimeConfigPath = path.join(expectedLanguageServerDirectoryPath, "Inscape.LanguageServer.runtimeconfig.json");
+  const languageServerArtifactGenerated = windowsPackageGenerated
+    && fs.existsSync(expectedLanguageServerRuntimeConfigPath)
+    && (fs.existsSync(expectedLanguageServerExecutablePath) || fs.existsSync(expectedLanguageServerDllPath));
 
   return {
     expectedExecutableName,
     expectedExecutablePath,
+    expectedLanguageServerDirectoryName,
+    expectedLanguageServerDirectoryPath,
+    expectedLanguageServerDllPath,
+    expectedLanguageServerExecutablePath,
+    expectedLanguageServerRuntimeConfigPath,
     format: SelfHostedEditorDesktopPackageReadinessFormat,
     knownLimitations: [
       ...(!windowsPackageGenerated ? ["windows-package-not-generated"] : []),
+      ...(windowsPackageGenerated && !languageServerArtifactGenerated ? ["language-server-artifact-not-generated"] : []),
     ],
+    languageServerArtifactGenerated,
     windowsPackageGenerated,
     windowsPackageScriptAvailable: packageManifest.scripts?.["package:windows"] === "electron-builder --win dir --x64",
   };
@@ -89,6 +120,10 @@ function assertArrayExcludes(values, unexpected, label) {
   if (Array.isArray(values) && values.includes(unexpected)) {
     throw new Error(`${label}: expected to exclude ${unexpected}`);
   }
+}
+
+function findResourceByTarget(resources, target) {
+  return (Array.isArray(resources) ? resources : []).find((resource) => resource?.to === target) || {};
 }
 
 function assertEqual(actual, expected, label) {

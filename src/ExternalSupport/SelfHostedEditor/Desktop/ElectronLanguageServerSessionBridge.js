@@ -31,6 +31,12 @@ export class SelfHostedEditorElectronLanguageServerSessionBridge {
       defaultErrorPreviewCharacterLimit
     );
     this.invocation = options.invocation || null;
+    this.invocationResolverOptions = options.invocationResolverOptions || {
+      moduleRoot: options.moduleRoot,
+      packaged: options.packaged,
+      repoRoot: options.repoRoot,
+      resourcesRoot: options.resourcesRoot,
+    };
     this.invocationResolver = options.invocationResolver || resolveSelfHostedEditorElectronLanguageServerInvocation;
     this.requestTimeoutMilliseconds = normalizePositiveInteger(
       options.requestTimeoutMilliseconds,
@@ -191,8 +197,12 @@ export class SelfHostedEditorElectronLanguageServerSessionBridge {
       extra.latestDocumentRevision ?? this.latestDocumentRevision
     );
     const syncedRevision = normalizeNonNegativeInteger(this.syncedDocumentRevision);
+    const invocation = this.invocation ? normalizeInvocation(this.invocation) : null;
     return {
+      artifactHealth: resolveArtifactHealth(invocation, this.health),
+      artifactKind: invocation?.artifactKind || "unresolved",
       documentRevisionLag: Math.max(0, latestRevision - syncedRevision),
+      fallbackKind: "process-per-request",
       health: this.health,
       kind: SelfHostedEditorElectronLanguageSessionKind,
       lastError: normalizeErrorSummary(this.lastError),
@@ -305,7 +315,7 @@ export class SelfHostedEditorElectronLanguageServerSessionBridge {
 
   resolveInvocation() {
     if (!this.invocation) {
-      this.invocation = this.invocationResolver(["--stdio"]);
+      this.invocation = this.invocationResolver(["--stdio"], this.invocationResolverOptions);
     }
 
     return normalizeInvocation(this.invocation);
@@ -461,10 +471,25 @@ export function createSelfHostedEditorElectronLanguageServerSessionBridge(option
   return new SelfHostedEditorElectronLanguageServerSessionBridge(options);
 }
 
-export function resolveSelfHostedEditorElectronLanguageServerInvocation(languageServerArgs = []) {
-  const desktopRoot = path.dirname(fileURLToPath(import.meta.url));
-  const moduleRoot = path.resolve(desktopRoot, "..");
-  const repoRoot = path.resolve(moduleRoot, "..", "..", "..");
+export function resolveSelfHostedEditorElectronLanguageServerInvocation(languageServerArgs = [], options = {}) {
+  const desktopRoot = path.resolve(options.desktopRoot || path.dirname(fileURLToPath(import.meta.url)));
+  const moduleRoot = path.resolve(options.moduleRoot || path.join(desktopRoot, ".."));
+  const repoRoot = path.resolve(options.repoRoot || path.join(moduleRoot, "..", "..", ".."));
+  const resourcesRoot = path.resolve(options.resourcesRoot || process.resourcesPath || path.join(moduleRoot, "dist", "win-unpacked", "resources"));
+  const args = Array.isArray(languageServerArgs) ? languageServerArgs : [];
+  const packaged = options.packaged === true;
+
+  if (packaged) {
+    return resolveLanguageServerArtifactInvocation({
+      args,
+      artifactRoot: path.join(resourcesRoot, "language-server"),
+      artifactKindPrefix: "packaged",
+      cwd: path.join(resourcesRoot, "language-server"),
+      missingMessage: "Packaged Inscape.LanguageServer artifact is missing from resources/language-server.",
+      missingReason: "language-server-packaged-artifact-missing",
+    });
+  }
+
   const languageServerProjectPath = path.join(
     repoRoot,
     "src",
@@ -481,29 +506,17 @@ export function resolveSelfHostedEditorElectronLanguageServerInvocation(language
     "Debug",
     "net10.0"
   );
-  const languageServerExePath = path.join(languageServerBinRoot, "Inscape.LanguageServer.exe");
-  const languageServerDllPath = path.join(languageServerBinRoot, "Inscape.LanguageServer.dll");
-  const args = Array.isArray(languageServerArgs) ? languageServerArgs : [];
+  const artifactInvocation = resolveLanguageServerArtifactInvocation({
+    args,
+    artifactRoot: languageServerBinRoot,
+    artifactKindPrefix: "dev-build",
+    cwd: repoRoot,
+    missingMessage: "Inscape.LanguageServer dev build artifact is missing.",
+    missingReason: "language-server-dev-artifact-missing",
+  });
 
-  if (fs.existsSync(languageServerExePath)) {
-    return {
-      args,
-      available: true,
-      command: languageServerExePath,
-      cwd: repoRoot,
-    };
-  }
-
-  if (fs.existsSync(languageServerDllPath)) {
-    return {
-      args: [
-        languageServerDllPath,
-        ...args,
-      ],
-      available: true,
-      command: "dotnet",
-      cwd: repoRoot,
-    };
+  if (artifactInvocation.available) {
+    return artifactInvocation;
   }
 
   if (fs.existsSync(languageServerProjectPath)) {
@@ -516,6 +529,8 @@ export function resolveSelfHostedEditorElectronLanguageServerInvocation(language
         "--",
         ...args,
       ],
+      artifactHealth: "available",
+      artifactKind: "dev-project",
       available: true,
       command: "dotnet",
       cwd: repoRoot,
@@ -524,23 +539,80 @@ export function resolveSelfHostedEditorElectronLanguageServerInvocation(language
 
   return {
     args: [],
+    artifactHealth: "missing",
+    artifactKind: "dev-missing",
     available: false,
     command: "",
     cwd: repoRoot,
-    message: "Inscape.LanguageServer project or build artifact was not found from the SelfHostedEditor Electron package.",
+    message: "Inscape.LanguageServer project or build artifact was not found for SelfHostedEditor Electron.",
     reason: "language-server-invocation-unavailable",
+  };
+}
+
+function resolveLanguageServerArtifactInvocation({
+  args,
+  artifactKindPrefix,
+  artifactRoot,
+  cwd,
+  missingMessage,
+  missingReason,
+}) {
+  const languageServerExePath = path.join(artifactRoot, "Inscape.LanguageServer.exe");
+  const languageServerDllPath = path.join(artifactRoot, "Inscape.LanguageServer.dll");
+  const runtimeConfigPath = path.join(artifactRoot, "Inscape.LanguageServer.runtimeconfig.json");
+
+  if (fs.existsSync(languageServerExePath)) {
+    return {
+      args,
+      artifactHealth: fs.existsSync(runtimeConfigPath) ? "available" : "incomplete",
+      artifactKind: `${artifactKindPrefix}-exe`,
+      available: true,
+      command: languageServerExePath,
+      cwd,
+    };
+  }
+
+  if (fs.existsSync(languageServerDllPath)) {
+    return {
+      args: [
+        languageServerDllPath,
+        ...args,
+      ],
+      artifactHealth: fs.existsSync(runtimeConfigPath) ? "available" : "incomplete",
+      artifactKind: `${artifactKindPrefix}-dll`,
+      available: true,
+      command: "dotnet",
+      cwd,
+    };
+  }
+
+  return {
+    args: [],
+    artifactHealth: "missing",
+    artifactKind: `${artifactKindPrefix}-missing`,
+    available: false,
+    command: "",
+    cwd,
+    message: missingMessage,
+    reason: missingReason,
   };
 }
 
 function normalizeInvocation(invocation = {}) {
   if (invocation.available === false) {
-    return invocation;
+    return {
+      ...invocation,
+      artifactHealth: normalizeArtifactHealth(invocation.artifactHealth),
+      artifactKind: normalizeArtifactKind(invocation.artifactKind),
+    };
   }
 
   const command = String(invocation.command || "").trim();
   if (!command) {
     return {
       ...invocation,
+      artifactHealth: normalizeArtifactHealth(invocation.artifactHealth, "missing"),
+      artifactKind: normalizeArtifactKind(invocation.artifactKind),
       available: false,
       message: "LanguageServer invocation is missing a command.",
       reason: "language-server-invocation-unavailable",
@@ -549,6 +621,8 @@ function normalizeInvocation(invocation = {}) {
 
   return {
     args: Array.isArray(invocation.args) ? invocation.args.map(String) : [],
+    artifactHealth: normalizeArtifactHealth(invocation.artifactHealth),
+    artifactKind: normalizeArtifactKind(invocation.artifactKind),
     available: true,
     command,
     cwd: invocation.cwd || process.cwd(),
@@ -609,6 +683,32 @@ function normalizeErrorSummary(error) {
     code: String(error.code || ""),
     message: String(error.message || "Unknown LanguageServer session error.").slice(0, 240),
   };
+}
+
+function normalizeArtifactHealth(artifactHealth, fallback = "available") {
+  const normalized = String(artifactHealth || fallback).trim();
+  return ["available", "incomplete", "missing", "unresolved"].includes(normalized)
+    ? normalized
+    : fallback;
+}
+
+function normalizeArtifactKind(artifactKind) {
+  return String(artifactKind || "unresolved")
+    .trim()
+    .replace(/[^A-Za-z0-9._:-]/g, "-")
+    .slice(0, 80) || "unresolved";
+}
+
+function resolveArtifactHealth(invocation, sessionHealth) {
+  if (!invocation) {
+    return "unresolved";
+  }
+
+  if (invocation.available === false || sessionHealth === "unavailable") {
+    return "missing";
+  }
+
+  return normalizeArtifactHealth(invocation.artifactHealth);
 }
 
 function normalizeNonNegativeInteger(value) {

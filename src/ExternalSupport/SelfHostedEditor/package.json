@@ -20,6 +20,7 @@
     "check:workspace-fs": "node DevScripts/SelfHostedEditorWorkspaceFileSystemContractCheck.js",
     "check:electron-boundary": "node DevScripts/SelfHostedEditorElectronBoundaryContractCheck.js",
     "check:electron-ipc": "node DevScripts/SelfHostedEditorElectronIpcContractCheck.js",
+    "check:electron-language-artifact": "node DevScripts/SelfHostedEditorElectronLanguageArtifactContractCheck.js",
     "check:electron-language-session": "node DevScripts/SelfHostedEditorElectronLanguageSessionContractCheck.js",
     "check:electron-lifecycle": "node DevScripts/SelfHostedEditorElectronLifecycleContractCheck.js",
     "check:electron-workspace": "node DevScripts/SelfHostedEditorElectronWorkspaceContractCheck.js",
@@ -91,6 +92,19 @@
         "to": "samples",
         "filter": [
           "**/*"
+        ]
+      },
+      {
+        "from": "../../../src/Internal/LanguageServer/bin/Debug/net10.0",
+        "to": "language-server",
+        "filter": [
+          "Inscape.Compiler.dll",
+          "Inscape.LanguageServer.deps.json",
+          "Inscape.LanguageServer.dll",
+          "Inscape.LanguageServer.exe",
+          "Inscape.LanguageServer.runtimeconfig.json",
+          "Inscape.Tooling.dll",
+          "Resources/**/*"
         ]
       }
     ],

@@ -206,6 +206,13 @@ export function registerSelfHostedEditorElectronApp(electronApp = app, options =
   const workspaceLifecycle = options.workspaceLifecycle || createSelfHostedEditorElectronWorkspaceLifecycle({
     ...options,
     enableLongLivedLanguageSession: options.enableLongLivedLanguageSession ?? true,
+    languageServerSessionOptions: {
+      moduleRoot: options.moduleRoot || moduleRoot,
+      packaged: options.packaged ?? electronApp.isPackaged,
+      repoRoot: options.repoRoot || repoRoot,
+      resourcesRoot: options.resourcesRoot || process.resourcesPath,
+      ...(options.languageServerSessionOptions || {}),
+    },
   });
   registerSelfHostedEditorBackendIpc(undefined, {
     ...options,
