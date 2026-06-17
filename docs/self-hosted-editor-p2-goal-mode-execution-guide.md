@@ -8,14 +8,14 @@
 
 请在 goal 模式中创建并持续推进以下目标：
 
-> 在 18 轮会话内完成 SelfHostedEditor P2：稳定身份迁移、localization review/productization、stable node map review/apply 的可审计闭环；完成代码、文档、回归验证，并给出是否允许进入 P2.5 的验收结论。
+> 在 18 轮会话内完成 SelfHostedEditor P2：稳定身份迁移、localization review/productization、stable node map review/apply 的可审计闭环；完成代码、文档、回归验证，并给出是否允许开启后续 Host Schema / Host Bridge / Unity-Bird 集成工作的验收结论。
 
 执行约束：
 
 - 总轮数上限：18 轮。
 - 主线开发轮：第 1-14 轮。
 - 缓冲收口轮：第 15-18 轮，只用于补缺陷、补测试、补文档、修回归。
-- 不允许把 P2.5 / P3 内容塞进 P2。
+- 不允许把后续 Host Schema / Host Bridge / Unity-Bird 或 P3 内容塞进 P2。
 - 不允许在未完成最终验证前把 goal 标记为 complete。
 - 如果同一阻塞条件连续 3 轮仍无法推进，标记 goal 为 blocked，并写明阻塞点、已尝试动作、需要的人类决策。
 
@@ -28,6 +28,12 @@
 - 已运行验证命令与结果。
 - 下一轮目标。
 - 是否消耗缓冲轮。
+
+命名说明：
+
+- `docs/todo.md` 当前把后续 Host Schema / Host Bridge / Unity-Bird 适配标记为 `P2.5`。
+- 本文只把它作为 P2 之后的边界提示，不把 `P2.5` 设为 P2 的强制子阶段。
+- P2 验收只回答“是否允许开启后续 host integration 工作”，不要求在本阶段实现该工作。
 
 ## 1. 必读上下文
 
@@ -64,7 +70,7 @@ P2 要完成：
 
 P2 不做：
 
-- P2.5 Host Schema / Host Bridge / Unity-Bird 适配。
+- 后续 Host Schema / Host Bridge / Unity-Bird 适配，也就是 `docs/todo.md` 当前标记的 `P2.5`。
 - P3 第二语法 / runtime / extension 设计。
 - RuntimeSession 长驻语义进程重构。
 - sidecar bridge。
@@ -98,7 +104,7 @@ git -c safe.directory=D:/LabProjects/Inscape status --short --branch
 - SelfHostedEditor 只做 host UI、bridge adapter、状态展示和用户确认。
 - VSCode 只做 editor integration，不复制 SelfHostedEditor 专属逻辑。
 - localization CSV 与 host config CSV 仍是两个独立 UI model。
-- 没有把 P2.5 Host Schema / Host Bridge 内容提前实现。
+- 没有把后续 Host Schema / Host Bridge 内容提前实现。
 - 没有把 P3 runtime / syntax / extension idea 提前实现。
 
 每轮结束至少运行与本轮相关的最小命令；如果本轮改了共享契约、bridge 或 presenter，必须补跑相关 HTTP smoke。
@@ -127,7 +133,7 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:node-map
 产出：
 
 - P2 差距清单。
-- 本阶段不进入 P2.5/P3 的边界确认。
+- 本阶段不进入后续 Host integration / P3 的边界确认。
 
 ### 第 2 轮：Localization Scoring 契约审计
 
@@ -298,7 +304,7 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:node-map-http
 
 - 更新 `docs/agent-handoff.md`、`docs/todo.md`、SelfHostedEditor README。
 - 如果 P2 引入长期 contract 或产品决策，补 ADR 或更新既有 contract 文档。
-- 明确 P2.5 的入口条件。
+- 明确后续 Host Schema / Host Bridge / Unity-Bird 集成工作的入口条件。
 
 必须清理：
 
@@ -349,7 +355,7 @@ git diff --check
 
 不能用于：
 
-- 新开 P2.5 功能。
+- 新开后续 Host Schema / Host Bridge / Unity-Bird 功能。
 - 新开 P3 设计。
 - 扩大 batch apply 范围。
 - 重构与 P2 无关的模块。
@@ -365,7 +371,7 @@ P2 PASS 必须同时满足：
 - batch review / multi-apply 若存在，必须可审计、可 dry-run、可撤回；若不存在，文档说明留到后续。
 - localization CSV 与 host config CSV UI model 保持分离。
 - SelfHostedEditor 与 VSCode 不复制 Internal/Tooling 语义。
-- P2.5/P3 没有被提前实现。
+- 后续 Host Schema / Host Bridge / Unity-Bird 与 P3 没有被提前实现。
 - 所有相关验证命令通过。
 - `docs/agent-handoff.md`、`docs/todo.md`、SelfHostedEditor README 与实际状态一致。
 
@@ -373,7 +379,7 @@ P2 PASS 必须同时满足：
 
 ```text
 P2 stable identity / localization review: PASS | FAIL
-P2.5 entry allowed: YES | NO
+Post-P2 host integration work allowed: YES | NO
 
 Completed:
 - ...
@@ -384,8 +390,8 @@ Validation:
 Remaining risks:
 - ...
 
-Next phase:
-- P2.5 Host Schema / Host Bridge / Unity-Bird adaptation, only if P2 PASS.
+Next candidate phase:
+- Host Schema / Host Bridge / Unity-Bird adaptation, only if P2 PASS.
 ```
 
 ## 6. 给执行者的边界提醒
@@ -394,5 +400,5 @@ Next phase:
 - 不要把 localization review 做成通用 CSV/table editor。
 - 不要把 similar candidate 当成 confirmed translation。
 - 不要在没有 dry-run、backup、conflict report 的情况下写入文件。
-- 不要把 P2.5 的 Host Schema / Host Bridge 当作 P2 的补充任务。
+- 不要把后续 Host Schema / Host Bridge 当作 P2 的补充任务。
 - 每轮都要 debug，也要检验架构。P2 的风险不只在 bug，更在语义边界漂移。
