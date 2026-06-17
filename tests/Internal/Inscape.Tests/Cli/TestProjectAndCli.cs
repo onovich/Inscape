@@ -125,9 +125,14 @@ Narrator: Start.
             AssertEqual("inscape.host-schema", root.GetProperty("format").GetString(), "Host schema format");
             AssertEqual(1, root.GetProperty("formatVersion").GetInt32(), "Host schema version");
             AssertTrue(root.GetProperty("queries").GetArrayLength() > 0, "Host schema should include query examples.");
-            AssertTrue(root.GetProperty("events").GetArrayLength() > 0, "Host schema should include event examples.");
+            AssertTrue(root.GetProperty("actions").GetArrayLength() > 0, "Host schema should include action examples.");
+            AssertFalse(root.TryGetProperty("events", out _), "Host schema template should prefer P3 actions over legacy events.");
             AssertEqual("has_item", root.GetProperty("queries")[0].GetProperty("name").GetString(), "Host schema query example name");
-            AssertEqual("open_window", root.GetProperty("events")[0].GetProperty("name").GetString(), "Host schema event example name");
+            AssertEqual("open_window", root.GetProperty("actions")[0].GetProperty("name").GetString(), "Host schema action example name");
+            AssertEqual("fire", root.GetProperty("actions")[0].GetProperty("mode").GetString(), "Host schema action example mode");
+            AssertEqual("item", root.GetProperty("queries")[0].GetProperty("parameters")[0].GetProperty("idKind").GetString(), "Host schema query parameter id kind");
+            AssertEqual("ui-window", root.GetProperty("actions")[0].GetProperty("parameters")[0].GetProperty("idKind").GetString(), "Host schema action parameter id kind");
+            AssertFalse(root.GetProperty("actions")[0].TryGetProperty("idKind", out _), "Host schema action should omit empty optional id kind.");
         }
 
         static void CliAuditQueryInterpolationProjectEmitsJson() {

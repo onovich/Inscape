@@ -19,15 +19,24 @@
     },
     "queries": {
       "type": "array",
-      "description": "Pure host queries that future DSL expressions may reference.",
+      "description": "Pure host queries that DSL interpolation and condition expressions may reference.",
       "items": {
         "$ref": "#/$defs/query"
       },
       "default": []
     },
+    "actions": {
+      "type": "array",
+      "description": "Host actions that @ syntax may trigger. New P3 capabilities should use actions[] instead of legacy events[].",
+      "items": {
+        "$ref": "#/$defs/action"
+      },
+      "default": []
+    },
     "events": {
       "type": "array",
-      "description": "Host events or callbacks that future DSL event expressions may reference.",
+      "description": "Legacy host events or callbacks. Kept for compatibility; prefer actions[] for new P3 host capabilities.",
+      "deprecated": true,
       "items": {
         "$ref": "#/$defs/event"
       },
@@ -45,6 +54,7 @@
         "bool",
         "int",
         "float",
+        "number",
         "string",
         "asset",
         "void"
@@ -66,6 +76,10 @@
           "$ref": "#/$defs/typeName",
           "description": "Host-neutral parameter type."
         },
+        "idKind": {
+          "$ref": "#/$defs/identifier",
+          "description": "Optional Inscape-side id kind for string parameters, such as item, timeline, or speaker."
+        },
         "required": {
           "type": "boolean",
           "default": true
@@ -80,6 +94,7 @@
       "additionalProperties": false,
       "required": [
         "name",
+        "parameters",
         "returnType"
       ],
       "properties": {
@@ -94,10 +109,52 @@
           "$ref": "#/$defs/typeName",
           "description": "Query return type. Queries should not use void."
         },
+        "idKind": {
+          "$ref": "#/$defs/identifier",
+          "description": "Optional Inscape-side id kind when the query itself returns a readable id."
+        },
         "isAsync": {
           "type": "boolean",
           "default": false,
           "description": "Whether the host may need asynchronous evaluation."
+        },
+        "parameters": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/parameter"
+          },
+          "default": []
+        }
+      }
+    },
+    "action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "parameters",
+        "mode"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/identifier",
+          "description": "Action name referenced by @ syntax or future action expressions."
+        },
+        "description": {
+          "type": "string"
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "fire",
+            "wait",
+            "handoff"
+          ],
+          "description": "Action execution mode. fire does not block narrative flow, wait resumes after host completion, and handoff transfers control to the host until it resumes Inscape."
+        },
+        "idKind": {
+          "$ref": "#/$defs/identifier",
+          "description": "Optional Inscape-side id kind when the action name is also a readable id category."
         },
         "parameters": {
           "type": "array",

@@ -4,8 +4,8 @@
 
 Host Bridge 是 Inscape 与具体宿主项目之间的映射契约。它位于 [Host Schema](host-schema.md) 和具体 adapter / importer 之间：
 
-- Host Schema 回答“剧本可以引用哪些查询、事件和宿主能力”。
-- Host Bridge 回答“这些 Inscape 侧可读 ID 在项目内部对应什么 ID、资源、事件处理器或查询实现”。
+- Host Schema 回答“剧本可以引用哪些查询、动作和宿主能力”。
+- Host Bridge 回答“这些 Inscape 侧可读 ID 在项目内部对应什么 ID、资源、动作处理器或查询实现”。
 - Adapter / Generator 负责把 schema + bridge + Compiler IR 转成 Unity、Godot、服务端或项目自定义格式。
 
 Compiler 不读取 Host Bridge，也不依赖任何宿主字段。
@@ -63,7 +63,7 @@ VSCode 编辑器扩展作者体验只读取 `hostBridge`。ExternalSupport 的 `
       }
     }
   ],
-  "events": [
+  "actions": [
     {
       "name": "play_timeline",
       "handler": {
@@ -99,7 +99,7 @@ VSCode 编辑器扩展作者体验只读取 `hostBridge`。ExternalSupport 的 `
 - `host.profile`：项目或样例 profile。
 - `host.schema`：当前 bridge 实现的 Host Schema 文件。
 - `ids`：Inscape 可读 ID 到宿主坐标的映射。
-- `events`：Host Schema event name 到宿主处理器的映射。
+- `actions`：Host Schema action name 到宿主处理器的映射。旧 `events` 可在迁移期作为 legacy 输入保留，但新 Host Bridge 口径优先使用 `actions`。
 - `queries`：Host Schema query name 到宿主查询实现的映射。
 
 `ids[].host` 是宿主自由对象，可以保存整数 ID、GUID、资源路径、Addressables key 或其它坐标，但这些字段不得进入 Compiler 通用概念。
@@ -118,7 +118,7 @@ VSCode 编辑器扩展作者体验只读取 `hostBridge`。ExternalSupport 的 `
 ```text
 @timeline court_intro
   -> ids[kind="timeline", name="court_intro"]
-  -> events[name="play_timeline"]
+  -> actions[name="play_timeline"]
 ```
 
 旧 bracket 写法不再属于当前主路径。

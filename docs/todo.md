@@ -1,6 +1,6 @@
 # TODO
 
-状态：持续维护，P3 Round 1 baseline audit complete
+状态：持续维护，P3 Round 2 Host Schema v2 contract complete
 
 SelfHostedEditor regression invariant: Preview choice clicks must advance the reading Preview to the target block and reveal the target block title in the editor. Compiler-project Preview data must never silently lose `previewLines`: if a returned Compiler graph has source lines but missing or mismatched `previewLines`, Preview must report a compiler graph contract error instead of falling back to the UI-only draft model. `npm --prefix src\ExternalSupport\SelfHostedEditor run check:model` covers both invariants so future Runtime / navigation work does not regress them.
 
@@ -196,7 +196,8 @@ npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
 - [x] P4 边界已确认：优先实现 Runtime MVP、delegate query、action dispatcher、Log / Backlog、普通 Save / Load 子状态 blob 与 editor preview 测试存档；不做纯 Inscape 完整存档产品、不做完整 Rollback / Trace Replay / Flashback。
 - [x] P4 Log / Backlog 已确认进入优先范围：默认记录 `speaker`、`text`、`lineId`；选项记录作为可选扩展或开发模式信息，不要求普通玩家 Log 默认展示。
 - [x] 完成 P3 Round 1 基线审计。2026-06-18 审计结果见 [SelfHostedEditor P3 Baseline Audit](self-hosted-editor-p3-baseline-audit.md)；确认当前代码链路仍是 `queries[]` + `events[]`，Usage / Host Integration Audit / 条件语法 / P3 Runtime State 均未进入实现。下一轮进入 Host Schema v2 minimum contract。
-- [ ] 按 [SelfHostedEditor / P3 Goal 模式执行指南](self-hosted-editor-p3-goal-mode-execution-guide.md) 继续推进 P3，下一步优先完成 Host Schema v2 `queries[]` / `actions[]` 草案与 legacy `events[]` 兼容，再进入 Usage Manifest、条件语法和 Runtime State 最小模型。
+- [x] 完成 P3 Round 2 Host Schema v2 minimum contract。2026-06-18 审计结果见 [SelfHostedEditor P3 Host Schema v2 Contract Audit](self-hosted-editor-p3-host-schema-v2-contract-audit.md)；模板和 JSON Schema 已进入 `queries[]` / `actions[]` 口径，legacy `events[]` 继续作为 deprecated 兼容输入保留，当前 consumption 仍留给 Round 3。
+- [ ] 按 [SelfHostedEditor / P3 Goal 模式执行指南](self-hosted-editor-p3-goal-mode-execution-guide.md) 继续推进 P3，下一步优先完成 Host Schema Tooling / CLI / LanguageServer / VSCode / SelfHostedEditor 的 `actions[]` consumption 迁移与 legacy `events[]` 兼容，再进入 Usage Manifest、条件语法和 Runtime State 最小模型。
 - [ ] P4 开始前需要细化 Runtime MVP 验收样例、query receipt 记录粒度、`fire` / `wait` / `handoff` pending / resumed payload，以及 Runtime Inspector 只能改 mock query、不直接改正式 Runtime state 的产品边界。
 - [ ] P7 前继续评估 Rollback checkpoint 的准确粒度、跨宿主 action 时的回退阻断 / checkpoint 规则、Trace Replay、Flashback Playback 与时空穿越式特殊倒放；这些不进入 P3 / P4 第一刀实现。
 

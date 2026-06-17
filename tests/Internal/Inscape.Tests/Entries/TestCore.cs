@@ -38,6 +38,7 @@ namespace Inscape.Tests {
                 ("cli runtime-project steps restored state", CliRuntimeProjectStepsRestoredState),
                 ("tool config resolves host bridge path", ToolConfigResolvesHostBridgePath),
                 ("tool config resolves node map path", ToolConfigResolvesNodeMapPath),
+                ("host schema json schema defines actions and legacy events", HostSchemaJsonSchemaDefinesActionsAndLegacyEvents),
                 ("host schema event reader reports schema events", HostSchemaEventReaderReportsSchemaEvents),
                 ("query interpolation audit reports host schema hints", QueryInterpolationAuditReportsHostSchemaHints),
                 ("story node map update preserves ids and marks missing nodes", StoryNodeMapUpdatePreservesIdsAndMarksMissingNodes),

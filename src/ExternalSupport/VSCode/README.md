@@ -33,7 +33,7 @@ The package is also a future split-repo candidate, so non-source extension asset
 - Shows node CodeLens entries as `N 个引用` on the referenced block header; clicking opens VSCode References Peek for incoming jumps.
 - Shows node declaration and jump target hover through the persistent LanguageServer session; dialogue speaker and host binding hover remain VSCode authoring hints.
 - Provides an outline view through the persistent LanguageServer session.
-- Provides JSON validation for `inscape.host.schema.json` / `*.host.schema.json`.
+- Provides JSON validation for `inscape.host.schema.json` / `*.host.schema.json`, including P3 `queries[]` / `actions[]` plus legacy `events[]` compatibility.
 - Exposes command palette actions for localization:
   - `Inscape: Open Preview`
   - `Inscape: Insert Node Title`
@@ -179,11 +179,11 @@ Host hook completion prefers `hostBridge` ids whose `kind` matches the authoring
 
 The supported contexts are host event / timing hooks such as `@timeline court_intro` and `@timeline.node.enter court_intro`. Hover explains `@entry` / `@scene` metadata lines, while Ctrl+Click on `@timeline ...` opens the corresponding bridge entry or first workspace occurrence when one exists. Compiler semantics come from `Inscape.Compiler`, while UnitySample export remains an experimental adapter.
 
-Host schema files named `inscape.host.schema.json` or `*.host.schema.json` are validated by the bundled JSON Schema. The command `Inscape: Show Host Schema Capabilities` reads `inscape.config.json` `hostSchema`, lists configured queries/events, and opens the selected capability in the schema file.
+Host schema files named `inscape.host.schema.json` or `*.host.schema.json` are validated by the bundled JSON Schema. The schema now accepts P3 `actions[]` with `mode: fire | wait | handoff`, while still accepting deprecated legacy `events[]`. The command `Inscape: Show Host Schema Capabilities` reads `inscape.config.json` `hostSchema`, lists configured queries/events, and opens the selected capability in the schema file. The command still consumes the current legacy event capability endpoint until P3 action consumption lands.
 
 Script authoring also reads the same configured Host Schema for `[]` query interpolation hints. In text such as `[player.gold]`, completion offers zero-parameter simple query names and Hover shows `returnType`, `isAsync`, description, and schema source. Unknown query Hover is deliberately informational: it means the current Host Schema did not declare that query, not that `Inscape.Compiler` rejects the script.
 
-For host events, `@emit eventName` completion offers Host Schema `events[]` names and Hover shows delivery, side effect, parameter, description, and schema source information. This is still an authoring hint: `Inscape.Compiler` keeps treating the line as metadata, and `@timeline...` keeps using Host Bridge data because it references a timed host resource hook rather than a generic schema event.
+For host events, `@emit eventName` completion currently offers legacy Host Schema `events[]` names and Hover shows delivery, side effect, parameter, description, and schema source information. This is still an authoring hint: `Inscape.Compiler` keeps treating the line as metadata, and `@timeline...` keeps using Host Bridge data because it references a timed host resource hook rather than a generic schema event. P3 new schema work should prefer `actions[]`; provider consumption migrates in a later round.
 
 The query and event providers prefer the persistent LanguageServer capability session path, then fall back to the Internal CLI endpoint:
 

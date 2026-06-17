@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Inscape.Tooling {
 
@@ -16,22 +17,23 @@ namespace Inscape.Tooling {
                             new HostSchemaParameterModel {
                                 Name = "itemId",
                                 Type = "string",
+                                IdKind = "item",
                                 Required = true,
                                 Description = "Stable item identifier owned by the host."
                             }
                         }
                     }
                 },
-                Events = new List<HostSchemaEventModel> {
-                    new HostSchemaEventModel {
+                Actions = new List<HostSchemaActionModel> {
+                    new HostSchemaActionModel {
                         Name = "open_window",
-                        Description = "Host event example. Inscape only records the intent; the host decides behavior.",
-                        Delivery = "fire-and-forget",
-                        SideEffects = true,
+                        Description = "Host action example. Inscape only records the intent; the host decides behavior.",
+                        Mode = "fire",
                         Parameters = new List<HostSchemaParameterModel> {
                             new HostSchemaParameterModel {
                                 Name = "windowId",
                                 Type = "string",
+                                IdKind = "ui-window",
                                 Required = true,
                                 Description = "Stable UI window identifier owned by the host."
                             }
@@ -53,7 +55,7 @@ namespace Inscape.Tooling {
 
         public List<HostSchemaQueryModel> Queries { get; set; } = new List<HostSchemaQueryModel>();
 
-        public List<HostSchemaEventModel> Events { get; set; } = new List<HostSchemaEventModel>();
+        public List<HostSchemaActionModel> Actions { get; set; } = new List<HostSchemaActionModel>();
 
     }
 
@@ -65,21 +67,25 @@ namespace Inscape.Tooling {
 
         public string ReturnType { get; set; } = string.Empty;
 
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? IdKind { get; set; }
+
         public bool IsAsync { get; set; }
 
         public List<HostSchemaParameterModel> Parameters { get; set; } = new List<HostSchemaParameterModel>();
 
     }
 
-    public sealed class HostSchemaEventModel {
+    public sealed class HostSchemaActionModel {
 
         public string Name { get; set; } = string.Empty;
 
         public string Description { get; set; } = string.Empty;
 
-        public string Delivery { get; set; } = string.Empty;
+        public string Mode { get; set; } = string.Empty;
 
-        public bool SideEffects { get; set; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? IdKind { get; set; }
 
         public List<HostSchemaParameterModel> Parameters { get; set; } = new List<HostSchemaParameterModel>();
 
@@ -90,6 +96,9 @@ namespace Inscape.Tooling {
         public string Name { get; set; } = string.Empty;
 
         public string Type { get; set; } = string.Empty;
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? IdKind { get; set; }
 
         public bool Required { get; set; }
 

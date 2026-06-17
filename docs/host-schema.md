@@ -12,14 +12,14 @@
 
 - DSL 只表达数据意图，不拥有具体执行权。
 - 查询是纯表达，默认不允许副作用。
-- 事件是宿主动作声明，是否执行、何时执行、失败如何处理都由宿主层决定。
+- 动作是宿主能力声明，是否执行、何时执行、失败如何处理都由宿主层决定。
 - `item`、`timeline`、`resource` 等参数是 Inscape 侧抽象概念，不要求与项目业务对象一一同名或同类型。
 - Inscape 内可使用可读字符串 ID；宿主项目内可使用整数、枚举、GUID、资源路径或其他编码，两者通过桥接层映射。
 - Inscape 下层状态只用于被宿主查询或内部推进，不反向查询上层业务系统。
 - Schema 可以由手写文件、Unity 烘焙器、代码扫描或服务端接口生成。
 - VSCode 和未来独立编辑器读取同一份 Schema，减少作者记忆压力。
 
-P3 讨论后的补充口径：Host Schema 是统一宿主能力清单，包含 `queries[]` 和 `actions[]` 两部分。旧文档和当前部分工具仍使用 `events[]` 描述宿主事件；P3 后续应给出 `events[] -> actions[]` 的兼容 / 迁移策略。手写 Schema 是兜底方案，长期优先支持宿主无关的自动化生成，例如 C# attribute / source generator、TypeScript 声明或运行时注册后导出 Schema。Unity Inspector 可以作为 Unity 插件的编辑界面，但不应成为 Host Schema 的唯一维护方式，也不应把 Schema 格式绑定到 Unity。
+P3 Round 2 补充口径：Host Schema 是统一宿主能力清单，包含 `queries[]` 和 `actions[]` 两部分。`actions[]` 是 Host Schema 的动作部分，不是独立 Action Schema。旧文档和当前部分工具仍使用 `events[]` 描述宿主事件；P3 迁移期间 `events[]` 作为 legacy 字段保留，当前工具可以继续读取，但新能力、模板和 JSON Schema 优先落到 `actions[]`。手写 Schema 是兜底方案，长期优先支持宿主无关的自动化生成，例如 C# attribute / source generator、TypeScript 声明或运行时注册后导出 Schema。Unity Inspector 可以作为 Unity 插件的编辑界面，但不应成为 Host Schema 的唯一维护方式，也不应把 Schema 格式绑定到 Unity。
 
 ## 项目配置
 
@@ -52,7 +52,7 @@ inscape.host.schema.json
 *.host.schema.json
 ```
 
-这会在编辑宿主能力清单时提供字段补全、类型校验和基础枚举约束，例如 `returnType`、`delivery`、`parameters[].type`。
+这会在编辑宿主能力清单时提供字段补全、类型校验和基础枚举约束，例如 `returnType`、`actions[].mode`、`parameters[].type`、`parameters[].idKind`。Legacy `events[]` 仍会被 schema 接受，但已标记为 deprecated。
 
 命令面板提供：
 
@@ -60,13 +60,13 @@ inscape.host.schema.json
 Inscape: Show Host Schema Capabilities
 ```
 
-该命令读取工作区 `inscape.config.json` 的 `hostSchema` 字段，列出当前可用 query / event，并可跳转到 schema 文件中对应的 `name`。这只是配置检查与浏览能力，不代表 `.inscape` 脚本中已经有正式查询或事件语法。
+该命令读取工作区 `inscape.config.json` 的 `hostSchema` 字段，列出当前可用 query / event，并可跳转到 schema 文件中对应的 `name`。Round 3 前该 capability endpoint 仍输出 legacy `events[]`；Round 3 会迁移到 `actions[]` consumption。这只是配置检查与浏览能力，不代表 `.inscape` 脚本中已经有正式查询或动作语法。
 
 对于 `[]` 查询插值，Host Schema 第一版只作为作者提示来源：可以驱动补全、Hover、未知查询提示和返回类型说明，但不应让 Compiler 依赖 Host Schema。具体数据边界见 [Query Interpolation Data Contract](query-interpolation-data-contract.md)。
 
 对于当前 `@emit eventName` 原型，VSCode 会读取 Host Schema `events[]` 提供 event 名补全与 Hover，展示 delivery、sideEffects、parameters、description 和 schema 来源。P3 新口径应逐步迁到 `actions[]`：`@` 触发的是 action，action 可以是 fire / wait / handoff。未知 action 只作为作者提示，不进入默认 Problems，也不改变 Compiler 行为。`@timeline...` 仍走 Host Bridge，因为它表达带时机的宿主资源 hook，而不是通用 schema action。
 
-Tooling 侧已经提供 `HostSchemaQueryReaderDomain` 与 `HostSchemaEventReaderDomain`，分别把 `queries[]`、`events[]` 归一化成带 source location 的能力模型。VSCode 当前仍保留轻量 JS reader，原因是扩展直接启动 .NET Tooling 会增加编辑延迟和发布复杂度；后续应优先通过 C# LanguageServer 或显式 CLI capability endpoint 复用 Tooling 契约。
+Tooling 侧已经提供 `HostSchemaQueryReaderDomain` 与 `HostSchemaEventReaderDomain`，分别把 `queries[]`、legacy `events[]` 归一化成带 source location 的能力模型。Round 2 只让模板和 JSON Schema 进入 `actions[]` 口径；Round 3 再补 action reader 与 capability catalog consumption。VSCode 当前通过 C# LanguageServer 或显式 CLI capability endpoint 复用 Tooling 契约。
 
 当前显式 CLI endpoint 是：
 
@@ -74,7 +74,7 @@ Tooling 侧已经提供 `HostSchemaQueryReaderDomain` 与 `HostSchemaEventReader
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- inspect-host-schema-project samples -o artifacts\host-schema-capabilities.json
 ```
 
-它输出 `inscape.host-schema.capabilities` JSON，包含 Host Schema 读取状态、归一化 queries 和 events。该命令不编译 `.inscape`，也不扫描脚本文本。
+它输出 `inscape.host-schema.capabilities` JSON，当前包含 Host Schema 读取状态、归一化 queries 和 legacy events。该命令不编译 `.inscape`，也不扫描脚本文本。
 
 VSCode 的 query / event 作者提示会优先调用该 endpoint，消费 Tooling 归一化后的 capability catalog；如果 endpoint 不可用，则回退直接读取 Host Schema JSON，保证扩展开发环境或未构建 CLI 时仍有基础提示。
 
@@ -128,6 +128,13 @@ Inscape 侧的 `item` 也是抽象叙事概念：它可以代表道具、装备�
 
 `actions` 描述可由叙事表达引用的宿主动作或回调，例如打开 UI、播放特殊系统、触发业务流程或触发 Timeline。动作天然可能有副作用，所以它们必须与查询分开。第一版动作模式只保留 `fire`、`wait`、`handoff` 三类，不为低优先级 Rollback / Replay 提前加入复杂 policy 字段。
 
+Legacy `events[]` 兼容策略：
+
+- `events[]` 只作为迁移期输入保留，JSON Schema 标记为 deprecated；新模板不再生成 `events[]`。
+- 当前 `HostSchemaEventReaderDomain`、`inspect-host-schema-project`、LanguageServer Host Schema capability endpoint、VSCode / SelfHostedEditor Host capability UI 可以继续消费 `events[]`，直到 Round 3 完成 action reader 与 editor consumption 迁移。
+- 后续需要从 legacy event 投影到 action 时，保守映射为：`delivery: "fire-and-forget"` 或 `"queued"` -> `mode: "fire"`，`delivery: "blocking"` -> `mode: "wait"`；legacy event 没有 `handoff` 等价模式。
+- `sideEffects` 在 legacy event 中只用于作者提示；P3 action 默认就是可能有副作用的宿主动作，不再需要同名字段。
+
 字段命名倾向：
 
 - `parameters`：参数列表，不使用 `params`。
@@ -136,9 +143,9 @@ Inscape 侧的 `item` 也是抽象叙事概念：它可以代表道具、装备�
 - `idKind`：可选字段，用于说明 string 参数是否是 Inscape 可读 ID，例如 `item`、`timeline`、`speaker`。
 - `description`：可选字段，来源可以是代码标注、代码注释或人工 overlay，只服务作者提示和文档，不参与执行。
 
-Timeline 不应作为 Inscape 内建特权机制长期绑定在 DSL 里。更通用的方向是把“触发 Timeline”视为宿主自定义事件的一种示例配置，由策划或项目适配层声明事件名和参数，上层拿到数据后自行决定如何处理。
+Timeline 不应作为 Inscape 内建特权机制长期绑定在 DSL 里。更通用的方向是把“触发 Timeline”视为宿主自定义 action 的一种示例配置，由策划或项目适配层声明 action 名和参数，上层拿到数据后自行决定如何处理。
 
-`parameters` 只描述参数名、类型、是否必填、`idKind` 和说明，不绑定具体 C#、Rust、服务端或 Unity 类型。连接层可以在导入或烘焙阶段把这些类型映射到宿主语言。
+`parameters` 只描述参数名、类型、是否必填、`idKind` 和说明，不绑定具体 C#、Rust、服务端或 Unity 类型。连接层可以在导入或烘焙阶段把这些类型映射到宿主语言。第一版 host-neutral type 包含 `bool`、`int`、`float`、`number`、`string`、`asset`、`void`；query 不应使用 `void`。
 
 ## Usage / Requirement Manifest
 
@@ -175,7 +182,7 @@ kind,alias,birdId,unityGuid,addressableKey,assetPath
 这张表描述资源 / Timeline 等宿主对象坐标，主要服务 `@timeline alias`、`@timeline.<phase> alias` 这类事件 / 时机 hook。历史 `[kind: alias]` 不再属于当前 Host Bridge 或查询语法扩展。宿主 Schema 则描述查询与事件能力。两者都属于宿主连接层，但不要混为同一张表：
 
 - `bindingMap` 回答“这个别名指向哪个资源或宿主对象”。
-- `hostSchema` 回答“剧本可以表达哪些查询和事件，以及它们需要哪些参数”。
+- `hostSchema` 回答“剧本可以表达哪些查询和动作，以及它们需要哪些参数”。
 
 后续需要在两者之上抽象出更通用的 Host Bridge：既能描述能力清单，也能描述 Inscape 可读 ID 到项目内部 ID / 资源坐标 / 代码处理器的映射。Bird 当前的 CSV 只是该方向的参考实现。第一版草案见 [Host Bridge Contract](host-bridge-contract.md)。
 
@@ -185,8 +192,8 @@ kind,alias,birdId,unityGuid,addressableKey,assetPath
 
 1. 设计条件表达式语法时，只允许引用 `queries`，默认禁止副作用。
 2. 设计 action 语法时，明确 action 是否进入 IR、是否 `fire` / `wait` / `handoff`，失败时按宿主异常上报。
-3. VSCode 读取 `hostSchema` 后，为查询名、事件名和参数名提供补全与 Hover。
+3. VSCode 读取 `hostSchema` 后，为查询名、动作名和参数名提供补全与 Hover。
 4. Unity / Bird 连接层可扫描带特定属性的方法，生成或校验 `hostSchema`。
 5. 未来如果进入代码生成阶段，可以从 Schema 生成宿主注册代码，避免运行时才发现未注册能力。
 6. 按 [Host Bridge Contract](host-bridge-contract.md) 继续推进映射表、VSCode 展示和生成流程，解决 Inscape 可读 ID 与项目内部 ID 不一致的问题。
-7. P3 需要补充 `actions[]` 对现有 `events[]` 的兼容策略、Usage Manifest / audit 输出格式，以及 Runtime 最小 state shape；暂不为了 Rollback / Replay 增加 action policy 字段。
+7. P3 Round 3 需要把 Tooling / CLI / LanguageServer / VSCode / SelfHostedEditor 的 Host Schema capability consumption 从 legacy `events[]` 迁到 `actions[]`，并继续保留兼容路径；后续还需补 Usage Manifest / audit 输出格式以及 Runtime 最小 state shape。

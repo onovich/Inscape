@@ -1,12 +1,23 @@
 # Agent 接手指南
 
-状态：P3 Round 1 baseline audit complete
+状态：P3 Round 2 Host Schema v2 contract complete
 
 最后更新：2026-06-18
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-18 SelfHostedEditor P3 Round 2 Host Schema v2 快照
+
+P3 Round 2 已完成 Host Schema v2 最小契约收口，不宣布 P3 完成。
+
+- 审计产物见 [SelfHostedEditor P3 Host Schema v2 Contract Audit](self-hosted-editor-p3-host-schema-v2-contract-audit.md)。
+- Host Schema 统一能力清单口径已落到文档、模板与 JSON Schema：`queries[]` 表达只读查询，`actions[]` 表达宿主动作；Action Schema 不作为独立系统存在。
+- `export-host-schema-template` 现在生成 `queries[]` / `actions[]` 示例，不再生成 legacy `events[]`；示例参数带 `idKind`，但不包含 Unity GUID、asset path、Addressables key、Bird ID 或具体项目 ID。
+- VSCode bundled JSON Schema 现在校验 `actions[].mode = fire | wait | handoff`、`parameters[].idKind`、`queries[].parameters` 与 `number` 类型；legacy `events[]` 仍被接受并标记 deprecated。
+- 当前可执行 capability consumption 仍保留 `events[]`：Tooling `HostSchemaEventReaderDomain`、`inspect-host-schema-project`、LanguageServer `--host-schema-capabilities-project`、VSCode / SelfHostedEditor Host capability UI 暂不在 Round 2 迁移，以免静默破坏现有链路。
+- 下一轮进入 P3 Round 3：补 Tooling action reader / CLI / LanguageServer / VSCode / SelfHostedEditor 的 `actions[]` 兼容消费，同时继续保留 legacy `events[]` 输入路径。
 
 ### 2026-06-18 SelfHostedEditor P3 Round 1 基线审计快照
 

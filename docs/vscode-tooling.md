@@ -199,13 +199,13 @@ inscape.host.schema.json
 *.host.schema.json
 ```
 
-字段约束覆盖 `format`、`formatVersion`、`queries`、`events` 和 `parameters`。这让手写宿主能力清单时能获得 JSON 级别的错误提示和字段补全。
+字段约束覆盖 `format`、`formatVersion`、`queries`、`actions`、legacy `events` 和 `parameters`。这让手写宿主能力清单时能获得 JSON 级别的错误提示和字段补全。P3 新能力优先写入 `actions[]`；`events[]` 只作为迁移期兼容字段保留。
 
 命令面板提供：
 
 - `Inscape: Show Host Schema Capabilities`
 
-该命令读取工作区根目录 `inscape.config.json` 的 `hostSchema` 字段，列出当前配置的 query / event，并可跳转到 schema 文件里的对应 `name` 字段。VSCode 现在会把零参数简单 query 注入 `[]` 查询插值 completion / Hover；event、条件语法和函数式查询仍未注入脚本补全，因为对应语法还未定稿。
+该命令读取工作区根目录 `inscape.config.json` 的 `hostSchema` 字段，列出当前配置的 query / legacy event，并可跳转到 schema 文件里的对应 `name` 字段。VSCode 现在会把零参数简单 query 注入 `[]` 查询插值 completion / Hover；`actions[]` consumption、条件语法和函数式查询仍未注入脚本补全，因为对应语法和 capability reader 会在 P3 后续轮次收口。
 
 `[]` 查询插值的第一版工具路线见 [Query Interpolation Tooling Decision](query-interpolation-tooling-decision.md)：当前 VSCode 已基于 Host Schema 做 completion / Hover 原型，未知 query 只作为提示，不升级为 Compiler 错误；LanguageServer 后续再复用同一数据契约。
 
