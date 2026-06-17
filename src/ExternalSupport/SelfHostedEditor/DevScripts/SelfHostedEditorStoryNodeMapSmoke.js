@@ -93,6 +93,9 @@ async function main() {
     manualReview.nodeMapPath
   );
   assertApplyPayload(appliedPreview, manualCandidate.stableId, true);
+  if (!String(appliedPreview.nodeMapPath || "").endsWith("inscape.node-map-candidate-preview.json")) {
+    throw new Error("Stable node map dry-run should return the preview node map path.");
+  }
 
   const applied = await getStoryNodeMapCandidateApplyForScriptText(
     manualRenamedScript,
@@ -115,6 +118,9 @@ async function main() {
     manualReview.nodeMapPath
   );
   assertApplyPayload(applied, manualCandidate.stableId, false);
+  if (!String(applied.nodeMapPath || "").endsWith("inscape.node-map.json")) {
+    throw new Error("Stable node map apply should return the sidecar node map path.");
+  }
   if (!String(applied.nodeMapText || "").includes("node.renamed")) {
     throw new Error("Expected applied stable node map to keep the current title.");
   }

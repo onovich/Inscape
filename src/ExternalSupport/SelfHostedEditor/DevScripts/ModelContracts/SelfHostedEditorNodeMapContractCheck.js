@@ -5,6 +5,7 @@ installFakeDomEnvironment();
 
 const nodeMapButton = new FakeElement("button");
 let appliedNodeMapPath = "";
+let lastDryRun = null;
 let selectedNodeMapLine = 0;
 const nodeMapReviewController = new StoryNodeMapReviewController({
   reviewBridge: {
@@ -47,8 +48,12 @@ const nodeMapReviewController = new StoryNodeMapReviewController({
         },
       };
     },
+    async previewCandidateApply(scriptText, item, candidate, nodeMapPath) {
+      return this.applyCandidate(scriptText, item, candidate, true, nodeMapPath);
+    },
     async applyCandidate(_scriptText, item, candidate, dryRun, nodeMapPath) {
       appliedNodeMapPath = nodeMapPath;
+      lastDryRun = dryRun;
       return {
         apply: {
           candidateStableId: candidate.stableId,
@@ -86,7 +91,15 @@ assertIncludesText(getTextContent(document.body), "Apply");
 const nodeMapReviewItemButton = findElementByClass(document.body, "node-map-review-item-main");
 nodeMapReviewItemButton?.click();
 assertEqual(selectedNodeMapLine, 12, "stable node map review item should jump to its current source line");
+await findElementByClass(document.body, "node-map-review-candidate-preview")?.click();
+assertEqual(lastDryRun, true, "stable node map preview action should request dry-run apply");
+await Promise.resolve();
+await Promise.resolve();
+assertIncludesText(getTextContent(document.body), "Dry-run ready for node_OLD");
 await findElementByClass(document.body, "node-map-review-candidate-apply")?.click();
+assertEqual(lastDryRun, false, "stable node map apply action should request real apply");
+await Promise.resolve();
+await Promise.resolve();
 assertEqual(appliedNodeMapPath, "inscape.node-map.json", "stable node map apply should preserve the review node map path");
 assertIncludesText(nodeMapReviewController.currentReviewPayload.nodeMapText, "\"applied\": true", "stable node map apply should update the downloadable node map text");
 assertIncludesText(getTextContent(document.body), "Applied node_OLD to downloadable node map");

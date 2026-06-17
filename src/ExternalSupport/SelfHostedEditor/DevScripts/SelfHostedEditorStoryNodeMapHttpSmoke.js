@@ -75,6 +75,30 @@ async function main() {
       throw new Error("Stable node map HTTP smoke should expose a manual candidate.");
     }
 
+    const dryRunApply = await postJson(address.port, "/api/node-map-apply", {
+      candidate: manualCandidate,
+      dryRun: true,
+      item: manualItem,
+      nodeMapPath: manualReview.nodeMapPath,
+      scriptText: manualRenamedScript,
+      workspace: {
+        currentFilePath: "draft.inscape",
+        documents: [
+          {
+            relativePath: "draft.inscape",
+            text: manualRenamedScript,
+          },
+          {
+            relativePath: "inscape.node-map.json",
+            text: manualReview.nodeMapText,
+          },
+        ],
+      },
+    });
+    if (!dryRunApply?.dryRun || !String(dryRunApply?.nodeMapPath || "").endsWith("inscape.node-map-candidate-preview.json")) {
+      throw new Error("Stable node map HTTP smoke should keep dry-run output on the preview path.");
+    }
+
     const apply = await postJson(address.port, "/api/node-map-apply", {
       candidate: manualCandidate,
       dryRun: false,
@@ -101,6 +125,9 @@ async function main() {
 
     if (apply?.candidateStableId !== manualCandidate.stableId || apply?.nodeMap?.format !== "inscape.node-map") {
       throw new Error("Stable node map HTTP smoke should apply the selected shared candidate.");
+    }
+    if (apply?.dryRun || !String(apply?.nodeMapPath || "").endsWith("inscape.node-map.json")) {
+      throw new Error("Stable node map HTTP smoke should write apply output to the sidecar path.");
     }
 
     console.log("SelfHostedEditor stable node map HTTP smoke ok");

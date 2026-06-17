@@ -193,6 +193,8 @@ export class FakeElement {
     }
   }
 
+  remove() {}
+
   querySelectorAll(selector) {
     const results = [];
     collectMatchingElements(this, selector, results);

@@ -1,12 +1,24 @@
 # Agent 接手指南
 
-状态：P2 Round 5
+状态：P2 Round 6
 
 最后更新：2026-06-17
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-17 SelfHostedEditor P2 Round 6 Stable Node Map 当前链路审计快照
+
+P2 Round 6 已完成 stable node map review/apply 当前链路审计，不宣布 P2 完成。
+
+- 审计产物见 [SelfHostedEditor P2 Stable Node Map Chain Audit](self-hosted-editor-p2-stable-node-map-chain-audit.md)。
+- 当前 review/apply 语义仍在 `Internal/Tooling`：`StoryNodeMapUpdateDomain` 生成 `renamed / new / missing / conflict / manual-review` report，`StoryNodeMapReviewActionDomain` 执行 selected candidate apply。
+- CLI `update-node-map-project --report` 与 `apply-node-map-candidate-project` 仍是 shared 命令入口；dry-run 写 `inscape.node-map-candidate-preview.json`，apply 写 `inscape.node-map.json`。
+- SelfHostedEditor `/api/node-map-review` / `/api/node-map-apply` 只做 dev-host bridge 与 compact payload；浏览器 UI 只显示 report、source jump、dry-run preview download 和 downloadable sidecar payload，不直接改写工作区 sidecar。
+- Direct / HTTP smoke 已新增 path 分离断言，UI contract 已确认 `Preview Apply` 发出 dry-run、`Apply` 发出 real apply。
+- 当前缺口已明确留给 Round 7/8：apply result contract 需要 backup metadata / recovery hint / richer conflict evidence，桌面真实写回需要接入 `workspace.write-back-backup`，并区分 download-only payload 与 real write-back success。
+- 下一轮进入 P2 Round 7：Stable Node Map Contract 加固；重点是 conflict report、dry-run/apply result、backup metadata 与 recovery hint，不提前做 batch/multi-apply 或 Host integration。
 
 ### 2026-06-17 SelfHostedEditor P2 Round 5 Localization Review UI 快照
 
