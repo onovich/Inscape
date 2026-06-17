@@ -164,6 +164,7 @@ npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
 - [ ] 低优先级评估 Bird `L10N` 真实格式是否需要影响 Inscape CSV 字段和列顺序；默认不要为 Bird 改动通用 CSV contract。
 - [ ] 继续推进 Host Bridge 作为 Inscape 可读 ID 到宿主 ID / 资源 / handler / query implementation 的映射层；Host Schema 只描述能力清单，不承担资源映射。
 - [ ] Unity 支持层仍作为 ExternalSupport / 独立插件方向评估，不让 UnityEngine / UnityEditor 依赖进入 `Internal`。
+- [x] 完成 P2.5 Round 1 基线审计。2026-06-17 审计结果见 [SelfHostedEditor P2.5 Baseline Audit](self-hosted-editor-p2-5-baseline-audit.md)；确认 P2 PASS 入口条件、Host Schema / Host Bridge 分工、Bird / Unity 环境可用性，以及当前差距清单。下一步进入 Round 2：Bird 提交策略与 dry-run-only 边界。
 
 ### P3：第二版语法 / Runtime / 扩展能力的后续调研
 

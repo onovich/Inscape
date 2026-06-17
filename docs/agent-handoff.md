@@ -1,12 +1,22 @@
 # Agent 接手指南
 
-状态：P2 PASS
+状态：P2.5 Round 1 PASS
 
 最后更新：2026-06-17
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-17 SelfHostedEditor P2.5 Round 1 基线审计快照
+
+P2.5 Host Schema / Host Bridge 与 Unity-Bird 适配收口已完成 Round 1 基线审计，不宣布 P2.5 完成。
+
+- 审计产物见 [SelfHostedEditor P2.5 Baseline Audit](self-hosted-editor-p2-5-baseline-audit.md)。
+- P2 PASS 入口条件已确认：`docs/self-hosted-editor-p2-final-validation-report.md` 记录 `P2 stable identity / localization review: PASS` 与 Post-P2 host integration work allowed。
+- Bird / Unity 环境可用：`D:\UnityProjects\Bird` 与 `D:\UnityEditors\Unity 2023.2.22f1\Editor\Unity.exe` 均存在；Bird 仓库当前已有两处字体 fallback 资产改动，且当前没有 importer 或 `InscapeGenerated` 资源。
+- 架构边界复核通过：Host Schema 仍是能力清单，Host Bridge 仍是 Inscape 可读 ID 到宿主 ID / 资源 / handler / query implementation 的映射层；Unity / Bird 相关实现仍留在 `ExternalSupport` 或外部 Bird 项目。
+- 下一轮进入 P2.5 Round 2：Bird importer / `.meta` / `InscapeGenerated` / Addressables / dry-run report 提交策略与试跑边界；不执行真实 Import。
 
 ### 2026-06-17 SelfHostedEditor P2 Final Validation 快照
 
