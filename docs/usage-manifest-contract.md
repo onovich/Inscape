@@ -1,6 +1,6 @@
 # Usage Manifest Contract
 
-状态：P3 Round 4 contract，P3 Round 5 minimal implementation available，P3 Round 8 condition IR available
+状态：P3 Round 4 contract，P3 Round 5 minimal implementation available，P3 Round 9 condition usage available
 
 最后更新：2026-06-18
 
@@ -56,7 +56,7 @@ dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- inspect-
 - 只有项目读取失败、JSON 写出失败、参数错误等工具层错误才导致非零退出码。
 - 命令不编译成 Runtime，不执行 query，不调用 Host Bridge，不启动宿主。
 
-当前实现范围限于现有语法能稳定扫描的 `query-interpolation`、`action-line` 和 `timeline-hook`。P3 Round 8 已按 [Condition Syntax Contract](condition-syntax-contract.md) 落地 `choice-condition` 与 `conditional-jump` 的 Compiler IR；实际 usage 扫描将在 Tooling / LanguageServer / Editor consumption 轮次接入同一契约。
+当前实现范围包含 `query-interpolation`、`action-line`、`timeline-hook`、`choice-condition` 和 `conditional-jump`。P3 Round 9 已让 Tooling / Usage Manifest 从 [Condition Syntax Contract](condition-syntax-contract.md) 定义的 Compiler IR 抽取条件 query usage；LanguageServer / VSCode / SelfHostedEditor 继续消费共享 diagnostics / payload，不复制条件 parser。
 
 ## 顶层 JSON
 
@@ -238,7 +238,7 @@ Action usage 记录 `@` 行里的宿主动作、事件或 hook。
 - `timeline-hook`：`@timeline... alias`。
 - `metadata-line`：其他 `@...` 行中能识别为宿主 intent 的用法。
 
-P3 Round 5 已先实现当前语法能看到的 `query-interpolation`、`action-line` 和 `timeline-hook`。P3 Round 8 已实现 `choice-condition` 与 `conditional-jump` 的 Compiler IR；实际 usage 扫描将在后续 Tooling 轮次接入同一 contract。
+P3 Round 5 已先实现 `query-interpolation`、`action-line` 和 `timeline-hook`。P3 Round 9 已基于 Compiler IR 接入 `choice-condition` 与 `conditional-jump` 的 usage 扫描。
 
 ## Literal Argument
 
@@ -489,7 +489,7 @@ Usage Manifest 只记录能看懂的字面量，不执行表达式，也不调�
 }
 ```
 
-该 sample 包含 P3 Round 8 已进入 Compiler IR、但尚未接入 Usage Manifest 扫描的条件语法，用来说明 contract。
+该 sample 包含 P3 Round 9 已接入 Usage Manifest 扫描的条件语法，用来说明 contract。
 
 ## Audit 对接
 
@@ -508,13 +508,13 @@ Audit 可以报告 unknown query / action、legacy event usage、参数数量 / 
 - Compiler 仍只负责 `.inscape` 语法、IR 和诊断，不读取 Host Schema / Host Bridge / Usage。
 - Tooling 是 Usage Manifest 读取和生成的共享位置。
 - CLI 只负责 `inspect-usage-project` 参数、stdout / `-o` 输出和 exit code。
-- LanguageServer / VSCode / SelfHostedEditor 后续可以消费 Usage 或 Audit payload 做提示，但不得重新扫描或重写 parser。
+- LanguageServer / VSCode / SelfHostedEditor 可以消费 Usage、Audit 或 Compiler diagnostics payload 做提示，但不得重新扫描或重写 parser。
 - Runtime 不直接消费 Usage Manifest 执行动作；Runtime 使用 Compiler IR、Host Bridge 烘焙结果和 Runtime Host delegate / dispatcher。
 
 ## 自检结论
 
 - Usage Manifest 与 Host Schema / Host Bridge / Audit 分工明确。
 - Unknown query / action 进入 Audit，不反向生成 Host Schema。
-- Source location 使用现有 1-based Tooling / Compiler 坐标。
+- Source location 使用现有 1-based Tooling / Compiler 坐标；条件 query source 来自 Compiler IR。
 - `requiredIds` 只保存 Inscape 可读 ID，不保存宿主内部坐标。
 - 本契约不实现完整 Runtime、Save / Load、Rollback、Trace Replay 或 Flashback。

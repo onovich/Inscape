@@ -1,12 +1,25 @@
 # Agent 接手指南
 
-状态：P3 Round 8 condition syntax Compiler / IR minimal implementation complete
+状态：P3 Round 9 condition expression Tooling / LanguageServer / Editor consumption complete
 
 最后更新：2026-06-18
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-18 SelfHostedEditor P3 Round 9 条件表达式消费快照
+
+P3 Round 9 已完成 condition expression Tooling / LanguageServer / Editor consumption 第一刀，不宣称 P3 完成。
+
+- 实现审计见 [SelfHostedEditor P3 Condition Consumption Audit](self-hosted-editor-p3-condition-consumption-audit.md)。
+- `Internal/Tooling/UsageManifest` 现在复用 Compiler 条件 IR，从选项条件抽取 `choice-condition` query usage，从条件跳转抽取 `conditional-jump` query usage。
+- 条件 query call / path 进入 `inscape.usage` 的 `queries[]`；Host Schema 参数 metadata 继续用于 `arguments[].name` 与 `requiredIds` 推导。
+- 文本插值扫描器会跳过条件行开头的 `[...]`，避免把条件误记为 `query-interpolation`。
+- LanguageServer diagnostics 继续透传 Compiler 条件诊断；Internal tests、VSCode `check:semantic-parity` 与 SelfHostedEditor `check:semantic-parity-http` 均覆盖 `INS061`。
+- VSCode semantic parity 静态断言 ExternalSupport editor runtime 没有新增独立 condition expression parser。
+- 本轮未实现 Runtime 条件求值、Preview / Runtime 条件选项过滤、条件 query completion / hover、Runtime State、Save / Load 或 query receipt。
+- 下一轮进入 P3 Round 10：Runtime query provider 与内部叙事事实设计。
 
 ### 2026-06-18 SelfHostedEditor P3 Round 8 条件语法 Compiler / IR 快照
 
@@ -19,7 +32,7 @@ P3 Round 8 已完成 condition syntax Compiler / IR minimal implementation，不
 - fallback `-> target` 继续复用现有 default jump / default edge；条件跳转组缺 fallback 时产生 `INS061`。
 - 本轮新增 diagnostics 覆盖 empty condition、missing `]`、unexpected / trailing token、unsupported operator、array/list、assignment、call argument、unclosed string、action marker、conditional jump missing target / fallback。
 - Compiler 仍不读取 Host Schema / Host Bridge；unknown query、参数数量 / 类型 mismatch 和 missing bridge binding 继续留给 Usage Manifest / Host Integration Audit 后续对账。
-- 本轮未实现 Runtime 条件求值、Usage Manifest 条件扫描、LanguageServer / editor 条件提示、Preview / Runtime 条件选项过滤或 Runtime State。
+- 该轮未实现 Runtime 条件求值、Preview / Runtime 条件选项过滤或 Runtime State；Usage Manifest 条件扫描和 LanguageServer / editor parity 已在 Round 9 补齐。
 - 下一轮进入 P3 Round 9：condition expression Tooling / LanguageServer / Editor consumption，重点是从 Compiler IR 抽取 `choice-condition` / `conditional-jump` usage，并证明编辑器宿主不复制 parser。
 
 ### 2026-06-18 SelfHostedEditor P3 Round 7 条件语法契约快照
@@ -1456,9 +1469,9 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 
 建议优先做小而闭环的任务，不要直接跳到大规模重构。
 
-1. 继续推进 P3 Round 9 condition expression Tooling / LanguageServer / Editor consumption。
-   - 从 [Condition Syntax Contract](condition-syntax-contract.md) 和 [SelfHostedEditor P3 Condition Syntax Implementation Audit](self-hosted-editor-p3-condition-syntax-implementation-audit.md) 接上，优先让 Tooling / Usage Manifest 从 Compiler IR 抽取条件 query usage。
-   - VSCode / SelfHostedEditor / CLI 只消费 Compiler / LanguageServer / Tooling payload，不复制条件 parser。
+1. 继续推进 P3 Round 10 Runtime query provider 与内部叙事事实设计。
+   - 从 [SelfHostedEditor P3 Condition Consumption Audit](self-hosted-editor-p3-condition-consumption-audit.md)、[Condition Syntax Contract](condition-syntax-contract.md) 和 [Host Query and Event Registration Strategy](host-query-event-registration-strategy.md) 接上。
+   - 优先定义 delegate / mock / recorded query provider contract、内部叙事事实最小模型和 query receipt 边界；不要把业务玩法状态托管给 Inscape。
 
 2. 继续推进 Stable Node ID / 本地化主线。
    - ADR 0013、sidecar 闭环、保守自动重命名识别、VSCode 显式 `Update Stable Node Map` 入口、插入标题后的自动同步、标题重命名人工确认 / 冲突报告、本地化 alignment / audit report，以及相似文本人工候选第一版都已落地。

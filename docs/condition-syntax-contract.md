@@ -1,12 +1,12 @@
 # Condition Syntax Contract
 
-状态：P3 Round 7 contract / parser design，P3 Round 8 Compiler / IR minimal implementation available
+状态：P3 Round 7 contract / parser design，P3 Round 9 Tooling / LanguageServer / Editor consumption available
 
 最后更新：2026-06-18
 
 本文定义 P3 第一刀条件语法、表达式 grammar、Compiler parser / IR 设计边界和诊断契约。它是 [ADR 0021](adr/0021-p3-runtime-and-host-capability-boundary.md)、[Host Query and Event Registration Strategy](host-query-event-registration-strategy.md) 与 [Usage Manifest Contract](usage-manifest-contract.md) 的落地补充。
 
-P3 Round 8 已完成 Compiler parser / IR 最小实现；Runtime 求值、Usage Manifest 条件扫描、编辑器消费和端到端 smoke 进入后续轮次。
+P3 Round 8 已完成 Compiler parser / IR 最小实现；P3 Round 9 已完成 Usage Manifest 条件扫描与 LanguageServer / 编辑器 parity 验证。Runtime 求值、Preview / Runtime 选项过滤、query provider 和 Runtime State 进入后续轮次。
 
 ## 目标
 
@@ -182,7 +182,7 @@ Compiler 不应：
 
 ## Usage Manifest 对接
 
-条件 parser 已落地；后续 Usage Manifest 应从 Compiler IR 或共享 Tooling adapter 抽取 query usage：
+条件 parser 已落地；Usage Manifest 已从 Compiler IR 抽取 query usage：
 
 - 选项条件使用 context `choice-condition`。
 - 条件跳转使用 context `conditional-jump`。

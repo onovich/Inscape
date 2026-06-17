@@ -60,7 +60,7 @@ Inscape 源文件首先描述 Narrative Graph：
 老板娘：你还剩[player.gold]枚金币。
 ```
 
-第一版正文插值只把简单路径视为 query interpolation 候选。函数调用、异步查询和失败策略仍留给后续 Runtime / Host 设计；P3 Round 8 已按 [Condition Syntax Contract](condition-syntax-contract.md) 在 Compiler 中实现选项条件与条件跳转的最小 parser / IR，但 Runtime 求值、Usage Manifest 条件扫描和编辑器提示仍待后续轮次。
+第一版正文插值只把简单路径视为 query interpolation 候选。函数调用、异步查询和失败策略仍留给后续 Runtime / Host 设计；P3 Round 8 已按 [Condition Syntax Contract](condition-syntax-contract.md) 在 Compiler 中实现选项条件与条件跳转的最小 parser / IR，P3 Round 9 已让 Usage Manifest 从 Compiler IR 抽取条件 query usage 并验证 LanguageServer / 编辑器 parity。Runtime 求值、条件 query 专门提示和 Preview / Runtime 选项过滤仍待后续轮次。
 
 ## Timeline Hook
 

@@ -1,6 +1,8 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
 using Inscape.Compiler.Compilation;
+using Inscape.Compiler.Model;
+using Inscape.Compiler.Parsing;
 
 namespace Inscape.Tooling {
 
@@ -40,6 +42,8 @@ namespace Inscape.Tooling {
                     CollectQueryUsages(manifest, displayPath, line, lineNumber, queriesByName);
                     CollectActionUsages(manifest, displayPath, line, lineNumber, actionsByName, eventsByName);
                 }
+
+                CollectConditionQueryUsages(manifest, fullWorkspacePath, source, queriesByName);
             }
 
             FinalizeSummary(manifest, sources.Count);
@@ -64,7 +68,7 @@ namespace Inscape.Tooling {
                 }
 
                 string body = line.Substring(open + 1, close - open - 1);
-                if (IsSimpleQueryPath(body)) {
+                if (IsSimpleQueryPath(body) && !IsLeadingConditionBracket(line, open, close)) {
                     string raw = line.Substring(open, close - open + 1);
                     UsageManifestQueryUsageModel query = new UsageManifestQueryUsageModel {
                         Name = body.Trim(),
@@ -79,6 +83,145 @@ namespace Inscape.Tooling {
 
                 searchStart = close + 1;
             }
+        }
+
+        static void CollectConditionQueryUsages(UsageManifestModel manifest,
+                                                string workspacePath,
+                                                DslScriptSourceModel source,
+                                                Dictionary<string, HostSchemaQueryCapabilityModel> queriesByName) {
+            DslScriptParserDomain parser = new DslScriptParserDomain();
+            DslScriptCompilationResultModel result = parser.Parse(source.Source, source.SourcePath);
+            string fallbackDisplayPath = CreateDisplayPath(workspacePath, source.SourcePath);
+
+            for (int nodeIndex = 0; nodeIndex < result.Document.Nodes.Count; nodeIndex += 1) {
+                StoryGraphNodeModel node = result.Document.Nodes[nodeIndex];
+                for (int choiceIndex = 0; choiceIndex < node.Choices.Count; choiceIndex += 1) {
+                    DslScriptChoiceGroupModel choice = node.Choices[choiceIndex];
+                    for (int optionIndex = 0; optionIndex < choice.Options.Count; optionIndex += 1) {
+                        DslScriptConditionModel? condition = choice.Options[optionIndex].Condition;
+                        if (condition != null) {
+                            CollectConditionQueryUsages(manifest,
+                                                        workspacePath,
+                                                        fallbackDisplayPath,
+                                                        condition.Expression,
+                                                        "choice-condition",
+                                                        queriesByName);
+                        }
+                    }
+                }
+
+                for (int jumpIndex = 0; jumpIndex < node.ConditionalJumps.Count; jumpIndex += 1) {
+                    DslScriptConditionalJumpModel jump = node.ConditionalJumps[jumpIndex];
+                    CollectConditionQueryUsages(manifest,
+                                                workspacePath,
+                                                fallbackDisplayPath,
+                                                jump.Condition.Expression,
+                                                "conditional-jump",
+                                                queriesByName);
+                }
+            }
+        }
+
+        static void CollectConditionQueryUsages(UsageManifestModel manifest,
+                                                string workspacePath,
+                                                string fallbackDisplayPath,
+                                                DslScriptConditionExpressionModel? expression,
+                                                string context,
+                                                Dictionary<string, HostSchemaQueryCapabilityModel> queriesByName) {
+            if (expression == null) {
+                return;
+            }
+
+            if (expression.Kind == DslScriptConditionExpressionKindModel.Query && expression.Query != null) {
+                UsageManifestQueryUsageModel query = CreateConditionQueryUsage(workspacePath,
+                                                                               fallbackDisplayPath,
+                                                                               expression,
+                                                                               expression.Query,
+                                                                               context);
+                manifest.Queries.Add(query);
+                AddRequiredIdsForQuery(manifest, query, queriesByName);
+                return;
+            }
+
+            CollectConditionQueryUsages(manifest, workspacePath, fallbackDisplayPath, expression.Left, context, queriesByName);
+            CollectConditionQueryUsages(manifest, workspacePath, fallbackDisplayPath, expression.Right, context, queriesByName);
+            CollectConditionQueryUsages(manifest, workspacePath, fallbackDisplayPath, expression.Operand, context, queriesByName);
+        }
+
+        static UsageManifestQueryUsageModel CreateConditionQueryUsage(string workspacePath,
+                                                                      string fallbackDisplayPath,
+                                                                      DslScriptConditionExpressionModel expression,
+                                                                      DslScriptConditionQueryModel conditionQuery,
+                                                                      string context) {
+            string sourcePath = string.IsNullOrWhiteSpace(conditionQuery.Source.SourcePath)
+                ? fallbackDisplayPath
+                : CreateDisplayPath(workspacePath, conditionQuery.Source.SourcePath);
+            UsageManifestQueryUsageModel query = new UsageManifestQueryUsageModel {
+                Name = conditionQuery.Name,
+                Syntax = conditionQuery.Syntax == DslScriptConditionQuerySyntaxModel.Call ? "call" : "path",
+                Context = context,
+                Raw = expression.Raw,
+                Source = CreateSource(sourcePath,
+                                      conditionQuery.Source.Line,
+                                      conditionQuery.Source.Column,
+                                      Math.Max(expression.Raw.Length, conditionQuery.Name.Length)),
+            };
+
+            for (int argumentIndex = 0; argumentIndex < conditionQuery.Arguments.Count; argumentIndex += 1) {
+                query.Arguments.Add(CreateConditionArgument(workspacePath,
+                                                           fallbackDisplayPath,
+                                                           argumentIndex,
+                                                           conditionQuery.Arguments[argumentIndex]));
+            }
+
+            return query;
+        }
+
+        static UsageManifestLiteralArgumentModel CreateConditionArgument(string workspacePath,
+                                                                         string fallbackDisplayPath,
+                                                                         int index,
+                                                                         DslScriptConditionLiteralModel literal) {
+            string sourcePath = string.IsNullOrWhiteSpace(literal.Source.SourcePath)
+                ? fallbackDisplayPath
+                : CreateDisplayPath(workspacePath, literal.Source.SourcePath);
+            UsageManifestLiteralArgumentModel argument = new UsageManifestLiteralArgumentModel {
+                Index = index,
+                Raw = literal.Raw,
+                LiteralKind = ConvertConditionLiteralKind(literal.LiteralKind),
+                Source = CreateSource(sourcePath,
+                                      literal.Source.Line,
+                                      literal.Source.Column,
+                                      Math.Max(literal.Raw.Length, 1)),
+            };
+
+            if (literal.LiteralKind == DslScriptConditionLiteralKindModel.String) {
+                argument.Value = literal.StringValue;
+            } else if (literal.LiteralKind == DslScriptConditionLiteralKindModel.Number) {
+                argument.Value = literal.NumberValue;
+            } else if (literal.LiteralKind == DslScriptConditionLiteralKindModel.Bool) {
+                argument.Value = literal.BoolValue;
+            } else if (literal.LiteralKind == DslScriptConditionLiteralKindModel.Identifier) {
+                argument.Value = literal.StringValue;
+            }
+
+            return argument;
+        }
+
+        static string ConvertConditionLiteralKind(DslScriptConditionLiteralKindModel literalKind) {
+            if (literalKind == DslScriptConditionLiteralKindModel.String) {
+                return "string";
+            }
+            if (literalKind == DslScriptConditionLiteralKindModel.Number) {
+                return "number";
+            }
+            if (literalKind == DslScriptConditionLiteralKindModel.Bool) {
+                return "bool";
+            }
+            if (literalKind == DslScriptConditionLiteralKindModel.Identifier) {
+                return "identifier";
+            }
+
+            return "unknown";
         }
 
         static void CollectActionUsages(UsageManifestModel manifest,
@@ -418,6 +561,35 @@ namespace Inscape.Tooling {
             }
 
             return true;
+        }
+
+        static bool IsLeadingConditionBracket(string line, int open, int close) {
+            int markerIndex = FirstNonWhitespaceIndex(line, 0);
+            if (markerIndex < 0 || (line[markerIndex] != '-' && line[markerIndex] != '?')) {
+                return false;
+            }
+
+            int bracketIndex = FirstNonWhitespaceIndex(line, markerIndex + 1);
+            if (bracketIndex != open) {
+                return false;
+            }
+
+            if (line[markerIndex] == '?') {
+                string afterCondition = line.Substring(close + 1).TrimStart();
+                return afterCondition.StartsWith("->", StringComparison.Ordinal);
+            }
+
+            return true;
+        }
+
+        static int FirstNonWhitespaceIndex(string text, int startIndex) {
+            for (int i = startIndex; i < text.Length; i += 1) {
+                if (!char.IsWhiteSpace(text[i])) {
+                    return i;
+                }
+            }
+
+            return -1;
         }
 
         static bool IsIdentifierToken(string value) {

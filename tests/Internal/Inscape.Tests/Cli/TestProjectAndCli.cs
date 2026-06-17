@@ -245,7 +245,8 @@ Narrator: Start.
   "format": "inscape.host-schema",
   "formatVersion": 1,
   "queries": [
-    { "name": "player.name", "returnType": "string", "isAsync": false, "parameters": [] }
+    { "name": "player.name", "returnType": "string", "isAsync": false, "parameters": [] },
+    { "name": "has_item", "returnType": "bool", "isAsync": false, "parameters": [{ "name": "itemId", "type": "string", "idKind": "item" }] }
   ],
   "actions": [
     { "name": "play_timeline", "mode": "wait", "parameters": [{ "name": "timelineId", "type": "string", "idKind": "timeline" }] }
@@ -259,6 +260,8 @@ Narrator: Start.
 @timeline.talking.exit court_intro
 @emit play_timeline "mira_reveal"
 Narrator: [player.name] and [player.godl].
+? Choose:
+- [has_item("silver_key")] Use silver key -> gate.open
 """, Encoding.UTF8);
 
                 string output = RunCliForOutput(new[] { "inspect-usage-project", directory });
@@ -266,10 +269,12 @@ Narrator: [player.name] and [player.godl].
                     JsonElement root = document.RootElement;
                     AssertEqual("inscape.usage", root.GetProperty("format").GetString(), "Usage format");
                     AssertEqual(1, root.GetProperty("formatVersion").GetInt32(), "Usage format version");
-                    AssertEqual(2, root.GetProperty("summary").GetProperty("queryCount").GetInt32(), "Usage query count");
+                    AssertEqual(3, root.GetProperty("summary").GetProperty("queryCount").GetInt32(), "Usage query count");
                     AssertEqual(2, root.GetProperty("summary").GetProperty("actionCount").GetInt32(), "Usage action count");
-                    AssertEqual(2, root.GetProperty("summary").GetProperty("requiredIdCount").GetInt32(), "Usage required id count");
+                    AssertEqual(3, root.GetProperty("summary").GetProperty("requiredIdCount").GetInt32(), "Usage required id count");
                     AssertEqual("player.godl", root.GetProperty("queries")[1].GetProperty("name").GetString(), "Unknown query should be preserved.");
+                    AssertEqual("choice-condition", root.GetProperty("queries")[2].GetProperty("context").GetString(), "Choice condition usage context should be preserved.");
+                    AssertEqual("silver_key", root.GetProperty("queries")[2].GetProperty("arguments")[0].GetProperty("value").GetString(), "Choice condition literal argument should be preserved.");
                     AssertEqual("story.inscape", root.GetProperty("queries")[0].GetProperty("source").GetProperty("path").GetString(), "Usage query source path.");
                     AssertEqual("story.inscape", root.GetProperty("actions")[1].GetProperty("source").GetProperty("path").GetString(), "Usage action source path.");
                     AssertFalse(root.GetProperty("actions")[1].GetProperty("arguments")[0].TryGetProperty("source", out JsonElement _), "Usage arguments should not expose internal source.");

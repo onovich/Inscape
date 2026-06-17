@@ -6,6 +6,7 @@ const openingText = `# Opening
 Narrator: Start.
 -> Evidence
 -> MissingTarget
+? [has_item("silver_key")] -> DraftOnly
 
 # DraftOnly
 Narrator: Unsaved current draft node.`;
@@ -37,6 +38,7 @@ async function main() {
     });
     assertEqual(diagnostics.format, "inscape.language-server-project-diagnostics", "diagnostics format");
     assertIncludesDiagnostic(diagnostics.diagnostics, "INS020", "story/opening.inscape");
+    assertIncludesDiagnostic(diagnostics.diagnostics, "INS061", "story/opening.inscape");
     assertNoTempSourcePaths(diagnostics.diagnostics, "diagnostics");
 
     const completions = await postJson(baseUrl, "/api/completions", {

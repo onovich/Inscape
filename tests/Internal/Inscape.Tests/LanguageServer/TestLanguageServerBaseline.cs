@@ -12,19 +12,26 @@ namespace Inscape.Tests {
 # start
 旁白：开始。
 -> missing.node
+? [has_item("silver_key")] -> second.node
+
+# second.node
+旁白：第二页。
 """, "memory://language-server.inscape");
 
             LanguageServerDiagnosticModel missingTarget = diagnostics[0];
             bool foundMissingTarget = false;
+            bool foundMissingConditionalFallback = false;
             foreach (LanguageServerDiagnosticModel diagnostic in diagnostics) {
-                if (diagnostic.Code == "INS020") {
+                if (diagnostic.Code == "INS020" && !foundMissingTarget) {
                     missingTarget = diagnostic;
                     foundMissingTarget = true;
-                    break;
+                } else if (diagnostic.Code == "INS061") {
+                    foundMissingConditionalFallback = true;
                 }
             }
 
             AssertTrue(foundMissingTarget, "LanguageServer diagnostics should include Compiler missing-target diagnostic.");
+            AssertTrue(foundMissingConditionalFallback, "LanguageServer diagnostics should include Compiler condition fallback diagnostic.");
             AssertEqual("memory://language-server.inscape", missingTarget.Location.SourcePath, "Diagnostic source path");
             AssertEqual(2, missingTarget.Location.Line, "Diagnostic editor line should be 0-based");
             AssertEqual(0, missingTarget.Location.Character, "Diagnostic editor character should be 0-based");

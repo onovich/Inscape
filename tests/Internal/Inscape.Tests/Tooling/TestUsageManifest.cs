@@ -18,7 +18,10 @@ namespace Inscape.Tests {
   "format": "inscape.host-schema",
   "formatVersion": 1,
   "queries": [
-    { "name": "player.name", "returnType": "string", "isAsync": false, "parameters": [] }
+    { "name": "player.name", "returnType": "string", "isAsync": false, "parameters": [] },
+    { "name": "has_item", "returnType": "bool", "isAsync": false, "parameters": [{ "name": "itemId", "type": "string", "idKind": "item" }] },
+    { "name": "trust", "returnType": "number", "isAsync": false, "parameters": [{ "name": "roleId", "type": "string", "idKind": "role" }] },
+    { "name": "debug_mode", "returnType": "bool", "isAsync": false, "parameters": [] }
   ],
   "actions": [
     { "name": "play_timeline", "mode": "wait", "parameters": [{ "name": "timelineId", "type": "string", "idKind": "timeline" }] },
@@ -40,6 +43,11 @@ namespace Inscape.Tests {
 Narrator: [player.name] and [player.godl].
 @emit open_window inventory_panel
 Narrator: [note: court_intro] ignored.
+? Choose:
+- [has_item("silver_key")] Unlock the gate -> gate.open
+- [trust(mira) >= 3] Ask Mira -> helper.path
+? [debug_mode()] -> debug.path
+-> normal.path
 """)
                 };
 
@@ -51,15 +59,25 @@ Narrator: [note: court_intro] ignored.
                 AssertEqual("inscape.usage", manifest.Format, "Usage manifest format");
                 AssertEqual("story.inscape", manifest.Queries[0].Source.Path, "Usage query source path");
                 AssertEqual(1, manifest.Summary.SourceCount, "Usage source count");
-                AssertEqual(2, manifest.Summary.QueryCount, "Usage query count");
+                AssertEqual(5, manifest.Summary.QueryCount, "Usage query count");
                 AssertEqual(4, manifest.Summary.ActionCount, "Usage action count");
-                AssertEqual(4, manifest.Summary.RequiredIdCount, "Usage required id count");
+                AssertEqual(6, manifest.Summary.RequiredIdCount, "Usage required id count");
                 AssertEqual(0, manifest.Summary.NonLiteralArgumentCount, "Usage non literal count");
 
                 AssertEqual("player.name", manifest.Queries[0].Name, "First query usage name");
                 AssertEqual("query-interpolation", manifest.Queries[0].Context, "First query context");
                 AssertEqual("[player.name]", manifest.Queries[0].Raw, "First query raw");
                 AssertEqual("player.godl", manifest.Queries[1].Name, "Unknown query should still be recorded");
+                AssertEqual("has_item", manifest.Queries[2].Name, "Choice condition query name");
+                AssertEqual("choice-condition", manifest.Queries[2].Context, "Choice condition query context");
+                AssertEqual("call", manifest.Queries[2].Syntax, "Choice condition query syntax");
+                AssertEqual("silver_key", manifest.Queries[2].Arguments[0].Value, "Choice condition query argument value");
+                AssertEqual("itemId", manifest.Queries[2].Arguments[0].Name, "Choice condition query argument name");
+                AssertEqual("trust", manifest.Queries[3].Name, "Choice comparison query name");
+                AssertEqual("mira", manifest.Queries[3].Arguments[0].Value, "Identifier condition argument value");
+                AssertEqual("roleId", manifest.Queries[3].Arguments[0].Name, "Identifier condition argument name");
+                AssertEqual("debug_mode", manifest.Queries[4].Name, "Conditional jump query name");
+                AssertEqual("conditional-jump", manifest.Queries[4].Context, "Conditional jump query context");
 
                 UsageManifestActionUsageModel timeline = manifest.Actions[0];
                 AssertEqual("timeline", timeline.Name, "Timeline usage name");
@@ -82,6 +100,8 @@ Narrator: [note: court_intro] ignored.
                 AssertTrue(ContainsRequiredId(manifest, "timeline", "mira_reveal", "host-schema-parameter-idKind"), "Usage should include schema action required id.");
                 AssertTrue(ContainsRequiredId(manifest, "ui-window", "legacy_panel", "host-schema-parameter-idKind"), "Usage should include legacy event required id.");
                 AssertTrue(ContainsRequiredId(manifest, "ui-window", "inventory_panel", "host-schema-parameter-idKind"), "Usage should include identifier action required id.");
+                AssertTrue(ContainsRequiredId(manifest, "item", "silver_key", "host-schema-parameter-idKind"), "Usage should include condition query item required id.");
+                AssertTrue(ContainsRequiredId(manifest, "role", "mira", "host-schema-parameter-idKind"), "Usage should include condition query role required id.");
             } finally {
                 if (Directory.Exists(directory)) {
                     Directory.Delete(directory, true);

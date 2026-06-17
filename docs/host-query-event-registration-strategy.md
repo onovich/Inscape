@@ -58,7 +58,7 @@ Runtime Host executes implementation.
 
 P3 可以把条件表达式作为第二版语法重点，但第一刀应保持保守：
 
-P3 Round 7 已将作者语法、表达式 grammar、Compiler IR shape 与 diagnostics 收口到 [Condition Syntax Contract](condition-syntax-contract.md)，P3 Round 8 已完成 Compiler / IR 最小实现。本文保留查询 / 动作边界口径，具体 parser 设计以后者为准。
+P3 Round 7 已将作者语法、表达式 grammar、Compiler IR shape 与 diagnostics 收口到 [Condition Syntax Contract](condition-syntax-contract.md)，P3 Round 8 已完成 Compiler / IR 最小实现，P3 Round 9 已让 Usage Manifest 从 Compiler IR 抽取条件 query usage。本文保留查询 / 动作边界口径，具体 parser 与 usage 设计以后者和 [Usage Manifest Contract](usage-manifest-contract.md) 为准。
 
 - 支持 `and`、`or`、`not`。
 - 支持括号。

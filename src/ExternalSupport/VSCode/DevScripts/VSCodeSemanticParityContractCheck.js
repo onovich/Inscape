@@ -27,6 +27,7 @@ const draftOpeningText = `# Opening
 Narrator: Start.
 -> Evidence
 -> MissingTarget
+? [has_item("silver_key")] -> DraftOnly
 
 # DraftOnly
 Narrator: Unsaved current draft node.`;
@@ -156,6 +157,7 @@ async function main() {
         await assertHover(providers.hoverProvider, openingDocument);
         await assertDocumentSymbols(providers.documentSymbolProvider, openingDocument);
         assertP2SharedBoundaryContracts();
+        assertP3ConditionBoundaryContracts();
         console.log("VSCode semantic parity contract ok");
     } finally {
         languageServerSessionClient.dispose();
@@ -284,6 +286,7 @@ async function assertDiagnostics(recordedDiagnostics, diagnosticScheduler, docum
     await waitFor(() => recordedDiagnostics.some((entry) =>
         entry.uri.fsPath === document.uri.fsPath
         && entry.diagnostics.some((diagnostic) => diagnostic.code === "INS020")
+        && entry.diagnostics.some((diagnostic) => diagnostic.code === "INS061")
     ), 5000);
 }
 
@@ -374,6 +377,20 @@ function assertP2SharedBoundaryContracts() {
     assertNotIncludesText(selfHostedLocalizationCsvFileController, "LocalizationDraftCsvBuilder", "SelfHostedEditor real localization update must not be built from the draft CSV exporter.");
     assertIncludesText(selfHostedLocalizationRowsModelBuilder, "normalizeReviewSignals", "SelfHostedEditor localization rows must preserve shared presenter signals.");
     assertIncludesText(selfHostedLocalizationRowsModelBuilder, "actionStatus", "SelfHostedEditor localization rows must preserve shared candidate actionStatus text.");
+}
+
+function assertP3ConditionBoundaryContracts() {
+    const externalEditorRuntimeText = [
+        readRepositoryTreeText("src", "ExternalSupport", "VSCode", "Scripts"),
+        readRepositoryTreeText("src", "ExternalSupport", "VSCode", "LanguageServer"),
+        readRepositoryTreeText("src", "ExternalSupport", "SelfHostedEditor", "Scripts")
+    ].join("\n");
+
+    assertNotMatchingText(
+        externalEditorRuntimeText,
+        /\b(parseConditionExpression|ConditionExpressionParser|conditionParser|tokenizeCondition|conditionTokens)\b/i,
+        "ExternalSupport editors must consume Compiler / LanguageServer condition diagnostics and usage payloads instead of implementing a condition expression parser."
+    );
 }
 
 function createDocument(filePath, text, version) {
@@ -620,6 +637,32 @@ function assertSamePath(actual, expected, message) {
 
 function readRepositoryText(...segments) {
     return fs.readFileSync(path.join(repoRoot, ...segments), "utf8");
+}
+
+function readRepositoryTreeText(...segments) {
+    const root = path.join(repoRoot, ...segments);
+    const chunks = [];
+    for (const filePath of walkFiles(root)) {
+        if (/\.(?:js|mjs|cjs|json|css|html)$/.test(filePath)) {
+            chunks.push(fs.readFileSync(filePath, "utf8"));
+        }
+    }
+
+    return chunks.join("\n");
+}
+
+function walkFiles(root) {
+    const results = [];
+    for (const entry of fs.readdirSync(root, { withFileTypes: true })) {
+        const entryPath = path.join(root, entry.name);
+        if (entry.isDirectory()) {
+            results.push(...walkFiles(entryPath));
+        } else if (entry.isFile()) {
+            results.push(entryPath);
+        }
+    }
+
+    return results;
 }
 
 function assertIncludesText(text, expected, message) {

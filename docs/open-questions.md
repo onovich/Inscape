@@ -11,7 +11,7 @@
 1. DSL 的最小可用语法还剩哪些未定边界？
    - 已确认第一版需要显式节点、对白、旁白、选项、跳转、注释和元信息；变量、条件查询和自定义指令延后。
    - 已确认长期块语法为 `# 标题`；标题是作者主身份且项目内唯一，stable node id 是系统身份。标题前空行是版式建议，不是 parser 语义。详见 [ADR 0013](adr/0013-author-title-and-stable-node-id.md)。
-   - P3 讨论已确认第二版条件表达式需要支持 `and`、`or`、`not`、括号、标量比较、字符串、数字和 bool；暂不支持数组、列表和复杂表达式。P3 Round 7 已将具体 grammar 与 parser 设计收口到 [Condition Syntax Contract](condition-syntax-contract.md)，P3 Round 8 已完成 Compiler / IR 最小实现。
+   - P3 讨论已确认第二版条件表达式需要支持 `and`、`or`、`not`、括号、标量比较、字符串、数字和 bool；暂不支持数组、列表和复杂表达式。P3 Round 7 已将具体 grammar 与 parser 设计收口到 [Condition Syntax Contract](condition-syntax-contract.md)，P3 Round 8 已完成 Compiler / IR 最小实现，P3 Round 9 已完成 Usage Manifest / LanguageServer / Editor consumption 第一刀。
    - P3 第一刀条件语法已确认：选项条件 `- [condition] text -> target`，条件跳转 `? [condition] -> target`，默认 fallback `-> target`；节点入口条件和行级条件后置。详见 [ADR 0021](adr/0021-p3-runtime-and-host-capability-boundary.md)。
 2. `@` 与 `[]` 如何分工？
    - 已确认当前方向：`@` 主要表达事件 / 动作 / 时机 / 状态变化，`[]` 主要表达查询 / 读取 / 文本插值。
@@ -34,7 +34,7 @@
    - 需要解决 Inscape 可读 ID 与项目内部 ID 不一致的问题，例如 `hasItem("badge")` 在项目中可能对应整数、枚举、GUID 或服务器主键。
    - 需要明确哪些内容属于 Host Schema 能力清单，哪些属于资源 / 对象 / 事件处理器映射，哪些可以通过代码生成或项目扫描自动生成。
    - 已确认手写 schema 是兜底，长期优先支持宿主无关的自动化生成，例如 C# attribute / source generator、其他宿主语言声明生成或运行时注册后导出 schema；不把 Host Schema 维护绑定到 Unity Inspector。
-   - 已确认 Host Schema 是统一能力清单，包含 `queries[]` 与 `actions[]`；第一版最小字段不包含 rollback / replay / receipt / failure / timeout policy。P3 Round 3 已完成 action reader / CLI / LanguageServer / VSCode / SelfHostedEditor capability consumption 迁移；legacy `events[]` 作为 deprecated 输入和兼容提示保留。P3 Round 4 已定义 Usage Manifest contract；P3 Round 5 已实现 `inspect-usage-project`；P3 Round 6 已实现 Host Integration Audit 最小输出格式；P3 Round 7 已完成条件语法 contract / parser design；P3 Round 8 已完成条件语法 Compiler / IR 最小实现。
+   - 已确认 Host Schema 是统一能力清单，包含 `queries[]` 与 `actions[]`；第一版最小字段不包含 rollback / replay / receipt / failure / timeout policy。P3 Round 3 已完成 action reader / CLI / LanguageServer / VSCode / SelfHostedEditor capability consumption 迁移；legacy `events[]` 作为 deprecated 输入和兼容提示保留。P3 Round 4 已定义 Usage Manifest contract；P3 Round 5 已实现 `inspect-usage-project`；P3 Round 6 已实现 Host Integration Audit 最小输出格式；P3 Round 7 已完成条件语法 contract / parser design；P3 Round 8 已完成条件语法 Compiler / IR 最小实现；P3 Round 9 已完成条件 usage 扫描与 editor parity 验证。
 8. P2 后是否需要 batch review / multi-apply？
    - P2 Round 10 已决定本阶段不实现 batch review / multi-apply，只保留逐候选 dry-run / confirm / backup / write-back 闭环。
    - 若后续重启该能力，必须先设计共享 Tooling / CLI batch dry-run、batch result、per-item failure 与 rollback contract；宿主 UI 不得直接循环单候选 apply，也不得提供一键全量静默 apply。
@@ -46,7 +46,7 @@
 - 旁白是否允许裸文本。
 - 缩进是否有语义；当前倾向是不让缩进承载核心语义。
 - `# 标题` 已作为长期块语法方向；标题前空行只做 style hint，不做编译错误。仍需确认空白台词或空白段落如何显式表示。
-- 第一版暂不设计条件块；第二版条件表达式第一刀已确认：先做选项条件和条件跳转，节点入口条件和行级条件后置。parser / IR 设计见 [Condition Syntax Contract](condition-syntax-contract.md)，Compiler 最小实现已在 P3 Round 8 完成，Tooling / LanguageServer / Editor consumption 仍待 P3 Round 9。
+- 第一版暂不设计条件块；第二版条件表达式第一刀已确认：先做选项条件和条件跳转，节点入口条件和行级条件后置。parser / IR 设计见 [Condition Syntax Contract](condition-syntax-contract.md)，Compiler 最小实现已在 P3 Round 8 完成，Tooling / LanguageServer / Editor consumption 已在 P3 Round 9 完成；Runtime 求值与 Preview / Runtime 选项过滤后置。
 - 条件表达式可引用 query，例如 `has_item("badge")`，但参数 ID 必须允许通过 Host Bridge 映射到项目内部编码。
 - 选项语法如何兼顾阅读和结构化。
 - 查询在条件表达式中可以带参数；文本插值是否支持参数、命名参数或格式化参数仍待设计。
