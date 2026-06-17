@@ -22,6 +22,8 @@ SelfHostedEditor 近期主线继续优先，但 VSCode 不应退化成历史入�
 
 2026-06-17 更新：SelfHostedEditor 的 `Node Map` review 面板已经把 manual-review 候选 apply 收成两态。dev-host HTTP 路径仍通过共享 CLI 产生可下载 node map payload，不声称直接写入项目文件；Electron desktop 路径要求 `Confirm Apply`，先走 `workspace.write-back-backup`，再通过 desktop-only `stable-node-map.write-sidecar` 写回 sidecar。
 
+2026-06-17 Round 9 复核：VSCode `check:semantic-parity` 已补入 P2 静态边界断言。该检查确认 VSCode stable node map 只调用共享 CLI、localization review 只展示 shared `signals` / `actionStatus` 而不重算候选排序，并确认 SelfHostedEditor dev-host route map 不暴露 desktop-only sidecar write / write-back backup。详细审计见 [SelfHostedEditor P2 VSCode Parity Boundary Audit](self-hosted-editor-p2-vscode-parity-boundary-audit.md)。
+
 2026-06-02 已收口第八项：VSCode 的本地化 alignment review 现在可以在报告生成成功后直接选择 `Update CSV`，复用本次 review 已选择的旧 CSV，并调用共享 CLI `update-l10n-project` 生成 updated CSV。VSCode 仍保持命令式入口，不复制 SelfHostedEditor 的表格编辑体验，也不在宿主侧实现 CSV 合并或 alignment 语义。
 
 2026-06-02 已继续收口 Editor Backend 会话边界第三项：SelfHostedEditor 的本地化 review / update 现在会按 `sessionId` 记住本次选择的 previous CSV。业务上这表示作者选过一次旧表后，后续审查和导出 updated CSV 不需要前端反复上传整份旧 CSV；宿主只记住“这次会话的旧表文本”，alignment、候选评分、translation override 应用和 CSV 生成仍由共享 Tooling / CLI 完成。

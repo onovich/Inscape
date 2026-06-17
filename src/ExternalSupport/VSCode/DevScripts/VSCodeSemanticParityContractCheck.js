@@ -155,6 +155,7 @@ async function main() {
         await assertReferences(providers.referenceProvider, openingDocument);
         await assertHover(providers.hoverProvider, openingDocument);
         await assertDocumentSymbols(providers.documentSymbolProvider, openingDocument);
+        assertP2SharedBoundaryContracts();
         console.log("VSCode semantic parity contract ok");
     } finally {
         languageServerSessionClient.dispose();
@@ -317,6 +318,45 @@ async function assertDocumentSymbols(provider, document) {
     const symbols = await provider.provideDocumentSymbols(document);
     assertIncludesSymbol(symbols, "Opening");
     assertIncludesSymbol(symbols, "DraftOnly");
+}
+
+function assertP2SharedBoundaryContracts() {
+    const vscodeEditorAuthoringCommand = readRepositoryText("src", "ExternalSupport", "VSCode", "Scripts", "EditorAuthoring", "Commands", "EditorAuthoringCommand.js");
+    const vscodeNodeMapReviewController = readRepositoryText("src", "ExternalSupport", "VSCode", "Scripts", "EditorAuthoring", "Controllers", "StoryNodeMapReviewController.js");
+    const vscodeLocalizationCommand = readRepositoryText("src", "ExternalSupport", "VSCode", "Scripts", "Localization", "Commands", "LocalizationCommand.js");
+    const vscodeLocalizationReviewQuickPickAdapter = readRepositoryText("src", "ExternalSupport", "VSCode", "Scripts", "Localization", "ViewModels", "LocalizationReviewQuickPickAdapter.js");
+    const selfHostedTransport = readRepositoryText("src", "ExternalSupport", "SelfHostedEditor", "Scripts", "Backend", "Clients", "EditorBackendTransport.js");
+    const selfHostedNodeMapBridge = readRepositoryText("src", "ExternalSupport", "SelfHostedEditor", "Scripts", "EditorAuthoring", "Bridges", "SelfHostedEditorStoryNodeMapBridge.js");
+    const selfHostedNodeMapReviewController = readRepositoryText("src", "ExternalSupport", "SelfHostedEditor", "Scripts", "EditorAuthoring", "Controllers", "StoryNodeMapReviewController.js");
+    const selfHostedLocalizationRowsModelBuilder = readRepositoryText("src", "ExternalSupport", "SelfHostedEditor", "Scripts", "Localization", "Models", "LocalizationReviewRowsModelBuilder.js");
+
+    assertIncludesText(vscodeEditorAuthoringCommand, "\"update-node-map-project\"", "VSCode stable node map review must keep using the shared update-node-map-project CLI command.");
+    assertIncludesText(vscodeEditorAuthoringCommand, "\"apply-node-map-candidate-project\"", "VSCode stable node map candidate apply must keep using the shared apply-node-map-candidate-project CLI command.");
+    assertNotIncludesText(vscodeEditorAuthoringCommand, "stable-node-map.write-sidecar", "VSCode must not depend on SelfHostedEditor desktop-only node-map sidecar write-back commands.");
+    assertNotIncludesText(vscodeEditorAuthoringCommand, "workspace.write-back-backup", "VSCode must not depend on SelfHostedEditor desktop-only write-back backup commands.");
+    assertIncludesText(vscodeNodeMapReviewController, ".review-backup.json", "VSCode may keep its local review-backup/revert file experience.");
+    assertIncludesText(vscodeNodeMapReviewController, "applyCandidateStableIdToNodeMap", "VSCode node-map apply UI must delegate to the shared CLI invocation wrapper.");
+    assertIncludesText(vscodeNodeMapReviewController, "previewCandidateStableIdToNodeMap", "VSCode node-map preview UI must delegate to the shared CLI invocation wrapper.");
+    assertNotIncludesText(vscodeNodeMapReviewController, "JSON.parse", "VSCode node-map review UI must not parse and rewrite the node-map sidecar itself.");
+
+    assertIncludesText(vscodeLocalizationCommand, "\"audit-l10n-alignment-project\"", "VSCode localization alignment review must keep using the shared audit-l10n-alignment-project CLI command.");
+    assertIncludesText(vscodeLocalizationCommand, "\"update-l10n-project\"", "VSCode localization update must keep using the shared update-l10n-project CLI command.");
+    assertIncludesText(vscodeLocalizationCommand, "\"refresh-l10n-line-map-project\"", "VSCode line identity refresh must keep using the shared refresh-l10n-line-map-project CLI command.");
+    assertIncludesText(vscodeLocalizationReviewQuickPickAdapter, "model.signals", "VSCode localization review UI must display shared presenter signals.");
+    assertIncludesText(vscodeLocalizationReviewQuickPickAdapter, "model.actionStatus", "VSCode localization review UI may display shared candidate actionStatus text.");
+    assertNotMatchingText(vscodeLocalizationReviewQuickPickAdapter, /\b(similarity|rankPenalty|rank-penalty|levenshtein|jaccard|scoreCandidate)\b/, "VSCode localization review UI must not recompute candidate scoring or ranking.");
+
+    assertIncludesText(selfHostedTransport, "StableNodeMapApplyCandidate: \"stable-node-map.apply-candidate\"", "SelfHostedEditor backend transport must expose stable node map candidate apply as a business command.");
+    assertIncludesText(selfHostedTransport, "StableNodeMapReview: \"stable-node-map.review\"", "SelfHostedEditor backend transport must expose stable node map review as a business command.");
+    assertIncludesText(selfHostedTransport, "StableNodeMapWriteSidecar: \"stable-node-map.write-sidecar\"", "SelfHostedEditor backend transport must keep desktop-only node-map write-back as an explicit command.");
+    assertNotIncludesText(selfHostedTransport, "[EditorBackendTransportCommand.StableNodeMapWriteSidecar]", "SelfHostedEditor dev-host HTTP route map must not expose the desktop-only node-map sidecar write command.");
+    assertNotIncludesText(selfHostedTransport, "[EditorBackendTransportCommand.WorkspaceWriteBackBackup]", "SelfHostedEditor dev-host HTTP route map must not expose the desktop-only write-back backup command.");
+    assertNotIncludesText(selfHostedNodeMapBridge, "\"/api/node-map", "SelfHostedEditor node-map feature bridge must use backend services, not hard-coded dev-host HTTP routes.");
+    assertOrderedText(selfHostedNodeMapBridge, "workspaceSessionClient.writeBackBackup", "stableNodeMapClient.writeSidecar", "SelfHostedEditor node-map write-back must create a workspace backup before writing the sidecar.");
+    assertIncludesText(selfHostedNodeMapReviewController, "Confirm Apply", "SelfHostedEditor node-map UI must keep explicit confirmation before real apply/write-back.");
+    assertIncludesText(selfHostedNodeMapReviewController, "Preview Apply", "SelfHostedEditor node-map UI must keep dry-run preview separate from real apply.");
+    assertIncludesText(selfHostedLocalizationRowsModelBuilder, "normalizeReviewSignals", "SelfHostedEditor localization rows must preserve shared presenter signals.");
+    assertIncludesText(selfHostedLocalizationRowsModelBuilder, "actionStatus", "SelfHostedEditor localization rows must preserve shared candidate actionStatus text.");
 }
 
 function createDocument(filePath, text, version) {
@@ -559,6 +599,29 @@ function assertIncludesSymbol(symbols, name) {
 
 function assertSamePath(actual, expected, message) {
     assert(normalizePath(actual) === normalizePath(expected), message + " Expected " + expected + ", got " + actual + ".");
+}
+
+function readRepositoryText(...segments) {
+    return fs.readFileSync(path.join(repoRoot, ...segments), "utf8");
+}
+
+function assertIncludesText(text, expected, message) {
+    assert(String(text || "").includes(expected), message);
+}
+
+function assertNotIncludesText(text, unexpected, message) {
+    assert(!String(text || "").includes(unexpected), message);
+}
+
+function assertNotMatchingText(text, pattern, message) {
+    assert(!pattern.test(String(text || "")), message);
+}
+
+function assertOrderedText(text, before, after, message) {
+    const source = String(text || "");
+    const beforeIndex = source.indexOf(before);
+    const afterIndex = source.indexOf(after);
+    assert(beforeIndex >= 0 && afterIndex >= 0 && beforeIndex < afterIndex, message);
 }
 
 function normalizePath(value) {

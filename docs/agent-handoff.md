@@ -1,12 +1,23 @@
 # Agent 接手指南
 
-状态：P2 Round 8
+状态：P2 Round 9
 
 最后更新：2026-06-17
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-17 SelfHostedEditor P2 Round 9 VSCode Parity 与共享边界快照
+
+P2 Round 9 已完成 VSCode / SelfHostedEditor P2 语义消费边界复核，不宣布 P2 完成。
+
+- 审计产物见 [SelfHostedEditor P2 VSCode Parity Boundary Audit](self-hosted-editor-p2-vscode-parity-boundary-audit.md)。
+- VSCode stable node map 路径继续只调用共享 CLI：`update-node-map-project` 与 `apply-node-map-candidate-project`；VSCode 自己只保留 Quick Pick、`.review-backup.json` / revert 等宿主体验，不依赖 SelfHostedEditor desktop-only `stable-node-map.write-sidecar` 或 `workspace.write-back-backup`。
+- VSCode localization review/update/line identity 继续通过 `audit-l10n-alignment-project`、`update-l10n-project` 与 `refresh-l10n-line-map-project`；Quick Pick 只展示 shared `signals` / `actionStatus`，不重算 candidate similarity、rank penalty 或排序。
+- SelfHostedEditor 继续通过 backend service / transport command 消费 shared payload；dev-host route map 不暴露真实 sidecar write-back，Electron desktop 写回仍必须先 `workspace.write-back-backup` 再 `stable-node-map.write-sidecar`。
+- `npm --prefix src\ExternalSupport\VSCode run check:semantic-parity` 已补入 P2 静态边界断言，和 SelfHostedEditor `check:semantic-parity-http` 分别守住 VSCode provider parity 与 SelfHostedEditor dev-host authoring parity。
+- 下一轮进入 P2 Round 10：Batch Review / Multi-Apply 决策；重点是决定是否需要进入 P2，默认不扩大自动 apply 范围，若做也只能是可 dry-run、可审计、可备份/撤回的 selected candidates 小闭环。
 
 ### 2026-06-17 SelfHostedEditor P2 Round 8 Stable Node Map UI 闭环快照
 
