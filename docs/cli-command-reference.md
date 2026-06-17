@@ -55,6 +55,8 @@ dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- inspect-
 
 `inspect-host-schema-project` 会读取项目 `hostSchema`，输出独立 `inscape.host-schema.capabilities` JSON，当前包含归一化后的 `queries[]`、`actions[]`、legacy `events[]` 和 schema 读取状态。该命令面向 VSCode / LanguageServer / SelfHostedEditor 复用 Tooling reader，不编译 `.inscape`，也不扫描脚本内容。
 
+P3 Round 4 已定义 [Usage Manifest Contract](usage-manifest-contract.md)。`inspect-usage-project` 是 P3 Round 5 计划命令，当前版本尚不可用；不要把它写入自动化脚本或验收矩阵。
+
 ## 单文件命令
 
 | 命令 | 用途 | 常用输出 |

@@ -162,14 +162,14 @@ Audit
 工具对账：剧本用的，宿主有没有提供，Bridge 有没有映射。
 ```
 
-P3 倾向使用：
+P3 Round 4 已在 [Usage Manifest Contract](usage-manifest-contract.md) 定义 `inscape.usage` 最小契约。Round 5 再实现命令：
 
 ```powershell
 inspect-usage-project <root> -o usage.json
 audit-host-integration-project <root> -o report.json
 ```
 
-Usage Manifest 可用于 CI、编辑器提示、source jump、Bridge TODO 生成和宿主集成审计，但不得用于 Runtime 直接执行，也不得反向生成权威 Host Schema。
+Usage Manifest 记录 `queries[]`、`actions[]` 与 `requiredIds[]`。其中 `@timeline...` 会作为 `usageKind = "host-binding-hook"` 对账 Host Bridge，而不是被当成缺失的普通 Host Schema action。Usage Manifest 可用于 CI、编辑器提示、source jump、Bridge TODO 生成和宿主集成审计，但不得用于 Runtime 直接执行，也不得反向生成权威 Host Schema。
 
 ## 与现有绑定表的关系
 
@@ -179,7 +179,7 @@ Usage Manifest 可用于 CI、编辑器提示、source jump、Bridge TODO 生成
 kind,alias,birdId,unityGuid,addressableKey,assetPath
 ```
 
-这张表描述资源 / Timeline 等宿主对象坐标，主要服务 `@timeline alias`、`@timeline.<phase> alias` 这类事件 / 时机 hook。历史 `[kind: alias]` 不再属于当前 Host Bridge 或查询语法扩展。宿主 Schema 则描述查询与事件能力。两者都属于宿主连接层，但不要混为同一张表：
+这张表描述资源 / Timeline 等宿主对象坐标，主要服务 `@timeline alias`、`@timeline.<phase> alias` 这类事件 / 时机 hook。历史 `[kind: alias]` 不再属于当前 Host Bridge 或查询语法扩展。宿主 Schema 则描述查询与动作能力。两者都属于宿主连接层，但不要混为同一张表：
 
 - `bindingMap` 回答“这个别名指向哪个资源或宿主对象”。
 - `hostSchema` 回答“剧本可以表达哪些查询和动作，以及它们需要哪些参数”。
@@ -196,4 +196,5 @@ kind,alias,birdId,unityGuid,addressableKey,assetPath
 4. Unity / Bird 连接层可扫描带特定属性的方法，生成或校验 `hostSchema`。
 5. 未来如果进入代码生成阶段，可以从 Schema 生成宿主注册代码，避免运行时才发现未注册能力。
 6. 按 [Host Bridge Contract](host-bridge-contract.md) 继续推进映射表、VSCode 展示和生成流程，解决 Inscape 可读 ID 与项目内部 ID 不一致的问题。
-7. P3 Round 3 已把 Tooling / CLI / LanguageServer / VSCode / SelfHostedEditor 的 Host Schema capability consumption 迁到 `actions[]`，并继续保留 legacy `events[]` 兼容路径；后续还需补 Usage Manifest / audit 输出格式以及 Runtime 最小 state shape。
+7. P3 Round 3 已把 Tooling / CLI / LanguageServer / VSCode / SelfHostedEditor 的 Host Schema capability consumption 迁到 `actions[]`，并继续保留 legacy `events[]` 兼容路径。
+8. P3 Round 4 已定义 Usage Manifest contract；后续还需实现 `inspect-usage-project`、Host Integration Audit 输出格式以及 Runtime 最小 state shape。
