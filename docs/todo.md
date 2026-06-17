@@ -97,7 +97,7 @@ SelfHostedEditor desktop backend v0
 - [x] 实现 autosave / flush / recovery：手动 Save、autosave timer、close/switch/app-exit flush、recovery restore / discard / later 已可通过 Electron main process 真实 IO 工作，GUI recovery smoke 已覆盖 preload -> IPC -> main 路径，并验证 diagnostics / completion 使用 restore 后当前 buffer。
 - [x] 实现 CSV / node-map / line-map 写前 backup：新增 desktop-only `workspace.write-back-backup` command，Electron main process 会按 backup plan 复制 localization CSV、node-map sidecar、line-map sidecar 到 `.inscape-workspace/backups/`，并执行 count-and-age retention cleanup；响应保持 text-free。
 - [x] 落地 settings 分层：全局偏好与 workspace / project 行为分开；即使设置页后置，配置 schema 也先稳定。
-- [ ] 打通 v0 最小可用闭环的真实 GUI Preview 验证：真实 GUI / packaged smoke 已覆盖打开目录、文件列表、编辑 `.inscape`、autosave / 手动 Save、recovery、基础诊断 / 补全；Preview 当前由 `smoke:desktop` contract 覆盖，仍需后续补真实 GUI 或 packaged Preview 断言。
+- [x] 打通 v0 最小可用闭环的真实 GUI Preview 验证：`smoke:desktop-gui-recovery` 与 `smoke:desktop-package-gui` 现在都会在真实 Workbench / packaged exe 中等待 Preview 渲染默认样例、点击 `查看证物` choice、确认阅读面板进入 `证物桌`，并验证编辑器 active source line reveal 到目标标题。
 - [x] 做 Windows internal package v0 smoke：`package:windows` 生成 unpacked package 后，`smoke:desktop-package-gui` 已验证 packaged exe 能启动、打开 workspace、编辑保存、恢复，并跑基础 diagnostics / completions authoring 能力。
 - [ ] 评估 SelfHostedEditor `monaco-editor` / `dompurify` npm audit advisory：当前 `npm audit fix --force` 会降到 `monaco-editor@0.53.0` 且为 breaking change，应单独依赖安全轮次决策。
 

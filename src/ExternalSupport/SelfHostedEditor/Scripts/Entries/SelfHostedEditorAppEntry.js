@@ -301,6 +301,8 @@ async function main() {
     workbenchRenderController.renderWorkspaceSession();
   });
 
+  bindings.shell.dataset.workbenchReady = "true";
+
   async function loadDefaultSampleScript() {
     const response = await fetch(`/${defaultSamplePath}`);
     if (!response.ok) {

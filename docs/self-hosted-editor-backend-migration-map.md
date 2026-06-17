@@ -100,6 +100,8 @@
 
 2026-06-17 P1 post-40 assets import IO 补充：desktop-only `workspace.import-assets` 已进入 shared command catalog、preload whitelist、`EditorBackendClient.workspace.importAssets()`、`WorkspaceSessionClient.importAssets()` 与 Electron dispatcher，但不映射 dev-host HTTP route。renderer payload 不携带 workspace 外 source path；Electron main process 通过原生多文件选择器或测试注入 selector 临时持有外部路径，复用 `EditorBackendWorkspaceAssetImportPlanModel` 生成 text-free copy plan，并复制图片 / 音频 / CSV 到 workspace `assets/images|audio|data`。响应不持久化外部路径，unsupported extension 进入 skip，缺失源失败会清理目标文件。
 
+2026-06-17 P1 post-40 GUI Preview smoke 补充：`smoke:desktop-gui-recovery` 与 `smoke:desktop-package-gui` 已共用真实 renderer Preview 断言。smoke 等待 Workbench handler ready，读取 `.story-preview` 的 provider / title / choice DOM，点击 `查看证物` choice 后确认 Preview 进入 `证物桌`，并通过 `.script-editor[data-active-source-line]` 验证 editor source reveal 到目标标题。该断言不新增 backend 语义，不把 offline fallback 伪装成 Compiler / Runtime success。
+
 ## 状态分类
 
 | 分类 | 当前例子 | 未来归属 | 规则 |

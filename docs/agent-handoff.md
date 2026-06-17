@@ -501,13 +501,13 @@ P1 40 轮计划完成后，继续补上了真实 Electron preload -> main 的固
 - `ElectronWorkspaceSessionStore.restoreRecoverySnapshot()` 会读取并校验 `.inscape-workspace/recovery/<relative>.snapshot.json` 的 relative path / content hash / text payload，把 snapshot 正文写回 `.inscape` 文件，刷新 buffer summary，并删除 snapshot。
 - `discardRecoverySnapshot()` 删除 snapshot 并刷新 text-free recovery status；`markRecoverySnapshotLater()` 只在当前 session status 标为 `later`，保留 snapshot 供后续提示。
 - `check:electron-workspace` 现在覆盖 restore 写盘且响应不泄露 snapshot text、restore 后 cleanup、later 保留 snapshot、discard 删除 snapshot、recovery action response text-free。`check:backend-transport` / `check:preload-transport` / `check:electron-shell` 同步覆盖新 command 面。
-- 后续已完成真实 GUI edit-save-recovery smoke，并补入 diagnostics / completions 使用恢复后当前 buffer 的验证；下一步应转向 P1.5 workspace-scoped long-lived LanguageServer 或其余 language action 的同源状态验证。
+- 后续已完成真实 GUI edit-save-recovery smoke、diagnostics / completions 使用恢复后当前 buffer 的验证，以及真实 GUI / packaged Preview 渲染、choice click 与 source reveal 断言；下一步应转向 P1.5 workspace-scoped long-lived LanguageServer 或其余 language action 的同源状态验证。
 
 ### 2026-06-17 SelfHostedEditor P1 post-40 Electron GUI recovery smoke 快照
 
 本轮新增 `smoke:desktop-gui-recovery`，用真实 Electron BrowserWindow 加载 Workbench/app protocol/preload，并通过 renderer 可见的 `window.inscapeSelfHostedEditor` 窄 API 走 preload -> IPC -> main 的产品路径；后续已把 diagnostics / completions current-buffer GUI 验证补入同一 smoke。
 
-- 真实 GUI smoke 覆盖：open folder、显式 read、dirty edit、manual save 写盘、idle autosave 写盘、recovery snapshot 发现、restore 写回磁盘、diagnostics / completions 从 restore 后当前 buffer 构建请求、later 保留 snapshot、discard 删除 snapshot，且 open/save/recovery/language action 响应不泄露正文。
+- 真实 GUI smoke 覆盖：open folder、显式 read、dirty edit、manual save 写盘、idle autosave 写盘、recovery snapshot 发现、restore 写回磁盘、diagnostics / completions 从 restore 后当前 buffer 构建请求、Preview 默认样例渲染、Preview choice click 推进到目标 block 并 reveal editor source line、later 保留 snapshot、discard 删除 snapshot，且 open/save/recovery/language action 响应不泄露正文。
 - 该轮同时发现并修复真实 preload 启动问题：sandboxed Electron preload 不能直接加载 ESM `ElectronPreload.js`，实际 BrowserWindow 改为加载 `ElectronPreload.cjs`；`ElectronPreloadApi.js` 继续作为 ESM contract/API 定义，contracts 同步覆盖 CJS preload path。
 - 当前 Electron dispatcher 已将六个 language-session command 接到 main-process `ElectronWorkspaceSessionStore` 的当前 `DocumentBufferStore` snapshot；本轮 GUI smoke 只实证 diagnostics / completions。下一步若继续 P1.5，应推进 workspace-scoped long-lived LanguageServer，并补 definition / references / hover / documentSymbols 的同源状态验证。
 
@@ -515,7 +515,7 @@ P1 40 轮计划完成后，继续补上了真实 Electron preload -> main 的固
 
 本轮新增 `smoke:desktop-package-gui`，在 `package:windows` 生成 `dist/win-unpacked/Inscape SelfHostedEditor.exe` 后，直接运行 packaged exe，而不是 Electron dev binary 或 artifact-only smoke。
 
-- packaged app 通过 `SELF_HOSTED_EDITOR_ELECTRON_PACKAGED_GUI_SMOKE=true` 进入受保护 smoke path；正常启动不会触发。smoke path 仍加载 packaged Workbench / app protocol / sandbox preload，通过 renderer preload API 打开临时 workspace、read、edit、manual Save 写盘、recovery restore 写盘，并验证 diagnostics / completions 使用 restore 后当前 buffer。
+- packaged app 通过 `SELF_HOSTED_EDITOR_ELECTRON_PACKAGED_GUI_SMOKE=true` 进入受保护 smoke path；正常启动不会触发。smoke path 仍加载 packaged Workbench / app protocol / sandbox preload，通过 renderer preload API 打开临时 workspace、read、edit、manual Save 写盘、recovery restore 写盘，并验证 diagnostics / completions 使用 restore 后当前 buffer；同一 smoke 也验证 packaged Preview 渲染默认样例、choice click 推进到 `证物桌`，以及 editor active source line reveal。
 - `Desktop/ElectronPackagedGuiSmoke.js` 只在 explicit env guard 下运行；它不认识 `/api/*` 或 localhost，也不向 renderer 暴露 Node/fs/shell。结果通过临时 JSON result file 回传给 `DevScripts/SelfHostedEditorDesktopPackageGuiSmoke.js`。
 - 本轮当前已通过：`package:windows`、`smoke:desktop-package-gui`、`smoke:desktop-package`、`check:desktop-package`、`smoke:desktop-gui-recovery`、Electron shell / boundary / IPC / workspace / lifecycle contracts、SelfHostedEditor syntax / structure / model、VSCode parity / structure、`.NET build` 与 Internal tests。下一步仍不应默认进入 P1.5，除非明确开始 workspace-scoped long-lived LanguageServer 里程碑。
 
@@ -526,7 +526,15 @@ P1 40 轮计划完成后，继续补上了真实 Electron preload -> main 的固
 - `EditorBackendTransportCommand.WorkspaceWriteBackBackup`、preload whitelist、`EditorBackendClient.workspace.writeBackBackup()`、`WorkspaceSessionClient.writeBackBackup()` 和 Electron dispatcher 已对齐；该 command 不映射 dev-host `/api/*` route。
 - `ElectronWorkspaceSessionStore.runWriteBackBackup()` 会扫描 `.inscape-workspace/backups/`，复用 `EditorBackendWorkspaceBackupPlanModel` 为 localization CSV、`inscape.node-map.json`、`inscape.line-map.json` 生成 text-free backup plan，复制源文件到 `.inscape-workspace/backups/`，并删除 retention cleanup candidates。
 - `check:electron-workspace` 覆盖三类真实复制、旧 backup 清理、disabled backup skip、unsupported `.inscape` skip、desktop-only route 和 text-free response；`check:backend-services`、`check:backend-transport`、`check:preload-transport`、`check:electron-shell`、fake embedded transport 也已同步。
-- 当前 Preview 的真实 GUI / packaged 断言仍可作为后续 P1 收口候选；不要把它误写成 P1.5 long-lived LanguageServer。
+- 真实 GUI / packaged Preview 断言已在后续 P1 post-40 Preview smoke 中完成；不要把它误写成 P1.5 long-lived LanguageServer。
+
+### 2026-06-17 SelfHostedEditor P1 post-40 GUI Preview smoke 快照
+
+本轮把 `smoke:desktop-gui-recovery` 与 `smoke:desktop-package-gui` 扩展为真实 GUI Preview smoke。新增共享 `ElectronGuiPreviewSmokeAssertions`，只通过真实 renderer DOM 与应用自身的编辑器 active source line 状态观察行为，不让 renderer 获得 Node/fs/shell。
+
+- Preview smoke 会等待 Workbench 完成首轮 handler 注册，再读取 `.story-preview` 的 provider / title / choice DOM，确认默认 `samples/court-loop.inscape` 已渲染 `法庭开场`。
+- smoke 点击真实 Preview choice `查看证物`，确认 reading Preview 进入 `证物桌`，并通过 `.script-editor[data-active-source-line]` 验证 editor reveal 到目标标题 source line。
+- `EditorSurfaceController` 现在在编辑器容器上同步 `data-active-source-line`，这是 UI 状态暴露，不改变 Compiler / LanguageServer / Runtime / Tooling 语义边界。
 
 ### 2026-06-17 SelfHostedEditor P1 post-40 assets import IO 快照
 

@@ -164,6 +164,7 @@ export class EditorSurfaceController {
       this.hoveredLineNumber = 0;
       this.renderHints();
     });
+    this.syncActiveSourceLineAttribute();
   }
 
   getMonaco() {
@@ -192,6 +193,7 @@ export class EditorSurfaceController {
     model.setValue(text);
     this.isApplyingText = false;
     this.activeLineNumber = 1;
+    this.syncActiveSourceLineAttribute();
   }
 
   applyUserTextEdit(text) {
@@ -307,6 +309,7 @@ export class EditorSurfaceController {
     });
     this.editor.revealLineInCenter(boundedLineNumber);
     this.activeLineNumber = boundedLineNumber;
+    this.syncActiveSourceLineAttribute();
     this.renderHints();
     this.renderActiveBlockDecorations();
     this.notifyLineChanged();
@@ -319,9 +322,16 @@ export class EditorSurfaceController {
     }
 
     this.activeLineNumber = nextLineNumber;
+    this.syncActiveSourceLineAttribute();
     this.renderHints();
     this.renderActiveBlockDecorations();
     this.notifyLineChanged();
+  }
+
+  syncActiveSourceLineAttribute() {
+    if (this.editorElement) {
+      this.editorElement.dataset.activeSourceLine = String(this.activeLineNumber || 1);
+    }
   }
 
   notifyTextChanged() {

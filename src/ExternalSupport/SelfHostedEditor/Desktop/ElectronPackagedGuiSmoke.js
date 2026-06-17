@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { assertSelfHostedEditorElectronGuiPreview } from "./ElectronGuiPreviewSmokeAssertions.js";
 
 export const SelfHostedEditorElectronPackagedGuiSmokeFormat = "inscape.self-hosted-editor.electron-packaged-gui-smoke";
 
@@ -107,6 +108,10 @@ export async function runSelfHostedEditorElectronPackagedGuiSmoke({
     );
     assertEqual(apiReady, true, "Packaged GUI smoke preload API is available");
 
+    const previewResult = await assertSelfHostedEditorElectronGuiPreview(browserWindow, {
+      label: "Packaged GUI smoke",
+    });
+
     const openResult = await invokePreload(browserWindow, "workspace.openFolder", {
       dialogTitle: "Packaged GUI Smoke Workspace",
     });
@@ -177,6 +182,7 @@ export async function runSelfHostedEditorElectronPackagedGuiSmoke({
       format: SelfHostedEditorElectronPackagedGuiSmokeFormat,
       languageCallCount: directLanguageCalls.length,
       ok: true,
+      preview: previewResult,
       reason: "",
     });
     browserWindow.destroy();

@@ -2,6 +2,7 @@ import { app, BrowserWindow } from "electron";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { assertSelfHostedEditorElectronGuiPreview } from "../Desktop/ElectronGuiPreviewSmokeAssertions.js";
 import { registerSelfHostedEditorElectronApp } from "../Desktop/ElectronMain.js";
 import {
   createSelfHostedEditorElectronWorkspaceLifecycle,
@@ -47,6 +48,10 @@ async function runProbe() {
       "preload API availability"
     );
     assertEqual(apiReady, true, "GUI probe preload API is available");
+
+    await assertSelfHostedEditorElectronGuiPreview(browserWindow, {
+      label: "GUI recovery probe",
+    });
 
     const openResult = await invokePreload(browserWindow, "workspace.openFolder", {
       dialogTitle: "GUI Recovery Smoke Workspace",
