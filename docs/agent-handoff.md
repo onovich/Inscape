@@ -1,12 +1,23 @@
 # Agent 接手指南
 
-状态：P3 first cut PASS
+状态：P4 Round 1 baseline / contract 完成
 
 最后更新：2026-06-18
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-18 SelfHostedEditor P4 Round 1 Baseline / Contract 快照
+
+P4 Runtime playable MVP 已完成第一轮基线审计与行为合同收口，不代表 P4 MVP 已完成。
+
+- P4 执行入口仍是 [P4 Runtime Playable MVP Goal 模式执行指南](self-hosted-editor-p4-goal-mode-execution-guide.md)：16 轮内完成，1-12 轮主线、13-15 轮缓冲、16 轮最终验收；每轮必须做 Debug 自检和架构自检。
+- 本轮审计见 [SelfHostedEditor P4 Baseline Audit](self-hosted-editor-p4-baseline-audit.md)，确认现有 Runtime / query provider / Runtime State / CLI / P3 integration smoke 的真实能力边界。
+- P4 最小行为合同见 [Runtime Playable MVP Contract](runtime-playable-mvp-contract.md)，后续 Runtime condition evaluator、query receipt、action dispatcher、Log / Backlog 与 Inscape 子状态 blob 都应按该合同推进。
+- 当前已具备：Compiler 条件 IR、Usage Manifest 条件 query usage、Host Schema `queries[]` / `actions[]`、Runtime internal facts、delegate / mock / recorded query provider、formal Runtime State export / validate、CLI `runtime-project` 基础推进与 P3 integration smoke。
+- 当前缺口保持明确：Runtime 尚未执行条件、尚未按条件过滤选项或执行条件跳转、尚未记录 branch query receipt、尚未有 action dispatcher、pending / resume、Log / Backlog 或 P4 子状态 blob。
+- 下一轮进入 P4 Round 2：在 `Internal/Runtime` 实现 condition evaluator，消费 `DslScriptConditionExpressionModel` 和既有 `NarrativeRuntimeQueryProviderDomain`，不重写 parser，不碰 ExternalSupport Runtime 语义。
 
 ### 2026-06-18 SelfHostedEditor P3 Final Validation 快照
 
@@ -18,6 +29,7 @@ P3 第一刀最终验证已通过，结论为 PASS。
 - 边界扫描通过：`Internal` 没有新增 Unity / Bird / Addressables 程序依赖；Host Schema 第一版没有新增 rollback / replay / receipt / failure / timeout policy 字段；ExternalSupport 没有新增 condition parser 或 Runtime 语义副本。
 - 后置范围保持不变：完整 Save / Load、Runtime 条件求值、action dispatcher、query / action receipt、完整 Log / Backlog、Rollback、Trace Replay、Flashback、Presentation IR 与通用 Unity / Host SDK。
 - 下一候选阶段为 P4 Runtime playable MVP；不要把 P4 目标回写成 P3 未完成项。
+- P4 执行入口见 [P4 Runtime Playable MVP Goal 模式执行指南](self-hosted-editor-p4-goal-mode-execution-guide.md)：16 轮内完成，1-12 轮主线、13-15 轮缓冲、16 轮最终验收；每轮必须做 Debug 自检和架构自检。
 
 ### 2026-06-18 SelfHostedEditor P3 Round 12 Integration Smoke 快照
 
@@ -176,7 +188,7 @@ P3 仍处于设计阶段，但已有一组可落实结论已沉淀到文档。�
 - 查询来源口径：正式运行优先 delegate query；mock / recorded values 服务编辑器预览、测试、CI 和调试复现；snapshot 不作为每帧同步主链路，只保留为低优先级实现细节。
 - Inscape 可以保存和查询内部叙事运行事实，例如 visited / seen / last_choice / Log / rollback 栈；背包、任务、好感度、战斗结果等业务玩法状态默认由宿主管。
 - Runtime / 存档 / Timeline 边界见 [运行时与 Unity 宿主](runtime-unity.md)：正式项目中宿主存档是权威，Inscape state 是宿主存档子状态；Log、Save / Load、Rollback、Trace Replay、Flashback Playback 已拆开命名；Timeline / 剧情 / 玩法系统按“同一段情节只有一个导演”交接控制权。
-- P3 之后阶段口径已确认：P4 先做 Runtime 可玩化，P5 再做 SelfHostedEditor Runtime authoring / 产品化接入，P6 做 Unity / Host SDK 第一版，P7 做 Rollback / Trace / 高级运行时调试，P8 再讨论 Presentation IR / 跨引擎 / 独立 Runtime。
+- P3 之后阶段口径已确认：P4 是下一个明确阶段，先做 Runtime 可玩化；P5 是中期候选，倾向做 SelfHostedEditor Runtime authoring / 产品化接入；Unity / Host SDK、Rollback / Trace / Flashback、Presentation IR / 跨引擎 / 独立 Runtime 只进入后置方向池，不作为当前正式排期 phase。
 - P4 边界已确认：纳入 Runtime MVP、delegate query、action dispatcher、Log / Backlog、普通 Save / Load 子状态 blob 与 editor preview 测试存档；不纳入纯 Inscape 完整存档产品、完整 Rollback、Trace Replay、Flashback Playback。
 - 后续未决项已收敛到 [待确认问题](open-questions.md) 与 [TODO](todo.md) 的 P3 / P4 段，重点是条件语法 parser / IR、Runtime State 最小 model / smoke、P4 Runtime MVP 样例、query receipt 粒度和 action pending / resume payload。
 
@@ -1518,9 +1530,9 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 
 建议优先做小而闭环的任务，不要直接跳到大规模重构。
 
-1. 启动 P4 Runtime playable MVP 前置设计 / 第一刀。
-   - 从 [SelfHostedEditor P3 Final Validation Report](self-hosted-editor-p3-final-validation-report.md)、[P3 Runtime / Language Discussion Memory](p3-runtime-language-discussion-memory.md)、[运行时与 Unity 宿主](runtime-unity.md) 和 ADR 0021 接上。
-   - 优先细化 Runtime MVP 验收样例：条件表达式 Runtime 求值、delegate / mock / recorded query、`fire` / `wait` / `handoff` action dispatcher、Log / Backlog 与普通 Save / Load 子状态 blob；不要回头扩大 P3。
+1. 进入 P4 Round 2 Runtime condition evaluator。
+   - 先读 [P4 Runtime Playable MVP Goal 模式执行指南](self-hosted-editor-p4-goal-mode-execution-guide.md)、[SelfHostedEditor P4 Baseline Audit](self-hosted-editor-p4-baseline-audit.md) 与 [Runtime Playable MVP Contract](runtime-playable-mvp-contract.md)。
+   - 在 `Internal/Runtime` 消费 `DslScriptConditionExpressionModel` 和既有 `NarrativeRuntimeQueryProviderDomain`，覆盖 bool / number / string、query path / call、`and` / `or` / `not`、标量比较和 Runtime error；不要重写 Compiler parser，也不要把 evaluator 复制到 VSCode 或 SelfHostedEditor。
 
 2. 继续推进 Stable Node ID / 本地化主线。
    - ADR 0013、sidecar 闭环、保守自动重命名识别、VSCode 显式 `Update Stable Node Map` 入口、插入标题后的自动同步、标题重命名人工确认 / 冲突报告、本地化 alignment / audit report，以及相似文本人工候选第一版都已落地。

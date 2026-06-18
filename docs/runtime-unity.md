@@ -272,7 +272,7 @@ Flashback Playback
 - 更低优先级：Flashback Playback。
 - 项目自定义：时空穿越式特殊倒放机制，例如大部分状态重置但少数状态保留。
 
-2026-06-18 P3 后续阶段口径已确认：P4 先做 Runtime 可玩化，P5 再做 SelfHostedEditor Runtime authoring / 产品化接入，P6 做 Unity / Host SDK 第一版，P7 才做 Rollback / Trace / 高级运行时调试，P8 再讨论 Presentation IR / 跨引擎 / 独立 Inscape Runtime。
+2026-06-18 P3 后续阶段口径已确认：P4 是下一个明确阶段，先做 Runtime 可玩化；P5 是中期候选，倾向做 SelfHostedEditor Runtime authoring / 产品化接入；Unity / Host SDK、Rollback / Trace / Flashback、Presentation IR / 跨引擎 / 独立 Inscape Runtime 只进入后置方向池，不作为当前正式排期 phase。
 
 P4 的 Save / Load 只要求正式项目中的 Inscape state 子状态 blob 与 editor preview 测试存档；纯 Inscape 独立游戏的完整存档产品后置。P4 应包含 Log / Backlog，默认记录 `speaker`、`text`、`lineId`，选项记录作为可选扩展或开发模式信息。
 

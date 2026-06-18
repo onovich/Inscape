@@ -1,6 +1,6 @@
 # TODO
 
-状态：持续维护，P3 first cut PASS
+状态：持续维护，P4 Round 1 baseline / contract 完成
 
 SelfHostedEditor regression invariant: Preview choice clicks must advance the reading Preview to the target block and reveal the target block title in the editor. Compiler-project Preview data must never silently lose `previewLines`: if a returned Compiler graph has source lines but missing or mismatched `previewLines`, Preview must report a compiler graph contract error instead of falling back to the UI-only draft model. `npm --prefix src\ExternalSupport\SelfHostedEditor run check:model` covers both invariants so future Runtime / navigation work does not regress them.
 
@@ -22,11 +22,9 @@ P2 stable identity / localization review
 P2.5 Host Schema / Host Bridge / Unity-Bird adaptation
   -> PASS
   -> P3 second syntax / Runtime / extension research only as a new scoped phase
-  -> P4 Runtime playable MVP
-  -> P5 SelfHostedEditor Runtime authoring/productization
-  -> P6 Unity / Host SDK first cut
-  -> P7 rollback / trace / advanced runtime debugging
-  -> P8 Presentation IR / cross-engine exploration
+  -> P4 Runtime playable MVP (guide: self-hosted-editor-p4-goal-mode-execution-guide.md)
+  -> P5 candidate: SelfHostedEditor Runtime authoring/productization
+  -> Later parking lot, not scheduled phases: Unity / Host SDK, rollback / trace, Presentation IR / cross-engine exploration
 ```
 
 ### P0：进入 desktop backend v0 前的 current-stage 100% 收口
@@ -192,7 +190,7 @@ npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
 - [x] P3 前置讨论已确认：Usage / Requirement Manifest 是机器可读对账清单，倾向 `inspect-usage-project` 生成 `inscape.usage`，`audit-host-integration-project` 对账 Usage + Host Schema + Host Bridge。
 - [x] P3 前置讨论已确认：Runtime State 第一版先做设计 + 最小 model / smoke，不做完整正式 Save / Load、完整 Rollback、完整 Trace Replay 或 Flashback。
 - [x] P3 前置讨论已确认：异步 action 失败、取消或超时统一作为宿主异常抛出 / 上报；第一版不为每个 action 配复杂 failure / timeout policy。
-- [x] P3 之后阶段顺序已确认：P4 先做 Runtime 可玩化，P5 再做 SelfHostedEditor 产品化接入，P6 做 Unity / Host SDK 第一版，P7 做 Rollback / Trace 等高级运行时调试，P8 再讨论 Presentation IR / 跨引擎 / 独立 Runtime。
+- [x] P3 之后阶段口径已确认：P4 是下一个明确阶段，先做 Runtime 可玩化；P5 是中期候选，倾向做 SelfHostedEditor Runtime authoring / 产品化接入；Unity / Host SDK、Rollback / Trace / Flashback、Presentation IR / 跨引擎 / 独立 Runtime 只进入后置方向池，不作为当前正式排期 phase。
 - [x] P4 边界已确认：优先实现 Runtime MVP、delegate query、action dispatcher、Log / Backlog、普通 Save / Load 子状态 blob 与 editor preview 测试存档；不做纯 Inscape 完整存档产品、不做完整 Rollback / Trace Replay / Flashback。
 - [x] P4 Log / Backlog 已确认进入优先范围：默认记录 `speaker`、`text`、`lineId`；选项记录作为可选扩展或开发模式信息，不要求普通玩家 Log 默认展示。
 - [x] 完成 P3 Round 1 基线审计。2026-06-18 审计结果见 [SelfHostedEditor P3 Baseline Audit](self-hosted-editor-p3-baseline-audit.md)；确认当前代码链路仍是 `queries[]` + `events[]`，Usage / Host Integration Audit / 条件语法 / P3 Runtime State 均未进入实现。下一轮进入 Host Schema v2 minimum contract。
@@ -208,8 +206,10 @@ npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
 - [x] 完成 P3 Round 11 Runtime State 最小模型。2026-06-18 审计结果见 [SelfHostedEditor P3 Runtime State Audit](self-hosted-editor-p3-runtime-state-audit.md)；`NarrativeRuntime.ExportState` 输出 `format` / `runtimeVersion` / `scriptVersion` / `position` / `flow` / `facts` / `random` / `host.checkpointId`，`ValidateStateAgainstCurrentScript` 覆盖 compatible / migratable / incompatible，CLI `runtime-project` 支持 `--export-state` 与 `--validate-state` smoke。
 - [x] 完成 P3 Round 12 最小端到端 smoke / docs closure。2026-06-18 审计结果见 [SelfHostedEditor P3 Integration Audit](self-hosted-editor-p3-integration-audit.md)；新增 `tests/Internal/Inscape.Tests/P3/TestP3IntegrationSmoke.cs`，串起 `compile-project` 条件 IR、`inspect-usage-project` usage、`audit-host-integration-project` schema / bridge 对账，以及 `runtime-project --export-state` / `--validate-state`。
 - [x] 完成 P3 最终验证并确认 P3 first cut PASS。2026-06-18 最终报告见 [SelfHostedEditor P3 Final Validation Report](self-hosted-editor-p3-final-validation-report.md)；最终矩阵、边界扫描、P3 PASS 门槛与文档接力入口均已收口。
-- [ ] 启动 P4 Runtime playable MVP 前置设计 / 第一刀；优先细化 Runtime MVP 验收样例、query receipt 记录粒度、`fire` / `wait` / `handoff` pending / resumed payload，以及 Runtime Inspector 只能改 mock query、不直接改正式 Runtime state 的产品边界。
-- [ ] P7 前继续评估 Rollback checkpoint 的准确粒度、跨宿主 action 时的回退阻断 / checkpoint 规则、Trace Replay、Flashback Playback 与时空穿越式特殊倒放；这些不进入 P3 / P4 第一刀实现。
+- [x] 输出 P4 Runtime playable MVP goal 模式执行指南。2026-06-18 指南见 [P4 Runtime Playable MVP Goal 模式执行指南](self-hosted-editor-p4-goal-mode-execution-guide.md)；约束 16 轮内完成，1-12 轮主线、13-15 轮缓冲、16 轮最终验收，每轮必须做 Debug 自检和架构自检。
+- [x] 完成 P4 Runtime playable MVP Round 1 基线审计 / 行为合同。2026-06-18 审计见 [SelfHostedEditor P4 Baseline Audit](self-hosted-editor-p4-baseline-audit.md)，行为合同见 [Runtime Playable MVP Contract](runtime-playable-mvp-contract.md)；确认 P3 已有入口与 P4 缺口，细化 Runtime MVP 验收样例、branch query receipt、`fire` / `wait` / `handoff` pending / resume、Log / Backlog 和 Inscape 子状态 blob 边界。Runtime Inspector 产品化 UI 不进入 P4。
+- [ ] 进入 P4 Round 2 Runtime condition evaluator：在 `Internal/Runtime` 消费 `DslScriptConditionExpressionModel`，接入既有 `NarrativeRuntimeQueryProviderDomain`，覆盖 bool / number / string、query path / call、`and` / `or` / `not`、标量比较和 Runtime error；不重新解析源码，不在 ExternalSupport 复制 Runtime 语义。
+- [ ] 高级运行时调试方向池继续评估 Rollback checkpoint 的准确粒度、跨宿主 action 时的回退阻断 / checkpoint 规则、Trace Replay、Flashback Playback 与时空穿越式特殊倒放；这些不进入 P3 / P4 第一刀实现，也不作为当前正式排期 phase。
 
 ### 暂停 / 明确后置
 

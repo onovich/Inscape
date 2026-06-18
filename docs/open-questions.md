@@ -74,12 +74,12 @@
 - 预览端不在线时如何退化。
 - 热重载 Patch 的最小协议是什么。
 - 状态监视器第一版倾向只允许修改 mock query / 测试值，不直接修改正式 Runtime state；后续若要做正式 state editor，必须单独设计权限、审计和恢复。
-- Time Travel 不作为 P3 / P4 必须功能；有限 Rollback、Trace Replay、Flashback Playback 和特殊时空玩法统一后置到 P7 级别讨论。
+- Time Travel 不作为 P3 / P4 必须功能；有限 Rollback、Trace Replay、Flashback Playback 和特殊时空玩法统一放入高级运行时调试方向池，不作为当前正式排期 phase。
 
 ## 运行时
 
 - Command Pipeline 是否足够，是否需要 ECS。
-- 已确认 P3 之后阶段顺序：P4 先做 Runtime 可玩化，P5 再做 SelfHostedEditor Runtime authoring / 产品化接入，P6 做 Unity / Host SDK 第一版，P7 做 Rollback / Trace / 高级运行时调试，P8 再讨论 Presentation IR、跨引擎和独立 Inscape Runtime。
+- 已确认 P3 之后阶段口径：P4 是下一个明确阶段，先做 Runtime 可玩化；P5 是中期候选，倾向做 SelfHostedEditor Runtime authoring / 产品化接入；Unity / Host SDK、Rollback / Trace / Flashback、Presentation IR、跨引擎和独立 Inscape Runtime 只进入后置方向池，不作为当前正式排期 phase。
 - 已确认正式项目中宿主存档是权威，Inscape state 应作为宿主存档子状态 blob；纯 Inscape 游戏和编辑器 Preview 可以例外。详见 [运行时与 Unity 宿主](runtime-unity.md)。
 - 已确认 P4 的 Save / Load 先做到宿主子状态 blob + editor preview 测试存档；纯 Inscape 独立游戏完整存档产品后置。
 - 已确认 P4 应包含 Log / Backlog；默认记录 `speaker`、`text`、`lineId`，选项记录作为可选扩展或开发模式信息。

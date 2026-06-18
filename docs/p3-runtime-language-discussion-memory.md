@@ -554,15 +554,20 @@ ADR 应记录：
 
 ## P3 之后的阶段口径
 
-2026-06-18 进一步确认：P3 之后不要直接跳到高级回放、Flashback 或 Presentation IR。阶段顺序先按以下倾向推进：
+2026-06-18 进一步确认：P3 之后不要直接跳到高级回放、Flashback 或 Presentation IR。当前只正式确认到 P4；P5 是中期候选，后面的内容只作为方向池停车场，避免反向污染 P3 / P4。
 
 ```text
+近期明确：
 P3  第二版语法 / Host 能力 / Runtime State 最小合同
 P4  Runtime 可玩化
+
+中期候选：
 P5  SelfHostedEditor Runtime authoring / 产品化接入
-P6  Unity / Host SDK 第一版
-P7  Rollback / Trace / 高级运行时调试
-P8  Presentation IR / 跨引擎 / 独立 Inscape Runtime
+
+后置方向池，不是当前正式排期 phase：
+- Unity / Host SDK 第一版
+- Rollback / Trace / 高级运行时调试
+- Presentation IR / 跨引擎 / 独立 Inscape Runtime
 ```
 
 P4 的核心不是“做完整 Runtime 大版本”，而是让一条剧情能稳定运行到可验证状态：
@@ -576,11 +581,11 @@ P4 的核心不是“做完整 Runtime 大版本”，而是让一条剧情能�
 
 P5 再把这些 Runtime 能力变成作者可用的 SelfHostedEditor 产品体验：条件 / action 提示、Usage / Audit 面板、Runtime Inspector、mock query 编辑、运行错误展示和 Runtime-backed preview。
 
-P6 才进入真实 Unity / Host SDK：Attribute / source generator / Editor 扫描、Host Bridge 生成或配置、Unity Runtime Host adapter、Timeline hook 与 Bird 回归样例。Bird 仍只是参考适配器，不能回灌为通用 Core 规则。
+Unity / Host SDK 方向池包含 Attribute / source generator / Editor 扫描、Host Bridge 生成或配置、Unity Runtime Host adapter、Timeline hook 与 Bird 回归样例。Bird 仍只是参考适配器，不能回灌为通用 Core 规则。
 
-P7 才讨论有限内存 Rollback、Rollback barrier、Trace Replay、recorded query / action receipt、调试 replay 和 Flashback Playback。P3 / P4 不应为了这些低优先级能力提前把 Host Schema 或 Action Schema 做胖。
+高级运行时调试方向池包含有限内存 Rollback、Rollback barrier、Trace Replay、recorded query / action receipt、调试 replay 和 Flashback Playback。P3 / P4 不应为了这些低优先级能力提前把 Host Schema 或 Action Schema 做胖。
 
-P8 再讨论 Presentation IR、Timeline 是否成为 Inscape 表现层、非 Unity runtime、Web / Godot / Bevy / 自研轻量演出层等更远目标。
+更远的表现层 / 跨引擎方向池包含 Presentation IR、Timeline 是否成为 Inscape 表现层、非 Unity runtime、Web / Godot / Bevy / 自研轻量演出层等目标。
 
 P4 开始前仍需要细化三件事：
 
