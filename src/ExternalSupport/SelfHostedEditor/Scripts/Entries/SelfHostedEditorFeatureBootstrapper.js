@@ -30,6 +30,7 @@ import { ProjectWorkspaceFileListController } from "../ProjectWorkspace/Controll
 import { ProjectWorkspaceSessionController } from "../ProjectWorkspace/Controllers/ProjectWorkspaceSessionController.js";
 import { ProjectWorkspaceSummaryController } from "../ProjectWorkspace/Controllers/ProjectWorkspaceSummaryController.js";
 import { SelfHostedEditorRuntimeBridge } from "../Runtime/Bridges/SelfHostedEditorRuntimeBridge.js";
+import { RuntimeActionPanelController } from "../Runtime/Controllers/RuntimeActionPanelController.js";
 import { RuntimeMockQueryPanelController } from "../Runtime/Controllers/RuntimeMockQueryPanelController.js";
 import { StoryGraphPreviewController } from "../StoryGraph/Controllers/StoryGraphPreviewController.js";
 import { WorkspaceLoadingStateController } from "../WorkspaceLayout/Controllers/WorkspaceLoadingStateController.js";
@@ -44,6 +45,7 @@ export async function createSelfHostedEditorFeatures(bindings, callbacks = {}) {
     host: bindings.hostCapabilityPanelElement,
     localization: bindings.localizationPanelElement,
     mockQuery: bindings.mockQueryPanelElement,
+    runtimeAction: bindings.runtimeActionPanelElement,
     outline: bindings.outlinePanelElement,
     preview: bindings.previewElement,
     runtime: bindings.runtimePanelElement,
@@ -58,6 +60,7 @@ export async function createSelfHostedEditorFeatures(bindings, callbacks = {}) {
     host: "Preparing host catalog",
     localization: "Preparing table",
     mockQuery: "Preparing mock queries",
+    runtimeAction: "Preparing action debug",
     outline: "Preparing outline",
     preview: "Preparing reading pane",
     runtime: "Preparing runtime",
@@ -92,6 +95,7 @@ export async function createSelfHostedEditorFeatures(bindings, callbacks = {}) {
     bindings.previewModeButtonElements,
     bindings.previewModeLabelElement
   );
+  const actionPanelController = new RuntimeActionPanelController(bindings.runtimeActionPanelElement);
   const mockQueryPanelController = new RuntimeMockQueryPanelController(bindings.mockQueryPanelElement);
   const storyGraphController = new StoryGraphPreviewController(bindings.graphPanelElement);
   const editorController = await EditorSurfaceController.create(bindings.editorElement, bindings.hintRailElement);
@@ -269,6 +273,7 @@ export async function createSelfHostedEditorFeatures(bindings, callbacks = {}) {
     loadingController,
     localizationController,
     localizationDraftStore,
+    actionPanelController,
     mockQueryPanelController,
     previewController,
     runtimeBridge,

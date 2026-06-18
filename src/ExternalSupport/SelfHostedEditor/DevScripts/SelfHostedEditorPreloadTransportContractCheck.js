@@ -228,6 +228,20 @@ const runtimeStep = await desktopBackendClient.runtimeSession.step({
   action: {
     kind: "continue",
   },
+  actionDispatcher: {
+    actions: [
+      {
+        mode: "wait",
+        name: "wait_for_ui",
+      },
+    ],
+    handlers: [
+      {
+        handlerName: "Ui.WaitForUi",
+        name: "wait_for_ui",
+      },
+    ],
+  },
   queryProvider: {
     kind: "Mock",
     mockValues: [],
@@ -236,7 +250,22 @@ const runtimeStep = await desktopBackendClient.runtimeSession.step({
 assertEqual(runtimeStep.currentNode.name, "Opening", "desktop backend client runtime preload payload");
 const runtimeStepCall = preloadCalls.find((call) => call.command === EditorBackendTransportCommand.RuntimeStep);
 assertEqual(runtimeStepCall.payload.queryProvider.kind, "Mock", "desktop runtime step allows mock query provider payload");
+assertEqual(runtimeStepCall.payload.actionDispatcher.actions[0].name, "wait_for_ui", "desktop runtime step allows action dispatcher payload");
 const runtimeStart = await desktopBackendClient.runtimeSession.startOrObserve({
+  actionDispatcher: {
+    actions: [
+      {
+        mode: "fire",
+        name: "play_timeline",
+      },
+    ],
+    handlers: [
+      {
+        handlerName: "Timeline.Play",
+        name: "play_timeline",
+      },
+    ],
+  },
   queryProvider: {
     kind: "Mock",
     mockValues: [],
@@ -245,6 +274,7 @@ const runtimeStart = await desktopBackendClient.runtimeSession.startOrObserve({
 assertEqual(runtimeStart.currentNode.name, "Opening", "desktop backend client runtime start preload payload");
 const runtimeStartCall = preloadCalls.find((call) => call.command === EditorBackendTransportCommand.RuntimeStartOrObserve);
 assertEqual(runtimeStartCall.payload.queryProvider.kind, "Mock", "desktop runtime start allows mock query provider payload");
+assertEqual(runtimeStartCall.payload.actionDispatcher.handlers[0].handlerName, "Timeline.Play", "desktop runtime start allows action dispatcher handler payload");
 const projectStatus = await desktopBackendClient.projectSession.status();
 assertEqual(projectStatus.sessionId, "desktop-session", "desktop backend client project session id");
 const desktopSave = await desktopBackendClient.documentBuffer.saveDocument({

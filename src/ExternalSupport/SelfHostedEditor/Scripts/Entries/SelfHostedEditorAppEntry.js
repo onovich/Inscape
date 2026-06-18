@@ -33,6 +33,7 @@ async function main() {
     layoutController,
     loadingController,
     localizationController,
+    actionPanelController,
     mockQueryPanelController,
     previewController,
     runtimeBridge,
@@ -57,6 +58,23 @@ async function main() {
     runtimeBridge.clearMockQueryProvider();
     await workbenchRenderController.renderWorkbench(editorController.getText(), editorController.getActiveLineNumber());
     return workbenchRenderController.getLatestRuntimeSnapshot();
+  });
+  actionPanelController.onResumeRuntimeRequested(async (resumeAction) => {
+    const latestRuntimeSnapshot = workbenchRenderController.getLatestRuntimeSnapshot();
+    const steppedRuntimeSnapshot = await runtimeBridge.stepRuntimeSnapshot(
+      editorController.getText(),
+      latestRuntimeSnapshot?.snapshot || null,
+      resumeAction
+    );
+    if (steppedRuntimeSnapshot.provider === "runtime-project") {
+      workbenchRenderController.setLatestRuntimeSnapshot(steppedRuntimeSnapshot);
+      previewController.renderRuntimeSnapshot(steppedRuntimeSnapshot.snapshot);
+      workbenchRenderController.renderWorkspaceSummary(editorController.getText());
+      workbenchRenderController.renderWorkspaceSession();
+      workbenchRenderController.renderActionPanel();
+    }
+
+    return steppedRuntimeSnapshot;
   });
 
   const defaultSample = await loadDefaultSampleScript();

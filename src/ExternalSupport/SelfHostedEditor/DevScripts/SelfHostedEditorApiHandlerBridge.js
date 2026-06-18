@@ -154,7 +154,10 @@ export function createSelfHostedEditorApiHandlers(services) {
       const queryProvider = payload.queryProvider && typeof payload.queryProvider === "object"
         ? payload.queryProvider
         : null;
-      return services.stepRuntimeStateForScriptText(scriptText, workspace, runtimeState, action, sessionId, queryProvider);
+      const actionDispatcher = payload.actionDispatcher && typeof payload.actionDispatcher === "object"
+        ? payload.actionDispatcher
+        : null;
+      return services.stepRuntimeStateForScriptText(scriptText, workspace, runtimeState, action, sessionId, queryProvider, actionDispatcher);
     }),
     runtimeState: createJsonApiHandler(async (payload) => {
       const scriptText = readScriptText(payload);
@@ -163,7 +166,10 @@ export function createSelfHostedEditorApiHandlers(services) {
       const queryProvider = payload.queryProvider && typeof payload.queryProvider === "object"
         ? payload.queryProvider
         : null;
-      return services.getRuntimeStateForScriptText(scriptText, workspace, sessionId, queryProvider);
+      const actionDispatcher = payload.actionDispatcher && typeof payload.actionDispatcher === "object"
+        ? payload.actionDispatcher
+        : null;
+      return services.getRuntimeStateForScriptText(scriptText, workspace, sessionId, queryProvider, actionDispatcher);
     }),
     sessionCacheStatus: createJsonApiHandler(async () =>
       getSelfHostedEditorSessionCacheStatus()

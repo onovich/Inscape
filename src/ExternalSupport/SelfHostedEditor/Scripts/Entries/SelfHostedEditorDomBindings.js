@@ -26,6 +26,7 @@ export function createSelfHostedEditorDomBindings(documentRef = document) {
     previewModeButtonElements: queryAll("[data-preview-mode]"),
     previewModeLabelElement: query("[data-preview-mode-label]"),
     replacePreviousLocalizationCsvButtonElement: query(".localization-replace-button"),
+    runtimeActionPanelElement: query(".runtime-action-panel"),
     runtimePanelElement: query(".workspace-runtime-panel"),
     scriptFileInputElement: query(".script-file-input"),
     scriptSourceLabelElement: query(".script-source-label"),

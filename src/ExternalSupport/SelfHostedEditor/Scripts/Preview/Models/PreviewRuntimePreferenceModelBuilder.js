@@ -117,6 +117,7 @@ export class PreviewRuntimePreferenceModelBuilder {
       runtimeState: {
         currentNodeName: runtimeSnapshot?.state?.currentNodeName || nodeTitle,
         path: Array.isArray(runtimeSnapshot?.state?.path) ? runtimeSnapshot.state.path : [],
+        pendingAction: runtimeSnapshot?.pendingAction || null,
         readingProgress: runtimeSnapshot?.readingProgress || null,
         visibleStepCount: Number(runtimeSnapshot?.state?.visibleStepCount || 0),
       },

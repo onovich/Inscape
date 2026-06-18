@@ -2,6 +2,7 @@ import { ProjectWorkspaceDraftSummaryModelBuilder } from "../ProjectWorkspace/Mo
 import { ScriptLineIdentityModelBuilder } from "../ProjectWorkspace/Models/ScriptLineIdentityModelBuilder.js";
 import { ProjectWorkspaceSessionStatusModelBuilder } from "../ProjectWorkspace/Models/ProjectWorkspaceSessionStatusModelBuilder.js";
 import { WorkspaceSummaryHostedModelBuilder } from "../ProjectWorkspace/Models/WorkspaceSummaryHostedModelBuilder.js";
+import { RuntimeActionAuthoringModelBuilder } from "../Runtime/Models/RuntimeActionAuthoringModelBuilder.js";
 
 export class SelfHostedEditorWorkbenchRenderController {
   constructor({
@@ -17,6 +18,7 @@ export class SelfHostedEditorWorkbenchRenderController {
     loadingController,
     localizationController,
     localizationDraftStore,
+    actionPanelController,
     mockQueryPanelController,
     previewController,
     projectSessionService,
@@ -40,6 +42,7 @@ export class SelfHostedEditorWorkbenchRenderController {
     this.loadingController = loadingController;
     this.localizationController = localizationController;
     this.localizationDraftStore = localizationDraftStore;
+    this.actionPanelController = actionPanelController || null;
     this.mockQueryPanelController = mockQueryPanelController || null;
     this.previewController = previewController;
     this.projectSessionService = projectSessionService;
@@ -64,6 +67,7 @@ export class SelfHostedEditorWorkbenchRenderController {
       provider: "unavailable",
       snapshot: null,
     };
+    this.latestHostBindingCatalog = null;
     this.latestHostSchemaCatalog = null;
     this.latestStoryGraphModel = null;
     this.latestBackendSessionStatus = {
@@ -102,6 +106,7 @@ export class SelfHostedEditorWorkbenchRenderController {
       graph: "Mapping story",
       host: "Reading host catalog",
       localization: "Gathering lines",
+      runtimeAction: "Preparing action debug",
       outline: "Reading outline",
       preview: "Reading compiler graph",
       runtime: "Starting runtime",
@@ -126,7 +131,12 @@ export class SelfHostedEditorWorkbenchRenderController {
     this.latestLocalizationSummary = this.localizationController.getSummarySnapshot();
     this.loadingController.setIdle("localization");
     const hostCatalogs = await this.hostCapabilityCatalogController.render(scriptText);
+    this.latestHostBindingCatalog = hostCatalogs?.hostBindingCatalog || null;
     this.latestHostSchemaCatalog = hostCatalogs?.hostSchemaCatalog || null;
+    this.runtimeBridge?.setActionBridgeInput?.(RuntimeActionAuthoringModelBuilder.buildRuntimeActionBridgeInput({
+      hostBindingCatalog: this.latestHostBindingCatalog,
+      hostSchemaCatalog: this.latestHostSchemaCatalog,
+    }));
     this.loadingController.setIdle("host");
     const storyGraphSnapshot = await this.storyGraphBridge.getStoryGraph(scriptText);
     if (renderVersion !== this.diagnosticsRenderVersion) {
@@ -141,6 +151,8 @@ export class SelfHostedEditorWorkbenchRenderController {
     this.latestStoryGraphModel = storyGraphModel;
     this.latestRuntimeSnapshot = runtimeSnapshot;
     this.loadingController.setIdle("runtime");
+    this.renderActionPanel();
+    this.loadingController.setIdle("runtimeAction");
     this.renderMockQueryPanel();
     this.loadingController.setIdle("mockQuery");
 
@@ -240,6 +252,14 @@ export class SelfHostedEditorWorkbenchRenderController {
 
   renderMockQueryPanel() {
     this.mockQueryPanelController?.render(this.latestHostSchemaCatalog, {
+      runtimeSnapshot: this.latestRuntimeSnapshot,
+      sessionId: this.runtimeBridge?.sessionId || "",
+      workspaceRevision: this.workspaceController.getState().revision || null,
+    });
+  }
+
+  renderActionPanel() {
+    this.actionPanelController?.render(this.latestHostSchemaCatalog, this.latestHostBindingCatalog, {
       runtimeSnapshot: this.latestRuntimeSnapshot,
       sessionId: this.runtimeBridge?.sessionId || "",
       workspaceRevision: this.workspaceController.getState().revision || null,

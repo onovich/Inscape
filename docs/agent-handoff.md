@@ -1,12 +1,24 @@
 # Agent 接手指南
 
-状态：P5 SelfHostedEditor Runtime authoring Round 4 mock query UI complete
+状态：P5 SelfHostedEditor Runtime authoring Round 5 action capability / pending surface complete
 
 最后更新：2026-06-18
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-18 SelfHostedEditor P5 Round 5 Action Capability / Pending Surface 快照
+
+P5 SelfHostedEditor Runtime authoring / productization 已完成第五轮 Action capability / pending surface，不代表 P5 已完成。
+- 本轮审计见 [SelfHostedEditor P5 Action Authoring Audit](self-hosted-editor-p5-action-authoring-audit.md)。
+- 新增 `RuntimeActionAuthoringModelBuilder`，从 Host Schema `actions[]`、Host Binding `actions[]` 与 Runtime snapshot 生成 text-free action authoring model。
+- Host Binding capability mapper 现在保留 Host Bridge action mapping；Workbench 在读取 Host Schema / Host Bridge catalog 后把 action input 传给 Runtime Preview。
+- 新增 `RuntimeActionPanelController`，挂到 Host view 的 `runtime-action-panel`，显示 mapped / missing handler、request evidence、pending action 和 Completed / Failed / Cancelled / Timeout debug resume controls。
+- dev-host `/api/runtime-state` / `/api/runtime-action` 支持把 action input 写成临时 `--action-dispatcher` JSON；debug resume 通过 `runtime-project --resume-action` 执行，前端不清 pending。
+- Runtime compact payload 现在暴露脱敏 `actionRequests[]` 与 `pendingAction` 摘要，不携带 raw action、argument value 或 host payload body。
+- Preview 在 Runtime snapshot 存在 `wait` / `handoff` pending action 时阻断 Runtime controls；`fire` request history 不阻断 UI。
+- 下一轮进入 P5 Round 6：Runtime-backed Preview controls hardening，明确 pending / stale / error / unavailable 控制状态；仍不得复制 Runtime flow state、action dispatcher、rollback / replay 或 Host action policy。
 
 ### 2026-06-18 SelfHostedEditor P5 Round 4 Mock Query UI 快照
 
@@ -18,7 +30,7 @@ P5 SelfHostedEditor Runtime authoring / productization 已完成第四轮 Mock q
 - dev-host `/api/runtime-state` 与 `/api/runtime-action` 会把 `queryProvider` 传给 `runtime-project --query-provider` 临时 JSON；不持久化到项目、formal Runtime State、P4 substate 或 Host Schema。
 - Electron preload whitelist 已允许 Runtime payload 携带 `queryProvider`；Electron backend Runtime path 当前仍保持 unavailable/fallback，不伪造未实现的 Runtime 执行。
 - 新增 `SelfHostedEditorRuntimeMockQueryUiContractCheck.js` 并扩展 runtime HTTP smoke / preload transport / structure guard，覆盖 apply、reset、unavailable、invalid、unknown、secret 不泄漏与 provider passthrough。
-- 下一轮进入 P5 Round 5：Action capability / pending surface，增加 action capability、pending request、resume/debug 状态展示；仍不得复制 action dispatcher 或 Host Bridge handler 语义。
+- 后续已由 P5 Round 5 接上 Action capability / pending surface；该轮显示 action capability、pending request、resume/debug 状态，并保持 Runtime action semantics 在 Internal / CLI。
 
 ### 2026-06-18 SelfHostedEditor P5 Round 3 Mock Query Model 快照
 

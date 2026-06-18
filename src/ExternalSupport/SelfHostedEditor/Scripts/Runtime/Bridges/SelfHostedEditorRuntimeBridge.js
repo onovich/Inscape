@@ -10,6 +10,7 @@ export class SelfHostedEditorRuntimeBridge {
     this.sessionId = options.sessionId || this.runtimeSessionClient.sessionId || this.createSessionId();
     this.workspaceContextProvider = null;
     this.workspaceSnapshotProvider = null;
+    this.actionBridgeInput = null;
     this.mockQueryProvider = null;
   }
 
@@ -33,6 +34,20 @@ export class SelfHostedEditorRuntimeBridge {
 
   getMockQueryProvider() {
     return this.mockQueryProvider;
+  }
+
+  setActionBridgeInput(actionBridgeInput) {
+    this.actionBridgeInput = actionBridgeInput && typeof actionBridgeInput === "object"
+      ? actionBridgeInput
+      : null;
+  }
+
+  clearActionBridgeInput() {
+    this.actionBridgeInput = null;
+  }
+
+  getActionBridgeInput() {
+    return this.actionBridgeInput;
   }
 
   async getRuntimeSnapshot(scriptText) {
@@ -117,13 +132,17 @@ export class SelfHostedEditorRuntimeBridge {
   }
 
   buildRuntimeRequest(request) {
-    if (!this.mockQueryProvider) {
-      return request;
+    const nextRequest = {
+      ...request,
+    };
+    if (this.mockQueryProvider) {
+      nextRequest.queryProvider = this.mockQueryProvider;
     }
 
-    return {
-      ...request,
-      queryProvider: this.mockQueryProvider,
-    };
+    if (this.actionBridgeInput) {
+      nextRequest.actionDispatcher = this.actionBridgeInput;
+    }
+
+    return nextRequest;
   }
 }

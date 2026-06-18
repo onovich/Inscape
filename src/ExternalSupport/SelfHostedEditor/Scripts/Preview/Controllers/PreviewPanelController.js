@@ -137,9 +137,11 @@ export class PreviewPanelController {
     this.blockRenderer.clearTypewriterTimer();
     const visibleLines = this.flowStatePresenter.getVisibleLines(storyModel, this.mode, this.flowVisibleLineCount);
     const shouldShowChoices = this.flowStatePresenter.shouldShowChoices(storyModel, this.mode, this.flowVisibleLineCount);
+    const blockingPendingAction = this.getBlockingPendingAction(storyModel);
     const animatedLineIndex = this.pendingFlowAnimationLineIndex;
     this.pendingFlowAnimationLineIndex = -1;
-    const historyElement = this.createRuntimeHistoryElement(storyModel);
+    const historyElement = this.createRuntimeHistoryElement(storyModel, Boolean(blockingPendingAction));
+    const pendingElement = blockingPendingAction ? this.createRuntimePendingElement(blockingPendingAction) : null;
     const storyElements = this.mode === "flow"
       ? this.blockRenderer.createFlowStoryElements(storyModel, visibleLines, animatedLineIndex)
       : [
@@ -151,11 +153,17 @@ export class PreviewPanelController {
     this.previewElement.replaceChildren(
       this.createPreviewProviderStatus(storyModel),
       ...(historyElement ? [historyElement] : []),
+      ...(pendingElement ? [pendingElement] : []),
       ...storyElements,
-      this.choiceRenderer.createChoicesElement(shouldShowChoices ? storyModel.choices : [])
+      this.choiceRenderer.createChoicesElement(shouldShowChoices && !blockingPendingAction ? storyModel.choices : [])
     );
     this.previewElement.dataset.previewMode = this.mode;
     this.previewElement.dataset.previewProvider = storyModel.provider || this.documentProvider;
+    if (blockingPendingAction) {
+      this.previewElement.dataset.runtimePending = "blocking";
+    } else {
+      delete this.previewElement.dataset.runtimePending;
+    }
     delete this.previewElement.dataset.previewState;
   }
 
@@ -309,6 +317,10 @@ export class PreviewPanelController {
       return false;
     }
 
+    if (this.getBlockingPendingAction(this.latestStoryModel)) {
+      return false;
+    }
+
     if (this.flowStatePresenter.hasRuntimeReadingProgress(this.latestStoryModel)) {
       return this.notifyChoiceSelected({
         nodeTitle: this.latestStoryModel.nodeTitle,
@@ -336,6 +348,10 @@ export class PreviewPanelController {
 
   async rewindFlow() {
     if (!this.latestStoryModel) {
+      return false;
+    }
+
+    if (this.getBlockingPendingAction(this.latestStoryModel)) {
       return false;
     }
 
@@ -443,7 +459,7 @@ export class PreviewPanelController {
     return (this.documentModel?.nodes || []).find((node) => node.title === title) || null;
   }
 
-  createRuntimeHistoryElement(storyModel) {
+  createRuntimeHistoryElement(storyModel, isRuntimeBlocked = false) {
     const runtimePath = Array.isArray(storyModel.runtimeState?.path)
       ? storyModel.runtimeState.path.filter((nodeTitle) => String(nodeTitle || "").trim().length > 0)
       : [];
@@ -459,6 +475,7 @@ export class PreviewPanelController {
       backButton.className = "story-runtime-back-button";
       backButton.type = "button";
       backButton.textContent = "Back";
+      backButton.disabled = isRuntimeBlocked;
       backButton.addEventListener("click", (event) => {
         void this.selectChoice({
           nodeTitle: storyModel.nodeTitle,
@@ -495,8 +512,27 @@ export class PreviewPanelController {
     return history;
   }
 
+  createRuntimePendingElement(pendingAction) {
+    const pending = document.createElement("div");
+    pending.className = "story-runtime-pending";
+    pending.textContent = `Runtime pending ${pendingAction.mode}: ${pendingAction.name || pendingAction.requestId}`;
+    return pending;
+  }
+
+  getBlockingPendingAction(storyModel) {
+    const pendingAction = storyModel?.runtimeState?.pendingAction || null;
+    const mode = String(pendingAction?.mode || "").trim().toLowerCase();
+    return mode === "wait" || mode === "handoff"
+      ? pendingAction
+      : null;
+  }
+
   async selectChoice(choice, event = null) {
     event?.stopPropagation?.();
+    if (choice?.runtimeAction && this.getBlockingPendingAction(this.latestStoryModel)) {
+      return;
+    }
+
     if (await this.notifyChoiceSelected(choice)) {
       return;
     }

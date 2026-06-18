@@ -129,6 +129,16 @@
   color: var(--text-warm-a-780);
 }
 
+.story-runtime-pending {
+  border: 1px solid var(--ink-a-095);
+  border-radius: 8px;
+  color: var(--button-muted-a-760);
+  font-size: 12px;
+  margin-bottom: 22px;
+  max-width: 24em;
+  padding: 8px 10px;
+}
+
 .story-line {
   border-radius: 10px;
   cursor: pointer;

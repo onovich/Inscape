@@ -1,7 +1,7 @@
 .host-authoring-panels {
   display: grid;
   gap: 14px;
-  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.72fr);
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 0.72fr) minmax(300px, 0.72fr);
   min-height: 0;
   overflow: hidden;
 }
@@ -185,7 +185,7 @@
   opacity: 0.48;
 }
 
-@media (max-width: 1180px) {
+@media (max-width: 1420px) {
   .host-authoring-panels {
     grid-template-columns: 1fr;
     overflow: auto;

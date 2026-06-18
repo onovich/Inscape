@@ -77,6 +77,8 @@ export function compactRuntimeStatePayload(payload, sessionId = "") {
       : null,
     format: "inscape.self-hosted-editor.runtime-state",
     formatVersion: 1,
+    actionRequests: compactRuntimeActionRequests(payload?.actionRequests),
+    pendingAction: compactRuntimePendingAction(payload?.pendingAction),
     readingProgress: {
       canAdvance: Boolean(payload?.readingProgress?.canAdvance),
       canRewind: Boolean(payload?.readingProgress?.canRewind),
@@ -92,6 +94,47 @@ export function compactRuntimeStatePayload(payload, sessionId = "") {
       path: Array.isArray(payload?.state?.path) ? payload.state.path : [],
       visibleStepCount: Number(payload?.state?.visibleStepCount || 0),
     },
+  };
+}
+
+function compactRuntimeActionRequests(actionRequests) {
+  if (!Array.isArray(actionRequests)) {
+    return [];
+  }
+
+  return actionRequests
+    .filter((request) => request && typeof request.name === "string")
+    .map((request) => ({
+      argumentCount: Array.isArray(request.arguments) ? request.arguments.length : 0,
+      handlerName: request.handlerName || "",
+      lineId: request.lineId || "",
+      mode: request.mode || "",
+      name: request.name || "",
+      nodeId: request.nodeId || "",
+      requestId: request.requestId || "",
+      sourceColumn: Number(request.sourceColumn || 0),
+      sourceLine: Number(request.sourceLine || 0),
+    }))
+    .slice(-8);
+}
+
+function compactRuntimePendingAction(pendingAction) {
+  if (!pendingAction || typeof pendingAction !== "object") {
+    return null;
+  }
+
+  return {
+    argumentCount: Array.isArray(pendingAction.arguments) ? pendingAction.arguments.length : 0,
+    handlerName: pendingAction.handlerName || "",
+    hostPayloadAvailable: Boolean(pendingAction.hostPayload),
+    lineId: pendingAction.lineId || "",
+    mode: pendingAction.mode || "",
+    name: pendingAction.name || "",
+    nodeId: pendingAction.nodeId || "",
+    requestId: pendingAction.requestId || "",
+    sourceColumn: Number(pendingAction.sourceColumn || 0),
+    sourceLine: Number(pendingAction.sourceLine || 0),
+    status: pendingAction.status || "",
   };
 }
 

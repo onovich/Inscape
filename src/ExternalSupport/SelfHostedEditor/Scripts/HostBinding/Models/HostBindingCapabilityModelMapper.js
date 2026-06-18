@@ -5,6 +5,7 @@ export class HostBindingCapabilityModelMapper {
       : {};
 
     return {
+      actions: this.mapActions(catalog.actions),
       bindings: this.mapBindings(catalog.bindings),
       format: catalog.format || "",
       formatVersion: Number(catalog.formatVersion || 0),
@@ -16,6 +17,27 @@ export class HostBindingCapabilityModelMapper {
       speakers: this.mapSpeakers(catalog.speakers),
       workspace: catalog.workspace || "",
     };
+  }
+
+  static mapActions(actions) {
+    if (!Array.isArray(actions)) {
+      return [];
+    }
+
+    return actions
+      .filter((action) => action && typeof action.name === "string")
+      .map((action) => ({
+        character: Number(action.character || 0),
+        length: Number(action.length || 0),
+        line: Number(action.line || 0),
+        locations: this.mapLocations(action.locations),
+        name: action.name.trim(),
+        sourceKind: action.sourceKind || "",
+        sourceLabel: action.sourceLabel || "",
+        sourcePath: action.sourcePath || "",
+      }))
+      .filter((action) => action.name)
+      .sort((left, right) => left.name.localeCompare(right.name));
   }
 
   static mapSpeakers(speakers) {

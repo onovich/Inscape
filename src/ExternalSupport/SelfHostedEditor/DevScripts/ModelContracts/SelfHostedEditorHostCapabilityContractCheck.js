@@ -42,6 +42,22 @@ assertEqual(hostSchemaCatalog.actions[0].mode, "fire", "host schema mapper actio
 assertEqual(hostSchemaCatalog.events[0].name, "legacy.quest.accepted", "host schema mapper event");
 assertEqual(hostSchemaCatalog.events[0].isLegacy, true, "host schema mapper legacy event marker");
 export const hostBindingCatalog = HostBindingCapabilityModelMapper.mapCatalog({
+  actions: [
+    {
+      locations: [
+        {
+          character: 0,
+          line: 0,
+          sourceKind: "hostBridge",
+          sourcePath: "config/inscape.host.bridge.json",
+        },
+      ],
+      name: "quest.accepted",
+      sourceKind: "hostBridge",
+      sourceLabel: "Host Bridge action",
+      sourcePath: "config/inscape.host.bridge.json",
+    },
+  ],
   bindings: [
     {
       assetId: "2001",
@@ -94,6 +110,7 @@ assertEqual(hostBindingCatalog.speakers[0].name, "Narrator", "host binding mappe
 assertEqual(hostBindingCatalog.speakers[0].locations.length, 2, "host binding mapper speaker locations");
 assertEqual(hostBindingCatalog.bindings[0].name, "court_intro", "host binding mapper binding");
 assertEqual(hostBindingCatalog.bindings[0].locations[1].sourcePath, "story/opening.inscape", "host binding mapper binding location");
+assertEqual(hostBindingCatalog.actions[0].name, "quest.accepted", "host binding mapper action");
 const hostBindingBridge = new SelfHostedEditorHostBindingBridge();
 hostBindingBridge.getCapabilityCatalog = async () => hostBindingCatalog;
 const speakerDefinition = await hostBindingBridge.getDefinition("", {

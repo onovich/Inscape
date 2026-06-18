@@ -31,6 +31,20 @@ Narrator: Open
 
 # Knock
 Narrator: Knock`;
+const actionRuntimeScript = `# ActionStart
+@entry
+@emit play_timeline intro
+Narrator: Action begins.
+? Continue
+- Wait -> WaitNode
+
+# WaitNode
+@emit wait_for_ui confirm
+Narrator: Waiting.
+-> End
+
+# End
+Narrator: Done`;
 const keyQueryProvider = {
   kind: "Mock",
   mockValues: [
@@ -46,6 +60,28 @@ const keyQueryProvider = {
         boolValue: true,
         kind: "Bool",
       },
+    },
+  ],
+};
+const actionDispatcher = {
+  actions: [
+    {
+      mode: "fire",
+      name: "play_timeline",
+    },
+    {
+      mode: "wait",
+      name: "wait_for_ui",
+    },
+  ],
+  handlers: [
+    {
+      handlerName: "Timeline.Play",
+      name: "play_timeline",
+    },
+    {
+      handlerName: "Ui.WaitForUi",
+      name: "wait_for_ui",
     },
   ],
 };
@@ -101,6 +137,86 @@ async function main() {
     assertEqual(queryProviderSnapshot.currentNode?.choices?.[0]?.options?.length, 2, "mock query provider shows conditional key option");
     assertEqual(queryProviderSnapshot.currentNode?.choices?.[0]?.options?.[0]?.text, "Use key", "mock query provider key option text");
     assertPayloadSize(queryProviderPayloadText, "mock query provider runtime HTTP payload");
+
+    const actionStartResponse = await fetch(`http://127.0.0.1:${address.port}/api/runtime-state`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        actionDispatcher,
+        scriptText: actionRuntimeScript,
+        sessionId: "runtime-http-action",
+      }),
+    });
+    const actionStartPayloadText = await actionStartResponse.text();
+    const actionStartSnapshot = JSON.parse(actionStartPayloadText);
+    if (!actionStartResponse.ok) {
+      throw new Error(`Runtime action HTTP smoke failed with HTTP ${actionStartResponse.status}.`);
+    }
+
+    assertRuntimeSnapshot(actionStartSnapshot, "ActionStart");
+    assertEqual(actionStartSnapshot.actionRequests?.[0]?.name, "play_timeline", "runtime fire action request name");
+    assertEqual(actionStartSnapshot.actionRequests?.[0]?.mode, "fire", "runtime fire action request mode");
+    assertEqual(actionStartSnapshot.pendingAction, null, "runtime fire action should not create pending action");
+    assertPayloadSize(actionStartPayloadText, "fire action runtime HTTP payload");
+
+    const pendingActionResponse = await fetch(`http://127.0.0.1:${address.port}/api/runtime-action`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        action: {
+          groupIndex: 0,
+          optionIndex: 0,
+          type: "choose",
+        },
+        actionDispatcher,
+        runtimeState: actionStartSnapshot,
+        sessionId: "runtime-http-action",
+        scriptText: actionRuntimeScript,
+      }),
+    });
+    const pendingActionPayloadText = await pendingActionResponse.text();
+    const pendingActionSnapshot = JSON.parse(pendingActionPayloadText);
+    if (!pendingActionResponse.ok) {
+      throw new Error(`Runtime pending action HTTP smoke failed with HTTP ${pendingActionResponse.status}.`);
+    }
+
+    assertRuntimeSnapshot(pendingActionSnapshot, "WaitNode");
+    assertEqual(pendingActionSnapshot.pendingAction?.name, "wait_for_ui", "runtime wait pending action name");
+    assertEqual(pendingActionSnapshot.pendingAction?.mode, "wait", "runtime wait pending action mode");
+    assertEqual(Boolean(pendingActionSnapshot.pendingAction?.requestId), true, "runtime wait pending action request id");
+    assertEqual(pendingActionSnapshot.actionRequests?.at(-1)?.name, "wait_for_ui", "runtime wait action request evidence");
+    assertPayloadSize(pendingActionPayloadText, "pending action runtime HTTP payload");
+
+    const resumeActionResponse = await fetch(`http://127.0.0.1:${address.port}/api/runtime-action`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        action: {
+          requestId: pendingActionSnapshot.pendingAction?.requestId,
+          status: "completed",
+          type: "resume-action",
+        },
+        actionDispatcher,
+        runtimeState: pendingActionSnapshot,
+        sessionId: "runtime-http-action",
+        scriptText: actionRuntimeScript,
+      }),
+    });
+    const resumeActionPayloadText = await resumeActionResponse.text();
+    const resumeActionSnapshot = JSON.parse(resumeActionPayloadText);
+    if (!resumeActionResponse.ok) {
+      throw new Error(`Runtime resume action HTTP smoke failed with HTTP ${resumeActionResponse.status}.`);
+    }
+
+    assertRuntimeSnapshot(resumeActionSnapshot, "WaitNode");
+    assertEqual(resumeActionSnapshot.pendingAction, null, "runtime resume action clears pending action through Runtime");
+    assertPayloadSize(resumeActionPayloadText, "resume action runtime HTTP payload");
 
     const openingAdvanceResponse = await fetch(`http://127.0.0.1:${address.port}/api/runtime-action`, {
       method: "POST",

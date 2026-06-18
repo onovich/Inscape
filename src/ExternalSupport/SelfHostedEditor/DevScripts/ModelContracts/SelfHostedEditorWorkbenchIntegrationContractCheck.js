@@ -153,6 +153,10 @@ let localizationRenderedText = "";
 let renderedMockQueryCatalog = null;
 let renderedMockQueryRuntimeProvider = "";
 let renderedMockQueryWorkspaceRevision = null;
+let renderedActionCatalog = null;
+let renderedActionBridgeCatalog = null;
+let renderedActionRuntimeProvider = "";
+let runtimeActionBridgeInput = null;
 const documentModel = ScriptDocumentFallbackPolicy.buildDocumentModel(scriptText, {
   reason: ScriptDocumentFallbackReason.EditorAuthoringSurface,
 });
@@ -252,8 +256,12 @@ const workbench = new SelfHostedEditorWorkbenchRenderController({
       return {
         hostBindingCatalog: {
           actions: [],
+          hostBridge: {
+            loaded: true,
+          },
         },
         hostSchemaCatalog: {
+          actions: [],
           hostSchema: {
             loaded: true,
           },
@@ -303,6 +311,13 @@ const workbench = new SelfHostedEditorWorkbenchRenderController({
       return 0;
     },
   },
+  actionPanelController: {
+    render(hostSchemaCatalog, hostBindingCatalog, options) {
+      renderedActionCatalog = hostSchemaCatalog;
+      renderedActionBridgeCatalog = hostBindingCatalog;
+      renderedActionRuntimeProvider = options.runtimeSnapshot?.provider || "";
+    },
+  },
   mockQueryPanelController: {
     render(hostSchemaCatalog, options) {
       renderedMockQueryCatalog = hostSchemaCatalog;
@@ -312,6 +327,9 @@ const workbench = new SelfHostedEditorWorkbenchRenderController({
   },
   previewController,
   runtimeBridge: {
+    setActionBridgeInput(actionBridgeInput) {
+      runtimeActionBridgeInput = actionBridgeInput;
+    },
     async getRuntimeSnapshot() {
       return {
         provider: "runtime-project",
@@ -369,6 +387,10 @@ assertEqual(renderedMockQueryCatalog?.hostSchema?.loaded, true, "workbench shoul
 assertEqual(renderedMockQueryCatalog?.queries?.[0]?.name, "has_item", "workbench should pass query catalog to mock query panel");
 assertEqual(renderedMockQueryRuntimeProvider, "runtime-project", "workbench should pass runtime snapshot to mock query panel");
 assertEqual(renderedMockQueryWorkspaceRevision, 5, "workbench should pass workspace revision to mock query panel");
+assertEqual(renderedActionCatalog?.hostSchema?.loaded, true, "workbench should pass host schema catalog to action panel");
+assertEqual(renderedActionBridgeCatalog?.hostBridge?.loaded, true, "workbench should pass host bridge catalog to action panel");
+assertEqual(renderedActionRuntimeProvider, "runtime-project", "workbench should pass runtime snapshot to action panel");
+assertEqual(runtimeActionBridgeInput?.actions?.length, 0, "workbench should set runtime action bridge input");
 assertIncludesText(getTextContent(summaryPanel), "shared summary");
 assertIncludesText(getTextContent(summaryPanel), "0 l10n");
 assertIncludesText(summaryPanel.children.at(-1)?.title || "", "graph: compiler-project");

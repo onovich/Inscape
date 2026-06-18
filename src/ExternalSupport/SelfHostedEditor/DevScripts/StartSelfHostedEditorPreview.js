@@ -193,13 +193,14 @@ async function getStoryGraphForScriptText(scriptText, workspace) {
   });
 }
 
-export async function getRuntimeStateForScriptText(scriptText, workspace, sessionId = "", queryProvider = null) {
+export async function getRuntimeStateForScriptText(scriptText, workspace, sessionId = "", queryProvider = null, actionDispatcher = null) {
   return withTemporaryWorkspace(workspace, scriptText, async ({ tempRoot }) => {
     const cliArgs = [
       "runtime-project",
       tempRoot,
     ];
     await appendRuntimeQueryProviderArgs(cliArgs, tempRoot, queryProvider);
+    await appendRuntimeActionDispatcherArgs(cliArgs, tempRoot, actionDispatcher);
     const result = await runCliCommand(cliArgs, "CLI runtime project snapshot");
     return rememberRuntimeSessionState(
       compactRuntimeStatePayload(relativizeProjectSourcePaths(JSON.parse(result.stdout), tempRoot), sessionId),
@@ -208,16 +209,23 @@ export async function getRuntimeStateForScriptText(scriptText, workspace, sessio
   });
 }
 
-export async function stepRuntimeStateForScriptText(scriptText, workspace, runtimeState, action, sessionId = "", queryProvider = null) {
+export async function stepRuntimeStateForScriptText(scriptText, workspace, runtimeState, action, sessionId = "", queryProvider = null, actionDispatcher = null) {
   return withTemporaryWorkspace(workspace, scriptText, async ({ tempRoot }) => {
     const statePath = path.join(tempRoot, "inscape.runtime-state.json");
+    const substatePath = path.join(tempRoot, "inscape.runtime-substate.json");
+    const resumePath = path.join(tempRoot, "inscape.runtime-action-resume.json");
     const cliArgs = [
       "runtime-project",
       tempRoot,
     ];
     await appendRuntimeQueryProviderArgs(cliArgs, tempRoot, queryProvider);
+    await appendRuntimeActionDispatcherArgs(cliArgs, tempRoot, actionDispatcher);
 
-    if (runtimeState) {
+    const isResumeAction = action.type === "resume-action";
+    if (isResumeAction && runtimeState?.pendingAction) {
+      await fsp.writeFile(substatePath, JSON.stringify(buildRuntimeSubstateFromSnapshot(runtimeState), null, 2), "utf8");
+      cliArgs.push("--substate", substatePath);
+    } else if (runtimeState) {
       await fsp.writeFile(statePath, JSON.stringify(runtimeState, null, 2), "utf8");
       cliArgs.push("--state", statePath);
     }
@@ -236,8 +244,11 @@ export async function stepRuntimeStateForScriptText(scriptText, workspace, runti
         String(Number(action.groupIndex || 0)),
         String(Number(action.optionIndex || 0))
       );
+    } else if (isResumeAction) {
+      await fsp.writeFile(resumePath, JSON.stringify(normalizeRuntimeActionResume(action), null, 2), "utf8");
+      cliArgs.push("--resume-action", resumePath);
     } else {
-      throw new Error("Runtime action requires type `continue`, `advance-flow`, `rewind`, `rewind-flow`, or `choose`.");
+      throw new Error("Runtime action requires type `continue`, `advance-flow`, `rewind`, `rewind-flow`, `resume-action`, or `choose`.");
     }
 
     const result = await runCliCommand(cliArgs, "CLI runtime project action");
@@ -256,6 +267,72 @@ async function appendRuntimeQueryProviderArgs(cliArgs, tempRoot, queryProvider) 
   const providerPath = path.join(tempRoot, "inscape.runtime-query-provider.json");
   await fsp.writeFile(providerPath, JSON.stringify(queryProvider, null, 2), "utf8");
   cliArgs.push("--query-provider", providerPath);
+}
+
+async function appendRuntimeActionDispatcherArgs(cliArgs, tempRoot, actionDispatcher) {
+  if (!actionDispatcher || typeof actionDispatcher !== "object") {
+    return;
+  }
+
+  const dispatcherPath = path.join(tempRoot, "inscape.runtime-action-dispatcher.json");
+  await fsp.writeFile(dispatcherPath, JSON.stringify(actionDispatcher, null, 2), "utf8");
+  cliArgs.push("--action-dispatcher", dispatcherPath);
+}
+
+function normalizeRuntimeActionResume(action) {
+  const status = String(action?.status || "completed").trim().toLowerCase();
+  return {
+    errorCode: String(action?.errorCode || ""),
+    errorMessage: String(action?.errorMessage || ""),
+    hostPayload: String(action?.hostPayload || ""),
+    requestId: String(action?.requestId || ""),
+    status: status || "completed",
+  };
+}
+
+function buildRuntimeSubstateFromSnapshot(runtimeState) {
+  const state = runtimeState?.state || {};
+  const pendingAction = runtimeState?.pendingAction || {};
+  const pathStack = Array.isArray(state.path) ? state.path.filter(Boolean) : [];
+  const nodeId = String(state.currentNodeName || runtimeState?.currentNode?.name || pendingAction.nodeId || "");
+  return {
+    branchQueryReceipts: [],
+    facts: {
+      choiceHistory: [],
+      seenLineAnchors: [],
+      visitedNodes: [],
+    },
+    flow: {
+      entryNodeId: pathStack[0] || nodeId,
+      stack: pathStack.length > 0 ? pathStack : (nodeId ? [nodeId] : []),
+    },
+    format: "inscape.runtime-substate",
+    formatVersion: 1,
+    host: {
+      checkpointId: "",
+    },
+    pendingAction: {
+      arguments: [],
+      handlerName: String(pendingAction.handlerName || ""),
+      hostPayload: "",
+      lineId: String(pendingAction.lineId || ""),
+      mode: String(pendingAction.mode || "wait"),
+      name: String(pendingAction.name || ""),
+      nodeId: String(pendingAction.nodeId || nodeId),
+      raw: "",
+      requestId: String(pendingAction.requestId || ""),
+      sourceColumn: Number(pendingAction.sourceColumn || 0),
+      sourceLine: Number(pendingAction.sourceLine || 0),
+      status: String(pendingAction.status || "waiting"),
+    },
+    position: {
+      commandIndex: Number(state.visibleStepCount || 0),
+      lineId: "",
+      nodeId,
+    },
+    runtimeVersion: "p3-runtime-state-v1",
+    scriptVersion: "",
+  };
 }
 
 export async function getStoryNodeMapReviewForScriptText(scriptText, workspace) {
