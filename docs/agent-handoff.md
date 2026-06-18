@@ -1,12 +1,22 @@
 # Agent 接手指南
 
-状态：P4 Runtime playable MVP final validation PASS
+状态：P5 SelfHostedEditor Runtime authoring Round 1 baseline / contract complete
 
 最后更新：2026-06-18
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-18 SelfHostedEditor P5 Round 1 Baseline / Contract 快照
+
+P5 SelfHostedEditor Runtime authoring / productization 已完成第一轮基线审计与合同收口，不代表 P5 已完成。
+- P5 执行入口见 [P5 SelfHostedEditor Runtime Authoring Goal 模式执行指南](self-hosted-editor-p5-goal-mode-execution-guide.md)：16 轮内完成，1-12 轮主线、13-15 轮缓冲、16 轮最终验收；每轮必须 Debug 自检、架构自检、验证通过后提交推送，再进入下一轮。
+- 本轮审计见 [SelfHostedEditor P5 Baseline Audit](self-hosted-editor-p5-baseline-audit.md)，确认 P4 Runtime playable MVP、SelfHostedEditor Runtime bridge、Runtime-backed Preview、Host Schema / Host Binding capability view、backend / desktop transport 和 session cache 的现状。
+- P5 Runtime authoring 合同见 [SelfHostedEditor P5 Runtime Authoring Contract](self-hosted-editor-p5-runtime-authoring-contract.md)，冻结 P5 只把 Runtime 能力产品化为 authoring workflow，不复制 Runtime condition evaluator、query evaluator、action dispatcher、branch receipt 或 substate 语义。
+- P5 最小验收 fixture 固定为 P4 已验证的 `has_item("silver_key")` / `trust("mira")` / `play_timeline` / `wait_for_ui` 样例，覆盖 key/fire path、no-key/wait/resume/help path、Log、branch receipts 和 substate。
+- 当前缺口已明确留给后续轮次：Runtime authoring session shape、mock query model / UI、action capability / pending / resume surface、Runtime Preview hardening、Log / Backlog、branch receipt explanation、substate authoring、error / stale 状态和 integration smoke。
+- 本轮未改 Runtime / Compiler / Host Schema policy / Unity / Bird / SelfHostedEditor 产品行为；下一轮进入 P5 Round 2：Runtime authoring session contract。
 
 ### 2026-06-18 SelfHostedEditor P4 Final Validation 快照
 
@@ -18,6 +28,7 @@ P4 Runtime playable MVP 已完成最终验收，结论为 PASS。
 - 最终验证矩阵通过：`.NET build`、Internal tests、VSCode manifest / structure / semantic parity、SelfHostedEditor syntax / structure / model / semantic parity HTTP、`git diff --check`。
 - 边界扫描通过：`Internal` 未引入 Unity / Bird / Addressables / ScriptableObject；实现层未新增 rollback / replay / timeout / failure policy 字段；VSCode / SelfHostedEditor 产品代码没有复制 Runtime condition evaluator、query evaluator、action dispatcher 或 Runtime Inspector 产品语义。
 - 下一候选阶段只能作为 P5 SelfHostedEditor Runtime authoring / productization 进入；Unity / Host SDK、完整 Rollback / Trace Replay / Flashback、Presentation IR 与完整独立存档产品继续留在后置方向池。
+- P5 执行入口见 [P5 SelfHostedEditor Runtime Authoring Goal 模式执行指南](self-hosted-editor-p5-goal-mode-execution-guide.md)：16 轮内完成，1-12 轮主线、13-15 轮缓冲、16 轮最终验收；每轮必须 Debug 自检、架构自检、验证通过后提交推送，再进入下一轮。
 
 ### 2026-06-18 SelfHostedEditor P4 Round 12 Integration Smoke 快照
 
@@ -1672,9 +1683,9 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 
 建议优先做小而闭环的任务，不要直接跳到大规模重构。
 
-1. 进入 P4 Round 9 Save / Load 子状态 blob 第一刀。
-   - 先读 [P4 Runtime Playable MVP Goal 模式执行指南](self-hosted-editor-p4-goal-mode-execution-guide.md)、[Runtime Playable MVP Contract](runtime-playable-mvp-contract.md)、[SelfHostedEditor P4 Handoff Audit](self-hosted-editor-p4-handoff-audit.md) 与 [SelfHostedEditor P4 Log Backlog Audit](self-hosted-editor-p4-log-backlog-audit.md)。
-   - 将 P3 `ExportState` 推进到 P4 可恢复子状态 blob，保存 position、flow、facts、pending action、必要 branch query receipt 与 opaque host checkpoint id；继续不保存宿主业务状态。
+1. 进入 P5 Round 2 Runtime authoring session contract。
+   - 先读 [P5 SelfHostedEditor Runtime Authoring Goal 模式执行指南](self-hosted-editor-p5-goal-mode-execution-guide.md)、[SelfHostedEditor P5 Baseline Audit](self-hosted-editor-p5-baseline-audit.md) 与 [SelfHostedEditor P5 Runtime Authoring Contract](self-hosted-editor-p5-runtime-authoring-contract.md)。
+   - 定义 SelfHostedEditor Runtime authoring session shape，区分 current snapshot、formal state、P4 substate、pending action、log entries、branch receipts 与 provider / stale / error metadata；保持 dev-host HTTP 与 desktop command 为薄 transport。
 
 2. 继续推进 Stable Node ID / 本地化主线。
    - ADR 0013、sidecar 闭环、保守自动重命名识别、VSCode 显式 `Update Stable Node Map` 入口、插入标题后的自动同步、标题重命名人工确认 / 冲突报告、本地化 alignment / audit report，以及相似文本人工候选第一版都已落地。

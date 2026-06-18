@@ -1,6 +1,6 @@
 # TODO
 
-状态：持续维护，P4 Runtime playable MVP final validation PASS。最终报告见 [SelfHostedEditor P4 Final Validation Report](self-hosted-editor-p4-final-validation-report.md)；下一候选阶段只能作为 P5 SelfHostedEditor Runtime authoring / productization 进入。
+状态：持续维护，P5 SelfHostedEditor Runtime authoring / productization 已进入执行，Round 1 baseline / contract 完成。P4 最终报告见 [SelfHostedEditor P4 Final Validation Report](self-hosted-editor-p4-final-validation-report.md)；P5 当前入口见 [P5 SelfHostedEditor Runtime Authoring Goal 模式执行指南](self-hosted-editor-p5-goal-mode-execution-guide.md)。
 
 SelfHostedEditor regression invariant: Preview choice clicks must advance the reading Preview to the target block and reveal the target block title in the editor. Compiler-project Preview data must never silently lose `previewLines`: if a returned Compiler graph has source lines but missing or mismatched `previewLines`, Preview must report a compiler graph contract error instead of falling back to the UI-only draft model. `npm --prefix src\ExternalSupport\SelfHostedEditor run check:model` covers both invariants so future Runtime / navigation work does not regress them.
 
@@ -23,7 +23,7 @@ P2.5 Host Schema / Host Bridge / Unity-Bird adaptation
   -> PASS
   -> P3 second syntax / Runtime / extension research only as a new scoped phase
   -> P4 Runtime playable MVP (guide: self-hosted-editor-p4-goal-mode-execution-guide.md)
-  -> P5 candidate: SelfHostedEditor Runtime authoring/productization
+  -> P5 active: SelfHostedEditor Runtime authoring/productization (guide: self-hosted-editor-p5-goal-mode-execution-guide.md)
   -> Later parking lot, not scheduled phases: Unity / Host SDK, rollback / trace, Presentation IR / cross-engine exploration
 ```
 
@@ -220,7 +220,9 @@ npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
 - [x] 完成 P4 Round 11 Editor host contract guard。2026-06-18 审计见 [SelfHostedEditor P4 Editor Host Contract Guard Audit](self-hosted-editor-p4-editor-host-contract-guard-audit.md)；VSCode / SelfHostedEditor `check:structure` 现已扫描 host 产品侧 Runtime 语义实现标记，Round 11 验收通过 `check:semantic-parity`、`check:model`、`check:semantic-parity-http` 与 ExternalSupport marker grep；本轮未改 Runtime bridge 行为、未新增 Runtime Inspector UI。
 - [x] 完成 P4 Round 12 integration smoke + 文档收口。2026-06-18 审计见 [SelfHostedEditor P4 Integration Audit](self-hosted-editor-p4-integration-audit.md)；新增 `tests/Internal/Inscape.Tests/P4/TestP4IntegrationSmoke.cs`，真实 CLI smoke 串起 key/fire path 与 no-key/wait/substate/resume/help path，证明最小剧情能从起点跑到终点，中途保存 / 恢复后可继续，并通过 JSON 断言条件、action、Log、state/substate 与 branch receipt；Round 12 完整验证矩阵和边界扫描均通过。
 - [x] 完成 P4 final validation / PASS-FAIL 收口。2026-06-18 最终报告见 [SelfHostedEditor P4 Final Validation Report](self-hosted-editor-p4-final-validation-report.md)；最终矩阵、边界扫描、P4 PASS 门槛与文档接力入口均已收口，下一候选阶段只能是 P5 SelfHostedEditor Runtime authoring / productization。
-- [ ] 下一候选阶段：P5 SelfHostedEditor Runtime authoring / productization。若启动，需要把 P4 Runtime 能力产品化到 authoring / preview / mock query / action hint / Runtime Inspector-like 工作流；不要把 Unity / Host SDK、完整 Rollback / Trace Replay / Flashback、Presentation IR 或完整独立存档产品并入 P5 第一刀。
+- [x] 输出 P5 SelfHostedEditor Runtime authoring / productization goal 模式执行指南。2026-06-18 指南见 [P5 SelfHostedEditor Runtime Authoring Goal 模式执行指南](self-hosted-editor-p5-goal-mode-execution-guide.md)；约束 16 轮内完成，1-12 轮主线、13-15 轮缓冲、16 轮最终验收，每轮必须 Debug 自检、架构自检、验证通过后提交推送，再进入下一轮。
+- [x] 完成 P5 Round 1 baseline audit / authoring contract。2026-06-18 审计见 [SelfHostedEditor P5 Baseline Audit](self-hosted-editor-p5-baseline-audit.md)，合同见 [SelfHostedEditor P5 Runtime Authoring Contract](self-hosted-editor-p5-runtime-authoring-contract.md)；确认现有 Runtime bridge、Preview、Host Schema / Host Binding、transport、session cache 入口，固定 P5 最小 fixture、缺口、风险和 per-round smoke 策略。本轮未改 Runtime / Compiler / Unity / Bird 或产品行为。
+- [ ] 下一轮：P5 Round 2 Runtime authoring session contract。按 [P5 SelfHostedEditor Runtime Authoring Goal 模式执行指南](self-hosted-editor-p5-goal-mode-execution-guide.md) 定义 SelfHostedEditor Runtime authoring session shape，区分 current snapshot、formal state、P4 substate、pending action、log entries、branch receipts 与 provider / stale / error metadata；不要把 Unity / Host SDK、完整 Rollback / Trace Replay / Flashback、Presentation IR 或完整独立存档产品并入 P5 第一刀。
 - [ ] 高级运行时调试方向池继续评估 Rollback checkpoint 的准确粒度、跨宿主 action 时的回退阻断 / checkpoint 规则、Trace Replay、Flashback Playback 与时空穿越式特殊倒放；这些不进入 P3 / P4 第一刀实现，也不作为当前正式排期 phase。
 
 ### 暂停 / 明确后置
