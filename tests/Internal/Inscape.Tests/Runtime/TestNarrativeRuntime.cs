@@ -294,6 +294,26 @@ Narrator: Knock.
             NarrativeRuntimeSnapshotModel snapshot = runtime.CreateSnapshot();
             AssertEqual(1, snapshot.CurrentNode?.Choices[0].Options.Count ?? -1, "Runtime snapshot should expose only visible options.");
             AssertEqual("Knock", snapshot.CurrentNode?.Choices[0].Options[0].Text ?? string.Empty, "Runtime visible option text");
+            AssertEqual(1, runtime.BranchQueryReceipts.Count, "Runtime should record choice condition query receipt.");
+            AssertEqual(1, snapshot.BranchQueryReceipts.Count, "Runtime snapshot should expose branch query receipts separately.");
+            NarrativeRuntimeQueryReceiptModel choiceReceipt = snapshot.BranchQueryReceipts[0];
+            AssertEqual("query-1", choiceReceipt.Id, "Choice query receipt id");
+            AssertEqual("choice-condition", choiceReceipt.Context, "Choice query receipt context");
+            AssertEqual("start", choiceReceipt.NodeId, "Choice query receipt node id");
+            AssertEqual("choices[0].options[0].condition", choiceReceipt.BranchPath, "Choice query receipt branch path");
+            AssertEqual(0, choiceReceipt.ChoiceGroupIndex, "Choice query receipt group index");
+            AssertEqual(0, choiceReceipt.ChoiceOptionIndex, "Choice query receipt option index");
+            AssertEqual(-1, choiceReceipt.ConditionalJumpIndex, "Choice query receipt jump index");
+            AssertEqual(3, choiceReceipt.SourceLine, "Choice query receipt source line");
+            AssertEqual(4, choiceReceipt.SourceColumn, "Choice query receipt source column");
+            AssertEqual("has_item", choiceReceipt.Name, "Choice query receipt name");
+            AssertEqual("call", choiceReceipt.Syntax, "Choice query receipt syntax");
+            AssertEqual(1, choiceReceipt.Arguments.Count, "Choice query receipt argument count");
+            AssertEqual("silver_key", choiceReceipt.Arguments[0].StringValue, "Choice query receipt argument value");
+            AssertEqual(NarrativeRuntimeQueryValueKindModel.Bool, choiceReceipt.Result.Kind, "Choice query receipt result kind");
+            AssertFalse(choiceReceipt.Result.BoolValue, "Choice query receipt result value");
+            AssertEqual("mock", choiceReceipt.SourceKind, "Choice query receipt source kind");
+            AssertTrue(choiceReceipt.Deterministic, "Choice query receipt deterministic flag");
 
             AssertFalse(runtime.Choose(0, 1), "Runtime should reject a missing visible option index.");
             AssertEqual("IRF003", runtime.LastError?.Code ?? string.Empty, "Runtime missing visible option error");
@@ -337,6 +357,28 @@ Narrator: Locked.
             AssertTrue(runtime.Start("start"), "Runtime should start conditional jump fixture.");
             AssertTrue(runtime.Continue(), "Runtime should follow a true conditional jump.");
             AssertEqual("gate.open", runtime.State.CurrentNodeName, "Runtime conditional jump should use first true target.");
+            AssertEqual(1, runtime.BranchQueryReceipts.Count, "Runtime should record first true conditional jump query receipt.");
+            NarrativeRuntimeQueryReceiptModel jumpReceipt = runtime.BranchQueryReceipts[0];
+            AssertEqual("query-1", jumpReceipt.Id, "Conditional jump receipt id");
+            AssertEqual("conditional-jump", jumpReceipt.Context, "Conditional jump receipt context");
+            AssertEqual("start", jumpReceipt.NodeId, "Conditional jump receipt node id");
+            AssertEqual("conditionalJumps[0].condition", jumpReceipt.BranchPath, "Conditional jump receipt branch path");
+            AssertEqual(-1, jumpReceipt.ChoiceGroupIndex, "Conditional jump receipt choice group index");
+            AssertEqual(-1, jumpReceipt.ChoiceOptionIndex, "Conditional jump receipt choice option index");
+            AssertEqual(0, jumpReceipt.ConditionalJumpIndex, "Conditional jump receipt jump index");
+            AssertEqual(3, jumpReceipt.SourceLine, "Conditional jump receipt source line");
+            AssertEqual(4, jumpReceipt.SourceColumn, "Conditional jump receipt source column");
+            AssertEqual("has_item", jumpReceipt.Name, "Conditional jump receipt name");
+            AssertEqual("call", jumpReceipt.Syntax, "Conditional jump receipt syntax");
+            AssertEqual(1, jumpReceipt.Arguments.Count, "Conditional jump receipt argument count");
+            AssertEqual("silver_key", jumpReceipt.Arguments[0].StringValue, "Conditional jump receipt argument value");
+            AssertEqual(NarrativeRuntimeQueryValueKindModel.Bool, jumpReceipt.Result.Kind, "Conditional jump receipt result kind");
+            AssertTrue(jumpReceipt.Result.BoolValue, "Conditional jump receipt result value");
+            AssertEqual("mock", jumpReceipt.SourceKind, "Conditional jump receipt source kind");
+            AssertTrue(jumpReceipt.Deterministic, "Conditional jump receipt deterministic flag");
+
+            string serializedState = JsonSerializer.Serialize(runtime.ExportState("script-v1", "checkpoint-opaque-1"));
+            AssertFalse(serializedState.Contains("receipt", StringComparison.OrdinalIgnoreCase), "Runtime export state should not include branch query receipts.");
         }
 
         static void NarrativeRuntimeFollowsConditionalFallback() {

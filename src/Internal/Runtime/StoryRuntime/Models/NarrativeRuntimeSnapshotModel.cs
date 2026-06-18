@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Inscape.Compiler.Model;
 
 namespace Inscape.Runtime {
@@ -16,11 +17,14 @@ namespace Inscape.Runtime {
 
         public NarrativeRuntimeFlowErrorModel? LastError { get; set; }
 
+        public List<NarrativeRuntimeQueryReceiptModel> BranchQueryReceipts { get; set; }
+
         public NarrativeRuntimeSnapshotModel() {
             Format = "inscape.runtime-state";
             FormatVersion = 1;
             State = new NarrativeRuntimeStateModel();
             ReadingProgress = new NarrativeRuntimeReadingProgressModel();
+            BranchQueryReceipts = new List<NarrativeRuntimeQueryReceiptModel>();
         }
 
     }

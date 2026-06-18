@@ -1,5 +1,26 @@
 # SelfHostedEditor P4 Runtime Flow Audit
 
+## 2026-06-18 Round 4 Query Receipt 收口
+
+状态：P4 Round 4 branch-affecting query receipt 第一刀完成；P4 Runtime playable MVP 尚未完成。
+
+本轮实现内容：
+- 新增 `NarrativeRuntimeQueryReceiptModel` 与 `NarrativeRuntimeQueryReceiptScopeModel`，只记录影响分支的 query receipt。
+- `NarrativeRuntimeConditionEvaluatorDomain.Evaluate(...)` 增加可选 receipt scope / receipt sink；成功解析 query 后记录 `id`、`context`、`nodeId`、`branchPath`、choice / jump index、source line / column、query name / syntax、arguments、result、sourceKind 与 deterministic。
+- `NarrativeRuntime` 在 choice condition 与 conditional jump 求值时传入分支上下文；`CreateSnapshot()` 返回 `BranchQueryReceipts` 的克隆，便于调试当前分支判断。
+- `LoadGraph()`、`Start()`、`Restore()` 会清空 receipt；receipt 不写入 `NarrativeRuntimeStateModel` 或 formal `NarrativeRuntimeExportStateModel`。
+
+测试覆盖：
+- `narrative runtime filters conditional choices by visible index` 验证 choice condition receipt 的 node / branch path / source / argument / result / sourceKind / deterministic。
+- `narrative runtime follows first true conditional jump` 验证 conditional jump receipt，并确认 formal Runtime State 序列化结果不包含 `receipt`。
+
+架构边界：
+- receipt 仍在 `Internal/Runtime` 内，由共享 evaluator / provider 链路产生；ExternalSupport 没有新增 query evaluator、condition parser 或 Runtime 语义副本。
+- receipt 是 branch debug / recorded provider 等价复现的最小证据，不是完整 Trace Replay，也不进入普通 Runtime State 主体。
+- 仍未实现 action dispatcher、`fire` / `wait` / `handoff` pending / resume、Log / Backlog、P4 substate blob、CLI playable driver 与 Runtime-backed editor UI。
+
+下一轮入口：P4 Round 5 应进入 action dispatcher 最小 contract，继续复用 Internal Runtime / Host Schema / Host Bridge 边界，不把宿主动作语义塞进 Compiler 或编辑器侧脚本。
+
 日期：2026-06-18
 
 状态：P4 Round 3 Runtime flow 条件接入完成，不代表 P4 Runtime playable MVP 已完成

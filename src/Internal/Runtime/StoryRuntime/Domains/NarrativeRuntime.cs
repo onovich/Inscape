@@ -16,6 +16,8 @@ namespace Inscape.Runtime {
 
         public NarrativeRuntimeFlowErrorModel? LastError { get; private set; }
 
+        public List<NarrativeRuntimeQueryReceiptModel> BranchQueryReceipts { get; }
+
         public StoryGraphNodeModel? CurrentNode {
             get {
                 if (State.CurrentNodeName.Length == 0 || !nodesByName.ContainsKey(State.CurrentNodeName)) {
@@ -30,10 +32,12 @@ namespace Inscape.Runtime {
             nodesByName = new Dictionary<string, StoryGraphNodeModel>();
             State = new NarrativeRuntimeStateModel();
             QueryProvider = new NarrativeRuntimeQueryProviderModel();
+            BranchQueryReceipts = new List<NarrativeRuntimeQueryReceiptModel>();
         }
 
         public void LoadGraph(DslScriptDocumentModel narrativeGraph) {
             ClearLastError();
+            BranchQueryReceipts.Clear();
             graph = narrativeGraph;
             nodesByName.Clear();
             State.CurrentNodeName = string.Empty;
@@ -50,6 +54,7 @@ namespace Inscape.Runtime {
 
         public bool Start(string entryNodeName = "") {
             ClearLastError();
+            BranchQueryReceipts.Clear();
             if (graph == null || graph.Nodes.Count == 0) {
                 return SetFlowError("IRF001", "graph", "Runtime graph is not loaded.");
             }
@@ -152,6 +157,7 @@ namespace Inscape.Runtime {
 
         public bool Restore(NarrativeRuntimeStateModel state) {
             ClearLastError();
+            BranchQueryReceipts.Clear();
             if (state.CurrentNodeName.Length > 0 && !nodesByName.ContainsKey(state.CurrentNodeName)) {
                 return SetFlowError("IRF004", "state.currentNodeName", "Runtime restore node is not available: " + state.CurrentNodeName);
             }
@@ -179,6 +185,7 @@ namespace Inscape.Runtime {
                 State = SnapshotState(),
                 CurrentNode = visibleNode,
                 LastError = CloneLastError(LastError),
+                BranchQueryReceipts = CloneQueryReceipts(BranchQueryReceipts),
             };
         }
 
@@ -353,7 +360,10 @@ namespace Inscape.Runtime {
                 if (!TryEvaluateCondition(jump.Condition,
                                           "conditional-jump",
                                           "conditionalJumps[" + i + "].condition",
-                                          out bool conditionResult)) {
+                                          out bool conditionResult,
+                                          -1,
+                                          -1,
+                                          i)) {
                     return false;
                 }
 
@@ -451,7 +461,10 @@ namespace Inscape.Runtime {
                 if (!TryEvaluateCondition(option.Condition,
                                           "choice-condition",
                                           "choices[" + groupIndex + "].options[" + optionIndex + "].condition",
-                                          out bool conditionResult)) {
+                                          out bool conditionResult,
+                                          groupIndex,
+                                          optionIndex,
+                                          -1)) {
                     return visibleOptions;
                 }
 
@@ -466,16 +479,29 @@ namespace Inscape.Runtime {
         bool TryEvaluateCondition(DslScriptConditionModel? condition,
                                   string context,
                                   string path,
-                                  out bool conditionResult) {
+                                  out bool conditionResult,
+                                  int choiceGroupIndex,
+                                  int choiceOptionIndex,
+                                  int conditionalJumpIndex) {
             conditionResult = true;
             if (condition == null) {
                 return true;
             }
 
+            NarrativeRuntimeQueryReceiptScopeModel receiptScope = new NarrativeRuntimeQueryReceiptScopeModel {
+                Context = context,
+                NodeId = State.CurrentNodeName,
+                BranchPath = path,
+                ChoiceGroupIndex = choiceGroupIndex,
+                ChoiceOptionIndex = choiceOptionIndex,
+                ConditionalJumpIndex = conditionalJumpIndex,
+            };
             NarrativeRuntimeConditionEvaluationModel evaluation = NarrativeRuntimeConditionEvaluatorDomain.Evaluate(condition.Expression,
                                                                                                                     State,
                                                                                                                     QueryProvider,
-                                                                                                                    context);
+                                                                                                                    context,
+                                                                                                                    receiptScope,
+                                                                                                                    BranchQueryReceipts);
             if (!evaluation.Succeeded) {
                 LastError = CreateFlowError("IRF005",
                                             path,
@@ -595,6 +621,54 @@ namespace Inscape.Runtime {
             };
             clone.ConditionDiagnostics.AddRange(error.ConditionDiagnostics);
             return clone;
+        }
+
+        static List<NarrativeRuntimeQueryReceiptModel> CloneQueryReceipts(IReadOnlyList<NarrativeRuntimeQueryReceiptModel> receipts) {
+            List<NarrativeRuntimeQueryReceiptModel> clone = new List<NarrativeRuntimeQueryReceiptModel>();
+            for (int i = 0; i < receipts.Count; i += 1) {
+                NarrativeRuntimeQueryReceiptModel receipt = receipts[i];
+                NarrativeRuntimeQueryReceiptModel receiptClone = new NarrativeRuntimeQueryReceiptModel {
+                    Id = receipt.Id,
+                    Context = receipt.Context,
+                    NodeId = receipt.NodeId,
+                    BranchPath = receipt.BranchPath,
+                    ChoiceGroupIndex = receipt.ChoiceGroupIndex,
+                    ChoiceOptionIndex = receipt.ChoiceOptionIndex,
+                    ConditionalJumpIndex = receipt.ConditionalJumpIndex,
+                    SourceLine = receipt.SourceLine,
+                    SourceColumn = receipt.SourceColumn,
+                    Name = receipt.Name,
+                    Syntax = receipt.Syntax,
+                    Result = CloneQueryValue(receipt.Result),
+                    SourceKind = receipt.SourceKind,
+                    Deterministic = receipt.Deterministic,
+                };
+                for (int argumentIndex = 0; argumentIndex < receipt.Arguments.Count; argumentIndex += 1) {
+                    receiptClone.Arguments.Add(CloneQueryValue(receipt.Arguments[argumentIndex]));
+                }
+
+                clone.Add(receiptClone);
+            }
+
+            return clone;
+        }
+
+        static NarrativeRuntimeQueryValueModel CloneQueryValue(NarrativeRuntimeQueryValueModel value) {
+            if (value.Kind == NarrativeRuntimeQueryValueKindModel.String) {
+                return NarrativeRuntimeQueryValueModel.FromString(value.StringValue);
+            }
+
+            if (value.Kind == NarrativeRuntimeQueryValueKindModel.Number) {
+                return NarrativeRuntimeQueryValueModel.FromNumber(value.NumberValue);
+            }
+
+            if (value.Kind == NarrativeRuntimeQueryValueKindModel.Bool) {
+                return NarrativeRuntimeQueryValueModel.FromBool(value.BoolValue);
+            }
+
+            return new NarrativeRuntimeQueryValueModel {
+                Kind = value.Kind,
+            };
         }
 
         static void AddValidationDiagnostic(NarrativeRuntimeStateValidationModel validation,

@@ -1,12 +1,23 @@
 # Agent 接手指南
 
-状态：P4 Round 3 Runtime flow 条件接入完成
+状态：P4 Round 4 branch-affecting query receipt 第一刀完成
 
 最后更新：2026-06-18
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-18 SelfHostedEditor P4 Round 4 Query Receipt 快照
+
+P4 Runtime playable MVP 已完成第四轮 branch query receipt 收口，不代表 P4 MVP 已完成。
+- 本轮审计见 [SelfHostedEditor P4 Runtime Flow Audit](self-hosted-editor-p4-runtime-flow-audit.md) 的 Round 4 Query Receipt 段。
+- `Internal/Runtime` 新增 `NarrativeRuntimeQueryReceiptModel` 与 `NarrativeRuntimeQueryReceiptScopeModel`，receipt 记录 query id、context、nodeId、branchPath、choice / jump index、source line / column、name、syntax、arguments、result、sourceKind 与 deterministic。
+- `NarrativeRuntimeConditionEvaluatorDomain.Evaluate(...)` 仍是共享条件求值入口；只有传入 receipt scope / sink 时才记录成功解析的 query。
+- `NarrativeRuntime` 在 choice condition 与 conditional jump 求值时记录 branch-affecting receipt；`CreateSnapshot()` 暴露 `BranchQueryReceipts` 的克隆。
+- receipt 不进入 `NarrativeRuntimeStateModel` 或 formal `NarrativeRuntimeExportStateModel`；测试已确认导出的 Runtime State 不包含 `receipt`。
+- ExternalSupport 未新增 condition parser、query evaluator 或 Runtime 语义副本。
+- 下一轮进入 P4 Round 5：action dispatcher 最小 contract；仍需保持 Compiler 独立，不把 Host action 执行语义塞进编辑器侧。
 
 ### 2026-06-18 SelfHostedEditor P4 Round 3 Runtime Flow 快照
 

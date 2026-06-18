@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Inscape.Compiler.Model;
 
 namespace Inscape.Runtime {
@@ -10,8 +11,16 @@ namespace Inscape.Runtime {
         public static NarrativeRuntimeConditionEvaluationModel Evaluate(DslScriptConditionExpressionModel? expression,
                                                                         NarrativeRuntimeStateModel state,
                                                                         NarrativeRuntimeQueryProviderModel provider,
-                                                                        string context = "") {
-            NarrativeRuntimeConditionEvaluationModel evaluation = EvaluateValue(expression, state, provider, context, "expression");
+                                                                        string context = "",
+                                                                        NarrativeRuntimeQueryReceiptScopeModel? receiptScope = null,
+                                                                        IList<NarrativeRuntimeQueryReceiptModel>? queryReceipts = null) {
+            NarrativeRuntimeConditionEvaluationModel evaluation = EvaluateValue(expression,
+                                                                               state,
+                                                                               provider,
+                                                                               context,
+                                                                               "expression",
+                                                                               receiptScope,
+                                                                               queryReceipts);
             if (!evaluation.Succeeded) {
                 return evaluation;
             }
@@ -30,7 +39,9 @@ namespace Inscape.Runtime {
                                                                       NarrativeRuntimeStateModel state,
                                                                       NarrativeRuntimeQueryProviderModel provider,
                                                                       string context,
-                                                                      string path) {
+                                                                      string path,
+                                                                      NarrativeRuntimeQueryReceiptScopeModel? receiptScope,
+                                                                      IList<NarrativeRuntimeQueryReceiptModel>? queryReceipts) {
             if (expression == null) {
                 return Failure("IRC001",
                                path,
@@ -43,19 +54,19 @@ namespace Inscape.Runtime {
             }
 
             if (expression.Kind == DslScriptConditionExpressionKindModel.Query) {
-                return EvaluateQuery(expression.Query, state, provider, context, path);
+                return EvaluateQuery(expression.Query, state, provider, context, path, receiptScope, queryReceipts);
             }
 
             if (expression.Kind == DslScriptConditionExpressionKindModel.Unary) {
-                return EvaluateUnary(expression, state, provider, context, path);
+                return EvaluateUnary(expression, state, provider, context, path, receiptScope, queryReceipts);
             }
 
             if (expression.Kind == DslScriptConditionExpressionKindModel.Binary) {
-                return EvaluateBinary(expression, state, provider, context, path);
+                return EvaluateBinary(expression, state, provider, context, path, receiptScope, queryReceipts);
             }
 
             if (expression.Kind == DslScriptConditionExpressionKindModel.Comparison) {
-                return EvaluateComparison(expression, state, provider, context, path);
+                return EvaluateComparison(expression, state, provider, context, path, receiptScope, queryReceipts);
             }
 
             return Failure("IRC009",
@@ -96,7 +107,9 @@ namespace Inscape.Runtime {
                                                                       NarrativeRuntimeStateModel state,
                                                                       NarrativeRuntimeQueryProviderModel provider,
                                                                       string context,
-                                                                      string path) {
+                                                                      string path,
+                                                                      NarrativeRuntimeQueryReceiptScopeModel? receiptScope,
+                                                                      IList<NarrativeRuntimeQueryReceiptModel>? queryReceipts) {
             if (query == null) {
                 return Failure("IRC003",
                                path,
@@ -136,6 +149,7 @@ namespace Inscape.Runtime {
                                "Runtime condition query was not found: " + query.Name);
             }
 
+            AddQueryReceipt(query, request, queryResult, receiptScope, queryReceipts);
             return Success(CloneValue(queryResult.Value));
         }
 
@@ -143,7 +157,9 @@ namespace Inscape.Runtime {
                                                                       NarrativeRuntimeStateModel state,
                                                                       NarrativeRuntimeQueryProviderModel provider,
                                                                       string context,
-                                                                      string path) {
+                                                                      string path,
+                                                                      NarrativeRuntimeQueryReceiptScopeModel? receiptScope,
+                                                                      IList<NarrativeRuntimeQueryReceiptModel>? queryReceipts) {
             if (expression.Operator != "not") {
                 return Failure("IRC007",
                                path,
@@ -155,7 +171,9 @@ namespace Inscape.Runtime {
                                                                             state,
                                                                             provider,
                                                                             context,
-                                                                            path + ".operand");
+                                                                            path + ".operand",
+                                                                            receiptScope,
+                                                                            queryReceipts);
             if (!operand.Succeeded) {
                 return operand;
             }
@@ -174,13 +192,17 @@ namespace Inscape.Runtime {
                                                                        NarrativeRuntimeStateModel state,
                                                                        NarrativeRuntimeQueryProviderModel provider,
                                                                        string context,
-                                                                       string path) {
+                                                                       string path,
+                                                                       NarrativeRuntimeQueryReceiptScopeModel? receiptScope,
+                                                                       IList<NarrativeRuntimeQueryReceiptModel>? queryReceipts) {
             if (expression.Operator == "and") {
                 NarrativeRuntimeConditionEvaluationModel left = EvaluateValue(expression.Left,
                                                                              state,
                                                                              provider,
                                                                              context,
-                                                                             path + ".left");
+                                                                             path + ".left",
+                                                                             receiptScope,
+                                                                             queryReceipts);
                 if (!left.Succeeded) {
                     return left;
                 }
@@ -200,7 +222,9 @@ namespace Inscape.Runtime {
                                                                               state,
                                                                               provider,
                                                                               context,
-                                                                              path + ".right");
+                                                                              path + ".right",
+                                                                              receiptScope,
+                                                                              queryReceipts);
                 if (!right.Succeeded) {
                     return right;
                 }
@@ -220,7 +244,9 @@ namespace Inscape.Runtime {
                                                                              state,
                                                                              provider,
                                                                              context,
-                                                                             path + ".left");
+                                                                             path + ".left",
+                                                                             receiptScope,
+                                                                             queryReceipts);
                 if (!left.Succeeded) {
                     return left;
                 }
@@ -240,7 +266,9 @@ namespace Inscape.Runtime {
                                                                               state,
                                                                               provider,
                                                                               context,
-                                                                              path + ".right");
+                                                                              path + ".right",
+                                                                              receiptScope,
+                                                                              queryReceipts);
                 if (!right.Succeeded) {
                     return right;
                 }
@@ -265,12 +293,16 @@ namespace Inscape.Runtime {
                                                                           NarrativeRuntimeStateModel state,
                                                                           NarrativeRuntimeQueryProviderModel provider,
                                                                           string context,
-                                                                          string path) {
+                                                                          string path,
+                                                                          NarrativeRuntimeQueryReceiptScopeModel? receiptScope,
+                                                                          IList<NarrativeRuntimeQueryReceiptModel>? queryReceipts) {
             NarrativeRuntimeConditionEvaluationModel left = EvaluateValue(expression.Left,
                                                                          state,
                                                                          provider,
                                                                          context,
-                                                                         path + ".left");
+                                                                         path + ".left",
+                                                                         receiptScope,
+                                                                         queryReceipts);
             if (!left.Succeeded) {
                 return left;
             }
@@ -279,7 +311,9 @@ namespace Inscape.Runtime {
                                                                           state,
                                                                           provider,
                                                                           context,
-                                                                          path + ".right");
+                                                                          path + ".right",
+                                                                          receiptScope,
+                                                                          queryReceipts);
             if (!right.Succeeded) {
                 return right;
             }
@@ -366,6 +400,59 @@ namespace Inscape.Runtime {
             return new NarrativeRuntimeQueryValueModel {
                 Kind = value.Kind,
             };
+        }
+
+        static void AddQueryReceipt(DslScriptConditionQueryModel query,
+                                    NarrativeRuntimeQueryRequestModel request,
+                                    NarrativeRuntimeQueryResultModel queryResult,
+                                    NarrativeRuntimeQueryReceiptScopeModel? receiptScope,
+                                    IList<NarrativeRuntimeQueryReceiptModel>? queryReceipts) {
+            if (receiptScope == null || queryReceipts == null) {
+                return;
+            }
+
+            NarrativeRuntimeQueryReceiptModel receipt = new NarrativeRuntimeQueryReceiptModel {
+                Id = "query-" + (queryReceipts.Count + 1),
+                Context = receiptScope.Context,
+                NodeId = receiptScope.NodeId,
+                BranchPath = receiptScope.BranchPath,
+                ChoiceGroupIndex = receiptScope.ChoiceGroupIndex,
+                ChoiceOptionIndex = receiptScope.ChoiceOptionIndex,
+                ConditionalJumpIndex = receiptScope.ConditionalJumpIndex,
+                SourceLine = query.Source.Line,
+                SourceColumn = query.Source.Column,
+                Name = query.Name,
+                Syntax = query.Syntax == DslScriptConditionQuerySyntaxModel.Call ? "call" : "path",
+                Result = CloneValue(queryResult.Value),
+                SourceKind = SourceKindName(queryResult.SourceKind),
+                Deterministic = queryResult.IsDeterministic,
+            };
+
+            for (int i = 0; i < request.Arguments.Count; i += 1) {
+                receipt.Arguments.Add(CloneValue(request.Arguments[i]));
+            }
+
+            queryReceipts.Add(receipt);
+        }
+
+        static string SourceKindName(NarrativeRuntimeQuerySourceKindModel sourceKind) {
+            if (sourceKind == NarrativeRuntimeQuerySourceKindModel.InternalFact) {
+                return "internal-fact";
+            }
+
+            if (sourceKind == NarrativeRuntimeQuerySourceKindModel.Delegate) {
+                return "delegate";
+            }
+
+            if (sourceKind == NarrativeRuntimeQuerySourceKindModel.Mock) {
+                return "mock";
+            }
+
+            if (sourceKind == NarrativeRuntimeQuerySourceKindModel.Recorded) {
+                return "recorded";
+            }
+
+            return "none";
         }
 
         static SourceSpanModel SourceOf(DslScriptConditionExpressionModel? expression) {

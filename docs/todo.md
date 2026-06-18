@@ -1,6 +1,6 @@
 # TODO
 
-状态：持续维护，P4 Round 3 Runtime flow 条件接入完成
+状态：持续维护，P4 Round 4 branch-affecting query receipt 第一刀完成。`Internal/Runtime` 现已记录 choice condition 与 conditional jump 求值时的最小 query receipt，并保持 formal Runtime State 不包含 receipt / Trace Replay 负载；下一轮进入 P4 Round 5 action dispatcher 最小 contract。
 
 SelfHostedEditor regression invariant: Preview choice clicks must advance the reading Preview to the target block and reveal the target block title in the editor. Compiler-project Preview data must never silently lose `previewLines`: if a returned Compiler graph has source lines but missing or mismatched `previewLines`, Preview must report a compiler graph contract error instead of falling back to the UI-only draft model. `npm --prefix src\ExternalSupport\SelfHostedEditor run check:model` covers both invariants so future Runtime / navigation work does not regress them.
 
