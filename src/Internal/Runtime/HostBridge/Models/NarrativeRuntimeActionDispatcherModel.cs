@@ -79,6 +79,69 @@ namespace Inscape.Runtime {
 
     }
 
+    public sealed class NarrativeRuntimePendingActionModel {
+
+        public string RequestId { get; set; }
+
+        public string Name { get; set; }
+
+        public string Mode { get; set; }
+
+        public string HandlerName { get; set; }
+
+        public string Status { get; set; }
+
+        public List<NarrativeRuntimeActionArgumentModel> Arguments { get; set; }
+
+        public string NodeId { get; set; }
+
+        public string LineId { get; set; }
+
+        public int SourceLine { get; set; }
+
+        public int SourceColumn { get; set; }
+
+        public string Raw { get; set; }
+
+        public string HostPayload { get; set; }
+
+        public NarrativeRuntimePendingActionModel() {
+            RequestId = string.Empty;
+            Name = string.Empty;
+            Mode = string.Empty;
+            HandlerName = string.Empty;
+            Status = "waiting";
+            Arguments = new List<NarrativeRuntimeActionArgumentModel>();
+            NodeId = string.Empty;
+            LineId = string.Empty;
+            Raw = string.Empty;
+            HostPayload = string.Empty;
+        }
+
+    }
+
+    public sealed class NarrativeRuntimeActionResumeModel {
+
+        public string RequestId { get; set; }
+
+        public string Status { get; set; }
+
+        public string HostPayload { get; set; }
+
+        public string ErrorCode { get; set; }
+
+        public string ErrorMessage { get; set; }
+
+        public NarrativeRuntimeActionResumeModel() {
+            RequestId = string.Empty;
+            Status = "completed";
+            HostPayload = string.Empty;
+            ErrorCode = string.Empty;
+            ErrorMessage = string.Empty;
+        }
+
+    }
+
     public sealed class NarrativeRuntimeActionArgumentModel {
 
         public int Index { get; set; }

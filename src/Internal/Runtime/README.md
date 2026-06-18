@@ -31,10 +31,11 @@ Current baseline:
 - Runtime now has the first action dispatcher contract:
   - `NarrativeRuntime.ActionDispatcher` accepts action capability mode data and Host Bridge handler bindings as injected Runtime-side models.
   - `@emit` metadata lines can produce `fire` action requests without blocking Runtime flow.
-  - `wait` and `handoff` modes are recognized as not implemented yet, so they do not silently behave like `fire`.
-  - Missing schema action, missing handler mapping, unsupported mode, and host delegate exceptions produce structured action errors.
+  - `wait` action requests enter `PendingAction` and block Runtime flow until `ResumeAction()` receives a completed resume.
+  - `handoff` mode is recognized as not implemented yet, so it does not silently behave like `fire` or `wait`.
+  - Missing schema action, missing handler mapping, unsupported mode, host delegate exceptions, wrong resume request ids, and failed / cancelled / timeout resumes produce structured action errors.
 - `NarrativeRuntime.CreateSnapshot()` returns `inscape.runtime-state` data with the current state, current Compiler node, and `ReadingProgress` for editor Player integration.
-- `NarrativeRuntime.CreateSnapshot()` also exposes branch query receipts and fire action requests as debug/runtime evidence outside the formal Runtime State export.
+- `NarrativeRuntime.CreateSnapshot()` also exposes branch query receipts, action requests, and pending action evidence outside the formal Runtime State export.
 - `NarrativeRuntime.ExportState()` returns the P3 minimal formal Runtime State shape: `format`, `formatVersion`, `runtimeVersion`, `scriptVersion`, `position`, `flow`, `facts`, `random`, and `host.checkpointId`.
 - `NarrativeRuntime.ValidateStateAgainstCurrentScript()` reports `compatible`, `migratable`, or `incompatible` without silently repairing state.
 - `ReadingProgress` currently exposes `ContentStepCount`, `MaxVisibleStepCount`, `VisibleStepCount`, `CanAdvance`, `CanRewind`, `IsChoiceStageVisible`, and `IsContinueStageVisible`.
@@ -42,4 +43,4 @@ Current baseline:
 - Formal Runtime State does not include full Log, full Rollback stack, full Trace Replay, or gameplay state ownership.
 - Runtime does not parse `.inscape` text and does not know about VSCode, HTML Preview, UnitySample, or Host Bridge details.
 - Runtime does not own gameplay state such as inventory, quest stage, trust, combat result, player position, or economy values; those belong behind host delegate queries.
-- Runtime does not yet implement `wait` / `handoff` pending and resume, maintain Log / Backlog, or export the full P4 Runtime substate blob.
+- Runtime does not yet implement `handoff` control transfer / resume, maintain Log / Backlog, or export the full P4 Runtime substate blob.

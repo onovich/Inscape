@@ -12,7 +12,7 @@ namespace Inscape.Runtime {
 
             string mode = NormalizeMode(action.Mode);
             request.Mode = mode;
-            if (mode != "fire") {
+            if (mode != "fire" && mode != "wait") {
                 return Failure("IRA003", "Runtime action mode is not implemented yet: " + mode, false);
             }
 
@@ -24,22 +24,26 @@ namespace Inscape.Runtime {
             try {
                 NarrativeRuntimeActionResultModel? hostResult = dispatcher.DispatchAction?.Invoke(request);
                 if (hostResult == null) {
-                    return Success();
+                    return Success(mode);
                 }
 
                 hostResult.RequestWasSent = true;
-                if (!hostResult.Succeeded) {
+                string status = NormalizeStatus(hostResult.Status, mode);
+                hostResult.Status = status;
+                bool invalidSuccessStatus = !IsHostErrorStatus(status) && !IsSuccessfulStatus(status, mode);
+                if (!hostResult.Succeeded || IsHostErrorStatus(status) || invalidSuccessStatus) {
+                    hostResult.Succeeded = false;
                     if (hostResult.ErrorCode.Length == 0) {
                         hostResult.ErrorCode = "IRA004";
                     }
-                    if (hostResult.Status.Length == 0) {
-                        hostResult.Status = "failed";
+                    if (invalidSuccessStatus && hostResult.ErrorMessage.Length == 0) {
+                        hostResult.ErrorMessage = "Runtime action host dispatcher returned unsupported status '" + status + "' for mode '" + mode + "'.";
                     }
                     return hostResult;
                 }
 
-                if (hostResult.Status.Length == 0) {
-                    hostResult.Status = "completed";
+                if (mode == "wait") {
+                    hostResult.Status = "waiting";
                 }
                 return hostResult;
             } catch (Exception ex) {
@@ -80,11 +84,28 @@ namespace Inscape.Runtime {
             return normalized.Length == 0 ? "fire" : normalized;
         }
 
-        static NarrativeRuntimeActionResultModel Success() {
+        static string NormalizeStatus(string status, string mode) {
+            string normalized = status.Trim().ToLowerInvariant();
+            if (normalized.Length == 0 || (mode == "wait" && normalized == "completed")) {
+                return mode == "wait" ? "waiting" : "completed";
+            }
+
+            return normalized;
+        }
+
+        static bool IsHostErrorStatus(string status) {
+            return status == "failed" || status == "cancelled" || status == "timeout";
+        }
+
+        static bool IsSuccessfulStatus(string status, string mode) {
+            return (mode == "fire" && status == "completed") || (mode == "wait" && status == "waiting");
+        }
+
+        static NarrativeRuntimeActionResultModel Success(string mode) {
             return new NarrativeRuntimeActionResultModel {
                 Succeeded = true,
                 RequestWasSent = true,
-                Status = "completed",
+                Status = mode == "wait" ? "waiting" : "completed",
             };
         }
 

@@ -531,9 +531,9 @@ Narrator: Start.
 
             NarrativeRuntime unsupportedMode = new NarrativeRuntime();
             unsupportedMode.LoadGraph(compilation.Document);
-            unsupportedMode.ActionDispatcher.Actions.Add(CreateActionCapability("open_window", "wait"));
+            unsupportedMode.ActionDispatcher.Actions.Add(CreateActionCapability("open_window", "handoff"));
             unsupportedMode.ActionDispatcher.Handlers.Add(CreateActionHandler("open_window", "UiBridge.OpenWindow"));
-            AssertFalse(unsupportedMode.Start("start"), "Runtime should not treat wait action as fire in Round 5.");
+            AssertFalse(unsupportedMode.Start("start"), "Runtime should not treat handoff action as fire or wait in Round 6.");
             AssertEqual("IRA003", unsupportedMode.LastError?.Code ?? string.Empty, "Runtime unsupported action mode error");
             AssertEqual(0, unsupportedMode.ActionRequests.Count, "Unsupported action modes should not emit fire requests.");
 
@@ -545,6 +545,99 @@ Narrator: Start.
             AssertFalse(hostError.Start("start"), "Runtime should report host fire action exceptions.");
             AssertEqual("IRA004", hostError.LastError?.Code ?? string.Empty, "Runtime host action exception error");
             AssertEqual(1, hostError.ActionRequests.Count, "Runtime should retain sent action request for host exception debugging.");
+        }
+
+        static void NarrativeRuntimeWaitsForActionResume() {
+            DslScriptCompilationResultModel compilation = Compile("""
+# start
+@emit wait_for_ui confirm_help
+Narrator: Resumed.
+-> end
+
+# end
+Narrator: End.
+""");
+            AssertFalse(compilation.HasErrors, "Wait action fixture should compile.");
+
+            NarrativeRuntime runtime = new NarrativeRuntime();
+            runtime.LoadGraph(compilation.Document);
+            runtime.ActionDispatcher.Actions.Add(CreateActionCapability("wait_for_ui", "wait"));
+            runtime.ActionDispatcher.Handlers.Add(CreateActionHandler("wait_for_ui", "UiBridge.WaitForUi"));
+            int dispatchCount = 0;
+            runtime.ActionDispatcher.DispatchAction = request => {
+                dispatchCount += 1;
+                AssertEqual("wait", request.Mode, "Wait action request mode");
+                return new NarrativeRuntimeActionResultModel();
+            };
+
+            AssertTrue(runtime.Start("start"), "Runtime should enter pending state for leading wait action.");
+            AssertEqual(1, dispatchCount, "Wait action dispatch count");
+            AssertEqual(1, runtime.ActionRequests.Count, "Runtime should record sent wait action request.");
+            AssertTrue(runtime.PendingAction != null, "Runtime should expose pending wait action.");
+            AssertEqual("action-1", runtime.PendingAction?.RequestId ?? string.Empty, "Pending action request id");
+            AssertEqual("wait_for_ui", runtime.PendingAction?.Name ?? string.Empty, "Pending action name");
+            AssertEqual("wait", runtime.PendingAction?.Mode ?? string.Empty, "Pending action mode");
+            AssertEqual("waiting", runtime.PendingAction?.Status ?? string.Empty, "Pending action status");
+            AssertEqual("UiBridge.WaitForUi", runtime.PendingAction?.HandlerName ?? string.Empty, "Pending action handler");
+            AssertEqual("confirm_help", runtime.PendingAction?.Arguments[0].Value.StringValue ?? string.Empty, "Pending action argument");
+
+            NarrativeRuntimeSnapshotModel pendingSnapshot = runtime.CreateSnapshot();
+            AssertTrue(pendingSnapshot.PendingAction != null, "Snapshot should expose pending action.");
+            AssertFalse(pendingSnapshot.ReadingProgress.CanAdvance, "Pending action should block advancing.");
+            string serializedPendingState = JsonSerializer.Serialize(runtime.ExportState("script-v1", "checkpoint-opaque-1"));
+            AssertFalse(serializedPendingState.Contains("pendingAction", StringComparison.OrdinalIgnoreCase), "Formal Runtime State should not include pending action in Round 6.");
+            AssertFalse(serializedPendingState.Contains("actionRequests", StringComparison.OrdinalIgnoreCase), "Formal Runtime State should not include action request history while pending.");
+            AssertFalse(runtime.AdvanceFlow(), "Runtime should not advance while waiting for action resume.");
+            AssertEqual("IRA005", runtime.LastError?.Code ?? string.Empty, "Pending action blocks advance error");
+
+            AssertTrue(runtime.ResumeAction(new NarrativeRuntimeActionResumeModel {
+                RequestId = "action-1",
+                Status = "completed",
+                HostPayload = "{\"ok\":true}",
+            }), "Runtime should resume a completed wait action.");
+            AssertTrue(runtime.PendingAction == null, "Completed resume should clear pending action.");
+            AssertEqual(1, dispatchCount, "Runtime should not redispatch completed wait action.");
+
+            NarrativeRuntimeSnapshotModel resumedSnapshot = runtime.CreateSnapshot();
+            AssertTrue(resumedSnapshot.PendingAction == null, "Snapshot should clear pending action after resume.");
+            AssertTrue(resumedSnapshot.ReadingProgress.CanAdvance, "Runtime should be advanceable after wait resume.");
+            AssertTrue(runtime.AdvanceFlow(), "Runtime should advance after wait action completes.");
+            AssertTrue(runtime.Continue(), "Runtime should continue after resumed wait action.");
+            AssertEqual("end", runtime.State.CurrentNodeName, "Runtime should reach end after wait resume.");
+        }
+
+        static void NarrativeRuntimeReportsWaitResumeErrors() {
+            DslScriptCompilationResultModel compilation = Compile("""
+# start
+@emit wait_for_ui confirm_help
+Narrator: Resumed.
+""");
+            AssertFalse(compilation.HasErrors, "Wait action error fixture should compile.");
+
+            NarrativeRuntime wrongRequest = new NarrativeRuntime();
+            wrongRequest.LoadGraph(compilation.Document);
+            wrongRequest.ActionDispatcher.Actions.Add(CreateActionCapability("wait_for_ui", "wait"));
+            wrongRequest.ActionDispatcher.Handlers.Add(CreateActionHandler("wait_for_ui", "UiBridge.WaitForUi"));
+            AssertTrue(wrongRequest.Start("start"), "Runtime should enter pending state before wrong resume request.");
+            AssertFalse(wrongRequest.ResumeAction(new NarrativeRuntimeActionResumeModel {
+                RequestId = "action-other",
+                Status = "completed",
+            }), "Runtime should reject resume for a different request id.");
+            AssertEqual("IRA006", wrongRequest.LastError?.Code ?? string.Empty, "Runtime wrong resume request error");
+            AssertEqual("waiting", wrongRequest.PendingAction?.Status ?? string.Empty, "Wrong request should keep action waiting.");
+
+            NarrativeRuntime hostError = new NarrativeRuntime();
+            hostError.LoadGraph(compilation.Document);
+            hostError.ActionDispatcher.Actions.Add(CreateActionCapability("wait_for_ui", "wait"));
+            hostError.ActionDispatcher.Handlers.Add(CreateActionHandler("wait_for_ui", "UiBridge.WaitForUi"));
+            AssertTrue(hostError.Start("start"), "Runtime should enter pending state before host error resume.");
+            AssertFalse(hostError.ResumeAction(new NarrativeRuntimeActionResumeModel {
+                RequestId = "action-1",
+                Status = "cancelled",
+                ErrorMessage = "host cancelled",
+            }), "Runtime should report wait action cancellation as host action error.");
+            AssertEqual("IRA007", hostError.LastError?.Code ?? string.Empty, "Runtime host action resume error");
+            AssertEqual("cancelled", hostError.PendingAction?.Status ?? string.Empty, "Host error should retain failed pending evidence.");
         }
 
         static void NarrativeRuntimeExportsAndValidatesMinimalRuntimeState() {

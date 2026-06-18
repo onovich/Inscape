@@ -21,6 +21,8 @@ namespace Inscape.Runtime {
 
         public List<NarrativeRuntimeActionRequestModel> ActionRequests { get; set; }
 
+        public NarrativeRuntimePendingActionModel? PendingAction { get; set; }
+
         public NarrativeRuntimeSnapshotModel() {
             Format = "inscape.runtime-state";
             FormatVersion = 1;

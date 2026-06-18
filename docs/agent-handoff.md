@@ -1,12 +1,25 @@
 # Agent 接手指南
 
-状态：P4 Round 5 action dispatcher contract + fire 第一刀完成
+状态：P4 Round 6 wait pending / resume 第一刀完成
 
 最后更新：2026-06-18
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-18 SelfHostedEditor P4 Round 6 Wait Pending 快照
+
+P4 Runtime playable MVP 已完成第六轮 `wait` pending / resume 第一刀，不代表 P4 MVP 已完成。
+- 本轮审计见 [SelfHostedEditor P4 Wait Pending Audit](self-hosted-editor-p4-wait-pending-audit.md)。
+- `Internal/Runtime/HostBridge` 新增 `NarrativeRuntimePendingActionModel` 与 `NarrativeRuntimeActionResumeModel`。
+- `NarrativeRuntime.PendingAction` 暴露当前等待中的 action evidence；snapshot `PendingAction` 克隆该 evidence，formal `ExportState()` 仍不包含 action request / pending history。
+- `@emit` wait action dispatch 成功后进入 pending，阻断 `AdvanceFlow()` / `Continue()` / `Choose()` / `RewindFlow()` / `Rewind()`，直到宿主用 request id 调用 `ResumeAction()`。
+- `ResumeAction(Status = completed)` 会清空 pending，并继续扫描当前位置已到达但尚未 dispatch 的 action；不会重复 dispatch 已完成的 wait action。
+- wrong request id 返回 `IRA006`，failed / cancelled / timeout resume 返回 `IRA007`；pending 状态阻断返回 `IRA005`。
+- `handoff` 仍未实现，只会按 unsupported mode 报 `IRA003`。
+- ExternalSupport 未新增 condition parser、query evaluator、action dispatcher 或 Runtime 语义副本。
+- 下一轮进入 P4 Round 7：`handoff` 控制权移交 / resume 第一刀；不要把 Unity / Bird / 小游戏 / Timeline 具体业务逻辑引入 Internal Runtime。
 
 ### 2026-06-18 SelfHostedEditor P4 Round 5 Action Dispatcher 快照
 
@@ -1580,9 +1593,9 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 
 建议优先做小而闭环的任务，不要直接跳到大规模重构。
 
-1. 进入 P4 Round 6 `wait` pending / resume 第一刀。
-   - 先读 [P4 Runtime Playable MVP Goal 模式执行指南](self-hosted-editor-p4-goal-mode-execution-guide.md)、[Runtime Playable MVP Contract](runtime-playable-mvp-contract.md) 与 [SelfHostedEditor P4 Action Dispatcher Audit](self-hosted-editor-p4-action-dispatcher-audit.md)。
-   - 定义 pending action 最小 shape、Runtime 暂停 / 恢复边界和 host result 注入路径；继续避免 per-action rollback / replay / timeout / failure policy 字段。
+1. 进入 P4 Round 7 `handoff` 控制权移交 / resume 第一刀。
+   - 先读 [P4 Runtime Playable MVP Goal 模式执行指南](self-hosted-editor-p4-goal-mode-execution-guide.md)、[Runtime Playable MVP Contract](runtime-playable-mvp-contract.md) 与 [SelfHostedEditor P4 Wait Pending Audit](self-hosted-editor-p4-wait-pending-audit.md)。
+   - 明确 `wait` 与 `handoff` 的状态差异，支持宿主后续用 request id 恢复剧情；不要引入 Unity / Bird / 小游戏 / Timeline 具体业务逻辑。
 
 2. 继续推进 Stable Node ID / 本地化主线。
    - ADR 0013、sidecar 闭环、保守自动重命名识别、VSCode 显式 `Update Stable Node Map` 入口、插入标题后的自动同步、标题重命名人工确认 / 冲突报告、本地化 alignment / audit report，以及相似文本人工候选第一版都已落地。

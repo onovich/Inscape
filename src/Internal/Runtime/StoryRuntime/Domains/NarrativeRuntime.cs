@@ -25,6 +25,8 @@ namespace Inscape.Runtime {
 
         public List<NarrativeRuntimeActionRequestModel> ActionRequests { get; }
 
+        public NarrativeRuntimePendingActionModel? PendingAction { get; private set; }
+
         public StoryGraphNodeModel? CurrentNode {
             get {
                 if (State.CurrentNodeName.Length == 0 || !nodesByName.ContainsKey(State.CurrentNodeName)) {
@@ -50,6 +52,7 @@ namespace Inscape.Runtime {
             BranchQueryReceipts.Clear();
             ActionRequests.Clear();
             dispatchedActionKeys.Clear();
+            PendingAction = null;
             graph = narrativeGraph;
             nodesByName.Clear();
             State.CurrentNodeName = string.Empty;
@@ -69,6 +72,7 @@ namespace Inscape.Runtime {
             BranchQueryReceipts.Clear();
             ActionRequests.Clear();
             dispatchedActionKeys.Clear();
+            PendingAction = null;
             if (graph == null || graph.Nodes.Count == 0) {
                 return SetFlowError("IRF001", "graph", "Runtime graph is not loaded.");
             }
@@ -79,6 +83,10 @@ namespace Inscape.Runtime {
 
         public bool Continue() {
             ClearLastError();
+            if (HasPendingAction()) {
+                return SetPendingActionError();
+            }
+
             StoryGraphNodeModel? node = CurrentNode;
             if (node == null) {
                 return SetFlowError("IRF001", "currentNode", "Runtime current node is missing.");
@@ -93,6 +101,10 @@ namespace Inscape.Runtime {
 
         public bool Choose(int groupIndex, int optionIndex) {
             ClearLastError();
+            if (HasPendingAction()) {
+                return SetPendingActionError();
+            }
+
             StoryGraphNodeModel? node = CurrentNode;
             if (node == null || groupIndex < 0 || groupIndex >= node.Choices.Count) {
                 return SetFlowError("IRF002", "choice.groupIndex", "Runtime choice group is not available.");
@@ -127,6 +139,10 @@ namespace Inscape.Runtime {
 
         public bool AdvanceFlow() {
             ClearLastError();
+            if (HasPendingAction()) {
+                return SetPendingActionError();
+            }
+
             StoryGraphNodeModel? node = CurrentNode;
             if (node == null) {
                 return SetFlowError("IRF001", "currentNode", "Runtime current node is missing.");
@@ -139,11 +155,15 @@ namespace Inscape.Runtime {
 
             State.VisibleStepCount += 1;
             RecordSeenLine(node, State.VisibleStepCount);
-            return DispatchAvailableFireActions(node);
+            return DispatchAvailableActions(node);
         }
 
         public bool RewindFlow() {
             ClearLastError();
+            if (HasPendingAction()) {
+                return SetPendingActionError();
+            }
+
             if (State.VisibleStepCount <= 0) {
                 return SetFlowError("IRF008", "visibleStepCount", "Runtime cannot rewind flow from the current step.");
             }
@@ -154,6 +174,10 @@ namespace Inscape.Runtime {
 
         public bool Rewind() {
             ClearLastError();
+            if (HasPendingAction()) {
+                return SetPendingActionError();
+            }
+
             if (State.Path.Count <= 1) {
                 return SetFlowError("IRF009", "path", "Runtime cannot rewind without a previous node.");
             }
@@ -174,6 +198,7 @@ namespace Inscape.Runtime {
             BranchQueryReceipts.Clear();
             ActionRequests.Clear();
             dispatchedActionKeys.Clear();
+            PendingAction = null;
             if (state.CurrentNodeName.Length > 0 && !nodesByName.ContainsKey(state.CurrentNodeName)) {
                 return SetFlowError("IRF004", "state.currentNodeName", "Runtime restore node is not available: " + state.CurrentNodeName);
             }
@@ -203,7 +228,44 @@ namespace Inscape.Runtime {
                 LastError = CloneLastError(LastError),
                 BranchQueryReceipts = CloneQueryReceipts(BranchQueryReceipts),
                 ActionRequests = CloneActionRequests(ActionRequests),
+                PendingAction = ClonePendingAction(PendingAction),
             };
+        }
+
+        public bool ResumeAction(NarrativeRuntimeActionResumeModel resume) {
+            ClearLastError();
+            if (!HasPendingAction() || PendingAction == null) {
+                return SetFlowError("IRA005", "pendingAction", "Runtime has no pending action to resume.");
+            }
+
+            if (PendingAction.Status != "waiting") {
+                return SetFlowError("IRA005",
+                                    "pendingAction.status",
+                                    "Runtime pending action is not waiting for resume: " + PendingAction.Status);
+            }
+
+            if (resume.RequestId != PendingAction.RequestId) {
+                return SetFlowError("IRA006",
+                                    "pendingAction.requestId",
+                                    "Runtime action resume request id does not match pending action: " + resume.RequestId);
+            }
+
+            string status = NormalizeActionResumeStatus(resume.Status);
+            if (status != "completed") {
+                PendingAction.Status = status;
+                PendingAction.HostPayload = resume.HostPayload;
+                return SetFlowError("IRA007",
+                                    "pendingAction." + PendingAction.RequestId,
+                                    BuildActionResumeErrorMessage(PendingAction, resume, status));
+            }
+
+            PendingAction = null;
+            StoryGraphNodeModel? node = CurrentNode;
+            if (node == null) {
+                return SetFlowError("IRF001", "currentNode", "Runtime current node is missing.");
+            }
+
+            return DispatchAvailableActions(node);
         }
 
         public NarrativeRuntimeExportStateModel ExportState(string scriptVersion = "", string hostCheckpointId = "") {
@@ -360,10 +422,11 @@ namespace Inscape.Runtime {
                 ContentStepCount = contentStepCount,
                 MaxVisibleStepCount = maxVisibleStepCount,
                 VisibleStepCount = State.VisibleStepCount,
-                CanAdvance = State.VisibleStepCount < maxVisibleStepCount,
-                CanRewind = State.VisibleStepCount > 0,
-                IsChoiceStageVisible = visibleNode != null && visibleNode.Choices.Count > 0 && State.VisibleStepCount > contentStepCount,
+                CanAdvance = !HasPendingAction() && State.VisibleStepCount < maxVisibleStepCount,
+                CanRewind = !HasPendingAction() && State.VisibleStepCount > 0,
+                IsChoiceStageVisible = !HasPendingAction() && visibleNode != null && visibleNode.Choices.Count > 0 && State.VisibleStepCount > contentStepCount,
                 IsContinueStageVisible = node != null
+                    && !HasPendingAction()
                     && (node.DefaultNext.Length > 0 || node.ConditionalJumps.Count > 0)
                     && State.VisibleStepCount > contentStepCount,
             };
@@ -543,7 +606,7 @@ namespace Inscape.Runtime {
             }
             State.Path.Add(nodeName);
             RecordNodeVisit(nodeName);
-            return DispatchAvailableFireActions(nodesByName[nodeName]);
+            return DispatchAvailableActions(nodesByName[nodeName]);
         }
 
         void RecordNodeVisit(string nodeName) {
@@ -581,7 +644,11 @@ namespace Inscape.Runtime {
             }
         }
 
-        bool DispatchAvailableFireActions(StoryGraphNodeModel node) {
+        bool DispatchAvailableActions(StoryGraphNodeModel node) {
+            if (HasPendingAction()) {
+                return true;
+            }
+
             int contentStepCount = 0;
             for (int i = 0; i < node.Lines.Count; i += 1) {
                 DslScriptLineModel line = node.Lines[i];
@@ -617,10 +684,84 @@ namespace Inscape.Runtime {
                                             : result.ErrorMessage);
                 }
 
+                if (request.Mode == "wait" && result.Status == "waiting") {
+                    PendingAction = CreatePendingAction(request, result);
+                    return true;
+                }
+
                 dispatchedActionKeys.Add(dispatchKey);
             }
 
             return true;
+        }
+
+        bool HasPendingAction() {
+            return PendingAction != null;
+        }
+
+        bool SetPendingActionError() {
+            if (PendingAction == null) {
+                return SetFlowError("IRA005", "pendingAction", "Runtime is waiting for action resume.");
+            }
+
+            if (PendingAction.Status != "waiting") {
+                return SetFlowError("IRA005",
+                                    "pendingAction." + PendingAction.RequestId,
+                                    "Runtime is stopped by action status " + PendingAction.Status + ": " + PendingAction.RequestId);
+            }
+
+            return SetFlowError("IRA005",
+                                "pendingAction." + PendingAction.RequestId,
+                                "Runtime is waiting for action resume: " + PendingAction.RequestId);
+        }
+
+        static NarrativeRuntimePendingActionModel CreatePendingAction(NarrativeRuntimeActionRequestModel request,
+                                                                      NarrativeRuntimeActionResultModel result) {
+            NarrativeRuntimePendingActionModel pending = new NarrativeRuntimePendingActionModel {
+                RequestId = request.RequestId,
+                Name = request.Name,
+                Mode = request.Mode,
+                HandlerName = request.HandlerName,
+                Status = "waiting",
+                NodeId = request.NodeId,
+                LineId = request.LineId,
+                SourceLine = request.SourceLine,
+                SourceColumn = request.SourceColumn,
+                Raw = request.Raw,
+                HostPayload = result.HostPayload,
+            };
+
+            for (int i = 0; i < request.Arguments.Count; i += 1) {
+                NarrativeRuntimeActionArgumentModel argument = request.Arguments[i];
+                pending.Arguments.Add(new NarrativeRuntimeActionArgumentModel {
+                    Index = argument.Index,
+                    Raw = argument.Raw,
+                    Value = CloneQueryValue(argument.Value),
+                    SourceLine = argument.SourceLine,
+                    SourceColumn = argument.SourceColumn,
+                });
+            }
+
+            return pending;
+        }
+
+        static string NormalizeActionResumeStatus(string status) {
+            string normalized = status.Trim().ToLowerInvariant();
+            return normalized.Length == 0 ? "completed" : normalized;
+        }
+
+        static string BuildActionResumeErrorMessage(NarrativeRuntimePendingActionModel pending,
+                                                    NarrativeRuntimeActionResumeModel resume,
+                                                    string status) {
+            if (resume.ErrorMessage.Length > 0) {
+                return resume.ErrorMessage;
+            }
+
+            if (resume.ErrorCode.Length > 0) {
+                return "Runtime action resume failed for '" + pending.Name + "' with status " + status + ": " + resume.ErrorCode;
+            }
+
+            return "Runtime action resume failed for '" + pending.Name + "' with status " + status + ".";
         }
 
         bool TryCreateActionRequest(StoryGraphNodeModel node,
@@ -918,6 +1059,39 @@ namespace Inscape.Runtime {
 
             for (int argumentIndex = 0; argumentIndex < request.Arguments.Count; argumentIndex += 1) {
                 NarrativeRuntimeActionArgumentModel argument = request.Arguments[argumentIndex];
+                clone.Arguments.Add(new NarrativeRuntimeActionArgumentModel {
+                    Index = argument.Index,
+                    Raw = argument.Raw,
+                    Value = CloneQueryValue(argument.Value),
+                    SourceLine = argument.SourceLine,
+                    SourceColumn = argument.SourceColumn,
+                });
+            }
+
+            return clone;
+        }
+
+        static NarrativeRuntimePendingActionModel? ClonePendingAction(NarrativeRuntimePendingActionModel? pending) {
+            if (pending == null) {
+                return null;
+            }
+
+            NarrativeRuntimePendingActionModel clone = new NarrativeRuntimePendingActionModel {
+                RequestId = pending.RequestId,
+                Name = pending.Name,
+                Mode = pending.Mode,
+                HandlerName = pending.HandlerName,
+                Status = pending.Status,
+                NodeId = pending.NodeId,
+                LineId = pending.LineId,
+                SourceLine = pending.SourceLine,
+                SourceColumn = pending.SourceColumn,
+                Raw = pending.Raw,
+                HostPayload = pending.HostPayload,
+            };
+
+            for (int argumentIndex = 0; argumentIndex < pending.Arguments.Count; argumentIndex += 1) {
+                NarrativeRuntimeActionArgumentModel argument = pending.Arguments[argumentIndex];
                 clone.Arguments.Add(new NarrativeRuntimeActionArgumentModel {
                     Index = argument.Index,
                     Raw = argument.Raw,
