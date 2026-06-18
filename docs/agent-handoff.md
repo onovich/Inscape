@@ -1,12 +1,26 @@
 # Agent 接手指南
 
-状态：P4 Round 2 condition evaluator 完成
+状态：P4 Round 3 Runtime flow 条件接入完成
 
 最后更新：2026-06-18
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-18 SelfHostedEditor P4 Round 3 Runtime Flow 快照
+
+P4 Runtime playable MVP 已完成第三轮 Runtime flow 条件接入，不代表 P4 MVP 已完成。
+
+- 本轮审计见 [SelfHostedEditor P4 Runtime Flow Audit](self-hosted-editor-p4-runtime-flow-audit.md)。
+- `NarrativeRuntime.QueryProvider` 现在供 Runtime flow 使用，internal facts 仍由 `NarrativeRuntimeQueryProviderDomain` 优先解析。
+- `CreateSnapshot()` 现在投影过滤后的 `CurrentNode`，choice groups 只包含当前条件下可见的 option。
+- `Choose(groupIndex, optionIndex)` 把 `optionIndex` 解释为 visible option index，并把原始 option index 写入 choice facts；不可见 / 不存在的 visible option 返回 `IRF003`。
+- `Continue()` 现在先按 `ConditionalJumps` 源码顺序求值，first true wins；全部 false 时走 `DefaultNext` fallback；无命中且无 fallback 时返回 `IRF006`。
+- 新增 `NarrativeRuntimeFlowErrorModel`，`NarrativeRuntime.LastError` 和 snapshot `LastError` 暴露最近一次 flow error；condition evaluation failure 通过 `IRF005` 携带 `IRC*` diagnostics。
+- Internal tests 覆盖 choice filtering、visible index 映射、first true wins、fallback、missing fallback error；无条件 Runtime / CLI smoke 未回归。
+- 当前仍未完成：branch query receipt、action dispatcher、`fire` / `wait` / `handoff` pending / resume、Log / Backlog、P4 子状态 blob 与 CLI Runtime playable driver。
+- 下一轮进入 P4 Round 4：定义并记录 branch-affecting query receipt，保持 receipt 与完整 Trace Replay 分离。
 
 ### 2026-06-18 SelfHostedEditor P4 Round 2 Condition Evaluator 快照
 
@@ -1542,9 +1556,9 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 
 建议优先做小而闭环的任务，不要直接跳到大规模重构。
 
-1. 进入 P4 Round 3 Runtime flow 条件接入。
-   - 先读 [P4 Runtime Playable MVP Goal 模式执行指南](self-hosted-editor-p4-goal-mode-execution-guide.md)、[Runtime Playable MVP Contract](runtime-playable-mvp-contract.md) 与 [SelfHostedEditor P4 Condition Evaluator Audit](self-hosted-editor-p4-condition-evaluator-audit.md)。
-   - 把 `NarrativeRuntimeConditionEvaluatorDomain` 接入 `NarrativeRuntime` flow：条件选项只暴露 / 可选 true 的 option，条件跳转按源码顺序 first true wins，没有命中时走 fallback，无可行路径时报 Runtime error；无条件剧情不得回归。
+1. 进入 P4 Round 4 Query receipt 第一刀。
+   - 先读 [P4 Runtime Playable MVP Goal 模式执行指南](self-hosted-editor-p4-goal-mode-execution-guide.md)、[Runtime Playable MVP Contract](runtime-playable-mvp-contract.md) 与 [SelfHostedEditor P4 Runtime Flow Audit](self-hosted-editor-p4-runtime-flow-audit.md)。
+   - 定义 branch-affecting query receipt 最小 shape，并在条件选项 / 条件跳转求值时记录 query name、arguments、result、sourceKind、deterministic、node / option / jump context；不要把普通 Runtime State 主体扩成完整 Trace Replay。
 
 2. 继续推进 Stable Node ID / 本地化主线。
    - ADR 0013、sidecar 闭环、保守自动重命名识别、VSCode 显式 `Update Stable Node Map` 入口、插入标题后的自动同步、标题重命名人工确认 / 冲突报告、本地化 alignment / audit report，以及相似文本人工候选第一版都已落地。

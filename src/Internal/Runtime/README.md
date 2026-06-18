@@ -13,6 +13,7 @@ Current baseline:
 - The runtime supports a minimal lifecycle: `LoadGraph`, `Start`, `AdvanceFlow`, `RewindFlow`, `Choose`, `Continue`, `Rewind`, and `Restore`.
 - Runtime state now tracks `VisibleStepCount`, so node-internal reading progress has shared Runtime truth instead of living only in a host-side presenter.
 - Runtime state now tracks internal narrative facts: visited nodes, seen line anchors, and choice history.
+- `NarrativeRuntime.QueryProvider` supplies delegate / mock / recorded query values to Runtime flow while internal facts still resolve first.
 - `HostBridge/Domains/NarrativeRuntimeQueryProviderDomain.cs` defines the first Runtime query provider contract:
   - `Delegate` is the formal host gameplay-state path.
   - `Mock` is for editor preview, tests, and CI.
@@ -22,6 +23,11 @@ Current baseline:
   - It consumes `DslScriptConditionExpressionModel`, never raw `.inscape` condition strings.
   - It supports bool / number / string values, `and` / `or` / `not`, scalar comparisons, query path / call, and Runtime query provider lookup.
   - It returns structured Runtime diagnostics for missing query, provider exception, type mismatch, unsupported operator, or non-bool top-level results.
+- Runtime flow now uses the evaluator for conditional choices and conditional jumps:
+  - `CreateSnapshot()` exposes only visible choice options in `CurrentNode`.
+  - `Choose(groupIndex, optionIndex)` treats `optionIndex` as visible option index and records the original option index in choice facts.
+  - `Continue()` resolves conditional jumps in source order with first true wins, then falls back to `DefaultNext`.
+  - `LastError` and snapshot `LastError` report flow errors such as missing visible choice, missing target, condition evaluation failure, or no matching conditional jump / fallback.
 - `NarrativeRuntime.CreateSnapshot()` returns `inscape.runtime-state` data with the current state, current Compiler node, and `ReadingProgress` for editor Player integration.
 - `NarrativeRuntime.ExportState()` returns the P3 minimal formal Runtime State shape: `format`, `formatVersion`, `runtimeVersion`, `scriptVersion`, `position`, `flow`, `facts`, `random`, and `host.checkpointId`.
 - `NarrativeRuntime.ValidateStateAgainstCurrentScript()` reports `compatible`, `migratable`, or `incompatible` without silently repairing state.
@@ -30,4 +36,4 @@ Current baseline:
 - Formal Runtime State does not include full Log, full Rollback stack, full Trace Replay, or gameplay state ownership.
 - Runtime does not parse `.inscape` text and does not know about VSCode, HTML Preview, UnitySample, or Host Bridge details.
 - Runtime does not own gameplay state such as inventory, quest stage, trust, combat result, player position, or economy values; those belong behind host delegate queries.
-- Runtime flow does not yet use the condition evaluator for choice filtering or conditional jumps; that is the next P4 step.
+- Runtime does not yet record branch query receipts, dispatch actions, maintain Log / Backlog, or export the full P4 Runtime substate blob.

@@ -12,6 +12,10 @@ namespace Inscape.Runtime {
 
         public NarrativeRuntimeStateModel State { get; }
 
+        public NarrativeRuntimeQueryProviderModel QueryProvider { get; set; }
+
+        public NarrativeRuntimeFlowErrorModel? LastError { get; private set; }
+
         public StoryGraphNodeModel? CurrentNode {
             get {
                 if (State.CurrentNodeName.Length == 0 || !nodesByName.ContainsKey(State.CurrentNodeName)) {
@@ -25,9 +29,11 @@ namespace Inscape.Runtime {
         public NarrativeRuntime() {
             nodesByName = new Dictionary<string, StoryGraphNodeModel>();
             State = new NarrativeRuntimeStateModel();
+            QueryProvider = new NarrativeRuntimeQueryProviderModel();
         }
 
         public void LoadGraph(DslScriptDocumentModel narrativeGraph) {
+            ClearLastError();
             graph = narrativeGraph;
             nodesByName.Clear();
             State.CurrentNodeName = string.Empty;
@@ -43,8 +49,9 @@ namespace Inscape.Runtime {
         }
 
         public bool Start(string entryNodeName = "") {
+            ClearLastError();
             if (graph == null || graph.Nodes.Count == 0) {
-                return false;
+                return SetFlowError("IRF001", "graph", "Runtime graph is not loaded.");
             }
 
             string nodeName = entryNodeName.Length > 0 ? entryNodeName : graph.Nodes[0].Name;
@@ -52,31 +59,39 @@ namespace Inscape.Runtime {
         }
 
         public bool Continue() {
+            ClearLastError();
             StoryGraphNodeModel? node = CurrentNode;
-            if (node == null || node.DefaultNext.Length == 0) {
+            if (node == null) {
+                return SetFlowError("IRF001", "currentNode", "Runtime current node is missing.");
+            }
+
+            if (!TryResolveContinueTarget(node, out string target)) {
                 return false;
             }
 
-            return EnterNode(node.DefaultNext, false);
+            return EnterNode(target, false);
         }
 
         public bool Choose(int groupIndex, int optionIndex) {
+            ClearLastError();
             StoryGraphNodeModel? node = CurrentNode;
             if (node == null || groupIndex < 0 || groupIndex >= node.Choices.Count) {
+                return SetFlowError("IRF002", "choice.groupIndex", "Runtime choice group is not available.");
+            }
+
+            if (!TryResolveVisibleChoice(node,
+                                         groupIndex,
+                                         optionIndex,
+                                         out DslScriptChoiceOptionModel option,
+                                         out int originalOptionIndex)) {
                 return false;
             }
 
-            DslScriptChoiceGroupModel group = node.Choices[groupIndex];
-            if (optionIndex < 0 || optionIndex >= group.Options.Count) {
-                return false;
-            }
-
-            string target = group.Options[optionIndex].Target;
+            string target = option.Target;
             if (target.Length == 0 || !nodesByName.ContainsKey(target)) {
-                return false;
+                return SetFlowError("IRF004", "choice.target", "Runtime choice target is not available: " + target);
             }
 
-            DslScriptChoiceOptionModel option = group.Options[optionIndex];
             if (!EnterNode(target, false)) {
                 return false;
             }
@@ -84,7 +99,7 @@ namespace Inscape.Runtime {
             State.Facts.ChoiceHistory.Add(new NarrativeRuntimeChoiceFactModel {
                 NodeName = node.Name,
                 GroupIndex = groupIndex,
-                OptionIndex = optionIndex,
+                OptionIndex = originalOptionIndex,
                 OptionAnchor = option.Anchor,
                 TargetNodeName = target,
             });
@@ -92,14 +107,15 @@ namespace Inscape.Runtime {
         }
 
         public bool AdvanceFlow() {
+            ClearLastError();
             StoryGraphNodeModel? node = CurrentNode;
             if (node == null) {
-                return false;
+                return SetFlowError("IRF001", "currentNode", "Runtime current node is missing.");
             }
 
             int maxVisibleStepCount = GetMaxVisibleStepCount(node);
             if (State.VisibleStepCount >= maxVisibleStepCount) {
-                return false;
+                return SetFlowError("IRF007", "visibleStepCount", "Runtime cannot advance flow from the current step.");
             }
 
             State.VisibleStepCount += 1;
@@ -108,8 +124,9 @@ namespace Inscape.Runtime {
         }
 
         public bool RewindFlow() {
+            ClearLastError();
             if (State.VisibleStepCount <= 0) {
-                return false;
+                return SetFlowError("IRF008", "visibleStepCount", "Runtime cannot rewind flow from the current step.");
             }
 
             State.VisibleStepCount -= 1;
@@ -117,13 +134,14 @@ namespace Inscape.Runtime {
         }
 
         public bool Rewind() {
+            ClearLastError();
             if (State.Path.Count <= 1) {
-                return false;
+                return SetFlowError("IRF009", "path", "Runtime cannot rewind without a previous node.");
             }
 
             string previousNodeName = State.Path[State.Path.Count - 2];
             if (!nodesByName.ContainsKey(previousNodeName)) {
-                return false;
+                return SetFlowError("IRF004", "path.previousNode", "Runtime previous node is not available: " + previousNodeName);
             }
 
             State.Path.RemoveAt(State.Path.Count - 1);
@@ -133,15 +151,16 @@ namespace Inscape.Runtime {
         }
 
         public bool Restore(NarrativeRuntimeStateModel state) {
+            ClearLastError();
             if (state.CurrentNodeName.Length > 0 && !nodesByName.ContainsKey(state.CurrentNodeName)) {
-                return false;
+                return SetFlowError("IRF004", "state.currentNodeName", "Runtime restore node is not available: " + state.CurrentNodeName);
             }
 
             StoryGraphNodeModel? restoredNode = state.CurrentNodeName.Length > 0
                 ? nodesByName[state.CurrentNodeName]
                 : null;
             if (state.VisibleStepCount < 0 || (restoredNode != null && state.VisibleStepCount > GetMaxVisibleStepCount(restoredNode))) {
-                return false;
+                return SetFlowError("IRF007", "state.visibleStepCount", "Runtime restore visible step count is out of range.");
             }
 
             State.CurrentNodeName = state.CurrentNodeName;
@@ -153,10 +172,13 @@ namespace Inscape.Runtime {
         }
 
         public NarrativeRuntimeSnapshotModel CreateSnapshot() {
+            StoryGraphNodeModel? currentNode = CurrentNode;
+            StoryGraphNodeModel? visibleNode = SnapshotVisibleNode(currentNode);
             return new NarrativeRuntimeSnapshotModel {
-                ReadingProgress = SnapshotReadingProgress(),
+                ReadingProgress = SnapshotReadingProgress(currentNode, visibleNode),
                 State = SnapshotState(),
-                CurrentNode = CurrentNode,
+                CurrentNode = visibleNode,
+                LastError = CloneLastError(LastError),
             };
         }
 
@@ -307,8 +329,7 @@ namespace Inscape.Runtime {
             };
         }
 
-        NarrativeRuntimeReadingProgressModel SnapshotReadingProgress() {
-            StoryGraphNodeModel? node = CurrentNode;
+        NarrativeRuntimeReadingProgressModel SnapshotReadingProgress(StoryGraphNodeModel? node, StoryGraphNodeModel? visibleNode) {
             int contentStepCount = GetContentStepCount(node);
             int maxVisibleStepCount = GetMaxVisibleStepCount(node);
             return new NarrativeRuntimeReadingProgressModel {
@@ -317,14 +338,159 @@ namespace Inscape.Runtime {
                 VisibleStepCount = State.VisibleStepCount,
                 CanAdvance = State.VisibleStepCount < maxVisibleStepCount,
                 CanRewind = State.VisibleStepCount > 0,
-                IsChoiceStageVisible = node != null && node.Choices.Count > 0 && State.VisibleStepCount > contentStepCount,
-                IsContinueStageVisible = node != null && node.DefaultNext.Length > 0 && State.VisibleStepCount > contentStepCount,
+                IsChoiceStageVisible = visibleNode != null && visibleNode.Choices.Count > 0 && State.VisibleStepCount > contentStepCount,
+                IsContinueStageVisible = node != null
+                    && (node.DefaultNext.Length > 0 || node.ConditionalJumps.Count > 0)
+                    && State.VisibleStepCount > contentStepCount,
             };
+        }
+
+        bool TryResolveContinueTarget(StoryGraphNodeModel node, out string target) {
+            target = string.Empty;
+
+            for (int i = 0; i < node.ConditionalJumps.Count; i += 1) {
+                DslScriptConditionalJumpModel jump = node.ConditionalJumps[i];
+                if (!TryEvaluateCondition(jump.Condition,
+                                          "conditional-jump",
+                                          "conditionalJumps[" + i + "].condition",
+                                          out bool conditionResult)) {
+                    return false;
+                }
+
+                if (!conditionResult) {
+                    continue;
+                }
+
+                if (jump.Target.Length == 0 || !nodesByName.ContainsKey(jump.Target)) {
+                    return SetFlowError("IRF004",
+                                        "conditionalJumps[" + i + "].target",
+                                        "Runtime conditional jump target is not available: " + jump.Target);
+                }
+
+                target = jump.Target;
+                return true;
+            }
+
+            if (node.DefaultNext.Length > 0) {
+                if (!nodesByName.ContainsKey(node.DefaultNext)) {
+                    return SetFlowError("IRF004",
+                                        "defaultNext",
+                                        "Runtime fallback target is not available: " + node.DefaultNext);
+                }
+
+                target = node.DefaultNext;
+                return true;
+            }
+
+            return SetFlowError("IRF006", "continue", "Runtime has no conditional jump match or fallback target.");
+        }
+
+        bool TryResolveVisibleChoice(StoryGraphNodeModel node,
+                                     int groupIndex,
+                                     int visibleOptionIndex,
+                                     out DslScriptChoiceOptionModel option,
+                                     out int originalOptionIndex) {
+            option = new DslScriptChoiceOptionModel();
+            originalOptionIndex = -1;
+
+            List<VisibleChoiceOptionResolution> visibleOptions = ResolveVisibleChoiceOptions(node.Choices[groupIndex],
+                                                                                            groupIndex);
+            if (LastError != null) {
+                return false;
+            }
+
+            if (visibleOptionIndex < 0 || visibleOptionIndex >= visibleOptions.Count) {
+                return SetFlowError("IRF003", "choice.optionIndex", "Runtime visible choice option is not available.");
+            }
+
+            option = visibleOptions[visibleOptionIndex].Option;
+            originalOptionIndex = visibleOptions[visibleOptionIndex].OriginalOptionIndex;
+            return true;
+        }
+
+        StoryGraphNodeModel? SnapshotVisibleNode(StoryGraphNodeModel? node) {
+            if (node == null) {
+                return null;
+            }
+
+            StoryGraphNodeModel snapshot = new StoryGraphNodeModel {
+                Name = node.Name,
+                Source = node.Source,
+                DefaultNext = node.DefaultNext,
+            };
+            snapshot.Lines.AddRange(node.Lines);
+            snapshot.ConditionalJumps.AddRange(node.ConditionalJumps);
+
+            for (int groupIndex = 0; groupIndex < node.Choices.Count; groupIndex += 1) {
+                DslScriptChoiceGroupModel group = node.Choices[groupIndex];
+                List<VisibleChoiceOptionResolution> visibleOptions = ResolveVisibleChoiceOptions(group, groupIndex);
+                if (visibleOptions.Count == 0) {
+                    continue;
+                }
+
+                DslScriptChoiceGroupModel visibleGroup = new DslScriptChoiceGroupModel {
+                    Prompt = group.Prompt,
+                    Anchor = group.Anchor,
+                    Source = group.Source,
+                };
+                for (int i = 0; i < visibleOptions.Count; i += 1) {
+                    visibleGroup.Options.Add(visibleOptions[i].Option);
+                }
+
+                snapshot.Choices.Add(visibleGroup);
+            }
+
+            return snapshot;
+        }
+
+        List<VisibleChoiceOptionResolution> ResolveVisibleChoiceOptions(DslScriptChoiceGroupModel group,
+                                                                        int groupIndex) {
+            List<VisibleChoiceOptionResolution> visibleOptions = new List<VisibleChoiceOptionResolution>();
+            for (int optionIndex = 0; optionIndex < group.Options.Count; optionIndex += 1) {
+                DslScriptChoiceOptionModel option = group.Options[optionIndex];
+                if (!TryEvaluateCondition(option.Condition,
+                                          "choice-condition",
+                                          "choices[" + groupIndex + "].options[" + optionIndex + "].condition",
+                                          out bool conditionResult)) {
+                    return visibleOptions;
+                }
+
+                if (conditionResult) {
+                    visibleOptions.Add(new VisibleChoiceOptionResolution(option, optionIndex));
+                }
+            }
+
+            return visibleOptions;
+        }
+
+        bool TryEvaluateCondition(DslScriptConditionModel? condition,
+                                  string context,
+                                  string path,
+                                  out bool conditionResult) {
+            conditionResult = true;
+            if (condition == null) {
+                return true;
+            }
+
+            NarrativeRuntimeConditionEvaluationModel evaluation = NarrativeRuntimeConditionEvaluatorDomain.Evaluate(condition.Expression,
+                                                                                                                    State,
+                                                                                                                    QueryProvider,
+                                                                                                                    context);
+            if (!evaluation.Succeeded) {
+                LastError = CreateFlowError("IRF005",
+                                            path,
+                                            "Runtime condition evaluation failed.");
+                LastError.ConditionDiagnostics.AddRange(evaluation.Diagnostics);
+                return false;
+            }
+
+            conditionResult = evaluation.Value.BoolValue;
+            return true;
         }
 
         bool EnterNode(string nodeName, bool resetPath) {
             if (!nodesByName.ContainsKey(nodeName)) {
-                return false;
+                return SetFlowError("IRF004", "nodeName", "Runtime target node is not available: " + nodeName);
             }
 
             State.CurrentNodeName = nodeName;
@@ -398,6 +564,39 @@ namespace Inscape.Runtime {
             return snapshot;
         }
 
+        void ClearLastError() {
+            LastError = null;
+        }
+
+        bool SetFlowError(string code, string path, string message) {
+            LastError = CreateFlowError(code, path, message);
+            return false;
+        }
+
+        static NarrativeRuntimeFlowErrorModel CreateFlowError(string code, string path, string message) {
+            return new NarrativeRuntimeFlowErrorModel {
+                Code = code,
+                Severity = "error",
+                Path = path,
+                Message = message,
+            };
+        }
+
+        static NarrativeRuntimeFlowErrorModel? CloneLastError(NarrativeRuntimeFlowErrorModel? error) {
+            if (error == null) {
+                return null;
+            }
+
+            NarrativeRuntimeFlowErrorModel clone = new NarrativeRuntimeFlowErrorModel {
+                Code = error.Code,
+                Severity = error.Severity,
+                Path = error.Path,
+                Message = error.Message,
+            };
+            clone.ConditionDiagnostics.AddRange(error.ConditionDiagnostics);
+            return clone;
+        }
+
         static void AddValidationDiagnostic(NarrativeRuntimeStateValidationModel validation,
                                             NarrativeRuntimeStateValidationStatusModel status,
                                             string code,
@@ -437,7 +636,7 @@ namespace Inscape.Runtime {
             }
 
             int contentStepCount = GetContentStepCount(node);
-            bool hasTerminalChoiceStage = node.Choices.Count > 0 || node.DefaultNext.Length > 0;
+            bool hasTerminalChoiceStage = node.Choices.Count > 0 || node.ConditionalJumps.Count > 0 || node.DefaultNext.Length > 0;
             return contentStepCount + (hasTerminalChoiceStage ? 1 : 0);
         }
 
@@ -469,6 +668,19 @@ namespace Inscape.Runtime {
             }
 
             return string.Empty;
+        }
+
+        sealed class VisibleChoiceOptionResolution {
+
+            public DslScriptChoiceOptionModel Option { get; }
+
+            public int OriginalOptionIndex { get; }
+
+            public VisibleChoiceOptionResolution(DslScriptChoiceOptionModel option, int originalOptionIndex) {
+                Option = option;
+                OriginalOptionIndex = originalOptionIndex;
+            }
+
         }
 
     }

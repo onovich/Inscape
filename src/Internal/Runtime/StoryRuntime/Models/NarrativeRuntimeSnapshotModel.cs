@@ -14,6 +14,8 @@ namespace Inscape.Runtime {
 
         public NarrativeRuntimeReadingProgressModel ReadingProgress { get; set; }
 
+        public NarrativeRuntimeFlowErrorModel? LastError { get; set; }
+
         public NarrativeRuntimeSnapshotModel() {
             Format = "inscape.runtime-state";
             FormatVersion = 1;

@@ -266,6 +266,140 @@ Narrator: Second.
             AssertEqual("IRC004", FirstConditionDiagnosticCode(providerError), "Provider exception diagnostic code");
         }
 
+        static void NarrativeRuntimeFiltersConditionalChoicesByVisibleIndex() {
+            DslScriptCompilationResultModel compilation = Compile("""
+# start
+? Choose
+- [has_item("silver_key")] Use silver key -> gate.open
+- Knock -> gate.knock
+
+# gate.open
+Narrator: Open.
+
+# gate.knock
+Narrator: Knock.
+""");
+            AssertFalse(compilation.HasErrors, "Conditional choice fixture should compile.");
+
+            NarrativeRuntime runtime = new NarrativeRuntime();
+            runtime.LoadGraph(compilation.Document);
+            runtime.QueryProvider = new NarrativeRuntimeQueryProviderModel {
+                Kind = NarrativeRuntimeQueryProviderKindModel.Mock,
+            };
+            runtime.QueryProvider.MockValues.Add(CreateValueEntry("has_item",
+                                                                  NarrativeRuntimeQueryValueModel.FromBool(false),
+                                                                  NarrativeRuntimeQueryValueModel.FromString("silver_key")));
+
+            AssertTrue(runtime.Start("start"), "Runtime should start conditional choice fixture.");
+            NarrativeRuntimeSnapshotModel snapshot = runtime.CreateSnapshot();
+            AssertEqual(1, snapshot.CurrentNode?.Choices[0].Options.Count ?? -1, "Runtime snapshot should expose only visible options.");
+            AssertEqual("Knock", snapshot.CurrentNode?.Choices[0].Options[0].Text ?? string.Empty, "Runtime visible option text");
+
+            AssertFalse(runtime.Choose(0, 1), "Runtime should reject a missing visible option index.");
+            AssertEqual("IRF003", runtime.LastError?.Code ?? string.Empty, "Runtime missing visible option error");
+
+            AssertTrue(runtime.Choose(0, 0), "Runtime should choose the first visible option.");
+            AssertEqual("gate.knock", runtime.State.CurrentNodeName, "Runtime choice should use visible option index.");
+            AssertEqual(1, runtime.State.Facts.ChoiceHistory[0].OptionIndex, "Runtime choice fact should preserve original option index.");
+        }
+
+        static void NarrativeRuntimeFollowsFirstTrueConditionalJump() {
+            DslScriptCompilationResultModel compilation = Compile("""
+# start
+Narrator: Start.
+? [has_item("silver_key")] -> gate.open
+? [trust("mira") >= 3] -> mira.help
+-> gate.locked
+
+# gate.open
+Narrator: Open.
+
+# mira.help
+Narrator: Help.
+
+# gate.locked
+Narrator: Locked.
+""");
+            AssertFalse(compilation.HasErrors, "Conditional jump fixture should compile.");
+
+            NarrativeRuntime runtime = new NarrativeRuntime();
+            runtime.LoadGraph(compilation.Document);
+            runtime.QueryProvider = new NarrativeRuntimeQueryProviderModel {
+                Kind = NarrativeRuntimeQueryProviderKindModel.Mock,
+            };
+            runtime.QueryProvider.MockValues.Add(CreateValueEntry("has_item",
+                                                                  NarrativeRuntimeQueryValueModel.FromBool(true),
+                                                                  NarrativeRuntimeQueryValueModel.FromString("silver_key")));
+            runtime.QueryProvider.MockValues.Add(CreateValueEntry("trust",
+                                                                  NarrativeRuntimeQueryValueModel.FromNumber(5),
+                                                                  NarrativeRuntimeQueryValueModel.FromString("mira")));
+
+            AssertTrue(runtime.Start("start"), "Runtime should start conditional jump fixture.");
+            AssertTrue(runtime.Continue(), "Runtime should follow a true conditional jump.");
+            AssertEqual("gate.open", runtime.State.CurrentNodeName, "Runtime conditional jump should use first true target.");
+        }
+
+        static void NarrativeRuntimeFollowsConditionalFallback() {
+            DslScriptCompilationResultModel compilation = Compile("""
+# start
+Narrator: Start.
+? [has_item("silver_key")] -> gate.open
+? [trust("mira") >= 3] -> mira.help
+-> gate.locked
+
+# gate.open
+Narrator: Open.
+
+# mira.help
+Narrator: Help.
+
+# gate.locked
+Narrator: Locked.
+""");
+            AssertFalse(compilation.HasErrors, "Conditional fallback fixture should compile.");
+
+            NarrativeRuntime runtime = new NarrativeRuntime();
+            runtime.LoadGraph(compilation.Document);
+            runtime.QueryProvider = new NarrativeRuntimeQueryProviderModel {
+                Kind = NarrativeRuntimeQueryProviderKindModel.Mock,
+            };
+            runtime.QueryProvider.MockValues.Add(CreateValueEntry("has_item",
+                                                                  NarrativeRuntimeQueryValueModel.FromBool(false),
+                                                                  NarrativeRuntimeQueryValueModel.FromString("silver_key")));
+            runtime.QueryProvider.MockValues.Add(CreateValueEntry("trust",
+                                                                  NarrativeRuntimeQueryValueModel.FromNumber(1),
+                                                                  NarrativeRuntimeQueryValueModel.FromString("mira")));
+
+            AssertTrue(runtime.Start("start"), "Runtime should start conditional fallback fixture.");
+            AssertTrue(runtime.Continue(), "Runtime should follow fallback when conditional jumps are false.");
+            AssertEqual("gate.locked", runtime.State.CurrentNodeName, "Runtime conditional fallback target");
+        }
+
+        static void NarrativeRuntimeReportsMissingConditionalFallback() {
+            DslScriptCompilationResultModel compilation = Compile("""
+# start
+Narrator: Start.
+? [has_item("silver_key")] -> gate.open
+
+# gate.open
+Narrator: Open.
+""");
+            AssertTrue(compilation.HasErrors, "Compiler should still report missing conditional fallback.");
+
+            NarrativeRuntime runtime = new NarrativeRuntime();
+            runtime.LoadGraph(compilation.Document);
+            runtime.QueryProvider = new NarrativeRuntimeQueryProviderModel {
+                Kind = NarrativeRuntimeQueryProviderKindModel.Mock,
+            };
+            runtime.QueryProvider.MockValues.Add(CreateValueEntry("has_item",
+                                                                  NarrativeRuntimeQueryValueModel.FromBool(false),
+                                                                  NarrativeRuntimeQueryValueModel.FromString("silver_key")));
+
+            AssertTrue(runtime.Start("start"), "Runtime should start missing fallback fixture for error-path coverage.");
+            AssertFalse(runtime.Continue(), "Runtime should fail when no conditional jump matches and no fallback exists.");
+            AssertEqual("IRF006", runtime.LastError?.Code ?? string.Empty, "Runtime missing conditional fallback error");
+        }
+
         static void NarrativeRuntimeExportsAndValidatesMinimalRuntimeState() {
             DslScriptCompilationResultModel compilation = Compile("""
 # start
