@@ -1,6 +1,6 @@
 # TODO
 
-状态：持续维护，P4 Round 10 CLI Runtime playable driver 第一刀完成。`runtime-project` 现已能用 JSON 输入驱动 query provider、action dispatcher、action result / resume、P4 substate import / export / validation，并通过 snapshot `logEntries` 输出运行 Log；下一轮进入 P4 Round 11 Editor host contract guard。
+状态：持续维护，P4 Round 11 Editor host contract guard 完成。VSCode / SelfHostedEditor `check:structure` 现已扫描 host 产品侧 Runtime 语义实现标记，防止 ExternalSupport 复制条件求值、query evaluator、action dispatcher、Log builder、substate import/export/validation 或 Runtime Inspector 产品化语义；下一轮进入 P4 Round 12 integration smoke + 文档收口。
 
 SelfHostedEditor regression invariant: Preview choice clicks must advance the reading Preview to the target block and reveal the target block title in the editor. Compiler-project Preview data must never silently lose `previewLines`: if a returned Compiler graph has source lines but missing or mismatched `previewLines`, Preview must report a compiler graph contract error instead of falling back to the UI-only draft model. `npm --prefix src\ExternalSupport\SelfHostedEditor run check:model` covers both invariants so future Runtime / navigation work does not regress them.
 
@@ -217,7 +217,8 @@ npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
 - [x] 完成 P4 Round 8 Log / Backlog 第一刀。2026-06-18 审计见 [SelfHostedEditor P4 Log Backlog Audit](self-hosted-editor-p4-log-backlog-audit.md)；`Internal/Runtime` 新增 `LogEntries`，只记录实际 reveal 的正文行，默认字段覆盖 sequence / nodeId / lineId / speaker / text，metadata / choice stage / 条件隐藏分支文本不进入默认 Log，formal Runtime State 不包含完整 Log。
 - [x] 完成 P4 Round 9 Save / Load 子状态 blob 第一刀。2026-06-18 审计见 [SelfHostedEditor P4 Substate Audit](self-hosted-editor-p4-substate-audit.md)；`Internal/Runtime` 新增 `inscape.runtime-substate`，通过 `ExportSubstate()` / `ImportSubstate()` 保存并恢复 position、flow、facts、pending action、branch query receipts 与 opaque host checkpoint id；`ValidateSubstateAgainstCurrentScript()` 继续只报告，不静默修复，substate 不保存宿主业务状态、完整 Log 或完整 action request history。
 - [x] 完成 P4 Round 10 CLI Runtime playable driver 第一刀。2026-06-18 审计见 [SelfHostedEditor P4 CLI Runtime Audit](self-hosted-editor-p4-cli-runtime-audit.md)；`runtime-project` 新增 `--query-provider`、`--action-dispatcher`、`--action-result`、`--resume-action`、`--substate`、`--export-substate` 与 `--validate-substate`，保持旧 `--state` / `--export-state` / `--validate-state` 兼容，并用 CLI tests 串起 P4 fixture 的 query、fire、wait pending / resume、substate 和 log output。
-- [ ] 进入 P4 Round 11 Editor host contract guard：确认 VSCode / SelfHostedEditor 不复制 Runtime 条件求值、query evaluator、action dispatcher、Log builder 或 substate 语义；如需改 SelfHostedEditor Runtime bridge，只做 shared payload 适配和 smoke，不做产品化 Runtime Inspector UI。
+- [x] 完成 P4 Round 11 Editor host contract guard。2026-06-18 审计见 [SelfHostedEditor P4 Editor Host Contract Guard Audit](self-hosted-editor-p4-editor-host-contract-guard-audit.md)；VSCode / SelfHostedEditor `check:structure` 现已扫描 host 产品侧 Runtime 语义实现标记，Round 11 验收通过 `check:semantic-parity`、`check:model`、`check:semantic-parity-http` 与 ExternalSupport marker grep；本轮未改 Runtime bridge 行为、未新增 Runtime Inspector UI。
+- [ ] 进入 P4 Round 12 integration smoke + 文档收口：串起条件选项、条件跳转、delegate / mock query、`fire` action、`wait` 或 `handoff` pending / resume、Log、export / import state、query receipt，并输出 `docs/self-hosted-editor-p4-integration-audit.md`。
 - [ ] 高级运行时调试方向池继续评估 Rollback checkpoint 的准确粒度、跨宿主 action 时的回退阻断 / checkpoint 规则、Trace Replay、Flashback Playback 与时空穿越式特殊倒放；这些不进入 P3 / P4 第一刀实现，也不作为当前正式排期 phase。
 
 ### 暂停 / 明确后置

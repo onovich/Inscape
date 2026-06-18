@@ -1,12 +1,22 @@
 # Agent 接手指南
 
-状态：P4 Round 10 CLI Runtime playable driver 第一刀完成
+状态：P4 Round 11 Editor host contract guard 完成
 
 最后更新：2026-06-18
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-18 SelfHostedEditor P4 Round 11 Editor Host Contract Guard 快照
+
+P4 Runtime playable MVP 已完成第十一轮 Editor host contract guard，不代表 P4 MVP 已完成。
+- 本轮审计见 [SelfHostedEditor P4 Editor Host Contract Guard Audit](self-hosted-editor-p4-editor-host-contract-guard-audit.md)。
+- VSCode `check:structure` 新增 host product semantic marker 扫描，覆盖 `Scripts/` 与 `Resources/` 下 JS / JSON / snippets，守住 VSCode 不复制 Runtime 条件求值、query evaluator、action dispatcher、Log builder、substate import/export/validation 或 Runtime Inspector 产品化语义。
+- SelfHostedEditor `check:structure` 新增 host product semantic marker 扫描，覆盖 `Desktop/`、`Scripts/` 与 `Resources/` 下 JS / CJS / HTML / JSON；`DevScripts/` 仍只承载 contract、smoke 与测试夹具，不作为产品 Runtime 语义来源。
+- 本轮未改 SelfHostedEditor Runtime bridge 行为，未新增 Runtime Inspector UI；Preview choice click invariant 继续由 `check:model` 覆盖。
+- Round 11 验收已通过：`.NET build`、Internal tests、VSCode `node --check` / `check:structure` / `check:semantic-parity`，SelfHostedEditor `check:syntax` / `check:structure` / `check:model` / `check:semantic-parity-http`，ExternalSupport runtime semantic marker grep 与 `git diff --check`。
+- 下一轮进入 P4 Round 12：P4 integration smoke + 文档收口，串起条件、query provider、action pending / resume、Log、state/substate 与 query receipt。
 
 ### 2026-06-18 SelfHostedEditor P4 Round 10 CLI Runtime 快照
 

@@ -248,6 +248,37 @@ const forbiddenRendererRuntimePatterns = [
   },
 ];
 
+const productRuntimeSemanticScanRoots = [
+  path.join(moduleRoot, "Desktop"),
+  path.join(moduleRoot, "Scripts"),
+  path.join(moduleRoot, "Resources"),
+];
+const productRuntimeSemanticScanExtensions = new Set([
+  ".cjs",
+  ".html",
+  ".js",
+  ".json",
+]);
+const forbiddenRuntimeSemanticMarkers = [
+  ["Condition", "Evaluator"],
+  ["Query", "Evaluator"],
+  ["Action", "Dispatcher"],
+  ["Runtime", "Log", "Builder"],
+  ["Log", "Builder"],
+  ["Sub", "state", "Importer"],
+  ["Sub", "state", "Exporter"],
+  ["Runtime", "Inspector"],
+  ["Validate", "Sub", "state", "Against", "Current", "Script"],
+  ["Export", "Sub", "state"],
+  ["Import", "Sub", "state"],
+  ["evaluate", "Condition"],
+  ["evaluate", "Query"],
+  ["dispatch", "Runtime", "Action"],
+  ["import", "Sub", "state"],
+  ["export", "Sub", "state"],
+  ["validate", "Sub", "state", "Against", "Current", "Script"],
+].map((parts) => parts.join(""));
+
 let failed = false;
 
 for (const relativePath of requiredPaths) {
@@ -316,6 +347,18 @@ if (fs.existsSync(scriptsRoot)) {
   }
 }
 
+for (const scanRoot of productRuntimeSemanticScanRoots) {
+  if (!fs.existsSync(scanRoot)) {
+    continue;
+  }
+
+  for (const filePath of getProductRuntimeSemanticFiles(scanRoot)) {
+    const relativePath = path.relative(moduleRoot, filePath).replace(/\\/g, "/");
+    const text = fs.readFileSync(filePath, "utf8");
+    checkRuntimeSemanticBoundary(relativePath, text);
+  }
+}
+
 function getJavaScriptFiles(rootPath) {
   const files = [];
   for (const entry of fs.readdirSync(rootPath, { withFileTypes: true })) {
@@ -331,6 +374,32 @@ function getJavaScriptFiles(rootPath) {
   }
 
   return files;
+}
+
+function getProductRuntimeSemanticFiles(rootPath) {
+  const files = [];
+  for (const entry of fs.readdirSync(rootPath, { withFileTypes: true })) {
+    const fullPath = path.join(rootPath, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...getProductRuntimeSemanticFiles(fullPath));
+      continue;
+    }
+
+    if (entry.isFile() && productRuntimeSemanticScanExtensions.has(path.extname(entry.name))) {
+      files.push(fullPath);
+    }
+  }
+
+  return files;
+}
+
+function checkRuntimeSemanticBoundary(relativePath, text) {
+  for (const marker of forbiddenRuntimeSemanticMarkers) {
+    if (text.includes(marker)) {
+      console.error(`SelfHostedEditor host product code must not contain runtime semantic implementation marker "${marker}": ${relativePath}`);
+      failed = true;
+    }
+  }
 }
 
 const htmlPath = path.join(moduleRoot, "Resources/Workbench/SelfHostedEditorWorkbenchDocument.html");

@@ -5,6 +5,15 @@ const path = require("path");
 
 const root = path.resolve(__dirname, "..");
 const scriptsRoot = path.join(root, "Scripts");
+const productRuntimeSemanticScanRoots = [
+    scriptsRoot,
+    path.join(root, "Resources"),
+];
+const productRuntimeSemanticScanExtensions = new Set([
+    ".js",
+    ".json",
+    ".code-snippets",
+]);
 const requiredPaths = [
     "DevScripts/VSCodeSemanticParityContractCheck.js",
 ];
@@ -42,6 +51,25 @@ const weakNameParts = [
     "Support",
     "Utils",
 ];
+const forbiddenRuntimeSemanticMarkers = [
+    ["Condition", "Evaluator"],
+    ["Query", "Evaluator"],
+    ["Action", "Dispatcher"],
+    ["Runtime", "Log", "Builder"],
+    ["Log", "Builder"],
+    ["Sub", "state", "Importer"],
+    ["Sub", "state", "Exporter"],
+    ["Runtime", "Inspector"],
+    ["Validate", "Sub", "state", "Against", "Current", "Script"],
+    ["Export", "Sub", "state"],
+    ["Import", "Sub", "state"],
+    ["evaluate", "Condition"],
+    ["evaluate", "Query"],
+    ["dispatch", "Runtime", "Action"],
+    ["import", "Sub", "state"],
+    ["export", "Sub", "state"],
+    ["validate", "Sub", "state", "Against", "Current", "Script"],
+].map((parts) => parts.join(""));
 const findings = [];
 
 function walk(dir) {
@@ -147,6 +175,14 @@ function checkLocalRequires(filePath, text) {
     }
 }
 
+function checkRuntimeSemanticBoundary(filePath, text) {
+    for (const marker of forbiddenRuntimeSemanticMarkers) {
+        if (text.includes(marker)) {
+            report(filePath, `runtime semantic implementation marker "${marker}" must stay out of VSCode host product code`);
+        }
+    }
+}
+
 checkTopLevelEntries();
 for (const requiredPath of requiredPaths) {
     const fullPath = path.join(root, requiredPath);
@@ -160,6 +196,19 @@ for (const filePath of walk(scriptsRoot).filter((file) => file.endsWith(".js")))
     checkFileName(filePath);
     checkClassNames(filePath, text);
     checkLocalRequires(filePath, text);
+}
+for (const scanRoot of productRuntimeSemanticScanRoots) {
+    if (!fs.existsSync(scanRoot)) {
+        continue;
+    }
+
+    for (const filePath of walk(scanRoot)) {
+        if (!productRuntimeSemanticScanExtensions.has(path.extname(filePath))) {
+            continue;
+        }
+
+        checkRuntimeSemanticBoundary(filePath, fs.readFileSync(filePath, "utf8"));
+    }
 }
 
 const packageJson = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
