@@ -39,6 +39,8 @@ namespace Inscape.Tests {
                 ("language server stdio session serves project requests", LanguageServerStdioSessionServesProjectRequests),
                 ("narrative runtime consumes compiler graph", NarrativeRuntimeConsumesCompilerGraph),
                 ("narrative runtime records internal narrative facts", NarrativeRuntimeRecordsInternalNarrativeFacts),
+                ("narrative runtime records displayed text log", NarrativeRuntimeRecordsDisplayedTextLog),
+                ("narrative runtime log skips hidden conditional text", NarrativeRuntimeLogSkipsHiddenConditionalText),
                 ("narrative runtime query provider uses delegate mock and recorded sources", NarrativeRuntimeQueryProviderUsesDelegateMockAndRecordedSources),
                 ("narrative runtime condition evaluator evaluates compiler ir", NarrativeRuntimeConditionEvaluatorEvaluatesCompilerIr),
                 ("narrative runtime condition evaluator uses internal facts and short circuit", NarrativeRuntimeConditionEvaluatorUsesInternalFactsAndShortCircuit),

@@ -1,12 +1,23 @@
 # Agent 接手指南
 
-状态：P4 Round 7 handoff 控制权移交 / resume 第一刀完成
+状态：P4 Round 8 Log / Backlog 第一刀完成
 
 最后更新：2026-06-18
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-18 SelfHostedEditor P4 Round 8 Log Backlog 快照
+
+P4 Runtime playable MVP 已完成第八轮 Log / Backlog 第一刀，不代表 P4 MVP 已完成。
+- 本轮审计见 [SelfHostedEditor P4 Log Backlog Audit](self-hosted-editor-p4-log-backlog-audit.md)。
+- `Internal/Runtime` 新增 `NarrativeRuntimeLogEntryModel`，最小字段为 `Sequence`、`NodeId`、`LineId`、`Speaker`、`Text`。
+- `NarrativeRuntime.LogEntries` 现在记录通过 `AdvanceFlow()` 实际 reveal 的正文行；metadata、choice stage、choice text 和条件隐藏分支文本不进入默认 Log。
+- `CreateSnapshot()` 暴露克隆后的 `LogEntries`，重复 snapshot 不会新增 log；formal `ExportState()` 仍不包含完整 Log。
+- minimal `Restore(NarrativeRuntimeStateModel)` 会清空 transient log evidence；P4 子状态 blob 仍留给下一轮。
+- ExternalSupport 未新增 condition parser、query evaluator、action dispatcher、Log builder 或 Runtime 语义副本；Internal Runtime 未引入 Unity / Bird / 宿主业务状态。
+- 下一轮进入 P4 Round 9：Save / Load 子状态 blob；保存 position、flow、facts、pending action、必要 branch query receipt、opaque host checkpoint id，不保存宿主业务状态。
 
 ### 2026-06-18 SelfHostedEditor P4 Round 7 Handoff 快照
 
@@ -1605,9 +1616,9 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 
 建议优先做小而闭环的任务，不要直接跳到大规模重构。
 
-1. 进入 P4 Round 8 Log / Backlog 第一刀。
-   - 先读 [P4 Runtime Playable MVP Goal 模式执行指南](self-hosted-editor-p4-goal-mode-execution-guide.md)、[Runtime Playable MVP Contract](runtime-playable-mvp-contract.md)、[SelfHostedEditor P4 Wait Pending Audit](self-hosted-editor-p4-wait-pending-audit.md) 与 [SelfHostedEditor P4 Handoff Audit](self-hosted-editor-p4-handoff-audit.md)。
-   - Runtime 只记录已经实际展示的正文，默认字段为 `speaker`、`text`、`lineId`；条件导致未展示的文本不进入 Log，普通 Runtime State 主体不默认包含完整 Log。
+1. 进入 P4 Round 9 Save / Load 子状态 blob 第一刀。
+   - 先读 [P4 Runtime Playable MVP Goal 模式执行指南](self-hosted-editor-p4-goal-mode-execution-guide.md)、[Runtime Playable MVP Contract](runtime-playable-mvp-contract.md)、[SelfHostedEditor P4 Handoff Audit](self-hosted-editor-p4-handoff-audit.md) 与 [SelfHostedEditor P4 Log Backlog Audit](self-hosted-editor-p4-log-backlog-audit.md)。
+   - 将 P3 `ExportState` 推进到 P4 可恢复子状态 blob，保存 position、flow、facts、pending action、必要 branch query receipt 与 opaque host checkpoint id；继续不保存宿主业务状态。
 
 2. 继续推进 Stable Node ID / 本地化主线。
    - ADR 0013、sidecar 闭环、保守自动重命名识别、VSCode 显式 `Update Stable Node Map` 入口、插入标题后的自动同步、标题重命名人工确认 / 冲突报告、本地化 alignment / audit report，以及相似文本人工候选第一版都已落地。

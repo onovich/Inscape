@@ -25,6 +25,8 @@ namespace Inscape.Runtime {
 
         public List<NarrativeRuntimeActionRequestModel> ActionRequests { get; }
 
+        public List<NarrativeRuntimeLogEntryModel> LogEntries { get; }
+
         public NarrativeRuntimePendingActionModel? PendingAction { get; private set; }
 
         public StoryGraphNodeModel? CurrentNode {
@@ -45,12 +47,14 @@ namespace Inscape.Runtime {
             ActionDispatcher = new NarrativeRuntimeActionDispatcherModel();
             BranchQueryReceipts = new List<NarrativeRuntimeQueryReceiptModel>();
             ActionRequests = new List<NarrativeRuntimeActionRequestModel>();
+            LogEntries = new List<NarrativeRuntimeLogEntryModel>();
         }
 
         public void LoadGraph(DslScriptDocumentModel narrativeGraph) {
             ClearLastError();
             BranchQueryReceipts.Clear();
             ActionRequests.Clear();
+            LogEntries.Clear();
             dispatchedActionKeys.Clear();
             PendingAction = null;
             graph = narrativeGraph;
@@ -71,6 +75,7 @@ namespace Inscape.Runtime {
             ClearLastError();
             BranchQueryReceipts.Clear();
             ActionRequests.Clear();
+            LogEntries.Clear();
             dispatchedActionKeys.Clear();
             PendingAction = null;
             if (graph == null || graph.Nodes.Count == 0) {
@@ -197,6 +202,7 @@ namespace Inscape.Runtime {
             ClearLastError();
             BranchQueryReceipts.Clear();
             ActionRequests.Clear();
+            LogEntries.Clear();
             dispatchedActionKeys.Clear();
             PendingAction = null;
             if (state.CurrentNodeName.Length > 0 && !nodesByName.ContainsKey(state.CurrentNodeName)) {
@@ -229,6 +235,7 @@ namespace Inscape.Runtime {
                 BranchQueryReceipts = CloneQueryReceipts(BranchQueryReceipts),
                 ActionRequests = CloneActionRequests(ActionRequests),
                 PendingAction = ClonePendingAction(PendingAction),
+                LogEntries = CloneLogEntries(LogEntries),
             };
         }
 
@@ -639,9 +646,24 @@ namespace Inscape.Runtime {
                     if (line.Anchor.Length > 0 && !State.Facts.SeenLineAnchors.Contains(line.Anchor)) {
                         State.Facts.SeenLineAnchors.Add(line.Anchor);
                     }
+                    RecordLogEntry(node, line, visibleStepCount);
                     return;
                 }
             }
+        }
+
+        void RecordLogEntry(StoryGraphNodeModel node, DslScriptLineModel line, int visibleStepCount) {
+            if (line.Kind == DslScriptLineKindModel.Metadata || line.Text.Length == 0) {
+                return;
+            }
+
+            LogEntries.Add(new NarrativeRuntimeLogEntryModel {
+                Sequence = LogEntries.Count + 1,
+                NodeId = node.Name,
+                LineId = CreateLogLineId(line, visibleStepCount),
+                Speaker = line.Speaker,
+                Text = line.Text,
+            });
         }
 
         bool DispatchAvailableActions(StoryGraphNodeModel node) {
@@ -910,6 +932,18 @@ namespace Inscape.Runtime {
             return "metadata:" + lineIndex.ToString(CultureInfo.InvariantCulture);
         }
 
+        static string CreateLogLineId(DslScriptLineModel line, int visibleStepCount) {
+            if (line.Anchor.Length > 0) {
+                return line.Anchor;
+            }
+
+            if (line.Source.Line > 0) {
+                return "line:" + line.Source.Line.ToString(CultureInfo.InvariantCulture);
+            }
+
+            return "content:" + visibleStepCount.ToString(CultureInfo.InvariantCulture);
+        }
+
         static int FirstNonWhitespaceIndex(string value) {
             for (int i = 0; i < value.Length; i += 1) {
                 if (!char.IsWhiteSpace(value[i])) {
@@ -1102,6 +1136,22 @@ namespace Inscape.Runtime {
                     Value = CloneQueryValue(argument.Value),
                     SourceLine = argument.SourceLine,
                     SourceColumn = argument.SourceColumn,
+                });
+            }
+
+            return clone;
+        }
+
+        static List<NarrativeRuntimeLogEntryModel> CloneLogEntries(IReadOnlyList<NarrativeRuntimeLogEntryModel> entries) {
+            List<NarrativeRuntimeLogEntryModel> clone = new List<NarrativeRuntimeLogEntryModel>();
+            for (int i = 0; i < entries.Count; i += 1) {
+                NarrativeRuntimeLogEntryModel entry = entries[i];
+                clone.Add(new NarrativeRuntimeLogEntryModel {
+                    Sequence = entry.Sequence,
+                    NodeId = entry.NodeId,
+                    LineId = entry.LineId,
+                    Speaker = entry.Speaker,
+                    Text = entry.Text,
                 });
             }
 

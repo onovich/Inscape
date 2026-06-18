@@ -1,6 +1,6 @@
 # TODO
 
-状态：持续维护，P4 Round 7 `handoff` 控制权移交 / resume 第一刀完成。`Internal/Runtime` 现已能让 `@emit` wait / handoff action 进入 `PendingAction`，通过 request id resume，并保持 formal Runtime State 不包含 action request / pending history；下一轮进入 P4 Round 8 Log / Backlog 第一刀。
+状态：持续维护，P4 Round 8 Log / Backlog 第一刀完成。`Internal/Runtime` 现已记录通过 `AdvanceFlow()` 实际展示的正文 LogEntries，并继续保持 formal Runtime State 不包含完整 Log / action request / pending history；下一轮进入 P4 Round 9 Save / Load 子状态 blob。
 
 SelfHostedEditor regression invariant: Preview choice clicks must advance the reading Preview to the target block and reveal the target block title in the editor. Compiler-project Preview data must never silently lose `previewLines`: if a returned Compiler graph has source lines but missing or mismatched `previewLines`, Preview must report a compiler graph contract error instead of falling back to the UI-only draft model. `npm --prefix src\ExternalSupport\SelfHostedEditor run check:model` covers both invariants so future Runtime / navigation work does not regress them.
 
@@ -214,7 +214,8 @@ npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
 - [x] 完成 P4 Round 5 action dispatcher contract + `fire` 第一刀。2026-06-18 审计见 [SelfHostedEditor P4 Action Dispatcher Audit](self-hosted-editor-p4-action-dispatcher-audit.md)；`Internal/Runtime` 已把 `@emit` metadata action intent 转成 Runtime fire action request，按 Host Schema `actions[]` 等价 mode 与 Host Bridge handler mapping dispatch，formal Runtime State 不包含 action request history。
 - [x] 完成 P4 Round 6 `wait` pending / resume 第一刀。2026-06-18 审计见 [SelfHostedEditor P4 Wait Pending Audit](self-hosted-editor-p4-wait-pending-audit.md)；`Internal/Runtime` 新增 `PendingAction` 与 `ResumeAction`，`wait` action dispatch 后阻断 Runtime flow，completed resume 后继续，wrong request / cancelled resume 均有结构化 Runtime action error。
 - [x] 完成 P4 Round 7 `handoff` 控制权移交 / resume 第一刀。2026-06-18 审计见 [SelfHostedEditor P4 Handoff Audit](self-hosted-editor-p4-handoff-audit.md)；`Internal/Runtime` 现在支持 Host Schema action mode `handoff`，通过 `PendingAction.Mode = handoff` 表达宿主成为当前段落主控，completed resume 后恢复剧情，timeout / failed / cancelled resume 继续作为结构化 Runtime action error。
-- [ ] 进入 P4 Round 8 Log / Backlog 第一刀：Runtime 只记录已经实际展示的正文，默认字段为 `speaker`、`text`、`lineId`；条件导致未展示的文本不进入 Log，普通 Runtime State 主体不默认包含完整 Log。
+- [x] 完成 P4 Round 8 Log / Backlog 第一刀。2026-06-18 审计见 [SelfHostedEditor P4 Log Backlog Audit](self-hosted-editor-p4-log-backlog-audit.md)；`Internal/Runtime` 新增 `LogEntries`，只记录实际 reveal 的正文行，默认字段覆盖 sequence / nodeId / lineId / speaker / text，metadata / choice stage / 条件隐藏分支文本不进入默认 Log，formal Runtime State 不包含完整 Log。
+- [ ] 进入 P4 Round 9 Save / Load 子状态 blob 第一刀：将 P3 `ExportState` 推进到 P4 可恢复子状态 blob，保存 position、flow、facts、pending action、必要 branch query receipt 与 opaque host checkpoint id；继续不保存宿主业务状态。
 - [ ] 高级运行时调试方向池继续评估 Rollback checkpoint 的准确粒度、跨宿主 action 时的回退阻断 / checkpoint 规则、Trace Replay、Flashback Playback 与时空穿越式特殊倒放；这些不进入 P3 / P4 第一刀实现，也不作为当前正式排期 phase。
 
 ### 暂停 / 明确后置

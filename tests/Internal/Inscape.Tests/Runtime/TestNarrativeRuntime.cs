@@ -1,6 +1,7 @@
 using Inscape.Compiler.Compilation;
 using Inscape.Compiler.Model;
 using Inscape.Runtime;
+using System.Collections.Generic;
 using System.Text;
 using System.Text.Json;
 
@@ -102,6 +103,96 @@ Narrator: Second.
             AssertTrue(seen.Found && seen.Value.BoolValue, "Runtime internal query should report seen line.");
             AssertEqual(optionAnchor, lastChoice.Value.StringValue, "Runtime internal query should report last choice.");
             AssertEqual(NarrativeRuntimeQuerySourceKindModel.InternalFact, lastChoice.SourceKind, "Runtime internal query source kind");
+        }
+
+        static void NarrativeRuntimeRecordsDisplayedTextLog() {
+            DslScriptCompilationResultModel compilation = Compile("""
+# start
+@entry
+Narrator: Start.
+Mira: Hello.
+? Next
+  - Go second -> second.node
+
+# second.node
+Narrator: Second.
+""");
+
+            NarrativeRuntime runtime = new NarrativeRuntime();
+            runtime.LoadGraph(compilation.Document);
+
+            AssertTrue(runtime.Start("start"), "Runtime should start before recording log entries.");
+            AssertEqual(0, runtime.LogEntries.Count, "Runtime should not log node entry or metadata.");
+
+            string firstLineAnchor = runtime.CurrentNode?.Lines[1].Anchor ?? string.Empty;
+            string secondLineAnchor = runtime.CurrentNode?.Lines[2].Anchor ?? string.Empty;
+
+            AssertTrue(runtime.AdvanceFlow(), "Runtime should reveal the first content line.");
+            AssertEqual(1, runtime.LogEntries.Count, "Runtime should log the first displayed line.");
+            AssertEqual(1, runtime.LogEntries[0].Sequence, "First log entry sequence");
+            AssertEqual("start", runtime.LogEntries[0].NodeId, "First log entry node");
+            AssertEqual(firstLineAnchor, runtime.LogEntries[0].LineId, "First log entry line id");
+            AssertEqual("Narrator", runtime.LogEntries[0].Speaker, "First log entry speaker");
+            AssertEqual("Start.", runtime.LogEntries[0].Text, "First log entry text");
+
+            AssertTrue(runtime.AdvanceFlow(), "Runtime should reveal the second content line.");
+            AssertEqual(2, runtime.LogEntries.Count, "Runtime should log the second displayed line.");
+            AssertEqual(2, runtime.LogEntries[1].Sequence, "Second log entry sequence");
+            AssertEqual(secondLineAnchor, runtime.LogEntries[1].LineId, "Second log entry line id");
+            AssertEqual("Mira", runtime.LogEntries[1].Speaker, "Second log entry speaker");
+            AssertEqual("Hello.", runtime.LogEntries[1].Text, "Second log entry text");
+
+            NarrativeRuntimeSnapshotModel firstSnapshot = runtime.CreateSnapshot();
+            NarrativeRuntimeSnapshotModel secondSnapshot = runtime.CreateSnapshot();
+            AssertEqual(2, firstSnapshot.LogEntries.Count, "Snapshot should expose log entries.");
+            AssertEqual(2, secondSnapshot.LogEntries.Count, "Snapshot should not create extra log entries.");
+
+            AssertTrue(runtime.AdvanceFlow(), "Runtime should reveal the choice stage without logging choice text.");
+            AssertEqual(2, runtime.LogEntries.Count, "Choice stage should not enter the default player log.");
+
+            string serializedState = JsonSerializer.Serialize(runtime.ExportState("script-v1", "checkpoint-opaque-1"));
+            AssertFalse(serializedState.Contains("log", StringComparison.OrdinalIgnoreCase), "Formal Runtime State should not include log entries.");
+
+            NarrativeRuntime restored = new NarrativeRuntime();
+            restored.LoadGraph(compilation.Document);
+            AssertTrue(restored.Restore(runtime.CreateSnapshot().State), "Minimal state restore should remain valid after log recording.");
+            AssertEqual(0, restored.LogEntries.Count, "Minimal state restore should not restore transient log entries.");
+        }
+
+        static void NarrativeRuntimeLogSkipsHiddenConditionalText() {
+            DslScriptCompilationResultModel compilation = Compile("""
+# start
+? Choose
+- [has_item("silver_key")] Use silver key -> gate.open
+- Knock -> gate.knock
+
+# gate.open
+Narrator: Open.
+
+# gate.knock
+Narrator: Knock.
+""");
+            AssertFalse(compilation.HasErrors, "Conditional log fixture should compile.");
+
+            NarrativeRuntime runtime = new NarrativeRuntime();
+            runtime.LoadGraph(compilation.Document);
+            runtime.QueryProvider = new NarrativeRuntimeQueryProviderModel {
+                Kind = NarrativeRuntimeQueryProviderKindModel.Mock,
+            };
+            runtime.QueryProvider.MockValues.Add(CreateValueEntry("has_item",
+                                                                  NarrativeRuntimeQueryValueModel.FromBool(false),
+                                                                  NarrativeRuntimeQueryValueModel.FromString("silver_key")));
+
+            AssertTrue(runtime.Start("start"), "Runtime should start conditional log fixture.");
+            AssertEqual(0, runtime.LogEntries.Count, "Runtime should not log hidden choice text.");
+            AssertTrue(runtime.Choose(0, 0), "Runtime should choose the only visible option.");
+            AssertEqual("gate.knock", runtime.State.CurrentNodeName, "Runtime should enter visible choice target.");
+            AssertTrue(runtime.AdvanceFlow(), "Runtime should reveal the chosen branch line.");
+
+            AssertEqual(1, runtime.LogEntries.Count, "Runtime should log only displayed branch text.");
+            AssertEqual("gate.knock", runtime.LogEntries[0].NodeId, "Conditional log entry node");
+            AssertEqual("Knock.", runtime.LogEntries[0].Text, "Conditional log entry text");
+            AssertFalse(LogContainsText(runtime.LogEntries, "Open."), "Hidden conditional branch text should not enter log.");
         }
 
         static void NarrativeRuntimeQueryProviderUsesDelegateMockAndRecordedSources() {
@@ -1035,6 +1126,16 @@ Narrator: End.
         static bool ValidationContains(NarrativeRuntimeStateValidationModel validation, string code) {
             for (int i = 0; i < validation.Diagnostics.Count; i += 1) {
                 if (validation.Diagnostics[i].Code == code) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        static bool LogContainsText(IReadOnlyList<NarrativeRuntimeLogEntryModel> entries, string text) {
+            for (int i = 0; i < entries.Count; i += 1) {
+                if (entries[i].Text == text) {
                     return true;
                 }
             }

@@ -23,6 +23,8 @@ namespace Inscape.Runtime {
 
         public NarrativeRuntimePendingActionModel? PendingAction { get; set; }
 
+        public List<NarrativeRuntimeLogEntryModel> LogEntries { get; set; }
+
         public NarrativeRuntimeSnapshotModel() {
             Format = "inscape.runtime-state";
             FormatVersion = 1;
@@ -30,6 +32,7 @@ namespace Inscape.Runtime {
             ReadingProgress = new NarrativeRuntimeReadingProgressModel();
             BranchQueryReceipts = new List<NarrativeRuntimeQueryReceiptModel>();
             ActionRequests = new List<NarrativeRuntimeActionRequestModel>();
+            LogEntries = new List<NarrativeRuntimeLogEntryModel>();
         }
 
     }
