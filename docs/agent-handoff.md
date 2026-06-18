@@ -1,12 +1,22 @@
 # Agent 接手指南
 
-状态：P5 SelfHostedEditor Runtime authoring Round 1 baseline / contract complete
+状态：P5 SelfHostedEditor Runtime authoring Round 2 runtime session contract complete
 
 最后更新：2026-06-18
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-18 SelfHostedEditor P5 Round 2 Runtime Session 快照
+
+P5 SelfHostedEditor Runtime authoring / productization 已完成第二轮 Runtime authoring session contract，不代表 P5 已完成。
+- 本轮审计见 [SelfHostedEditor P5 Runtime Session Audit](self-hosted-editor-p5-runtime-session-audit.md)。
+- 新增 `RuntimeAuthoringSessionModelBuilder`，格式为 `inscape.self-hosted-editor.runtime-authoring-session`，只表达 text-free session summary，不携带 workspace 文本、formal state body、完整 Log、完整 action request history、pending host payload 或 branch evidence body。
+- 新增 `SelfHostedEditorRuntimeAuthoringSessionContractCheck.js` 并接入 `check:model`，覆盖 current snapshot、formal Runtime State、P4 substate、pending action、action request summary、log summary、branch evidence、stale、error 和 transport command boundary。
+- dev-host HTTP 与 desktop transport 的等价边界只用 `runtime.start-or-observe` / `runtime.step` command 表达；产品模型不认识 `/api/*` route，也不直接调用 backend transport。
+- 本轮未改 Runtime / Compiler / Host Schema policy / Unity / Bird，也未新增可见 UI；SelfHostedEditor 仍只做 Runtime payload 的摘要、适配和展示准备。
+- 下一轮进入 P5 Round 3：Mock query model，从 Host Schema `queries[]` 生成 editor-session-only mock query authoring model，覆盖 string / number / bool、missing / invalid / unknown query，并保持 mock 不进入正式 Runtime state。
 
 ### 2026-06-18 SelfHostedEditor P5 Round 1 Baseline / Contract 快照
 
@@ -16,7 +26,7 @@ P5 SelfHostedEditor Runtime authoring / productization 已完成第一轮基线�
 - P5 Runtime authoring 合同见 [SelfHostedEditor P5 Runtime Authoring Contract](self-hosted-editor-p5-runtime-authoring-contract.md)，冻结 P5 只把 Runtime 能力产品化为 authoring workflow，不复制 Runtime condition evaluator、query evaluator、action dispatcher、branch receipt 或 substate 语义。
 - P5 最小验收 fixture 固定为 P4 已验证的 `has_item("silver_key")` / `trust("mira")` / `play_timeline` / `wait_for_ui` 样例，覆盖 key/fire path、no-key/wait/resume/help path、Log、branch receipts 和 substate。
 - 当前缺口已明确留给后续轮次：Runtime authoring session shape、mock query model / UI、action capability / pending / resume surface、Runtime Preview hardening、Log / Backlog、branch receipt explanation、substate authoring、error / stale 状态和 integration smoke。
-- 本轮未改 Runtime / Compiler / Host Schema policy / Unity / Bird / SelfHostedEditor 产品行为；下一轮进入 P5 Round 2：Runtime authoring session contract。
+- 本轮未改 Runtime / Compiler / Host Schema policy / Unity / Bird / SelfHostedEditor 产品行为；后续已由 P5 Round 2 接上 Runtime authoring session contract。
 
 ### 2026-06-18 SelfHostedEditor P4 Final Validation 快照
 
@@ -1683,9 +1693,9 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 
 建议优先做小而闭环的任务，不要直接跳到大规模重构。
 
-1. 进入 P5 Round 2 Runtime authoring session contract。
-   - 先读 [P5 SelfHostedEditor Runtime Authoring Goal 模式执行指南](self-hosted-editor-p5-goal-mode-execution-guide.md)、[SelfHostedEditor P5 Baseline Audit](self-hosted-editor-p5-baseline-audit.md) 与 [SelfHostedEditor P5 Runtime Authoring Contract](self-hosted-editor-p5-runtime-authoring-contract.md)。
-   - 定义 SelfHostedEditor Runtime authoring session shape，区分 current snapshot、formal state、P4 substate、pending action、log entries、branch receipts 与 provider / stale / error metadata；保持 dev-host HTTP 与 desktop command 为薄 transport。
+1. 进入 P5 Round 3 Mock query model。
+   - 先读 [P5 SelfHostedEditor Runtime Authoring Goal 模式执行指南](self-hosted-editor-p5-goal-mode-execution-guide.md)、[SelfHostedEditor P5 Runtime Authoring Contract](self-hosted-editor-p5-runtime-authoring-contract.md) 与 [SelfHostedEditor P5 Runtime Session Audit](self-hosted-editor-p5-runtime-session-audit.md)。
+   - 从 Host Schema `queries[]` 生成 mock query authoring model，覆盖 string / number / bool mock value、missing / invalid / unknown query 的结构化提示，并保持 mock query 只作为 editor session test input。
 
 2. 继续推进 Stable Node ID / 本地化主线。
    - ADR 0013、sidecar 闭环、保守自动重命名识别、VSCode 显式 `Update Stable Node Map` 入口、插入标题后的自动同步、标题重命名人工确认 / 冲突报告、本地化 alignment / audit report，以及相似文本人工候选第一版都已落地。
