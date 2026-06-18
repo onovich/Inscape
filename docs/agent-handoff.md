@@ -1,12 +1,23 @@
 # Agent 接手指南
 
-状态：P4 Round 11 Editor host contract guard 完成
+状态：P4 Round 12 integration smoke + 文档收口完成
 
 最后更新：2026-06-18
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-18 SelfHostedEditor P4 Round 12 Integration Smoke 快照
+
+P4 Runtime playable MVP 已完成第十二轮 integration smoke + 文档收口，不代表 P4 最终验收已完成。
+- 本轮审计见 [SelfHostedEditor P4 Integration Audit](self-hosted-editor-p4-integration-audit.md)。
+- 新增 `tests/Internal/Inscape.Tests/P4/TestP4IntegrationSmoke.cs`，runner 名称为 `p4 integration smoke runs playable mvp sample`。
+- 该 smoke 使用真实 `runtime-project` CLI 和临时 workspace 串起 P4 MVP 样例：条件选项、mock query、`fire` action、`wait` pending / resume、Log、formal Runtime State export / validate / import、P4 substate export / validate / import，以及 branch query receipt。
+- key path 通过 `has_item("silver_key") = true` 进入 `gate.open`，dispatch `play_timeline` fire action，记录 `Door opens.` Log，并到达 `end`。
+- no-key path 通过 `has_item("silver_key") = false` 隐藏钥匙选项，进入 `gate.knock` 后 pending `wait_for_ui`，保存 / 恢复 substate 后 resume，再通过 `visited("gate.knock") and trust("mira") >= 3` 的 conditional jump 到达 `mira.help`，记录 `Mira helps.` Log，并到达 `end`。
+- Formal Runtime State 仍不包含完整 Log 或 branch receipts；P4 substate 仍不包含完整 Log 或完整 action request history。
+- 本轮已通过完整 Round 12 收口验证：`.NET build`、Internal tests、VSCode / SelfHostedEditor syntax / structure / semantic checks、`git diff --check`，以及 Internal Unity / host SDK forbidden-term scan、P4 deferred policy-name implementation scan、ExternalSupport product-code Runtime semantic marker scan。下一轮进入 P4 final validation / PASS-FAIL 收口；若不消耗缓冲轮，应直接输出 P4 final validation report 并更新最终交接文档。
 
 ### 2026-06-18 SelfHostedEditor P4 Round 11 Editor Host Contract Guard 快照
 

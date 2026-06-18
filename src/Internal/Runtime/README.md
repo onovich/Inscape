@@ -47,4 +47,5 @@ Current baseline:
 - P4 Runtime Substate does not include full Log, full action request history, full Rollback stack, full Trace Replay, or host gameplay state; `host.checkpointId` remains an opaque id owned by the host save shell.
 - Runtime does not parse `.inscape` text and does not know about VSCode, HTML Preview, UnitySample, or Host Bridge details.
 - Runtime does not own gameplay state such as inventory, quest stage, trust, combat result, player position, or economy values; those belong behind host delegate queries.
-- Runtime does not yet have Editor host contract guard coverage for P4 beyond the CLI driver and existing ExternalSupport structure checks.
+- ExternalSupport host product code is guarded by VSCode / SelfHostedEditor structure checks so Runtime condition evaluation, query evaluation, action dispatch, Log building, substate import/export/validation, and Runtime Inspector product semantics do not drift into editor hosts.
+- P4 Round 12 adds an Internal CLI integration smoke that runs a playable MVP sample through conditions, mock query values, `fire`, `wait` pending / resume, Log, formal Runtime State, P4 substate, and branch query receipts.

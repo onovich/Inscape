@@ -65,6 +65,7 @@ namespace Inscape.Tests {
                 ("cli runtime-project emits runtime state", CliRuntimeProjectEmitsRuntimeState),
                 ("cli runtime-project steps restored state", CliRuntimeProjectStepsRestoredState),
                 ("cli runtime-project drives p4 playable runtime", CliRuntimeProjectDrivesP4PlayableRuntime),
+                ("p4 integration smoke runs playable mvp sample", P4IntegrationSmokeRunsPlayableMvpSample),
                 ("cli runtime-project reports p4 runtime query errors", CliRuntimeProjectReportsP4RuntimeQueryErrors),
                 ("cli runtime-project reports p4 runtime action result errors", CliRuntimeProjectReportsP4RuntimeActionResultErrors),
                 ("tool config resolves host bridge path", ToolConfigResolvesHostBridgePath),
