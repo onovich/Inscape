@@ -869,6 +869,135 @@ Narrator: Second.
             AssertTrue(ValidationContains(invalid, "IRT007"), "Runtime validation should report missing current node.");
         }
 
+        static void NarrativeRuntimeExportsImportsSubstateAndContinues() {
+            DslScriptCompilationResultModel compilation = Compile("""
+# start
+Narrator: Start.
+? [gate_ready()] -> gate.open
+-> gate.locked
+
+# gate.open
+Narrator: Open.
+-> end
+
+# gate.locked
+Narrator: Locked.
+-> end
+
+# end
+Narrator: End.
+""");
+            AssertFalse(compilation.HasErrors, "Runtime substate fixture should compile.");
+
+            NarrativeRuntime runtime = new NarrativeRuntime();
+            runtime.LoadGraph(compilation.Document);
+            runtime.QueryProvider = new NarrativeRuntimeQueryProviderModel {
+                Kind = NarrativeRuntimeQueryProviderKindModel.Mock,
+            };
+            runtime.QueryProvider.MockValues.Add(CreateValueEntry("gate_ready",
+                                                                  NarrativeRuntimeQueryValueModel.FromBool(false)));
+
+            AssertTrue(runtime.Start("start"), "Runtime should start before exporting substate.");
+            AssertTrue(runtime.AdvanceFlow(), "Runtime should reveal the start line before branch.");
+            AssertTrue(runtime.Continue(), "Runtime should follow fallback branch before exporting substate.");
+            AssertTrue(runtime.AdvanceFlow(), "Runtime should reveal fallback branch line before exporting substate.");
+
+            NarrativeRuntimeSubstateModel substate = runtime.ExportSubstate("script-v1", "opaque-host-checkpoint-1");
+            AssertEqual("inscape.runtime-substate", substate.Format, "Runtime substate format");
+            AssertEqual(1, substate.FormatVersion, "Runtime substate version");
+            AssertEqual(NarrativeRuntime.CurrentRuntimeVersion, substate.RuntimeVersion, "Runtime substate runtime version");
+            AssertEqual("script-v1", substate.ScriptVersion, "Runtime substate script version");
+            AssertEqual("gate.locked", substate.Position.NodeId, "Runtime substate current node");
+            AssertEqual(1, substate.Position.CommandIndex, "Runtime substate command index");
+            AssertEqual(2, substate.Flow.Stack.Count, "Runtime substate flow stack count");
+            AssertEqual(2, substate.Facts.VisitedNodes.Count, "Runtime substate facts should be cloned.");
+            AssertEqual(1, substate.BranchQueryReceipts.Count, "Runtime substate should preserve branch query receipts.");
+            AssertTrue(substate.PendingAction == null, "Runtime substate should omit pending action when no action is pending.");
+            AssertEqual("opaque-host-checkpoint-1", substate.Host.CheckpointId, "Runtime substate host checkpoint id is opaque.");
+
+            string serializedSubstate = JsonSerializer.Serialize(substate);
+            AssertFalse(serializedSubstate.Contains("log", StringComparison.OrdinalIgnoreCase), "Runtime substate should not include full log entries.");
+            AssertFalse(serializedSubstate.Contains("actionRequests", StringComparison.OrdinalIgnoreCase), "Runtime substate should not include action request history.");
+            AssertFalse(serializedSubstate.Contains("inventory", StringComparison.OrdinalIgnoreCase), "Runtime substate should not include host inventory state.");
+
+            NarrativeRuntime restored = new NarrativeRuntime();
+            restored.LoadGraph(compilation.Document);
+            AssertTrue(restored.ImportSubstate(substate, "script-v1"), "Runtime should import a compatible substate.");
+            AssertEqual("gate.locked", restored.State.CurrentNodeName, "Imported substate current node");
+            AssertEqual(1, restored.State.VisibleStepCount, "Imported substate command index");
+            AssertEqual(1, restored.BranchQueryReceipts.Count, "Imported substate should restore branch query receipts.");
+            AssertEqual(0, restored.LogEntries.Count, "Imported substate should not restore full log entries.");
+            AssertTrue(restored.Continue(), "Runtime should continue after importing substate.");
+            AssertEqual("end", restored.State.CurrentNodeName, "Runtime should reach end after import and continue.");
+        }
+
+        static void NarrativeRuntimeImportsPendingSubstateAndResumes() {
+            DslScriptCompilationResultModel compilation = Compile("""
+# start
+@emit wait_for_ui confirm_help
+Narrator: Resumed.
+-> end
+
+# end
+Narrator: End.
+""");
+            AssertFalse(compilation.HasErrors, "Runtime pending substate fixture should compile.");
+
+            NarrativeRuntime runtime = new NarrativeRuntime();
+            runtime.LoadGraph(compilation.Document);
+            runtime.ActionDispatcher.Actions.Add(CreateActionCapability("wait_for_ui", "wait"));
+            runtime.ActionDispatcher.Handlers.Add(CreateActionHandler("wait_for_ui", "UiBridge.WaitForUi"));
+            AssertTrue(runtime.Start("start"), "Runtime should enter pending state before exporting substate.");
+
+            NarrativeRuntimeSubstateModel substate = runtime.ExportSubstate("script-v1", "checkpoint-pending-1");
+            AssertTrue(substate.PendingAction != null, "Runtime substate should include pending action.");
+            AssertEqual("action-1", substate.PendingAction?.RequestId ?? string.Empty, "Runtime substate pending request id");
+            AssertEqual("wait", substate.PendingAction?.Mode ?? string.Empty, "Runtime substate pending mode");
+            AssertEqual("checkpoint-pending-1", substate.Host.CheckpointId, "Runtime substate pending checkpoint id");
+
+            int dispatchCount = 0;
+            NarrativeRuntime restored = new NarrativeRuntime();
+            restored.LoadGraph(compilation.Document);
+            restored.ActionDispatcher.Actions.Add(CreateActionCapability("wait_for_ui", "wait"));
+            restored.ActionDispatcher.Handlers.Add(CreateActionHandler("wait_for_ui", "UiBridge.WaitForUi"));
+            restored.ActionDispatcher.DispatchAction = _ => {
+                dispatchCount += 1;
+                return new NarrativeRuntimeActionResultModel();
+            };
+
+            AssertTrue(restored.ImportSubstate(substate, "script-v1"), "Runtime should import pending substate.");
+            AssertTrue(restored.PendingAction != null, "Imported substate should restore pending action.");
+            AssertEqual(0, dispatchCount, "Importing substate should not dispatch host actions.");
+            AssertTrue(restored.ResumeAction(new NarrativeRuntimeActionResumeModel {
+                RequestId = "action-1",
+                Status = "completed",
+            }), "Runtime should resume imported pending action.");
+            AssertEqual(0, dispatchCount, "Resuming imported pending action should not redispatch the completed action.");
+            AssertTrue(restored.AdvanceFlow(), "Runtime should advance after imported pending action resumes.");
+        }
+
+        static void NarrativeRuntimeRejectsMigratableSubstateWithoutRepair() {
+            DslScriptCompilationResultModel compilation = Compile("""
+# start
+Narrator: Start.
+""");
+
+            NarrativeRuntime source = new NarrativeRuntime();
+            source.LoadGraph(compilation.Document);
+            AssertTrue(source.Start("start"), "Runtime should start before exporting drifted substate.");
+            NarrativeRuntimeSubstateModel substate = source.ExportSubstate("script-v0", "checkpoint-drifted");
+
+            NarrativeRuntime restored = new NarrativeRuntime();
+            restored.LoadGraph(compilation.Document);
+            NarrativeRuntimeStateValidationModel validation = restored.ValidateSubstateAgainstCurrentScript(substate, "script-v1");
+            AssertEqual(NarrativeRuntimeStateValidationStatusModel.Migratable, validation.Status, "Substate script drift should be migratable.");
+            AssertTrue(ValidationContains(validation, "IRT006"), "Substate validation should report script drift.");
+
+            AssertFalse(restored.ImportSubstate(substate, "script-v1"), "Runtime should not import migratable substate by guessing repairs.");
+            AssertEqual("IRT011", restored.LastError?.Code ?? string.Empty, "Runtime import incompatible substate error");
+            AssertEqual(string.Empty, restored.State.CurrentNodeName, "Rejected substate import should not repair current node.");
+        }
+
         static void CliRuntimeProjectExportsAndValidatesFormalRuntimeState() {
             string directory = Path.Combine(Path.GetTempPath(), "inscape-tests", Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(directory);

@@ -1,12 +1,24 @@
 # Agent 接手指南
 
-状态：P4 Round 8 Log / Backlog 第一刀完成
+状态：P4 Round 9 Save / Load 子状态 blob 第一刀完成
 
 最后更新：2026-06-18
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-18 SelfHostedEditor P4 Round 9 Substate 快照
+
+P4 Runtime playable MVP 已完成第九轮 Save / Load 子状态 blob 第一刀，不代表 P4 MVP 已完成。
+- 本轮审计见 [SelfHostedEditor P4 Substate Audit](self-hosted-editor-p4-substate-audit.md)。
+- `Internal/Runtime` 新增 `NarrativeRuntimeSubstateModel`，格式名为 `inscape.runtime-substate`，保存 position、flow、facts、pending action、branch query receipts 与 `host.checkpointId`。
+- `NarrativeRuntime.ExportSubstate()` 导出 Inscape 自己的叙事子状态；formal `ExportState()` 继续保持 P3 minimal `inscape.runtime-state` 口径。
+- `NarrativeRuntime.ValidateSubstateAgainstCurrentScript()` 只报告 compatible / migratable / incompatible；`ImportSubstate()` 只接受 compatible substate，script drift 等 migratable 状态会拒绝导入并返回 `IRT011`，不静默修复。
+- 导入成功后恢复 `State`、`BranchQueryReceipts` 与 `PendingAction`，清空 transient `ActionRequests` / `LogEntries`，并避免重复 dispatch 已保存 pending action 对应的 `@emit`。
+- 子状态不保存宿主业务状态、完整 Log、完整 action request history、Rollback stack 或 Trace Replay；`host.checkpointId` 仍是宿主存档外壳的 opaque id。
+- ExternalSupport 未新增 condition parser、query evaluator、action dispatcher、Log builder 或 Runtime 语义副本；Internal Runtime 未引入 Unity / Bird / 宿主业务状态。
+- 下一轮进入 P4 Round 10：CLI Runtime playable driver；扩展 `runtime-project` 或等价 CLI 参数，驱动 query provider 输入、action resume、substate import / export 与 log output。
 
 ### 2026-06-18 SelfHostedEditor P4 Round 8 Log Backlog 快照
 
