@@ -42,9 +42,9 @@ Current baseline:
 - `NarrativeRuntime.ImportSubstate()` restores only compatible P4 substate data, rejects migratable / incompatible substate data with `IRT011`, and does not silently repair script drift.
 - Runtime Log / Backlog first cut records only content lines that were actually revealed through `AdvanceFlow()`, using `sequence`, `nodeId`, `lineId`, `speaker`, and `text`.
 - `ReadingProgress` currently exposes `ContentStepCount`, `MaxVisibleStepCount`, `VisibleStepCount`, `CanAdvance`, `CanRewind`, `IsChoiceStageVisible`, and `IsContinueStageVisible`.
-- The CLI `runtime-project` command can start a project or restore a previous snapshot / formal state and apply one `Continue` / `AdvanceFlow` / `Rewind` / `RewindFlow` / `Choose` action before returning the next snapshot. It can also emit formal state with `--export-state` and validate it with `--validate-state`.
+- The CLI `runtime-project` command can start a project or restore a previous snapshot / formal state / P4 substate and apply one `Continue` / `AdvanceFlow` / `Rewind` / `RewindFlow` / `Choose` / `ResumeAction` action before returning the next snapshot. It can also emit formal state with `--export-state`, emit P4 substate with `--export-substate`, validate state with `--validate-state`, and validate substate with `--validate-substate`.
 - Formal Runtime State does not include full Log, full Rollback stack, full Trace Replay, or gameplay state ownership.
 - P4 Runtime Substate does not include full Log, full action request history, full Rollback stack, full Trace Replay, or host gameplay state; `host.checkpointId` remains an opaque id owned by the host save shell.
 - Runtime does not parse `.inscape` text and does not know about VSCode, HTML Preview, UnitySample, or Host Bridge details.
 - Runtime does not own gameplay state such as inventory, quest stage, trust, combat result, player position, or economy values; those belong behind host delegate queries.
-- Runtime does not yet expose the full P4 playable driver through CLI import / resume parameters.
+- Runtime does not yet have Editor host contract guard coverage for P4 beyond the CLI driver and existing ExternalSupport structure checks.

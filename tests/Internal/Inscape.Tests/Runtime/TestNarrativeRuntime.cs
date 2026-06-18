@@ -1174,6 +1174,349 @@ Narrator: End.
             }
         }
 
+        static void CliRuntimeProjectDrivesP4PlayableRuntime() {
+            string directory = Path.Combine(Path.GetTempPath(), "inscape-tests", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory);
+            string initialPath = Path.Combine(directory, "runtime-initial.json");
+            string pendingSubstatePath = Path.Combine(directory, "runtime-pending-substate.json");
+            string resumedSubstatePath = Path.Combine(directory, "runtime-resumed-substate.json");
+            string advancedSubstatePath = Path.Combine(directory, "runtime-advanced-substate.json");
+            string queryProviderPath = Path.Combine(directory, "runtime-query-provider.json");
+            string keyQueryProviderPath = Path.Combine(directory, "runtime-key-query-provider.json");
+            string actionDispatcherPath = Path.Combine(directory, "runtime-action-dispatcher.json");
+            string resumePath = Path.Combine(directory, "runtime-resume.json");
+
+            File.WriteAllText(Path.Combine(directory, "story.inscape"), """
+# start
+@entry
+Narrator: Door.
+? Gate
+- [has_item("silver_key")] Use key -> gate.open
+- Knock -> gate.knock
+
+# gate.open
+@emit play_timeline mira_reveal
+Narrator: Door opens.
+-> end
+
+# gate.knock
+@emit wait_for_ui confirm_help
+Narrator: Knocked.
+? [visited("gate.knock") and trust("mira") >= 3] -> mira.help
+-> gate.locked
+
+# mira.help
+Narrator: Mira helps.
+-> end
+
+# gate.locked
+Narrator: Locked.
+-> end
+
+# end
+Narrator: End.
+""", Encoding.UTF8);
+
+            File.WriteAllText(queryProviderPath, """
+{
+  "kind": "Mock",
+  "mockValues": [
+    {
+      "name": "has_item",
+      "arguments": [
+        { "kind": "String", "stringValue": "silver_key" }
+      ],
+      "value": { "kind": "Bool", "boolValue": false }
+    },
+    {
+      "name": "trust",
+      "arguments": [
+        { "kind": "String", "stringValue": "mira" }
+      ],
+      "value": { "kind": "Number", "numberValue": 4 }
+    }
+  ]
+}
+""", Encoding.UTF8);
+
+            File.WriteAllText(keyQueryProviderPath, """
+{
+  "kind": "Mock",
+  "mockValues": [
+    {
+      "name": "has_item",
+      "arguments": [
+        { "kind": "String", "stringValue": "silver_key" }
+      ],
+      "value": { "kind": "Bool", "boolValue": true }
+    }
+  ]
+}
+""", Encoding.UTF8);
+
+            File.WriteAllText(actionDispatcherPath, """
+{
+  "actions": [
+    { "name": "play_timeline", "mode": "fire" },
+    { "name": "wait_for_ui", "mode": "wait" }
+  ],
+  "handlers": [
+    { "name": "play_timeline", "handlerName": "Timeline.Play" },
+    { "name": "wait_for_ui", "handlerName": "Ui.WaitForUi" }
+  ]
+}
+""", Encoding.UTF8);
+
+            File.WriteAllText(resumePath, """
+{
+  "requestId": "action-1",
+  "status": "completed",
+  "hostPayload": "{\"confirmed\":true}"
+}
+""", Encoding.UTF8);
+
+            try {
+                string fireJson = RunCliForOutput(new[] {
+                    "runtime-project",
+                    directory,
+                    "--query-provider",
+                    keyQueryProviderPath,
+                    "--action-dispatcher",
+                    actionDispatcherPath,
+                    "--choose",
+                    "0",
+                    "0",
+                });
+                using (JsonDocument fireDocument = JsonDocument.Parse(fireJson)) {
+                    JsonElement fireRoot = fireDocument.RootElement;
+                    AssertEqual("gate.open", fireRoot.GetProperty("state").GetProperty("currentNodeName").GetString(), "Runtime CLI fire path current node");
+                    AssertEqual(1, fireRoot.GetProperty("actionRequests").GetArrayLength(), "Runtime CLI fire action request count");
+                    AssertEqual("play_timeline", fireRoot.GetProperty("actionRequests")[0].GetProperty("name").GetString(), "Runtime CLI fire action name");
+                    AssertEqual("fire", fireRoot.GetProperty("actionRequests")[0].GetProperty("mode").GetString(), "Runtime CLI fire action mode");
+                    AssertEqual(JsonValueKind.Null, fireRoot.GetProperty("pendingAction").ValueKind, "Runtime CLI fire should not create pending action");
+                }
+
+                string initialJson = RunCliForOutput(new[] {
+                    "runtime-project",
+                    directory,
+                    "--query-provider",
+                    queryProviderPath,
+                });
+                File.WriteAllText(initialPath, initialJson, Encoding.UTF8);
+                using (JsonDocument initialDocument = JsonDocument.Parse(initialJson)) {
+                    JsonElement initialRoot = initialDocument.RootElement;
+                    AssertEqual(1, initialRoot.GetProperty("currentNode").GetProperty("choices")[0].GetProperty("options").GetArrayLength(), "Runtime CLI should filter invisible choice.");
+                    AssertEqual("Knock", initialRoot.GetProperty("currentNode").GetProperty("choices")[0].GetProperty("options")[0].GetProperty("text").GetString(), "Runtime CLI visible choice text");
+                    AssertEqual(1, initialRoot.GetProperty("branchQueryReceipts").GetArrayLength(), "Runtime CLI initial choice receipt count");
+                }
+
+                string pendingSubstateJson = RunCliForOutput(new[] {
+                    "runtime-project",
+                    directory,
+                    "--state",
+                    initialPath,
+                    "--query-provider",
+                    queryProviderPath,
+                    "--action-dispatcher",
+                    actionDispatcherPath,
+                    "--choose",
+                    "0",
+                    "0",
+                    "--export-substate",
+                    "--script-version",
+                    "script-v1",
+                    "--host-checkpoint-id",
+                    "checkpoint-p4",
+                });
+                File.WriteAllText(pendingSubstatePath, pendingSubstateJson, Encoding.UTF8);
+                using (JsonDocument pendingDocument = JsonDocument.Parse(pendingSubstateJson)) {
+                    JsonElement pendingRoot = pendingDocument.RootElement;
+                    AssertEqual("inscape.runtime-substate", pendingRoot.GetProperty("format").GetString(), "Runtime CLI substate format");
+                    AssertEqual("gate.knock", pendingRoot.GetProperty("position").GetProperty("nodeId").GetString(), "Runtime CLI pending substate node");
+                    AssertEqual("wait_for_ui", pendingRoot.GetProperty("pendingAction").GetProperty("name").GetString(), "Runtime CLI pending action name");
+                    AssertEqual("wait", pendingRoot.GetProperty("pendingAction").GetProperty("mode").GetString(), "Runtime CLI pending action mode");
+                    AssertEqual("checkpoint-p4", pendingRoot.GetProperty("host").GetProperty("checkpointId").GetString(), "Runtime CLI substate checkpoint");
+                    AssertEqual(1, pendingRoot.GetProperty("branchQueryReceipts").GetArrayLength(), "Runtime CLI substate should preserve branch receipt.");
+                }
+
+                string validationJson = RunCliForOutput(new[] {
+                    "runtime-project",
+                    directory,
+                    "--validate-substate",
+                    pendingSubstatePath,
+                    "--script-version",
+                    "script-v1",
+                });
+                using (JsonDocument validationDocument = JsonDocument.Parse(validationJson)) {
+                    AssertEqual("compatible", ReadLowerStatus(validationDocument), "Runtime CLI substate validation status");
+                }
+
+                string resumedSubstateJson = RunCliForOutput(new[] {
+                    "runtime-project",
+                    directory,
+                    "--substate",
+                    pendingSubstatePath,
+                    "--action-dispatcher",
+                    actionDispatcherPath,
+                    "--resume-action",
+                    resumePath,
+                    "--export-substate",
+                    "--script-version",
+                    "script-v1",
+                });
+                File.WriteAllText(resumedSubstatePath, resumedSubstateJson, Encoding.UTF8);
+                using (JsonDocument resumedDocument = JsonDocument.Parse(resumedSubstateJson)) {
+                    JsonElement resumedRoot = resumedDocument.RootElement;
+                    AssertEqual(JsonValueKind.Null, resumedRoot.GetProperty("pendingAction").ValueKind, "Runtime CLI resumed substate pending action");
+                    AssertEqual("gate.knock", resumedRoot.GetProperty("position").GetProperty("nodeId").GetString(), "Runtime CLI resumed substate node");
+                }
+
+                string logJson = RunCliForOutput(new[] {
+                    "runtime-project",
+                    directory,
+                    "--substate",
+                    resumedSubstatePath,
+                    "--action-dispatcher",
+                    actionDispatcherPath,
+                    "--advance-flow",
+                });
+                using (JsonDocument logDocument = JsonDocument.Parse(logJson)) {
+                    JsonElement logRoot = logDocument.RootElement;
+                    AssertEqual(1, logRoot.GetProperty("logEntries").GetArrayLength(), "Runtime CLI log entry count");
+                    AssertEqual("Knocked.", logRoot.GetProperty("logEntries")[0].GetProperty("text").GetString(), "Runtime CLI log entry text");
+                    AssertEqual(0, logRoot.GetProperty("actionRequests").GetArrayLength(), "Runtime CLI substate import should not redispatch completed pending action.");
+                }
+
+                string advancedSubstateJson = RunCliForOutput(new[] {
+                    "runtime-project",
+                    directory,
+                    "--substate",
+                    resumedSubstatePath,
+                    "--action-dispatcher",
+                    actionDispatcherPath,
+                    "--advance-flow",
+                    "--export-substate",
+                    "--script-version",
+                    "script-v1",
+                });
+                File.WriteAllText(advancedSubstatePath, advancedSubstateJson, Encoding.UTF8);
+
+                string helpJson = RunCliForOutput(new[] {
+                    "runtime-project",
+                    directory,
+                    "--substate",
+                    advancedSubstatePath,
+                    "--query-provider",
+                    queryProviderPath,
+                    "--continue",
+                });
+                using JsonDocument helpDocument = JsonDocument.Parse(helpJson);
+                JsonElement helpRoot = helpDocument.RootElement;
+                AssertEqual("mira.help", helpRoot.GetProperty("state").GetProperty("currentNodeName").GetString(), "Runtime CLI should continue through internal fact and query condition.");
+                AssertTrue(RuntimeSnapshotHasReceipt(helpRoot, "trust"), "Runtime CLI conditional jump should record host query receipt.");
+                AssertTrue(RuntimeSnapshotHasReceipt(helpRoot, "visited"), "Runtime CLI conditional jump should record internal fact receipt.");
+            } finally {
+                Directory.Delete(directory, true);
+            }
+        }
+
+        static void CliRuntimeProjectReportsP4RuntimeQueryErrors() {
+            string directory = Path.Combine(Path.GetTempPath(), "inscape-tests", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory);
+            string queryProviderPath = Path.Combine(directory, "runtime-query-provider.json");
+            File.WriteAllText(Path.Combine(directory, "story.inscape"), """
+# start
+@entry
+Narrator: Start.
+? [trust("mira") >= 3] -> mira.help
+-> gate.locked
+
+# mira.help
+Narrator: Help.
+
+# gate.locked
+Narrator: Locked.
+""", Encoding.UTF8);
+
+            File.WriteAllText(queryProviderPath, """
+{
+  "kind": "Mock",
+  "mockValues": []
+}
+""", Encoding.UTF8);
+
+            try {
+                (int ExitCode, string Stdout, string Stderr) result = RunCliForFailure(new[] {
+                    "runtime-project",
+                    directory,
+                    "--query-provider",
+                    queryProviderPath,
+                    "--continue",
+                });
+
+                AssertEqual(1, result.ExitCode, "Runtime CLI query failure exit code");
+                AssertEqual(string.Empty, result.Stdout.Trim(), "Runtime CLI query failure stdout");
+                AssertTrue(result.Stderr.Contains("IRF005"), "Runtime CLI query failure should include flow error code.");
+                AssertTrue(result.Stderr.Contains("IRC003"), "Runtime CLI query failure should include condition diagnostic code.");
+                AssertTrue(result.Stderr.Contains("conditionalJumps[0].condition"), "Runtime CLI query failure should include branch path.");
+                AssertTrue(result.Stderr.Contains("trust"), "Runtime CLI query failure should include query name.");
+            } finally {
+                Directory.Delete(directory, true);
+            }
+        }
+
+        static void CliRuntimeProjectReportsP4RuntimeActionResultErrors() {
+            string directory = Path.Combine(Path.GetTempPath(), "inscape-tests", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory);
+            string actionDispatcherPath = Path.Combine(directory, "runtime-action-dispatcher.json");
+            string actionResultPath = Path.Combine(directory, "runtime-action-result.json");
+            File.WriteAllText(Path.Combine(directory, "story.inscape"), """
+# start
+@entry
+@emit play_timeline mira_reveal
+Narrator: Start.
+""", Encoding.UTF8);
+
+            File.WriteAllText(actionDispatcherPath, """
+{
+  "actions": [
+    { "name": "play_timeline", "mode": "fire" }
+  ],
+  "handlers": [
+    { "name": "play_timeline", "handlerName": "Timeline.Play" }
+  ]
+}
+""", Encoding.UTF8);
+
+            File.WriteAllText(actionResultPath, """
+{
+  "succeeded": false,
+  "status": "failed",
+  "errorCode": "HOST001",
+  "errorMessage": "Timeline failed."
+}
+""", Encoding.UTF8);
+
+            try {
+                (int ExitCode, string Stdout, string Stderr) result = RunCliForFailure(new[] {
+                    "runtime-project",
+                    directory,
+                    "--action-dispatcher",
+                    actionDispatcherPath,
+                    "--action-result",
+                    actionResultPath,
+                });
+
+                AssertEqual(1, result.ExitCode, "Runtime CLI action failure exit code");
+                AssertEqual(string.Empty, result.Stdout.Trim(), "Runtime CLI action failure stdout");
+                AssertTrue(result.Stderr.Contains("HOST001"), "Runtime CLI action failure should include host error code.");
+                AssertTrue(result.Stderr.Contains("action.play_timeline"), "Runtime CLI action failure should include action path.");
+                AssertTrue(result.Stderr.Contains("Timeline failed."), "Runtime CLI action failure should include host error message.");
+            } finally {
+                Directory.Delete(directory, true);
+            }
+        }
+
         static string rewindJsonToStatePath(string directory, string rewindJson) {
             string rewindStatePath = Path.Combine(directory, "runtime-rewind-state.json");
             File.WriteAllText(rewindStatePath, rewindJson, Encoding.UTF8);
@@ -1265,6 +1608,16 @@ Narrator: End.
         static bool LogContainsText(IReadOnlyList<NarrativeRuntimeLogEntryModel> entries, string text) {
             for (int i = 0; i < entries.Count; i += 1) {
                 if (entries[i].Text == text) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        static bool RuntimeSnapshotHasReceipt(JsonElement snapshot, string name) {
+            foreach (JsonElement receipt in snapshot.GetProperty("branchQueryReceipts").EnumerateArray()) {
+                if (receipt.GetProperty("name").GetString() == name) {
                     return true;
                 }
             }

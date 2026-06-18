@@ -1,12 +1,24 @@
 # Agent 接手指南
 
-状态：P4 Round 9 Save / Load 子状态 blob 第一刀完成
+状态：P4 Round 10 CLI Runtime playable driver 第一刀完成
 
 最后更新：2026-06-18
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-18 SelfHostedEditor P4 Round 10 CLI Runtime 快照
+
+P4 Runtime playable MVP 已完成第十轮 CLI Runtime playable driver 第一刀，不代表 P4 MVP 已完成。
+- 本轮审计见 [SelfHostedEditor P4 CLI Runtime Audit](self-hosted-editor-p4-cli-runtime-audit.md)。
+- `runtime-project` 现在支持 `--query-provider`、`--action-dispatcher`、`--action-result`、`--resume-action`、`--substate`、`--export-substate` 与 `--validate-substate`。
+- `--query-provider` 复用 `NarrativeRuntimeQueryProviderModel` 的 mock / recorded value table；`Delegate` callback 仍属于正式宿主集成，不通过 CLI JSON 表达。
+- `--action-dispatcher`、`--action-result` 与 `--resume-action` 复用 Runtime action dispatcher / result / resume 模型，CLI 只做 JSON 输入和 Runtime 调用，不重写 action 语义。
+- 旧 `--state` / `--export-state` / `--validate-state` 保持兼容；若把 P4 substate 误传给旧 `--state` 或 `--validate-state`，CLI 会拒绝并提示使用 `--substate` / `--validate-substate`，避免 pending action 和 branch receipt 静默丢失。
+- CLI happy path 测试通过真实 `runtime-project` 串起 mock query、fire action、wait pending / resume、substate export / validate / import、snapshot `logEntries` 与 internal fact + query 条件跳转；错误路径覆盖 missing query 与 host action result failure。
+- ExternalSupport 未新增 condition parser、query evaluator、action dispatcher、Log builder、Substate importer 或 Runtime 语义副本；Internal Runtime / CLI 未引入 Unity / Bird / 宿主业务状态。
+- 下一轮进入 P4 Round 11：Editor host contract guard，不做产品化 UI；重点验证 VSCode / SelfHostedEditor 边界和 smoke。
 
 ### 2026-06-18 SelfHostedEditor P4 Round 9 Substate 快照
 

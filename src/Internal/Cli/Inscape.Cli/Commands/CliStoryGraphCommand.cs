@@ -82,9 +82,34 @@ namespace Inscape.Cli {
 
                     NarrativeRuntime runtime = new NarrativeRuntime();
                     runtime.LoadGraph(result.Graph);
+                    if (!TryConfigureRuntimeInputs(runtime, args, jsonOptions, out string? runtimeInputError)) {
+                        Console.Error.WriteLine(runtimeInputError);
+                        return 1;
+                    }
 
+                    string? validationSubstatePath = CliCore.ReadOption(args, "--validate-substate");
                     string? validationStatePath = CliCore.ReadOption(args, "--validate-state");
                     string scriptVersion = CliCore.ReadOption(args, "--script-version") ?? string.Empty;
+                    if (!string.IsNullOrWhiteSpace(validationSubstatePath) && !string.IsNullOrWhiteSpace(validationStatePath)) {
+                        Console.Error.WriteLine("Runtime validation can use only one of --validate-state or --validate-substate.");
+                        return 1;
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(validationSubstatePath)) {
+                        if (!TryReadRuntimeSubstate(validationSubstatePath,
+                                                    jsonOptions,
+                                                    out NarrativeRuntimeSubstateModel substate,
+                                                    out string? validationSubstateError)) {
+                            Console.Error.WriteLine(validationSubstateError);
+                            return 1;
+                        }
+
+                        NarrativeRuntimeStateValidationModel validation = runtime.ValidateSubstateAgainstCurrentScript(substate,
+                                                                                                                      scriptVersion);
+                        CliCore.WriteOrPrint(outputPath, JsonSerializer.Serialize(validation, jsonOptions));
+                        return 0;
+                    }
+
                     if (!string.IsNullOrWhiteSpace(validationStatePath)) {
                         if (!TryReadRuntimeExportState(validationStatePath,
                                                        jsonOptions,
@@ -101,20 +126,41 @@ namespace Inscape.Cli {
                     }
 
                     string? statePath = CliCore.ReadOption(args, "--state");
-                    if (string.IsNullOrWhiteSpace(statePath)) {
-                        if (!runtime.Start(result.EntryNodeName)) {
-                            Console.Error.WriteLine("Runtime could not start project entry: " + result.EntryNodeName);
-                            return 1;
-                        }
-                    } else if (!TryReadRuntimeState(statePath, jsonOptions, out NarrativeRuntimeStateModel runtimeState, out string? stateError)) {
-                        Console.Error.WriteLine(stateError);
-                        return 1;
-                    } else if (!runtime.Restore(runtimeState)) {
-                        Console.Error.WriteLine("Runtime could not restore state for node: " + runtimeState.CurrentNodeName);
+                    string? substatePath = CliCore.ReadOption(args, "--substate");
+                    if (!string.IsNullOrWhiteSpace(statePath) && !string.IsNullOrWhiteSpace(substatePath)) {
+                        Console.Error.WriteLine("Runtime restore can use only one of --state or --substate.");
                         return 1;
                     }
 
-                    if (!ApplyRuntimeAction(runtime, args, out string? runtimeActionError)) {
+                    if (HasOption(args, "--export-state") && HasOption(args, "--export-substate")) {
+                        Console.Error.WriteLine("Runtime output can use only one of --export-state or --export-substate.");
+                        return 1;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(statePath) && string.IsNullOrWhiteSpace(substatePath)) {
+                        if (!runtime.Start(result.EntryNodeName)) {
+                            Console.Error.WriteLine(DescribeRuntimeFailure(runtime, "Runtime could not start project entry: " + result.EntryNodeName));
+                            return 1;
+                        }
+                    } else if (!string.IsNullOrWhiteSpace(substatePath)) {
+                        if (!TryReadRuntimeSubstate(substatePath, jsonOptions, out NarrativeRuntimeSubstateModel substate, out string? substateError)) {
+                            Console.Error.WriteLine(substateError);
+                            return 1;
+                        }
+
+                        if (!runtime.ImportSubstate(substate, scriptVersion)) {
+                            Console.Error.WriteLine(DescribeRuntimeFailure(runtime, "Runtime could not import substate for node: " + substate.Position.NodeId));
+                            return 1;
+                        }
+                    } else if (!TryReadRuntimeState(statePath ?? string.Empty, jsonOptions, out NarrativeRuntimeStateModel runtimeState, out string? stateError)) {
+                        Console.Error.WriteLine(stateError);
+                        return 1;
+                    } else if (!runtime.Restore(runtimeState)) {
+                        Console.Error.WriteLine(DescribeRuntimeFailure(runtime, "Runtime could not restore state for node: " + runtimeState.CurrentNodeName));
+                        return 1;
+                    }
+
+                    if (!ApplyRuntimeAction(runtime, args, jsonOptions, out string? runtimeActionError)) {
                         Console.Error.WriteLine(runtimeActionError);
                         return 1;
                     }
@@ -123,6 +169,14 @@ namespace Inscape.Cli {
                         string hostCheckpointId = CliCore.ReadOption(args, "--host-checkpoint-id") ?? string.Empty;
                         CliCore.WriteOrPrint(outputPath,
                                              JsonSerializer.Serialize(runtime.ExportState(scriptVersion, hostCheckpointId),
+                                                                     jsonOptions));
+                        return 0;
+                    }
+
+                    if (HasOption(args, "--export-substate")) {
+                        string hostCheckpointId = CliCore.ReadOption(args, "--host-checkpoint-id") ?? string.Empty;
+                        CliCore.WriteOrPrint(outputPath,
+                                             JsonSerializer.Serialize(runtime.ExportSubstate(scriptVersion, hostCheckpointId),
                                                                       jsonOptions));
                         return 0;
                     }
@@ -157,27 +211,49 @@ namespace Inscape.Cli {
             }
         }
 
-        static bool ApplyRuntimeAction(NarrativeRuntime runtime, string[] args, out string? errorMessage) {
+        static bool ApplyRuntimeAction(NarrativeRuntime runtime,
+                                       string[] args,
+                                       JsonSerializerOptions jsonOptions,
+                                       out string? errorMessage) {
             errorMessage = null;
             bool shouldContinue = HasOption(args, "--continue");
             bool shouldAdvanceFlow = HasOption(args, "--advance-flow");
             bool shouldRewind = HasOption(args, "--rewind");
             bool shouldRewindFlow = HasOption(args, "--rewind-flow");
+            string? resumeActionPath = CliCore.ReadOption(args, "--resume-action");
             int chooseIndex = IndexOf(args, "--choose");
 
             int actionCount = (shouldContinue ? 1 : 0)
                               + (shouldAdvanceFlow ? 1 : 0)
                               + (shouldRewind ? 1 : 0)
                               + (shouldRewindFlow ? 1 : 0)
+                              + (!string.IsNullOrWhiteSpace(resumeActionPath) ? 1 : 0)
                               + (chooseIndex >= 0 ? 1 : 0);
             if (actionCount > 1) {
-                errorMessage = "Runtime action can use only one of --continue, --advance-flow, --rewind, --rewind-flow, or --choose.";
+                errorMessage = "Runtime action can use only one of --continue, --advance-flow, --rewind, --rewind-flow, --resume-action, or --choose.";
                 return false;
+            }
+
+            if (!string.IsNullOrWhiteSpace(resumeActionPath)) {
+                if (!TryReadJsonFile(resumeActionPath,
+                                     jsonOptions,
+                                     "Runtime action resume file",
+                                     out NarrativeRuntimeActionResumeModel resume,
+                                     out errorMessage)) {
+                    return false;
+                }
+
+                if (!runtime.ResumeAction(resume)) {
+                    errorMessage = DescribeRuntimeFailure(runtime, "Runtime could not resume pending action: " + resume.RequestId);
+                    return false;
+                }
+
+                return true;
             }
 
             if (shouldContinue) {
                 if (!runtime.Continue()) {
-                    errorMessage = "Runtime could not continue from node: " + runtime.State.CurrentNodeName;
+                    errorMessage = DescribeRuntimeFailure(runtime, "Runtime could not continue from node: " + runtime.State.CurrentNodeName);
                     return false;
                 }
 
@@ -186,7 +262,7 @@ namespace Inscape.Cli {
 
             if (shouldAdvanceFlow) {
                 if (!runtime.AdvanceFlow()) {
-                    errorMessage = "Runtime could not advance flow from node: " + runtime.State.CurrentNodeName;
+                    errorMessage = DescribeRuntimeFailure(runtime, "Runtime could not advance flow from node: " + runtime.State.CurrentNodeName);
                     return false;
                 }
 
@@ -195,7 +271,7 @@ namespace Inscape.Cli {
 
             if (shouldRewind) {
                 if (!runtime.Rewind()) {
-                    errorMessage = "Runtime could not rewind from node: " + runtime.State.CurrentNodeName;
+                    errorMessage = DescribeRuntimeFailure(runtime, "Runtime could not rewind from node: " + runtime.State.CurrentNodeName);
                     return false;
                 }
 
@@ -204,7 +280,7 @@ namespace Inscape.Cli {
 
             if (shouldRewindFlow) {
                 if (!runtime.RewindFlow()) {
-                    errorMessage = "Runtime could not rewind flow from node: " + runtime.State.CurrentNodeName;
+                    errorMessage = DescribeRuntimeFailure(runtime, "Runtime could not rewind flow from node: " + runtime.State.CurrentNodeName);
                     return false;
                 }
 
@@ -220,9 +296,61 @@ namespace Inscape.Cli {
                 }
 
                 if (!runtime.Choose(groupIndex, optionIndex)) {
-                    errorMessage = "Runtime could not choose option " + groupIndex + ":" + optionIndex + " from node: " + runtime.State.CurrentNodeName;
+                    errorMessage = DescribeRuntimeFailure(runtime, "Runtime could not choose option " + groupIndex + ":" + optionIndex + " from node: " + runtime.State.CurrentNodeName);
                     return false;
                 }
+            }
+
+            return true;
+        }
+
+        static bool TryConfigureRuntimeInputs(NarrativeRuntime runtime,
+                                              string[] args,
+                                              JsonSerializerOptions jsonOptions,
+                                              out string? errorMessage) {
+            errorMessage = null;
+            string? queryProviderPath = CliCore.ReadOption(args, "--query-provider");
+            if (!string.IsNullOrWhiteSpace(queryProviderPath)) {
+                if (!TryReadJsonFile(queryProviderPath,
+                                     jsonOptions,
+                                     "Runtime query provider file",
+                                     out NarrativeRuntimeQueryProviderModel provider,
+                                     out errorMessage)) {
+                    return false;
+                }
+
+                if (provider.Kind == NarrativeRuntimeQueryProviderKindModel.Delegate) {
+                    errorMessage = "Runtime --query-provider supports mock or recorded value tables. Delegate callbacks belong to host integration, not CLI JSON.";
+                    return false;
+                }
+
+                runtime.QueryProvider = provider;
+            }
+
+            string? actionDispatcherPath = CliCore.ReadOption(args, "--action-dispatcher");
+            if (!string.IsNullOrWhiteSpace(actionDispatcherPath)) {
+                if (!TryReadJsonFile(actionDispatcherPath,
+                                     jsonOptions,
+                                     "Runtime action dispatcher file",
+                                     out NarrativeRuntimeActionDispatcherModel dispatcher,
+                                     out errorMessage)) {
+                    return false;
+                }
+
+                runtime.ActionDispatcher = dispatcher;
+            }
+
+            string? actionResultPath = CliCore.ReadOption(args, "--action-result");
+            if (!string.IsNullOrWhiteSpace(actionResultPath)) {
+                if (!TryReadJsonFile(actionResultPath,
+                                     jsonOptions,
+                                     "Runtime action result file",
+                                     out NarrativeRuntimeActionResultModel actionResult,
+                                     out errorMessage)) {
+                    return false;
+                }
+
+                runtime.ActionDispatcher.DispatchAction = _ => CloneActionResult(actionResult);
             }
 
             return true;
@@ -273,6 +401,11 @@ namespace Inscape.Cli {
                 JsonElement stateElement = root.TryGetProperty("state", out JsonElement nestedState)
                     ? nestedState
                     : root;
+                if (IsRuntimeSubstateElement(stateElement)) {
+                    errorMessage = "Runtime state file is a P4 runtime substate. Use --substate for import: " + fullPath;
+                    return false;
+                }
+
                 if (stateElement.TryGetProperty("position", out _) && stateElement.TryGetProperty("flow", out _)) {
                     NarrativeRuntimeExportStateModel? exportedState = stateElement.Deserialize<NarrativeRuntimeExportStateModel>(jsonOptions);
                     if (exportedState == null) {
@@ -316,6 +449,11 @@ namespace Inscape.Cli {
                 JsonElement stateElement = root.TryGetProperty("state", out JsonElement nestedState)
                     ? nestedState
                     : root;
+                if (IsRuntimeSubstateElement(stateElement)) {
+                    errorMessage = "Runtime export state file is a P4 runtime substate. Use --validate-substate for validation: " + fullPath;
+                    return false;
+                }
+
                 if (!stateElement.TryGetProperty("position", out _) || !stateElement.TryGetProperty("flow", out _)) {
                     errorMessage = "Runtime export state file did not contain a formal runtime state object: " + fullPath;
                     return false;
@@ -335,6 +473,28 @@ namespace Inscape.Cli {
             }
         }
 
+        static bool TryReadRuntimeSubstate(string substatePath,
+                                           JsonSerializerOptions jsonOptions,
+                                           out NarrativeRuntimeSubstateModel substate,
+                                           out string? errorMessage) {
+            substate = new NarrativeRuntimeSubstateModel();
+            if (!TryReadJsonFile(substatePath,
+                                 jsonOptions,
+                                 "Runtime substate file",
+                                 out NarrativeRuntimeSubstateModel parsedSubstate,
+                                 out errorMessage)) {
+                return false;
+            }
+
+            substate = parsedSubstate;
+            if (substate.Format != "inscape.runtime-substate") {
+                errorMessage = "Runtime substate file did not contain an inscape.runtime-substate object: " + Path.GetFullPath(substatePath);
+                return false;
+            }
+
+            return true;
+        }
+
         static NarrativeRuntimeStateModel ConvertExportStateToRuntimeState(NarrativeRuntimeExportStateModel exportState) {
             NarrativeRuntimeStateModel runtimeState = new NarrativeRuntimeStateModel {
                 CurrentNodeName = exportState.Position.NodeId,
@@ -347,6 +507,97 @@ namespace Inscape.Cli {
             }
 
             return runtimeState;
+        }
+
+        static bool TryReadJsonFile<T>(string path,
+                                       JsonSerializerOptions jsonOptions,
+                                       string description,
+                                       out T value,
+                                       out string? errorMessage) where T : new() {
+            value = new T();
+            errorMessage = null;
+            string fullPath = Path.GetFullPath(path);
+            if (!File.Exists(fullPath)) {
+                errorMessage = description + " not found: " + fullPath;
+                return false;
+            }
+
+            try {
+                T? parsed = JsonSerializer.Deserialize<T>(File.ReadAllText(fullPath), jsonOptions);
+                if (parsed == null) {
+                    errorMessage = description + " did not contain a JSON object: " + fullPath;
+                    return false;
+                }
+
+                value = parsed;
+                return true;
+            } catch (JsonException ex) {
+                errorMessage = description + " is not valid JSON: " + ex.Message;
+                return false;
+            }
+        }
+
+        static bool IsRuntimeSubstateElement(JsonElement element) {
+            return element.TryGetProperty("format", out JsonElement formatElement)
+                   && formatElement.GetString() == "inscape.runtime-substate";
+        }
+
+        static NarrativeRuntimeActionResultModel CloneActionResult(NarrativeRuntimeActionResultModel source) {
+            return new NarrativeRuntimeActionResultModel {
+                Succeeded = source.Succeeded,
+                RequestWasSent = source.RequestWasSent,
+                Status = source.Status,
+                ErrorCode = source.ErrorCode,
+                ErrorMessage = source.ErrorMessage,
+                HostPayload = source.HostPayload,
+            };
+        }
+
+        static string DescribeRuntimeFailure(NarrativeRuntime runtime, string fallback) {
+            NarrativeRuntimeFlowErrorModel? error = runtime.LastError;
+            if (error == null) {
+                return fallback;
+            }
+
+            System.Text.StringBuilder builder = new System.Text.StringBuilder();
+            if (error.Code.Length > 0) {
+                builder.Append(error.Code);
+            }
+            if (error.Path.Length > 0) {
+                if (builder.Length > 0) {
+                    builder.Append(' ');
+                }
+                builder.Append(error.Path);
+            }
+            if (error.Message.Length > 0) {
+                if (builder.Length > 0) {
+                    builder.Append(": ");
+                }
+                builder.Append(error.Message);
+            }
+
+            for (int i = 0; i < error.ConditionDiagnostics.Count; i += 1) {
+                NarrativeRuntimeConditionEvaluationDiagnosticModel diagnostic = error.ConditionDiagnostics[i];
+                builder.AppendLine();
+                builder.Append("condition ");
+                builder.Append(diagnostic.Code);
+                if (diagnostic.Path.Length > 0) {
+                    builder.Append(' ');
+                    builder.Append(diagnostic.Path);
+                }
+                if (diagnostic.Source.Line > 0 || diagnostic.Source.Column > 0) {
+                    builder.Append(" at ");
+                    builder.Append(diagnostic.Source.Line);
+                    builder.Append(':');
+                    builder.Append(diagnostic.Source.Column);
+                }
+                if (diagnostic.Message.Length > 0) {
+                    builder.Append(": ");
+                    builder.Append(diagnostic.Message);
+                }
+            }
+
+            return builder.Length == 0 ? fallback : builder.ToString();
         }
 
         static bool HasOption(string[] args, string optionName) {
