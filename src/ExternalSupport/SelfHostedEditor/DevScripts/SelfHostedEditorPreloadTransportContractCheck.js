@@ -64,12 +64,33 @@ const preloadApi = createSelfHostedEditorPreloadApi({
         ok: true,
       };
     },
+    [EditorBackendTransportCommand.RuntimeSubstateExport]: async (payload) => {
+      preloadCalls.push({ command: EditorBackendTransportCommand.RuntimeSubstateExport, payload });
+      return {
+        format: "inscape.self-hosted-editor.runtime-substate-operation",
+        operation: "export",
+      };
+    },
+    [EditorBackendTransportCommand.RuntimeSubstateImport]: async (payload) => {
+      preloadCalls.push({ command: EditorBackendTransportCommand.RuntimeSubstateImport, payload });
+      return {
+        format: "inscape.self-hosted-editor.runtime-substate-operation",
+        operation: "import",
+      };
+    },
     [EditorBackendTransportCommand.RuntimeStep]: async (payload) => {
       preloadCalls.push({ command: EditorBackendTransportCommand.RuntimeStep, payload });
       return {
         currentNode: {
           name: "Opening",
         },
+      };
+    },
+    [EditorBackendTransportCommand.RuntimeSubstateValidate]: async (payload) => {
+      preloadCalls.push({ command: EditorBackendTransportCommand.RuntimeSubstateValidate, payload });
+      return {
+        format: "inscape.self-hosted-editor.runtime-substate-operation",
+        operation: "validate",
       };
     },
     [EditorBackendTransportCommand.RuntimeStartOrObserve]: async (payload) => {
@@ -203,6 +224,29 @@ const recoveryDiscardResult = await preloadTransport.invoke(EditorBackendTranspo
   relativePath: "story/opening.inscape",
 });
 assertEqual(recoveryDiscardResult.action, "discard", "preload transport recovery discard payload");
+const substateExportResult = await preloadTransport.invoke(EditorBackendTransportCommand.RuntimeSubstateExport, {
+  hostCheckpointId: "preview",
+  runtimeState: {
+    state: {
+      currentNodeName: "Opening",
+    },
+  },
+  scriptText: "# Opening",
+  scriptVersion: "script-v1",
+});
+assertEqual(substateExportResult.operation, "export", "preload transport runtime substate export payload");
+const substateValidateResult = await preloadTransport.invoke(EditorBackendTransportCommand.RuntimeSubstateValidate, {
+  scriptText: "# Opening",
+  scriptVersion: "script-v1",
+  substateText: "{}",
+});
+assertEqual(substateValidateResult.operation, "validate", "preload transport runtime substate validate payload");
+const substateImportResult = await preloadTransport.invoke(EditorBackendTransportCommand.RuntimeSubstateImport, {
+  scriptText: "# Opening",
+  scriptVersion: "script-v1",
+  substateText: "{}",
+});
+assertEqual(substateImportResult.operation, "import", "preload transport runtime substate import payload");
 
 let unknownCommandRejected = false;
 try {
@@ -275,6 +319,11 @@ assertEqual(runtimeStart.currentNode.name, "Opening", "desktop backend client ru
 const runtimeStartCall = preloadCalls.find((call) => call.command === EditorBackendTransportCommand.RuntimeStartOrObserve);
 assertEqual(runtimeStartCall.payload.queryProvider.kind, "Mock", "desktop runtime start allows mock query provider payload");
 assertEqual(runtimeStartCall.payload.actionDispatcher.handlers[0].handlerName, "Timeline.Play", "desktop runtime start allows action dispatcher handler payload");
+const runtimeSubstate = await desktopBackendClient.runtimeSession.substateValidate({
+  scriptText: "# Desktop",
+  substateText: "{}",
+});
+assertEqual(runtimeSubstate.operation, "validate", "desktop backend client runtime substate validate preload payload");
 const projectStatus = await desktopBackendClient.projectSession.status();
 assertEqual(projectStatus.sessionId, "desktop-session", "desktop backend client project session id");
 const desktopSave = await desktopBackendClient.documentBuffer.saveDocument({

@@ -71,11 +71,35 @@ export class SelfHostedEditorFakeEmbeddedTransport {
           supportedEndpoints: ["diagnostics", "document-symbols"],
         },
       }),
+      [EditorBackendTransportCommand.RuntimeSubstateExport]: async () => ({
+        error: "Fake embedded Runtime substate export is unavailable.",
+        format: "inscape.self-hosted-editor.runtime-substate-operation",
+        formatVersion: 1,
+        imported: false,
+        operation: "export",
+        validationStatus: "unavailable",
+      }),
+      [EditorBackendTransportCommand.RuntimeSubstateImport]: async () => ({
+        error: "Fake embedded Runtime substate import is unavailable.",
+        format: "inscape.self-hosted-editor.runtime-substate-operation",
+        formatVersion: 1,
+        imported: false,
+        operation: "import",
+        validationStatus: "unavailable",
+      }),
       [EditorBackendTransportCommand.RuntimeStartOrObserve]: async () => ({
         currentNode: null,
       }),
       [EditorBackendTransportCommand.RuntimeStep]: async () => ({
         currentNode: null,
+      }),
+      [EditorBackendTransportCommand.RuntimeSubstateValidate]: async () => ({
+        error: "Fake embedded Runtime substate validation is unavailable.",
+        format: "inscape.self-hosted-editor.runtime-substate-operation",
+        formatVersion: 1,
+        imported: false,
+        operation: "validate",
+        validationStatus: "unavailable",
       }),
       [EditorBackendTransportCommand.StableNodeMapApplyCandidate]: async () => ({
         changes: [],

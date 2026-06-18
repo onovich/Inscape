@@ -75,6 +75,12 @@ export function createSelfHostedEditorBackendCommandHandlers(options = {}) {
     [EditorBackendTransportCommand.RecoveryRestore]: async (payload = {}) => {
       return await sessionStore.restoreRecoverySnapshot(payload);
     },
+    [EditorBackendTransportCommand.RuntimeSubstateExport]: async () =>
+      buildUnavailableRuntimeSubstateOperation("export"),
+    [EditorBackendTransportCommand.RuntimeSubstateImport]: async () =>
+      buildUnavailableRuntimeSubstateOperation("import"),
+    [EditorBackendTransportCommand.RuntimeSubstateValidate]: async () =>
+      buildUnavailableRuntimeSubstateOperation("validate"),
     [EditorBackendTransportCommand.WorkspaceListFiles]: async () => {
       return sessionStore.listFiles();
     },
@@ -99,4 +105,15 @@ export function listSelfHostedEditorElectronBackendCommands() {
 
 export function buildSelfHostedEditorElectronProjectSessionStatus(payload = {}, options = {}) {
   return buildProjectSessionStatusFromPayload(payload, options);
+}
+
+function buildUnavailableRuntimeSubstateOperation(operation) {
+  return {
+    error: "SelfHostedEditor desktop Runtime substate backend is unavailable in the current embedded workspace session.",
+    format: "inscape.self-hosted-editor.runtime-substate-operation",
+    formatVersion: 1,
+    imported: false,
+    operation,
+    validationStatus: "unavailable",
+  };
 }

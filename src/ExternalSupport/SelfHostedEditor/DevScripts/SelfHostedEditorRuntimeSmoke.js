@@ -1,6 +1,9 @@
 import {
+  exportRuntimeSubstateForScriptText,
   getRuntimeStateForScriptText,
+  importRuntimeSubstateForScriptText,
   stepRuntimeStateForScriptText,
+  validateRuntimeSubstateForScriptText,
 } from "./StartSelfHostedEditorPreview.js";
 
 const runtimeScript = `# Opening
@@ -76,6 +79,45 @@ async function main() {
   assertEqual(querySnapshot.branchQueryReceipts?.[0]?.result?.value, "true", "query snapshot branch evidence result");
   assertEqual(querySnapshot.branchQueryReceipts?.[0]?.sourceLine, 5, "query snapshot branch evidence source line");
   assertPayloadSize(querySnapshot, "query branch evidence runtime snapshot");
+
+  const substateExport = await exportRuntimeSubstateForScriptText(queryRuntimeScript, null, querySnapshot, "runtime-substate-smoke", keyQueryProvider, null, {
+    hostCheckpointId: "preview-checkpoint",
+    scriptVersion: "script-v1",
+  });
+  assertEqual(substateExport.format, "inscape.self-hosted-editor.runtime-substate-operation", "runtime substate export operation format");
+  assertEqual(substateExport.validationStatus, "compatible", "runtime substate export validation status");
+  assertEqual(substateExport.substate?.format, "inscape.runtime-substate", "runtime substate artifact format");
+  assertEqual(substateExport.substateSummary.branchReceiptCount, 1, "runtime substate branch receipt count");
+  assertEqual(substateExport.substateSummary.hostCheckpointPresent, true, "runtime substate host checkpoint presence");
+  assertEqual(substateExport.safety.notFullHostSave, true, "runtime substate is not full host save");
+  assertRuntimeSubstatePayloadBoundary(substateExport.substateText, "runtime substate export payload");
+
+  const substateValidate = await validateRuntimeSubstateForScriptText(queryRuntimeScript, null, substateExport.substateText, "runtime-substate-smoke", {
+    scriptVersion: "script-v1",
+  });
+  assertEqual(substateValidate.validationStatus, "compatible", "runtime substate validate status");
+
+  const substateDrift = await validateRuntimeSubstateForScriptText(queryRuntimeScript, null, substateExport.substateText, "runtime-substate-smoke", {
+    scriptVersion: "script-v2",
+  });
+  assertEqual(substateDrift.validationStatus, "migratable", "runtime substate script drift status");
+
+  const substateImport = await importRuntimeSubstateForScriptText(queryRuntimeScript, null, substateExport.substateText, "runtime-substate-smoke", keyQueryProvider, null, {
+    scriptVersion: "script-v1",
+  });
+  assertEqual(substateImport.imported, true, "runtime substate compatible import flag");
+  assertRuntimeSnapshot(substateImport.runtimeSnapshot, "Gate");
+
+  const substateBlockedImport = await importRuntimeSubstateForScriptText(queryRuntimeScript, null, substateExport.substateText, "runtime-substate-smoke", keyQueryProvider, null, {
+    scriptVersion: "script-v2",
+  });
+  assertEqual(substateBlockedImport.imported, false, "runtime substate migratable import blocked");
+  assertEqual(substateBlockedImport.validationStatus, "migratable", "runtime substate blocked import status");
+
+  const invalidSubstate = await validateRuntimeSubstateForScriptText(queryRuntimeScript, null, "{", "runtime-substate-smoke", {
+    scriptVersion: "script-v1",
+  });
+  assertEqual(invalidSubstate.validationStatus, "error", "runtime substate invalid JSON status");
 
   const openingLineSnapshot = await stepRuntimeStateForScriptText(runtimeScript, null, openingSnapshot, {
     type: "advance-flow",
@@ -166,6 +208,14 @@ function assertPayloadSize(snapshot, label) {
   const payloadBytes = Buffer.byteLength(JSON.stringify(snapshot), "utf8");
   if (payloadBytes > maximumRuntimePayloadBytes) {
     throw new Error(`${label} too large: ${payloadBytes} bytes.`);
+  }
+}
+
+function assertRuntimeSubstatePayloadBoundary(payloadText, label) {
+  for (const forbidden of ["logEntries", "actionRequests", "inventory", "traceReplay", "rollbackStack"]) {
+    if (String(payloadText || "").includes(forbidden)) {
+      throw new Error(`${label} must not include ${forbidden}.`);
+    }
   }
 }
 

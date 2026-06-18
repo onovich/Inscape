@@ -63,6 +63,7 @@ const requiredPaths = [
   "DevScripts/ModelContracts/SelfHostedEditorRuntimeMockQueryContractCheck.js",
   "DevScripts/ModelContracts/SelfHostedEditorRuntimeMockQueryUiContractCheck.js",
   "DevScripts/ModelContracts/SelfHostedEditorRuntimeStatusSurfaceContractCheck.js",
+  "DevScripts/ModelContracts/SelfHostedEditorRuntimeSubstateAuthoringContractCheck.js",
   "DevScripts/ModelContracts/SelfHostedEditorStoryGraphContractCheck.js",
   "DevScripts/SelfHostedEditorModelContractCheck.js",
   "DevScripts/SelfHostedEditorProcessBridge.js",
@@ -98,6 +99,7 @@ const requiredPaths = [
   "Resources/Styles/SelfHostedEditorRuntimeAuthoring.css",
   "Resources/Styles/SelfHostedEditorRuntimeBranchEvidence.css",
   "Resources/Styles/SelfHostedEditorRuntimeLogBacklog.css",
+  "Resources/Styles/SelfHostedEditorRuntimeSubstateAuthoring.css",
   "Resources/Styles/SelfHostedEditorStoryGraph.css",
   "Resources/Styles/SelfHostedEditorSidebar.css",
   "Resources/Styles/SelfHostedEditorTopbar.css",
@@ -200,12 +202,14 @@ const requiredPaths = [
   "Scripts/Runtime/Controllers/RuntimeLogBacklogPanelController.js",
   "Scripts/Runtime/Controllers/RuntimeMockQueryPanelController.js",
   "Scripts/Runtime/Controllers/RuntimeStatusPanelController.js",
+  "Scripts/Runtime/Controllers/RuntimeSubstatePanelController.js",
   "Scripts/Runtime/Models/RuntimeActionAuthoringModelBuilder.js",
   "Scripts/Runtime/Models/RuntimeAuthoringSessionModelBuilder.js",
   "Scripts/Runtime/Models/RuntimeBranchEvidenceModelBuilder.js",
   "Scripts/Runtime/Models/RuntimeLogBacklogModelBuilder.js",
   "Scripts/Runtime/Models/RuntimeMockQueryModelBuilder.js",
   "Scripts/Runtime/Models/RuntimeStatusSurfaceModelBuilder.js",
+  "Scripts/Runtime/Models/RuntimeSubstateAuthoringModelBuilder.js",
   "Scripts/StoryGraph/Controllers/StoryGraphInteractionController.js",
   "Scripts/StoryGraph/Controllers/StoryGraphPreviewController.js",
   "Scripts/StoryGraph/Controllers/StoryGraphViewportController.js",
@@ -526,6 +530,7 @@ const workbenchRuntimeActionAuthoringCssPath = path.join(moduleRoot, "Resources/
 const workbenchRuntimeAuthoringCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorRuntimeAuthoring.css");
 const workbenchRuntimeBranchEvidenceCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorRuntimeBranchEvidence.css");
 const workbenchRuntimeLogBacklogCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorRuntimeLogBacklog.css");
+const workbenchRuntimeSubstateAuthoringCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorRuntimeSubstateAuthoring.css");
 const workbenchStoryGraphCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorStoryGraph.css");
 const workbenchSidebarCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorSidebar.css");
 const workbenchTopbarCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorTopbar.css");
@@ -546,6 +551,7 @@ const workbenchRuntimeActionAuthoringCss = fs.readFileSync(workbenchRuntimeActio
 const workbenchRuntimeAuthoringCss = fs.readFileSync(workbenchRuntimeAuthoringCssPath, "utf8");
 const workbenchRuntimeBranchEvidenceCss = fs.readFileSync(workbenchRuntimeBranchEvidenceCssPath, "utf8");
 const workbenchRuntimeLogBacklogCss = fs.readFileSync(workbenchRuntimeLogBacklogCssPath, "utf8");
+const workbenchRuntimeSubstateAuthoringCss = fs.readFileSync(workbenchRuntimeSubstateAuthoringCssPath, "utf8");
 const workbenchStoryGraphCss = fs.readFileSync(workbenchStoryGraphCssPath, "utf8");
 const workbenchSidebarCss = fs.readFileSync(workbenchSidebarCssPath, "utf8");
 const workbenchTopbarCss = fs.readFileSync(workbenchTopbarCssPath, "utf8");
@@ -569,6 +575,7 @@ const expectedWorkbenchCssImports = [
   '@import url("./SelfHostedEditorRuntimeActionAuthoring.css");',
   '@import url("./SelfHostedEditorRuntimeLogBacklog.css");',
   '@import url("./SelfHostedEditorRuntimeBranchEvidence.css");',
+  '@import url("./SelfHostedEditorRuntimeSubstateAuthoring.css");',
   '@import url("./SelfHostedEditorNodeMapReview.css");',
   '@import url("./SelfHostedEditorStoryGraph.css");',
 ].join("\n");
@@ -818,6 +825,19 @@ if (
 }
 if (/^\.diagnostics-dock\s*{/m.test(workbenchRuntimeBranchEvidenceCss) || /^\.localization-toolbar\s*{/m.test(workbenchRuntimeBranchEvidenceCss) || /^\.host-capability-item\s*{/m.test(workbenchRuntimeBranchEvidenceCss) || /^\.graph-viewport\s*{/m.test(workbenchRuntimeBranchEvidenceCss) || /^\.story-preview\s*{/m.test(workbenchRuntimeBranchEvidenceCss) || /^\.editor-frame\s*{/m.test(workbenchRuntimeBranchEvidenceCss)) {
   console.error("SelfHostedEditorRuntimeBranchEvidence.css must not absorb diagnostics, localization, host capability items, graph, preview, or editor authoring rules.");
+  failed = true;
+}
+if (
+  !/^\.runtime-substate-panel\s*{/m.test(workbenchRuntimeSubstateAuthoringCss)
+  || !/^\.runtime-substate-header,\r?\n\.runtime-substate-toolbar\s*{/m.test(workbenchRuntimeSubstateAuthoringCss)
+  || !/^\.runtime-substate-summary\s*{/m.test(workbenchRuntimeSubstateAuthoringCss)
+  || !/^\.runtime-substate-textarea\s*{/m.test(workbenchRuntimeSubstateAuthoringCss)
+) {
+  console.error("SelfHostedEditorRuntimeSubstateAuthoring.css must retain substate panel, header, summary, and textarea rules.");
+  failed = true;
+}
+if (/^\.diagnostics-dock\s*{/m.test(workbenchRuntimeSubstateAuthoringCss) || /^\.localization-toolbar\s*{/m.test(workbenchRuntimeSubstateAuthoringCss) || /^\.host-capability-item\s*{/m.test(workbenchRuntimeSubstateAuthoringCss) || /^\.graph-viewport\s*{/m.test(workbenchRuntimeSubstateAuthoringCss) || /^\.story-preview\s*{/m.test(workbenchRuntimeSubstateAuthoringCss) || /^\.editor-frame\s*{/m.test(workbenchRuntimeSubstateAuthoringCss)) {
+  console.error("SelfHostedEditorRuntimeSubstateAuthoring.css must not absorb diagnostics, localization, host capability items, graph, preview, or editor authoring rules.");
   failed = true;
 }
 if (
@@ -1166,6 +1186,9 @@ for (const expectedRoutePath of [
   "/api/story-graph",
   "/api/runtime-state",
   "/api/runtime-action",
+  "/api/runtime-substate-export",
+  "/api/runtime-substate-import",
+  "/api/runtime-substate-validate",
   "/api/line-map-refresh",
   "/api/session-cache-status",
   "/api/node-map-review",

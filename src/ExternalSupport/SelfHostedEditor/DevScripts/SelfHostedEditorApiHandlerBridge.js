@@ -159,6 +159,46 @@ export function createSelfHostedEditorApiHandlers(services) {
         : null;
       return services.stepRuntimeStateForScriptText(scriptText, workspace, runtimeState, action, sessionId, queryProvider, actionDispatcher);
     }),
+    runtimeSubstateExport: createJsonApiHandler(async (payload) => {
+      const scriptText = readScriptText(payload);
+      const workspace = normalizeWorkspacePayload(payload.workspace);
+      const sessionId = normalizeRuntimeSessionId(payload.sessionId);
+      const runtimeState = payload.runtimeState && typeof payload.runtimeState === "object"
+        ? payload.runtimeState
+        : getRuntimeSessionState(sessionId);
+      const queryProvider = payload.queryProvider && typeof payload.queryProvider === "object"
+        ? payload.queryProvider
+        : null;
+      const actionDispatcher = payload.actionDispatcher && typeof payload.actionDispatcher === "object"
+        ? payload.actionDispatcher
+        : null;
+      return services.exportRuntimeSubstateForScriptText(scriptText, workspace, runtimeState, sessionId, queryProvider, actionDispatcher, {
+        hostCheckpointId: typeof payload.hostCheckpointId === "string" ? payload.hostCheckpointId : "",
+        scriptVersion: typeof payload.scriptVersion === "string" ? payload.scriptVersion : "",
+      });
+    }),
+    runtimeSubstateImport: createJsonApiHandler(async (payload) => {
+      const scriptText = readScriptText(payload);
+      const workspace = normalizeWorkspacePayload(payload.workspace);
+      const sessionId = normalizeRuntimeSessionId(payload.sessionId);
+      const queryProvider = payload.queryProvider && typeof payload.queryProvider === "object"
+        ? payload.queryProvider
+        : null;
+      const actionDispatcher = payload.actionDispatcher && typeof payload.actionDispatcher === "object"
+        ? payload.actionDispatcher
+        : null;
+      return services.importRuntimeSubstateForScriptText(scriptText, workspace, readSubstateInput(payload), sessionId, queryProvider, actionDispatcher, {
+        scriptVersion: typeof payload.scriptVersion === "string" ? payload.scriptVersion : "",
+      });
+    }),
+    runtimeSubstateValidate: createJsonApiHandler(async (payload) => {
+      const scriptText = readScriptText(payload);
+      const workspace = normalizeWorkspacePayload(payload.workspace);
+      const sessionId = normalizeRuntimeSessionId(payload.sessionId);
+      return services.validateRuntimeSubstateForScriptText(scriptText, workspace, readSubstateInput(payload), sessionId, {
+        scriptVersion: typeof payload.scriptVersion === "string" ? payload.scriptVersion : "",
+      });
+    }),
     runtimeState: createJsonApiHandler(async (payload) => {
       const scriptText = readScriptText(payload);
       const workspace = normalizeWorkspacePayload(payload.workspace);
@@ -197,4 +237,16 @@ function readScriptText(payload) {
   return typeof payload.scriptText === "string"
     ? payload.scriptText
     : "";
+}
+
+function readSubstateInput(payload) {
+  if (typeof payload.substateText === "string") {
+    return payload.substateText;
+  }
+
+  if (payload.substate && typeof payload.substate === "object") {
+    return payload.substate;
+  }
+
+  return "";
 }

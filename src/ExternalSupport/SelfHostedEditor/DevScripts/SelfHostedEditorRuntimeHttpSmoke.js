@@ -167,6 +167,113 @@ async function main() {
     assertEqual(queryProviderSnapshot.branchQueryReceipts?.[0]?.sourceLine, 5, "mock query provider branch evidence source line");
     assertPayloadSize(queryProviderPayloadText, "mock query provider runtime HTTP payload");
 
+    const substateExportResponse = await fetch(`http://127.0.0.1:${address.port}/api/runtime-substate-export`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        hostCheckpointId: "preview-checkpoint",
+        queryProvider: keyQueryProvider,
+        runtimeState: queryProviderSnapshot,
+        scriptText: queryRuntimeScript,
+        scriptVersion: "script-v1",
+        sessionId: "runtime-http-substate",
+      }),
+    });
+    const substateExportPayloadText = await substateExportResponse.text();
+    const substateExportPayload = JSON.parse(substateExportPayloadText);
+    if (!substateExportResponse.ok) {
+      throw new Error(`Runtime substate export HTTP smoke failed with HTTP ${substateExportResponse.status}.`);
+    }
+
+    assertEqual(substateExportPayload.format, "inscape.self-hosted-editor.runtime-substate-operation", "runtime substate HTTP export operation format");
+    assertEqual(substateExportPayload.validationStatus, "compatible", "runtime substate HTTP export validation status");
+    assertEqual(substateExportPayload.substate?.format, "inscape.runtime-substate", "runtime substate HTTP artifact format");
+    assertEqual(substateExportPayload.substateSummary.branchReceiptCount, 1, "runtime substate HTTP branch receipt count");
+    assertEqual(substateExportPayload.safety.notFullHostSave, true, "runtime substate HTTP not full host save");
+    assertRuntimeSubstatePayloadBoundary(substateExportPayload.substateText, "runtime substate HTTP export payload");
+
+    const substateValidateResponse = await fetch(`http://127.0.0.1:${address.port}/api/runtime-substate-validate`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        scriptText: queryRuntimeScript,
+        scriptVersion: "script-v1",
+        sessionId: "runtime-http-substate",
+        substateText: substateExportPayload.substateText,
+      }),
+    });
+    const substateValidatePayload = JSON.parse(await substateValidateResponse.text());
+    if (!substateValidateResponse.ok) {
+      throw new Error(`Runtime substate validate HTTP smoke failed with HTTP ${substateValidateResponse.status}.`);
+    }
+
+    assertEqual(substateValidatePayload.validationStatus, "compatible", "runtime substate HTTP validate status");
+
+    const substateImportResponse = await fetch(`http://127.0.0.1:${address.port}/api/runtime-substate-import`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        queryProvider: keyQueryProvider,
+        scriptText: queryRuntimeScript,
+        scriptVersion: "script-v1",
+        sessionId: "runtime-http-substate",
+        substateText: substateExportPayload.substateText,
+      }),
+    });
+    const substateImportPayload = JSON.parse(await substateImportResponse.text());
+    if (!substateImportResponse.ok) {
+      throw new Error(`Runtime substate import HTTP smoke failed with HTTP ${substateImportResponse.status}.`);
+    }
+
+    assertEqual(substateImportPayload.imported, true, "runtime substate HTTP compatible import flag");
+    assertRuntimeSnapshot(substateImportPayload.runtimeSnapshot, "Gate");
+
+    const substateDriftImportResponse = await fetch(`http://127.0.0.1:${address.port}/api/runtime-substate-import`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        queryProvider: keyQueryProvider,
+        scriptText: queryRuntimeScript,
+        scriptVersion: "script-v2",
+        sessionId: "runtime-http-substate",
+        substateText: substateExportPayload.substateText,
+      }),
+    });
+    const substateDriftImportPayload = JSON.parse(await substateDriftImportResponse.text());
+    if (!substateDriftImportResponse.ok) {
+      throw new Error(`Runtime substate drift import HTTP smoke failed with HTTP ${substateDriftImportResponse.status}.`);
+    }
+
+    assertEqual(substateDriftImportPayload.imported, false, "runtime substate HTTP migratable import blocked");
+    assertEqual(substateDriftImportPayload.validationStatus, "migratable", "runtime substate HTTP drift validation status");
+
+    const substateInvalidResponse = await fetch(`http://127.0.0.1:${address.port}/api/runtime-substate-validate`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        scriptText: queryRuntimeScript,
+        scriptVersion: "script-v1",
+        sessionId: "runtime-http-substate",
+        substateText: "{",
+      }),
+    });
+    const substateInvalidPayload = JSON.parse(await substateInvalidResponse.text());
+    if (!substateInvalidResponse.ok) {
+      throw new Error(`Runtime substate invalid JSON HTTP smoke failed with HTTP ${substateInvalidResponse.status}.`);
+    }
+
+    assertEqual(substateInvalidPayload.validationStatus, "error", "runtime substate HTTP invalid JSON status");
+
     const noKeyResponse = await fetch(`http://127.0.0.1:${address.port}/api/runtime-state`, {
       method: "POST",
       headers: {
@@ -496,6 +603,14 @@ function assertPayloadSize(payloadText, label) {
   const payloadBytes = Buffer.byteLength(payloadText, "utf8");
   if (payloadBytes > maximumRuntimePayloadBytes) {
     throw new Error(`${label} too large: ${payloadBytes} bytes.`);
+  }
+}
+
+function assertRuntimeSubstatePayloadBoundary(payloadText, label) {
+  for (const forbidden of ["logEntries", "actionRequests", "inventory", "traceReplay", "rollbackStack"]) {
+    if (String(payloadText || "").includes(forbidden)) {
+      throw new Error(`${label} must not include ${forbidden}.`);
+    }
   }
 }
 

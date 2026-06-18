@@ -6,6 +6,7 @@ import { RuntimeActionAuthoringModelBuilder } from "../Runtime/Models/RuntimeAct
 import { RuntimeBranchEvidenceModelBuilder } from "../Runtime/Models/RuntimeBranchEvidenceModelBuilder.js";
 import { RuntimeLogBacklogModelBuilder } from "../Runtime/Models/RuntimeLogBacklogModelBuilder.js";
 import { RuntimeStatusSurfaceModelBuilder } from "../Runtime/Models/RuntimeStatusSurfaceModelBuilder.js";
+import { RuntimeSubstateAuthoringModelBuilder } from "../Runtime/Models/RuntimeSubstateAuthoringModelBuilder.js";
 
 export class SelfHostedEditorWorkbenchRenderController {
   constructor({
@@ -29,6 +30,7 @@ export class SelfHostedEditorWorkbenchRenderController {
     runtimeBranchEvidencePanelController,
     runtimeLogBacklogPanelController,
     runtimeStatusPanelController,
+    runtimeSubstatePanelController,
     storyGraphBridge,
     storyGraphController,
     workspaceController,
@@ -56,6 +58,7 @@ export class SelfHostedEditorWorkbenchRenderController {
     this.runtimeBranchEvidencePanelController = runtimeBranchEvidencePanelController || null;
     this.runtimeLogBacklogPanelController = runtimeLogBacklogPanelController || null;
     this.runtimeStatusPanelController = runtimeStatusPanelController || null;
+    this.runtimeSubstatePanelController = runtimeSubstatePanelController || null;
     this.storyGraphBridge = storyGraphBridge;
     this.storyGraphController = storyGraphController;
     this.workspaceController = workspaceController;
@@ -108,6 +111,7 @@ export class SelfHostedEditorWorkbenchRenderController {
     this.renderRuntimeStatusPanel();
     this.renderRuntimeLogPanel();
     this.renderRuntimeBranchPanel();
+    this.renderRuntimeSubstatePanel();
   }
 
   async renderWorkbench(scriptText, activeLineNumber = 1) {
@@ -121,6 +125,7 @@ export class SelfHostedEditorWorkbenchRenderController {
       runtimeAction: "Preparing action debug",
       runtimeBranch: "Preparing branch evidence",
       runtimeLog: "Preparing runtime log",
+      runtimeSubstate: "Preparing substate tools",
       outline: "Reading outline",
       preview: "Reading compiler graph",
       runtime: "Starting runtime",
@@ -168,10 +173,12 @@ export class SelfHostedEditorWorkbenchRenderController {
     this.renderRuntimeStatusPanel();
     this.renderRuntimeLogPanel();
     this.renderRuntimeBranchPanel();
+    this.renderRuntimeSubstatePanel();
     this.renderActionPanel();
     this.loadingController.setIdle("runtimeAction");
     this.loadingController.setIdle("runtimeBranch");
     this.loadingController.setIdle("runtimeLog");
+    this.loadingController.setIdle("runtimeSubstate");
     this.renderMockQueryPanel();
     this.loadingController.setIdle("mockQuery");
 
@@ -297,6 +304,18 @@ export class SelfHostedEditorWorkbenchRenderController {
     });
     this.runtimeBranchEvidencePanelController?.render(evidenceModel);
     return evidenceModel;
+  }
+
+  renderRuntimeSubstatePanel(operation = null) {
+    const authoringModel = RuntimeSubstateAuthoringModelBuilder.build({
+      artifactText: this.runtimeSubstatePanelController?.getSubstateText?.() || "",
+      operation: operation || this.runtimeSubstatePanelController?.getLastOperation?.() || null,
+      runtimeSnapshot: this.latestRuntimeSnapshot,
+      sessionId: this.runtimeBridge?.sessionId || "",
+      workspaceRevision: this.workspaceController.getState().revision || null,
+    });
+    this.runtimeSubstatePanelController?.render(authoringModel);
+    return authoringModel;
   }
 
   renderMockQueryPanel() {

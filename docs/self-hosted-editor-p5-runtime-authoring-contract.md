@@ -4,6 +4,8 @@
 
 状态：P5 Round 1 authoring contract
 
+最近更新：2026-06-19 P5 Round 10 已落地 Substate preview save/load；本合同边界不变。
+
 本文定义 P5 SelfHostedEditor Runtime authoring / productization 第一刀的边界。它是后续 Round 2-12 的共同合同：SelfHostedEditor 可以把 P4 Runtime 能力产品化为作者调试工作流，但不能接管或复制 Runtime 语义。
 
 ## 目标
@@ -123,11 +125,12 @@ Branch receipt / condition explanation 的合同：
 Substate authoring 的合同：
 
 - 支持导出 `inscape.runtime-substate` 作为 editor preview / test artifact。
-- 支持 validate substate，显示 compatible / migratable / incompatible。
+- 支持 validate substate，显示 compatible / migratable / incompatible / unavailable / error。
 - 只有 compatible substate 可导入恢复 preview session。
 - Migratable / incompatible 不静默修复。
 - Substate 不保存宿主业务状态、完整 Log、完整 action request history、Rollback stack 或 Trace Replay。
 - `host.checkpointId` 仍是 opaque 外壳，不由 SelfHostedEditor 解读。
+- Round 10 已落地 Host view 的 Runtime Substate 面板、`RuntimeSubstateAuthoringModelBuilder`、dev-host `/api/runtime-substate-export|validate|import`、backend command / preload whitelist 和 direct / HTTP smoke。
 
 ## Error / Empty / Stale
 
@@ -153,7 +156,8 @@ Dev-host HTTP 与 desktop command 必须保持业务等价：
 
 - `runtime.start-or-observe` 对应 Runtime snapshot start / observe。
 - `runtime.step` 对应 Runtime action step。
-- 后续 mock query、resume action、substate import / export / validate 如需新增 command，必须先定义 shared payload shape，再分别接 dev-host 与 desktop thin transport。
+- `runtime.substate-export` / `runtime.substate-validate` / `runtime.substate-import` 对应 Runtime substate artifact export / validate / compatible import。
+- 后续 mock query、resume action、substate 扩展如需新增 command，必须先定义 shared payload shape，再分别接 dev-host 与 desktop thin transport。
 - Renderer 只通过 backend service / command / transport 使用这些能力，不直接访问 `/api/*`、Node、Electron 或 arbitrary IPC。
 
 ## 最小验收 Fixture

@@ -23,6 +23,7 @@ const expectedImports = [
   "SelfHostedEditorRuntimeActionAuthoring.css",
   "SelfHostedEditorRuntimeLogBacklog.css",
   "SelfHostedEditorRuntimeBranchEvidence.css",
+  "SelfHostedEditorRuntimeSubstateAuthoring.css",
   "SelfHostedEditorNodeMapReview.css",
   "SelfHostedEditorStoryGraph.css",
 ];
@@ -43,10 +44,11 @@ const filePolicies = new Map([
   ["SelfHostedEditorRuntimeAuthoring.css", { currentMaximum: 240, owner: "runtime authoring", targetMaximum: 240 }],
   ["SelfHostedEditorRuntimeBranchEvidence.css", { currentMaximum: 140, owner: "runtime branch evidence", targetMaximum: 140 }],
   ["SelfHostedEditorRuntimeLogBacklog.css", { currentMaximum: 140, owner: "runtime log backlog", targetMaximum: 140 }],
+  ["SelfHostedEditorRuntimeSubstateAuthoring.css", { currentMaximum: 140, owner: "runtime substate authoring", targetMaximum: 140 }],
   ["SelfHostedEditorStoryGraph.css", { currentMaximum: 400, owner: "story graph", targetMaximum: 400 }],
   ["SelfHostedEditorSidebar.css", { currentMaximum: 380, owner: "workspace sidebar", targetMaximum: 380 }],
   ["SelfHostedEditorTopbar.css", { currentMaximum: 150, owner: "workspace top bar", targetMaximum: 150 }],
-  ["SelfHostedEditorWorkbench.css", { currentMaximum: 20, owner: "style import composition", targetMaximum: 20 }],
+  ["SelfHostedEditorWorkbench.css", { currentMaximum: 21, owner: "style import composition", targetMaximum: 21 }],
   ["SelfHostedEditorWorkspaceLayout.css", { currentMaximum: 260, owner: "workspace shell layout", targetMaximum: 450 }],
 ]);
 

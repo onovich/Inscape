@@ -195,6 +195,7 @@ let renderedActionRuntimeProvider = "";
 let renderedRuntimeLogBacklog = null;
 let renderedRuntimeBranchEvidence = null;
 let renderedRuntimeStatusSurface = null;
+let renderedRuntimeSubstate = null;
 let runtimeActionBridgeInput = null;
 const documentModel = ScriptDocumentFallbackPolicy.buildDocumentModel(scriptText, {
   reason: ScriptDocumentFallbackReason.EditorAuthoringSurface,
@@ -392,6 +393,17 @@ const workbench = new SelfHostedEditorWorkbenchRenderController({
       renderedRuntimeBranchEvidence = evidenceModel;
     },
   },
+  runtimeSubstatePanelController: {
+    getLastOperation() {
+      return null;
+    },
+    getSubstateText() {
+      return "";
+    },
+    render(authoringModel) {
+      renderedRuntimeSubstate = authoringModel;
+    },
+  },
   storyGraphBridge: {
     async getStoryGraph() {
       return {
@@ -465,6 +477,11 @@ assertEqual(renderedRuntimeBranchEvidence?.entries?.[0]?.source?.lineNumber, 5, 
 assertEqual(renderedRuntimeBranchEvidence?.requeriesHost, false, "workbench branch evidence does not re-query host");
 assertEqual(renderedRuntimeBranchEvidence?.implementsReplayTimeline, false, "workbench branch evidence does not implement replay timeline");
 assertNotIncludesText(JSON.stringify(renderedRuntimeBranchEvidence), "secret runtime snapshot text");
+assertEqual(renderedRuntimeSubstate?.runtime?.provider, "runtime-project", "workbench should pass runtime snapshot to substate panel");
+assertEqual(renderedRuntimeSubstate?.runtime?.currentNodeId, "Opening", "workbench runtime substate current node");
+assertEqual(renderedRuntimeSubstate?.runtime?.commandIndex, 1, "workbench runtime substate command index");
+assertEqual(renderedRuntimeSubstate?.runtime?.branchReceiptCount, 1, "workbench runtime substate branch receipt count");
+assertEqual(renderedRuntimeSubstate?.safety?.notFullHostSave, true, "workbench runtime substate is not full host save");
 assertEqual(runtimeActionBridgeInput?.actions?.length, 0, "workbench should set runtime action bridge input");
 assertIncludesText(getTextContent(summaryPanel), "shared summary");
 assertIncludesText(getTextContent(summaryPanel), "0 l10n");

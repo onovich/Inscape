@@ -21,6 +21,7 @@ export function createSelfHostedEditorDomBindings(documentRef = document) {
     localizationSessionStatusElement: query(".localization-session-status"),
     runtimeBranchEvidencePanelElement: query(".runtime-branch-evidence-panel"),
     runtimeLogBacklogPanelElement: query(".runtime-log-backlog-panel"),
+    runtimeSubstatePanelElement: query(".runtime-substate-panel"),
     mockQueryPanelElement: query(".runtime-mock-query-panel"),
     nodeMapReviewButtonElement: query(".node-map-review-button"),
     outlinePanelElement: query(".document-outline-panel"),

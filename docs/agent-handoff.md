@@ -1,12 +1,24 @@
 # Agent 接手指南
 
-状态：P5 SelfHostedEditor Runtime authoring Round 9 Branch receipt / condition explanation complete
+状态：P5 SelfHostedEditor Runtime authoring Round 10 Substate preview save/load complete；下一轮进入 Round 11 Error / empty / stale state hardening
 
-最后更新：2026-06-18
+最后更新：2026-06-19
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-19 P5 Round 10 Substate Preview Save/Load 快照
+
+P5 SelfHostedEditor Runtime authoring / productization 已完成第十轮 Substate preview save/load，不代表 P5 已完成。
+- Round 10 专用执行指南见 [P5 Round 10 Substate Preview Save/Load Goal 模式执行指南](self-hosted-editor-p5-round10-substate-goal-mode-execution-guide.md)。
+- 新增 `RuntimeSubstateAuthoringModelBuilder` 与 `RuntimeSubstatePanelController`，Host view 现在可以导出当前 Runtime Preview substate、粘贴 JSON validate，并且只在 `compatible` 时导入恢复 Runtime Preview。
+- dev-host 新增 `runtime.substate-*` backend command 与 `/api/runtime-substate-export`、`/api/runtime-substate-validate`、`/api/runtime-substate-import` 路径；实际 export / validate / import 仍通过 shared CLI `runtime-project --export-substate`、`--validate-substate` 与 `--substate` 执行。
+- Substate 面板显示 format、formatVersion、runtimeVersion、scriptVersion、current node、command index、flow stack depth、pending action 摘要、branch receipt count、host checkpoint presence 与 validation status。
+- Desktop preload / IPC surface 已白名单 Substate commands；当前 embedded desktop backend 明确返回 unavailable operation，不伪造未实现的 Runtime substate 执行。
+- Contract / smoke 覆盖 model、panel import gating、Workbench 集成、backend transport / preload、direct Runtime smoke、HTTP smoke、script drift `migratable` 阻断、invalid JSON `error`，并检查 artifact 不包含完整 Log、完整 action history、Rollback stack 或 Trace Replay。
+- 本轮继续禁止把 `inscape.runtime-substate` 扩张为完整 host save；`host.checkpointId` 仍是 opaque，SelfHostedEditor 不解释宿主业务状态。
+- 下一轮进入 P5 Round 11：Error / empty / stale state hardening；不要混入 Unity / Host SDK、Rollback / Trace / Flashback 或 Host Schema action policy 扩张。
 
 ### 2026-06-18 SelfHostedEditor P5 Round 9 Branch Receipt Surface 快照
 

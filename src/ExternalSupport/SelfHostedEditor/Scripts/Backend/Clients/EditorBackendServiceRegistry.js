@@ -264,8 +264,11 @@ export class RuntimeSessionClient {
   constructor(backendClient) {
     this.sessionId = backendClient?.sessionId || "";
     this.#runtimeSession = requireCapabilities(backendClient?.runtimeSession, [
+      "substateExport",
+      "substateImport",
       "startOrObserve",
       "step",
+      "substateValidate",
     ], "RuntimeSessionClient");
     Object.freeze(this);
   }
@@ -276,6 +279,18 @@ export class RuntimeSessionClient {
 
   async step(request = {}) {
     return await this.#runtimeSession.step(request);
+  }
+
+  async substateExport(request = {}) {
+    return await this.#runtimeSession.substateExport(request);
+  }
+
+  async substateValidate(request = {}) {
+    return await this.#runtimeSession.substateValidate(request);
+  }
+
+  async substateImport(request = {}) {
+    return await this.#runtimeSession.substateImport(request);
   }
 }
 

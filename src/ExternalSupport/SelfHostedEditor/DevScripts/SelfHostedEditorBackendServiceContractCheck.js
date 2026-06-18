@@ -93,6 +93,20 @@ const backendClient = {
     },
   },
   runtimeSession: {
+    async substateExport(payload) {
+      calls.push({ method: "runtimeSession.substateExport", payload });
+      return {
+        format: "inscape.self-hosted-editor.runtime-substate-operation",
+        operation: "export",
+      };
+    },
+    async substateImport(payload) {
+      calls.push({ method: "runtimeSession.substateImport", payload });
+      return {
+        format: "inscape.self-hosted-editor.runtime-substate-operation",
+        operation: "import",
+      };
+    },
     async startOrObserve(payload) {
       calls.push({ method: "runtimeSession.startOrObserve", payload });
       return { currentNode: null };
@@ -100,6 +114,13 @@ const backendClient = {
     async step(payload) {
       calls.push({ method: "runtimeSession.step", payload });
       return { currentNode: null };
+    },
+    async substateValidate(payload) {
+      calls.push({ method: "runtimeSession.substateValidate", payload });
+      return {
+        format: "inscape.self-hosted-editor.runtime-substate-operation",
+        operation: "validate",
+      };
     },
   },
   lineIdentitySession: {
@@ -192,7 +213,7 @@ assertSurface(services.hostCapabilityClient, [
   "schemaCapabilities",
 ], "host capability client");
 assertSurface(services.storyGraphClient, ["sessionId", "compileProjectGraph"], "story graph client");
-assertSurface(services.runtimeSessionClient, ["sessionId", "startOrObserve", "step"], "runtime session client");
+assertSurface(services.runtimeSessionClient, ["sessionId", "startOrObserve", "step", "substateExport", "substateValidate", "substateImport"], "runtime session client");
 assertSurface(services.lineIdentityClient, ["sessionId", "refresh"], "line identity client");
 assertSurface(services.localizationWorkflowClient, ["sessionId", "review", "updateCsv"], "localization workflow client");
 assertSurface(services.stableNodeMapClient, ["sessionId", "applyCandidate", "review", "writeSidecar"], "stable node-map client");
@@ -205,6 +226,9 @@ await services.workspaceSessionClient.listFiles();
 await services.workspaceSessionClient.writeBackBackup({ writeRequests: [{ relativePath: "localization/zh-cn.csv" }] });
 await services.languageSessionClient.diagnose({ scriptText: "# Opening" });
 await services.runtimeSessionClient.step({ action: "continue" });
+await services.runtimeSessionClient.substateExport({ runtimeState: {} });
+await services.runtimeSessionClient.substateValidate({ substateText: "{}" });
+await services.runtimeSessionClient.substateImport({ substateText: "{}" });
 await services.localizationWorkflowClient.review({ scriptText: "# Opening" });
 await services.stableNodeMapClient.applyCandidate({ dryRun: true });
 await services.stableNodeMapClient.writeSidecar({ nodeMapText: "{}", relativePath: "inscape.node-map.json" });
@@ -216,6 +240,9 @@ assertEqual(calls.map((call) => call.method).join(","), [
   "workspace.writeBackBackup",
   "languageSession.diagnose",
   "runtimeSession.step",
+  "runtimeSession.substateExport",
+  "runtimeSession.substateValidate",
+  "runtimeSession.substateImport",
   "localizationSession.review",
   "stableNodeMap.applyCandidate",
   "stableNodeMap.writeSidecar",

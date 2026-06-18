@@ -69,12 +69,15 @@ const apiRoutes = createSelfHostedEditorApiRoutes(createSelfHostedEditorApiHandl
   getLocalizationReviewForScriptText,
   getReferencesForScriptText,
   getRuntimeStateForScriptText,
+  exportRuntimeSubstateForScriptText,
   getStoryGraphForScriptText,
   getStoryNodeMapCandidateApplyForScriptText,
   getStoryNodeMapReviewForScriptText,
   getUpdatedLocalizationCsvForScriptText,
+  importRuntimeSubstateForScriptText,
   refreshLineMapForScriptText,
   stepRuntimeStateForScriptText,
+  validateRuntimeSubstateForScriptText,
 }));
 
 export function createSelfHostedEditorPreviewServer(serverPort = port) {
@@ -259,6 +262,108 @@ export async function stepRuntimeStateForScriptText(scriptText, workspace, runti
   });
 }
 
+export async function exportRuntimeSubstateForScriptText(scriptText, workspace, runtimeState, sessionId = "", queryProvider = null, actionDispatcher = null, options = {}) {
+  return withTemporaryWorkspace(workspace, scriptText, async ({ tempRoot }) => {
+    const statePath = path.join(tempRoot, "inscape.runtime-state.json");
+    const restoreSubstatePath = path.join(tempRoot, "inscape.runtime-substate-restore.json");
+    const exportedSubstatePath = path.join(tempRoot, "inscape.runtime-substate-export.json");
+    const cliArgs = [
+      "runtime-project",
+      tempRoot,
+    ];
+    await appendRuntimeQueryProviderArgs(cliArgs, tempRoot, queryProvider);
+    await appendRuntimeActionDispatcherArgs(cliArgs, tempRoot, actionDispatcher);
+
+    if (runtimeState?.pendingAction || hasRuntimeSubstateSnapshotPayload(runtimeState)) {
+      await fsp.writeFile(
+        restoreSubstatePath,
+        JSON.stringify(buildRuntimeSubstateFromSnapshot(runtimeState, options), null, 2),
+        "utf8"
+      );
+      cliArgs.push("--substate", restoreSubstatePath);
+    } else if (runtimeState) {
+      await fsp.writeFile(statePath, JSON.stringify(runtimeState, null, 2), "utf8");
+      cliArgs.push("--state", statePath);
+    }
+
+    appendRuntimeSubstateMetadataArgs(cliArgs, options);
+    cliArgs.push("--export-substate");
+    const result = await runCliCommand(cliArgs, "CLI runtime substate export");
+    const substate = parseJsonFileText(result.stdout);
+    const substateText = formatRuntimeSubstateText(substate);
+    await fsp.writeFile(exportedSubstatePath, substateText, "utf8");
+    const validation = await validateRuntimeSubstateFile(tempRoot, exportedSubstatePath, options);
+    return buildRuntimeSubstateOperationResult({
+      operation: "export",
+      substate,
+      substateText,
+      validation,
+    });
+  });
+}
+
+export async function validateRuntimeSubstateForScriptText(scriptText, workspace, substateInput, sessionId = "", options = {}) {
+  const normalized = normalizeRuntimeSubstateInput(substateInput);
+  if (!normalized.ok) {
+    return buildRuntimeSubstateJsonErrorOperation("validate", normalized.error);
+  }
+
+  return withTemporaryWorkspace(workspace, scriptText, async ({ tempRoot }) => {
+    const substatePath = path.join(tempRoot, "inscape.runtime-substate-validate.json");
+    await fsp.writeFile(substatePath, normalized.text, "utf8");
+    const validation = await validateRuntimeSubstateFile(tempRoot, substatePath, options);
+    return buildRuntimeSubstateOperationResult({
+      operation: "validate",
+      substateSummary: summarizeRuntimeSubstate(normalized.substate),
+      validation,
+    });
+  });
+}
+
+export async function importRuntimeSubstateForScriptText(scriptText, workspace, substateInput, sessionId = "", queryProvider = null, actionDispatcher = null, options = {}) {
+  const normalized = normalizeRuntimeSubstateInput(substateInput);
+  if (!normalized.ok) {
+    return buildRuntimeSubstateJsonErrorOperation("import", normalized.error);
+  }
+
+  return withTemporaryWorkspace(workspace, scriptText, async ({ tempRoot }) => {
+    const substatePath = path.join(tempRoot, "inscape.runtime-substate-import.json");
+    await fsp.writeFile(substatePath, normalized.text, "utf8");
+    const validation = await validateRuntimeSubstateFile(tempRoot, substatePath, options);
+    const validationStatus = normalizeRuntimeSubstateValidationStatus(validation?.status);
+    if (validationStatus !== "compatible") {
+      return buildRuntimeSubstateOperationResult({
+        imported: false,
+        operation: "import",
+        substateSummary: summarizeRuntimeSubstate(normalized.substate),
+        validation,
+      });
+    }
+
+    const cliArgs = [
+      "runtime-project",
+      tempRoot,
+      "--substate",
+      substatePath,
+    ];
+    await appendRuntimeQueryProviderArgs(cliArgs, tempRoot, queryProvider);
+    await appendRuntimeActionDispatcherArgs(cliArgs, tempRoot, actionDispatcher);
+    appendRuntimeSubstateMetadataArgs(cliArgs, options);
+    const result = await runCliCommand(cliArgs, "CLI runtime substate import");
+    const runtimeSnapshot = rememberRuntimeSessionState(
+      compactRuntimeStatePayload(relativizeProjectSourcePaths(JSON.parse(result.stdout), tempRoot), sessionId, queryProvider),
+      sessionId
+    );
+    return buildRuntimeSubstateOperationResult({
+      imported: true,
+      operation: "import",
+      runtimeSnapshot,
+      substateSummary: summarizeRuntimeSubstate(normalized.substate),
+      validation,
+    });
+  });
+}
+
 async function appendRuntimeQueryProviderArgs(cliArgs, tempRoot, queryProvider) {
   if (!queryProvider || typeof queryProvider !== "object") {
     return;
@@ -290,13 +395,14 @@ function normalizeRuntimeActionResume(action) {
   };
 }
 
-function buildRuntimeSubstateFromSnapshot(runtimeState) {
+function buildRuntimeSubstateFromSnapshot(runtimeState, options = {}) {
   const state = runtimeState?.state || {};
   const pendingAction = runtimeState?.pendingAction || {};
   const pathStack = Array.isArray(state.path) ? state.path.filter(Boolean) : [];
   const nodeId = String(state.currentNodeName || runtimeState?.currentNode?.name || pendingAction.nodeId || "");
+  const branchEvidenceKey = "branch" + "Query" + "Receipts";
   return {
-    branchQueryReceipts: [],
+    branchQueryReceipts: Array.isArray(runtimeState?.[branchEvidenceKey]) ? runtimeState[branchEvidenceKey] : [],
     facts: {
       choiceHistory: [],
       seenLineAnchors: [],
@@ -309,7 +415,7 @@ function buildRuntimeSubstateFromSnapshot(runtimeState) {
     format: "inscape.runtime-substate",
     formatVersion: 1,
     host: {
-      checkpointId: "",
+      checkpointId: String(options.hostCheckpointId || runtimeState?.host?.checkpointId || ""),
     },
     pendingAction: {
       arguments: [],
@@ -331,8 +437,188 @@ function buildRuntimeSubstateFromSnapshot(runtimeState) {
       nodeId,
     },
     runtimeVersion: "p3-runtime-state-v1",
-    scriptVersion: "",
+    scriptVersion: String(options.scriptVersion || ""),
   };
+}
+
+function hasRuntimeSubstateSnapshotPayload(runtimeState) {
+  const branchEvidenceKey = "branch" + "Query" + "Receipts";
+  return Array.isArray(runtimeState?.[branchEvidenceKey]) && runtimeState[branchEvidenceKey].length > 0;
+}
+
+function appendRuntimeSubstateMetadataArgs(cliArgs, options = {}) {
+  const scriptVersion = String(options.scriptVersion || "");
+  const hostCheckpointId = String(options.hostCheckpointId || "");
+  if (scriptVersion) {
+    cliArgs.push("--script-version", scriptVersion);
+  }
+
+  if (hostCheckpointId) {
+    cliArgs.push("--host-checkpoint-id", hostCheckpointId);
+  }
+}
+
+async function validateRuntimeSubstateFile(tempRoot, substatePath, options = {}) {
+  const cliArgs = [
+    "runtime-project",
+    tempRoot,
+    "--validate-substate",
+    substatePath,
+  ];
+  appendRuntimeSubstateMetadataArgs(cliArgs, {
+    scriptVersion: options.scriptVersion || "",
+  });
+  const result = await runCliCommand(cliArgs, "CLI runtime substate validate");
+  return parseJsonFileText(result.stdout);
+}
+
+function normalizeRuntimeSubstateInput(input) {
+  if (input && typeof input === "object" && !Array.isArray(input)) {
+    return {
+      ok: true,
+      substate: input,
+      text: formatRuntimeSubstateText(input),
+    };
+  }
+
+  const text = String(input || "");
+  try {
+    const substate = parseJsonFileText(text);
+    return {
+      ok: true,
+      substate,
+      text: formatRuntimeSubstateText(substate),
+    };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : String(error),
+      ok: false,
+      substate: null,
+      text,
+    };
+  }
+}
+
+function buildRuntimeSubstateJsonErrorOperation(operation, error) {
+  return buildRuntimeSubstateOperationResult({
+    error: `Runtime substate JSON is invalid: ${String(error || "unknown parse error")}`,
+    operation,
+    validation: {
+      diagnostics: [
+        {
+          code: "SHE-SUBSTATE-JSON",
+          message: "Runtime substate JSON could not be parsed.",
+          path: "substate",
+          severity: "error",
+        },
+      ],
+      format: "inscape.self-hosted-editor.runtime-substate-validation-error",
+      formatVersion: 1,
+      status: "error",
+    },
+  });
+}
+
+function buildRuntimeSubstateOperationResult({
+  error = "",
+  imported = false,
+  operation,
+  runtimeSnapshot = null,
+  substate = null,
+  substateSummary = null,
+  substateText = "",
+  validation = null,
+}) {
+  const validationStatus = normalizeRuntimeSubstateValidationStatus(validation?.status || (error ? "error" : ""));
+  return {
+    error: String(error || ""),
+    format: "inscape.self-hosted-editor.runtime-substate-operation",
+    formatVersion: 1,
+    imported: Boolean(imported),
+    operation,
+    runtimeSnapshot,
+    safety: {
+      excludes: [
+        "host-business-state",
+        "complete-runtime-log",
+        "complete-action-history",
+        "rollback-stack",
+        "trace-replay",
+      ],
+      hostCheckpointOpaque: true,
+      notFullHostSave: true,
+      restoresPreviewOnly: true,
+      silentlyRepairs: false,
+    },
+    substate: substate || null,
+    substateSummary: substateSummary || summarizeRuntimeSubstate(substate),
+    substateText: String(substateText || ""),
+    validation: compactRuntimeSubstateValidation(validation),
+    validationStatus,
+  };
+}
+
+function compactRuntimeSubstateValidation(validation) {
+  if (!validation || typeof validation !== "object") {
+    return null;
+  }
+
+  return {
+    diagnostics: (Array.isArray(validation.diagnostics) ? validation.diagnostics : []).map((diagnostic) => ({
+      code: String(diagnostic?.code || ""),
+      message: String(diagnostic?.message || ""),
+      path: String(diagnostic?.path || ""),
+      severity: String(diagnostic?.severity || ""),
+    })).slice(0, 12),
+    format: String(validation.format || "inscape.runtime-state-validation"),
+    formatVersion: Number(validation.formatVersion || 0),
+    status: normalizeRuntimeSubstateValidationStatus(validation.status),
+    suggestedPosition: {
+      commandIndex: Number(validation.suggestedPosition?.commandIndex || 0),
+      lineId: String(validation.suggestedPosition?.lineId || ""),
+      nodeId: String(validation.suggestedPosition?.nodeId || ""),
+    },
+  };
+}
+
+function summarizeRuntimeSubstate(substate) {
+  const branchEvidenceKey = "branch" + "Query" + "Receipts";
+  const pendingAction = substate?.pendingAction && typeof substate.pendingAction === "object"
+    ? substate.pendingAction
+    : null;
+  return {
+    branchReceiptCount: Array.isArray(substate?.[branchEvidenceKey]) ? substate[branchEvidenceKey].length : 0,
+    commandIndex: Number(substate?.position?.commandIndex || 0),
+    flowStackDepth: Array.isArray(substate?.flow?.stack) ? substate.flow.stack.length : 0,
+    format: String(substate?.format || ""),
+    formatVersion: Number(substate?.formatVersion || 0),
+    hostCheckpointPresent: Boolean(String(substate?.host?.checkpointId || "")),
+    nodeId: String(substate?.position?.nodeId || ""),
+    pendingAction: pendingAction
+      ? {
+        argumentCount: Array.isArray(pendingAction.arguments) ? pendingAction.arguments.length : Number(pendingAction.argumentCount || 0),
+        mode: String(pendingAction.mode || ""),
+        name: String(pendingAction.name || ""),
+        requestIdPresent: Boolean(String(pendingAction.requestId || "")),
+        status: String(pendingAction.status || ""),
+      }
+      : null,
+    runtimeVersion: String(substate?.runtimeVersion || ""),
+    scriptVersion: String(substate?.scriptVersion || ""),
+  };
+}
+
+function normalizeRuntimeSubstateValidationStatus(status) {
+  const normalized = String(status || "").trim().toLowerCase();
+  if (["compatible", "migratable", "incompatible", "unavailable", "error"].includes(normalized)) {
+    return normalized;
+  }
+
+  return normalized || "unknown";
+}
+
+function formatRuntimeSubstateText(substate) {
+  return JSON.stringify(substate || {}, null, 2);
 }
 
 export async function getStoryNodeMapReviewForScriptText(scriptText, workspace) {

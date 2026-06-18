@@ -13,7 +13,10 @@ assertEqual(resolveEditorBackendDevHostRoute(EditorBackendTransportCommand.Langu
 assertEqual(resolveEditorBackendDevHostRoute(EditorBackendTransportCommand.DocumentBufferSave), "/api/document-buffer-save", "document-buffer save dev-host route");
 assertEqual(resolveEditorBackendDevHostRoute(EditorBackendTransportCommand.DocumentBufferSaveAll), "/api/document-buffer-save-all", "document-buffer save all dev-host route");
 assertEqual(resolveEditorBackendDevHostRoute(EditorBackendTransportCommand.ProjectSessionStatus), "/api/session-cache-status", "project-session status dev-host route");
+assertEqual(resolveEditorBackendDevHostRoute(EditorBackendTransportCommand.RuntimeSubstateExport), "/api/runtime-substate-export", "runtime substate export dev-host route");
 assertEqual(resolveEditorBackendDevHostRoute(EditorBackendTransportCommand.RuntimeStep), "/api/runtime-action", "runtime step dev-host route");
+assertEqual(resolveEditorBackendDevHostRoute(EditorBackendTransportCommand.RuntimeSubstateValidate), "/api/runtime-substate-validate", "runtime substate validate dev-host route");
+assertEqual(resolveEditorBackendDevHostRoute(EditorBackendTransportCommand.RuntimeSubstateImport), "/api/runtime-substate-import", "runtime substate import dev-host route");
 let desktopOnlyRouteRejected = false;
 try {
   resolveEditorBackendDevHostRoute(EditorBackendTransportCommand.WorkspaceOpenFolder);
@@ -139,6 +142,22 @@ const runtimeStep = await backendClient.runtimeSession.step({
   },
 });
 assertEqual(runtimeStep.command, EditorBackendTransportCommand.RuntimeStep, "backend client runtime command");
+const runtimeSubstateExport = await backendClient.runtimeSession.substateExport({
+  runtimeState: {
+    state: {
+      currentNodeName: "Opening",
+    },
+  },
+});
+assertEqual(runtimeSubstateExport.command, EditorBackendTransportCommand.RuntimeSubstateExport, "backend client runtime substate export command");
+const runtimeSubstateValidate = await backendClient.runtimeSession.substateValidate({
+  substateText: "{}",
+});
+assertEqual(runtimeSubstateValidate.command, EditorBackendTransportCommand.RuntimeSubstateValidate, "backend client runtime substate validate command");
+const runtimeSubstateImport = await backendClient.runtimeSession.substateImport({
+  substateText: "{}",
+});
+assertEqual(runtimeSubstateImport.command, EditorBackendTransportCommand.RuntimeSubstateImport, "backend client runtime substate import command");
 const documentSave = await backendClient.documentBuffer.saveDocument({
   baseRevision: 7,
   relativePath: "story/opening.inscape",

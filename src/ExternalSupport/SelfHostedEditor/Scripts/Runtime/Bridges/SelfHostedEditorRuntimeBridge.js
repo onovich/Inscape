@@ -117,6 +117,58 @@ export class SelfHostedEditorRuntimeBridge {
     }
   }
 
+  async exportRuntimeSubstate(scriptText, runtimeState = null, options = {}) {
+    try {
+      const workspace = this.workspaceContextProvider?.() || null;
+      return await this.runtimeSessionClient.substateExport(this.buildWorkspaceRequest({
+        request: this.buildRuntimeRequest({
+          hostCheckpointId: options.hostCheckpointId || "",
+          runtimeState,
+          scriptVersion: options.scriptVersion || "",
+          sessionId: this.sessionId,
+        }),
+        scriptText,
+        workspace,
+      }));
+    } catch (error) {
+      return this.buildUnavailableSubstateOperation("export", error);
+    }
+  }
+
+  async validateRuntimeSubstate(scriptText, substateText, options = {}) {
+    try {
+      const workspace = this.workspaceContextProvider?.() || null;
+      return await this.runtimeSessionClient.substateValidate(this.buildWorkspaceRequest({
+        request: {
+          scriptVersion: options.scriptVersion || "",
+          sessionId: this.sessionId,
+          substateText: String(substateText || ""),
+        },
+        scriptText,
+        workspace,
+      }));
+    } catch (error) {
+      return this.buildUnavailableSubstateOperation("validate", error);
+    }
+  }
+
+  async importRuntimeSubstate(scriptText, substateText, options = {}) {
+    try {
+      const workspace = this.workspaceContextProvider?.() || null;
+      return await this.runtimeSessionClient.substateImport(this.buildWorkspaceRequest({
+        request: this.buildRuntimeRequest({
+          scriptVersion: options.scriptVersion || "",
+          sessionId: this.sessionId,
+          substateText: String(substateText || ""),
+        }),
+        scriptText,
+        workspace,
+      }));
+    } catch (error) {
+      return this.buildUnavailableSubstateOperation("import", error);
+    }
+  }
+
   createSessionId() {
     const randomPart = Math.random().toString(36).slice(2);
     return `runtime-${Date.now().toString(36)}-${randomPart}`;
@@ -144,5 +196,16 @@ export class SelfHostedEditorRuntimeBridge {
     }
 
     return nextRequest;
+  }
+
+  buildUnavailableSubstateOperation(operation, error) {
+    return {
+      error: error instanceof Error ? error.message : String(error),
+      format: "inscape.self-hosted-editor.runtime-substate-operation",
+      formatVersion: 1,
+      imported: false,
+      operation,
+      validationStatus: "unavailable",
+    };
   }
 }

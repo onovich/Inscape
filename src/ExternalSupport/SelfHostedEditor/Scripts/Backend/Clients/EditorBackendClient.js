@@ -40,8 +40,11 @@ export class EditorBackendClient {
       compileProjectGraph: (request) => this.#invoke(EditorBackendTransportCommand.StoryGraphCompileProject, request),
     });
     this.runtimeSession = Object.freeze({
+      substateExport: (request) => this.#invoke(EditorBackendTransportCommand.RuntimeSubstateExport, request),
+      substateImport: (request) => this.#invoke(EditorBackendTransportCommand.RuntimeSubstateImport, request),
       startOrObserve: (request) => this.#invoke(EditorBackendTransportCommand.RuntimeStartOrObserve, request),
       step: (request) => this.#invoke(EditorBackendTransportCommand.RuntimeStep, request),
+      substateValidate: (request) => this.#invoke(EditorBackendTransportCommand.RuntimeSubstateValidate, request),
     });
     this.lineIdentitySession = Object.freeze({
       refresh: (request) => this.#invoke(EditorBackendTransportCommand.LineIdentityRefresh, request),

@@ -39,6 +39,7 @@ async function main() {
     runtimeBridge,
     runtimeBranchEvidencePanelController,
     runtimeLogBacklogPanelController,
+    runtimeSubstatePanelController,
     storyGraphController,
     storyNodeMapReviewController,
     workspaceController,
@@ -72,6 +73,7 @@ async function main() {
       workbenchRenderController.setLatestRuntimeSnapshot(steppedRuntimeSnapshot);
       workbenchRenderController.renderWorkspaceSession();
       workbenchRenderController.renderActionPanel();
+      workbenchRenderController.renderRuntimeSubstatePanel();
       return steppedRuntimeSnapshot;
     }
 
@@ -81,6 +83,7 @@ async function main() {
       workbenchRenderController.renderWorkspaceSummary(editorController.getText());
       workbenchRenderController.renderWorkspaceSession();
       workbenchRenderController.renderActionPanel();
+      workbenchRenderController.renderRuntimeSubstatePanel();
     }
 
     return steppedRuntimeSnapshot;
@@ -92,6 +95,46 @@ async function main() {
   runtimeBranchEvidencePanelController.onSourceLineSelected((selection) => {
     focusSourceSelection(selection);
     layoutController.ensureEditorVisible();
+  });
+  runtimeSubstatePanelController.onExportRequested(async () => {
+    const latestRuntimeSnapshot = workbenchRenderController.getLatestRuntimeSnapshot();
+    const result = await runtimeBridge.exportRuntimeSubstate(
+      editorController.getText(),
+      latestRuntimeSnapshot?.snapshot || null,
+      buildRuntimeSubstateOptions()
+    );
+    workbenchRenderController.renderRuntimeSubstatePanel(result);
+    return result;
+  });
+  runtimeSubstatePanelController.onValidateRequested(async (substateText) => {
+    const result = await runtimeBridge.validateRuntimeSubstate(
+      editorController.getText(),
+      substateText,
+      buildRuntimeSubstateOptions()
+    );
+    workbenchRenderController.renderRuntimeSubstatePanel(result);
+    return result;
+  });
+  runtimeSubstatePanelController.onImportRequested(async (substateText) => {
+    const result = await runtimeBridge.importRuntimeSubstate(
+      editorController.getText(),
+      substateText,
+      buildRuntimeSubstateOptions()
+    );
+    if (result?.imported && result.runtimeSnapshot) {
+      const importedRuntimeSnapshot = {
+        provider: "runtime-project",
+        snapshot: result.runtimeSnapshot,
+      };
+      workbenchRenderController.setLatestRuntimeSnapshot(importedRuntimeSnapshot);
+      previewController.renderRuntimeSnapshot(importedRuntimeSnapshot.snapshot);
+      workbenchRenderController.renderWorkspaceSummary(editorController.getText());
+      workbenchRenderController.renderWorkspaceSession();
+      workbenchRenderController.renderActionPanel();
+    }
+
+    workbenchRenderController.renderRuntimeSubstatePanel(result);
+    return result;
   });
 
   const defaultSample = await loadDefaultSampleScript();
@@ -124,6 +167,7 @@ async function main() {
     workbenchRenderController.renderRuntimeStatusPanel();
     workbenchRenderController.renderRuntimeLogPanel();
     workbenchRenderController.renderRuntimeBranchPanel();
+    workbenchRenderController.renderRuntimeSubstatePanel();
   });
 
   layoutController.onStateChanged(() => {
@@ -344,6 +388,14 @@ async function main() {
     editorController.focusLine(selection.lineNumber);
   }
 
+  function buildRuntimeSubstateOptions() {
+    const revision = workspaceController.getState().revision || 0;
+    return {
+      hostCheckpointId: `preview-${runtimeBridge.sessionId || "default"}`,
+      scriptVersion: `workspace-revision-${revision}`,
+    };
+  }
+
   storyGraphController.onNodeRenameRequested((node) => {
     void renameNode(node);
   });
@@ -396,6 +448,7 @@ async function main() {
   void editorStatusController;
   void hostCapabilityCatalogController;
   void runtimeBranchEvidencePanelController;
+  void runtimeSubstatePanelController;
   void storyNodeMapReviewController;
   void runtimeLogBacklogPanelController;
   void runtimeBridge;

@@ -1,0 +1,137 @@
+.runtime-substate-panel {
+  border-left: 1px solid var(--ink-a-070);
+  min-height: 0;
+  overflow: auto;
+  padding: 16px;
+}
+
+.runtime-substate-shell {
+  display: grid;
+  gap: 12px;
+}
+
+.runtime-substate-header,
+.runtime-substate-toolbar {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.runtime-substate-title {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.runtime-substate-title h2,
+.runtime-substate-editor-label {
+  color: var(--text);
+  font-size: 13px;
+  margin: 0;
+}
+
+.runtime-substate-runtime-status,
+.runtime-substate-status,
+.runtime-substate-summary-item,
+.runtime-substate-safety {
+  color: var(--muted-strong);
+  font-size: 11px;
+  margin: 0;
+}
+
+.runtime-substate-runtime-status[data-runtime-state="runtime-ready"],
+.runtime-substate-validation[data-validation-status="compatible"] {
+  color: var(--accent);
+}
+
+.runtime-substate-validation[data-validation-status="migratable"] {
+  color: var(--button-muted-a-760);
+}
+
+.runtime-substate-runtime-status[data-runtime-state="runtime-error"],
+.runtime-substate-runtime-status[data-runtime-state="runtime-unavailable"],
+.runtime-substate-validation[data-validation-status="incompatible"],
+.runtime-substate-validation[data-validation-status="error"],
+.runtime-substate-validation[data-validation-status="unavailable"] {
+  color: var(--danger-text-a-720);
+}
+
+.runtime-substate-validation {
+  background: var(--surface-soft);
+  border: 1px solid var(--ink-a-070);
+  border-radius: 6px;
+  color: var(--muted-strong);
+  font-size: 10px;
+  line-height: 1;
+  padding: 5px 7px;
+}
+
+.runtime-substate-toolbar {
+  border-bottom: 1px solid var(--ink-a-055);
+  padding-bottom: 10px;
+}
+
+.runtime-substate-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.runtime-substate-button {
+  background: var(--surface);
+  border: 1px solid var(--ink-a-095);
+  border-radius: 6px;
+  color: var(--button-muted-a-760);
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  min-height: 30px;
+  padding: 6px 9px;
+}
+
+.runtime-substate-button:disabled {
+  cursor: default;
+  opacity: 0.48;
+}
+
+.runtime-substate-summary {
+  border: 1px solid var(--ink-a-070);
+  border-radius: 8px;
+  display: grid;
+  gap: 6px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 10px;
+}
+
+.runtime-substate-summary-item {
+  overflow-wrap: anywhere;
+}
+
+.runtime-substate-editor {
+  display: grid;
+  gap: 8px;
+}
+
+.runtime-substate-textarea {
+  background: var(--surface-soft);
+  border: 1px solid var(--ink-a-095);
+  border-radius: 8px;
+  color: var(--text);
+  font: 11px/1.45 ui-monospace, SFMono-Regular, Consolas, monospace;
+  min-height: 180px;
+  padding: 10px;
+  resize: vertical;
+  width: 100%;
+}
+
+@media (max-width: 1420px) {
+  .runtime-substate-panel {
+    border-left: 0;
+    border-top: 1px solid var(--ink-a-070);
+  }
+
+  .runtime-substate-summary {
+    grid-template-columns: 1fr;
+  }
+}

@@ -45,6 +45,7 @@
 .localization-panel[data-loading-state="loading"]::before,
 .runtime-log-backlog-panel[data-loading-state="loading"]::before,
 .runtime-branch-evidence-panel[data-loading-state="loading"]::before,
+.runtime-substate-panel[data-loading-state="loading"]::before,
 .graph-panel[data-loading-state="loading"]::before,
 .workspace-runtime-panel[data-loading-state="loading"]::before {
   background:
@@ -78,6 +79,7 @@
 .localization-panel[data-loading-state="loading"]::after,
 .runtime-log-backlog-panel[data-loading-state="loading"]::after,
 .runtime-branch-evidence-panel[data-loading-state="loading"]::after,
+.runtime-substate-panel[data-loading-state="loading"]::after,
 .graph-panel[data-loading-state="loading"]::after,
 .workspace-runtime-panel[data-loading-state="loading"]::after {
   animation: loading-breath 1500ms ease-in-out infinite;
@@ -101,6 +103,7 @@
 .localization-panel[data-loading-state="loading"]::before,
 .runtime-log-backlog-panel[data-loading-state="loading"]::before,
 .runtime-branch-evidence-panel[data-loading-state="loading"]::before,
+.runtime-substate-panel[data-loading-state="loading"]::before,
 .graph-panel[data-loading-state="loading"]::before,
 .workspace-runtime-panel[data-loading-state="loading"]::before {
   animation: loading-drift 2200ms linear infinite;
