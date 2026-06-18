@@ -1,12 +1,25 @@
 # Agent 接手指南
 
-状态：P4 Round 4 branch-affecting query receipt 第一刀完成
+状态：P4 Round 5 action dispatcher contract + fire 第一刀完成
 
 最后更新：2026-06-18
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-18 SelfHostedEditor P4 Round 5 Action Dispatcher 快照
+
+P4 Runtime playable MVP 已完成第五轮 action dispatcher contract + `fire` 第一刀，不代表 P4 MVP 已完成。
+- 本轮审计见 [SelfHostedEditor P4 Action Dispatcher Audit](self-hosted-editor-p4-action-dispatcher-audit.md)。
+- `Internal/Runtime/HostBridge` 新增 action dispatcher 最小模型：action capability、handler binding、action request、action argument 与 action result。
+- `NarrativeRuntime.ActionDispatcher` 消费 Host Schema `actions[]` 等价 mode 输入和 Host Bridge handler mapping 等价输入；Runtime 项目仍不引用 Tooling JSON reader。
+- `@emit` metadata line 现在可转成 Runtime fire action request；leading action 在进入节点时 dispatch，随正文推进到达的 action 在 `AdvanceFlow()` 时 dispatch。
+- `NarrativeRuntime.ActionRequests` 和 snapshot `ActionRequests` 暴露已发出的 fire request；formal `ExportState()` 不包含 action request history。
+- error 第一刀：`IRA001` missing schema action、`IRA002` missing handler、`IRA003` mode not implemented、`IRA004` host dispatch failed。
+- `wait` / `handoff` 尚未实现 pending / resume，只会按未实现 mode 报错。
+- ExternalSupport 未新增 condition parser、query evaluator、action dispatcher 或 Runtime 语义副本。
+- 下一轮进入 P4 Round 6：`wait` pending / resume 第一刀；继续避免 per-action rollback / replay / timeout / failure policy 字段。
 
 ### 2026-06-18 SelfHostedEditor P4 Round 4 Query Receipt 快照
 
@@ -1567,9 +1580,9 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 
 建议优先做小而闭环的任务，不要直接跳到大规模重构。
 
-1. 进入 P4 Round 4 Query receipt 第一刀。
-   - 先读 [P4 Runtime Playable MVP Goal 模式执行指南](self-hosted-editor-p4-goal-mode-execution-guide.md)、[Runtime Playable MVP Contract](runtime-playable-mvp-contract.md) 与 [SelfHostedEditor P4 Runtime Flow Audit](self-hosted-editor-p4-runtime-flow-audit.md)。
-   - 定义 branch-affecting query receipt 最小 shape，并在条件选项 / 条件跳转求值时记录 query name、arguments、result、sourceKind、deterministic、node / option / jump context；不要把普通 Runtime State 主体扩成完整 Trace Replay。
+1. 进入 P4 Round 6 `wait` pending / resume 第一刀。
+   - 先读 [P4 Runtime Playable MVP Goal 模式执行指南](self-hosted-editor-p4-goal-mode-execution-guide.md)、[Runtime Playable MVP Contract](runtime-playable-mvp-contract.md) 与 [SelfHostedEditor P4 Action Dispatcher Audit](self-hosted-editor-p4-action-dispatcher-audit.md)。
+   - 定义 pending action 最小 shape、Runtime 暂停 / 恢复边界和 host result 注入路径；继续避免 per-action rollback / replay / timeout / failure policy 字段。
 
 2. 继续推进 Stable Node ID / 本地化主线。
    - ADR 0013、sidecar 闭环、保守自动重命名识别、VSCode 显式 `Update Stable Node Map` 入口、插入标题后的自动同步、标题重命名人工确认 / 冲突报告、本地化 alignment / audit report，以及相似文本人工候选第一版都已落地。

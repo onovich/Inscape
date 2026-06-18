@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Globalization;
 using Inscape.Compiler.Model;
 
 namespace Inscape.Runtime {
@@ -8,15 +10,20 @@ namespace Inscape.Runtime {
         public const string CurrentRuntimeVersion = "p3-runtime-state-v1";
 
         readonly Dictionary<string, StoryGraphNodeModel> nodesByName;
+        readonly HashSet<string> dispatchedActionKeys;
         DslScriptDocumentModel? graph;
 
         public NarrativeRuntimeStateModel State { get; }
 
         public NarrativeRuntimeQueryProviderModel QueryProvider { get; set; }
 
+        public NarrativeRuntimeActionDispatcherModel ActionDispatcher { get; set; }
+
         public NarrativeRuntimeFlowErrorModel? LastError { get; private set; }
 
         public List<NarrativeRuntimeQueryReceiptModel> BranchQueryReceipts { get; }
+
+        public List<NarrativeRuntimeActionRequestModel> ActionRequests { get; }
 
         public StoryGraphNodeModel? CurrentNode {
             get {
@@ -30,14 +37,19 @@ namespace Inscape.Runtime {
 
         public NarrativeRuntime() {
             nodesByName = new Dictionary<string, StoryGraphNodeModel>();
+            dispatchedActionKeys = new HashSet<string>(StringComparer.Ordinal);
             State = new NarrativeRuntimeStateModel();
             QueryProvider = new NarrativeRuntimeQueryProviderModel();
+            ActionDispatcher = new NarrativeRuntimeActionDispatcherModel();
             BranchQueryReceipts = new List<NarrativeRuntimeQueryReceiptModel>();
+            ActionRequests = new List<NarrativeRuntimeActionRequestModel>();
         }
 
         public void LoadGraph(DslScriptDocumentModel narrativeGraph) {
             ClearLastError();
             BranchQueryReceipts.Clear();
+            ActionRequests.Clear();
+            dispatchedActionKeys.Clear();
             graph = narrativeGraph;
             nodesByName.Clear();
             State.CurrentNodeName = string.Empty;
@@ -55,6 +67,8 @@ namespace Inscape.Runtime {
         public bool Start(string entryNodeName = "") {
             ClearLastError();
             BranchQueryReceipts.Clear();
+            ActionRequests.Clear();
+            dispatchedActionKeys.Clear();
             if (graph == null || graph.Nodes.Count == 0) {
                 return SetFlowError("IRF001", "graph", "Runtime graph is not loaded.");
             }
@@ -125,7 +139,7 @@ namespace Inscape.Runtime {
 
             State.VisibleStepCount += 1;
             RecordSeenLine(node, State.VisibleStepCount);
-            return true;
+            return DispatchAvailableFireActions(node);
         }
 
         public bool RewindFlow() {
@@ -158,6 +172,8 @@ namespace Inscape.Runtime {
         public bool Restore(NarrativeRuntimeStateModel state) {
             ClearLastError();
             BranchQueryReceipts.Clear();
+            ActionRequests.Clear();
+            dispatchedActionKeys.Clear();
             if (state.CurrentNodeName.Length > 0 && !nodesByName.ContainsKey(state.CurrentNodeName)) {
                 return SetFlowError("IRF004", "state.currentNodeName", "Runtime restore node is not available: " + state.CurrentNodeName);
             }
@@ -186,6 +202,7 @@ namespace Inscape.Runtime {
                 CurrentNode = visibleNode,
                 LastError = CloneLastError(LastError),
                 BranchQueryReceipts = CloneQueryReceipts(BranchQueryReceipts),
+                ActionRequests = CloneActionRequests(ActionRequests),
             };
         }
 
@@ -526,7 +543,7 @@ namespace Inscape.Runtime {
             }
             State.Path.Add(nodeName);
             RecordNodeVisit(nodeName);
-            return true;
+            return DispatchAvailableFireActions(nodesByName[nodeName]);
         }
 
         void RecordNodeVisit(string nodeName) {
@@ -562,6 +579,230 @@ namespace Inscape.Runtime {
                     return;
                 }
             }
+        }
+
+        bool DispatchAvailableFireActions(StoryGraphNodeModel node) {
+            int contentStepCount = 0;
+            for (int i = 0; i < node.Lines.Count; i += 1) {
+                DslScriptLineModel line = node.Lines[i];
+                if (line.Kind != DslScriptLineKindModel.Metadata) {
+                    contentStepCount += 1;
+                    continue;
+                }
+
+                if (contentStepCount > State.VisibleStepCount) {
+                    continue;
+                }
+
+                if (!TryCreateActionRequest(node, line, i, out NarrativeRuntimeActionRequestModel request)) {
+                    continue;
+                }
+
+                string dispatchKey = CreateActionDispatchKey(node, line, i);
+                if (dispatchedActionKeys.Contains(dispatchKey)) {
+                    continue;
+                }
+
+                NarrativeRuntimeActionResultModel result = NarrativeRuntimeActionDispatcherDomain.Dispatch(request, ActionDispatcher);
+                if (result.RequestWasSent) {
+                    ActionRequests.Add(CloneActionRequest(request));
+                    dispatchedActionKeys.Add(dispatchKey);
+                }
+
+                if (!result.Succeeded) {
+                    return SetFlowError(result.ErrorCode.Length == 0 ? "IRF010" : result.ErrorCode,
+                                        "action." + request.Name,
+                                        result.ErrorMessage.Length == 0
+                                            ? "Runtime action dispatch failed: " + request.Name
+                                            : result.ErrorMessage);
+                }
+
+                dispatchedActionKeys.Add(dispatchKey);
+            }
+
+            return true;
+        }
+
+        bool TryCreateActionRequest(StoryGraphNodeModel node,
+                                    DslScriptLineModel line,
+                                    int lineIndex,
+                                    out NarrativeRuntimeActionRequestModel request) {
+            request = new NarrativeRuntimeActionRequestModel();
+            string raw = line.Raw.Length > 0 ? line.Raw : line.Text;
+            int atIndex = FirstNonWhitespaceIndex(raw);
+            if (atIndex < 0) {
+                return false;
+            }
+
+            if (!StartsWithToken(raw, atIndex, "@emit")) {
+                return false;
+            }
+
+            int nameStart = SkipWhitespace(raw, atIndex + 5);
+            if (nameStart >= raw.Length || !IsIdentifierStart(raw[nameStart])) {
+                request.Name = string.Empty;
+                request.NodeId = node.Name;
+                request.SourceLine = line.Source.Line;
+                request.SourceColumn = atIndex + 1;
+                return false;
+            }
+
+            int nameEnd = nameStart + 1;
+            while (nameEnd < raw.Length && IsActionNamePart(raw[nameEnd])) {
+                nameEnd += 1;
+            }
+
+            string name = raw.Substring(nameStart, nameEnd - nameStart);
+            request.RequestId = "action-" + (ActionRequests.Count + 1);
+            request.Name = name;
+            request.NodeId = node.Name;
+            request.LineId = CreateActionLineId(line, lineIndex);
+            request.SourceLine = line.Source.Line;
+            request.SourceColumn = atIndex + 1;
+            request.Raw = raw.Substring(atIndex).TrimEnd();
+            AddActionArguments(request, raw, line.Source.Line, nameEnd);
+            return true;
+        }
+
+        void AddActionArguments(NarrativeRuntimeActionRequestModel request,
+                                string raw,
+                                int sourceLine,
+                                int startIndex) {
+            int index = startIndex;
+            while (index < raw.Length) {
+                index = SkipWhitespace(raw, index);
+                if (index >= raw.Length) {
+                    return;
+                }
+
+                int tokenStart = index;
+                string tokenRaw;
+                bool tokenClosed = true;
+                if (raw[index] == '"') {
+                    index += 1;
+                    tokenClosed = false;
+                    while (index < raw.Length) {
+                        if (raw[index] == '\\' && index + 1 < raw.Length) {
+                            index += 2;
+                            continue;
+                        }
+
+                        if (raw[index] == '"') {
+                            index += 1;
+                            tokenClosed = true;
+                            break;
+                        }
+
+                        index += 1;
+                    }
+
+                    tokenRaw = raw.Substring(tokenStart, index - tokenStart);
+                } else {
+                    while (index < raw.Length && !char.IsWhiteSpace(raw[index])) {
+                        index += 1;
+                    }
+
+                    tokenRaw = raw.Substring(tokenStart, index - tokenStart);
+                }
+
+                request.Arguments.Add(new NarrativeRuntimeActionArgumentModel {
+                    Index = request.Arguments.Count,
+                    Raw = tokenRaw,
+                    Value = ParseActionArgumentValue(tokenRaw, tokenClosed),
+                    SourceLine = sourceLine,
+                    SourceColumn = tokenStart + 1,
+                });
+            }
+        }
+
+        static NarrativeRuntimeQueryValueModel ParseActionArgumentValue(string raw, bool tokenClosed) {
+            if (!tokenClosed) {
+                return new NarrativeRuntimeQueryValueModel {
+                    Kind = NarrativeRuntimeQueryValueKindModel.Unknown,
+                };
+            }
+
+            if (raw.Length >= 2 && raw[0] == '"' && raw[raw.Length - 1] == '"') {
+                return NarrativeRuntimeQueryValueModel.FromString(UnescapeActionString(raw.Substring(1, raw.Length - 2)));
+            }
+
+            if (bool.TryParse(raw, out bool boolValue)) {
+                return NarrativeRuntimeQueryValueModel.FromBool(boolValue);
+            }
+
+            if (double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out double numberValue)) {
+                return NarrativeRuntimeQueryValueModel.FromNumber(numberValue);
+            }
+
+            return NarrativeRuntimeQueryValueModel.FromString(raw);
+        }
+
+        static string UnescapeActionString(string value) {
+            return value.Replace("\\\"", "\"").Replace("\\\\", "\\");
+        }
+
+        string CreateActionDispatchKey(StoryGraphNodeModel node, DslScriptLineModel line, int lineIndex) {
+            return State.Path.Count.ToString(CultureInfo.InvariantCulture)
+                   + ":"
+                   + node.Name
+                   + ":"
+                   + line.Source.Line.ToString(CultureInfo.InvariantCulture)
+                   + ":"
+                   + line.Source.Column.ToString(CultureInfo.InvariantCulture)
+                   + ":"
+                   + lineIndex.ToString(CultureInfo.InvariantCulture);
+        }
+
+        static string CreateActionLineId(DslScriptLineModel line, int lineIndex) {
+            if (line.Anchor.Length > 0) {
+                return line.Anchor;
+            }
+
+            if (line.Source.Line > 0) {
+                return "line:" + line.Source.Line.ToString(CultureInfo.InvariantCulture);
+            }
+
+            return "metadata:" + lineIndex.ToString(CultureInfo.InvariantCulture);
+        }
+
+        static int FirstNonWhitespaceIndex(string value) {
+            for (int i = 0; i < value.Length; i += 1) {
+                if (!char.IsWhiteSpace(value[i])) {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        static int SkipWhitespace(string value, int startIndex) {
+            int index = startIndex;
+            while (index < value.Length && char.IsWhiteSpace(value[index])) {
+                index += 1;
+            }
+
+            return index;
+        }
+
+        static bool StartsWithToken(string value, int startIndex, string token) {
+            if (startIndex + token.Length > value.Length) {
+                return false;
+            }
+
+            if (!string.Equals(value.Substring(startIndex, token.Length), token, StringComparison.Ordinal)) {
+                return false;
+            }
+
+            int after = startIndex + token.Length;
+            return after >= value.Length || char.IsWhiteSpace(value[after]);
+        }
+
+        static bool IsIdentifierStart(char value) {
+            return value == '_' || (value >= 'A' && value <= 'Z') || (value >= 'a' && value <= 'z');
+        }
+
+        static bool IsActionNamePart(char value) {
+            return IsIdentifierStart(value) || (value >= '0' && value <= '9') || value == '.' || value == '-';
         }
 
         static NarrativeRuntimeFactsModel CloneFacts(NarrativeRuntimeFactsModel facts) {
@@ -648,6 +889,42 @@ namespace Inscape.Runtime {
                 }
 
                 clone.Add(receiptClone);
+            }
+
+            return clone;
+        }
+
+        static List<NarrativeRuntimeActionRequestModel> CloneActionRequests(IReadOnlyList<NarrativeRuntimeActionRequestModel> requests) {
+            List<NarrativeRuntimeActionRequestModel> clone = new List<NarrativeRuntimeActionRequestModel>();
+            for (int i = 0; i < requests.Count; i += 1) {
+                clone.Add(CloneActionRequest(requests[i]));
+            }
+
+            return clone;
+        }
+
+        static NarrativeRuntimeActionRequestModel CloneActionRequest(NarrativeRuntimeActionRequestModel request) {
+            NarrativeRuntimeActionRequestModel clone = new NarrativeRuntimeActionRequestModel {
+                RequestId = request.RequestId,
+                Name = request.Name,
+                Mode = request.Mode,
+                HandlerName = request.HandlerName,
+                NodeId = request.NodeId,
+                LineId = request.LineId,
+                SourceLine = request.SourceLine,
+                SourceColumn = request.SourceColumn,
+                Raw = request.Raw,
+            };
+
+            for (int argumentIndex = 0; argumentIndex < request.Arguments.Count; argumentIndex += 1) {
+                NarrativeRuntimeActionArgumentModel argument = request.Arguments[argumentIndex];
+                clone.Arguments.Add(new NarrativeRuntimeActionArgumentModel {
+                    Index = argument.Index,
+                    Raw = argument.Raw,
+                    Value = CloneQueryValue(argument.Value),
+                    SourceLine = argument.SourceLine,
+                    SourceColumn = argument.SourceColumn,
+                });
             }
 
             return clone;

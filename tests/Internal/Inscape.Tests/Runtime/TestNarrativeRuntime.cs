@@ -442,6 +442,111 @@ Narrator: Open.
             AssertEqual("IRF006", runtime.LastError?.Code ?? string.Empty, "Runtime missing conditional fallback error");
         }
 
+        static void NarrativeRuntimeDispatchesFireActionsAndContinues() {
+            DslScriptCompilationResultModel compilation = Compile("""
+# start
+@emit play_timeline "mira_reveal"
+Narrator: Open.
+@emit mark_checkpoint true 3 door-id
+Narrator: Done.
+-> end
+
+# end
+Narrator: End.
+""");
+            AssertFalse(compilation.HasErrors, "Fire action fixture should compile.");
+
+            NarrativeRuntime runtime = new NarrativeRuntime();
+            runtime.LoadGraph(compilation.Document);
+            runtime.ActionDispatcher.Actions.Add(CreateActionCapability("play_timeline", "fire"));
+            runtime.ActionDispatcher.Actions.Add(CreateActionCapability("mark_checkpoint", "fire"));
+            runtime.ActionDispatcher.Handlers.Add(CreateActionHandler("play_timeline", "TimelineBridge.PlayTimeline"));
+            runtime.ActionDispatcher.Handlers.Add(CreateActionHandler("mark_checkpoint", "RuntimeBridge.MarkCheckpoint"));
+            int dispatchCount = 0;
+            runtime.ActionDispatcher.DispatchAction = request => {
+                dispatchCount += 1;
+                AssertTrue(request.Mode == "fire", "Fire action request should use fire mode.");
+                AssertTrue(request.HandlerName.Length > 0, "Fire action request should include Host Bridge handler mapping.");
+                return new NarrativeRuntimeActionResultModel();
+            };
+
+            AssertTrue(runtime.Start("start"), "Runtime should start and dispatch leading fire action.");
+            AssertEqual(1, dispatchCount, "Leading fire action dispatch count");
+            AssertEqual(1, runtime.ActionRequests.Count, "Runtime should record leading fire action request.");
+            NarrativeRuntimeActionRequestModel first = runtime.ActionRequests[0];
+            AssertEqual("action-1", first.RequestId, "First action request id");
+            AssertEqual("play_timeline", first.Name, "First action name");
+            AssertEqual("fire", first.Mode, "First action mode");
+            AssertEqual("TimelineBridge.PlayTimeline", first.HandlerName, "First action handler name");
+            AssertEqual("start", first.NodeId, "First action node id");
+            AssertEqual("line:2", first.LineId, "First action line id");
+            AssertEqual(2, first.SourceLine, "First action source line");
+            AssertEqual(1, first.SourceColumn, "First action source column");
+            AssertEqual("@emit play_timeline \"mira_reveal\"", first.Raw, "First action raw");
+            AssertEqual(1, first.Arguments.Count, "First action argument count");
+            AssertEqual("mira_reveal", first.Arguments[0].Value.StringValue, "First action string argument");
+
+            NarrativeRuntimeSnapshotModel snapshot = runtime.CreateSnapshot();
+            AssertEqual(1, snapshot.ActionRequests.Count, "Runtime snapshot should expose fire action requests separately.");
+
+            AssertTrue(runtime.AdvanceFlow(), "Runtime should advance after leading fire action.");
+            AssertEqual(2, dispatchCount, "Runtime should dispatch fire action reached by flow advance.");
+            AssertEqual(2, runtime.ActionRequests.Count, "Runtime should record second fire action request.");
+            NarrativeRuntimeActionRequestModel second = runtime.ActionRequests[1];
+            AssertEqual("action-2", second.RequestId, "Second action request id");
+            AssertEqual("mark_checkpoint", second.Name, "Second action name");
+            AssertEqual("RuntimeBridge.MarkCheckpoint", second.HandlerName, "Second action handler name");
+            AssertEqual(3, second.Arguments.Count, "Second action argument count");
+            AssertTrue(second.Arguments[0].Value.BoolValue, "Second action bool argument");
+            AssertEqual(3, (int)second.Arguments[1].Value.NumberValue, "Second action number argument");
+            AssertEqual("door-id", second.Arguments[2].Value.StringValue, "Second action identifier argument");
+
+            AssertTrue(runtime.AdvanceFlow(), "Runtime should advance remaining content without redispatching fire actions.");
+            AssertEqual(2, dispatchCount, "Runtime should not dispatch the same fire action twice in one node visit.");
+            AssertTrue(runtime.Continue(), "Runtime should continue after fire actions.");
+            AssertEqual("end", runtime.State.CurrentNodeName, "Runtime fire actions should not block default continue.");
+
+            string serializedState = JsonSerializer.Serialize(runtime.ExportState("script-v1", "checkpoint-opaque-1"));
+            AssertFalse(serializedState.Contains("actionRequests", StringComparison.OrdinalIgnoreCase), "Runtime export state should not include fire action request history.");
+        }
+
+        static void NarrativeRuntimeReportsActionDispatchErrors() {
+            DslScriptCompilationResultModel compilation = Compile("""
+# start
+@emit open_window inventory_panel
+Narrator: Start.
+""");
+            AssertFalse(compilation.HasErrors, "Action error fixture should compile.");
+
+            NarrativeRuntime missingSchema = new NarrativeRuntime();
+            missingSchema.LoadGraph(compilation.Document);
+            AssertFalse(missingSchema.Start("start"), "Runtime should reject action missing Host Schema declaration.");
+            AssertEqual("IRA001", missingSchema.LastError?.Code ?? string.Empty, "Runtime missing action schema error");
+
+            NarrativeRuntime missingHandler = new NarrativeRuntime();
+            missingHandler.LoadGraph(compilation.Document);
+            missingHandler.ActionDispatcher.Actions.Add(CreateActionCapability("open_window", "fire"));
+            AssertFalse(missingHandler.Start("start"), "Runtime should reject action missing Host Bridge handler.");
+            AssertEqual("IRA002", missingHandler.LastError?.Code ?? string.Empty, "Runtime missing action handler error");
+
+            NarrativeRuntime unsupportedMode = new NarrativeRuntime();
+            unsupportedMode.LoadGraph(compilation.Document);
+            unsupportedMode.ActionDispatcher.Actions.Add(CreateActionCapability("open_window", "wait"));
+            unsupportedMode.ActionDispatcher.Handlers.Add(CreateActionHandler("open_window", "UiBridge.OpenWindow"));
+            AssertFalse(unsupportedMode.Start("start"), "Runtime should not treat wait action as fire in Round 5.");
+            AssertEqual("IRA003", unsupportedMode.LastError?.Code ?? string.Empty, "Runtime unsupported action mode error");
+            AssertEqual(0, unsupportedMode.ActionRequests.Count, "Unsupported action modes should not emit fire requests.");
+
+            NarrativeRuntime hostError = new NarrativeRuntime();
+            hostError.LoadGraph(compilation.Document);
+            hostError.ActionDispatcher.Actions.Add(CreateActionCapability("open_window", "fire"));
+            hostError.ActionDispatcher.Handlers.Add(CreateActionHandler("open_window", "UiBridge.OpenWindow"));
+            hostError.ActionDispatcher.DispatchAction = _ => throw new InvalidOperationException("host refused");
+            AssertFalse(hostError.Start("start"), "Runtime should report host fire action exceptions.");
+            AssertEqual("IRA004", hostError.LastError?.Code ?? string.Empty, "Runtime host action exception error");
+            AssertEqual(1, hostError.ActionRequests.Count, "Runtime should retain sent action request for host exception debugging.");
+        }
+
         static void NarrativeRuntimeExportsAndValidatesMinimalRuntimeState() {
             DslScriptCompilationResultModel compilation = Compile("""
 # start
@@ -706,6 +811,20 @@ Narrator: End.
                 entry.Arguments.Add(arguments[i]);
             }
             return entry;
+        }
+
+        static NarrativeRuntimeActionCapabilityModel CreateActionCapability(string name, string mode) {
+            return new NarrativeRuntimeActionCapabilityModel {
+                Name = name,
+                Mode = mode,
+            };
+        }
+
+        static NarrativeRuntimeActionHandlerBindingModel CreateActionHandler(string name, string handlerName) {
+            return new NarrativeRuntimeActionHandlerBindingModel {
+                Name = name,
+                HandlerName = handlerName,
+            };
         }
 
         static DslScriptConditionExpressionModel ReadChoiceConditionExpression(string condition) {

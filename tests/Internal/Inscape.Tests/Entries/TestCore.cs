@@ -48,6 +48,8 @@ namespace Inscape.Tests {
                 ("narrative runtime follows first true conditional jump", NarrativeRuntimeFollowsFirstTrueConditionalJump),
                 ("narrative runtime follows conditional fallback", NarrativeRuntimeFollowsConditionalFallback),
                 ("narrative runtime reports missing conditional fallback", NarrativeRuntimeReportsMissingConditionalFallback),
+                ("narrative runtime dispatches fire actions and continues", NarrativeRuntimeDispatchesFireActionsAndContinues),
+                ("narrative runtime reports action dispatch errors", NarrativeRuntimeReportsActionDispatchErrors),
                 ("narrative runtime exports and validates minimal runtime state", NarrativeRuntimeExportsAndValidatesMinimalRuntimeState),
                 ("cli runtime-project exports and validates formal runtime state", CliRuntimeProjectExportsAndValidatesFormalRuntimeState),
                 ("p3 integration smoke connects usage audit conditions and runtime state", P3IntegrationSmokeConnectsUsageAuditConditionsAndRuntimeState),

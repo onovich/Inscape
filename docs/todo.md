@@ -1,6 +1,6 @@
 # TODO
 
-状态：持续维护，P4 Round 4 branch-affecting query receipt 第一刀完成。`Internal/Runtime` 现已记录 choice condition 与 conditional jump 求值时的最小 query receipt，并保持 formal Runtime State 不包含 receipt / Trace Replay 负载；下一轮进入 P4 Round 5 action dispatcher 最小 contract。
+状态：持续维护，P4 Round 5 action dispatcher contract + `fire` 第一刀完成。`Internal/Runtime` 现已能把 `@emit` metadata action intent 转成 fire action request，并保持 formal Runtime State 不包含 action request history；下一轮进入 P4 Round 6 `wait` pending / resume。
 
 SelfHostedEditor regression invariant: Preview choice clicks must advance the reading Preview to the target block and reveal the target block title in the editor. Compiler-project Preview data must never silently lose `previewLines`: if a returned Compiler graph has source lines but missing or mismatched `previewLines`, Preview must report a compiler graph contract error instead of falling back to the UI-only draft model. `npm --prefix src\ExternalSupport\SelfHostedEditor run check:model` covers both invariants so future Runtime / navigation work does not regress them.
 
@@ -210,7 +210,9 @@ npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
 - [x] 完成 P4 Runtime playable MVP Round 1 基线审计 / 行为合同。2026-06-18 审计见 [SelfHostedEditor P4 Baseline Audit](self-hosted-editor-p4-baseline-audit.md)，行为合同见 [Runtime Playable MVP Contract](runtime-playable-mvp-contract.md)；确认 P3 已有入口与 P4 缺口，细化 Runtime MVP 验收样例、branch query receipt、`fire` / `wait` / `handoff` pending / resume、Log / Backlog 和 Inscape 子状态 blob 边界。Runtime Inspector 产品化 UI 不进入 P4。
 - [x] 完成 P4 Round 2 Runtime condition evaluator。2026-06-18 审计见 [SelfHostedEditor P4 Condition Evaluator Audit](self-hosted-editor-p4-condition-evaluator-audit.md)；`Internal/Runtime` 新增 evaluator domain，消费 `DslScriptConditionExpressionModel`，复用既有 query provider，覆盖 bool / number / string、query path / call、`and` / `or` / `not`、标量比较、short-circuit、missing query、provider exception 和 type mismatch。
 - [x] 完成 P4 Round 3 Runtime flow 条件接入。2026-06-18 审计见 [SelfHostedEditor P4 Runtime Flow Audit](self-hosted-editor-p4-runtime-flow-audit.md)；`NarrativeRuntime` 已用 evaluator 过滤 snapshot 可见选项、按 visible option index 选择并保留原始 option index、按源码顺序执行条件跳转 first true wins、全部 false 时走 fallback、无命中且无 fallback 时返回 Runtime error。
-- [ ] 进入 P4 Round 4 Query receipt 第一刀：定义 branch-affecting query receipt 最小 shape，并在条件选项 / 条件跳转求值时记录 query name、arguments、result、sourceKind、deterministic、node / option / jump context；普通 Runtime State 主体仍保持小而可恢复，不吞并完整 Trace Replay。
+- [x] 完成 P4 Round 4 Query receipt 第一刀。2026-06-18 审计见 [SelfHostedEditor P4 Runtime Flow Audit](self-hosted-editor-p4-runtime-flow-audit.md) 的 Round 4 Query Receipt 段；`Internal/Runtime` 已记录 branch-affecting query receipt，覆盖条件选项 / 条件跳转的 query name、arguments、result、sourceKind、deterministic、node / option / jump context；普通 Runtime State 主体仍保持小而可恢复，不吞并完整 Trace Replay。
+- [x] 完成 P4 Round 5 action dispatcher contract + `fire` 第一刀。2026-06-18 审计见 [SelfHostedEditor P4 Action Dispatcher Audit](self-hosted-editor-p4-action-dispatcher-audit.md)；`Internal/Runtime` 已把 `@emit` metadata action intent 转成 Runtime fire action request，按 Host Schema `actions[]` 等价 mode 与 Host Bridge handler mapping dispatch，formal Runtime State 不包含 action request history。
+- [ ] 进入 P4 Round 6 `wait` pending / resume 第一刀：定义 pending action 最小 shape、Runtime 暂停 / 恢复边界和 host result 注入路径；继续避免 per-action rollback / replay / timeout / failure policy 字段。
 - [ ] 高级运行时调试方向池继续评估 Rollback checkpoint 的准确粒度、跨宿主 action 时的回退阻断 / checkpoint 规则、Trace Replay、Flashback Playback 与时空穿越式特殊倒放；这些不进入 P3 / P4 第一刀实现，也不作为当前正式排期 phase。
 
 ### 暂停 / 明确后置

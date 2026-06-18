@@ -19,12 +19,15 @@ namespace Inscape.Runtime {
 
         public List<NarrativeRuntimeQueryReceiptModel> BranchQueryReceipts { get; set; }
 
+        public List<NarrativeRuntimeActionRequestModel> ActionRequests { get; set; }
+
         public NarrativeRuntimeSnapshotModel() {
             Format = "inscape.runtime-state";
             FormatVersion = 1;
             State = new NarrativeRuntimeStateModel();
             ReadingProgress = new NarrativeRuntimeReadingProgressModel();
             BranchQueryReceipts = new List<NarrativeRuntimeQueryReceiptModel>();
+            ActionRequests = new List<NarrativeRuntimeActionRequestModel>();
         }
 
     }
