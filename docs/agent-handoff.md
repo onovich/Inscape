@@ -1,12 +1,24 @@
 # Agent 接手指南
 
-状态：P5 SelfHostedEditor Runtime authoring Round 3 mock query model complete
+状态：P5 SelfHostedEditor Runtime authoring Round 4 mock query UI complete
 
 最后更新：2026-06-18
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-18 SelfHostedEditor P5 Round 4 Mock Query UI 快照
+
+P5 SelfHostedEditor Runtime authoring / productization 已完成第四轮 Mock query UI，不代表 P5 已完成。
+- 本轮审计见 [SelfHostedEditor P5 Mock Query UI Audit](self-hosted-editor-p5-mock-query-ui-audit.md)。
+- 新增 `RuntimeMockQueryPanelController`，挂到 Host view 的 `runtime-mock-query-panel`，显示 Host Schema query、参数、返回类型、当前 mock 值、ready / missing / invalid / unknown 计数、diagnostics、Reset 与 Apply。
+- Workbench render controller 现在把 Host Schema catalog、Runtime snapshot、runtime session id 与 workspace revision 传入 mock query panel；`check:workbench-integration-http` 覆盖这条集成路径。
+- `SelfHostedEditorRuntimeBridge` 支持 session-only mock query provider，Apply 后在 `runtime.start-or-observe` / `runtime.step` payload 里薄透传 `queryProvider`；Reset 清空 provider，并重新渲染 Runtime Preview。
+- dev-host `/api/runtime-state` 与 `/api/runtime-action` 会把 `queryProvider` 传给 `runtime-project --query-provider` 临时 JSON；不持久化到项目、formal Runtime State、P4 substate 或 Host Schema。
+- Electron preload whitelist 已允许 Runtime payload 携带 `queryProvider`；Electron backend Runtime path 当前仍保持 unavailable/fallback，不伪造未实现的 Runtime 执行。
+- 新增 `SelfHostedEditorRuntimeMockQueryUiContractCheck.js` 并扩展 runtime HTTP smoke / preload transport / structure guard，覆盖 apply、reset、unavailable、invalid、unknown、secret 不泄漏与 provider passthrough。
+- 下一轮进入 P5 Round 5：Action capability / pending surface，增加 action capability、pending request、resume/debug 状态展示；仍不得复制 action dispatcher 或 Host Bridge handler 语义。
 
 ### 2026-06-18 SelfHostedEditor P5 Round 3 Mock Query Model 快照
 
@@ -17,7 +29,7 @@ P5 SelfHostedEditor Runtime authoring / productization 已完成第三轮 Mock q
 - Mock query model 支持 string / number / bool mock value，并用结构化 row state / diagnostic 表达 missing value、invalid value、unsupported type 与 unknown query。
 - 只有 ready row 会投影为 Runtime preview / CLI 可消费的 `kind: "Mock"` query provider；mock value 仍只作为 editor session test input，不写入 formal Runtime State、P4 substate 或宿主状态。
 - 新增 `SelfHostedEditorRuntimeMockQueryContractCheck.js` 并接入 `check:model`，覆盖 ready / missing / invalid / unknown / unsupported、provider projection、authoring-only boundary 与 Host Schema secret 不泄漏。
-- 下一轮进入 P5 Round 4：Mock query UI，在 SelfHostedEditor 增加编辑表面、reset/apply preview 入口与 unavailable/fallback 状态；仍不得复制 Runtime 条件求值、query evaluator 或 Host Schema action policy。
+- 后续已由 P5 Round 4 接上 Mock query UI；该轮把 authoring model 接入 Host view 可见面板，并把 ready rows 作为 session-only mock provider 透传给 Runtime Preview。
 
 ### 2026-06-18 SelfHostedEditor P5 Round 2 Runtime Session 快照
 
@@ -1704,9 +1716,9 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 
 建议优先做小而闭环的任务，不要直接跳到大规模重构。
 
-1. 进入 P5 Round 4 Mock query UI。
-   - 先读 [P5 SelfHostedEditor Runtime Authoring Goal 模式执行指南](self-hosted-editor-p5-goal-mode-execution-guide.md)、[SelfHostedEditor P5 Runtime Authoring Contract](self-hosted-editor-p5-runtime-authoring-contract.md)、[SelfHostedEditor P5 Runtime Session Audit](self-hosted-editor-p5-runtime-session-audit.md) 与 [SelfHostedEditor P5 Mock Query Model Audit](self-hosted-editor-p5-mock-query-model-audit.md)。
-   - 在 SelfHostedEditor 增加 mock query 编辑表面，提供 reset / apply to runtime preview 入口、unavailable / fallback / invalid 状态提示，并保持 UI 只消费 Round 3 authoring model，不复制 Runtime 条件求值或 query evaluator。
+1. 进入 P5 Round 5 Action capability / pending surface。
+   - 先读 [P5 SelfHostedEditor Runtime Authoring Goal 模式执行指南](self-hosted-editor-p5-goal-mode-execution-guide.md)、[SelfHostedEditor P5 Runtime Authoring Contract](self-hosted-editor-p5-runtime-authoring-contract.md)、[SelfHostedEditor P5 Runtime Session Audit](self-hosted-editor-p5-runtime-session-audit.md) 与 [SelfHostedEditor P5 Mock Query UI Audit](self-hosted-editor-p5-mock-query-ui-audit.md)。
+   - 在 SelfHostedEditor 增加 action capability / pending / resume 调试表面，消费 Host Schema `actions[]` 与 Runtime snapshot 摘要；不得复制 Runtime action dispatcher、Host Bridge handler mapping 或 action execution policy。
 
 2. 继续推进 Stable Node ID / 本地化主线。
    - ADR 0013、sidecar 闭环、保守自动重命名识别、VSCode 显式 `Update Stable Node Map` 入口、插入标题后的自动同步、标题重命名人工确认 / 冲突报告、本地化 alignment / audit report，以及相似文本人工候选第一版都已落地。

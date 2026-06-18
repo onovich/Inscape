@@ -72,6 +72,14 @@ const preloadApi = createSelfHostedEditorPreloadApi({
         },
       };
     },
+    [EditorBackendTransportCommand.RuntimeStartOrObserve]: async (payload) => {
+      preloadCalls.push({ command: EditorBackendTransportCommand.RuntimeStartOrObserve, payload });
+      return {
+        currentNode: {
+          name: "Opening",
+        },
+      };
+    },
     [EditorBackendTransportCommand.WorkspaceListFiles]: async (payload) => {
       preloadCalls.push({ command: EditorBackendTransportCommand.WorkspaceListFiles, payload });
       return {
@@ -220,8 +228,23 @@ const runtimeStep = await desktopBackendClient.runtimeSession.step({
   action: {
     kind: "continue",
   },
+  queryProvider: {
+    kind: "Mock",
+    mockValues: [],
+  },
 });
 assertEqual(runtimeStep.currentNode.name, "Opening", "desktop backend client runtime preload payload");
+const runtimeStepCall = preloadCalls.find((call) => call.command === EditorBackendTransportCommand.RuntimeStep);
+assertEqual(runtimeStepCall.payload.queryProvider.kind, "Mock", "desktop runtime step allows mock query provider payload");
+const runtimeStart = await desktopBackendClient.runtimeSession.startOrObserve({
+  queryProvider: {
+    kind: "Mock",
+    mockValues: [],
+  },
+});
+assertEqual(runtimeStart.currentNode.name, "Opening", "desktop backend client runtime start preload payload");
+const runtimeStartCall = preloadCalls.find((call) => call.command === EditorBackendTransportCommand.RuntimeStartOrObserve);
+assertEqual(runtimeStartCall.payload.queryProvider.kind, "Mock", "desktop runtime start allows mock query provider payload");
 const projectStatus = await desktopBackendClient.projectSession.status();
 assertEqual(projectStatus.sessionId, "desktop-session", "desktop backend client project session id");
 const desktopSave = await desktopBackendClient.documentBuffer.saveDocument({

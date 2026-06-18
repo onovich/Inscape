@@ -19,6 +19,36 @@ Narrator: Staying put
 
 # End
 Narrator: Done`;
+const queryRuntimeScript = `# Gate
+@entry
+Narrator: Gate
+? Choose
+- [has_item("silver_key")] Use key -> Open
+- Knock -> Knock
+
+# Open
+Narrator: Open
+
+# Knock
+Narrator: Knock`;
+const keyQueryProvider = {
+  kind: "Mock",
+  mockValues: [
+    {
+      arguments: [
+        {
+          kind: "String",
+          stringValue: "silver_key",
+        },
+      ],
+      name: "has_item",
+      value: {
+        boolValue: true,
+        kind: "Bool",
+      },
+    },
+  ],
+};
 const maximumRuntimePayloadBytes = 10000;
 
 async function main() {
@@ -49,6 +79,28 @@ async function main() {
     assertEqual(openingSnapshot.readingProgress?.contentStepCount, 1, "opening content step count");
     assertEqual(openingSnapshot.readingProgress?.visibleStepCount, 0, "opening visible step count");
     assertPayloadSize(openingPayloadText, "opening runtime HTTP payload");
+
+    const queryProviderResponse = await fetch(`http://127.0.0.1:${address.port}/api/runtime-state`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        queryProvider: keyQueryProvider,
+        scriptText: queryRuntimeScript,
+        sessionId: "runtime-http-mock-query",
+      }),
+    });
+    const queryProviderPayloadText = await queryProviderResponse.text();
+    const queryProviderSnapshot = JSON.parse(queryProviderPayloadText);
+    if (!queryProviderResponse.ok) {
+      throw new Error(`Runtime mock query provider HTTP smoke failed with HTTP ${queryProviderResponse.status}.`);
+    }
+
+    assertRuntimeSnapshot(queryProviderSnapshot, "Gate");
+    assertEqual(queryProviderSnapshot.currentNode?.choices?.[0]?.options?.length, 2, "mock query provider shows conditional key option");
+    assertEqual(queryProviderSnapshot.currentNode?.choices?.[0]?.options?.[0]?.text, "Use key", "mock query provider key option text");
+    assertPayloadSize(queryProviderPayloadText, "mock query provider runtime HTTP payload");
 
     const openingAdvanceResponse = await fetch(`http://127.0.0.1:${address.port}/api/runtime-action`, {
       method: "POST",

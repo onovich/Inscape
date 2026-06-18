@@ -193,12 +193,14 @@ async function getStoryGraphForScriptText(scriptText, workspace) {
   });
 }
 
-export async function getRuntimeStateForScriptText(scriptText, workspace, sessionId = "") {
+export async function getRuntimeStateForScriptText(scriptText, workspace, sessionId = "", queryProvider = null) {
   return withTemporaryWorkspace(workspace, scriptText, async ({ tempRoot }) => {
-    const result = await runCliCommand([
+    const cliArgs = [
       "runtime-project",
       tempRoot,
-    ], "CLI runtime project snapshot");
+    ];
+    await appendRuntimeQueryProviderArgs(cliArgs, tempRoot, queryProvider);
+    const result = await runCliCommand(cliArgs, "CLI runtime project snapshot");
     return rememberRuntimeSessionState(
       compactRuntimeStatePayload(relativizeProjectSourcePaths(JSON.parse(result.stdout), tempRoot), sessionId),
       sessionId
@@ -206,13 +208,14 @@ export async function getRuntimeStateForScriptText(scriptText, workspace, sessio
   });
 }
 
-export async function stepRuntimeStateForScriptText(scriptText, workspace, runtimeState, action, sessionId = "") {
+export async function stepRuntimeStateForScriptText(scriptText, workspace, runtimeState, action, sessionId = "", queryProvider = null) {
   return withTemporaryWorkspace(workspace, scriptText, async ({ tempRoot }) => {
     const statePath = path.join(tempRoot, "inscape.runtime-state.json");
     const cliArgs = [
       "runtime-project",
       tempRoot,
     ];
+    await appendRuntimeQueryProviderArgs(cliArgs, tempRoot, queryProvider);
 
     if (runtimeState) {
       await fsp.writeFile(statePath, JSON.stringify(runtimeState, null, 2), "utf8");
@@ -243,6 +246,16 @@ export async function stepRuntimeStateForScriptText(scriptText, workspace, runti
       sessionId
     );
   });
+}
+
+async function appendRuntimeQueryProviderArgs(cliArgs, tempRoot, queryProvider) {
+  if (!queryProvider || typeof queryProvider !== "object") {
+    return;
+  }
+
+  const providerPath = path.join(tempRoot, "inscape.runtime-query-provider.json");
+  await fsp.writeFile(providerPath, JSON.stringify(queryProvider, null, 2), "utf8");
+  cliArgs.push("--query-provider", providerPath);
 }
 
 export async function getStoryNodeMapReviewForScriptText(scriptText, workspace) {

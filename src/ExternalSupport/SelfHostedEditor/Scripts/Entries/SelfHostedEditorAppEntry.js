@@ -33,6 +33,7 @@ async function main() {
     layoutController,
     loadingController,
     localizationController,
+    mockQueryPanelController,
     previewController,
     runtimeBridge,
     storyGraphController,
@@ -47,6 +48,16 @@ async function main() {
   } = bindings;
   loadingController.setIdle("editor");
   const workbenchRenderController = new SelfHostedEditorWorkbenchRenderController(features);
+  mockQueryPanelController.onApplyRuntimeRequested(async (authoringModel) => {
+    runtimeBridge.setMockQueryProvider(authoringModel.runtimeQueryProvider);
+    await workbenchRenderController.renderWorkbench(editorController.getText(), editorController.getActiveLineNumber());
+    return workbenchRenderController.getLatestRuntimeSnapshot();
+  });
+  mockQueryPanelController.onResetRuntimeRequested(async () => {
+    runtimeBridge.clearMockQueryProvider();
+    await workbenchRenderController.renderWorkbench(editorController.getText(), editorController.getActiveLineNumber());
+    return workbenchRenderController.getLatestRuntimeSnapshot();
+  });
 
   const defaultSample = await loadDefaultSampleScript();
   editorController.setText(defaultSample.text);

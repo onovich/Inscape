@@ -10,6 +10,7 @@ export class SelfHostedEditorRuntimeBridge {
     this.sessionId = options.sessionId || this.runtimeSessionClient.sessionId || this.createSessionId();
     this.workspaceContextProvider = null;
     this.workspaceSnapshotProvider = null;
+    this.mockQueryProvider = null;
   }
 
   setWorkspaceContextProvider(provider) {
@@ -20,13 +21,27 @@ export class SelfHostedEditorRuntimeBridge {
     this.workspaceSnapshotProvider = provider;
   }
 
+  setMockQueryProvider(queryProvider) {
+    this.mockQueryProvider = queryProvider && typeof queryProvider === "object"
+      ? queryProvider
+      : null;
+  }
+
+  clearMockQueryProvider() {
+    this.mockQueryProvider = null;
+  }
+
+  getMockQueryProvider() {
+    return this.mockQueryProvider;
+  }
+
   async getRuntimeSnapshot(scriptText) {
     try {
       const workspace = this.workspaceContextProvider?.() || null;
       const request = this.buildWorkspaceRequest({
-        request: {
+        request: this.buildRuntimeRequest({
           sessionId: this.sessionId,
-        },
+        }),
         scriptText,
         workspace,
       });
@@ -51,10 +66,10 @@ export class SelfHostedEditorRuntimeBridge {
       let snapshot;
       try {
         snapshot = await this.runtimeSessionClient.step(this.buildWorkspaceRequest({
-          request: {
+          request: this.buildRuntimeRequest({
             action,
             sessionId: this.sessionId,
-          },
+          }),
           scriptText,
           workspace,
         }));
@@ -64,11 +79,11 @@ export class SelfHostedEditorRuntimeBridge {
         }
 
         snapshot = await this.runtimeSessionClient.step(this.buildWorkspaceRequest({
-          request: {
+          request: this.buildRuntimeRequest({
             action,
             runtimeState,
             sessionId: this.sessionId,
-          },
+          }),
           scriptText,
           workspace,
         }));
@@ -99,5 +114,16 @@ export class SelfHostedEditorRuntimeBridge {
       workspace,
       workspaceSnapshot: this.workspaceSnapshotProvider?.() || null,
     });
+  }
+
+  buildRuntimeRequest(request) {
+    if (!this.mockQueryProvider) {
+      return request;
+    }
+
+    return {
+      ...request,
+      queryProvider: this.mockQueryProvider,
+    };
   }
 }

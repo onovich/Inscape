@@ -4,6 +4,8 @@ export class HostCapabilityCatalogController {
     this.hostSchemaBridge = hostSchemaBridge;
     this.hostBindingBridge = hostBindingBridge;
     this.sourceLineSelectedHandlers = [];
+    this.latestHostSchemaCatalog = null;
+    this.latestHostBindingCatalog = null;
   }
 
   onSourceLineSelected(handler) {
@@ -16,6 +18,8 @@ export class HostCapabilityCatalogController {
       this.hostSchemaBridge.getCapabilityCatalog(scriptText),
       this.hostBindingBridge.getCapabilityCatalog(scriptText),
     ]);
+    this.latestHostSchemaCatalog = hostSchemaCatalog;
+    this.latestHostBindingCatalog = hostBindingCatalog;
 
     this.panelElement.replaceChildren(
       this.createSummary(hostSchemaCatalog, hostBindingCatalog),
@@ -25,6 +29,14 @@ export class HostCapabilityCatalogController {
       this.createSpeakerSection(hostBindingCatalog),
       this.createBindingSection(hostBindingCatalog)
     );
+    return {
+      hostBindingCatalog,
+      hostSchemaCatalog,
+    };
+  }
+
+  getLatestHostSchemaCatalog() {
+    return this.latestHostSchemaCatalog;
   }
 
   renderLoading() {

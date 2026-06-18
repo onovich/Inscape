@@ -17,6 +17,7 @@ export class SelfHostedEditorWorkbenchRenderController {
     loadingController,
     localizationController,
     localizationDraftStore,
+    mockQueryPanelController,
     previewController,
     projectSessionService,
     runtimeBridge,
@@ -39,6 +40,7 @@ export class SelfHostedEditorWorkbenchRenderController {
     this.loadingController = loadingController;
     this.localizationController = localizationController;
     this.localizationDraftStore = localizationDraftStore;
+    this.mockQueryPanelController = mockQueryPanelController || null;
     this.previewController = previewController;
     this.projectSessionService = projectSessionService;
     this.runtimeBridge = runtimeBridge;
@@ -62,6 +64,7 @@ export class SelfHostedEditorWorkbenchRenderController {
       provider: "unavailable",
       snapshot: null,
     };
+    this.latestHostSchemaCatalog = null;
     this.latestStoryGraphModel = null;
     this.latestBackendSessionStatus = {
       mode: "dev-host",
@@ -81,6 +84,10 @@ export class SelfHostedEditorWorkbenchRenderController {
 
   getLatestRuntimeSnapshot() {
     return this.latestRuntimeSnapshot;
+  }
+
+  getLatestStoryGraphModel() {
+    return this.latestStoryGraphModel;
   }
 
   setLatestRuntimeSnapshot(runtimeSnapshot) {
@@ -118,7 +125,8 @@ export class SelfHostedEditorWorkbenchRenderController {
 
     this.latestLocalizationSummary = this.localizationController.getSummarySnapshot();
     this.loadingController.setIdle("localization");
-    await this.hostCapabilityCatalogController.render(scriptText);
+    const hostCatalogs = await this.hostCapabilityCatalogController.render(scriptText);
+    this.latestHostSchemaCatalog = hostCatalogs?.hostSchemaCatalog || null;
     this.loadingController.setIdle("host");
     const storyGraphSnapshot = await this.storyGraphBridge.getStoryGraph(scriptText);
     if (renderVersion !== this.diagnosticsRenderVersion) {
@@ -133,6 +141,8 @@ export class SelfHostedEditorWorkbenchRenderController {
     this.latestStoryGraphModel = storyGraphModel;
     this.latestRuntimeSnapshot = runtimeSnapshot;
     this.loadingController.setIdle("runtime");
+    this.renderMockQueryPanel();
+    this.loadingController.setIdle("mockQuery");
 
     this.previewController.render(
       scriptText,
@@ -226,5 +236,13 @@ export class SelfHostedEditorWorkbenchRenderController {
 
   renderWorkspaceFiles() {
     this.workspaceFileListController.render(this.workspaceController.getState());
+  }
+
+  renderMockQueryPanel() {
+    this.mockQueryPanelController?.render(this.latestHostSchemaCatalog, {
+      runtimeSnapshot: this.latestRuntimeSnapshot,
+      sessionId: this.runtimeBridge?.sessionId || "",
+      workspaceRevision: this.workspaceController.getState().revision || null,
+    });
   }
 }

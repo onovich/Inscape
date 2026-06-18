@@ -30,6 +30,7 @@ import { ProjectWorkspaceFileListController } from "../ProjectWorkspace/Controll
 import { ProjectWorkspaceSessionController } from "../ProjectWorkspace/Controllers/ProjectWorkspaceSessionController.js";
 import { ProjectWorkspaceSummaryController } from "../ProjectWorkspace/Controllers/ProjectWorkspaceSummaryController.js";
 import { SelfHostedEditorRuntimeBridge } from "../Runtime/Bridges/SelfHostedEditorRuntimeBridge.js";
+import { RuntimeMockQueryPanelController } from "../Runtime/Controllers/RuntimeMockQueryPanelController.js";
 import { StoryGraphPreviewController } from "../StoryGraph/Controllers/StoryGraphPreviewController.js";
 import { WorkspaceLoadingStateController } from "../WorkspaceLayout/Controllers/WorkspaceLoadingStateController.js";
 import { WorkspaceLayoutController } from "../WorkspaceLayout/Controllers/WorkspaceLayoutController.js";
@@ -42,6 +43,7 @@ export async function createSelfHostedEditorFeatures(bindings, callbacks = {}) {
     graph: bindings.graphPanelElement,
     host: bindings.hostCapabilityPanelElement,
     localization: bindings.localizationPanelElement,
+    mockQuery: bindings.mockQueryPanelElement,
     outline: bindings.outlinePanelElement,
     preview: bindings.previewElement,
     runtime: bindings.runtimePanelElement,
@@ -55,6 +57,7 @@ export async function createSelfHostedEditorFeatures(bindings, callbacks = {}) {
     graph: "Preparing map",
     host: "Preparing host catalog",
     localization: "Preparing table",
+    mockQuery: "Preparing mock queries",
     outline: "Preparing outline",
     preview: "Preparing reading pane",
     runtime: "Preparing runtime",
@@ -89,6 +92,7 @@ export async function createSelfHostedEditorFeatures(bindings, callbacks = {}) {
     bindings.previewModeButtonElements,
     bindings.previewModeLabelElement
   );
+  const mockQueryPanelController = new RuntimeMockQueryPanelController(bindings.mockQueryPanelElement);
   const storyGraphController = new StoryGraphPreviewController(bindings.graphPanelElement);
   const editorController = await EditorSurfaceController.create(bindings.editorElement, bindings.hintRailElement);
   editorController.setSemanticHighlightEnabled(bindings.syntaxToggleElement?.getAttribute("aria-pressed") !== "false");
@@ -265,6 +269,7 @@ export async function createSelfHostedEditorFeatures(bindings, callbacks = {}) {
     loadingController,
     localizationController,
     localizationDraftStore,
+    mockQueryPanelController,
     previewController,
     runtimeBridge,
     storyGraphBridge,

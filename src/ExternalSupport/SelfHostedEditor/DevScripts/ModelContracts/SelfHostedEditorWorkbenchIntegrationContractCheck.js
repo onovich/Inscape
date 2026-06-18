@@ -150,6 +150,9 @@ let renderedStoryGraphProvider = "";
 let renderedWorkspaceSession = null;
 let renderedDiagnosticsProvider = "";
 let localizationRenderedText = "";
+let renderedMockQueryCatalog = null;
+let renderedMockQueryRuntimeProvider = "";
+let renderedMockQueryWorkspaceRevision = null;
 const documentModel = ScriptDocumentFallbackPolicy.buildDocumentModel(scriptText, {
   reason: ScriptDocumentFallbackReason.EditorAuthoringSurface,
 });
@@ -245,7 +248,24 @@ const workbench = new SelfHostedEditorWorkbenchRenderController({
     setActiveLine() {},
   },
   hostCapabilityCatalogController: {
-    async render() {},
+    async render() {
+      return {
+        hostBindingCatalog: {
+          actions: [],
+        },
+        hostSchemaCatalog: {
+          hostSchema: {
+            loaded: true,
+          },
+          queries: [
+            {
+              name: "has_item",
+              returnType: "bool",
+            },
+          ],
+        },
+      };
+    },
   },
   layoutController: {
     getState() {
@@ -283,6 +303,13 @@ const workbench = new SelfHostedEditorWorkbenchRenderController({
       return 0;
     },
   },
+  mockQueryPanelController: {
+    render(hostSchemaCatalog, options) {
+      renderedMockQueryCatalog = hostSchemaCatalog;
+      renderedMockQueryRuntimeProvider = options.runtimeSnapshot?.provider || "";
+      renderedMockQueryWorkspaceRevision = options.workspaceRevision;
+    },
+  },
   previewController,
   runtimeBridge: {
     async getRuntimeSnapshot() {
@@ -311,6 +338,7 @@ const workbench = new SelfHostedEditorWorkbenchRenderController({
         dirty: false,
         filePath: "samples/court-loop.inscape",
         layoutMode: "write-preview",
+        revision: 5,
         sourceState: "sample",
         workspaceName: "sample-workspace",
       };
@@ -337,6 +365,10 @@ assertEqual(renderedDiagnosticsProvider, "language-server", "workbench should re
 assertEqual(previewElement.dataset.previewProvider, "runtime", "workbench preview should use runtime provider when available");
 assertIncludesText(getTextContent(previewElement), "Runtime preview");
 assertEqual(renderedStoryGraphProvider, "compiler-project", "workbench graph should use compiler project provider");
+assertEqual(renderedMockQueryCatalog?.hostSchema?.loaded, true, "workbench should pass host schema catalog to mock query panel");
+assertEqual(renderedMockQueryCatalog?.queries?.[0]?.name, "has_item", "workbench should pass query catalog to mock query panel");
+assertEqual(renderedMockQueryRuntimeProvider, "runtime-project", "workbench should pass runtime snapshot to mock query panel");
+assertEqual(renderedMockQueryWorkspaceRevision, 5, "workbench should pass workspace revision to mock query panel");
 assertIncludesText(getTextContent(summaryPanel), "shared summary");
 assertIncludesText(getTextContent(summaryPanel), "0 l10n");
 assertIncludesText(summaryPanel.children.at(-1)?.title || "", "graph: compiler-project");
