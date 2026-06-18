@@ -684,7 +684,7 @@ namespace Inscape.Runtime {
                                             : result.ErrorMessage);
                 }
 
-                if (request.Mode == "wait" && result.Status == "waiting") {
+                if (IsPendingActionMode(request.Mode) && result.Status == "waiting") {
                     PendingAction = CreatePendingAction(request, result);
                     return true;
                 }
@@ -697,6 +697,10 @@ namespace Inscape.Runtime {
 
         bool HasPendingAction() {
             return PendingAction != null;
+        }
+
+        static bool IsPendingActionMode(string mode) {
+            return mode == "wait" || mode == "handoff";
         }
 
         bool SetPendingActionError() {

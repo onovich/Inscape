@@ -531,9 +531,9 @@ Narrator: Start.
 
             NarrativeRuntime unsupportedMode = new NarrativeRuntime();
             unsupportedMode.LoadGraph(compilation.Document);
-            unsupportedMode.ActionDispatcher.Actions.Add(CreateActionCapability("open_window", "handoff"));
+            unsupportedMode.ActionDispatcher.Actions.Add(CreateActionCapability("open_window", "teleport"));
             unsupportedMode.ActionDispatcher.Handlers.Add(CreateActionHandler("open_window", "UiBridge.OpenWindow"));
-            AssertFalse(unsupportedMode.Start("start"), "Runtime should not treat handoff action as fire or wait in Round 6.");
+            AssertFalse(unsupportedMode.Start("start"), "Runtime should reject unsupported action modes.");
             AssertEqual("IRA003", unsupportedMode.LastError?.Code ?? string.Empty, "Runtime unsupported action mode error");
             AssertEqual(0, unsupportedMode.ActionRequests.Count, "Unsupported action modes should not emit fire requests.");
 
@@ -638,6 +638,90 @@ Narrator: Resumed.
             }), "Runtime should report wait action cancellation as host action error.");
             AssertEqual("IRA007", hostError.LastError?.Code ?? string.Empty, "Runtime host action resume error");
             AssertEqual("cancelled", hostError.PendingAction?.Status ?? string.Empty, "Host error should retain failed pending evidence.");
+        }
+
+        static void NarrativeRuntimeHandsOffAndResumes() {
+            DslScriptCompilationResultModel compilation = Compile("""
+# start
+@emit enter_host_segment segment_alpha
+Narrator: Returned.
+-> end
+
+# end
+Narrator: End.
+""");
+            AssertFalse(compilation.HasErrors, "Handoff action fixture should compile.");
+
+            NarrativeRuntime runtime = new NarrativeRuntime();
+            runtime.LoadGraph(compilation.Document);
+            runtime.ActionDispatcher.Actions.Add(CreateActionCapability("enter_host_segment", "handoff"));
+            runtime.ActionDispatcher.Handlers.Add(CreateActionHandler("enter_host_segment", "HostFlowBridge.EnterSegment"));
+            int dispatchCount = 0;
+            runtime.ActionDispatcher.DispatchAction = request => {
+                dispatchCount += 1;
+                AssertEqual("handoff", request.Mode, "Handoff action request mode");
+                AssertEqual("HostFlowBridge.EnterSegment", request.HandlerName, "Handoff action handler");
+                return new NarrativeRuntimeActionResultModel {
+                    Status = "completed",
+                    HostPayload = "{\"segment\":\"segment_alpha\"}",
+                };
+            };
+
+            AssertTrue(runtime.Start("start"), "Runtime should enter pending state for leading handoff action.");
+            AssertEqual(1, dispatchCount, "Handoff action dispatch count");
+            AssertEqual(1, runtime.ActionRequests.Count, "Runtime should record sent handoff action request.");
+            AssertTrue(runtime.PendingAction != null, "Runtime should expose pending handoff action.");
+            AssertEqual("action-1", runtime.PendingAction?.RequestId ?? string.Empty, "Pending handoff request id");
+            AssertEqual("enter_host_segment", runtime.PendingAction?.Name ?? string.Empty, "Pending handoff name");
+            AssertEqual("handoff", runtime.PendingAction?.Mode ?? string.Empty, "Pending handoff mode");
+            AssertEqual("waiting", runtime.PendingAction?.Status ?? string.Empty, "Pending handoff status");
+            AssertEqual("HostFlowBridge.EnterSegment", runtime.PendingAction?.HandlerName ?? string.Empty, "Pending handoff handler");
+            AssertEqual("segment_alpha", runtime.PendingAction?.Arguments[0].Value.StringValue ?? string.Empty, "Pending handoff argument");
+
+            NarrativeRuntimeSnapshotModel pendingSnapshot = runtime.CreateSnapshot();
+            AssertTrue(pendingSnapshot.PendingAction != null, "Snapshot should expose pending handoff action.");
+            AssertFalse(pendingSnapshot.ReadingProgress.CanAdvance, "Handoff action should block advancing.");
+            string serializedPendingState = JsonSerializer.Serialize(runtime.ExportState("script-v1", "checkpoint-opaque-1"));
+            AssertFalse(serializedPendingState.Contains("pendingAction", StringComparison.OrdinalIgnoreCase), "Formal Runtime State should not include handoff pending action.");
+            AssertFalse(runtime.Continue(), "Runtime should not continue while handoff controls flow.");
+            AssertEqual("IRA005", runtime.LastError?.Code ?? string.Empty, "Pending handoff blocks continue error");
+
+            AssertTrue(runtime.ResumeAction(new NarrativeRuntimeActionResumeModel {
+                RequestId = "action-1",
+                Status = "completed",
+                HostPayload = "{\"result\":\"done\"}",
+            }), "Runtime should resume a completed handoff action.");
+            AssertTrue(runtime.PendingAction == null, "Completed handoff resume should clear pending action.");
+            AssertEqual(1, dispatchCount, "Runtime should not redispatch completed handoff action.");
+
+            AssertTrue(runtime.AdvanceFlow(), "Runtime should advance after handoff action completes.");
+            AssertTrue(runtime.Continue(), "Runtime should continue after resumed handoff action.");
+            AssertEqual("end", runtime.State.CurrentNodeName, "Runtime should reach end after handoff resume.");
+        }
+
+        static void NarrativeRuntimeReportsHandoffResumeErrors() {
+            DslScriptCompilationResultModel compilation = Compile("""
+# start
+@emit enter_host_segment segment_alpha
+Narrator: Returned.
+""");
+            AssertFalse(compilation.HasErrors, "Handoff action error fixture should compile.");
+
+            NarrativeRuntime hostError = new NarrativeRuntime();
+            hostError.LoadGraph(compilation.Document);
+            hostError.ActionDispatcher.Actions.Add(CreateActionCapability("enter_host_segment", "handoff"));
+            hostError.ActionDispatcher.Handlers.Add(CreateActionHandler("enter_host_segment", "HostFlowBridge.EnterSegment"));
+            AssertTrue(hostError.Start("start"), "Runtime should enter pending state before handoff host error resume.");
+            AssertFalse(hostError.ResumeAction(new NarrativeRuntimeActionResumeModel {
+                RequestId = "action-1",
+                Status = "timeout",
+                ErrorCode = "host-timeout",
+            }), "Runtime should report handoff timeout as host action error.");
+            AssertEqual("IRA007", hostError.LastError?.Code ?? string.Empty, "Runtime handoff resume error");
+            AssertEqual("handoff", hostError.PendingAction?.Mode ?? string.Empty, "Host error should retain handoff mode.");
+            AssertEqual("timeout", hostError.PendingAction?.Status ?? string.Empty, "Host error should retain failed handoff evidence.");
+            AssertFalse(hostError.AdvanceFlow(), "Runtime should stay blocked after handoff host error.");
+            AssertEqual("IRA005", hostError.LastError?.Code ?? string.Empty, "Failed handoff pending blocks advance error");
         }
 
         static void NarrativeRuntimeExportsAndValidatesMinimalRuntimeState() {

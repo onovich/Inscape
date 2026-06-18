@@ -1,12 +1,24 @@
 # Agent 接手指南
 
-状态：P4 Round 6 wait pending / resume 第一刀完成
+状态：P4 Round 7 handoff 控制权移交 / resume 第一刀完成
 
 最后更新：2026-06-18
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-18 SelfHostedEditor P4 Round 7 Handoff 快照
+
+P4 Runtime playable MVP 已完成第七轮 `handoff` 控制权移交 / resume 第一刀，不代表 P4 MVP 已完成。
+- 本轮审计见 [SelfHostedEditor P4 Handoff Audit](self-hosted-editor-p4-handoff-audit.md)。
+- `NarrativeRuntimeActionDispatcherDomain` 现在支持 Host Schema action mode `handoff`；`fire` 仍返回 `completed`，`wait` / `handoff` dispatch 成功后都进入 `waiting`。
+- `NarrativeRuntime.PendingAction.Mode` 保留 `handoff`，用于区分“宿主成为当前段落主控”与 `wait` 的“等待一个宿主动作完成”。
+- `@emit` handoff action dispatch 成功后会记录 action request、进入 pending，并阻断 `AdvanceFlow()` / `Continue()` / `Choose()` / `RewindFlow()` / `Rewind()`，直到宿主用 request id 调用 `ResumeAction()`。
+- `ResumeAction(Status = completed)` 会清空 handoff pending，并继续扫描当前位置已到达但尚未 dispatch 的 action；不会重复 dispatch 已完成的 handoff action。
+- `failed` / `cancelled` / `timeout` resume 仍统一返回 `IRA007`，并保留 pending evidence 的 mode 与失败 status；未知 action mode 仍返回 `IRA003`。
+- ExternalSupport 未新增 condition parser、query evaluator、action dispatcher 或 Runtime 语义副本；Internal Runtime 未引入 Unity / Bird / 小游戏 / Timeline 具体业务逻辑。
+- 下一轮进入 P4 Round 8：Log / Backlog 第一刀；只记录已经实际展示的正文，保持 Log 与普通 Runtime State 主体分离。
 
 ### 2026-06-18 SelfHostedEditor P4 Round 6 Wait Pending 快照
 
@@ -1593,9 +1605,9 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 
 建议优先做小而闭环的任务，不要直接跳到大规模重构。
 
-1. 进入 P4 Round 7 `handoff` 控制权移交 / resume 第一刀。
-   - 先读 [P4 Runtime Playable MVP Goal 模式执行指南](self-hosted-editor-p4-goal-mode-execution-guide.md)、[Runtime Playable MVP Contract](runtime-playable-mvp-contract.md) 与 [SelfHostedEditor P4 Wait Pending Audit](self-hosted-editor-p4-wait-pending-audit.md)。
-   - 明确 `wait` 与 `handoff` 的状态差异，支持宿主后续用 request id 恢复剧情；不要引入 Unity / Bird / 小游戏 / Timeline 具体业务逻辑。
+1. 进入 P4 Round 8 Log / Backlog 第一刀。
+   - 先读 [P4 Runtime Playable MVP Goal 模式执行指南](self-hosted-editor-p4-goal-mode-execution-guide.md)、[Runtime Playable MVP Contract](runtime-playable-mvp-contract.md)、[SelfHostedEditor P4 Wait Pending Audit](self-hosted-editor-p4-wait-pending-audit.md) 与 [SelfHostedEditor P4 Handoff Audit](self-hosted-editor-p4-handoff-audit.md)。
+   - Runtime 只记录已经实际展示的正文，默认字段为 `speaker`、`text`、`lineId`；条件导致未展示的文本不进入 Log，普通 Runtime State 主体不默认包含完整 Log。
 
 2. 继续推进 Stable Node ID / 本地化主线。
    - ADR 0013、sidecar 闭环、保守自动重命名识别、VSCode 显式 `Update Stable Node Map` 入口、插入标题后的自动同步、标题重命名人工确认 / 冲突报告、本地化 alignment / audit report，以及相似文本人工候选第一版都已落地。

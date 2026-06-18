@@ -52,6 +52,8 @@ namespace Inscape.Tests {
                 ("narrative runtime reports action dispatch errors", NarrativeRuntimeReportsActionDispatchErrors),
                 ("narrative runtime waits for action resume", NarrativeRuntimeWaitsForActionResume),
                 ("narrative runtime reports wait resume errors", NarrativeRuntimeReportsWaitResumeErrors),
+                ("narrative runtime hands off and resumes", NarrativeRuntimeHandsOffAndResumes),
+                ("narrative runtime reports handoff resume errors", NarrativeRuntimeReportsHandoffResumeErrors),
                 ("narrative runtime exports and validates minimal runtime state", NarrativeRuntimeExportsAndValidatesMinimalRuntimeState),
                 ("cli runtime-project exports and validates formal runtime state", CliRuntimeProjectExportsAndValidatesFormalRuntimeState),
                 ("p3 integration smoke connects usage audit conditions and runtime state", P3IntegrationSmokeConnectsUsageAuditConditionsAndRuntimeState),

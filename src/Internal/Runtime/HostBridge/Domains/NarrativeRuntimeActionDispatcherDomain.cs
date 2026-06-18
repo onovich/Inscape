@@ -12,7 +12,7 @@ namespace Inscape.Runtime {
 
             string mode = NormalizeMode(action.Mode);
             request.Mode = mode;
-            if (mode != "fire" && mode != "wait") {
+            if (!IsSupportedMode(mode)) {
                 return Failure("IRA003", "Runtime action mode is not implemented yet: " + mode, false);
             }
 
@@ -42,7 +42,7 @@ namespace Inscape.Runtime {
                     return hostResult;
                 }
 
-                if (mode == "wait") {
+                if (IsPendingMode(mode)) {
                     hostResult.Status = "waiting";
                 }
                 return hostResult;
@@ -86,11 +86,19 @@ namespace Inscape.Runtime {
 
         static string NormalizeStatus(string status, string mode) {
             string normalized = status.Trim().ToLowerInvariant();
-            if (normalized.Length == 0 || (mode == "wait" && normalized == "completed")) {
-                return mode == "wait" ? "waiting" : "completed";
+            if (normalized.Length == 0 || (IsPendingMode(mode) && normalized == "completed")) {
+                return IsPendingMode(mode) ? "waiting" : "completed";
             }
 
             return normalized;
+        }
+
+        static bool IsSupportedMode(string mode) {
+            return mode == "fire" || IsPendingMode(mode);
+        }
+
+        static bool IsPendingMode(string mode) {
+            return mode == "wait" || mode == "handoff";
         }
 
         static bool IsHostErrorStatus(string status) {
@@ -98,14 +106,14 @@ namespace Inscape.Runtime {
         }
 
         static bool IsSuccessfulStatus(string status, string mode) {
-            return (mode == "fire" && status == "completed") || (mode == "wait" && status == "waiting");
+            return (mode == "fire" && status == "completed") || (IsPendingMode(mode) && status == "waiting");
         }
 
         static NarrativeRuntimeActionResultModel Success(string mode) {
             return new NarrativeRuntimeActionResultModel {
                 Succeeded = true,
                 RequestWasSent = true,
-                Status = mode == "wait" ? "waiting" : "completed",
+                Status = IsPendingMode(mode) ? "waiting" : "completed",
             };
         }
 
