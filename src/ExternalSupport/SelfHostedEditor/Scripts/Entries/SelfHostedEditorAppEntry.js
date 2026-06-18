@@ -117,13 +117,29 @@ async function main() {
   });
 
   previewController.onChoiceSelected(async (choice) => {
-    const latestRuntimeSnapshot = workbenchRenderController.getLatestRuntimeSnapshot();
-    if (latestRuntimeSnapshot.provider !== "runtime-project" || !latestRuntimeSnapshot.snapshot?.currentNode) {
+    const latestRuntimeSnapshot = workbenchRenderController.getLatestRuntimeSnapshot() || {};
+    if (!choice?.runtimeAction) {
       return false;
     }
 
-    if (choice.nodeTitle !== latestRuntimeSnapshot.snapshot.currentNode.name || !choice.runtimeAction) {
+    if (latestRuntimeSnapshot.provider !== "runtime-project" || !latestRuntimeSnapshot.snapshot?.currentNode) {
+      previewController.setRuntimeControlStatus({
+        detail: latestRuntimeSnapshot.error || "Compiler or offline fallback is handling this preview control.",
+        label: latestRuntimeSnapshot.error ? "Runtime error" : "Runtime unavailable",
+        provider: latestRuntimeSnapshot.provider || "unavailable",
+        state: latestRuntimeSnapshot.error ? "runtime-error" : "runtime-unavailable",
+      });
       return false;
+    }
+
+    if (choice.nodeTitle !== latestRuntimeSnapshot.snapshot.currentNode.name) {
+      previewController.setRuntimeControlStatus({
+        detail: `Runtime is at ${latestRuntimeSnapshot.snapshot.currentNode.name || "another node"} while this Preview control belongs to ${choice.nodeTitle || "another node"}.`,
+        label: "Runtime snapshot stale",
+        provider: "runtime-project",
+        state: "runtime-stale",
+      });
+      return previewController.isRuntimePreviewActive();
     }
 
     const steppedRuntimeSnapshot = await runtimeBridge.stepRuntimeSnapshot(
@@ -132,10 +148,18 @@ async function main() {
       choice.runtimeAction
     );
     if (steppedRuntimeSnapshot.provider !== "runtime-project" || !steppedRuntimeSnapshot.snapshot?.currentNode) {
+      workbenchRenderController.setLatestRuntimeSnapshot(steppedRuntimeSnapshot);
+      previewController.setRuntimeControlStatus({
+        detail: steppedRuntimeSnapshot.error || "Runtime action did not return a current node snapshot.",
+        label: "Runtime action failed",
+        provider: steppedRuntimeSnapshot.provider || "unavailable",
+        state: steppedRuntimeSnapshot.error ? "runtime-error" : "runtime-unavailable",
+      });
       console.error(
         "SelfHostedEditor runtime action failed:",
         steppedRuntimeSnapshot.error || "runtime snapshot unavailable"
       );
+      workbenchRenderController.renderWorkspaceSession();
       return true;
     }
 

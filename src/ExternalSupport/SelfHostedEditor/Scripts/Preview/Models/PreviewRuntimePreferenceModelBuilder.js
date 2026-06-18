@@ -6,6 +6,7 @@ export class PreviewRuntimePreferenceModelBuilder {
     fallbackStoryModel,
     runtimeSnapshot,
   }) {
+    const runtimeStatus = this.buildRuntimeStatus(runtimeSnapshot);
     const runtimeStoryModel = this.buildPreviewModelFromRuntimeSnapshot(runtimeSnapshot);
     if (runtimeStoryModel && this.shouldPreferRuntimeInitialSelection(documentModel, currentNodeTitle, activeLineNumber)) {
       return runtimeStoryModel;
@@ -13,6 +14,17 @@ export class PreviewRuntimePreferenceModelBuilder {
 
     if (runtimeStoryModel && this.isRuntimeStoryModelAlignedWithActiveLine(documentModel, runtimeStoryModel, activeLineNumber)) {
       return runtimeStoryModel;
+    }
+
+    if (runtimeStoryModel) {
+      return this.withRuntimeStatus(
+        fallbackStoryModel,
+        this.buildStaleRuntimeStatus(runtimeStoryModel, fallbackStoryModel)
+      );
+    }
+
+    if (runtimeStatus && runtimeStatus.state !== "runtime-ready") {
+      return this.withRuntimeStatus(fallbackStoryModel, runtimeStatus);
     }
 
     return fallbackStoryModel;
@@ -37,7 +49,18 @@ export class PreviewRuntimePreferenceModelBuilder {
   }
 
   buildPreviewModelFromRuntimeSnapshot(runtimeSnapshot) {
-    const currentNode = runtimeSnapshot?.currentNode || null;
+    const runtimeEnvelope = this.normalizeRuntimeEnvelope(runtimeSnapshot);
+    if (!runtimeEnvelope || runtimeEnvelope.provider !== "runtime-project") {
+      return null;
+    }
+
+    const runtimeState = runtimeEnvelope.snapshot || null;
+    const runtimeStatus = this.buildRuntimeStatus(runtimeEnvelope);
+    if (runtimeStatus?.state !== "runtime-ready") {
+      return null;
+    }
+
+    const currentNode = runtimeState?.currentNode || null;
     if (!currentNode) {
       return null;
     }
@@ -114,12 +137,13 @@ export class PreviewRuntimePreferenceModelBuilder {
       lines,
       nodeTitle,
       provider: "runtime",
+      runtimeStatus,
       runtimeState: {
-        currentNodeName: runtimeSnapshot?.state?.currentNodeName || nodeTitle,
-        path: Array.isArray(runtimeSnapshot?.state?.path) ? runtimeSnapshot.state.path : [],
-        pendingAction: runtimeSnapshot?.pendingAction || null,
-        readingProgress: runtimeSnapshot?.readingProgress || null,
-        visibleStepCount: Number(runtimeSnapshot?.state?.visibleStepCount || 0),
+        currentNodeName: runtimeState?.state?.currentNodeName || nodeTitle,
+        path: Array.isArray(runtimeState?.state?.path) ? runtimeState.state.path : [],
+        pendingAction: runtimeState?.pendingAction || null,
+        readingProgress: runtimeState?.readingProgress || null,
+        visibleStepCount: Number(runtimeState?.state?.visibleStepCount || 0),
       },
       sourceLine,
       title: nodeTitle,
@@ -134,5 +158,90 @@ export class PreviewRuntimePreferenceModelBuilder {
 
   findNodeByTitle(documentModel, title) {
     return (documentModel?.nodes || []).find((node) => node.title === title) || null;
+  }
+
+  buildRuntimeStatus(runtimeSnapshot) {
+    const runtimeEnvelope = this.normalizeRuntimeEnvelope(runtimeSnapshot);
+    if (!runtimeEnvelope) {
+      return null;
+    }
+
+    if (runtimeEnvelope.provider === "runtime-project" && runtimeEnvelope.snapshot?.currentNode) {
+      return {
+        detail: "Runtime controls use the latest Runtime snapshot.",
+        label: "Runtime ready",
+        provider: "runtime-project",
+        state: "runtime-ready",
+      };
+    }
+
+    if (runtimeEnvelope.error) {
+      return {
+        detail: this.boundRuntimeDetail(runtimeEnvelope.error),
+        label: "Runtime error",
+        provider: runtimeEnvelope.provider || "unavailable",
+        state: "runtime-error",
+      };
+    }
+
+    return {
+      detail: "Compiler or offline fallback is active until Runtime preview is available.",
+      label: "Runtime unavailable",
+      provider: runtimeEnvelope.provider || "unavailable",
+      state: "runtime-unavailable",
+    };
+  }
+
+  buildStaleRuntimeStatus(runtimeStoryModel, fallbackStoryModel) {
+    return {
+      detail: `Runtime is at ${runtimeStoryModel?.nodeTitle || "another node"} while Preview is showing ${fallbackStoryModel?.nodeTitle || "another node"}.`,
+      label: "Runtime snapshot stale",
+      provider: "runtime-project",
+      state: "runtime-stale",
+    };
+  }
+
+  withRuntimeStatus(storyModel, runtimeStatus) {
+    if (!storyModel || !runtimeStatus) {
+      return storyModel;
+    }
+
+    return {
+      ...storyModel,
+      runtimeStatus,
+    };
+  }
+
+  normalizeRuntimeEnvelope(runtimeSnapshot) {
+    if (!runtimeSnapshot) {
+      return null;
+    }
+
+    if (
+      Object.prototype.hasOwnProperty.call(runtimeSnapshot, "provider")
+      || Object.prototype.hasOwnProperty.call(runtimeSnapshot, "snapshot")
+      || Object.prototype.hasOwnProperty.call(runtimeSnapshot, "error")
+    ) {
+      return {
+        error: runtimeSnapshot.error || "",
+        provider: runtimeSnapshot.provider || "unavailable",
+        snapshot: runtimeSnapshot.snapshot || null,
+      };
+    }
+
+    return {
+      error: "",
+      provider: "runtime-project",
+      snapshot: runtimeSnapshot,
+    };
+  }
+
+  boundRuntimeDetail(detail) {
+    const text = String(detail || "").replace(/\s+/g, " ").trim();
+    if (text.length <= 160) {
+      return text;
+    }
+
+    return `${text.slice(0, 157)}...`;
   }
 }

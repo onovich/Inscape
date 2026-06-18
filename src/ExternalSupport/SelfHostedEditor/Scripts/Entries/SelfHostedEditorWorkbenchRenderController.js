@@ -160,9 +160,7 @@ export class SelfHostedEditorWorkbenchRenderController {
       scriptText,
       activeLineNumber,
       storyGraphSnapshot.graph,
-      this.latestRuntimeSnapshot.provider === "runtime-project"
-        ? this.latestRuntimeSnapshot.snapshot
-        : null
+      this.latestRuntimeSnapshot
     );
     this.storyGraphController.render(storyGraphSnapshot.graph, scriptText);
     this.loadingController.setManyIdle(["preview", "graph"]);

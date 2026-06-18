@@ -139,6 +139,31 @@
   padding: 8px 10px;
 }
 
+.story-runtime-status {
+  border: 1px solid var(--ink-a-090);
+  border-left: 3px solid var(--accent-a-360);
+  border-radius: 8px;
+  color: var(--button-muted-a-760);
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+  line-height: 1.45;
+  margin-bottom: 22px;
+  max-width: 24em;
+  padding: 8px 10px;
+}
+
+.story-runtime-status strong {
+  color: var(--text-warm-a-760);
+  font-size: 11px;
+  font-weight: 680;
+  line-height: 1.25;
+}
+
+.story-runtime-status span {
+  color: var(--muted-a-620);
+}
+
 .story-line {
   border-radius: 10px;
   cursor: pointer;

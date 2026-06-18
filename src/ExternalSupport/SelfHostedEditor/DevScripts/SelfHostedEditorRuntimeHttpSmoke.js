@@ -293,6 +293,30 @@ async function main() {
     assertEqual(stayAdvanceSnapshot.sessionId, sessionId, "stay advance runtime session id");
     assertEqual(stayAdvanceSnapshot.state?.visibleStepCount, 1, "stay visible step count after first flow advance");
 
+    const stayRewindFlowResponse = await fetch(`http://127.0.0.1:${address.port}/api/runtime-action`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        action: {
+          type: "rewind-flow",
+        },
+        sessionId,
+        scriptText: runtimeScript,
+      }),
+    });
+    const stayRewindFlowPayloadText = await stayRewindFlowResponse.text();
+    const stayRewindFlowSnapshot = JSON.parse(stayRewindFlowPayloadText);
+    if (!stayRewindFlowResponse.ok) {
+      throw new Error(`Runtime stay rewind-flow HTTP smoke failed with HTTP ${stayRewindFlowResponse.status}.`);
+    }
+
+    assertRuntimeSnapshot(stayRewindFlowSnapshot, "Stay");
+    assertEqual(stayRewindFlowSnapshot.sessionId, sessionId, "stay rewind-flow runtime session id");
+    assertEqual(stayRewindFlowSnapshot.state?.visibleStepCount, 0, "stay visible step count after flow rewind");
+    assertPayloadSize(stayRewindFlowPayloadText, "stay rewind-flow runtime HTTP payload");
+
     const rewindResponse = await fetch(`http://127.0.0.1:${address.port}/api/runtime-action`, {
       method: "POST",
       headers: {

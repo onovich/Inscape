@@ -1,12 +1,23 @@
 # Agent 接手指南
 
-状态：P5 SelfHostedEditor Runtime authoring Round 5 action capability / pending surface complete
+状态：P5 SelfHostedEditor Runtime authoring Round 6 runtime-backed Preview controls complete
 
 最后更新：2026-06-18
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-18 SelfHostedEditor P5 Round 6 Runtime-backed Preview Controls 快照
+
+P5 SelfHostedEditor Runtime authoring / productization 已完成第六轮 Runtime-backed Preview controls，不代表 P5 已完成。
+- 本轮审计见 [SelfHostedEditor P5 Runtime Preview Audit](self-hosted-editor-p5-runtime-preview-audit.md)。
+- Workbench 现在把完整 Runtime envelope 传给 Preview；Preview 不再因为只收到裸 snapshot 而丢失 `unavailable` / `error` provider 状态。
+- `PreviewRuntimePreferenceModelBuilder` 兼容裸 snapshot 与 Runtime envelope，Runtime 不可用、Runtime command error、snapshot stale 会作为 Preview runtime status 附着在 compiler / offline fallback story model 上。
+- `PreviewPanelController` 新增轻量 Runtime status strip 与 `data-runtime-preview-state`，覆盖 `runtime-unavailable`、`runtime-error`、`runtime-stale` 与 `runtime-ready`；pending wait / handoff guard 延续 Round 5 行为。
+- Runtime action handler 在 unavailable、action failure、Runtime node 与 Preview control node 不一致时显式更新 Preview 状态；Runtime path stale 且当前 Preview 已是 Runtime provider 时，不再静默落回本地分支推进。
+- `check:model` 覆盖 unavailable fallback、Runtime error、stale snapshot 与 Runtime control error；`check:runtime-http` 补齐 `rewind-flow`，Runtime direct / HTTP smoke 共同覆盖 choose、continue、advance-flow、rewind-flow 与 Back / rewind。
+- 下一轮进入 P5 Round 7：Runtime status surface，展示 current node、visible choices、visible step count、provider、pending action、Runtime error 与 query provider 来源；仍不得重算 Runtime state、复制 Runtime evaluator / dispatcher 或扩大 Host action policy。
 
 ### 2026-06-18 SelfHostedEditor P5 Round 5 Action Capability / Pending Surface 快照
 
@@ -18,7 +29,7 @@ P5 SelfHostedEditor Runtime authoring / productization 已完成第五轮 Action
 - dev-host `/api/runtime-state` / `/api/runtime-action` 支持把 action input 写成临时 `--action-dispatcher` JSON；debug resume 通过 `runtime-project --resume-action` 执行，前端不清 pending。
 - Runtime compact payload 现在暴露脱敏 `actionRequests[]` 与 `pendingAction` 摘要，不携带 raw action、argument value 或 host payload body。
 - Preview 在 Runtime snapshot 存在 `wait` / `handoff` pending action 时阻断 Runtime controls；`fire` request history 不阻断 UI。
-- 下一轮进入 P5 Round 6：Runtime-backed Preview controls hardening，明确 pending / stale / error / unavailable 控制状态；仍不得复制 Runtime flow state、action dispatcher、rollback / replay 或 Host action policy。
+- 后续已由 P5 Round 6 接上 Runtime-backed Preview controls hardening；该轮明确 pending / stale / error / unavailable 控制状态，并保持 Runtime flow state 与 action dispatch 由 Runtime 决定。
 
 ### 2026-06-18 SelfHostedEditor P5 Round 4 Mock Query UI 快照
 
@@ -1728,9 +1739,9 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 
 建议优先做小而闭环的任务，不要直接跳到大规模重构。
 
-1. 进入 P5 Round 5 Action capability / pending surface。
-   - 先读 [P5 SelfHostedEditor Runtime Authoring Goal 模式执行指南](self-hosted-editor-p5-goal-mode-execution-guide.md)、[SelfHostedEditor P5 Runtime Authoring Contract](self-hosted-editor-p5-runtime-authoring-contract.md)、[SelfHostedEditor P5 Runtime Session Audit](self-hosted-editor-p5-runtime-session-audit.md) 与 [SelfHostedEditor P5 Mock Query UI Audit](self-hosted-editor-p5-mock-query-ui-audit.md)。
-   - 在 SelfHostedEditor 增加 action capability / pending / resume 调试表面，消费 Host Schema `actions[]` 与 Runtime snapshot 摘要；不得复制 Runtime action dispatcher、Host Bridge handler mapping 或 action execution policy。
+1. 进入 P5 Round 7 Runtime status surface。
+   - 先读 [P5 SelfHostedEditor Runtime Authoring Goal 模式执行指南](self-hosted-editor-p5-goal-mode-execution-guide.md)、[SelfHostedEditor P5 Runtime Authoring Contract](self-hosted-editor-p5-runtime-authoring-contract.md)、[SelfHostedEditor P5 Runtime Preview Audit](self-hosted-editor-p5-runtime-preview-audit.md) 与 [SelfHostedEditor P5 Action Authoring Audit](self-hosted-editor-p5-action-authoring-audit.md)。
+   - 在 SelfHostedEditor 展示 current node、visible choices、visible step count、provider、pending action、Runtime error 与 query provider 来源；不得在浏览器侧重算 Runtime state、condition/query/action 语义或扩展 Host action policy。
 
 2. 继续推进 Stable Node ID / 本地化主线。
    - ADR 0013、sidecar 闭环、保守自动重命名识别、VSCode 显式 `Update Stable Node Map` 入口、插入标题后的自动同步、标题重命名人工确认 / 冲突报告、本地化 alignment / audit report，以及相似文本人工候选第一版都已落地。

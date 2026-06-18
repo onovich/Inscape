@@ -225,7 +225,46 @@ const runtimeMismatchPreviewElement = new FakeElement("main");
 const runtimeMismatchPreviewController = new PreviewPanelController(runtimeMismatchPreviewElement);
 runtimeMismatchPreviewController.render("", 2, storyGraph, runtimeWitnessSnapshot);
 assertEqual(findElementByClass(runtimeMismatchPreviewElement, "story-title")?.textContent, "Opening", "preview should fall back to compiler graph when active line and runtime node are out of sync");
+assertEqual(runtimeMismatchPreviewElement.dataset.runtimePreviewState, "runtime-stale", "preview should mark runtime snapshot stale when compiler fallback is showing a different node");
+assertIncludesText(getTextContent(runtimeMismatchPreviewElement), "Runtime snapshot stale");
 assertIncludesText(getTextContent(runtimeMismatchPreviewElement), "Review the evidence.");
+const runtimeUnavailablePreviewElement = new FakeElement("main");
+const runtimeUnavailablePreviewController = new PreviewPanelController(runtimeUnavailablePreviewElement);
+runtimeUnavailablePreviewController.render("", 2, storyGraph, {
+  provider: "unavailable",
+  snapshot: null,
+});
+assertEqual(runtimeUnavailablePreviewElement.dataset.previewProvider, "compiler-project", "runtime unavailable should keep compiler preview as explicit fallback");
+assertEqual(runtimeUnavailablePreviewElement.dataset.runtimePreviewState, "runtime-unavailable", "runtime unavailable should mark runtime fallback state");
+assertIncludesText(getTextContent(runtimeUnavailablePreviewElement), "Runtime unavailable");
+assertIncludesText(getTextContent(runtimeUnavailablePreviewElement), "Compiler preview");
+const runtimeUnavailableChoice = runtimeUnavailablePreviewController.normalizeChoiceGroups(
+  runtimeUnavailablePreviewController.latestStoryModel.choices
+)[0].options[0];
+await runtimeUnavailablePreviewController.selectChoice(runtimeUnavailableChoice);
+assertEqual(findElementByClass(runtimeUnavailablePreviewElement, "story-title")?.textContent, "Witness", "runtime unavailable fallback should still support source-local preview navigation");
+assertEqual(runtimeUnavailablePreviewElement.dataset.runtimePreviewState, "runtime-unavailable", "runtime unavailable should stay visible after fallback navigation");
+const runtimeErrorPreviewElement = new FakeElement("main");
+const runtimeErrorPreviewController = new PreviewPanelController(runtimeErrorPreviewElement);
+runtimeErrorPreviewController.render("", 2, storyGraph, {
+  error: "runtime command failed for contract check",
+  provider: "unavailable",
+  snapshot: null,
+});
+assertEqual(runtimeErrorPreviewElement.dataset.runtimePreviewState, "runtime-error", "runtime command failure should mark runtime error state");
+assertIncludesText(getTextContent(runtimeErrorPreviewElement), "Runtime error");
+assertIncludesText(getTextContent(runtimeErrorPreviewElement), "runtime command failed");
+const runtimeControlErrorPreviewElement = new FakeElement("main");
+const runtimeControlErrorPreviewController = new PreviewPanelController(runtimeControlErrorPreviewElement);
+runtimeControlErrorPreviewController.renderRuntimeSnapshot(runtimeOpeningSnapshot);
+runtimeControlErrorPreviewController.setRuntimeControlStatus({
+  detail: "runtime action bridge returned unavailable",
+  label: "Runtime action failed",
+  provider: "unavailable",
+  state: "runtime-error",
+});
+assertEqual(runtimeControlErrorPreviewElement.dataset.runtimePreviewState, "runtime-error", "runtime control errors should be visible in Preview");
+assertIncludesText(getTextContent(runtimeControlErrorPreviewElement), "Runtime action failed");
 let runtimeContinueAction = null;
 const runtimeContinuePreviewElement = new FakeElement("main");
 const runtimeContinuePreviewController = new PreviewPanelController(runtimeContinuePreviewElement);

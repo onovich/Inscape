@@ -22,6 +22,8 @@ export class PreviewPanelController {
     this.documentModel = null;
     this.documentProvider = "unavailable";
     this.latestStoryModel = null;
+    this.latestRuntimeSnapshot = null;
+    this.runtimeControlStatus = null;
     this.storyGraphModel = null;
     this.scriptText = "";
     this.pendingFlowAnimationLineIndex = -1;
@@ -61,6 +63,8 @@ export class PreviewPanelController {
     this.scriptText = scriptText;
     this.activeLineNumber = activeLineNumber;
     this.storyGraphModel = storyGraphModel;
+    this.latestRuntimeSnapshot = runtimeSnapshot || null;
+    this.runtimeControlStatus = null;
     try {
       const previewDocument = this.buildPreviewDocumentModel(scriptText, storyGraphModel);
       this.documentModel = previewDocument.documentModel;
@@ -125,6 +129,8 @@ export class PreviewPanelController {
     }
     this.flowVisibleLineCount = this.flowStatePresenter.syncVisibleLineCount(storyModel, this.flowVisibleLineCount);
     this.pendingFlowAnimationLineIndex = -1;
+    this.latestRuntimeSnapshot = runtimeSnapshot || null;
+    this.runtimeControlStatus = null;
 
     this.currentNodeTitle = storyModel.nodeTitle;
     this.latestStoryModel = storyModel;
@@ -142,6 +148,8 @@ export class PreviewPanelController {
     this.pendingFlowAnimationLineIndex = -1;
     const historyElement = this.createRuntimeHistoryElement(storyModel, Boolean(blockingPendingAction));
     const pendingElement = blockingPendingAction ? this.createRuntimePendingElement(blockingPendingAction) : null;
+    const runtimeStatus = this.getVisibleRuntimeStatus(storyModel);
+    const runtimeStatusElement = runtimeStatus ? this.createRuntimeStatusElement(runtimeStatus) : null;
     const storyElements = this.mode === "flow"
       ? this.blockRenderer.createFlowStoryElements(storyModel, visibleLines, animatedLineIndex)
       : [
@@ -152,6 +160,7 @@ export class PreviewPanelController {
       ];
     this.previewElement.replaceChildren(
       this.createPreviewProviderStatus(storyModel),
+      ...(runtimeStatusElement ? [runtimeStatusElement] : []),
       ...(historyElement ? [historyElement] : []),
       ...(pendingElement ? [pendingElement] : []),
       ...storyElements,
@@ -163,6 +172,14 @@ export class PreviewPanelController {
       this.previewElement.dataset.runtimePending = "blocking";
     } else {
       delete this.previewElement.dataset.runtimePending;
+    }
+    const runtimePreviewState = runtimeStatus?.state || storyModel.runtimeStatus?.state || (
+      storyModel.provider === "runtime" ? "runtime-ready" : ""
+    );
+    if (runtimePreviewState) {
+      this.previewElement.dataset.runtimePreviewState = runtimePreviewState;
+    } else {
+      delete this.previewElement.dataset.runtimePreviewState;
     }
     delete this.previewElement.dataset.previewState;
   }
@@ -216,11 +233,88 @@ export class PreviewPanelController {
     return "Preview unavailable";
   }
 
+  setRuntimeControlStatus(status) {
+    this.runtimeControlStatus = this.normalizeRuntimeControlStatus(status);
+    if (this.latestStoryModel) {
+      this.renderStoryModel(this.latestStoryModel);
+    }
+  }
+
+  clearRuntimeControlStatus() {
+    this.runtimeControlStatus = null;
+    if (this.latestStoryModel) {
+      this.renderStoryModel(this.latestStoryModel);
+    }
+  }
+
+  isRuntimePreviewActive() {
+    return this.latestStoryModel?.provider === "runtime";
+  }
+
+  getVisibleRuntimeStatus(storyModel) {
+    const status = this.runtimeControlStatus || storyModel?.runtimeStatus || null;
+    if (!status || status.state === "runtime-ready") {
+      return null;
+    }
+
+    return status;
+  }
+
+  createRuntimeStatusElement(runtimeStatus) {
+    const status = document.createElement("div");
+    status.className = "story-runtime-status";
+    status.dataset.runtimeState = runtimeStatus.state;
+
+    const title = document.createElement("strong");
+    title.textContent = runtimeStatus.label || this.getRuntimeStatusLabel(runtimeStatus.state);
+
+    const detail = document.createElement("span");
+    detail.textContent = runtimeStatus.detail || "";
+
+    status.append(title, detail);
+    return status;
+  }
+
+  normalizeRuntimeControlStatus(status) {
+    const state = String(status?.state || "runtime-error").trim() || "runtime-error";
+    return {
+      detail: this.boundRuntimeStatusDetail(status?.detail || ""),
+      label: status?.label || this.getRuntimeStatusLabel(state),
+      provider: status?.provider || "runtime-project",
+      state,
+    };
+  }
+
+  getRuntimeStatusLabel(state) {
+    if (state === "runtime-stale") {
+      return "Runtime snapshot stale";
+    }
+
+    if (state === "runtime-unavailable") {
+      return "Runtime unavailable";
+    }
+
+    if (state === "runtime-error") {
+      return "Runtime error";
+    }
+
+    return "Runtime status";
+  }
+
+  boundRuntimeStatusDetail(detail) {
+    const text = String(detail || "").replace(/\s+/g, " ").trim();
+    if (text.length <= 160) {
+      return text;
+    }
+
+    return `${text.slice(0, 157)}...`;
+  }
+
   highlightSourceLine(lineNumber, options = {}) {
     this.activeLineNumber = lineNumber;
     const activeNode = this.findNodeForLine(lineNumber);
     if (options.allowNodeSwitch !== false && activeNode && activeNode.title !== this.currentNodeTitle) {
-      this.render(this.scriptText, lineNumber, this.storyGraphModel);
+      this.render(this.scriptText, lineNumber, this.storyGraphModel, this.latestRuntimeSnapshot);
       return;
     }
 
@@ -431,6 +525,7 @@ export class PreviewPanelController {
       lines: previewNode?.lines || [],
       nodeTitle: previewNode?.title || "",
       provider: this.documentProvider,
+      runtimeStatus: null,
       runtimeState: null,
       sourceLine: Number(previewNode?.sourceLine || 0),
       title: previewNode?.title || this.documentModel?.title || "Untitled Node",
@@ -541,6 +636,7 @@ export class PreviewPanelController {
     if (targetNode) {
       this.flowVisibleLineCount = 0;
       const storyModel = this.createPreviewModelFromNode(targetNode);
+      storyModel.runtimeStatus = this.runtimeControlStatus || this.latestStoryModel?.runtimeStatus || null;
       this.currentNodeTitle = storyModel.nodeTitle;
       this.latestStoryModel = storyModel;
       this.renderStoryModel(storyModel);
