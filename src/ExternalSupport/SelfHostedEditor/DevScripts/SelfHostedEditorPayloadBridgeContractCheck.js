@@ -108,6 +108,15 @@ const compactRuntimePayload = compactRuntimeStatePayload({
     maxVisibleStepCount: 4,
     visibleStepCount: 2,
   },
+  logEntries: [
+    {
+      lineId: "line_001",
+      nodeId: "Opening",
+      sequence: 1,
+      speaker: "Narrator",
+      text: "Hello",
+    },
+  ],
   state: {
     currentNodeName: "Opening",
     path: ["Opening"],
@@ -136,6 +145,9 @@ assert.equal(compactRuntimePayload.currentNode.source.sourcePath, "Stories/openi
 assert.equal(compactRuntimePayload.queryProvider.source, "mock");
 assert.equal(compactRuntimePayload.queryProvider.mockValueCount, 1);
 assert.equal(compactRuntimePayload.queryProvider.payloadContentExposed, false);
+assert.equal(compactRuntimePayload.logEntries.length, 1);
+assert.equal(compactRuntimePayload.logEntries[0].text, "Hello");
+assert.equal(compactRuntimePayload.logEntries[0].lineId, "line_001");
 assert.equal(JSON.stringify(compactRuntimePayload).includes("secret mock argument"), false);
 assert.deepEqual(compactRuntimeQueryProvider(null), {
   delegateAvailable: false,

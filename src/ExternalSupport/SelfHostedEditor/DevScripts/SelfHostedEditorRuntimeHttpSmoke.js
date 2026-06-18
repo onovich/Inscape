@@ -63,6 +63,24 @@ const keyQueryProvider = {
     },
   ],
 };
+const noKeyQueryProvider = {
+  kind: "Mock",
+  mockValues: [
+    {
+      arguments: [
+        {
+          kind: "String",
+          stringValue: "silver_key",
+        },
+      ],
+      name: "has_item",
+      value: {
+        boolValue: false,
+        kind: "Bool",
+      },
+    },
+  ],
+};
 const actionDispatcher = {
   actions: [
     {
@@ -141,6 +159,78 @@ async function main() {
     assertEqual(queryProviderSnapshot.currentNode?.choices?.[0]?.options?.length, 2, "mock query provider shows conditional key option");
     assertEqual(queryProviderSnapshot.currentNode?.choices?.[0]?.options?.[0]?.text, "Use key", "mock query provider key option text");
     assertPayloadSize(queryProviderPayloadText, "mock query provider runtime HTTP payload");
+
+    const noKeyResponse = await fetch(`http://127.0.0.1:${address.port}/api/runtime-state`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        queryProvider: noKeyQueryProvider,
+        scriptText: queryRuntimeScript,
+        sessionId: "runtime-http-hidden-log",
+      }),
+    });
+    const noKeyPayloadText = await noKeyResponse.text();
+    const noKeySnapshot = JSON.parse(noKeyPayloadText);
+    if (!noKeyResponse.ok) {
+      throw new Error(`Runtime no-key query provider HTTP smoke failed with HTTP ${noKeyResponse.status}.`);
+    }
+
+    assertRuntimeSnapshot(noKeySnapshot, "Gate");
+    assertEqual(noKeySnapshot.currentNode?.choices?.[0]?.options?.length, 1, "no-key provider hides key option");
+    assertEqual(noKeyPayloadText.includes("Open"), false, "hidden conditional target stays out of no-key Runtime payload");
+
+    const noKeyChooseResponse = await fetch(`http://127.0.0.1:${address.port}/api/runtime-action`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        action: {
+          groupIndex: 0,
+          optionIndex: 0,
+          type: "choose",
+        },
+        queryProvider: noKeyQueryProvider,
+        runtimeState: noKeySnapshot,
+        sessionId: "runtime-http-hidden-log",
+        scriptText: queryRuntimeScript,
+      }),
+    });
+    const noKeyChoosePayloadText = await noKeyChooseResponse.text();
+    const noKeyChooseSnapshot = JSON.parse(noKeyChoosePayloadText);
+    if (!noKeyChooseResponse.ok) {
+      throw new Error(`Runtime no-key choose HTTP smoke failed with HTTP ${noKeyChooseResponse.status}.`);
+    }
+
+    assertRuntimeSnapshot(noKeyChooseSnapshot, "Knock");
+
+    const noKeyLogResponse = await fetch(`http://127.0.0.1:${address.port}/api/runtime-action`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        action: {
+          type: "advance-flow",
+        },
+        queryProvider: noKeyQueryProvider,
+        runtimeState: noKeyChooseSnapshot,
+        sessionId: "runtime-http-hidden-log",
+        scriptText: queryRuntimeScript,
+      }),
+    });
+    const noKeyLogPayloadText = await noKeyLogResponse.text();
+    const noKeyLogSnapshot = JSON.parse(noKeyLogPayloadText);
+    if (!noKeyLogResponse.ok) {
+      throw new Error(`Runtime no-key log HTTP smoke failed with HTTP ${noKeyLogResponse.status}.`);
+    }
+
+    assertRuntimeSnapshot(noKeyLogSnapshot, "Knock");
+    assertEqual(noKeyLogSnapshot.logEntries?.[0]?.text, "Knock", "Runtime log shows displayed no-key branch text");
+    assertEqual(noKeyLogPayloadText.includes("Open"), false, "Runtime log payload excludes hidden conditional branch text");
+    assertPayloadSize(noKeyLogPayloadText, "no-key log runtime HTTP payload");
 
     const actionStartResponse = await fetch(`http://127.0.0.1:${address.port}/api/runtime-state`, {
       method: "POST",
@@ -245,6 +335,7 @@ async function main() {
     assertEqual(openingAdvanceSnapshot.sessionId, sessionId, "advance runtime session id");
     assertEqual(openingAdvanceSnapshot.state?.visibleStepCount, 1, "opening visible step count after first flow advance");
     assertEqual(openingAdvanceSnapshot.readingProgress?.isChoiceStageVisible, false, "opening choices should stay hidden after first flow advance");
+    assertEqual(openingAdvanceSnapshot.logEntries?.[0]?.text, "Hello", "opening runtime HTTP log text after first flow advance");
 
     const stayResponse = await fetch(`http://127.0.0.1:${address.port}/api/runtime-action`, {
       method: "POST",
@@ -296,6 +387,7 @@ async function main() {
     assertRuntimeSnapshot(stayAdvanceSnapshot, "Stay");
     assertEqual(stayAdvanceSnapshot.sessionId, sessionId, "stay advance runtime session id");
     assertEqual(stayAdvanceSnapshot.state?.visibleStepCount, 1, "stay visible step count after first flow advance");
+    assertEqual(stayAdvanceSnapshot.logEntries?.[0]?.text, "Staying put", "stay runtime HTTP log text after first flow advance");
 
     const stayRewindFlowResponse = await fetch(`http://127.0.0.1:${address.port}/api/runtime-action`, {
       method: "POST",

@@ -78,6 +78,7 @@ export function compactRuntimeStatePayload(payload, sessionId = "", queryProvide
     format: "inscape.self-hosted-editor.runtime-state",
     formatVersion: 1,
     actionRequests: compactRuntimeActionRequests(payload?.actionRequests),
+    logEntries: compactRuntimeLogEntries(payload?.logEntries),
     pendingAction: compactRuntimePendingAction(payload?.pendingAction),
     queryProvider: compactRuntimeQueryProvider(queryProvider || payload?.queryProvider || null),
     readingProgress: {
@@ -152,6 +153,28 @@ export function compactRuntimeQueryProvider(queryProvider) {
     recordedValueCount: 0,
     source: "internal",
   };
+}
+
+function compactRuntimeLogEntries(logEntries) {
+  if (!Array.isArray(logEntries)) {
+    return [];
+  }
+
+  return logEntries
+    .filter((entry) => entry && typeof entry.text === "string")
+    .map((entry) => ({
+      lineId: entry.lineId || "",
+      nodeId: entry.nodeId || "",
+      sequence: Number(entry.sequence || 0),
+      speaker: boundRuntimeLogText(entry.speaker || "", 80),
+      text: boundRuntimeLogText(entry.text || "", 240),
+    }))
+    .slice(-24);
+}
+
+function boundRuntimeLogText(value, maximumLength) {
+  const text = String(value || "");
+  return text.length > maximumLength ? `${text.slice(0, Math.max(0, maximumLength - 3))}...` : text;
 }
 
 function compactRuntimeActionRequests(actionRequests) {

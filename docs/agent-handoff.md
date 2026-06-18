@@ -1,12 +1,22 @@
 # Agent 接手指南
 
-状态：P5 SelfHostedEditor Runtime authoring Round 7 Runtime status surface complete
+状态：P5 SelfHostedEditor Runtime authoring Round 8 Log / Backlog surface complete
 
 最后更新：2026-06-18
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-18 SelfHostedEditor P5 Round 8 Log Backlog Surface 快照
+
+P5 SelfHostedEditor Runtime authoring / productization 已完成第八轮 Log / Backlog surface，不代表 P5 已完成。
+- 本轮审计见 [SelfHostedEditor P5 Log Backlog Audit](self-hosted-editor-p5-log-backlog-audit.md)。
+- 新增 `RuntimeLogBacklogModelBuilder` 与 `RuntimeLogBacklogPanelController`，Host view 现在展示 Runtime `logEntries` 的 bounded 摘要，包含 `speaker`、`text`、`lineId`、node 与 sequence。
+- Runtime compact payload 现在附带脱敏 `logEntries`，只来自 Runtime snapshot，不在浏览器端重新执行脚本或重建 Log。
+- Log / Backlog surface 支持 `runtime-ready`、`runtime-empty`、`runtime-unavailable` 与 `runtime-error` 状态；Log item 可触发 source jump 回到对应源行。
+- Contract check 覆盖 source jump、empty / unavailable / error、hidden branch text absence、formal Runtime State absence 与 `line:N` fallback；Runtime direct / HTTP smoke 覆盖真实 Runtime payload 中的 log entries。
+- 下一轮进入 P5 Round 9：Branch receipt / condition explanation，只展示 Runtime receipts，不重新查询 host 解释历史分支，不实现完整 Trace Replay。
 
 ### 2026-06-18 SelfHostedEditor P5 Round 7 Runtime Status Surface 快照
 
@@ -17,7 +27,7 @@ P5 SelfHostedEditor Runtime authoring / productization 已完成第七轮 Runtim
 - Workbench 在 Runtime snapshot start / step 后同步刷新 status surface；debug resume 失败也会更新 latest Runtime envelope，避免状态栏停在旧 snapshot。
 - 旧 `ProjectWorkspaceSessionController` 在产品装配中只负责 workspace/session 半边；Runtime meta 面板由 Runtime status controller 接管，仍复用 sidebar session item 样式。
 - `check:model` 覆盖 status model / panel / Workbench 集成和 secret 不泄漏；`check:runtime` 与 `check:runtime-http` 覆盖 query provider 来源 summary。
-- 下一轮进入 P5 Round 8：Log / Backlog surface，只展示 Runtime `logEntries`，支持空状态与 Runtime unavailable 状态，不把 Log 写入 formal Runtime State。
+- 后续已由 P5 Round 8 接上 Log / Backlog surface；该轮只展示 Runtime `logEntries`，支持空状态与 Runtime unavailable 状态，不把 Log 写入 formal Runtime State。
 
 ### 2026-06-18 SelfHostedEditor P5 Round 6 Runtime-backed Preview Controls 快照
 

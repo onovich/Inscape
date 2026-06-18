@@ -37,6 +37,7 @@ async function main() {
     mockQueryPanelController,
     previewController,
     runtimeBridge,
+    runtimeLogBacklogPanelController,
     storyGraphController,
     storyNodeMapReviewController,
     workspaceController,
@@ -83,6 +84,10 @@ async function main() {
 
     return steppedRuntimeSnapshot;
   });
+  runtimeLogBacklogPanelController.onSourceLineSelected((selection) => {
+    focusSourceSelection(selection);
+    layoutController.ensureEditorVisible();
+  });
 
   const defaultSample = await loadDefaultSampleScript();
   editorController.setText(defaultSample.text);
@@ -112,6 +117,7 @@ async function main() {
     workbenchRenderController.renderWorkspaceFiles();
     workbenchRenderController.renderWorkspaceSession();
     workbenchRenderController.renderRuntimeStatusPanel();
+    workbenchRenderController.renderRuntimeLogPanel();
   });
 
   layoutController.onStateChanged(() => {
@@ -384,6 +390,7 @@ async function main() {
   void editorStatusController;
   void hostCapabilityCatalogController;
   void storyNodeMapReviewController;
+  void runtimeLogBacklogPanelController;
   void runtimeBridge;
   void workspaceSessionController;
 }

@@ -41,6 +41,8 @@ async function main() {
   assertRuntimeSnapshot(openingLineSnapshot, "Opening");
   assertEqual(openingLineSnapshot.state?.visibleStepCount, 1, "opening visible step count after first flow advance");
   assertEqual(openingLineSnapshot.readingProgress?.isChoiceStageVisible, false, "opening choices should stay hidden after first flow advance");
+  assertEqual(openingLineSnapshot.logEntries?.[0]?.text, "Hello", "opening runtime log text after first flow advance");
+  assertEqual(openingLineSnapshot.logEntries?.[0]?.speaker, "Narrator", "opening runtime log speaker after first flow advance");
 
   const openingChoiceStageSnapshot = await stepRuntimeStateForScriptText(runtimeScript, null, openingLineSnapshot, {
     type: "advance-flow",

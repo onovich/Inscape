@@ -58,6 +58,7 @@ const requiredPaths = [
   "DevScripts/ModelContracts/SelfHostedEditorPreviewRuntimeContractCheck.js",
   "DevScripts/ModelContracts/SelfHostedEditorRuntimeActionAuthoringContractCheck.js",
   "DevScripts/ModelContracts/SelfHostedEditorRuntimeAuthoringSessionContractCheck.js",
+  "DevScripts/ModelContracts/SelfHostedEditorRuntimeLogBacklogContractCheck.js",
   "DevScripts/ModelContracts/SelfHostedEditorRuntimeMockQueryContractCheck.js",
   "DevScripts/ModelContracts/SelfHostedEditorRuntimeMockQueryUiContractCheck.js",
   "DevScripts/ModelContracts/SelfHostedEditorRuntimeStatusSurfaceContractCheck.js",
@@ -94,6 +95,7 @@ const requiredPaths = [
   "Resources/Styles/SelfHostedEditorReferenceOverlay.css",
   "Resources/Styles/SelfHostedEditorRuntimeActionAuthoring.css",
   "Resources/Styles/SelfHostedEditorRuntimeAuthoring.css",
+  "Resources/Styles/SelfHostedEditorRuntimeLogBacklog.css",
   "Resources/Styles/SelfHostedEditorStoryGraph.css",
   "Resources/Styles/SelfHostedEditorSidebar.css",
   "Resources/Styles/SelfHostedEditorTopbar.css",
@@ -192,10 +194,12 @@ const requiredPaths = [
   "Scripts/ProjectWorkspace/Models/WorkspaceSummaryHostedModelBuilder.js",
   "Scripts/Runtime/Bridges/SelfHostedEditorRuntimeBridge.js",
   "Scripts/Runtime/Controllers/RuntimeActionPanelController.js",
+  "Scripts/Runtime/Controllers/RuntimeLogBacklogPanelController.js",
   "Scripts/Runtime/Controllers/RuntimeMockQueryPanelController.js",
   "Scripts/Runtime/Controllers/RuntimeStatusPanelController.js",
   "Scripts/Runtime/Models/RuntimeActionAuthoringModelBuilder.js",
   "Scripts/Runtime/Models/RuntimeAuthoringSessionModelBuilder.js",
+  "Scripts/Runtime/Models/RuntimeLogBacklogModelBuilder.js",
   "Scripts/Runtime/Models/RuntimeMockQueryModelBuilder.js",
   "Scripts/Runtime/Models/RuntimeStatusSurfaceModelBuilder.js",
   "Scripts/StoryGraph/Controllers/StoryGraphInteractionController.js",
@@ -516,6 +520,7 @@ const workbenchPreviewCssPath = path.join(moduleRoot, "Resources/Styles/SelfHost
 const workbenchReferenceOverlayCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorReferenceOverlay.css");
 const workbenchRuntimeActionAuthoringCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorRuntimeActionAuthoring.css");
 const workbenchRuntimeAuthoringCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorRuntimeAuthoring.css");
+const workbenchRuntimeLogBacklogCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorRuntimeLogBacklog.css");
 const workbenchStoryGraphCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorStoryGraph.css");
 const workbenchSidebarCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorSidebar.css");
 const workbenchTopbarCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorTopbar.css");
@@ -534,6 +539,7 @@ const workbenchPreviewCss = fs.readFileSync(workbenchPreviewCssPath, "utf8");
 const workbenchReferenceOverlayCss = fs.readFileSync(workbenchReferenceOverlayCssPath, "utf8");
 const workbenchRuntimeActionAuthoringCss = fs.readFileSync(workbenchRuntimeActionAuthoringCssPath, "utf8");
 const workbenchRuntimeAuthoringCss = fs.readFileSync(workbenchRuntimeAuthoringCssPath, "utf8");
+const workbenchRuntimeLogBacklogCss = fs.readFileSync(workbenchRuntimeLogBacklogCssPath, "utf8");
 const workbenchStoryGraphCss = fs.readFileSync(workbenchStoryGraphCssPath, "utf8");
 const workbenchSidebarCss = fs.readFileSync(workbenchSidebarCssPath, "utf8");
 const workbenchTopbarCss = fs.readFileSync(workbenchTopbarCssPath, "utf8");
@@ -555,6 +561,7 @@ const expectedWorkbenchCssImports = [
   '@import url("./SelfHostedEditorHostCapability.css");',
   '@import url("./SelfHostedEditorRuntimeAuthoring.css");',
   '@import url("./SelfHostedEditorRuntimeActionAuthoring.css");',
+  '@import url("./SelfHostedEditorRuntimeLogBacklog.css");',
   '@import url("./SelfHostedEditorNodeMapReview.css");',
   '@import url("./SelfHostedEditorStoryGraph.css");',
 ].join("\n");
@@ -778,6 +785,19 @@ if (
 }
 if (/^\.diagnostics-dock\s*{/m.test(workbenchRuntimeActionAuthoringCss) || /^\.localization-toolbar\s*{/m.test(workbenchRuntimeActionAuthoringCss) || /^\.host-capability-item\s*{/m.test(workbenchRuntimeActionAuthoringCss) || /^\.graph-viewport\s*{/m.test(workbenchRuntimeActionAuthoringCss) || /^\.story-preview\s*{/m.test(workbenchRuntimeActionAuthoringCss) || /^\.editor-frame\s*{/m.test(workbenchRuntimeActionAuthoringCss)) {
   console.error("SelfHostedEditorRuntimeActionAuthoring.css must not absorb diagnostics, localization, host capability items, graph, preview, or editor authoring rules.");
+  failed = true;
+}
+if (
+  !/^\.runtime-log-backlog-panel\s*{/m.test(workbenchRuntimeLogBacklogCss)
+  || !/^\.runtime-log-backlog-header,\r?\n\.runtime-log-backlog-entry-summary\s*{/m.test(workbenchRuntimeLogBacklogCss)
+  || !/^\.runtime-log-backlog-entry\s*{/m.test(workbenchRuntimeLogBacklogCss)
+  || !/^\.runtime-log-backlog-source-button\s*{/m.test(workbenchRuntimeLogBacklogCss)
+) {
+  console.error("SelfHostedEditorRuntimeLogBacklog.css must retain log panel, header, entry, and source button rules.");
+  failed = true;
+}
+if (/^\.diagnostics-dock\s*{/m.test(workbenchRuntimeLogBacklogCss) || /^\.localization-toolbar\s*{/m.test(workbenchRuntimeLogBacklogCss) || /^\.host-capability-item\s*{/m.test(workbenchRuntimeLogBacklogCss) || /^\.graph-viewport\s*{/m.test(workbenchRuntimeLogBacklogCss) || /^\.story-preview\s*{/m.test(workbenchRuntimeLogBacklogCss) || /^\.editor-frame\s*{/m.test(workbenchRuntimeLogBacklogCss)) {
+  console.error("SelfHostedEditorRuntimeLogBacklog.css must not absorb diagnostics, localization, host capability items, graph, preview, or editor authoring rules.");
   failed = true;
 }
 if (

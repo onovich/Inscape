@@ -137,6 +137,15 @@ const runtimeSnapshot = {
     path: ["Opening"],
     visibleStepCount: 1,
   },
+  logEntries: [
+    {
+      lineId: "line:3",
+      nodeId: "Opening",
+      sequence: 1,
+      speaker: "Narrator",
+      text: "Hello.",
+    },
+  ],
   debugSnapshotText: "secret runtime snapshot text",
 };
 
@@ -156,6 +165,7 @@ let renderedMockQueryWorkspaceRevision = null;
 let renderedActionCatalog = null;
 let renderedActionBridgeCatalog = null;
 let renderedActionRuntimeProvider = "";
+let renderedRuntimeLogBacklog = null;
 let renderedRuntimeStatusSurface = null;
 let runtimeActionBridgeInput = null;
 const documentModel = ScriptDocumentFallbackPolicy.buildDocumentModel(scriptText, {
@@ -344,6 +354,11 @@ const workbench = new SelfHostedEditorWorkbenchRenderController({
       renderedRuntimeStatusSurface = statusModel;
     },
   },
+  runtimeLogBacklogPanelController: {
+    render(backlogModel) {
+      renderedRuntimeLogBacklog = backlogModel;
+    },
+  },
   storyGraphBridge: {
     async getStoryGraph() {
       return {
@@ -404,6 +419,11 @@ assertEqual(renderedRuntimeStatusSurface?.readingProgress.visibleStepCount, 1, "
 assertEqual(renderedRuntimeStatusSurface?.queryProvider.source, "internal", "workbench runtime status query provider source");
 assertEqual(renderedRuntimeStatusSurface?.sessionId, "runtime-status-session", "workbench runtime status session id");
 assertEqual(renderedRuntimeStatusSurface?.workspaceRevision, 5, "workbench runtime status workspace revision");
+assertEqual(renderedRuntimeLogBacklog?.provider, "runtime-project", "workbench should pass runtime snapshot to log panel");
+assertEqual(renderedRuntimeLogBacklog?.entryCount, 1, "workbench runtime log entry count");
+assertEqual(renderedRuntimeLogBacklog?.entries?.[0]?.text, "Hello.", "workbench runtime log text");
+assertEqual(renderedRuntimeLogBacklog?.entries?.[0]?.source?.lineNumber, 3, "workbench runtime log source line");
+assertEqual(renderedRuntimeLogBacklog?.writesToFormalRuntimeState, false, "workbench runtime log stays out of formal state");
 assertEqual(runtimeActionBridgeInput?.actions?.length, 0, "workbench should set runtime action bridge input");
 assertIncludesText(getTextContent(summaryPanel), "shared summary");
 assertIncludesText(getTextContent(summaryPanel), "0 l10n");

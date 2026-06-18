@@ -3,6 +3,7 @@ import { ScriptLineIdentityModelBuilder } from "../ProjectWorkspace/Models/Scrip
 import { ProjectWorkspaceSessionStatusModelBuilder } from "../ProjectWorkspace/Models/ProjectWorkspaceSessionStatusModelBuilder.js";
 import { WorkspaceSummaryHostedModelBuilder } from "../ProjectWorkspace/Models/WorkspaceSummaryHostedModelBuilder.js";
 import { RuntimeActionAuthoringModelBuilder } from "../Runtime/Models/RuntimeActionAuthoringModelBuilder.js";
+import { RuntimeLogBacklogModelBuilder } from "../Runtime/Models/RuntimeLogBacklogModelBuilder.js";
 import { RuntimeStatusSurfaceModelBuilder } from "../Runtime/Models/RuntimeStatusSurfaceModelBuilder.js";
 
 export class SelfHostedEditorWorkbenchRenderController {
@@ -24,6 +25,7 @@ export class SelfHostedEditorWorkbenchRenderController {
     previewController,
     projectSessionService,
     runtimeBridge,
+    runtimeLogBacklogPanelController,
     runtimeStatusPanelController,
     storyGraphBridge,
     storyGraphController,
@@ -49,6 +51,7 @@ export class SelfHostedEditorWorkbenchRenderController {
     this.previewController = previewController;
     this.projectSessionService = projectSessionService;
     this.runtimeBridge = runtimeBridge;
+    this.runtimeLogBacklogPanelController = runtimeLogBacklogPanelController || null;
     this.runtimeStatusPanelController = runtimeStatusPanelController || null;
     this.storyGraphBridge = storyGraphBridge;
     this.storyGraphController = storyGraphController;
@@ -100,6 +103,7 @@ export class SelfHostedEditorWorkbenchRenderController {
   setLatestRuntimeSnapshot(runtimeSnapshot) {
     this.latestRuntimeSnapshot = runtimeSnapshot;
     this.renderRuntimeStatusPanel();
+    this.renderRuntimeLogPanel();
   }
 
   async renderWorkbench(scriptText, activeLineNumber = 1) {
@@ -156,8 +160,10 @@ export class SelfHostedEditorWorkbenchRenderController {
     this.latestRuntimeSnapshot = runtimeSnapshot;
     this.loadingController.setIdle("runtime");
     this.renderRuntimeStatusPanel();
+    this.renderRuntimeLogPanel();
     this.renderActionPanel();
     this.loadingController.setIdle("runtimeAction");
+    this.loadingController.setIdle("runtimeLog");
     this.renderMockQueryPanel();
     this.loadingController.setIdle("mockQuery");
 
@@ -261,6 +267,17 @@ export class SelfHostedEditorWorkbenchRenderController {
     });
     this.runtimeStatusPanelController?.render(statusModel);
     return statusModel;
+  }
+
+  renderRuntimeLogPanel() {
+    const backlogModel = RuntimeLogBacklogModelBuilder.build({
+      runtimeSnapshot: this.latestRuntimeSnapshot,
+      sessionId: this.runtimeBridge?.sessionId || "",
+      storyGraphModel: this.latestStoryGraphModel,
+      workspaceRevision: this.workspaceController.getState().revision || null,
+    });
+    this.runtimeLogBacklogPanelController?.render(backlogModel);
+    return backlogModel;
   }
 
   renderMockQueryPanel() {
