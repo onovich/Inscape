@@ -18,6 +18,10 @@ Current baseline:
   - `Mock` is for editor preview, tests, and CI.
   - `Recorded` is for debug replay / trace evidence.
   - Internal facts such as `current_node()`, `visited(nodeId)`, `seen(lineId)`, and `last_choice(nodeId)` resolve before external provider sources.
+- `StoryRuntime/Domains/NarrativeRuntimeConditionEvaluatorDomain.cs` evaluates Compiler condition IR with Runtime values:
+  - It consumes `DslScriptConditionExpressionModel`, never raw `.inscape` condition strings.
+  - It supports bool / number / string values, `and` / `or` / `not`, scalar comparisons, query path / call, and Runtime query provider lookup.
+  - It returns structured Runtime diagnostics for missing query, provider exception, type mismatch, unsupported operator, or non-bool top-level results.
 - `NarrativeRuntime.CreateSnapshot()` returns `inscape.runtime-state` data with the current state, current Compiler node, and `ReadingProgress` for editor Player integration.
 - `NarrativeRuntime.ExportState()` returns the P3 minimal formal Runtime State shape: `format`, `formatVersion`, `runtimeVersion`, `scriptVersion`, `position`, `flow`, `facts`, `random`, and `host.checkpointId`.
 - `NarrativeRuntime.ValidateStateAgainstCurrentScript()` reports `compatible`, `migratable`, or `incompatible` without silently repairing state.
@@ -26,3 +30,4 @@ Current baseline:
 - Formal Runtime State does not include full Log, full Rollback stack, full Trace Replay, or gameplay state ownership.
 - Runtime does not parse `.inscape` text and does not know about VSCode, HTML Preview, UnitySample, or Host Bridge details.
 - Runtime does not own gameplay state such as inventory, quest stage, trust, combat result, player position, or economy values; those belong behind host delegate queries.
+- Runtime flow does not yet use the condition evaluator for choice filtering or conditional jumps; that is the next P4 step.

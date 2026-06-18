@@ -1,12 +1,24 @@
 # Agent 接手指南
 
-状态：P4 Round 1 baseline / contract 完成
+状态：P4 Round 2 condition evaluator 完成
 
 最后更新：2026-06-18
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-18 SelfHostedEditor P4 Round 2 Condition Evaluator 快照
+
+P4 Runtime playable MVP 已完成第二轮 Runtime condition evaluator 最小实现，不代表 P4 MVP 已完成。
+
+- 本轮审计见 [SelfHostedEditor P4 Condition Evaluator Audit](self-hosted-editor-p4-condition-evaluator-audit.md)。
+- `Internal/Runtime` 新增 `NarrativeRuntimeConditionEvaluatorDomain`，输入 `DslScriptConditionExpressionModel`、`NarrativeRuntimeStateModel` 与 `NarrativeRuntimeQueryProviderModel`，输出 bool result 或结构化 Runtime diagnostic。
+- Evaluator 支持 bool / number / string literal、identifier query argument、query path / call、`and` / `or` / `not`、同类型 equality、number ordered comparison，并对 `and` / `or` 做短路。
+- Query lookup 复用既有 `NarrativeRuntimeQueryProviderDomain`，因此 internal facts 仍优先于 delegate / mock / recorded；本轮没有新增第二套 query 语义。
+- Internal tests 覆盖 mock provider、recorded provider、internal fact `visited()`、short-circuit、missing query、type mismatch 与 delegate provider exception。
+- 当前仍未完成：Runtime flow 尚未使用 evaluator 做选项过滤或条件跳转；branch query receipt、action dispatcher、Log / Backlog、P4 子状态 blob 与 CLI playable driver 仍在后续轮次。
+- 下一轮进入 P4 Round 3：把 evaluator 接入 Runtime flow，完成条件选项可见性、条件跳转 first true wins、fallback 与无路径错误。
 
 ### 2026-06-18 SelfHostedEditor P4 Round 1 Baseline / Contract 快照
 
@@ -1530,9 +1542,9 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 
 建议优先做小而闭环的任务，不要直接跳到大规模重构。
 
-1. 进入 P4 Round 2 Runtime condition evaluator。
-   - 先读 [P4 Runtime Playable MVP Goal 模式执行指南](self-hosted-editor-p4-goal-mode-execution-guide.md)、[SelfHostedEditor P4 Baseline Audit](self-hosted-editor-p4-baseline-audit.md) 与 [Runtime Playable MVP Contract](runtime-playable-mvp-contract.md)。
-   - 在 `Internal/Runtime` 消费 `DslScriptConditionExpressionModel` 和既有 `NarrativeRuntimeQueryProviderDomain`，覆盖 bool / number / string、query path / call、`and` / `or` / `not`、标量比较和 Runtime error；不要重写 Compiler parser，也不要把 evaluator 复制到 VSCode 或 SelfHostedEditor。
+1. 进入 P4 Round 3 Runtime flow 条件接入。
+   - 先读 [P4 Runtime Playable MVP Goal 模式执行指南](self-hosted-editor-p4-goal-mode-execution-guide.md)、[Runtime Playable MVP Contract](runtime-playable-mvp-contract.md) 与 [SelfHostedEditor P4 Condition Evaluator Audit](self-hosted-editor-p4-condition-evaluator-audit.md)。
+   - 把 `NarrativeRuntimeConditionEvaluatorDomain` 接入 `NarrativeRuntime` flow：条件选项只暴露 / 可选 true 的 option，条件跳转按源码顺序 first true wins，没有命中时走 fallback，无可行路径时报 Runtime error；无条件剧情不得回归。
 
 2. 继续推进 Stable Node ID / 本地化主线。
    - ADR 0013、sidecar 闭环、保守自动重命名识别、VSCode 显式 `Update Stable Node Map` 入口、插入标题后的自动同步、标题重命名人工确认 / 冲突报告、本地化 alignment / audit report，以及相似文本人工候选第一版都已落地。

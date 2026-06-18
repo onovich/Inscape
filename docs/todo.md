@@ -1,6 +1,6 @@
 # TODO
 
-状态：持续维护，P4 Round 1 baseline / contract 完成
+状态：持续维护，P4 Round 2 condition evaluator 完成
 
 SelfHostedEditor regression invariant: Preview choice clicks must advance the reading Preview to the target block and reveal the target block title in the editor. Compiler-project Preview data must never silently lose `previewLines`: if a returned Compiler graph has source lines but missing or mismatched `previewLines`, Preview must report a compiler graph contract error instead of falling back to the UI-only draft model. `npm --prefix src\ExternalSupport\SelfHostedEditor run check:model` covers both invariants so future Runtime / navigation work does not regress them.
 
@@ -208,7 +208,8 @@ npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
 - [x] 完成 P3 最终验证并确认 P3 first cut PASS。2026-06-18 最终报告见 [SelfHostedEditor P3 Final Validation Report](self-hosted-editor-p3-final-validation-report.md)；最终矩阵、边界扫描、P3 PASS 门槛与文档接力入口均已收口。
 - [x] 输出 P4 Runtime playable MVP goal 模式执行指南。2026-06-18 指南见 [P4 Runtime Playable MVP Goal 模式执行指南](self-hosted-editor-p4-goal-mode-execution-guide.md)；约束 16 轮内完成，1-12 轮主线、13-15 轮缓冲、16 轮最终验收，每轮必须做 Debug 自检和架构自检。
 - [x] 完成 P4 Runtime playable MVP Round 1 基线审计 / 行为合同。2026-06-18 审计见 [SelfHostedEditor P4 Baseline Audit](self-hosted-editor-p4-baseline-audit.md)，行为合同见 [Runtime Playable MVP Contract](runtime-playable-mvp-contract.md)；确认 P3 已有入口与 P4 缺口，细化 Runtime MVP 验收样例、branch query receipt、`fire` / `wait` / `handoff` pending / resume、Log / Backlog 和 Inscape 子状态 blob 边界。Runtime Inspector 产品化 UI 不进入 P4。
-- [ ] 进入 P4 Round 2 Runtime condition evaluator：在 `Internal/Runtime` 消费 `DslScriptConditionExpressionModel`，接入既有 `NarrativeRuntimeQueryProviderDomain`，覆盖 bool / number / string、query path / call、`and` / `or` / `not`、标量比较和 Runtime error；不重新解析源码，不在 ExternalSupport 复制 Runtime 语义。
+- [x] 完成 P4 Round 2 Runtime condition evaluator。2026-06-18 审计见 [SelfHostedEditor P4 Condition Evaluator Audit](self-hosted-editor-p4-condition-evaluator-audit.md)；`Internal/Runtime` 新增 evaluator domain，消费 `DslScriptConditionExpressionModel`，复用既有 query provider，覆盖 bool / number / string、query path / call、`and` / `or` / `not`、标量比较、short-circuit、missing query、provider exception 和 type mismatch。
+- [ ] 进入 P4 Round 3 Runtime flow 条件接入：把 evaluator 接入 `NarrativeRuntime`，实现条件选项可见性 / 可选性、条件跳转 first true wins、fallback 和无可行路径 Runtime error；无条件剧情不得回归，仍不实现 query receipt / action dispatcher / Log / 子状态 blob。
 - [ ] 高级运行时调试方向池继续评估 Rollback checkpoint 的准确粒度、跨宿主 action 时的回退阻断 / checkpoint 规则、Trace Replay、Flashback Playback 与时空穿越式特殊倒放；这些不进入 P3 / P4 第一刀实现，也不作为当前正式排期 phase。
 
 ### 暂停 / 明确后置

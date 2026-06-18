@@ -10,7 +10,7 @@
 - 查未定事项：读 [待确认问题](open-questions.md)，避免把草案当成规范。
 - 查 P3 第二版语法 / Runtime 讨论脉络：读 [P3 Runtime / Language Discussion Memory](p3-runtime-language-discussion-memory.md)，再读对应正式 contract 文档。
 - 执行 P3 goal：读 [P3 第二版语法 / Runtime / 宿主能力 Goal 模式执行指南](self-hosted-editor-p3-goal-mode-execution-guide.md)，并从 [P3 Baseline Audit](self-hosted-editor-p3-baseline-audit.md)、[P3 Host Schema v2 Contract Audit](self-hosted-editor-p3-host-schema-v2-contract-audit.md)、[P3 Host Schema Compatibility Audit](self-hosted-editor-p3-host-schema-compatibility-audit.md)、[P3 Usage Manifest Contract Audit](self-hosted-editor-p3-usage-manifest-contract-audit.md)、[P3 Usage Manifest Implementation Audit](self-hosted-editor-p3-usage-manifest-implementation-audit.md)、[P3 Host Integration Audit](self-hosted-editor-p3-host-integration-audit.md)、[P3 Condition Syntax Contract Audit](self-hosted-editor-p3-condition-syntax-contract-audit.md)、[P3 Condition Syntax Implementation Audit](self-hosted-editor-p3-condition-syntax-implementation-audit.md)、[P3 Condition Consumption Audit](self-hosted-editor-p3-condition-consumption-audit.md)、[P3 Runtime Query Provider Audit](self-hosted-editor-p3-runtime-query-provider-audit.md)、[P3 Runtime State Audit](self-hosted-editor-p3-runtime-state-audit.md)、[P3 Integration Audit](self-hosted-editor-p3-integration-audit.md) 与 [P3 Final Validation Report](self-hosted-editor-p3-final-validation-report.md) 接上当前实现状态。
-- 执行 P4 goal：读 [P4 Runtime Playable MVP Goal 模式执行指南](self-hosted-editor-p4-goal-mode-execution-guide.md)，再读 [P4 Baseline Audit](self-hosted-editor-p4-baseline-audit.md) 与 [Runtime Playable MVP Contract](runtime-playable-mvp-contract.md)，从 P3 final validation 接上 Runtime playable MVP，不要把 P4 扩成编辑器产品化、Rollback / Trace / Flashback、Presentation IR 或 Unity / Host SDK。
+- 执行 P4 goal：读 [P4 Runtime Playable MVP Goal 模式执行指南](self-hosted-editor-p4-goal-mode-execution-guide.md)，再读 [P4 Baseline Audit](self-hosted-editor-p4-baseline-audit.md)、[Runtime Playable MVP Contract](runtime-playable-mvp-contract.md) 与 [P4 Condition Evaluator Audit](self-hosted-editor-p4-condition-evaluator-audit.md)，从 P3 final validation 接上 Runtime playable MVP，不要把 P4 扩成编辑器产品化、Rollback / Trace / Flashback、Presentation IR 或 Unity / Host SDK。
 
 ## 阅读路径
 
@@ -53,12 +53,13 @@
 35. [P4 Runtime Playable MVP Goal 模式执行指南](self-hosted-editor-p4-goal-mode-execution-guide.md)
 36. [P4 Baseline Audit](self-hosted-editor-p4-baseline-audit.md)
 37. [Runtime Playable MVP Contract](runtime-playable-mvp-contract.md)
-38. [Bird / Unity 调研记录](bird-unity-research.md)
-39. [Bird Adapter 原型](bird-adapter.md)
-40. [Unity Editor Importer 草案](unity-editor-importer.md)
-41. [路线图](roadmap.md)
-42. [TODO](todo.md)
-43. [待确认问题](open-questions.md)
+38. [P4 Condition Evaluator Audit](self-hosted-editor-p4-condition-evaluator-audit.md)
+39. [Bird / Unity 调研记录](bird-unity-research.md)
+40. [Bird Adapter 原型](bird-adapter.md)
+41. [Unity Editor Importer 草案](unity-editor-importer.md)
+42. [路线图](roadmap.md)
+43. [TODO](todo.md)
+44. [待确认问题](open-questions.md)
 
 ## 按任务检索
 
@@ -75,7 +76,7 @@ CLI 命令速查         cli-command-reference.md, README.md
 宿主 Schema/查询事件 host-schema.md, usage-manifest-contract.md, condition-syntax-contract.md, host-query-event-registration-strategy.md, p3-runtime-language-discussion-memory.md, open-questions.md, todo.md
 P3 Runtime/存档/回滚  p3-runtime-language-discussion-memory.md, runtime-unity.md, host-query-event-registration-strategy.md, open-questions.md, todo.md
 P3 Goal 执行         self-hosted-editor-p3-goal-mode-execution-guide.md, self-hosted-editor-p3-baseline-audit.md, self-hosted-editor-p3-host-schema-v2-contract-audit.md, self-hosted-editor-p3-host-schema-compatibility-audit.md, self-hosted-editor-p3-usage-manifest-contract-audit.md, self-hosted-editor-p3-usage-manifest-implementation-audit.md, self-hosted-editor-p3-host-integration-audit.md, self-hosted-editor-p3-condition-syntax-contract-audit.md, self-hosted-editor-p3-condition-syntax-implementation-audit.md, self-hosted-editor-p3-condition-consumption-audit.md, self-hosted-editor-p3-runtime-query-provider-audit.md, self-hosted-editor-p3-runtime-state-audit.md, self-hosted-editor-p3-integration-audit.md, self-hosted-editor-p3-final-validation-report.md, condition-syntax-contract.md, p3-runtime-language-discussion-memory.md, ADR 0021, todo.md
-P4 Runtime Goal 执行 self-hosted-editor-p4-goal-mode-execution-guide.md, self-hosted-editor-p4-baseline-audit.md, runtime-playable-mvp-contract.md, self-hosted-editor-p3-final-validation-report.md, p3-runtime-language-discussion-memory.md, runtime-unity.md, condition-syntax-contract.md, usage-manifest-contract.md, host-schema.md, host-bridge-contract.md, ADR 0021, todo.md
+P4 Runtime Goal 执行 self-hosted-editor-p4-goal-mode-execution-guide.md, self-hosted-editor-p4-baseline-audit.md, runtime-playable-mvp-contract.md, self-hosted-editor-p4-condition-evaluator-audit.md, self-hosted-editor-p3-final-validation-report.md, p3-runtime-language-discussion-memory.md, runtime-unity.md, condition-syntax-contract.md, usage-manifest-contract.md, host-schema.md, host-bridge-contract.md, ADR 0021, todo.md
 Unity/Bird 适配      bird-adapter.md, unity-editor-importer.md, bird-unity-research.md, runtime-unity.md, architecture.md, todo.md
 编辑器阶段           editor-design.md, roadmap.md
 长期设计决策         adr/README.md
@@ -124,6 +125,7 @@ docs/
   self-hosted-editor-p4-goal-mode-execution-guide.md P4 Runtime playable MVP goal 模式执行指南
   self-hosted-editor-p4-baseline-audit.md P4 Round 1 Runtime playable MVP 基线审计
   runtime-playable-mvp-contract.md P4 Runtime playable MVP 行为合同
+  self-hosted-editor-p4-condition-evaluator-audit.md P4 Round 2 Runtime condition evaluator 审计
   vscode-tooling.md      VSCode 阶段的轻工具链设计与使用方式
   cli-command-reference.md CLI 命令、参数、产物和验证命令速查
   l10n-extraction.md     CSV 本地化提取命令与字段说明

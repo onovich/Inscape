@@ -1,4 +1,5 @@
 using Inscape.Compiler.Compilation;
+using Inscape.Compiler.Model;
 using Inscape.Runtime;
 using System.Text;
 using System.Text.Json;
@@ -147,6 +148,122 @@ Narrator: Second.
             AssertTrue(currentNode.Found, "Internal facts should resolve before external provider sources.");
             AssertEqual("start", currentNode.Value.StringValue, "Internal current node query value");
             AssertEqual(NarrativeRuntimeQuerySourceKindModel.InternalFact, currentNode.SourceKind, "Internal query source kind");
+        }
+
+        static void NarrativeRuntimeConditionEvaluatorEvaluatesCompilerIr() {
+            DslScriptConditionExpressionModel expression = ReadChoiceConditionExpression(
+                "has_item(\"silver_key\") and trust(mira) >= 3 and not debug_mode");
+
+            NarrativeRuntimeStateModel state = new NarrativeRuntimeStateModel();
+            state.CurrentNodeName = "start";
+            state.Path.Add("start");
+
+            NarrativeRuntimeQueryProviderModel provider = new NarrativeRuntimeQueryProviderModel {
+                Kind = NarrativeRuntimeQueryProviderKindModel.Mock,
+            };
+            provider.MockValues.Add(CreateValueEntry("has_item",
+                                                     NarrativeRuntimeQueryValueModel.FromBool(true),
+                                                     NarrativeRuntimeQueryValueModel.FromString("silver_key")));
+            provider.MockValues.Add(CreateValueEntry("trust",
+                                                     NarrativeRuntimeQueryValueModel.FromNumber(4),
+                                                     NarrativeRuntimeQueryValueModel.FromString("mira")));
+            provider.MockValues.Add(CreateValueEntry("debug_mode",
+                                                     NarrativeRuntimeQueryValueModel.FromBool(false)));
+
+            NarrativeRuntimeConditionEvaluationModel evaluation = NarrativeRuntimeConditionEvaluatorDomain.Evaluate(
+                expression,
+                state,
+                provider,
+                "choice-condition");
+
+            AssertTrue(evaluation.Succeeded, "Runtime condition evaluator should evaluate compiler IR.");
+            AssertEqual(NarrativeRuntimeQueryValueKindModel.Bool, evaluation.Value.Kind, "Runtime condition result kind");
+            AssertTrue(evaluation.Value.BoolValue, "Runtime condition result value");
+            AssertEqual(0, evaluation.Diagnostics.Count, "Runtime condition diagnostics");
+        }
+
+        static void NarrativeRuntimeConditionEvaluatorUsesInternalFactsAndShortCircuit() {
+            DslScriptConditionExpressionModel expression = ReadChoiceConditionExpression(
+                "visited(\"gate.knock\") or host_explodes()");
+
+            NarrativeRuntimeStateModel state = new NarrativeRuntimeStateModel();
+            state.Facts.VisitedNodes.Add(new NarrativeRuntimeNodeVisitFactModel {
+                NodeName = "gate.knock",
+                Count = 1,
+            });
+
+            NarrativeRuntimeQueryProviderModel provider = new NarrativeRuntimeQueryProviderModel {
+                Kind = NarrativeRuntimeQueryProviderKindModel.Delegate,
+                DelegateQuery = _ => throw new InvalidOperationException("short circuit should skip delegate"),
+            };
+
+            NarrativeRuntimeConditionEvaluationModel evaluation = NarrativeRuntimeConditionEvaluatorDomain.Evaluate(
+                expression,
+                state,
+                provider,
+                "conditional-jump");
+
+            AssertTrue(evaluation.Succeeded, "Runtime condition evaluator should use internal facts before delegate queries.");
+            AssertTrue(evaluation.Value.BoolValue, "Runtime condition internal fact result");
+        }
+
+        static void NarrativeRuntimeConditionEvaluatorUsesRecordedProviderValues() {
+            DslScriptConditionExpressionModel expression = ReadChoiceConditionExpression("has_item(\"silver_key\")");
+            NarrativeRuntimeStateModel state = new NarrativeRuntimeStateModel();
+            NarrativeRuntimeQueryProviderModel provider = new NarrativeRuntimeQueryProviderModel {
+                Kind = NarrativeRuntimeQueryProviderKindModel.Recorded,
+            };
+            provider.RecordedValues.Add(CreateValueEntry("has_item",
+                                                        NarrativeRuntimeQueryValueModel.FromBool(true),
+                                                        NarrativeRuntimeQueryValueModel.FromString("silver_key")));
+
+            NarrativeRuntimeConditionEvaluationModel evaluation = NarrativeRuntimeConditionEvaluatorDomain.Evaluate(
+                expression,
+                state,
+                provider,
+                "choice-condition");
+
+            AssertTrue(evaluation.Succeeded, "Runtime condition evaluator should use recorded provider values.");
+            AssertTrue(evaluation.Value.BoolValue, "Runtime condition recorded provider result");
+        }
+
+        static void NarrativeRuntimeConditionEvaluatorReportsRuntimeErrors() {
+            NarrativeRuntimeStateModel state = new NarrativeRuntimeStateModel();
+
+            NarrativeRuntimeConditionEvaluationModel missingQuery = NarrativeRuntimeConditionEvaluatorDomain.Evaluate(
+                ReadChoiceConditionExpression("missing_query()"),
+                state,
+                new NarrativeRuntimeQueryProviderModel {
+                    Kind = NarrativeRuntimeQueryProviderKindModel.Mock,
+                },
+                "choice-condition");
+            AssertFalse(missingQuery.Succeeded, "Missing query should fail runtime condition evaluation.");
+            AssertEqual("IRC003", FirstConditionDiagnosticCode(missingQuery), "Missing query diagnostic code");
+
+            NarrativeRuntimeQueryProviderModel mismatchProvider = new NarrativeRuntimeQueryProviderModel {
+                Kind = NarrativeRuntimeQueryProviderKindModel.Mock,
+            };
+            mismatchProvider.MockValues.Add(CreateValueEntry("trust",
+                                                            NarrativeRuntimeQueryValueModel.FromNumber(4),
+                                                            NarrativeRuntimeQueryValueModel.FromString("mira")));
+            NarrativeRuntimeConditionEvaluationModel typeMismatch = NarrativeRuntimeConditionEvaluatorDomain.Evaluate(
+                ReadChoiceConditionExpression("trust(\"mira\") >= \"high\""),
+                state,
+                mismatchProvider,
+                "choice-condition");
+            AssertFalse(typeMismatch.Succeeded, "Type mismatch should fail runtime condition evaluation.");
+            AssertEqual("IRC006", FirstConditionDiagnosticCode(typeMismatch), "Type mismatch diagnostic code");
+
+            NarrativeRuntimeConditionEvaluationModel providerError = NarrativeRuntimeConditionEvaluatorDomain.Evaluate(
+                ReadChoiceConditionExpression("host_query()"),
+                state,
+                new NarrativeRuntimeQueryProviderModel {
+                    Kind = NarrativeRuntimeQueryProviderKindModel.Delegate,
+                    DelegateQuery = _ => throw new InvalidOperationException("host failure"),
+                },
+                "choice-condition");
+            AssertFalse(providerError.Succeeded, "Provider exception should fail runtime condition evaluation.");
+            AssertEqual("IRC004", FirstConditionDiagnosticCode(providerError), "Provider exception diagnostic code");
         }
 
         static void NarrativeRuntimeExportsAndValidatesMinimalRuntimeState() {
@@ -399,12 +516,48 @@ Narrator: End.
         static NarrativeRuntimeQueryValueEntryModel CreateValueEntry(string name,
                                                                      string argument,
                                                                      NarrativeRuntimeQueryValueModel value) {
+            return CreateValueEntry(name, value, NarrativeRuntimeQueryValueModel.FromString(argument));
+        }
+
+        static NarrativeRuntimeQueryValueEntryModel CreateValueEntry(string name,
+                                                                     NarrativeRuntimeQueryValueModel value,
+                                                                     params NarrativeRuntimeQueryValueModel[] arguments) {
             NarrativeRuntimeQueryValueEntryModel entry = new NarrativeRuntimeQueryValueEntryModel {
                 Name = name,
                 Value = value,
             };
-            entry.Arguments.Add(NarrativeRuntimeQueryValueModel.FromString(argument));
+            for (int i = 0; i < arguments.Length; i += 1) {
+                entry.Arguments.Add(arguments[i]);
+            }
             return entry;
+        }
+
+        static DslScriptConditionExpressionModel ReadChoiceConditionExpression(string condition) {
+            DslScriptCompilationResultModel compilation = Compile($"""
+# start
+? Choose
+- [{condition}] Option -> end
+
+# end
+Narrator: End.
+""");
+            AssertFalse(compilation.HasErrors, "Condition evaluator fixture should compile.");
+
+            DslScriptConditionExpressionModel? expression = compilation.Document
+                .Nodes[0]
+                .Choices[0]
+                .Options[0]
+                .Condition
+                ?.Expression;
+            if (expression == null) {
+                throw new InvalidOperationException("Condition evaluator fixture did not produce condition IR.");
+            }
+
+            return expression;
+        }
+
+        static string FirstConditionDiagnosticCode(NarrativeRuntimeConditionEvaluationModel evaluation) {
+            return evaluation.Diagnostics.Count > 0 ? evaluation.Diagnostics[0].Code : string.Empty;
         }
 
         static bool ValidationContains(NarrativeRuntimeStateValidationModel validation, string code) {
