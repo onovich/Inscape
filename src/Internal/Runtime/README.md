@@ -48,4 +48,4 @@ Current baseline:
 - Runtime does not parse `.inscape` text and does not know about VSCode, HTML Preview, UnitySample, or Host Bridge details.
 - Runtime does not own gameplay state such as inventory, quest stage, trust, combat result, player position, or economy values; those belong behind host delegate queries.
 - ExternalSupport host product code is guarded by VSCode / SelfHostedEditor structure checks so Runtime condition evaluation, query evaluation, action dispatch, Log building, substate import/export/validation, and Runtime Inspector product semantics do not drift into editor hosts.
-- P4 Round 12 adds an Internal CLI integration smoke that runs a playable MVP sample through conditions, mock query values, `fire`, `wait` pending / resume, Log, formal Runtime State, P4 substate, and branch query receipts.
+- P4 final validation passed with an Internal CLI integration smoke that runs a playable MVP sample through conditions, mock query values, `fire`, `wait` pending / resume, Log, formal Runtime State, P4 substate, and branch query receipts. See `docs/self-hosted-editor-p4-final-validation-report.md`.

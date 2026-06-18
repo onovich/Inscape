@@ -1,6 +1,6 @@
 ﻿# 运行时与 Unity 宿主
 
-状态：草案，P3 Runtime 前置边界
+状态：草案，P4 Runtime playable MVP PASS 后的 Unity / Host 边界
 
 最后更新：2026-06-18
 
@@ -272,7 +272,7 @@ Flashback Playback
 - 更低优先级：Flashback Playback。
 - 项目自定义：时空穿越式特殊倒放机制，例如大部分状态重置但少数状态保留。
 
-2026-06-18 P3 后续阶段口径已确认：P4 是下一个明确阶段，先做 Runtime 可玩化；P5 是中期候选，倾向做 SelfHostedEditor Runtime authoring / 产品化接入；Unity / Host SDK、Rollback / Trace / Flashback、Presentation IR / 跨引擎 / 独立 Inscape Runtime 只进入后置方向池，不作为当前正式排期 phase。
+2026-06-18 P4 Runtime playable MVP 最终验收已 PASS。当前 Runtime 已完成条件求值、delegate / mock / recorded query provider、branch query receipt、`fire` / `wait` / `handoff` action dispatcher、Log / Backlog、formal Runtime State、P4 `inscape.runtime-substate`、CLI playable driver 和最小 integration smoke。下一候选阶段只能作为 P5 SelfHostedEditor Runtime authoring / 产品化接入；Unity / Host SDK、Rollback / Trace / Flashback、Presentation IR / 跨引擎 / 独立 Inscape Runtime 仍只进入后置方向池，不作为当前正式排期 phase。
 
 P4 的 Save / Load 只要求正式项目中的 Inscape state 子状态 blob 与 editor preview 测试存档；纯 Inscape 独立游戏的完整存档产品后置。P4 应包含 Log / Backlog，默认记录 `speaker`、`text`、`lineId`，选项记录作为可选扩展或开发模式信息。
 
@@ -346,4 +346,4 @@ incompatible
 
 它只报告能否加载、能否迁移、失败原因和可能的附近位置，不应静默修状态。
 
-P3 Round 11 当前实现遵守该边界：普通 Runtime State 不默认包含完整 Log、完整 query/action trace 或完整 Rollback stack；宿主 checkpoint 只作为 opaque id 保存。
+P4 final validation 当前实现遵守该边界：formal Runtime State 不默认包含完整 Log、完整 query/action trace、branch receipts、action request history 或完整 Rollback stack；P4 `inscape.runtime-substate` 只保存 Inscape narrative 子状态、必要 branch receipts、pending action 和 opaque host checkpoint id，不保存宿主业务状态。

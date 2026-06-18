@@ -1,12 +1,23 @@
 # Agent 接手指南
 
-状态：P4 Round 12 integration smoke + 文档收口完成
+状态：P4 Runtime playable MVP final validation PASS
 
 最后更新：2026-06-18
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-18 SelfHostedEditor P4 Final Validation 快照
+
+P4 Runtime playable MVP 已完成最终验收，结论为 PASS。
+- 最终报告见 [SelfHostedEditor P4 Final Validation Report](self-hosted-editor-p4-final-validation-report.md)。
+- P4 已完成 Runtime 条件求值、delegate / mock / recorded query provider、branch query receipt、`fire` / `wait` / `handoff` action dispatcher、Log / Backlog、formal Runtime State、P4 `inscape.runtime-substate`、CLI playable driver 和最小 integration smoke。
+- 最小 P4 样例通过真实 `runtime-project` CLI 跑通 key/fire path 与 no-key/wait/substate/resume/help path；两条路径都能从 `start` 到 `end`，中途保存 / 恢复后可继续。
+- Formal Runtime State 仍保持最小可恢复口径，不包含完整 Log、Rollback stack、Trace Replay、branch receipts 或 action request history；P4 substate 只保存 Inscape narrative 子状态和 opaque host checkpoint id。
+- 最终验证矩阵通过：`.NET build`、Internal tests、VSCode manifest / structure / semantic parity、SelfHostedEditor syntax / structure / model / semantic parity HTTP、`git diff --check`。
+- 边界扫描通过：`Internal` 未引入 Unity / Bird / Addressables / ScriptableObject；实现层未新增 rollback / replay / timeout / failure policy 字段；VSCode / SelfHostedEditor 产品代码没有复制 Runtime condition evaluator、query evaluator、action dispatcher 或 Runtime Inspector 产品语义。
+- 下一候选阶段只能作为 P5 SelfHostedEditor Runtime authoring / productization 进入；Unity / Host SDK、完整 Rollback / Trace Replay / Flashback、Presentation IR 与完整独立存档产品继续留在后置方向池。
 
 ### 2026-06-18 SelfHostedEditor P4 Round 12 Integration Smoke 快照
 
