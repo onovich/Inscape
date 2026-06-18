@@ -1,0 +1,127 @@
+.runtime-branch-evidence-panel {
+  border-left: 1px solid var(--ink-a-070);
+  min-height: 0;
+  overflow: auto;
+  padding: 16px;
+}
+
+.runtime-branch-evidence-shell {
+  display: grid;
+  gap: 12px;
+}
+
+.runtime-branch-evidence-header,
+.runtime-branch-evidence-entry-summary {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.runtime-branch-evidence-title,
+.runtime-branch-evidence-entry-name {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.runtime-branch-evidence-title h2 {
+  color: var(--text);
+  font-size: 13px;
+  margin: 0;
+}
+
+.runtime-branch-evidence-entry-name strong {
+  color: var(--text);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.runtime-branch-evidence-runtime-status,
+.runtime-branch-evidence-status,
+.runtime-branch-evidence-empty,
+.runtime-branch-evidence-entry-name span,
+.runtime-branch-evidence-entry-meta,
+.runtime-branch-evidence-entry-details {
+  color: var(--muted-strong);
+  font-size: 11px;
+  margin: 0;
+}
+
+.runtime-branch-evidence-runtime-status[data-runtime-state="runtime-ready"] {
+  color: var(--accent);
+}
+
+.runtime-branch-evidence-runtime-status[data-runtime-state="runtime-error"],
+.runtime-branch-evidence-runtime-status[data-runtime-state="runtime-unavailable"],
+.runtime-branch-evidence-status[data-status-state="runtime-error"] {
+  color: var(--danger-text-a-720);
+}
+
+.runtime-branch-evidence-count {
+  background: var(--surface-soft);
+  border: 1px solid var(--ink-a-070);
+  border-radius: 6px;
+  color: var(--muted-strong);
+  font-size: 10px;
+  line-height: 1;
+  padding: 5px 7px;
+}
+
+.runtime-branch-evidence-status {
+  border-bottom: 1px solid var(--ink-a-055);
+  padding-bottom: 10px;
+}
+
+.runtime-branch-evidence-list {
+  display: grid;
+  gap: 8px;
+}
+
+.runtime-branch-evidence-entry {
+  border: 1px solid var(--ink-a-070);
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+}
+
+.runtime-branch-evidence-entry[data-source-available="true"] {
+  border-color: var(--accent-a-220);
+}
+
+.runtime-branch-evidence-entry-explanation {
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.45;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.runtime-branch-evidence-entry-details {
+  overflow-wrap: anywhere;
+}
+
+.runtime-branch-evidence-source-button {
+  background: var(--surface);
+  border: 1px solid var(--ink-a-095);
+  border-radius: 6px;
+  color: var(--button-muted-a-760);
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  min-height: 28px;
+  padding: 5px 8px;
+}
+
+.runtime-branch-evidence-source-button:disabled {
+  cursor: default;
+  opacity: 0.48;
+}
+
+@media (max-width: 1420px) {
+  .runtime-branch-evidence-panel {
+    border-left: 0;
+    border-top: 1px solid var(--ink-a-070);
+  }
+}

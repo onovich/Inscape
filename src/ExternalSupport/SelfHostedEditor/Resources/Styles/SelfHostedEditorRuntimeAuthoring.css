@@ -1,7 +1,7 @@
 .host-authoring-panels {
   display: grid;
   gap: 14px;
-  grid-template-columns: minmax(0, 1fr) repeat(3, minmax(250px, 0.66fr));
+  grid-template-columns: minmax(0, 1fr) repeat(4, minmax(220px, 0.56fr));
   min-height: 0;
   overflow: hidden;
 }

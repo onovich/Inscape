@@ -19,6 +19,7 @@ export function createSelfHostedEditorDomBindings(documentRef = document) {
     localizationPreviousCsvInputElement: query(".localization-csv-input"),
     localizationPreviousCsvStatusElement: query(".localization-source-status"),
     localizationSessionStatusElement: query(".localization-session-status"),
+    runtimeBranchEvidencePanelElement: query(".runtime-branch-evidence-panel"),
     runtimeLogBacklogPanelElement: query(".runtime-log-backlog-panel"),
     mockQueryPanelElement: query(".runtime-mock-query-panel"),
     nodeMapReviewButtonElement: query(".node-map-review-button"),

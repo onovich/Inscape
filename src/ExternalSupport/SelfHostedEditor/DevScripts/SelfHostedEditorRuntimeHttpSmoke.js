@@ -155,9 +155,16 @@ async function main() {
     assertRuntimeSnapshot(queryProviderSnapshot, "Gate");
     assertEqual(queryProviderSnapshot.queryProvider?.source, "mock", "mock query provider source");
     assertEqual(queryProviderSnapshot.queryProvider?.mockValueCount, 1, "mock query provider value count");
-    assertEqual(queryProviderPayloadText.includes("silver_key"), false, "mock query provider value stays out of runtime HTTP payload");
+    assertEqual(JSON.stringify(queryProviderSnapshot.queryProvider).includes("silver_key"), false, "mock query provider value stays out of query provider summary");
     assertEqual(queryProviderSnapshot.currentNode?.choices?.[0]?.options?.length, 2, "mock query provider shows conditional key option");
     assertEqual(queryProviderSnapshot.currentNode?.choices?.[0]?.options?.[0]?.text, "Use key", "mock query provider key option text");
+    assertEqual(queryProviderSnapshot.branchQueryReceipts?.length, 1, "mock query provider branch evidence count");
+    assertEqual(queryProviderSnapshot.branchQueryReceipts?.[0]?.name, "has_item", "mock query provider branch evidence name");
+    assertEqual(queryProviderSnapshot.branchQueryReceipts?.[0]?.context, "choice-condition", "mock query provider branch evidence context");
+    assertEqual(queryProviderSnapshot.branchQueryReceipts?.[0]?.arguments?.[0]?.value, "silver_key", "mock query provider branch evidence argument");
+    assertEqual(queryProviderSnapshot.branchQueryReceipts?.[0]?.result?.value, "true", "mock query provider branch evidence result");
+    assertEqual(String(queryProviderSnapshot.branchQueryReceipts?.[0]?.sourceKind || "").toLowerCase(), "mock", "mock query provider branch evidence source kind");
+    assertEqual(queryProviderSnapshot.branchQueryReceipts?.[0]?.sourceLine, 5, "mock query provider branch evidence source line");
     assertPayloadSize(queryProviderPayloadText, "mock query provider runtime HTTP payload");
 
     const noKeyResponse = await fetch(`http://127.0.0.1:${address.port}/api/runtime-state`, {
@@ -179,6 +186,7 @@ async function main() {
 
     assertRuntimeSnapshot(noKeySnapshot, "Gate");
     assertEqual(noKeySnapshot.currentNode?.choices?.[0]?.options?.length, 1, "no-key provider hides key option");
+    assertEqual(noKeySnapshot.branchQueryReceipts?.[0]?.result?.value, "false", "no-key branch evidence records false result");
     assertEqual(noKeyPayloadText.includes("Open"), false, "hidden conditional target stays out of no-key Runtime payload");
 
     const noKeyChooseResponse = await fetch(`http://127.0.0.1:${address.port}/api/runtime-action`, {

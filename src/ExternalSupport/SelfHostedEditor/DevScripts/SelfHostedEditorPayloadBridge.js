@@ -78,6 +78,7 @@ export function compactRuntimeStatePayload(payload, sessionId = "", queryProvide
     format: "inscape.self-hosted-editor.runtime-state",
     formatVersion: 1,
     actionRequests: compactRuntimeActionRequests(payload?.actionRequests),
+    branchQueryReceipts: compactRuntimeBranchReceipts(payload?.branchQueryReceipts),
     logEntries: compactRuntimeLogEntries(payload?.logEntries),
     pendingAction: compactRuntimePendingAction(payload?.pendingAction),
     queryProvider: compactRuntimeQueryProvider(queryProvider || payload?.queryProvider || null),
@@ -175,6 +176,71 @@ function compactRuntimeLogEntries(logEntries) {
 function boundRuntimeLogText(value, maximumLength) {
   const text = String(value || "");
   return text.length > maximumLength ? `${text.slice(0, Math.max(0, maximumLength - 3))}...` : text;
+}
+
+function compactRuntimeBranchReceipts(receipts) {
+  if (!Array.isArray(receipts)) {
+    return [];
+  }
+
+  return receipts
+    .filter((receipt) => receipt && typeof receipt.name === "string")
+    .map((receipt) => ({
+      arguments: (Array.isArray(receipt.arguments) ? receipt.arguments : [])
+        .map((argument) => compactRuntimeQueryValue(argument)),
+      branchPath: boundRuntimeLogText(receipt.branchPath || "", 120),
+      choiceGroupIndex: Number(receipt.choiceGroupIndex ?? -1),
+      choiceOptionIndex: Number(receipt.choiceOptionIndex ?? -1),
+      conditionalJumpIndex: Number(receipt.conditionalJumpIndex ?? -1),
+      context: boundRuntimeLogText(receipt.context || "", 80),
+      deterministic: Boolean(receipt.deterministic),
+      id: boundRuntimeLogText(receipt.id || "", 80),
+      name: boundRuntimeLogText(receipt.name || "", 120),
+      nodeId: boundRuntimeLogText(receipt.nodeId || "", 120),
+      result: compactRuntimeQueryValue(receipt.result),
+      sourceColumn: Number(receipt.sourceColumn || 0),
+      sourceKind: boundRuntimeLogText(receipt.sourceKind || "", 80),
+      sourceLine: Number(receipt.sourceLine || 0),
+      syntax: boundRuntimeLogText(receipt.syntax || "", 40),
+    }))
+    .slice(-16);
+}
+
+function compactRuntimeQueryValue(value) {
+  if (!value || typeof value !== "object") {
+    return {
+      kind: "unknown",
+      value: "",
+    };
+  }
+
+  const kind = String(value.kind || "").trim().toLowerCase();
+  if (kind === "bool") {
+    return {
+      kind,
+      value: value.boolValue === true ? "true" : "false",
+    };
+  }
+
+  if (kind === "number") {
+    const numericValue = Number(value.numberValue ?? 0);
+    return {
+      kind,
+      value: Number.isFinite(numericValue) ? String(numericValue) : "0",
+    };
+  }
+
+  if (kind === "string") {
+    return {
+      kind,
+      value: boundRuntimeLogText(value.stringValue || "", 80),
+    };
+  }
+
+  return {
+    kind: kind || "unknown",
+    value: "",
+  };
 }
 
 function compactRuntimeActionRequests(actionRequests) {

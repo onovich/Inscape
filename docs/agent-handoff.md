@@ -1,12 +1,22 @@
 # Agent 接手指南
 
-状态：P5 SelfHostedEditor Runtime authoring Round 8 Log / Backlog surface complete
+状态：P5 SelfHostedEditor Runtime authoring Round 9 Branch receipt / condition explanation complete
 
 最后更新：2026-06-18
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-18 SelfHostedEditor P5 Round 9 Branch Receipt Surface 快照
+
+P5 SelfHostedEditor Runtime authoring / productization 已完成第九轮 Branch receipt / condition explanation surface，不代表 P5 已完成。
+- 本轮审计见 [SelfHostedEditor P5 Branch Receipt Audit](self-hosted-editor-p5-branch-receipt-audit.md)。
+- 新增 `RuntimeBranchEvidenceModelBuilder` 与 `RuntimeBranchEvidencePanelController`，Host view 现在展示 Runtime `branchQueryReceipts` 的 bounded 摘要，包含 query name、arguments、result、source kind、deterministic、node / choice / jump context 与 source jump。
+- Runtime compact payload 现在附带 branch receipt 摘要；query provider summary 仍不暴露 mock value table，receipt 本身只展示 Runtime 已记录的 branch-affecting query evidence。
+- Branch Receipts surface 支持 `runtime-ready`、`runtime-empty`、`runtime-unavailable` 与 `runtime-error` 状态，不重新查询 host，不重新执行脚本，不实现完整 Trace Replay 或 replay timeline。
+- Contract / smoke 覆盖 branch evidence model、panel source jump、payload compact、Workbench 集成、真实 Runtime direct / HTTP receipt、hidden branch target 不进入 no-key payload，以及产品代码不复制 Runtime condition evaluator / query evaluator。
+- 下一轮进入 P5 Round 10：Substate preview save/load，只展示 / 导入导出 Runtime substate，不把它扩张为完整 host save。
 
 ### 2026-06-18 SelfHostedEditor P5 Round 8 Log Backlog Surface 快照
 

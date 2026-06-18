@@ -58,6 +58,7 @@ const requiredPaths = [
   "DevScripts/ModelContracts/SelfHostedEditorPreviewRuntimeContractCheck.js",
   "DevScripts/ModelContracts/SelfHostedEditorRuntimeActionAuthoringContractCheck.js",
   "DevScripts/ModelContracts/SelfHostedEditorRuntimeAuthoringSessionContractCheck.js",
+  "DevScripts/ModelContracts/SelfHostedEditorRuntimeBranchEvidenceContractCheck.js",
   "DevScripts/ModelContracts/SelfHostedEditorRuntimeLogBacklogContractCheck.js",
   "DevScripts/ModelContracts/SelfHostedEditorRuntimeMockQueryContractCheck.js",
   "DevScripts/ModelContracts/SelfHostedEditorRuntimeMockQueryUiContractCheck.js",
@@ -95,6 +96,7 @@ const requiredPaths = [
   "Resources/Styles/SelfHostedEditorReferenceOverlay.css",
   "Resources/Styles/SelfHostedEditorRuntimeActionAuthoring.css",
   "Resources/Styles/SelfHostedEditorRuntimeAuthoring.css",
+  "Resources/Styles/SelfHostedEditorRuntimeBranchEvidence.css",
   "Resources/Styles/SelfHostedEditorRuntimeLogBacklog.css",
   "Resources/Styles/SelfHostedEditorStoryGraph.css",
   "Resources/Styles/SelfHostedEditorSidebar.css",
@@ -194,11 +196,13 @@ const requiredPaths = [
   "Scripts/ProjectWorkspace/Models/WorkspaceSummaryHostedModelBuilder.js",
   "Scripts/Runtime/Bridges/SelfHostedEditorRuntimeBridge.js",
   "Scripts/Runtime/Controllers/RuntimeActionPanelController.js",
+  "Scripts/Runtime/Controllers/RuntimeBranchEvidencePanelController.js",
   "Scripts/Runtime/Controllers/RuntimeLogBacklogPanelController.js",
   "Scripts/Runtime/Controllers/RuntimeMockQueryPanelController.js",
   "Scripts/Runtime/Controllers/RuntimeStatusPanelController.js",
   "Scripts/Runtime/Models/RuntimeActionAuthoringModelBuilder.js",
   "Scripts/Runtime/Models/RuntimeAuthoringSessionModelBuilder.js",
+  "Scripts/Runtime/Models/RuntimeBranchEvidenceModelBuilder.js",
   "Scripts/Runtime/Models/RuntimeLogBacklogModelBuilder.js",
   "Scripts/Runtime/Models/RuntimeMockQueryModelBuilder.js",
   "Scripts/Runtime/Models/RuntimeStatusSurfaceModelBuilder.js",
@@ -520,6 +524,7 @@ const workbenchPreviewCssPath = path.join(moduleRoot, "Resources/Styles/SelfHost
 const workbenchReferenceOverlayCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorReferenceOverlay.css");
 const workbenchRuntimeActionAuthoringCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorRuntimeActionAuthoring.css");
 const workbenchRuntimeAuthoringCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorRuntimeAuthoring.css");
+const workbenchRuntimeBranchEvidenceCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorRuntimeBranchEvidence.css");
 const workbenchRuntimeLogBacklogCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorRuntimeLogBacklog.css");
 const workbenchStoryGraphCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorStoryGraph.css");
 const workbenchSidebarCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorSidebar.css");
@@ -539,6 +544,7 @@ const workbenchPreviewCss = fs.readFileSync(workbenchPreviewCssPath, "utf8");
 const workbenchReferenceOverlayCss = fs.readFileSync(workbenchReferenceOverlayCssPath, "utf8");
 const workbenchRuntimeActionAuthoringCss = fs.readFileSync(workbenchRuntimeActionAuthoringCssPath, "utf8");
 const workbenchRuntimeAuthoringCss = fs.readFileSync(workbenchRuntimeAuthoringCssPath, "utf8");
+const workbenchRuntimeBranchEvidenceCss = fs.readFileSync(workbenchRuntimeBranchEvidenceCssPath, "utf8");
 const workbenchRuntimeLogBacklogCss = fs.readFileSync(workbenchRuntimeLogBacklogCssPath, "utf8");
 const workbenchStoryGraphCss = fs.readFileSync(workbenchStoryGraphCssPath, "utf8");
 const workbenchSidebarCss = fs.readFileSync(workbenchSidebarCssPath, "utf8");
@@ -562,6 +568,7 @@ const expectedWorkbenchCssImports = [
   '@import url("./SelfHostedEditorRuntimeAuthoring.css");',
   '@import url("./SelfHostedEditorRuntimeActionAuthoring.css");',
   '@import url("./SelfHostedEditorRuntimeLogBacklog.css");',
+  '@import url("./SelfHostedEditorRuntimeBranchEvidence.css");',
   '@import url("./SelfHostedEditorNodeMapReview.css");',
   '@import url("./SelfHostedEditorStoryGraph.css");',
 ].join("\n");
@@ -798,6 +805,19 @@ if (
 }
 if (/^\.diagnostics-dock\s*{/m.test(workbenchRuntimeLogBacklogCss) || /^\.localization-toolbar\s*{/m.test(workbenchRuntimeLogBacklogCss) || /^\.host-capability-item\s*{/m.test(workbenchRuntimeLogBacklogCss) || /^\.graph-viewport\s*{/m.test(workbenchRuntimeLogBacklogCss) || /^\.story-preview\s*{/m.test(workbenchRuntimeLogBacklogCss) || /^\.editor-frame\s*{/m.test(workbenchRuntimeLogBacklogCss)) {
   console.error("SelfHostedEditorRuntimeLogBacklog.css must not absorb diagnostics, localization, host capability items, graph, preview, or editor authoring rules.");
+  failed = true;
+}
+if (
+  !/^\.runtime-branch-evidence-panel\s*{/m.test(workbenchRuntimeBranchEvidenceCss)
+  || !/^\.runtime-branch-evidence-header,\r?\n\.runtime-branch-evidence-entry-summary\s*{/m.test(workbenchRuntimeBranchEvidenceCss)
+  || !/^\.runtime-branch-evidence-entry\s*{/m.test(workbenchRuntimeBranchEvidenceCss)
+  || !/^\.runtime-branch-evidence-source-button\s*{/m.test(workbenchRuntimeBranchEvidenceCss)
+) {
+  console.error("SelfHostedEditorRuntimeBranchEvidence.css must retain branch evidence panel, header, entry, and source button rules.");
+  failed = true;
+}
+if (/^\.diagnostics-dock\s*{/m.test(workbenchRuntimeBranchEvidenceCss) || /^\.localization-toolbar\s*{/m.test(workbenchRuntimeBranchEvidenceCss) || /^\.host-capability-item\s*{/m.test(workbenchRuntimeBranchEvidenceCss) || /^\.graph-viewport\s*{/m.test(workbenchRuntimeBranchEvidenceCss) || /^\.story-preview\s*{/m.test(workbenchRuntimeBranchEvidenceCss) || /^\.editor-frame\s*{/m.test(workbenchRuntimeBranchEvidenceCss)) {
+  console.error("SelfHostedEditorRuntimeBranchEvidence.css must not absorb diagnostics, localization, host capability items, graph, preview, or editor authoring rules.");
   failed = true;
 }
 if (

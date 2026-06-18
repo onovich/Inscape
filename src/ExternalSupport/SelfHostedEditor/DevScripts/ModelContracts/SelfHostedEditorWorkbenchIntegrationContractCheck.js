@@ -122,6 +122,33 @@ const compilerGraph = {
   provider: "compiler-project",
 };
 const runtimeSnapshot = {
+  branchQueryReceipts: [
+    {
+      arguments: [
+        {
+          kind: "string",
+          value: "silver_key",
+        },
+      ],
+      branchPath: "choices[0].options[0].condition",
+      choiceGroupIndex: 0,
+      choiceOptionIndex: 0,
+      conditionalJumpIndex: -1,
+      context: "choice-condition",
+      deterministic: true,
+      id: "branch-evidence-1",
+      name: "has_item",
+      nodeId: "Opening",
+      result: {
+        kind: "bool",
+        value: "true",
+      },
+      sourceColumn: 3,
+      sourceKind: "mock",
+      sourceLine: 5,
+      syntax: "call",
+    },
+  ],
   currentNode: {
     choices: compilerGraph.nodes[0].choices,
     defaultNext: "",
@@ -166,6 +193,7 @@ let renderedActionCatalog = null;
 let renderedActionBridgeCatalog = null;
 let renderedActionRuntimeProvider = "";
 let renderedRuntimeLogBacklog = null;
+let renderedRuntimeBranchEvidence = null;
 let renderedRuntimeStatusSurface = null;
 let runtimeActionBridgeInput = null;
 const documentModel = ScriptDocumentFallbackPolicy.buildDocumentModel(scriptText, {
@@ -359,6 +387,11 @@ const workbench = new SelfHostedEditorWorkbenchRenderController({
       renderedRuntimeLogBacklog = backlogModel;
     },
   },
+  runtimeBranchEvidencePanelController: {
+    render(evidenceModel) {
+      renderedRuntimeBranchEvidence = evidenceModel;
+    },
+  },
   storyGraphBridge: {
     async getStoryGraph() {
       return {
@@ -424,6 +457,14 @@ assertEqual(renderedRuntimeLogBacklog?.entryCount, 1, "workbench runtime log ent
 assertEqual(renderedRuntimeLogBacklog?.entries?.[0]?.text, "Hello.", "workbench runtime log text");
 assertEqual(renderedRuntimeLogBacklog?.entries?.[0]?.source?.lineNumber, 3, "workbench runtime log source line");
 assertEqual(renderedRuntimeLogBacklog?.writesToFormalRuntimeState, false, "workbench runtime log stays out of formal state");
+assertEqual(renderedRuntimeBranchEvidence?.provider, "runtime-project", "workbench should pass runtime snapshot to branch evidence panel");
+assertEqual(renderedRuntimeBranchEvidence?.entryCount, 1, "workbench runtime branch evidence entry count");
+assertEqual(renderedRuntimeBranchEvidence?.entries?.[0]?.queryName, "has_item", "workbench runtime branch evidence query name");
+assertEqual(renderedRuntimeBranchEvidence?.entries?.[0]?.contextLabel, "choice condition", "workbench runtime branch evidence context");
+assertEqual(renderedRuntimeBranchEvidence?.entries?.[0]?.source?.lineNumber, 5, "workbench runtime branch evidence source line");
+assertEqual(renderedRuntimeBranchEvidence?.requeriesHost, false, "workbench branch evidence does not re-query host");
+assertEqual(renderedRuntimeBranchEvidence?.implementsReplayTimeline, false, "workbench branch evidence does not implement replay timeline");
+assertNotIncludesText(JSON.stringify(renderedRuntimeBranchEvidence), "secret runtime snapshot text");
 assertEqual(runtimeActionBridgeInput?.actions?.length, 0, "workbench should set runtime action bridge input");
 assertIncludesText(getTextContent(summaryPanel), "shared summary");
 assertIncludesText(getTextContent(summaryPanel), "0 l10n");

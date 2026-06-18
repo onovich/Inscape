@@ -98,7 +98,35 @@ assert.equal(compactProjectPayload.documents[0].nodes[0].lineCount, 1);
 assert.equal(Object.hasOwn(compactProjectPayload.documents[0].nodes[0].lines[0], "extraReportState"), false);
 
 const compactRuntimePayload = compactRuntimeStatePayload({
+  branchQueryReceipts: [
+    {
+      arguments: [
+        {
+          kind: "String",
+          stringValue: "silver_key",
+        },
+      ],
+      branchPath: "choices[0].options[0].condition",
+      choiceGroupIndex: 0,
+      choiceOptionIndex: 0,
+      conditionalJumpIndex: -1,
+      context: "choice-condition",
+      deterministic: true,
+      id: "query-1",
+      name: "has_item",
+      nodeId: "Opening",
+      result: {
+        boolValue: true,
+        kind: "Bool",
+      },
+      sourceColumn: 3,
+      sourceKind: "Mock",
+      sourceLine: 5,
+      syntax: "call",
+    },
+  ],
   currentNode: projectPayload.currentNode,
+  debugTraceReplayText: "secret trace replay body",
   readingProgress: {
     canAdvance: true,
     canRewind: true,
@@ -148,7 +176,14 @@ assert.equal(compactRuntimePayload.queryProvider.payloadContentExposed, false);
 assert.equal(compactRuntimePayload.logEntries.length, 1);
 assert.equal(compactRuntimePayload.logEntries[0].text, "Hello");
 assert.equal(compactRuntimePayload.logEntries[0].lineId, "line_001");
+assert.equal(compactRuntimePayload.branchQueryReceipts.length, 1);
+assert.equal(compactRuntimePayload.branchQueryReceipts[0].name, "has_item");
+assert.equal(compactRuntimePayload.branchQueryReceipts[0].arguments[0].value, "silver_key");
+assert.equal(compactRuntimePayload.branchQueryReceipts[0].result.value, "true");
+assert.equal(compactRuntimePayload.branchQueryReceipts[0].sourceKind, "Mock");
+assert.equal(compactRuntimePayload.branchQueryReceipts[0].sourceLine, 5);
 assert.equal(JSON.stringify(compactRuntimePayload).includes("secret mock argument"), false);
+assert.equal(JSON.stringify(compactRuntimePayload).includes("secret trace replay body"), false);
 assert.deepEqual(compactRuntimeQueryProvider(null), {
   delegateAvailable: false,
   label: "internal",

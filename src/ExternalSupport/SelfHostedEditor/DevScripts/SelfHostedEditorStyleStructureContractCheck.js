@@ -22,6 +22,7 @@ const expectedImports = [
   "SelfHostedEditorRuntimeAuthoring.css",
   "SelfHostedEditorRuntimeActionAuthoring.css",
   "SelfHostedEditorRuntimeLogBacklog.css",
+  "SelfHostedEditorRuntimeBranchEvidence.css",
   "SelfHostedEditorNodeMapReview.css",
   "SelfHostedEditorStoryGraph.css",
 ];
@@ -40,6 +41,7 @@ const filePolicies = new Map([
   ["SelfHostedEditorReferenceOverlay.css", { currentMaximum: 140, owner: "editor references overlay", targetMaximum: 160 }],
   ["SelfHostedEditorRuntimeActionAuthoring.css", { currentMaximum: 180, owner: "runtime action authoring", targetMaximum: 180 }],
   ["SelfHostedEditorRuntimeAuthoring.css", { currentMaximum: 240, owner: "runtime authoring", targetMaximum: 240 }],
+  ["SelfHostedEditorRuntimeBranchEvidence.css", { currentMaximum: 140, owner: "runtime branch evidence", targetMaximum: 140 }],
   ["SelfHostedEditorRuntimeLogBacklog.css", { currentMaximum: 140, owner: "runtime log backlog", targetMaximum: 140 }],
   ["SelfHostedEditorStoryGraph.css", { currentMaximum: 400, owner: "story graph", targetMaximum: 400 }],
   ["SelfHostedEditorSidebar.css", { currentMaximum: 380, owner: "workspace sidebar", targetMaximum: 380 }],

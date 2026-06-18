@@ -1,6 +1,6 @@
 # TODO
 
-状态：持续维护，P5 SelfHostedEditor Runtime authoring / productization 已进入执行，Round 7 Runtime status surface 完成。P4 最终报告见 [SelfHostedEditor P4 Final Validation Report](self-hosted-editor-p4-final-validation-report.md)；P5 当前入口见 [P5 SelfHostedEditor Runtime Authoring Goal 模式执行指南](self-hosted-editor-p5-goal-mode-execution-guide.md)。
+状态：持续维护，P5 SelfHostedEditor Runtime authoring / productization 已进入执行，Round 9 Branch receipt / condition explanation surface 完成；下一轮进入 Substate preview save/load。P4 最终报告见 [SelfHostedEditor P4 Final Validation Report](self-hosted-editor-p4-final-validation-report.md)；P5 当前入口见 [P5 SelfHostedEditor Runtime Authoring Goal 模式执行指南](self-hosted-editor-p5-goal-mode-execution-guide.md)。
 
 SelfHostedEditor regression invariant: Preview choice clicks must advance the reading Preview to the target block and reveal the target block title in the editor. Compiler-project Preview data must never silently lose `previewLines`: if a returned Compiler graph has source lines but missing or mismatched `previewLines`, Preview must report a compiler graph contract error instead of falling back to the UI-only draft model. `npm --prefix src\ExternalSupport\SelfHostedEditor run check:model` covers both invariants so future Runtime / navigation work does not regress them.
 
@@ -229,7 +229,8 @@ npm --prefix src\ExternalSupport\VSCode run check:semantic-parity
 - [x] 完成 P5 Round 6 Runtime-backed Preview controls hardening。2026-06-18 审计见 [SelfHostedEditor P5 Runtime Preview Audit](self-hosted-editor-p5-runtime-preview-audit.md)；Preview 现在消费完整 Runtime envelope，显式显示 unavailable / error / stale 状态，Runtime action failure 与 snapshot/node mismatch 不再静默掩盖，`check:model` 与 `check:runtime-http` 覆盖 choose、continue、advance-flow、rewind-flow 与 Back / rewind 路径。
 - [x] 完成 P5 Round 7 Runtime status surface。2026-06-18 审计见 [SelfHostedEditor P5 Runtime Status Audit](self-hosted-editor-p5-runtime-status-audit.md)；sidebar Runtime meta 显示 provider、current node、visible choices、visible step count、pending action、Runtime error 与 query provider 来源，query provider summary 脱敏为 source/count，状态来自 Runtime compact payload。
 - [x] 完成 P5 Round 8 Log / Backlog surface。2026-06-18 审计见 [SelfHostedEditor P5 Log Backlog Audit](self-hosted-editor-p5-log-backlog-audit.md)；Host view 新增 Runtime Log / Backlog surface，只展示 Runtime `logEntries` 的 bounded 摘要，支持 source jump、empty / unavailable / error 状态，并验证条件隐藏文本不显示、Log 不写入 formal Runtime State。
-- [ ] 下一轮：P5 Round 9 Branch receipt / condition explanation。按 [P5 SelfHostedEditor Runtime Authoring Goal 模式执行指南](self-hosted-editor-p5-goal-mode-execution-guide.md) 只展示 Runtime branch query receipts，支持条件解释和 source jump，不重新查询 host，不实现完整 Trace Replay。
+- [x] 完成 P5 Round 9 Branch receipt / condition explanation surface。2026-06-18 审计见 [SelfHostedEditor P5 Branch Receipt Audit](self-hosted-editor-p5-branch-receipt-audit.md)；Host view 新增 Branch Receipts surface，只展示 Runtime `branchQueryReceipts` 的 bounded 摘要，解释 query name、arguments、result、source kind、deterministic 与 choice / jump context，支持 source jump，且不重新查询 host、不实现 Trace Replay。
+- [ ] 下一轮：P5 Round 10 Substate preview save/load。按 [P5 SelfHostedEditor Runtime Authoring Goal 模式执行指南](self-hosted-editor-p5-goal-mode-execution-guide.md) 只展示 / 导入导出 Runtime substate，用于编辑器预览和测试，不把 substate 扩张为完整 host save，也不保存宿主业务状态、完整 Log、完整 action history 或完整 Trace Replay。
 - [ ] 高级运行时调试方向池继续评估 Rollback checkpoint 的准确粒度、跨宿主 action 时的回退阻断 / checkpoint 规则、Trace Replay、Flashback Playback 与时空穿越式特殊倒放；这些不进入 P3 / P4 第一刀实现，也不作为当前正式排期 phase。
 
 ### 暂停 / 明确后置

@@ -20,6 +20,36 @@ Narrator: Staying put
 
 # End
 Narrator: Done`;
+const queryRuntimeScript = `# Gate
+@entry
+Narrator: Gate
+? Choose
+- [has_item("silver_key")] Use key -> Open
+- Knock -> Knock
+
+# Open
+Narrator: Open
+
+# Knock
+Narrator: Knock`;
+const keyQueryProvider = {
+  kind: "Mock",
+  mockValues: [
+    {
+      arguments: [
+        {
+          kind: "String",
+          stringValue: "silver_key",
+        },
+      ],
+      name: "has_item",
+      value: {
+        boolValue: true,
+        kind: "Bool",
+      },
+    },
+  ],
+};
 const maximumRuntimePayloadBytes = 10000;
 
 async function main() {
@@ -34,6 +64,18 @@ async function main() {
   assertEqual(openingSnapshot.readingProgress?.contentStepCount, 1, "opening content step count");
   assertEqual(openingSnapshot.readingProgress?.visibleStepCount, 0, "opening visible step count");
   assertPayloadSize(openingSnapshot, "opening runtime snapshot");
+
+  const querySnapshot = await getRuntimeStateForScriptText(queryRuntimeScript, null, "", keyQueryProvider);
+  assertRuntimeSnapshot(querySnapshot, "Gate");
+  assertEqual(querySnapshot.queryProvider?.source, "mock", "query snapshot provider source");
+  assertEqual(querySnapshot.currentNode?.choices?.[0]?.options?.length, 2, "query snapshot visible choice count");
+  assertEqual(querySnapshot.branchQueryReceipts?.length, 1, "query snapshot branch evidence count");
+  assertEqual(querySnapshot.branchQueryReceipts?.[0]?.name, "has_item", "query snapshot branch evidence name");
+  assertEqual(querySnapshot.branchQueryReceipts?.[0]?.context, "choice-condition", "query snapshot branch evidence context");
+  assertEqual(querySnapshot.branchQueryReceipts?.[0]?.arguments?.[0]?.value, "silver_key", "query snapshot branch evidence argument");
+  assertEqual(querySnapshot.branchQueryReceipts?.[0]?.result?.value, "true", "query snapshot branch evidence result");
+  assertEqual(querySnapshot.branchQueryReceipts?.[0]?.sourceLine, 5, "query snapshot branch evidence source line");
+  assertPayloadSize(querySnapshot, "query branch evidence runtime snapshot");
 
   const openingLineSnapshot = await stepRuntimeStateForScriptText(runtimeScript, null, openingSnapshot, {
     type: "advance-flow",
