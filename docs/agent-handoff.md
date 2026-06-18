@@ -1,12 +1,23 @@
 # Agent 接手指南
 
-状态：P5 SelfHostedEditor Runtime authoring Round 2 runtime session contract complete
+状态：P5 SelfHostedEditor Runtime authoring Round 3 mock query model complete
 
 最后更新：2026-06-18
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-18 SelfHostedEditor P5 Round 3 Mock Query Model 快照
+
+P5 SelfHostedEditor Runtime authoring / productization 已完成第三轮 Mock query model，不代表 P5 已完成。
+- 本轮审计见 [SelfHostedEditor P5 Mock Query Model Audit](self-hosted-editor-p5-mock-query-model-audit.md)。
+- 新增 `RuntimeMockQueryModelBuilder`，格式为 `inscape.self-hosted-editor.runtime-mock-query-authoring`，从 Host Schema `queries[]` 生成 authoring-only mock query authoring model。
+- Host Schema capability mapper 现在保留参数化 `queries[]`，并显式标记 `isSimpleTextInterpolationQuery`；这只修正 SelfHostedEditor capability view，不修改 Host Schema 语义、Compiler 语义或 Runtime query evaluator。
+- Mock query model 支持 string / number / bool mock value，并用结构化 row state / diagnostic 表达 missing value、invalid value、unsupported type 与 unknown query。
+- 只有 ready row 会投影为 Runtime preview / CLI 可消费的 `kind: "Mock"` query provider；mock value 仍只作为 editor session test input，不写入 formal Runtime State、P4 substate 或宿主状态。
+- 新增 `SelfHostedEditorRuntimeMockQueryContractCheck.js` 并接入 `check:model`，覆盖 ready / missing / invalid / unknown / unsupported、provider projection、authoring-only boundary 与 Host Schema secret 不泄漏。
+- 下一轮进入 P5 Round 4：Mock query UI，在 SelfHostedEditor 增加编辑表面、reset/apply preview 入口与 unavailable/fallback 状态；仍不得复制 Runtime 条件求值、query evaluator 或 Host Schema action policy。
 
 ### 2026-06-18 SelfHostedEditor P5 Round 2 Runtime Session 快照
 
@@ -16,7 +27,7 @@ P5 SelfHostedEditor Runtime authoring / productization 已完成第二轮 Runtim
 - 新增 `SelfHostedEditorRuntimeAuthoringSessionContractCheck.js` 并接入 `check:model`，覆盖 current snapshot、formal Runtime State、P4 substate、pending action、action request summary、log summary、branch evidence、stale、error 和 transport command boundary。
 - dev-host HTTP 与 desktop transport 的等价边界只用 `runtime.start-or-observe` / `runtime.step` command 表达；产品模型不认识 `/api/*` route，也不直接调用 backend transport。
 - 本轮未改 Runtime / Compiler / Host Schema policy / Unity / Bird，也未新增可见 UI；SelfHostedEditor 仍只做 Runtime payload 的摘要、适配和展示准备。
-- 下一轮进入 P5 Round 3：Mock query model，从 Host Schema `queries[]` 生成 editor-session-only mock query authoring model，覆盖 string / number / bool、missing / invalid / unknown query，并保持 mock 不进入正式 Runtime state。
+- 后续已由 P5 Round 3 接上 Mock query model；该轮从 Host Schema `queries[]` 生成 editor-session-only mock query authoring model，并保持 mock 不进入正式 Runtime state。
 
 ### 2026-06-18 SelfHostedEditor P5 Round 1 Baseline / Contract 快照
 
@@ -1693,9 +1704,9 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 
 建议优先做小而闭环的任务，不要直接跳到大规模重构。
 
-1. 进入 P5 Round 3 Mock query model。
-   - 先读 [P5 SelfHostedEditor Runtime Authoring Goal 模式执行指南](self-hosted-editor-p5-goal-mode-execution-guide.md)、[SelfHostedEditor P5 Runtime Authoring Contract](self-hosted-editor-p5-runtime-authoring-contract.md) 与 [SelfHostedEditor P5 Runtime Session Audit](self-hosted-editor-p5-runtime-session-audit.md)。
-   - 从 Host Schema `queries[]` 生成 mock query authoring model，覆盖 string / number / bool mock value、missing / invalid / unknown query 的结构化提示，并保持 mock query 只作为 editor session test input。
+1. 进入 P5 Round 4 Mock query UI。
+   - 先读 [P5 SelfHostedEditor Runtime Authoring Goal 模式执行指南](self-hosted-editor-p5-goal-mode-execution-guide.md)、[SelfHostedEditor P5 Runtime Authoring Contract](self-hosted-editor-p5-runtime-authoring-contract.md)、[SelfHostedEditor P5 Runtime Session Audit](self-hosted-editor-p5-runtime-session-audit.md) 与 [SelfHostedEditor P5 Mock Query Model Audit](self-hosted-editor-p5-mock-query-model-audit.md)。
+   - 在 SelfHostedEditor 增加 mock query 编辑表面，提供 reset / apply to runtime preview 入口、unavailable / fallback / invalid 状态提示，并保持 UI 只消费 Round 3 authoring model，不复制 Runtime 条件求值或 query evaluator。
 
 2. 继续推进 Stable Node ID / 本地化主线。
    - ADR 0013、sidecar 闭环、保守自动重命名识别、VSCode 显式 `Update Stable Node Map` 入口、插入标题后的自动同步、标题重命名人工确认 / 冲突报告、本地化 alignment / audit report，以及相似文本人工候选第一版都已落地。

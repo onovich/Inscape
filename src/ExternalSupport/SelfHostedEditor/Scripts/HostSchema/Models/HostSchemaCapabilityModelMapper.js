@@ -26,11 +26,11 @@ export class HostSchemaCapabilityModelMapper {
 
     return queries
       .filter((query) => query && typeof query.name === "string")
-      .filter((query) => query.isSimpleTextInterpolationQuery !== false)
       .map((query) => ({
         character: Math.max(Number(query.column || 1) - 1, 0),
         description: query.description || "",
         isAsync: query.isAsync === true,
+        isSimpleTextInterpolationQuery: query.isSimpleTextInterpolationQuery !== false,
         length: Math.max(Number(query.length || query.name.length || 1), 1),
         line: Math.max(Number(query.line || 1) - 1, 0),
         name: query.name.trim(),
