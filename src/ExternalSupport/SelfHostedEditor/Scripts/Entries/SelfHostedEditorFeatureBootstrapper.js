@@ -32,6 +32,7 @@ import { ProjectWorkspaceSummaryController } from "../ProjectWorkspace/Controlle
 import { SelfHostedEditorRuntimeBridge } from "../Runtime/Bridges/SelfHostedEditorRuntimeBridge.js";
 import { RuntimeActionPanelController } from "../Runtime/Controllers/RuntimeActionPanelController.js";
 import { RuntimeMockQueryPanelController } from "../Runtime/Controllers/RuntimeMockQueryPanelController.js";
+import { RuntimeStatusPanelController } from "../Runtime/Controllers/RuntimeStatusPanelController.js";
 import { StoryGraphPreviewController } from "../StoryGraph/Controllers/StoryGraphPreviewController.js";
 import { WorkspaceLoadingStateController } from "../WorkspaceLayout/Controllers/WorkspaceLoadingStateController.js";
 import { WorkspaceLayoutController } from "../WorkspaceLayout/Controllers/WorkspaceLayoutController.js";
@@ -97,6 +98,7 @@ export async function createSelfHostedEditorFeatures(bindings, callbacks = {}) {
   );
   const actionPanelController = new RuntimeActionPanelController(bindings.runtimeActionPanelElement);
   const mockQueryPanelController = new RuntimeMockQueryPanelController(bindings.mockQueryPanelElement);
+  const runtimeStatusPanelController = new RuntimeStatusPanelController(bindings.runtimePanelElement);
   const storyGraphController = new StoryGraphPreviewController(bindings.graphPanelElement);
   const editorController = await EditorSurfaceController.create(bindings.editorElement, bindings.hintRailElement);
   editorController.setSemanticHighlightEnabled(bindings.syntaxToggleElement?.getAttribute("aria-pressed") !== "false");
@@ -250,7 +252,7 @@ export async function createSelfHostedEditorFeatures(bindings, callbacks = {}) {
   const workspaceSummaryController = new ProjectWorkspaceSummaryController(bindings.workspaceSummaryElement);
   const workspaceSessionController = new ProjectWorkspaceSessionController(
     bindings.sessionPanelElement,
-    bindings.runtimePanelElement
+    null
   );
 
   return {
@@ -277,6 +279,7 @@ export async function createSelfHostedEditorFeatures(bindings, callbacks = {}) {
     mockQueryPanelController,
     previewController,
     runtimeBridge,
+    runtimeStatusPanelController,
     storyGraphBridge,
     storyGraphController,
     storyNodeMapReviewController,

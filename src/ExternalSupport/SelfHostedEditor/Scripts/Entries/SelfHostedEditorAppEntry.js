@@ -66,6 +66,13 @@ async function main() {
       latestRuntimeSnapshot?.snapshot || null,
       resumeAction
     );
+    if (steppedRuntimeSnapshot.provider !== "runtime-project") {
+      workbenchRenderController.setLatestRuntimeSnapshot(steppedRuntimeSnapshot);
+      workbenchRenderController.renderWorkspaceSession();
+      workbenchRenderController.renderActionPanel();
+      return steppedRuntimeSnapshot;
+    }
+
     if (steppedRuntimeSnapshot.provider === "runtime-project") {
       workbenchRenderController.setLatestRuntimeSnapshot(steppedRuntimeSnapshot);
       previewController.renderRuntimeSnapshot(steppedRuntimeSnapshot.snapshot);
@@ -104,6 +111,7 @@ async function main() {
   workspaceController.onStateChanged(() => {
     workbenchRenderController.renderWorkspaceFiles();
     workbenchRenderController.renderWorkspaceSession();
+    workbenchRenderController.renderRuntimeStatusPanel();
   });
 
   layoutController.onStateChanged(() => {

@@ -3,6 +3,7 @@ import { ScriptLineIdentityModelBuilder } from "../ProjectWorkspace/Models/Scrip
 import { ProjectWorkspaceSessionStatusModelBuilder } from "../ProjectWorkspace/Models/ProjectWorkspaceSessionStatusModelBuilder.js";
 import { WorkspaceSummaryHostedModelBuilder } from "../ProjectWorkspace/Models/WorkspaceSummaryHostedModelBuilder.js";
 import { RuntimeActionAuthoringModelBuilder } from "../Runtime/Models/RuntimeActionAuthoringModelBuilder.js";
+import { RuntimeStatusSurfaceModelBuilder } from "../Runtime/Models/RuntimeStatusSurfaceModelBuilder.js";
 
 export class SelfHostedEditorWorkbenchRenderController {
   constructor({
@@ -23,6 +24,7 @@ export class SelfHostedEditorWorkbenchRenderController {
     previewController,
     projectSessionService,
     runtimeBridge,
+    runtimeStatusPanelController,
     storyGraphBridge,
     storyGraphController,
     workspaceController,
@@ -47,6 +49,7 @@ export class SelfHostedEditorWorkbenchRenderController {
     this.previewController = previewController;
     this.projectSessionService = projectSessionService;
     this.runtimeBridge = runtimeBridge;
+    this.runtimeStatusPanelController = runtimeStatusPanelController || null;
     this.storyGraphBridge = storyGraphBridge;
     this.storyGraphController = storyGraphController;
     this.workspaceController = workspaceController;
@@ -96,6 +99,7 @@ export class SelfHostedEditorWorkbenchRenderController {
 
   setLatestRuntimeSnapshot(runtimeSnapshot) {
     this.latestRuntimeSnapshot = runtimeSnapshot;
+    this.renderRuntimeStatusPanel();
   }
 
   async renderWorkbench(scriptText, activeLineNumber = 1) {
@@ -151,6 +155,7 @@ export class SelfHostedEditorWorkbenchRenderController {
     this.latestStoryGraphModel = storyGraphModel;
     this.latestRuntimeSnapshot = runtimeSnapshot;
     this.loadingController.setIdle("runtime");
+    this.renderRuntimeStatusPanel();
     this.renderActionPanel();
     this.loadingController.setIdle("runtimeAction");
     this.renderMockQueryPanel();
@@ -246,6 +251,16 @@ export class SelfHostedEditorWorkbenchRenderController {
 
   renderWorkspaceFiles() {
     this.workspaceFileListController.render(this.workspaceController.getState());
+  }
+
+  renderRuntimeStatusPanel() {
+    const statusModel = RuntimeStatusSurfaceModelBuilder.build({
+      runtimeSnapshot: this.latestRuntimeSnapshot,
+      sessionId: this.runtimeBridge?.sessionId || "",
+      workspaceRevision: this.workspaceController.getState().revision || null,
+    });
+    this.runtimeStatusPanelController?.render(statusModel);
+    return statusModel;
   }
 
   renderMockQueryPanel() {

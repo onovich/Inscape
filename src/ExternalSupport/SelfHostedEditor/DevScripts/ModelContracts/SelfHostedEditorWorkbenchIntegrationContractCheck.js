@@ -156,6 +156,7 @@ let renderedMockQueryWorkspaceRevision = null;
 let renderedActionCatalog = null;
 let renderedActionBridgeCatalog = null;
 let renderedActionRuntimeProvider = "";
+let renderedRuntimeStatusSurface = null;
 let runtimeActionBridgeInput = null;
 const documentModel = ScriptDocumentFallbackPolicy.buildDocumentModel(scriptText, {
   reason: ScriptDocumentFallbackReason.EditorAuthoringSurface,
@@ -327,6 +328,7 @@ const workbench = new SelfHostedEditorWorkbenchRenderController({
   },
   previewController,
   runtimeBridge: {
+    sessionId: "runtime-status-session",
     setActionBridgeInput(actionBridgeInput) {
       runtimeActionBridgeInput = actionBridgeInput;
     },
@@ -335,6 +337,11 @@ const workbench = new SelfHostedEditorWorkbenchRenderController({
         provider: "runtime-project",
         snapshot: runtimeSnapshot,
       };
+    },
+  },
+  runtimeStatusPanelController: {
+    render(statusModel) {
+      renderedRuntimeStatusSurface = statusModel;
     },
   },
   storyGraphBridge: {
@@ -390,6 +397,13 @@ assertEqual(renderedMockQueryWorkspaceRevision, 5, "workbench should pass worksp
 assertEqual(renderedActionCatalog?.hostSchema?.loaded, true, "workbench should pass host schema catalog to action panel");
 assertEqual(renderedActionBridgeCatalog?.hostBridge?.loaded, true, "workbench should pass host bridge catalog to action panel");
 assertEqual(renderedActionRuntimeProvider, "runtime-project", "workbench should pass runtime snapshot to action panel");
+assertEqual(renderedRuntimeStatusSurface?.provider, "runtime-project", "workbench should pass runtime snapshot to status panel");
+assertEqual(renderedRuntimeStatusSurface?.currentNodeName, "Opening", "workbench runtime status current node");
+assertEqual(renderedRuntimeStatusSurface?.visibleChoiceCount, 1, "workbench runtime status visible choice count");
+assertEqual(renderedRuntimeStatusSurface?.readingProgress.visibleStepCount, 1, "workbench runtime status visible step count");
+assertEqual(renderedRuntimeStatusSurface?.queryProvider.source, "internal", "workbench runtime status query provider source");
+assertEqual(renderedRuntimeStatusSurface?.sessionId, "runtime-status-session", "workbench runtime status session id");
+assertEqual(renderedRuntimeStatusSurface?.workspaceRevision, 5, "workbench runtime status workspace revision");
 assertEqual(runtimeActionBridgeInput?.actions?.length, 0, "workbench should set runtime action bridge input");
 assertIncludesText(getTextContent(summaryPanel), "shared summary");
 assertIncludesText(getTextContent(summaryPanel), "0 l10n");

@@ -203,7 +203,7 @@ export async function getRuntimeStateForScriptText(scriptText, workspace, sessio
     await appendRuntimeActionDispatcherArgs(cliArgs, tempRoot, actionDispatcher);
     const result = await runCliCommand(cliArgs, "CLI runtime project snapshot");
     return rememberRuntimeSessionState(
-      compactRuntimeStatePayload(relativizeProjectSourcePaths(JSON.parse(result.stdout), tempRoot), sessionId),
+      compactRuntimeStatePayload(relativizeProjectSourcePaths(JSON.parse(result.stdout), tempRoot), sessionId, queryProvider),
       sessionId
     );
   });
@@ -253,7 +253,7 @@ export async function stepRuntimeStateForScriptText(scriptText, workspace, runti
 
     const result = await runCliCommand(cliArgs, "CLI runtime project action");
     return rememberRuntimeSessionState(
-      compactRuntimeStatePayload(relativizeProjectSourcePaths(JSON.parse(result.stdout), tempRoot), sessionId),
+      compactRuntimeStatePayload(relativizeProjectSourcePaths(JSON.parse(result.stdout), tempRoot), sessionId, queryProvider),
       sessionId
     );
   });

@@ -30,6 +30,7 @@ async function main() {
   assertEqual(openingSnapshot.currentNode?.choices?.length, 1, "opening choice group count");
   assertEqual(openingSnapshot.currentNode?.choices?.[0]?.options?.[0]?.target, "Witness", "opening first choice target");
   assertEqual(openingSnapshot.currentNode?.choices?.[0]?.options?.[1]?.target, "Stay", "opening second choice target");
+  assertEqual(openingSnapshot.queryProvider?.source, "internal", "opening query provider source");
   assertEqual(openingSnapshot.readingProgress?.contentStepCount, 1, "opening content step count");
   assertEqual(openingSnapshot.readingProgress?.visibleStepCount, 0, "opening visible step count");
   assertPayloadSize(openingSnapshot, "opening runtime snapshot");

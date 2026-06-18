@@ -112,6 +112,7 @@ async function main() {
 
     assertRuntimeSnapshot(openingSnapshot, "Opening");
     assertEqual(openingSnapshot.sessionId, sessionId, "opening runtime session id");
+    assertEqual(openingSnapshot.queryProvider?.source, "internal", "opening query provider source");
     assertEqual(openingSnapshot.readingProgress?.contentStepCount, 1, "opening content step count");
     assertEqual(openingSnapshot.readingProgress?.visibleStepCount, 0, "opening visible step count");
     assertPayloadSize(openingPayloadText, "opening runtime HTTP payload");
@@ -134,6 +135,9 @@ async function main() {
     }
 
     assertRuntimeSnapshot(queryProviderSnapshot, "Gate");
+    assertEqual(queryProviderSnapshot.queryProvider?.source, "mock", "mock query provider source");
+    assertEqual(queryProviderSnapshot.queryProvider?.mockValueCount, 1, "mock query provider value count");
+    assertEqual(queryProviderPayloadText.includes("silver_key"), false, "mock query provider value stays out of runtime HTTP payload");
     assertEqual(queryProviderSnapshot.currentNode?.choices?.[0]?.options?.length, 2, "mock query provider shows conditional key option");
     assertEqual(queryProviderSnapshot.currentNode?.choices?.[0]?.options?.[0]?.text, "Use key", "mock query provider key option text");
     assertPayloadSize(queryProviderPayloadText, "mock query provider runtime HTTP payload");

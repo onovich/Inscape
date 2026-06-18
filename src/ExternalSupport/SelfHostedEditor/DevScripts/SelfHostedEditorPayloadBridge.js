@@ -48,7 +48,7 @@ export function compactProjectGraphPayload(payload) {
   };
 }
 
-export function compactRuntimeStatePayload(payload, sessionId = "") {
+export function compactRuntimeStatePayload(payload, sessionId = "", queryProvider = null) {
   const currentNode = payload?.currentNode || null;
   return {
     currentNode: currentNode
@@ -79,6 +79,7 @@ export function compactRuntimeStatePayload(payload, sessionId = "") {
     formatVersion: 1,
     actionRequests: compactRuntimeActionRequests(payload?.actionRequests),
     pendingAction: compactRuntimePendingAction(payload?.pendingAction),
+    queryProvider: compactRuntimeQueryProvider(queryProvider || payload?.queryProvider || null),
     readingProgress: {
       canAdvance: Boolean(payload?.readingProgress?.canAdvance),
       canRewind: Boolean(payload?.readingProgress?.canRewind),
@@ -94,6 +95,62 @@ export function compactRuntimeStatePayload(payload, sessionId = "") {
       path: Array.isArray(payload?.state?.path) ? payload.state.path : [],
       visibleStepCount: Number(payload?.state?.visibleStepCount || 0),
     },
+  };
+}
+
+export function compactRuntimeQueryProvider(queryProvider) {
+  if (!queryProvider || typeof queryProvider !== "object") {
+    return {
+      delegateAvailable: false,
+      label: "internal",
+      mockValueCount: 0,
+      payloadContentExposed: false,
+      recordedValueCount: 0,
+      source: "internal",
+    };
+  }
+
+  const source = normalizeRuntimeQueryProviderSource(queryProvider.source || queryProvider.kind);
+  if (source === "mock") {
+    return {
+      delegateAvailable: false,
+      label: "mock",
+      mockValueCount: Array.isArray(queryProvider.mockValues) ? queryProvider.mockValues.length : 0,
+      payloadContentExposed: false,
+      recordedValueCount: 0,
+      source,
+    };
+  }
+
+  if (source === "recorded") {
+    return {
+      delegateAvailable: false,
+      label: "recorded",
+      mockValueCount: 0,
+      payloadContentExposed: false,
+      recordedValueCount: Array.isArray(queryProvider.recordedValues) ? queryProvider.recordedValues.length : 0,
+      source,
+    };
+  }
+
+  if (source === "delegate-unavailable" || source === "delegate") {
+    return {
+      delegateAvailable: false,
+      label: "delegate unavailable",
+      mockValueCount: 0,
+      payloadContentExposed: false,
+      recordedValueCount: 0,
+      source: "delegate-unavailable",
+    };
+  }
+
+  return {
+    delegateAvailable: false,
+    label: "internal",
+    mockValueCount: 0,
+    payloadContentExposed: false,
+    recordedValueCount: 0,
+    source: "internal",
   };
 }
 
@@ -136,6 +193,19 @@ function compactRuntimePendingAction(pendingAction) {
     sourceLine: Number(pendingAction.sourceLine || 0),
     status: pendingAction.status || "",
   };
+}
+
+function normalizeRuntimeQueryProviderSource(source) {
+  const normalized = String(source || "").trim().toLowerCase();
+  if (normalized === "mock" || normalized === "recorded" || normalized === "internal") {
+    return normalized;
+  }
+
+  if (normalized === "delegate" || normalized === "delegate unavailable" || normalized === "delegate-unavailable") {
+    return "delegate-unavailable";
+  }
+
+  return "";
 }
 
 export function compactLocalizationReviewPayload(report, baseline = null) {

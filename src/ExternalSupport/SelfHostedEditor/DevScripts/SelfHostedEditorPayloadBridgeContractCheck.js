@@ -5,6 +5,7 @@ import {
   compactLocalizationReviewPayload,
   compactLocalizationUpdatePayload,
   compactProjectGraphPayload,
+  compactRuntimeQueryProvider,
   compactRuntimeStatePayload,
   compactStoryNodeMapApplyPayload,
   compactStoryNodeMapReviewPayload,
@@ -112,9 +113,52 @@ const compactRuntimePayload = compactRuntimeStatePayload({
     path: ["Opening"],
     visibleStepCount: 2,
   },
-}, " Runtime Session!? ");
+}, " Runtime Session!? ", {
+  kind: "Mock",
+  mockValues: [
+    {
+      arguments: [
+        {
+          kind: "String",
+          stringValue: "secret mock argument",
+        },
+      ],
+      name: "has_item",
+      value: {
+        boolValue: true,
+        kind: "Bool",
+      },
+    },
+  ],
+});
 assert.equal(compactRuntimePayload.sessionId, "Runtime-Session--");
 assert.equal(compactRuntimePayload.currentNode.source.sourcePath, "Stories/opening.inscape");
+assert.equal(compactRuntimePayload.queryProvider.source, "mock");
+assert.equal(compactRuntimePayload.queryProvider.mockValueCount, 1);
+assert.equal(compactRuntimePayload.queryProvider.payloadContentExposed, false);
+assert.equal(JSON.stringify(compactRuntimePayload).includes("secret mock argument"), false);
+assert.deepEqual(compactRuntimeQueryProvider(null), {
+  delegateAvailable: false,
+  label: "internal",
+  mockValueCount: 0,
+  payloadContentExposed: false,
+  recordedValueCount: 0,
+  source: "internal",
+});
+assert.equal(compactRuntimeQueryProvider({
+  kind: "Recorded",
+  recordedValues: [
+    {
+      name: "trust",
+      value: {
+        numberValue: 3,
+      },
+    },
+  ],
+}).source, "recorded");
+assert.equal(compactRuntimeQueryProvider({
+  kind: "Delegate",
+}).source, "delegate-unavailable");
 
 const localizationReport = relativizeLocalizationReviewPaths({
   debugSections: ["trim me"],
