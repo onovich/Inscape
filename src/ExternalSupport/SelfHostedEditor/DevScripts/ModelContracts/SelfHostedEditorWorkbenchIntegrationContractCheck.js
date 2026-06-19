@@ -194,6 +194,7 @@ let renderedActionBridgeCatalog = null;
 let renderedActionRuntimeProvider = "";
 let renderedRuntimeLogBacklog = null;
 let renderedRuntimeBranchEvidence = null;
+let renderedRuntimeErrorStateInventory = null;
 let renderedRuntimeStatusSurface = null;
 let renderedRuntimeSubstate = null;
 let runtimeActionBridgeInput = null;
@@ -356,6 +357,18 @@ const workbench = new SelfHostedEditorWorkbenchRenderController({
       renderedActionCatalog = hostSchemaCatalog;
       renderedActionBridgeCatalog = hostBindingCatalog;
       renderedActionRuntimeProvider = options.runtimeSnapshot?.provider || "";
+      return {
+        diagnostics: [],
+        handlerMissingCount: 0,
+        hostBridge: {
+          loaded: true,
+        },
+        hostSchema: {
+          actionCount: 0,
+          loaded: true,
+        },
+        pendingAction: null,
+      };
     },
   },
   mockQueryPanelController: {
@@ -363,6 +376,17 @@ const workbench = new SelfHostedEditorWorkbenchRenderController({
       renderedMockQueryCatalog = hostSchemaCatalog;
       renderedMockQueryRuntimeProvider = options.runtimeSnapshot?.provider || "";
       renderedMockQueryWorkspaceRevision = options.workspaceRevision;
+      return {
+        diagnostics: [],
+        hostSchema: {
+          loaded: true,
+          queryCount: 1,
+        },
+        invalidCount: 0,
+        readyCount: 0,
+        unknownCount: 0,
+        unsupportedCount: 0,
+      };
     },
   },
   previewController,
@@ -391,6 +415,11 @@ const workbench = new SelfHostedEditorWorkbenchRenderController({
   runtimeBranchEvidencePanelController: {
     render(evidenceModel) {
       renderedRuntimeBranchEvidence = evidenceModel;
+    },
+  },
+  runtimeErrorStatePanelController: {
+    render(inventoryModel) {
+      renderedRuntimeErrorStateInventory = inventoryModel;
     },
   },
   runtimeSubstatePanelController: {
@@ -477,6 +506,13 @@ assertEqual(renderedRuntimeBranchEvidence?.entries?.[0]?.source?.lineNumber, 5, 
 assertEqual(renderedRuntimeBranchEvidence?.requeriesHost, false, "workbench branch evidence does not re-query host");
 assertEqual(renderedRuntimeBranchEvidence?.implementsReplayTimeline, false, "workbench branch evidence does not implement replay timeline");
 assertNotIncludesText(JSON.stringify(renderedRuntimeBranchEvidence), "secret runtime snapshot text");
+assertEqual(renderedRuntimeErrorStateInventory?.format, "inscape.self-hosted-editor.runtime-error-state-inventory", "workbench runtime error state inventory format");
+assertEqual(renderedRuntimeErrorStateInventory?.surfaceCount, 7, "workbench runtime error state inventory surface count");
+assertEqual(renderedRuntimeErrorStateInventory?.payloadContentExposed, false, "workbench runtime error state inventory hides payload content");
+assertEqual(renderedRuntimeErrorStateInventory?.surfaces?.find((surface) => surface.surface === "preview")?.state, "ready", "workbench runtime error state preview row");
+assertEqual(renderedRuntimeErrorStateInventory?.surfaces?.find((surface) => surface.surface === "runtime-status")?.state, "ready", "workbench runtime error state status row");
+assertEqual(renderedRuntimeErrorStateInventory?.surfaces?.find((surface) => surface.surface === "mock-query")?.state, "empty", "workbench runtime error state mock row");
+assertNotIncludesText(JSON.stringify(renderedRuntimeErrorStateInventory), "secret runtime snapshot text");
 assertEqual(renderedRuntimeSubstate?.runtime?.provider, "runtime-project", "workbench should pass runtime snapshot to substate panel");
 assertEqual(renderedRuntimeSubstate?.runtime?.currentNodeId, "Opening", "workbench runtime substate current node");
 assertEqual(renderedRuntimeSubstate?.runtime?.commandIndex, 1, "workbench runtime substate command index");

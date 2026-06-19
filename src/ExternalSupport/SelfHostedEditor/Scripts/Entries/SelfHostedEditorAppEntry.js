@@ -38,6 +38,7 @@ async function main() {
     previewController,
     runtimeBridge,
     runtimeBranchEvidencePanelController,
+    runtimeErrorStatePanelController,
     runtimeLogBacklogPanelController,
     runtimeSubstatePanelController,
     storyGraphController,
@@ -74,6 +75,7 @@ async function main() {
       workbenchRenderController.renderWorkspaceSession();
       workbenchRenderController.renderActionPanel();
       workbenchRenderController.renderRuntimeSubstatePanel();
+      workbenchRenderController.renderRuntimeErrorStatePanel();
       return steppedRuntimeSnapshot;
     }
 
@@ -84,6 +86,7 @@ async function main() {
       workbenchRenderController.renderWorkspaceSession();
       workbenchRenderController.renderActionPanel();
       workbenchRenderController.renderRuntimeSubstatePanel();
+      workbenchRenderController.renderRuntimeErrorStatePanel();
     }
 
     return steppedRuntimeSnapshot;
@@ -103,7 +106,10 @@ async function main() {
       latestRuntimeSnapshot?.snapshot || null,
       buildRuntimeSubstateOptions()
     );
-    workbenchRenderController.renderRuntimeSubstatePanel(result);
+    const substateModel = workbenchRenderController.renderRuntimeSubstatePanel(result);
+    workbenchRenderController.renderRuntimeErrorStatePanel({
+      runtimeSubstate: substateModel,
+    });
     return result;
   });
   runtimeSubstatePanelController.onValidateRequested(async (substateText) => {
@@ -112,7 +118,10 @@ async function main() {
       substateText,
       buildRuntimeSubstateOptions()
     );
-    workbenchRenderController.renderRuntimeSubstatePanel(result);
+    const substateModel = workbenchRenderController.renderRuntimeSubstatePanel(result);
+    workbenchRenderController.renderRuntimeErrorStatePanel({
+      runtimeSubstate: substateModel,
+    });
     return result;
   });
   runtimeSubstatePanelController.onImportRequested(async (substateText) => {
@@ -133,7 +142,10 @@ async function main() {
       workbenchRenderController.renderActionPanel();
     }
 
-    workbenchRenderController.renderRuntimeSubstatePanel(result);
+    const substateModel = workbenchRenderController.renderRuntimeSubstatePanel(result);
+    workbenchRenderController.renderRuntimeErrorStatePanel({
+      runtimeSubstate: substateModel,
+    });
     return result;
   });
 
@@ -168,6 +180,7 @@ async function main() {
     workbenchRenderController.renderRuntimeLogPanel();
     workbenchRenderController.renderRuntimeBranchPanel();
     workbenchRenderController.renderRuntimeSubstatePanel();
+    workbenchRenderController.renderRuntimeErrorStatePanel();
   });
 
   layoutController.onStateChanged(() => {
@@ -193,6 +206,7 @@ async function main() {
         provider: latestRuntimeSnapshot.provider || "unavailable",
         state: latestRuntimeSnapshot.error ? "runtime-error" : "runtime-unavailable",
       });
+      workbenchRenderController.renderRuntimeErrorStatePanel();
       return false;
     }
 
@@ -203,6 +217,7 @@ async function main() {
         provider: "runtime-project",
         state: "runtime-stale",
       });
+      workbenchRenderController.renderRuntimeErrorStatePanel();
       return previewController.isRuntimePreviewActive();
     }
 
@@ -224,6 +239,7 @@ async function main() {
         steppedRuntimeSnapshot.error || "runtime snapshot unavailable"
       );
       workbenchRenderController.renderWorkspaceSession();
+      workbenchRenderController.renderRuntimeErrorStatePanel();
       return true;
     }
 
@@ -244,6 +260,7 @@ async function main() {
     }
 
     workbenchRenderController.renderWorkspaceSession();
+    workbenchRenderController.renderRuntimeErrorStatePanel();
     return true;
   });
 
@@ -448,6 +465,7 @@ async function main() {
   void editorStatusController;
   void hostCapabilityCatalogController;
   void runtimeBranchEvidencePanelController;
+  void runtimeErrorStatePanelController;
   void runtimeSubstatePanelController;
   void storyNodeMapReviewController;
   void runtimeLogBacklogPanelController;

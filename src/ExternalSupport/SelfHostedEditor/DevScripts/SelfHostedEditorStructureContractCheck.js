@@ -99,6 +99,7 @@ const requiredPaths = [
   "Resources/Styles/SelfHostedEditorRuntimeActionAuthoring.css",
   "Resources/Styles/SelfHostedEditorRuntimeAuthoring.css",
   "Resources/Styles/SelfHostedEditorRuntimeBranchEvidence.css",
+  "Resources/Styles/SelfHostedEditorRuntimeErrorState.css",
   "Resources/Styles/SelfHostedEditorRuntimeLogBacklog.css",
   "Resources/Styles/SelfHostedEditorRuntimeSubstateAuthoring.css",
   "Resources/Styles/SelfHostedEditorStoryGraph.css",
@@ -200,6 +201,7 @@ const requiredPaths = [
   "Scripts/Runtime/Bridges/SelfHostedEditorRuntimeBridge.js",
   "Scripts/Runtime/Controllers/RuntimeActionPanelController.js",
   "Scripts/Runtime/Controllers/RuntimeBranchEvidencePanelController.js",
+  "Scripts/Runtime/Controllers/RuntimeErrorStatePanelController.js",
   "Scripts/Runtime/Controllers/RuntimeLogBacklogPanelController.js",
   "Scripts/Runtime/Controllers/RuntimeMockQueryPanelController.js",
   "Scripts/Runtime/Controllers/RuntimeStatusPanelController.js",
@@ -531,6 +533,7 @@ const workbenchReferenceOverlayCssPath = path.join(moduleRoot, "Resources/Styles
 const workbenchRuntimeActionAuthoringCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorRuntimeActionAuthoring.css");
 const workbenchRuntimeAuthoringCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorRuntimeAuthoring.css");
 const workbenchRuntimeBranchEvidenceCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorRuntimeBranchEvidence.css");
+const workbenchRuntimeErrorStateCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorRuntimeErrorState.css");
 const workbenchRuntimeLogBacklogCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorRuntimeLogBacklog.css");
 const workbenchRuntimeSubstateAuthoringCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorRuntimeSubstateAuthoring.css");
 const workbenchStoryGraphCssPath = path.join(moduleRoot, "Resources/Styles/SelfHostedEditorStoryGraph.css");
@@ -552,6 +555,7 @@ const workbenchReferenceOverlayCss = fs.readFileSync(workbenchReferenceOverlayCs
 const workbenchRuntimeActionAuthoringCss = fs.readFileSync(workbenchRuntimeActionAuthoringCssPath, "utf8");
 const workbenchRuntimeAuthoringCss = fs.readFileSync(workbenchRuntimeAuthoringCssPath, "utf8");
 const workbenchRuntimeBranchEvidenceCss = fs.readFileSync(workbenchRuntimeBranchEvidenceCssPath, "utf8");
+const workbenchRuntimeErrorStateCss = fs.readFileSync(workbenchRuntimeErrorStateCssPath, "utf8");
 const workbenchRuntimeLogBacklogCss = fs.readFileSync(workbenchRuntimeLogBacklogCssPath, "utf8");
 const workbenchRuntimeSubstateAuthoringCss = fs.readFileSync(workbenchRuntimeSubstateAuthoringCssPath, "utf8");
 const workbenchStoryGraphCss = fs.readFileSync(workbenchStoryGraphCssPath, "utf8");
@@ -575,6 +579,7 @@ const expectedWorkbenchCssImports = [
   '@import url("./SelfHostedEditorHostCapability.css");',
   '@import url("./SelfHostedEditorRuntimeAuthoring.css");',
   '@import url("./SelfHostedEditorRuntimeActionAuthoring.css");',
+  '@import url("./SelfHostedEditorRuntimeErrorState.css");',
   '@import url("./SelfHostedEditorRuntimeLogBacklog.css");',
   '@import url("./SelfHostedEditorRuntimeBranchEvidence.css");',
   '@import url("./SelfHostedEditorRuntimeSubstateAuthoring.css");',
@@ -801,6 +806,19 @@ if (
 }
 if (/^\.diagnostics-dock\s*{/m.test(workbenchRuntimeActionAuthoringCss) || /^\.localization-toolbar\s*{/m.test(workbenchRuntimeActionAuthoringCss) || /^\.host-capability-item\s*{/m.test(workbenchRuntimeActionAuthoringCss) || /^\.graph-viewport\s*{/m.test(workbenchRuntimeActionAuthoringCss) || /^\.story-preview\s*{/m.test(workbenchRuntimeActionAuthoringCss) || /^\.editor-frame\s*{/m.test(workbenchRuntimeActionAuthoringCss)) {
   console.error("SelfHostedEditorRuntimeActionAuthoring.css must not absorb diagnostics, localization, host capability items, graph, preview, or editor authoring rules.");
+  failed = true;
+}
+if (
+  !/^\.runtime-error-state-panel\s*{/m.test(workbenchRuntimeErrorStateCss)
+  || !/^\.runtime-error-state-header,\r?\n\.runtime-error-state-row-summary\s*{/m.test(workbenchRuntimeErrorStateCss)
+  || !/^\.runtime-error-state-row\s*{/m.test(workbenchRuntimeErrorStateCss)
+  || !/^\.runtime-error-state-list,\r?\n\.runtime-error-state-diagnostics\s*{/m.test(workbenchRuntimeErrorStateCss)
+) {
+  console.error("SelfHostedEditorRuntimeErrorState.css must retain error-state panel, header, row, and diagnostics rules.");
+  failed = true;
+}
+if (/^\.diagnostics-dock\s*{/m.test(workbenchRuntimeErrorStateCss) || /^\.localization-toolbar\s*{/m.test(workbenchRuntimeErrorStateCss) || /^\.host-capability-item\s*{/m.test(workbenchRuntimeErrorStateCss) || /^\.graph-viewport\s*{/m.test(workbenchRuntimeErrorStateCss) || /^\.story-preview\s*{/m.test(workbenchRuntimeErrorStateCss) || /^\.editor-frame\s*{/m.test(workbenchRuntimeErrorStateCss)) {
+  console.error("SelfHostedEditorRuntimeErrorState.css must not absorb diagnostics, localization, host capability items, graph, preview, or editor authoring rules.");
   failed = true;
 }
 if (

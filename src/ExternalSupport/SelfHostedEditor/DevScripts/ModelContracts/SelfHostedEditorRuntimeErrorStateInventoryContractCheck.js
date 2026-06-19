@@ -1,4 +1,5 @@
 import { HostSchemaCapabilityModelMapper } from "../../Scripts/HostSchema/Models/HostSchemaCapabilityModelMapper.js";
+import { RuntimeErrorStatePanelController } from "../../Scripts/Runtime/Controllers/RuntimeErrorStatePanelController.js";
 import {
   RuntimeActionAuthoringModelBuilder,
 } from "../../Scripts/Runtime/Models/RuntimeActionAuthoringModelBuilder.js";
@@ -25,8 +26,14 @@ import {
 } from "../../Scripts/Runtime/Models/RuntimeSubstateAuthoringModelBuilder.js";
 import {
   assertEqual,
+  assertIncludesText,
   assertNotIncludesText,
+  FakeElement,
+  getTextContent,
+  installFakeDomEnvironment,
 } from "./SelfHostedEditorModelContractHarness.js";
+
+installFakeDomEnvironment();
 
 const previewModel = {
   provider: "compiler-project",
@@ -262,5 +269,25 @@ assertNotIncludesText(serialized, "secret incompatible script detail");
 assertNotIncludesText(serialized, "secret cli stderr");
 assertNotIncludesText(serialized, "secret http response");
 assertNotIncludesText(serialized, "secret malformed payload body");
+
+const panelElement = new FakeElement("section");
+const panelController = new RuntimeErrorStatePanelController(panelElement);
+const renderedInventory = panelController.render(inventory);
+const panelText = getTextContent(panelElement);
+assertEqual(renderedInventory?.format, RuntimeErrorStateInventoryFormat, "runtime error inventory panel returns model");
+assertEqual(panelElement.dataset.runtimeErrorState, "error", "runtime error inventory panel state");
+assertIncludesText(panelText, "Runtime States");
+assertIncludesText(panelText, "Mock Query");
+assertIncludesText(panelText, "Runtime Actions");
+assertIncludesText(panelText, "Diagnostics");
+assertNotIncludesText(panelText, "secret runtime stale detail");
+assertNotIncludesText(panelText, "secret schema payload");
+assertNotIncludesText(panelText, "secret mock value");
+assertNotIncludesText(panelText, "secret bridge payload");
+assertNotIncludesText(panelText, "secret pending argument");
+assertNotIncludesText(panelText, "secret host payload");
+assertNotIncludesText(panelText, "secret substate body");
+assertNotIncludesText(panelText, "secret cli stderr");
+assertNotIncludesText(panelText, "secret http response");
 
 console.log("SelfHostedEditor runtime error state inventory contract ok");

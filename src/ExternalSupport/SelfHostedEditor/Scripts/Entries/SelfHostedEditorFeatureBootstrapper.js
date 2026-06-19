@@ -32,6 +32,7 @@ import { ProjectWorkspaceSummaryController } from "../ProjectWorkspace/Controlle
 import { SelfHostedEditorRuntimeBridge } from "../Runtime/Bridges/SelfHostedEditorRuntimeBridge.js";
 import { RuntimeActionPanelController } from "../Runtime/Controllers/RuntimeActionPanelController.js";
 import { RuntimeBranchEvidencePanelController } from "../Runtime/Controllers/RuntimeBranchEvidencePanelController.js";
+import { RuntimeErrorStatePanelController } from "../Runtime/Controllers/RuntimeErrorStatePanelController.js";
 import { RuntimeLogBacklogPanelController } from "../Runtime/Controllers/RuntimeLogBacklogPanelController.js";
 import { RuntimeMockQueryPanelController } from "../Runtime/Controllers/RuntimeMockQueryPanelController.js";
 import { RuntimeStatusPanelController } from "../Runtime/Controllers/RuntimeStatusPanelController.js";
@@ -50,6 +51,7 @@ export async function createSelfHostedEditorFeatures(bindings, callbacks = {}) {
     localization: bindings.localizationPanelElement,
     mockQuery: bindings.mockQueryPanelElement,
     runtimeBranch: bindings.runtimeBranchEvidencePanelElement,
+    runtimeErrorState: bindings.runtimeErrorStatePanelElement,
     runtimeLog: bindings.runtimeLogBacklogPanelElement,
     runtimeSubstate: bindings.runtimeSubstatePanelElement,
     runtimeAction: bindings.runtimeActionPanelElement,
@@ -68,6 +70,7 @@ export async function createSelfHostedEditorFeatures(bindings, callbacks = {}) {
     localization: "Preparing table",
     mockQuery: "Preparing mock queries",
     runtimeBranch: "Preparing branch evidence",
+    runtimeErrorState: "Preparing runtime states",
     runtimeLog: "Preparing runtime log",
     runtimeSubstate: "Preparing substate tools",
     runtimeAction: "Preparing action debug",
@@ -107,6 +110,7 @@ export async function createSelfHostedEditorFeatures(bindings, callbacks = {}) {
   );
   const actionPanelController = new RuntimeActionPanelController(bindings.runtimeActionPanelElement);
   const runtimeBranchEvidencePanelController = new RuntimeBranchEvidencePanelController(bindings.runtimeBranchEvidencePanelElement);
+  const runtimeErrorStatePanelController = new RuntimeErrorStatePanelController(bindings.runtimeErrorStatePanelElement);
   const runtimeLogBacklogPanelController = new RuntimeLogBacklogPanelController(bindings.runtimeLogBacklogPanelElement);
   const runtimeSubstatePanelController = new RuntimeSubstatePanelController(bindings.runtimeSubstatePanelElement);
   const mockQueryPanelController = new RuntimeMockQueryPanelController(bindings.mockQueryPanelElement);
@@ -292,6 +296,7 @@ export async function createSelfHostedEditorFeatures(bindings, callbacks = {}) {
     previewController,
     runtimeBridge,
     runtimeBranchEvidencePanelController,
+    runtimeErrorStatePanelController,
     runtimeLogBacklogPanelController,
     runtimeSubstatePanelController,
     runtimeStatusPanelController,

@@ -1,0 +1,113 @@
+.runtime-error-state-panel {
+  border-left: 1px solid var(--ink-a-070);
+  min-height: 0;
+  overflow: auto;
+  padding: 16px;
+}
+
+.runtime-error-state-shell {
+  display: grid;
+  gap: 12px;
+}
+
+.runtime-error-state-header,
+.runtime-error-state-row-summary {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.runtime-error-state-title,
+.runtime-error-state-row-name {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.runtime-error-state-title h2,
+.runtime-error-state-diagnostics h3 {
+  color: var(--text);
+  font-size: 13px;
+  margin: 0;
+}
+
+.runtime-error-state-status,
+.runtime-error-state-empty,
+.runtime-error-state-row-name span,
+.runtime-error-state-diagnostic {
+  color: var(--muted-strong);
+  font-size: 11px;
+  margin: 0;
+}
+
+.runtime-error-state-status[data-inventory-state="ready"],
+.runtime-error-state-pill[data-state="ready"],
+.runtime-error-state-row[data-surface-state="ready"] .runtime-error-state-row-state {
+  color: var(--accent);
+}
+
+.runtime-error-state-status[data-inventory-state="error"],
+.runtime-error-state-status[data-inventory-state="blocked"],
+.runtime-error-state-pill[data-state="error"],
+.runtime-error-state-pill[data-state="blocked"],
+.runtime-error-state-row[data-surface-state="error"] .runtime-error-state-row-state,
+.runtime-error-state-row[data-surface-state="blocked"] .runtime-error-state-row-state {
+  color: var(--danger-text-a-720);
+}
+
+.runtime-error-state-summary {
+  border-bottom: 1px solid var(--ink-a-055);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-bottom: 10px;
+}
+
+.runtime-error-state-count,
+.runtime-error-state-pill,
+.runtime-error-state-row-state {
+  background: var(--surface-soft);
+  border: 1px solid var(--ink-a-070);
+  border-radius: 6px;
+  color: var(--muted-strong);
+  font-size: 10px;
+  line-height: 1;
+  padding: 5px 7px;
+}
+
+.runtime-error-state-list,
+.runtime-error-state-diagnostics {
+  display: grid;
+  gap: 8px;
+}
+
+.runtime-error-state-row {
+  border: 1px solid var(--ink-a-070);
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+}
+
+.runtime-error-state-row[data-surface-state="error"],
+.runtime-error-state-row[data-surface-state="blocked"] {
+  border-color: var(--danger-text-a-720);
+}
+
+.runtime-error-state-row-name strong {
+  color: var(--text);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.runtime-error-state-diagnostic {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 1420px) {
+  .runtime-error-state-panel {
+    border-left: 0;
+    border-top: 1px solid var(--ink-a-070);
+  }
+}

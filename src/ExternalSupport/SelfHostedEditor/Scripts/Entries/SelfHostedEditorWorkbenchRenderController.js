@@ -4,6 +4,7 @@ import { ProjectWorkspaceSessionStatusModelBuilder } from "../ProjectWorkspace/M
 import { WorkspaceSummaryHostedModelBuilder } from "../ProjectWorkspace/Models/WorkspaceSummaryHostedModelBuilder.js";
 import { RuntimeActionAuthoringModelBuilder } from "../Runtime/Models/RuntimeActionAuthoringModelBuilder.js";
 import { RuntimeBranchEvidenceModelBuilder } from "../Runtime/Models/RuntimeBranchEvidenceModelBuilder.js";
+import { RuntimeErrorStateInventoryModelBuilder } from "../Runtime/Models/RuntimeErrorStateInventoryModelBuilder.js";
 import { RuntimeLogBacklogModelBuilder } from "../Runtime/Models/RuntimeLogBacklogModelBuilder.js";
 import { RuntimeStatusSurfaceModelBuilder } from "../Runtime/Models/RuntimeStatusSurfaceModelBuilder.js";
 import { RuntimeSubstateAuthoringModelBuilder } from "../Runtime/Models/RuntimeSubstateAuthoringModelBuilder.js";
@@ -28,6 +29,7 @@ export class SelfHostedEditorWorkbenchRenderController {
     projectSessionService,
     runtimeBridge,
     runtimeBranchEvidencePanelController,
+    runtimeErrorStatePanelController,
     runtimeLogBacklogPanelController,
     runtimeStatusPanelController,
     runtimeSubstatePanelController,
@@ -56,6 +58,7 @@ export class SelfHostedEditorWorkbenchRenderController {
     this.projectSessionService = projectSessionService;
     this.runtimeBridge = runtimeBridge;
     this.runtimeBranchEvidencePanelController = runtimeBranchEvidencePanelController || null;
+    this.runtimeErrorStatePanelController = runtimeErrorStatePanelController || null;
     this.runtimeLogBacklogPanelController = runtimeLogBacklogPanelController || null;
     this.runtimeStatusPanelController = runtimeStatusPanelController || null;
     this.runtimeSubstatePanelController = runtimeSubstatePanelController || null;
@@ -82,6 +85,15 @@ export class SelfHostedEditorWorkbenchRenderController {
     this.latestHostBindingCatalog = null;
     this.latestHostSchemaCatalog = null;
     this.latestStoryGraphModel = null;
+    this.latestRuntimeSurfaceModels = {
+      branchReceipts: null,
+      logBacklog: null,
+      mockQuery: null,
+      preview: null,
+      runtimeActions: null,
+      runtimeStatus: null,
+      runtimeSubstate: null,
+    };
     this.latestBackendSessionStatus = {
       mode: "dev-host",
       sessionId: this.projectSessionService?.sessionId || "default",
@@ -112,6 +124,7 @@ export class SelfHostedEditorWorkbenchRenderController {
     this.renderRuntimeLogPanel();
     this.renderRuntimeBranchPanel();
     this.renderRuntimeSubstatePanel();
+    this.renderRuntimeErrorStatePanel();
   }
 
   async renderWorkbench(scriptText, activeLineNumber = 1) {
@@ -124,6 +137,7 @@ export class SelfHostedEditorWorkbenchRenderController {
       localization: "Gathering lines",
       runtimeAction: "Preparing action debug",
       runtimeBranch: "Preparing branch evidence",
+      runtimeErrorState: "Reviewing runtime states",
       runtimeLog: "Preparing runtime log",
       runtimeSubstate: "Preparing substate tools",
       outline: "Reading outline",
@@ -188,6 +202,10 @@ export class SelfHostedEditorWorkbenchRenderController {
       storyGraphSnapshot.graph,
       this.latestRuntimeSnapshot
     );
+    this.renderRuntimeErrorStatePanel({
+      preview: this.previewController.getRuntimeSurfaceModel?.() || null,
+    });
+    this.loadingController.setIdle("runtimeErrorState");
     this.storyGraphController.render(storyGraphSnapshot.graph, scriptText);
     this.loadingController.setManyIdle(["preview", "graph"]);
     const diagnosticSnapshot = await this.diagnosticsBridge.getDiagnostics(scriptText);
@@ -281,6 +299,7 @@ export class SelfHostedEditorWorkbenchRenderController {
       workspaceRevision: this.workspaceController.getState().revision || null,
     });
     this.runtimeStatusPanelController?.render(statusModel);
+    this.latestRuntimeSurfaceModels.runtimeStatus = statusModel;
     return statusModel;
   }
 
@@ -292,6 +311,7 @@ export class SelfHostedEditorWorkbenchRenderController {
       workspaceRevision: this.workspaceController.getState().revision || null,
     });
     this.runtimeLogBacklogPanelController?.render(backlogModel);
+    this.latestRuntimeSurfaceModels.logBacklog = backlogModel;
     return backlogModel;
   }
 
@@ -303,6 +323,7 @@ export class SelfHostedEditorWorkbenchRenderController {
       workspaceRevision: this.workspaceController.getState().revision || null,
     });
     this.runtimeBranchEvidencePanelController?.render(evidenceModel);
+    this.latestRuntimeSurfaceModels.branchReceipts = evidenceModel;
     return evidenceModel;
   }
 
@@ -315,22 +336,43 @@ export class SelfHostedEditorWorkbenchRenderController {
       workspaceRevision: this.workspaceController.getState().revision || null,
     });
     this.runtimeSubstatePanelController?.render(authoringModel);
+    this.latestRuntimeSurfaceModels.runtimeSubstate = authoringModel;
     return authoringModel;
   }
 
   renderMockQueryPanel() {
-    this.mockQueryPanelController?.render(this.latestHostSchemaCatalog, {
+    const authoringModel = this.mockQueryPanelController?.render(this.latestHostSchemaCatalog, {
       runtimeSnapshot: this.latestRuntimeSnapshot,
       sessionId: this.runtimeBridge?.sessionId || "",
       workspaceRevision: this.workspaceController.getState().revision || null,
-    });
+    }) || this.mockQueryPanelController?.getAuthoringModel?.() || null;
+    this.latestRuntimeSurfaceModels.mockQuery = authoringModel;
+    return authoringModel;
   }
 
   renderActionPanel() {
-    this.actionPanelController?.render(this.latestHostSchemaCatalog, this.latestHostBindingCatalog, {
+    const authoringModel = this.actionPanelController?.render(this.latestHostSchemaCatalog, this.latestHostBindingCatalog, {
       runtimeSnapshot: this.latestRuntimeSnapshot,
       sessionId: this.runtimeBridge?.sessionId || "",
       workspaceRevision: this.workspaceController.getState().revision || null,
+    }) || this.actionPanelController?.getAuthoringModel?.() || null;
+    this.latestRuntimeSurfaceModels.runtimeActions = authoringModel;
+    return authoringModel;
+  }
+
+  renderRuntimeErrorStatePanel(surfaceModelOverrides = {}) {
+    this.latestRuntimeSurfaceModels = {
+      ...this.latestRuntimeSurfaceModels,
+      ...surfaceModelOverrides,
+      preview: surfaceModelOverrides.preview || this.previewController?.getRuntimeSurfaceModel?.() || this.latestRuntimeSurfaceModels.preview,
+    };
+    const inventoryModel = RuntimeErrorStateInventoryModelBuilder.build({
+      diagnostics: this.latestDiagnosticSnapshot?.diagnostics || [],
+      sessionId: this.runtimeBridge?.sessionId || "",
+      surfaceModels: this.latestRuntimeSurfaceModels,
+      workspaceRevision: this.workspaceController.getState().revision || null,
     });
+    this.runtimeErrorStatePanelController?.render(inventoryModel);
+    return inventoryModel;
   }
 }

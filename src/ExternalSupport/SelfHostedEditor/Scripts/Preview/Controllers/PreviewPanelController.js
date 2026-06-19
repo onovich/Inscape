@@ -251,6 +251,15 @@ export class PreviewPanelController {
     return this.latestStoryModel?.provider === "runtime";
   }
 
+  getRuntimeSurfaceModel() {
+    const runtimeStatus = this.runtimeControlStatus || this.latestStoryModel?.runtimeStatus || null;
+    return {
+      provider: this.latestStoryModel?.provider || this.documentProvider || "unavailable",
+      runtimeStatus,
+      state: runtimeStatus?.state || this.previewElement?.dataset?.runtimePreviewState || this.previewElement?.dataset?.previewState || "",
+    };
+  }
+
   getVisibleRuntimeStatus(storyModel) {
     const status = this.runtimeControlStatus || storyModel?.runtimeStatus || null;
     if (!status || status.state === "runtime-ready") {
