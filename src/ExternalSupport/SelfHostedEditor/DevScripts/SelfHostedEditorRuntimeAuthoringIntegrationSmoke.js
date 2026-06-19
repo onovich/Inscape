@@ -342,6 +342,18 @@ async function main() {
     });
     assertEqual(substateValidation.validationStatus, "compatible", "substate validate status");
 
+    const substateDriftImport = await postJson(baseUrl, "/api/runtime-substate-import", {
+      actionDispatcher: actionBridgeInput,
+      queryProvider: mockQueryModel.runtimeQueryProvider,
+      scriptText,
+      scriptVersion: "workspace-revision-13",
+      sessionId,
+      substateText: substateExport.substateText,
+      workspace,
+    });
+    assertEqual(substateDriftImport.imported, false, "substate drift import blocked");
+    assertEqual(substateDriftImport.validationStatus, "migratable", "substate drift status");
+
     const substateImport = await postJson(baseUrl, "/api/runtime-substate-import", {
       actionDispatcher: actionBridgeInput,
       queryProvider: mockQueryModel.runtimeQueryProvider,
@@ -422,6 +434,15 @@ async function main() {
       statusModel,
       substateModel,
     }));
+    assertFailureSurfaceCoverage({
+      blockedActionModel,
+      fireSnapshot,
+      helpSnapshot,
+      hostSchemaCatalog,
+      loggedSnapshot,
+      storyGraphModel,
+      substateDriftImport,
+    });
 
     console.log(`SelfHostedEditor runtime authoring integration smoke ok (${Date.now() - startedAt}ms)`);
   } finally {
@@ -465,6 +486,195 @@ function assertRuntimeSubstatePayloadBoundary(payloadText, label) {
     if (String(payloadText || "").includes(forbidden)) {
       throw new Error(`${label} must not include ${forbidden}.`);
     }
+  }
+}
+
+function assertFailureSurfaceCoverage({
+  blockedActionModel,
+  fireSnapshot,
+  helpSnapshot,
+  hostSchemaCatalog,
+  loggedSnapshot,
+  storyGraphModel,
+  substateDriftImport,
+}) {
+  const unavailableRuntimeEnvelope = {
+    provider: "unavailable",
+    snapshot: null,
+  };
+  const runtimeUnavailableStatus = RuntimeStatusSurfaceModelBuilder.build({
+    runtimeSnapshot: unavailableRuntimeEnvelope,
+    sessionId,
+    workspaceRevision,
+  });
+  const runtimeCommandErrorStatus = RuntimeStatusSurfaceModelBuilder.build({
+    runtimeSnapshot: {
+      error: {
+        code: "runtime-cli-failed",
+        message: "secret runtime stderr",
+      },
+      provider: "runtime-project",
+      snapshot: null,
+    },
+    sessionId,
+    workspaceRevision,
+  });
+  const missingSchemaMockModel = RuntimeMockQueryModelBuilder.build({
+    hostSchemaCatalog: {
+      hostSchema: {
+        loaded: false,
+      },
+      queries: [],
+    },
+    mockEntries: [
+      {
+        arguments: ["silver_key"],
+        name: "has_item",
+        value: "true",
+      },
+    ],
+    sessionId,
+    workspaceRevision,
+  });
+  const missingHandlerActionModel = RuntimeActionAuthoringModelBuilder.build({
+    hostBindingCatalog: {
+      actions: [],
+      hostBridge: {
+        loaded: true,
+        resolvedPath: "config/inscape.host.bridge.json",
+      },
+    },
+    hostSchemaCatalog,
+    runtimeSnapshot: runtimeEnvelope(fireSnapshot),
+    sessionId,
+    workspaceRevision,
+  });
+  const missingBridgeActionModel = RuntimeActionAuthoringModelBuilder.build({
+    hostBindingCatalog: {
+      actions: [],
+      hostBridge: {
+        loaded: false,
+      },
+    },
+    hostSchemaCatalog,
+    runtimeSnapshot: runtimeEnvelope(fireSnapshot),
+    sessionId,
+    workspaceRevision,
+  });
+  const emptyLogModel = RuntimeLogBacklogModelBuilder.build({
+    runtimeSnapshot: runtimeEnvelope(fireSnapshot),
+    sessionId,
+    storyGraphModel,
+    workspaceRevision,
+  });
+  const emptyBranchModel = RuntimeBranchEvidenceModelBuilder.build({
+    runtimeSnapshot: runtimeEnvelope({
+      ...fireSnapshot,
+      branchQueryReceipts: [],
+    }),
+    sessionId,
+    storyGraphModel,
+    workspaceRevision,
+  });
+  const staleSubstateModel = RuntimeSubstateAuthoringModelBuilder.build({
+    artifactText: "",
+    operation: substateDriftImport,
+    runtimeSnapshot: runtimeEnvelope(loggedSnapshot),
+    sessionId,
+    workspaceRevision,
+  });
+  const emptySubstateModel = RuntimeSubstateAuthoringModelBuilder.build({
+    artifactText: "",
+    operation: null,
+    runtimeSnapshot: unavailableRuntimeEnvelope,
+    sessionId,
+    workspaceRevision,
+  });
+  const stalePreviewSurface = {
+    provider: "compiler-project",
+    runtimeStatus: {
+      detail: "secret stale workspace revision detail",
+      label: "Runtime snapshot stale",
+      provider: "runtime-project",
+      state: "runtime-stale",
+    },
+    state: "runtime-stale",
+  };
+  const hardeningInventory = RuntimeErrorStateInventoryModelBuilder.build({
+    diagnostics: [],
+    sessionId,
+    surfaceModels: {
+      branchReceipts: emptyBranchModel,
+      logBacklog: emptyLogModel,
+      mockQuery: missingSchemaMockModel,
+      preview: stalePreviewSurface,
+      runtimeActions: missingHandlerActionModel,
+      runtimeStatus: runtimeUnavailableStatus,
+      runtimeSubstate: staleSubstateModel,
+    },
+    workspaceRevision,
+  });
+  const bridgeInventory = RuntimeErrorStateInventoryModelBuilder.build({
+    diagnostics: [],
+    sessionId,
+    surfaceModels: {
+      runtimeActions: missingBridgeActionModel,
+    },
+    workspaceRevision,
+  });
+  const payloadDiagnosticInventory = RuntimeErrorStateInventoryModelBuilder.build({
+    diagnostics: [
+      {
+        code: "payload-contract-error",
+        layer: "payload",
+        message: "secret hosted payload body",
+        severity: "error",
+        surface: "preview",
+      },
+    ],
+    sessionId,
+    surfaceModels: {
+      preview: stalePreviewSurface,
+      runtimeActions: blockedActionModel,
+    },
+    workspaceRevision,
+  });
+
+  assertEqual(runtimeUnavailableStatus.state, "runtime-unavailable", "runtime unavailable status");
+  assertEqual(runtimeCommandErrorStatus.state, "runtime-error", "runtime command error status");
+  assertEqual(missingSchemaMockModel.hostSchema.loaded, false, "missing schema mock model state");
+  assertEqual(missingHandlerActionModel.handlerMissingCount, 2, "missing action handler count");
+  assertEqual(missingBridgeActionModel.hostBridge.loaded, false, "missing bridge action model state");
+  assertEqual(emptyLogModel.state, "runtime-empty", "empty runtime log state");
+  assertEqual(emptyBranchModel.state, "runtime-empty", "empty branch receipt state");
+  assertEqual(staleSubstateModel.validation.status, "migratable", "stale substate validation state");
+  assertEqual(emptySubstateModel.canExport, false, "empty substate cannot export without Runtime");
+  assertEqual(hardeningInventory.surfaces.find((surface) => surface.surface === "preview")?.state, "stale", "hardening preview stale");
+  assertEqual(hardeningInventory.surfaces.find((surface) => surface.surface === "runtime-status")?.state, "unavailable", "hardening runtime status unavailable");
+  assertEqual(hardeningInventory.surfaces.find((surface) => surface.surface === "mock-query")?.state, "unavailable", "hardening mock schema unavailable");
+  assertEqual(hardeningInventory.surfaces.find((surface) => surface.surface === "runtime-actions")?.state, "error", "hardening action handler missing");
+  assertEqual(hardeningInventory.surfaces.find((surface) => surface.surface === "log-backlog")?.state, "empty", "hardening log empty");
+  assertEqual(hardeningInventory.surfaces.find((surface) => surface.surface === "branch-receipts")?.state, "empty", "hardening branch empty");
+  assertEqual(hardeningInventory.surfaces.find((surface) => surface.surface === "runtime-substate")?.state, "stale", "hardening substate stale");
+  assertEqual(bridgeInventory.surfaces.find((surface) => surface.surface === "runtime-actions")?.suggestedFixCategory, "bridge", "missing bridge fix category");
+  assertTruthy(
+    payloadDiagnosticInventory.diagnostics.some((diagnostic) => diagnostic.code === "payload-contract-error" && diagnostic.suggestedFixCategory === "payload"),
+    "payload contract diagnostic preserved"
+  );
+  assertNoForbiddenPayloads(JSON.stringify({
+    bridgeInventory,
+    hardeningInventory,
+    payloadDiagnosticInventory,
+    runtimeCommandErrorStatus,
+  }));
+  if (JSON.stringify(payloadDiagnosticInventory).includes("secret hosted payload body")) {
+    throw new Error("Payload contract diagnostic must not expose raw hosted payload body.");
+  }
+  if (JSON.stringify(hardeningInventory).includes("secret stale workspace revision detail")) {
+    throw new Error("Stale preview inventory must not expose raw stale detail.");
+  }
+  if (JSON.stringify(runtimeCommandErrorStatus).includes("secret runtime stderr")) {
+    throw new Error("Runtime command error status must not expose raw stderr.");
   }
 }
 
