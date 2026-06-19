@@ -171,6 +171,7 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run check:localization-update
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:localization-update-http
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:runtime
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:runtime-http
+npm --prefix src\ExternalSupport\SelfHostedEditor run check:runtime-authoring-integration
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:workbench-integration-http
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:semantic-parity-http
 npm --prefix src\ExternalSupport\SelfHostedEditor run check:references
@@ -202,6 +203,7 @@ npm --prefix src\ExternalSupport\SelfHostedEditor run smoke:desktop-startup
 `check:localization-update-http` starts the preview dev server in-process and performs real HTTP requests to `/api/localization-review` and `/api/localization-update`, including the `sessionId` path where review and update reuse the server-side previous CSV baseline, return update safety metadata, and reject Host Config-shaped CSV input.
 `check:runtime` exercises the Runtime dev-host path without requiring the local HTTP server to be started first, and asserts `advance-flow` / `rewind-flow` plus `choose` / `continue` transitions over a compact payload with an internal query provider summary.
 `check:runtime-http` starts the preview dev server in-process and performs real HTTP requests to `/api/runtime-state` and `/api/runtime-action`, including the `sessionId` path where actions advance server-side Runtime state without a `runtimeState` request body, mock query provider source/count without values, Host Schema / Host Bridge-derived action input, `fire` request evidence, `wait` pending evidence, and CLI-backed debug resume.
+`check:runtime-authoring-integration` starts the preview dev server in-process and drives the P5 Runtime authoring path through Host Schema / Host Bridge catalogs, session-only mock query, Runtime Preview, `fire`, `wait` pending / debug resume, Runtime Log, Branch Receipts, Runtime Substate export / validate / import, and Runtime States inventory models.
 `check:workbench-integration-http` starts the preview dev server in-process and performs a cross-feature workbench smoke through real HTTP requests: localization review / update, hosted empty and missing-baseline error states, line-map session refresh, stable node map review / dry-run / apply, backup metadata, recovery hints, and non-content session cache status.
 `check:semantic-parity-http` starts the preview dev server in-process and performs real HTTP requests to the LanguageServer-backed authoring endpoints: diagnostics, completions, definition, references, hover, and document symbols.
 `check:references` exercises the LanguageServer project references dev-host helper without requiring the local HTTP server to be started first, including cross-file references and current draft content.

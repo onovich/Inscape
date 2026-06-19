@@ -49,6 +49,7 @@ const requiredPaths = [
   "DevScripts/SelfHostedEditorPreloadTransportContractCheck.js",
   "DevScripts/SelfHostedEditorPayloadBridge.js",
   "DevScripts/SelfHostedEditorPayloadBridgeContractCheck.js",
+  "DevScripts/SelfHostedEditorRuntimeAuthoringIntegrationSmoke.js",
   "DevScripts/ModelContracts",
   "DevScripts/ModelContracts/SelfHostedEditorHostCapabilityContractCheck.js",
   "DevScripts/ModelContracts/SelfHostedEditorLocalizationContractCheck.js",
@@ -1056,6 +1057,10 @@ if (packageJson.scripts["check:static-assets"] !== "node DevScripts/SelfHostedEd
 }
 if (packageJson.scripts["check:static-assets-http"] !== "node DevScripts/SelfHostedEditorStaticAssetHttpSmoke.js") {
   console.error("SelfHostedEditor check:static-assets-http must delegate to SelfHostedEditorStaticAssetHttpSmoke.js.");
+  failed = true;
+}
+if (packageJson.scripts["check:runtime-authoring-integration"] !== "node DevScripts/SelfHostedEditorRuntimeAuthoringIntegrationSmoke.js") {
+  console.error("SelfHostedEditor check:runtime-authoring-integration must delegate to SelfHostedEditorRuntimeAuthoringIntegrationSmoke.js.");
   failed = true;
 }
 if (packageJson.scripts["check:style-structure"] !== "node DevScripts/SelfHostedEditorStyleStructureContractCheck.js") {
