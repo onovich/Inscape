@@ -12,6 +12,7 @@
 
 P5 SelfHostedEditor Runtime authoring / productization 已完成第十轮 Substate preview save/load，不代表 P5 已完成。
 - Round 10 专用执行指南见 [P5 Round 10 Substate Preview Save/Load Goal 模式执行指南](self-hosted-editor-p5-round10-substate-goal-mode-execution-guide.md)。
+- Round 10 审计见 [SelfHostedEditor P5 Substate Authoring Audit](self-hosted-editor-p5-substate-authoring-audit.md)。
 - 新增 `RuntimeSubstateAuthoringModelBuilder` 与 `RuntimeSubstatePanelController`，Host view 现在可以导出当前 Runtime Preview substate、粘贴 JSON validate，并且只在 `compatible` 时导入恢复 Runtime Preview。
 - dev-host 新增 `runtime.substate-*` backend command 与 `/api/runtime-substate-export`、`/api/runtime-substate-validate`、`/api/runtime-substate-import` 路径；实际 export / validate / import 仍通过 shared CLI `runtime-project --export-substate`、`--validate-substate` 与 `--substate` 执行。
 - Substate 面板显示 format、formatVersion、runtimeVersion、scriptVersion、current node、command index、flow stack depth、pending action 摘要、branch receipt count、host checkpoint presence 与 validation status。
