@@ -1,12 +1,23 @@
 # Agent 接手指南
 
-状态：P5 SelfHostedEditor Runtime authoring Round 11 Error / empty / stale state hardening complete；下一步进入 Round 12 integration smoke + docs closure
+状态：P5 SelfHostedEditor Runtime authoring Round 12 integration smoke + docs closure 已验收；下一步进入 P5 final validation / PASS-FAIL 收口
 
 最后更新：2026-06-20
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-20 P5 Round 12 Integration Smoke 完成快照
+
+P5 Round 12 integration smoke + docs closure 已完成，不代表 P5 final validation 已完成。
+- Round 12 执行指南见 [P5 Round 12 Integration Smoke + Docs Closure Goal 模式执行指南](self-hosted-editor-p5-round12-integration-smoke-goal-mode-execution-guide.md)。
+- Round 12 审计见 [SelfHostedEditor P5 Integration Audit](self-hosted-editor-p5-integration-audit.md)。
+- 新增 `check:runtime-authoring-integration`，真实 in-process dev host HTTP 串起 Host Schema / Host Bridge catalog、session-only mock query、Runtime Preview、`fire` action、`wait` pending / debug resume、Runtime Log、Branch Receipts、Runtime Substate export / validate / import 和 Runtime States inventory。
+- Smoke hardening 覆盖 Runtime unavailable、Runtime command error、missing schema、missing bridge、missing handler、empty log、empty branch receipt、empty substate artifact、scriptVersion drift / migratable blocked import 和 hosted payload contract diagnostic。
+- Round 12 功能提交：`a72cbe9 p5: add runtime authoring integration smoke`、`3c652fc p5: harden runtime authoring integration smoke`。
+- 当前没有需要进入 P5 Round 13-15 缓冲修复的阻塞缺陷；下一步进入 P5 final validation / PASS-FAIL，输出 `docs/self-hosted-editor-p5-final-validation-report.md`。
+- 继续禁止复制 Runtime evaluator、query evaluator、action dispatcher、substate validator 或 Log builder；继续禁止混入完整 host save、Unity / Host SDK、Rollback / Trace / Flashback、Presentation IR 或 Host Schema action policy 扩张。
 
 ### 2026-06-20 P5 Round 11 Error / Empty / Stale State 完成快照
 
