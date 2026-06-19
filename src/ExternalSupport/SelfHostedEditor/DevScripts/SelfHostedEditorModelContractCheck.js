@@ -10,6 +10,7 @@ await import("./ModelContracts/SelfHostedEditorRuntimeLogBacklogContractCheck.js
 await import("./ModelContracts/SelfHostedEditorRuntimeBranchEvidenceContractCheck.js");
 await import("./ModelContracts/SelfHostedEditorRuntimeActionAuthoringContractCheck.js");
 await import("./ModelContracts/SelfHostedEditorRuntimeSubstateAuthoringContractCheck.js");
+await import("./ModelContracts/SelfHostedEditorRuntimeErrorStateInventoryContractCheck.js");
 await import("./ModelContracts/SelfHostedEditorRuntimeMockQueryContractCheck.js");
 await import("./ModelContracts/SelfHostedEditorRuntimeMockQueryUiContractCheck.js");
 await import("./ModelContracts/SelfHostedEditorWorkbenchIntegrationContractCheck.js");

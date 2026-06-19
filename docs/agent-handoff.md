@@ -1,12 +1,21 @@
 # Agent 接手指南
 
-状态：P5 SelfHostedEditor Runtime authoring Round 10 Substate preview save/load complete；下一轮进入 Round 11 Error / empty / stale state hardening
+状态：P5 SelfHostedEditor Runtime authoring Round 10 Substate preview save/load complete；Round 11 Error / empty / stale state guide ready
 
-最后更新：2026-06-19
+最后更新：2026-06-20
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-20 P5 Round 11 Error / Empty / Stale State 执行入口
+
+P5 Round 10 已验收通过后，下一步进入 P5 Round 11：Error / empty / stale state hardening。
+- Round 11 专用执行指南见 [P5 Round 11 Error / Empty / Stale State Goal 模式执行指南](self-hosted-editor-p5-round11-error-state-goal-mode-execution-guide.md)，约束最多 3 轮会话完成。
+- 本轮只收口 Runtime authoring surfaces 的 ready / empty / unavailable / error / stale / blocked 状态表达，不提前做 Round 12 integration smoke。
+- 每轮必须包含 Debug 自检、架构自检、验证命令结果；验证通过后提交并推送，推送成功后才能进入下一轮。
+- 继续禁止复制 Runtime condition evaluator、query evaluator、action dispatcher、substate validator 或 Log builder；禁止扩张 Host Schema action policy。
+- 后续 Round 12 才进入 P5 integration smoke + docs closure；不要在 Round 11 混入 Unity / Host SDK、Rollback / Trace / Flashback 或完整 host save。
 
 ### 2026-06-19 P5 Round 10 Substate Preview Save/Load 快照
 
