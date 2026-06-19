@@ -1,6 +1,6 @@
 # Agent 接手指南
 
-状态：P5 SelfHostedEditor Runtime authoring Round 10 Substate preview save/load complete；Round 11 Error / empty / stale state guide ready
+状态：P5 SelfHostedEditor Runtime authoring Round 11 Error / empty / stale state hardening complete；下一步进入 Round 12 integration smoke + docs closure
 
 最后更新：2026-06-20
 
@@ -8,14 +8,18 @@
 
 ## 当前项目快照
 
-### 2026-06-20 P5 Round 11 Error / Empty / Stale State 执行入口
+### 2026-06-20 P5 Round 11 Error / Empty / Stale State 完成快照
 
-P5 Round 10 已验收通过后，下一步进入 P5 Round 11：Error / empty / stale state hardening。
-- Round 11 专用执行指南见 [P5 Round 11 Error / Empty / Stale State Goal 模式执行指南](self-hosted-editor-p5-round11-error-state-goal-mode-execution-guide.md)，约束最多 3 轮会话完成。
-- 本轮只收口 Runtime authoring surfaces 的 ready / empty / unavailable / error / stale / blocked 状态表达，不提前做 Round 12 integration smoke。
-- 每轮必须包含 Debug 自检、架构自检、验证命令结果；验证通过后提交并推送，推送成功后才能进入下一轮。
+P5 Round 11 Error / empty / stale state hardening 已完成，不代表 P5 已完成。
+- Round 11 专用执行指南见 [P5 Round 11 Error / Empty / Stale State Goal 模式执行指南](self-hosted-editor-p5-round11-error-state-goal-mode-execution-guide.md)。
+- Round 11 审计见 [SelfHostedEditor P5 Error State Audit](self-hosted-editor-p5-error-state-audit.md)。
+- 新增 `RuntimeErrorStateInventoryModelBuilder`，统一聚合 Preview、Runtime Status、Mock Query、Runtime Actions、Log / Backlog、Branch Receipts 与 Runtime Substate 七个 authoring surface 的 `ready` / `empty` / `unavailable` / `error` / `stale` / `blocked` 状态。
+- Inventory diagnostic contract 固定 `layer`、`code`、`shortMessage`、`surface`、`suggestedFixCategory`，suggested fix category 覆盖 schema、bridge、query、action、runtime-cli、transport、session、script 与 payload。
+- Host view 新增 `Runtime States` 面板，渲染每个 surface 的 bounded state、diagnostic count 与修复类别；面板不暴露 workspace text、host payload body、mock value table、完整 Runtime snapshot、完整 substate、完整 Runtime log 或完整 action history。
+- Workbench 在普通 render、Runtime snapshot update、substate export / validate / import、Preview Runtime control state 变化后刷新 Runtime States 总览。
+- Round 11 功能提交：`ca4b929 p5: add runtime error state inventory`、`ecc0fbe p5: surface runtime error states`。
 - 继续禁止复制 Runtime condition evaluator、query evaluator、action dispatcher、substate validator 或 Log builder；禁止扩张 Host Schema action policy。
-- 后续 Round 12 才进入 P5 integration smoke + docs closure；不要在 Round 11 混入 Unity / Host SDK、Rollback / Trace / Flashback 或完整 host save。
+- 下一步进入 P5 Round 12：integration smoke + docs closure；不要混入 Unity / Host SDK、Rollback / Trace / Flashback 或完整 host save。
 
 ### 2026-06-19 P5 Round 10 Substate Preview Save/Load 快照
 
@@ -28,7 +32,7 @@ P5 SelfHostedEditor Runtime authoring / productization 已完成第十轮 Substa
 - Desktop preload / IPC surface 已白名单 Substate commands；当前 embedded desktop backend 明确返回 unavailable operation，不伪造未实现的 Runtime substate 执行。
 - Contract / smoke 覆盖 model、panel import gating、Workbench 集成、backend transport / preload、direct Runtime smoke、HTTP smoke、script drift `migratable` 阻断、invalid JSON `error`，并检查 artifact 不包含完整 Log、完整 action history、Rollback stack 或 Trace Replay。
 - 本轮继续禁止把 `inscape.runtime-substate` 扩张为完整 host save；`host.checkpointId` 仍是 opaque，SelfHostedEditor 不解释宿主业务状态。
-- 下一轮进入 P5 Round 11：Error / empty / stale state hardening；不要混入 Unity / Host SDK、Rollback / Trace / Flashback 或 Host Schema action policy 扩张。
+- 后续已由 P5 Round 11 收口 Error / empty / stale state hardening；继续不要混入 Unity / Host SDK、Rollback / Trace / Flashback 或 Host Schema action policy 扩张。
 
 ### 2026-06-18 SelfHostedEditor P5 Round 9 Branch Receipt Surface 快照
 
