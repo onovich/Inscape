@@ -1,12 +1,22 @@
 # Agent 接手指南
 
-状态：P5 SelfHostedEditor Runtime authoring / productization 已通过 final validation；下一候选方向必须由用户批准
+状态：P5 SelfHostedEditor Runtime authoring / productization 已通过 final validation；Post-P5 下一方向决策 brief 已完成，下一候选方向仍必须由用户批准
 
 最后更新：2026-06-20
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-20 Post-P5 下一方向决策门完成快照
+
+P5 已通过 final validation；Post-P5 下一方向决策 brief 已完成；当前仍没有已批准的新研发 phase。下一步应等待用户批准一个候选方向，而不是自动启动 Unity / Host SDK、Rollback / Trace Replay / Flashback、Presentation IR 或完整 host save。
+- Post-P5 决策门执行指南见 [Post-P5 Next Direction Decision Goal 模式执行指南](post-p5-next-direction-decision-goal-mode-execution-guide.md)。
+- 决策 brief 见 [Post-P5 Next Direction Decision Brief](post-p5-next-direction-decision-brief.md)。
+- Brief 比较了 Unity / Host SDK 第一刀、高级运行时调试、Presentation IR / 跨引擎 / 独立 Runtime、Host Bridge / Schema 自动化四个候选方向。
+- 推荐下一步是先批准 Host Bridge / Host Schema 自动化与代码生成收口的 scoping first slice，再用它降低 Unity / Host SDK 第一刀风险；这只是建议，不是已批准 phase。
+- 本阶段只做决策资料和推荐，没有做产品开发；如果用户批准某个方向，应为该方向单独输出新的 goal-mode execution guide。
+- 下一候选方向仍必须由用户批准，不能由 agent 自动扩张。
 
 ### 2026-06-20 P5 Final Validation PASS 快照
 
