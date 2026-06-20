@@ -12,7 +12,7 @@
 - 执行 P3 goal：读 [P3 第二版语法 / Runtime / 宿主能力 Goal 模式执行指南](self-hosted-editor-p3-goal-mode-execution-guide.md)，并从 [P3 Baseline Audit](self-hosted-editor-p3-baseline-audit.md)、[P3 Host Schema v2 Contract Audit](self-hosted-editor-p3-host-schema-v2-contract-audit.md)、[P3 Host Schema Compatibility Audit](self-hosted-editor-p3-host-schema-compatibility-audit.md)、[P3 Usage Manifest Contract Audit](self-hosted-editor-p3-usage-manifest-contract-audit.md)、[P3 Usage Manifest Implementation Audit](self-hosted-editor-p3-usage-manifest-implementation-audit.md)、[P3 Host Integration Audit](self-hosted-editor-p3-host-integration-audit.md)、[P3 Condition Syntax Contract Audit](self-hosted-editor-p3-condition-syntax-contract-audit.md)、[P3 Condition Syntax Implementation Audit](self-hosted-editor-p3-condition-syntax-implementation-audit.md)、[P3 Condition Consumption Audit](self-hosted-editor-p3-condition-consumption-audit.md)、[P3 Runtime Query Provider Audit](self-hosted-editor-p3-runtime-query-provider-audit.md)、[P3 Runtime State Audit](self-hosted-editor-p3-runtime-state-audit.md)、[P3 Integration Audit](self-hosted-editor-p3-integration-audit.md) 与 [P3 Final Validation Report](self-hosted-editor-p3-final-validation-report.md) 接上当前实现状态。
 - 执行 P4 goal：读 [P4 Runtime Playable MVP Goal 模式执行指南](self-hosted-editor-p4-goal-mode-execution-guide.md)，再读 [P4 Final Validation Report](self-hosted-editor-p4-final-validation-report.md)，从 P3 final validation 接上 Runtime playable MVP，不要把 P4 扩成编辑器产品化、Rollback / Trace / Flashback、Presentation IR 或 Unity / Host SDK。
 - 执行 P5 goal：读 [P5 SelfHostedEditor Runtime Authoring Goal 模式执行指南](self-hosted-editor-p5-goal-mode-execution-guide.md)，再读 [P5 Baseline Audit](self-hosted-editor-p5-baseline-audit.md)、[P5 Runtime Authoring Contract](self-hosted-editor-p5-runtime-authoring-contract.md)、[P5 Runtime Session Audit](self-hosted-editor-p5-runtime-session-audit.md)、[P5 Mock Query Model Audit](self-hosted-editor-p5-mock-query-model-audit.md) 与 [P5 Mock Query UI Audit](self-hosted-editor-p5-mock-query-ui-audit.md)，从 P4 final validation 接上 SelfHostedEditor Runtime authoring / productization；每轮必须 Debug 自检、架构自检、验证通过后提交推送，再进入下一轮。
-- P5 Round 12 已完成：读 [P5 Integration Audit](self-hosted-editor-p5-integration-audit.md) 和 [P5 Round 12 Integration Smoke + Docs Closure Goal 模式执行指南](self-hosted-editor-p5-round12-integration-smoke-goal-mode-execution-guide.md)，从 [P5 Error State Audit](self-hosted-editor-p5-error-state-audit.md) 接上；下一步进入 P5 final validation / PASS-FAIL。
+- P5 Runtime authoring / productization 已完成 final validation：读 [P5 Final Validation Report](self-hosted-editor-p5-final-validation-report.md)、[P5 Final Validation / PASS-FAIL Goal 模式执行指南](self-hosted-editor-p5-final-validation-goal-mode-execution-guide.md) 和 [P5 Integration Audit](self-hosted-editor-p5-integration-audit.md)。下一候选方向必须由用户批准，不能自动进入 Unity / Host SDK、Rollback / Trace Replay / Flashback、Presentation IR 或完整 host save。
 
 ## 阅读路径
 
@@ -145,6 +145,9 @@ docs/
   self-hosted-editor-p5-runtime-session-audit.md P5 Round 2 Runtime authoring session 审计
   self-hosted-editor-p5-mock-query-model-audit.md P5 Round 3 Mock query model 审计
   self-hosted-editor-p5-mock-query-ui-audit.md P5 Round 4 Mock query UI 审计
+  self-hosted-editor-p5-integration-audit.md P5 Round 12 integration smoke 审计
+  self-hosted-editor-p5-final-validation-goal-mode-execution-guide.md P5 final validation goal 模式执行指南
+  self-hosted-editor-p5-final-validation-report.md P5 Runtime authoring 最终验证报告
   vscode-tooling.md      VSCode 阶段的轻工具链设计与使用方式
   cli-command-reference.md CLI 命令、参数、产物和验证命令速查
   l10n-extraction.md     CSV 本地化提取命令与字段说明

@@ -1,6 +1,6 @@
 # Agent 接手指南
 
-状态：P5 SelfHostedEditor Runtime authoring Round 12 integration smoke + docs closure 已验收；下一步进入 P5 final validation / PASS-FAIL 收口
+状态：P5 SelfHostedEditor Runtime authoring / productization 已通过 final validation；下一候选方向必须由用户批准
 
 最后更新：2026-06-20
 
@@ -8,15 +8,25 @@
 
 ## 当前项目快照
 
+### 2026-06-20 P5 Final Validation PASS 快照
+
+P5 SelfHostedEditor Runtime authoring / productization 已通过 final validation，结论见 [SelfHostedEditor P5 Final Validation Report](self-hosted-editor-p5-final-validation-report.md)。
+- Final validation 专用执行指南见 [P5 Final Validation / PASS-FAIL Goal 模式执行指南](self-hosted-editor-p5-final-validation-goal-mode-execution-guide.md)。
+- 最终验证矩阵全部通过：`.NET build`、Internal tests、VSCode structure / semantic parity、SelfHostedEditor syntax / structure / model / payload bridge / runtime / runtime HTTP / runtime authoring integration / workbench integration / semantic parity HTTP 与 `git diff --check`。
+- 边界扫描全部无命中；`rg` 无输出 / exit code 1 已按指南解释为 PASS。
+- 当前没有必须进入 P5 Round 13-15 buffer fix 的阻塞缺陷。
+- 下一候选方向必须由用户重新批准，不能自动扩张到 Unity / Host SDK、Rollback / Trace Replay / Flashback、Presentation IR 或完整 host save。
+- 继续禁止复制 Runtime evaluator、query evaluator、action dispatcher、substate validator 或 Log builder；继续禁止新增 Host Schema action policy 字段。
+
 ### 2026-06-20 P5 Round 12 Integration Smoke 完成快照
 
-P5 Round 12 integration smoke + docs closure 已完成，不代表 P5 final validation 已完成。
+P5 Round 12 integration smoke + docs closure 已完成；它本身不代表 P5 final validation，最终验收已由上方 P5 Final Validation Report 收口。
 - Round 12 执行指南见 [P5 Round 12 Integration Smoke + Docs Closure Goal 模式执行指南](self-hosted-editor-p5-round12-integration-smoke-goal-mode-execution-guide.md)。
 - Round 12 审计见 [SelfHostedEditor P5 Integration Audit](self-hosted-editor-p5-integration-audit.md)。
 - 新增 `check:runtime-authoring-integration`，真实 in-process dev host HTTP 串起 Host Schema / Host Bridge catalog、session-only mock query、Runtime Preview、`fire` action、`wait` pending / debug resume、Runtime Log、Branch Receipts、Runtime Substate export / validate / import 和 Runtime States inventory。
 - Smoke hardening 覆盖 Runtime unavailable、Runtime command error、missing schema、missing bridge、missing handler、empty log、empty branch receipt、empty substate artifact、scriptVersion drift / migratable blocked import 和 hosted payload contract diagnostic。
 - Round 12 功能提交：`a72cbe9 p5: add runtime authoring integration smoke`、`3c652fc p5: harden runtime authoring integration smoke`。
-- 当前没有需要进入 P5 Round 13-15 缓冲修复的阻塞缺陷；下一步进入 P5 final validation / PASS-FAIL，输出 `docs/self-hosted-editor-p5-final-validation-report.md`。
+- Round 12 没有需要进入 P5 Round 13-15 缓冲修复的阻塞缺陷；P5 final validation 已输出 `docs/self-hosted-editor-p5-final-validation-report.md` 并判定 PASS。
 - 继续禁止复制 Runtime evaluator、query evaluator、action dispatcher、substate validator 或 Log builder；继续禁止混入完整 host save、Unity / Host SDK、Rollback / Trace / Flashback、Presentation IR 或 Host Schema action policy 扩张。
 
 ### 2026-06-20 P5 Round 11 Error / Empty / Stale State 完成快照
@@ -1807,9 +1817,9 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 
 建议优先做小而闭环的任务，不要直接跳到大规模重构。
 
-1. 进入 P5 Round 8 Log / Backlog surface。
-   - 先读 [P5 SelfHostedEditor Runtime Authoring Goal 模式执行指南](self-hosted-editor-p5-goal-mode-execution-guide.md)、[SelfHostedEditor P5 Runtime Authoring Contract](self-hosted-editor-p5-runtime-authoring-contract.md)、[SelfHostedEditor P5 Runtime Status Audit](self-hosted-editor-p5-runtime-status-audit.md) 与 [SelfHostedEditor P5 Runtime Preview Audit](self-hosted-editor-p5-runtime-preview-audit.md)。
-   - 在 SelfHostedEditor 只展示 Runtime `logEntries`，支持空状态和 Runtime unavailable；不得把 Log 写入 formal Runtime State，也不得在浏览器侧重算 Runtime state、condition/query/action 语义或扩展 Host action policy。
+1. P5 后续方向选择需先由用户批准。
+   - P5 Runtime authoring / productization 已 PASS，见 [SelfHostedEditor P5 Final Validation Report](self-hosted-editor-p5-final-validation-report.md)。
+   - 不要自动进入 Unity / Host SDK、Rollback / Trace Replay / Flashback、Presentation IR 或完整 host save；若要继续其中任一方向，先产出新的 goal-mode execution guide 并重新声明边界。
 
 2. 继续推进 Stable Node ID / 本地化主线。
    - ADR 0013、sidecar 闭环、保守自动重命名识别、VSCode 显式 `Update Stable Node Map` 入口、插入标题后的自动同步、标题重命名人工确认 / 冲突报告、本地化 alignment / audit report，以及相似文本人工候选第一版都已落地。
