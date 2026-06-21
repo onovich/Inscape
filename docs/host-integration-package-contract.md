@@ -2,7 +2,7 @@
 
 日期：2026-06-21
 
-状态：Round 4 contract baseline；readiness report、POC planning 与 final validation 会在 Round 5-6 继续拆分成独立契约。
+状态：Round 5 contract baseline；readiness report、static artifact smoke 与 POC-1 planning 已收口，final validation 留给 Round 6。
 
 ## 目标
 
@@ -59,7 +59,7 @@ inscape-integration-package/
     readiness-report.json
 ```
 
-Round 2 固定 package 结构与 graph 入口。Round 3 固定 source location 与 localization anchor export 契约。Round 4 固定 Host Bridge candidate 契约和 static fixture pack。`reports/readiness-report.json` 的详细字段留给后续轮次。
+Round 2 固定 package 结构与 graph 入口。Round 3 固定 source location 与 localization anchor export 契约。Round 4 固定 Host Bridge candidate 契约和 static fixture pack。Round 5 固定 `reports/readiness-report.json` 契约、static artifact smoke 和 POC-1 planning/checklist。
 
 ## Artifact 清单
 
@@ -75,7 +75,7 @@ Round 2 固定 package 结构与 graph 入口。Round 3 固定 source location �
 | `source-map/source-locations.json` | required for packages with diagnostics or reports | Round 3 contract | package/source export | diagnostics / report source jump |
 | `localization/anchor-map.json` | required when `localization/l10n.csv` is present | Round 3 contract | localization export / package assembly | localization source mapping |
 | `host/host-bridge-candidate.json` | recommended when gaps exist | Round 4 contract | manual assembly / partner dry-run / future generator | manual review |
-| `reports/readiness-report.json` | planned | Round 5 | static artifact smoke / audit | CI / handoff |
+| `reports/readiness-report.json` | recommended | Round 5 contract | static artifact smoke / partner dry-run | CI / handoff |
 
 ## Manifest Contract
 
@@ -220,6 +220,21 @@ Candidate rules:
 
 Round 4 static artifact fixtures are documented in [Host Integration Partner Readiness Fixtures](host-integration-partner-readiness-fixtures.md), with the JSON fixture pack at [host-integration-static-fixtures/fixtures.json](host-integration-static-fixtures/fixtures.json).
 
+## Readiness Report Connection
+
+`reports/readiness-report.json` must follow [Host Integration Readiness Report Contract](host-integration-readiness-report-contract.md).
+
+Report rules:
+
+- Readiness reports are static package / partner dry-run evidence, not Runtime reports.
+- Reports must be deterministic, diffable and source-ref aware.
+- Report diagnostics should use package/workspace-relative source refs and `compiler-1-based` coordinates.
+- Host Bridge Candidate summary remains unconfirmed review evidence with `writesHostData = false`.
+- Partner-specific fields may appear only as partner report / candidate evidence, not in Compiler, Host Schema, Narrative Graph IR or source localization truth.
+- Missing or blocked artifacts produce explicit report status, not Runtime fallback.
+
+Round 5 static artifact smoke is documented in [Host Integration Static Artifact Smoke](host-integration-static-artifact-smoke.md), with the script at [StaticArtifactFixtureSmoke.js](host-integration-static-fixtures/StaticArtifactFixtureSmoke.js).
+
 ## Package Status States
 
 Package-level validation and reports should be able to represent:
@@ -275,8 +290,8 @@ it means only:
 - Round 2: [Narrative Graph IR External Contract](narrative-graph-ir-external-contract.md).
 - Round 3: [Source Location External Contract](source-location-external-contract.md) and [Localization Anchor Export Contract](localization-anchor-export-contract.md).
 - Round 4: [Host Bridge Candidate Contract](host-bridge-candidate-contract.md) and [Host Integration Partner Readiness Fixtures](host-integration-partner-readiness-fixtures.md).
+- Round 5: [Host Integration Readiness Report Contract](host-integration-readiness-report-contract.md), [Host Integration Static Artifact Smoke](host-integration-static-artifact-smoke.md), [Host Integration Partner Readiness POC-1 Checklist](host-integration-partner-readiness-poc-1-checklist.md) and [Sinan Static Artifact POC Planning Note](sinan-cooperation/sinan-static-artifact-poc-planning-note.md).
 
 ## Deferred To Later Rounds
 
-- Round 5: static artifact smoke, readiness report shape, Sinan Static Artifact POC planning note and POC-1 checklist.
 - Round 6: final validation report and docs closure.

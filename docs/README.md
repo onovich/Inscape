@@ -14,7 +14,7 @@
 - 执行 P5 goal：读 [P5 SelfHostedEditor Runtime Authoring Goal 模式执行指南](self-hosted-editor-p5-goal-mode-execution-guide.md)，再读 [P5 Baseline Audit](self-hosted-editor-p5-baseline-audit.md)、[P5 Runtime Authoring Contract](self-hosted-editor-p5-runtime-authoring-contract.md)、[P5 Runtime Session Audit](self-hosted-editor-p5-runtime-session-audit.md)、[P5 Mock Query Model Audit](self-hosted-editor-p5-mock-query-model-audit.md) 与 [P5 Mock Query UI Audit](self-hosted-editor-p5-mock-query-ui-audit.md)，从 P4 final validation 接上 SelfHostedEditor Runtime authoring / productization；每轮必须 Debug 自检、架构自检、验证通过后提交推送，再进入下一轮。
 - P5 Runtime authoring / productization 已完成 final validation：读 [P5 Final Validation Report](self-hosted-editor-p5-final-validation-report.md)、[P5 Final Validation / PASS-FAIL Goal 模式执行指南](self-hosted-editor-p5-final-validation-goal-mode-execution-guide.md) 和 [P5 Integration Audit](self-hosted-editor-p5-integration-audit.md)。下一候选方向必须由用户批准，不能自动进入 Unity / Host SDK、Rollback / Trace Replay / Flashback、Presentation IR 或完整 host save。
 - Post-P5 下一方向决策已完成：读 [Post-P5 Next Direction Decision Brief](post-p5-next-direction-decision-brief.md) 和 [Post-P5 Next Direction Decision Goal 模式执行指南](post-p5-next-direction-decision-goal-mode-execution-guide.md)。2026-06-21 已批准其推荐方向的具体化版本：`Host Integration Partner Readiness`，但范围仅限 contract / fixture / report / planning。
-- 执行 Host Integration Partner Readiness goal：读 [Host Integration Partner Readiness Goal 模式执行指南](host-integration-partner-readiness-goal-mode-execution-guide.md)、[Host Integration Package Contract](host-integration-package-contract.md)、[Narrative Graph IR External Contract](narrative-graph-ir-external-contract.md)、[Source Location External Contract](source-location-external-contract.md)、[Localization Anchor Export Contract](localization-anchor-export-contract.md)、[Host Bridge Candidate Contract](host-bridge-candidate-contract.md)、[Host Integration Partner Readiness Fixtures](host-integration-partner-readiness-fixtures.md)、[Sinan Cooperation Notes](sinan-cooperation/README.md)、[Host Integration Partner Readiness 决策简报](sinan-cooperation/host-integration-partner-readiness-decision-brief-2026-06-21.md) 和 [商务反馈口径](sinan-cooperation/host-integration-partner-readiness-business-response-2026-06-21.md)。总预算 6 轮，每轮必须 Debug 自检、架构自检、验证通过后提交推送；Sinan 只能作为 partner profile / fixture，不得成为 core dependency。
+- 执行 Host Integration Partner Readiness goal：读 [Host Integration Partner Readiness Goal 模式执行指南](host-integration-partner-readiness-goal-mode-execution-guide.md)、[Host Integration Package Contract](host-integration-package-contract.md)、[Narrative Graph IR External Contract](narrative-graph-ir-external-contract.md)、[Source Location External Contract](source-location-external-contract.md)、[Localization Anchor Export Contract](localization-anchor-export-contract.md)、[Host Bridge Candidate Contract](host-bridge-candidate-contract.md)、[Host Integration Readiness Report Contract](host-integration-readiness-report-contract.md)、[Host Integration Static Artifact Smoke](host-integration-static-artifact-smoke.md)、[Host Integration Partner Readiness Fixtures](host-integration-partner-readiness-fixtures.md)、[Host Integration Partner Readiness POC-1 Checklist](host-integration-partner-readiness-poc-1-checklist.md)、[Sinan Cooperation Notes](sinan-cooperation/README.md)、[Host Integration Partner Readiness 决策简报](sinan-cooperation/host-integration-partner-readiness-decision-brief-2026-06-21.md)、[商务反馈口径](sinan-cooperation/host-integration-partner-readiness-business-response-2026-06-21.md) 和 [Sinan Static Artifact POC Planning Note](sinan-cooperation/sinan-static-artifact-poc-planning-note.md)。总预算 6 轮，每轮必须 Debug 自检、架构自检、验证通过后提交推送；Sinan 只能作为 partner profile / fixture，不得成为 core dependency。
 
 ## 阅读路径
 
@@ -159,11 +159,15 @@ docs/
   source-location-external-contract.md Source Location 外部契约
   localization-anchor-export-contract.md Localization Anchor Export 外部契约
   host-bridge-candidate-contract.md Host Bridge Candidate 外部契约
+  host-integration-readiness-report-contract.md Host Integration Readiness Report 契约
+  host-integration-static-artifact-smoke.md Host Integration static artifact smoke 说明
+  host-integration-partner-readiness-poc-1-checklist.md Host Integration Partner Readiness POC-1 checklist
   host-integration-partner-readiness-fixtures.md Host Integration Partner Readiness fixture 说明
-  host-integration-static-fixtures/ Round 4 static artifact fixture pack
+  host-integration-static-fixtures/ Round 4 static artifact fixture pack 与 Round 5 smoke script
   sinan-cooperation/README.md Sinan / Inscape 合作资料索引
   sinan-cooperation/host-integration-partner-readiness-decision-brief-2026-06-21.md Host Integration Partner Readiness 决策简报
   sinan-cooperation/host-integration-partner-readiness-business-response-2026-06-21.md Host Integration Partner Readiness 商务反馈口径
+  sinan-cooperation/sinan-static-artifact-poc-planning-note.md Sinan Static Artifact POC planning note
   vscode-tooling.md      VSCode 阶段的轻工具链设计与使用方式
   cli-command-reference.md CLI 命令、参数、产物和验证命令速查
   l10n-extraction.md     CSV 本地化提取命令与字段说明

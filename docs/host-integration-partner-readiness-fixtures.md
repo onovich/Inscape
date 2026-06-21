@@ -2,7 +2,7 @@
 
 日期：2026-06-21
 
-状态：Round 4 static artifact fixture baseline；面向 POC-1 static artifact smoke / partner dry-run planning。
+状态：Round 5 static artifact fixture baseline；已接入 POC-1 static artifact smoke / partner dry-run planning。
 
 ## 目标
 
@@ -14,7 +14,7 @@
 docs/host-integration-static-fixtures/fixtures.json
 ```
 
-该 pack 是静态 JSON 证据，不是 Compiler sample、Runtime sample 或 host adapter 输出。Round 5 可以在此基础上建立 static artifact smoke。
+该 pack 是静态 JSON 证据，不是 Compiler sample、Runtime sample 或 host adapter 输出。Round 5 在此基础上建立了 static artifact smoke，见 [Host Integration Static Artifact Smoke](host-integration-static-artifact-smoke.md)。
 
 ## 覆盖矩阵
 
@@ -80,9 +80,9 @@ If a future Sinan fixture is added, it must keep the same boundary:
 - static catalog projection may create candidates;
 - no core dependency, runtime integration, hard dependency or Sinan-only Host Schema policy may appear.
 
-## Smoke Expectations For Round 5
+## Static Smoke
 
-The next round can validate the fixture pack by checking:
+Round 5 validates the fixture pack with [StaticArtifactFixtureSmoke.js](host-integration-static-fixtures/StaticArtifactFixtureSmoke.js). The smoke checks:
 
 - JSON parse succeeds.
 - Fixture ids are unique.
@@ -93,10 +93,11 @@ The next round can validate the fixture pack by checking:
 - Unknown action uses `schema-capability` / `blocked`, not fake `action-handler`.
 - Localization fixture does not include host runtime localization id.
 
-## Round 4 Self-Check
+## Round 5 Self-Check
 
 - The seven required fixture scenarios are present.
 - The pack is deterministic and diffable JSON.
 - Diagnostics and candidates carry source refs where applicable.
 - Candidate evidence does not write host data.
 - Fixtures do not introduce Sinan-specific core semantics or Host Schema action policy fields.
+- The fixture smoke does not compile source, run Runtime, connect Sinan Runtime / Unity / Host SDK or generate confirmed Host Bridge mappings.

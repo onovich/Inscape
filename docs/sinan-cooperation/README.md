@@ -28,7 +28,11 @@
 11. [Source Location External Contract](../source-location-external-contract.md)
 12. [Localization Anchor Export Contract](../localization-anchor-export-contract.md)
 13. [Host Bridge Candidate Contract](../host-bridge-candidate-contract.md)
-14. [Host Integration Partner Readiness Fixtures](../host-integration-partner-readiness-fixtures.md)
+14. [Host Integration Readiness Report Contract](../host-integration-readiness-report-contract.md)
+15. [Host Integration Static Artifact Smoke](../host-integration-static-artifact-smoke.md)
+16. [Host Integration Partner Readiness Fixtures](../host-integration-partner-readiness-fixtures.md)
+17. [Host Integration Partner Readiness POC-1 Checklist](../host-integration-partner-readiness-poc-1-checklist.md)
+18. [Sinan Static Artifact POC Planning Note](sinan-static-artifact-poc-planning-note.md)
 
 边界规则：
 
