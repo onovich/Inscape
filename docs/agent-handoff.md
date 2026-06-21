@@ -1,12 +1,22 @@
 # Agent 接手指南
 
-状态：P5 SelfHostedEditor Runtime authoring / productization 已通过 final validation；Host Integration Partner Readiness Round 3 已完成，范围仍限 contract / fixture / report / planning
+状态：P5 SelfHostedEditor Runtime authoring / productization 已通过 final validation；Host Integration Partner Readiness Round 4 已完成，范围仍限 contract / fixture / report / planning
 
 最后更新：2026-06-21
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-21 Host Integration Partner Readiness Round 4 快照
+
+Host Integration Partner Readiness 已完成 Round 4 Host Bridge Candidate Contract + Static Artifact Fixtures。
+- 新增 [Host Bridge Candidate Contract](host-bridge-candidate-contract.md)，定义 `host/host-bridge-candidate.json` 的 candidate kind、status、confidence、conflict、manual review、generated ownership、Sinan catalog projection boundary 和 `writesHostData = false` POC-1 边界。
+- 新增 [Host Integration Partner Readiness Fixtures](host-integration-partner-readiness-fixtures.md) 与静态 fixture pack [fixtures.json](host-integration-static-fixtures/fixtures.json)，覆盖 minimal dialogue、branching、localization、missing speaker、unknown action、unsupported feature 和 source diagnostic 七类场景。
+- [Host Integration Package Contract](host-integration-package-contract.md) 已接入 Round 4 契约，`host/host-bridge-candidate.json` 从 planned 变为 Round 4 contract；static fixture pack 只作为 docs/test evidence，不是 Compiler sample、Runtime sample 或宿主输出。
+- 本轮只做 docs / static fixture 收口；未实现 Host Bridge candidate generator、generated apply、Host SDK、Sinan Runtime、Runtime Preview Bridge、完整 host save、Rollback / Trace Replay / Flashback、Presentation IR 或 Host Schema action policy 扩张。
+- 当前缺口仍包括 static artifact smoke / readiness report shape、Sinan Static Artifact POC planning note、POC-1 checklist 和 final validation report。
+- 下一轮进入 Round 5：Static Artifact Smoke / POC Planning / Buffer；继续禁止 Sinan Runtime Integration、Runtime Preview Bridge、hard dependency、Sinan-specific core semantics、完整 host save、Rollback / Trace Replay / Flashback、Presentation IR 或 Host Schema action policy 扩张。
 
 ### 2026-06-21 Host Integration Partner Readiness Round 3 快照
 
@@ -1867,14 +1877,15 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 
 建议优先做小而闭环的任务，不要直接跳到大规模重构。
 
-1. 继续 Host Integration Partner Readiness Round 4。
+1. 继续 Host Integration Partner Readiness Round 5。
    - P5 Runtime authoring / productization 已 PASS，见 [SelfHostedEditor P5 Final Validation Report](self-hosted-editor-p5-final-validation-report.md)。
    - 用户已批准 Host Integration Partner Readiness 作为下一短阶段；范围仅限 contract / fixture / report / planning。
    - 执行指南见 [Host Integration Partner Readiness Goal 模式执行指南](host-integration-partner-readiness-goal-mode-execution-guide.md)，总预算 6 轮。
    - Round 1 已完成 baseline audit 与 integration package contract 初稿。
    - Round 2 已收口 integration package contract，并新增 Narrative Graph IR external contract。
    - Round 3 已新增 Source Location External Contract 与 Localization Anchor Export Contract，并同步 package/index 入口。
-   - 下一轮应输出 Host Bridge candidate contract 与 static artifact fixtures。
+   - Round 4 已新增 Host Bridge Candidate Contract 与七类 static artifact fixture pack。
+   - 下一轮应输出 static artifact smoke / readiness report shape、Sinan Static Artifact POC planning note 和 POC-1 acceptance checklist；如需使用缓冲轮，只能修本阶段 contract / fixture / docs / validation 缺口。
    - 不要自动进入 Sinan Runtime Integration、Runtime Preview Bridge、Unity / Host SDK、Rollback / Trace Replay / Flashback、Presentation IR、完整 host save 或 Host Schema action policy 扩张。
 
 2. 继续推进 Stable Node ID / 本地化主线。

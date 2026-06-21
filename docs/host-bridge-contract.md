@@ -12,6 +12,8 @@ Compiler 不读取 Host Bridge，也不依赖任何宿主字段。
 
 P2.5 收口结论：Unity GUID、asset path、Addressables key、Bird `talkingId` / `birdId` 只能出现在 Host Bridge / adapter artifact / 外部项目配置中，不进入 Host Schema 或 Compiler contract。
 
+Round 4 补充：Host Bridge Candidate 是未确认的 review evidence，契约见 [Host Bridge Candidate Contract](host-bridge-candidate-contract.md)。Candidate 可以提出 `ids[]`、`actions[]`、`queries[]` 或 schema-capability 候选，但不得直接写 `inscape.host.bridge.json`，也不得写宿主正式 data。确认后的长期映射仍以本文定义的 Host Bridge 为准。
+
 ## 文件命名
 
 推荐默认文件名：

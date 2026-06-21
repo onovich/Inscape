@@ -2,7 +2,7 @@
 
 日期：2026-06-21
 
-状态：Round 3 contract baseline；Host Bridge candidate、static fixtures、readiness report 与 final validation 会在 Round 4-6 继续拆分成独立契约。
+状态：Round 4 contract baseline；readiness report、POC planning 与 final validation 会在 Round 5-6 继续拆分成独立契约。
 
 ## 目标
 
@@ -59,7 +59,7 @@ inscape-integration-package/
     readiness-report.json
 ```
 
-Round 2 固定 package 结构与 graph 入口。Round 3 固定 source location 与 localization anchor export 契约。`host/host-bridge-candidate.json` 与 `reports/readiness-report.json` 的详细字段分别留给后续轮次。
+Round 2 固定 package 结构与 graph 入口。Round 3 固定 source location 与 localization anchor export 契约。Round 4 固定 Host Bridge candidate 契约和 static fixture pack。`reports/readiness-report.json` 的详细字段留给后续轮次。
 
 ## Artifact 清单
 
@@ -74,7 +74,7 @@ Round 2 固定 package 结构与 graph 入口。Round 3 固定 source location �
 | `localization/l10n.csv` | required when translatable text exists | existing command | `extract-l10n-project` | localization handoff |
 | `source-map/source-locations.json` | required for packages with diagnostics or reports | Round 3 contract | package/source export | diagnostics / report source jump |
 | `localization/anchor-map.json` | required when `localization/l10n.csv` is present | Round 3 contract | localization export / package assembly | localization source mapping |
-| `host/host-bridge-candidate.json` | planned | Round 4 | future generator / partner dry-run | manual review |
+| `host/host-bridge-candidate.json` | recommended when gaps exist | Round 4 contract | manual assembly / partner dry-run / future generator | manual review |
 | `reports/readiness-report.json` | planned | Round 5 | static artifact smoke / audit | CI / handoff |
 
 ## Manifest Contract
@@ -205,6 +205,21 @@ Localization rules:
 - Partner runtime IDs may appear only as optional evidence under partner refs; they cannot replace the Inscape anchor.
 - Package readers must not infer localization anchors by re-parsing `.inscape` source text.
 
+## Host Bridge Candidate Connection
+
+`host/host-bridge-candidate.json` must follow [Host Bridge Candidate Contract](host-bridge-candidate-contract.md).
+
+Candidate rules:
+
+- Host Bridge Candidate is unconfirmed review evidence, not confirmed Host Bridge truth.
+- It may propose `ids[]`, `actions[]`, `queries[]`, schema-capability or partner diagnostic entries.
+- It must keep `writesHostData = false` for POC-1 packages.
+- Unknown schema action/query usage must stay `blocked` or `schema-capability` until Host Schema is updated.
+- Conflict candidates require manual review and must not be auto-applied.
+- Partner-specific fields may appear only as evidence in candidate / adapter artifacts, not in Compiler, Host Schema or narrative graph IR.
+
+Round 4 static artifact fixtures are documented in [Host Integration Partner Readiness Fixtures](host-integration-partner-readiness-fixtures.md), with the JSON fixture pack at [host-integration-static-fixtures/fixtures.json](host-integration-static-fixtures/fixtures.json).
+
 ## Package Status States
 
 Package-level validation and reports should be able to represent:
@@ -259,9 +274,9 @@ it means only:
 
 - Round 2: [Narrative Graph IR External Contract](narrative-graph-ir-external-contract.md).
 - Round 3: [Source Location External Contract](source-location-external-contract.md) and [Localization Anchor Export Contract](localization-anchor-export-contract.md).
+- Round 4: [Host Bridge Candidate Contract](host-bridge-candidate-contract.md) and [Host Integration Partner Readiness Fixtures](host-integration-partner-readiness-fixtures.md).
 
 ## Deferred To Later Rounds
 
-- Round 4: Host Bridge candidate contract and static artifact fixtures.
 - Round 5: static artifact smoke, readiness report shape, Sinan Static Artifact POC planning note and POC-1 checklist.
 - Round 6: final validation report and docs closure.

@@ -1,0 +1,361 @@
+{
+  "format": "inscape.host-integration.static-fixtures",
+  "formatVersion": 1,
+  "createdAtUtc": "2026-06-21T00:00:00Z",
+  "fixtureSet": "host-integration-partner-readiness-round4",
+  "fixtures": [
+    {
+      "id": "minimal-dialogue",
+      "requiredScenario": "minimal dialogue",
+      "profile": {
+        "kind": "generic",
+        "partner": null
+      },
+      "source": {
+        "path": "source/minimal-dialogue.inscape",
+        "lines": [
+          "# start",
+          "@entry",
+          "Narrator: The room is quiet.",
+          "Narrator: The door stays closed."
+        ]
+      },
+      "artifactCoverage": [
+        "graph/project-ir.json",
+        "source-map/source-locations.json",
+        "usage/usage.json",
+        "reports/readiness-report.json"
+      ],
+      "expected": {
+        "packageStatus": "ready",
+        "usageSummary": {
+          "queryCount": 0,
+          "actionCount": 0,
+          "requiredIdCount": 0
+        },
+        "hostBridgeCandidate": {
+          "candidateCount": 0,
+          "writesHostData": false
+        },
+        "diagnostics": []
+      }
+    },
+    {
+      "id": "branching",
+      "requiredScenario": "branching",
+      "profile": {
+        "kind": "generic",
+        "partner": null
+      },
+      "source": {
+        "path": "source/branching.inscape",
+        "lines": [
+          "# start",
+          "@entry",
+          "? Choose a route",
+          "  - [has_item(\"silver_key\")] Unlock the gate -> gate.open",
+          "  - Leave -> leave",
+          "# gate.open",
+          "Narrator: The gate opens.",
+          "# leave",
+          "Narrator: You step away."
+        ]
+      },
+      "artifactCoverage": [
+        "graph/project-ir.json",
+        "usage/usage.json",
+        "host/host-integration-audit.json",
+        "host/host-bridge-candidate.json"
+      ],
+      "expected": {
+        "packageStatus": "ready",
+        "usageSummary": {
+          "queryCount": 1,
+          "actionCount": 0,
+          "requiredIdCount": 1
+        },
+        "hostBridgeCandidate": {
+          "candidateCount": 2,
+          "writesHostData": false,
+          "candidates": [
+            {
+              "candidateKind": "query-handler",
+              "status": "candidate",
+              "subject": {
+                "kind": "query",
+                "name": "has_item"
+              },
+              "confidenceLevel": "medium"
+            },
+            {
+              "candidateKind": "id-binding",
+              "status": "candidate",
+              "subject": {
+                "kind": "item",
+                "name": "silver_key"
+              },
+              "confidenceLevel": "low"
+            }
+          ]
+        },
+        "diagnostics": []
+      }
+    },
+    {
+      "id": "localization",
+      "requiredScenario": "localization",
+      "profile": {
+        "kind": "generic",
+        "partner": null
+      },
+      "source": {
+        "path": "source/localization.inscape",
+        "lines": [
+          "# start",
+          "@entry",
+          "Narrator: A quiet line needs translation.",
+          "Mira: Keep the source anchor stable."
+        ]
+      },
+      "artifactCoverage": [
+        "localization/l10n.csv",
+        "localization/anchor-map.json",
+        "source-map/source-locations.json",
+        "graph/project-ir.json"
+      ],
+      "expected": {
+        "packageStatus": "ready",
+        "localization": {
+          "csvColumns": [
+            "anchor",
+            "node",
+            "kind",
+            "speaker",
+            "text",
+            "translation",
+            "sourcePath",
+            "line",
+            "column"
+          ],
+          "hostRuntimeLocalizationId": null,
+          "anchorMapFormat": "inscape.localization-anchor-map"
+        },
+        "hostBridgeCandidate": {
+          "candidateCount": 0,
+          "writesHostData": false
+        },
+        "diagnostics": []
+      }
+    },
+    {
+      "id": "missing-speaker",
+      "requiredScenario": "missing speaker",
+      "profile": {
+        "kind": "generic",
+        "partner": null
+      },
+      "source": {
+        "path": "source/missing-speaker.inscape",
+        "lines": [
+          "# start",
+          "@entry",
+          "Mira: I am not mapped in the current bridge."
+        ]
+      },
+      "artifactCoverage": [
+        "graph/project-ir.json",
+        "host/host-binding-capabilities.json",
+        "host/host-bridge-candidate.json",
+        "reports/readiness-report.json"
+      ],
+      "expected": {
+        "packageStatus": "blocked",
+        "hostBridgeCandidate": {
+          "candidateCount": 1,
+          "writesHostData": false,
+          "candidates": [
+            {
+              "candidateKind": "id-binding",
+              "status": "candidate",
+              "subject": {
+                "kind": "speaker",
+                "name": "Mira"
+              },
+              "confidenceLevel": "low"
+            }
+          ]
+        },
+        "diagnostics": [
+          {
+            "code": "fixture.missing-speaker",
+            "severity": "warning",
+            "source": {
+              "path": "source/missing-speaker.inscape",
+              "line": 3,
+              "column": 1,
+              "length": 4,
+              "coordinateSystem": "compiler-1-based"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "unknown-action",
+      "requiredScenario": "unknown action",
+      "profile": {
+        "kind": "generic",
+        "partner": null
+      },
+      "source": {
+        "path": "source/unknown-action.inscape",
+        "lines": [
+          "# start",
+          "@entry",
+          "@emit play_cutscene \"intro_scene\"",
+          "Narrator: The script asks for an action the schema has not declared."
+        ]
+      },
+      "artifactCoverage": [
+        "usage/usage.json",
+        "host/host-integration-audit.json",
+        "host/host-bridge-candidate.json"
+      ],
+      "expected": {
+        "packageStatus": "blocked",
+        "hostIntegrationAudit": {
+          "diagnosticCodes": [
+            "HIA002"
+          ]
+        },
+        "hostBridgeCandidate": {
+          "candidateCount": 1,
+          "writesHostData": false,
+          "candidates": [
+            {
+              "candidateKind": "schema-capability",
+              "status": "blocked",
+              "subject": {
+                "kind": "action",
+                "name": "play_cutscene"
+              },
+              "confidenceLevel": "none"
+            }
+          ]
+        },
+        "diagnostics": [
+          {
+            "code": "HIA002",
+            "severity": "error",
+            "source": {
+              "path": "source/unknown-action.inscape",
+              "line": 3,
+              "column": 1,
+              "length": 29,
+              "coordinateSystem": "compiler-1-based"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "unsupported-feature",
+      "requiredScenario": "unsupported feature",
+      "profile": {
+        "kind": "partner-profile",
+        "partner": "generic",
+        "supportedTimelinePhases": [
+          "talking.exit"
+        ]
+      },
+      "source": {
+        "path": "source/unsupported-feature.inscape",
+        "lines": [
+          "# start",
+          "@entry",
+          "@timeline.node.enter camera_push",
+          "Narrator: This partner profile only supports talking.exit timeline hooks."
+        ]
+      },
+      "artifactCoverage": [
+        "usage/usage.json",
+        "host/host-integration-audit.json",
+        "host/host-bridge-candidate.json",
+        "reports/readiness-report.json"
+      ],
+      "expected": {
+        "packageStatus": "unsupported",
+        "hostBridgeCandidate": {
+          "candidateCount": 1,
+          "writesHostData": false,
+          "candidates": [
+            {
+              "candidateKind": "id-binding",
+              "status": "unsupported",
+              "subject": {
+                "kind": "timeline",
+                "name": "camera_push"
+              },
+              "confidenceLevel": "none"
+            }
+          ]
+        },
+        "diagnostics": [
+          {
+            "code": "fixture.timeline-phase.unsupported",
+            "severity": "warning",
+            "source": {
+              "path": "source/unsupported-feature.inscape",
+              "line": 3,
+              "column": 1,
+              "length": 32,
+              "coordinateSystem": "compiler-1-based"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "source-diagnostic",
+      "requiredScenario": "source diagnostic",
+      "profile": {
+        "kind": "generic",
+        "partner": null
+      },
+      "source": {
+        "path": "source/source-diagnostic.inscape",
+        "lines": [
+          "# start",
+          "@entry",
+          "? Choose",
+          "  - Go to a missing node -> missing.target"
+        ]
+      },
+      "artifactCoverage": [
+        "graph/project-ir.json",
+        "source-map/source-locations.json",
+        "reports/readiness-report.json"
+      ],
+      "expected": {
+        "packageStatus": "invalid",
+        "hostBridgeCandidate": {
+          "candidateCount": 0,
+          "writesHostData": false
+        },
+        "diagnostics": [
+          {
+            "code": "compiler.missing-target",
+            "severity": "error",
+            "source": {
+              "path": "source/source-diagnostic.inscape",
+              "line": 4,
+              "column": 29,
+              "length": 14,
+              "coordinateSystem": "compiler-1-based"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
