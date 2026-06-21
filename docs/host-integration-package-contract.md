@@ -2,7 +2,7 @@
 
 日期：2026-06-21
 
-状态：Round 2 contract baseline；source location、localization anchor、Host Bridge candidate 与 static fixtures 会在 Round 3-5 继续拆分成独立契约。
+状态：Round 3 contract baseline；Host Bridge candidate、static fixtures、readiness report 与 final validation 会在 Round 4-6 继续拆分成独立契约。
 
 ## 目标
 
@@ -59,7 +59,7 @@ inscape-integration-package/
     readiness-report.json
 ```
 
-Round 2 固定 package 结构与 graph 入口。`source-map/source-locations.json`、`localization/anchor-map.json`、`host/host-bridge-candidate.json` 与 `reports/readiness-report.json` 的详细字段分别留给后续轮次。
+Round 2 固定 package 结构与 graph 入口。Round 3 固定 source location 与 localization anchor export 契约。`host/host-bridge-candidate.json` 与 `reports/readiness-report.json` 的详细字段分别留给后续轮次。
 
 ## Artifact 清单
 
@@ -72,8 +72,8 @@ Round 2 固定 package 结构与 graph 入口。`source-map/source-locations.jso
 | `host/host-integration-audit.json` | yes | existing command | `audit-host-integration-project` | readiness diagnostics |
 | `host/host-schema-capabilities.json` | recommended | existing command | `inspect-host-schema-project` | capability comparison |
 | `localization/l10n.csv` | required when translatable text exists | existing command | `extract-l10n-project` | localization handoff |
-| `source-map/source-locations.json` | planned | Round 3 | future package/source export | diagnostics / report source jump |
-| `localization/anchor-map.json` | planned | Round 3 | future localization export | localization source mapping |
+| `source-map/source-locations.json` | required for packages with diagnostics or reports | Round 3 contract | package/source export | diagnostics / report source jump |
+| `localization/anchor-map.json` | required when `localization/l10n.csv` is present | Round 3 contract | localization export / package assembly | localization source mapping |
 | `host/host-bridge-candidate.json` | planned | Round 4 | future generator / partner dry-run | manual review |
 | `reports/readiness-report.json` | planned | Round 5 | static artifact smoke / audit | CI / handoff |
 
@@ -148,7 +148,7 @@ Manifest rules:
 ## Artifact Rules
 
 - Paths inside package manifest are package-relative.
-- Source paths inside JSON artifacts should be workspace-relative when producers support it. Producers that currently emit absolute paths must be treated as legacy / implementation detail by external consumers.
+- Source paths inside JSON artifacts should be workspace-relative when producers support it. Producers that currently emit absolute paths must be treated as legacy / implementation detail by external consumers. Package-level rules are defined by [Source Location External Contract](source-location-external-contract.md).
 - Artifacts must be deterministic for the same source and config inputs.
 - Artifacts must be diffable with stable ordering where producers can control ordering.
 - Reports must carry source locations when they refer to source content.
@@ -178,8 +178,32 @@ Source graph to source location connection:
 
 - `graph.project-ir` currently carries source objects on nodes, lines, choices, options and edges.
 - Those source objects use Compiler coordinates: `sourcePath`, `line`, `column`, all 1-based.
-- Round 3 will define whether package-level `source-map/source-locations.json` indexes those locations or only supplements artifacts that lack embedded source locations.
+- Package-level `source-map/source-locations.json` follows [Source Location External Contract](source-location-external-contract.md). It may index embedded graph locations and supplement artifacts that lack embedded source locations.
 - External consumers must not re-parse `.inscape` to recover locations that are already present in artifacts.
+
+## Source Location Connection
+
+`source-map/source-locations.json` must follow [Source Location External Contract](source-location-external-contract.md).
+
+Source location rules:
+
+- Package source refs use Compiler coordinates by default: 1-based `line` and 1-based `column`.
+- Editor clients may convert those refs to 0-based reveal coordinates, but the package must not store editor-specific reveal positions as source truth.
+- Package paths should be package-relative `source/<workspace-relative-path>` when possible.
+- Direct CLI outputs that still contain absolute local paths are implementation evidence, not portable package identity.
+- Reports and partner dry-run diagnostics should refer to source locations by inline source refs or by entries from `source-map/source-locations.json`.
+
+## Localization Anchor Connection
+
+`localization/l10n.csv` and `localization/anchor-map.json` must follow [Localization Anchor Export Contract](localization-anchor-export-contract.md).
+
+Localization rules:
+
+- `l10n.csv` remains the human translation handoff surface.
+- `anchor-map.json` connects CSV rows to narrative graph refs, source refs, line identity evidence and optional partner dry-run refs.
+- Localization anchors are Inscape text/source anchors, not host runtime localization IDs.
+- Partner runtime IDs may appear only as optional evidence under partner refs; they cannot replace the Inscape anchor.
+- Package readers must not infer localization anchors by re-parsing `.inscape` source text.
 
 ## Package Status States
 
@@ -231,9 +255,13 @@ it means only:
 - The package may include Sinan-facing planning notes or profile assumptions.
 - The package still cannot require Sinan Runtime, Sinan TypeScript modules, Sinan data directory writes or Sinan-specific DSL semantics.
 
+## Completed Contract Links
+
+- Round 2: [Narrative Graph IR External Contract](narrative-graph-ir-external-contract.md).
+- Round 3: [Source Location External Contract](source-location-external-contract.md) and [Localization Anchor Export Contract](localization-anchor-export-contract.md).
+
 ## Deferred To Later Rounds
 
-- Round 3: source location external contract and localization anchor export contract.
 - Round 4: Host Bridge candidate contract and static artifact fixtures.
 - Round 5: static artifact smoke, readiness report shape, Sinan Static Artifact POC planning note and POC-1 checklist.
 - Round 6: final validation report and docs closure.

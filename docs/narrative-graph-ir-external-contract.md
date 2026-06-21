@@ -2,7 +2,7 @@
 
 日期：2026-06-21
 
-状态：Round 2 external contract baseline；面向 Integration Package 的 `graph/project-ir.json` 消费方。
+状态：Round 3 external contract baseline；面向 Integration Package 的 `graph/project-ir.json` 消费方。
 
 ## 目标
 
@@ -141,7 +141,7 @@ Rules:
 - `sourcePath` is the producer's source path text. Package consumers should prefer package/workspace-relative paths when available.
 - Compiler source location currently does not guarantee range length.
 - Editor hosts must convert to 0-based editor coordinates using [Source Location Contracts](source-location-contracts.md).
-- Round 3 will define package-level source location export and range policy.
+- Package-level source location export and range policy are defined by [Source Location External Contract](source-location-external-contract.md).
 
 ## Diagnostics
 
@@ -204,10 +204,16 @@ Within [Host Integration Package Contract](host-integration-package-contract.md)
 
 The package manifest identifies the artifact. This contract defines how external importers may consume it.
 
-## Round 2 Self-Check
+Related package contracts:
+
+- [Source Location External Contract](source-location-external-contract.md) defines how embedded graph source refs connect to `source-map/source-locations.json`.
+- [Localization Anchor Export Contract](localization-anchor-export-contract.md) defines how line / choice anchors connect to `localization/l10n.csv` and `localization/anchor-map.json`.
+
+## Round 2-3 Self-Check
 
 - External Graph IR exposes a stable subset rather than freezing all internal implementation details.
 - Source graph to source location connection is explicit and uses existing 1-based Compiler coordinates.
+- Package-level source refs and localization anchor exports are documented in separate Round 3 contracts, not embedded as host-specific graph fields.
 - Host Schema / Host Bridge / Usage Manifest / Audit remain separate artifacts.
 - Sinan remains a partner profile / fixture only.
 - No Runtime Preview Bridge, host save/load, Rollback / Trace Replay / Flashback, Presentation IR or Host Schema action policy expansion is introduced.
