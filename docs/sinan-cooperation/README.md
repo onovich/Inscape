@@ -23,6 +23,8 @@
 6. [Host Integration Partner Readiness 商务反馈口径](host-integration-partner-readiness-business-response-2026-06-21.md)
 7. [Host Integration Partner Readiness Goal 模式执行指南](../host-integration-partner-readiness-goal-mode-execution-guide.md)
 8. [Host Integration Partner Readiness Baseline Audit](../host-integration-partner-readiness-baseline-audit.md)
+9. [Host Integration Package Contract](../host-integration-package-contract.md)
+10. [Narrative Graph IR External Contract](../narrative-graph-ir-external-contract.md)
 
 边界规则：
 

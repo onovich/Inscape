@@ -2,23 +2,24 @@
 
 日期：2026-06-21
 
-状态：Round 1 draft；Round 2-5 会继续收口
+状态：Round 2 contract baseline；source location、localization anchor、Host Bridge candidate 与 static fixtures 会在 Round 3-5 继续拆分成独立契约。
 
 ## 目标
 
-Inscape Integration Package 是给外部宿主项目消费的一组静态 artifact。它的目标是让 partner 项目在不接入 Inscape Runtime、不依赖 SelfHostedEditor、不解析 `.inscape` 语法的前提下，完成 dry-run、对账、诊断回源和人工映射审查。
+Inscape Integration Package 是给外部宿主项目消费的一组静态 artifact。它让 partner 项目在不接入 Inscape Runtime、不依赖 SelfHostedEditor、不解析 `.inscape` 语法的前提下，完成 dry-run、对账、诊断回溯、本地化交接和人工映射审查。
 
-本契约第一版服务 `Host Integration Partner Readiness`，并允许 Sinan 作为第一个 partner profile / fixture。Sinan 不成为 Inscape core dependency。
+本契约服务 `Host Integration Partner Readiness`。Sinan 可以作为第一批 partner profile / fixture 验证这套通用契约，但 Sinan 不成为 Inscape core dependency。
 
 ## 非目标
 
 - 不定义 live preview 协议。
 - 不定义 Runtime Preview Bridge。
-- 不定义 runtime state sync 或 host save/load。
+- 不定义 runtime state sync、正式 host save/load 或 bidirectional edit。
 - 不直接写宿主正式 data。
 - 不把 Host Schema 变成宿主 Engine API 复制品。
 - 不把 Host Bridge candidate 写成已确认 mapping。
 - 不新增 `rollbackPolicy`、`replayPolicy`、`failurePolicy`、`timeoutPolicy`。
+- 不引入 Sinan runtime、Sinan TypeScript module、Sinan data layout 或 Sinan-specific DSL semantics。
 
 ## Package 心智模型
 
@@ -32,33 +33,59 @@ Inscape source
 
 Package 只携带静态证据，不携带运行时连接。外部宿主可以读取 package 生成 dry-run report，但不得把 package 解释为要求宿主执行 Inscape Runtime。
 
-## 最小 artifact 组合
+## 最小目录结构
 
-第一版 package 建议包含：
+第一版 package 采用小文件组合，不把所有内容塞进一个巨大 JSON。
 
-| Artifact | Required | Producer | Consumer |
-| --- | --- | --- | --- |
-| `manifest.json` | yes | Tooling / CLI package command future | partner importer / CI |
-| `source/*.inscape` | yes | workspace copy / export | human review / source jump |
-| `graph/project-ir.json` | yes | `compile-project` | external importer |
-| `source/source-locations.json` | planned | future package step | diagnostics / report source jump |
-| `localization/l10n.csv` | yes | `extract-l10n-project` | localization handoff |
-| `usage/usage.json` | yes | `inspect-usage-project` | audit / bridge TODO |
-| `host/host-schema-capabilities.json` | optional but recommended | `inspect-host-schema-project` | capability comparison |
-| `host/host-integration-audit.json` | yes | `audit-host-integration-project` | readiness diagnostics |
-| `host/host-bridge-candidate.json` | planned | future generator / partner dry-run | manual review |
-| `reports/readiness-report.json` | planned | static artifact smoke / audit | CI / handoff |
+```text
+inscape-integration-package/
+  manifest.json
+  source/
+    *.inscape
+  graph/
+    project-ir.json
+  usage/
+    usage.json
+  host/
+    host-schema-capabilities.json
+    host-integration-audit.json
+    host-bridge-candidate.json
+  localization/
+    l10n.csv
+    anchor-map.json
+  source-map/
+    source-locations.json
+  reports/
+    readiness-report.json
+```
 
-Round 1 only defines the package shape. It does not implement a packaging command.
+Round 2 固定 package 结构与 graph 入口。`source-map/source-locations.json`、`localization/anchor-map.json`、`host/host-bridge-candidate.json` 与 `reports/readiness-report.json` 的详细字段分别留给后续轮次。
 
-## Manifest draft
+## Artifact 清单
 
-`manifest.json` should be small and index the package rather than duplicate every artifact body.
+| Artifact | Required | Status | Producer | Consumer |
+| --- | --- | --- | --- | --- |
+| `manifest.json` | yes | Round 2 contract | future package command / manual assembly | partner importer / CI |
+| `source/*.inscape` | yes | Round 2 contract | workspace copy / export | human review / source jump |
+| `graph/project-ir.json` | yes | existing command | `compile-project` | external importer |
+| `usage/usage.json` | yes | existing command | `inspect-usage-project` | audit / bridge TODO |
+| `host/host-integration-audit.json` | yes | existing command | `audit-host-integration-project` | readiness diagnostics |
+| `host/host-schema-capabilities.json` | recommended | existing command | `inspect-host-schema-project` | capability comparison |
+| `localization/l10n.csv` | required when translatable text exists | existing command | `extract-l10n-project` | localization handoff |
+| `source-map/source-locations.json` | planned | Round 3 | future package/source export | diagnostics / report source jump |
+| `localization/anchor-map.json` | planned | Round 3 | future localization export | localization source mapping |
+| `host/host-bridge-candidate.json` | planned | Round 4 | future generator / partner dry-run | manual review |
+| `reports/readiness-report.json` | planned | Round 5 | static artifact smoke / audit | CI / handoff |
+
+## Manifest Contract
+
+`manifest.json` indexes artifacts and package capabilities. It must not duplicate large artifact bodies.
 
 ```json
 {
   "format": "inscape.integration-package",
   "formatVersion": 1,
+  "createdAtUtc": "2026-06-21T00:00:00Z",
   "producer": {
     "name": "Inscape",
     "tool": "Inscape.Cli",
@@ -70,15 +97,35 @@ Round 1 only defines the package shape. It does not implement a packaging comman
   },
   "profile": {
     "kind": "generic",
-    "partner": null
+    "partner": null,
+    "purpose": "static-artifact-poc"
   },
-  "artifacts": {
-    "graph": "graph/project-ir.json",
-    "usage": "usage/usage.json",
-    "hostSchemaCapabilities": "host/host-schema-capabilities.json",
-    "hostIntegrationAudit": "host/host-integration-audit.json",
-    "localizationCsv": "localization/l10n.csv"
-  },
+  "artifacts": [
+    {
+      "kind": "narrative-graph-ir",
+      "path": "graph/project-ir.json",
+      "required": true,
+      "format": "inscape.project-ir",
+      "formatVersion": 1,
+      "producerRole": "compiler"
+    },
+    {
+      "kind": "usage-manifest",
+      "path": "usage/usage.json",
+      "required": true,
+      "format": "inscape.usage",
+      "formatVersion": 1,
+      "producerRole": "tooling"
+    },
+    {
+      "kind": "host-integration-audit",
+      "path": "host/host-integration-audit.json",
+      "required": true,
+      "format": "inscape.host-integration.audit",
+      "formatVersion": 1,
+      "producerRole": "tooling"
+    }
+  ],
   "capabilities": {
     "runtimeIntegration": false,
     "previewBridge": false,
@@ -88,14 +135,71 @@ Round 1 only defines the package shape. It does not implement a packaging comman
 }
 ```
 
+Manifest rules:
+
+- `format` is fixed to `inscape.integration-package`.
+- `formatVersion` starts at `1`.
+- All `artifacts[].path` values are package-relative paths using `/`.
+- `artifacts[].required` describes package completeness, not whether the artifact can be parsed by the current importer.
+- `artifacts[].producerRole` is informational and must remain one of `compiler`, `tooling`, `package`, `partner`, or `manual`.
+- `profile.partner` can be `sinan` in a partner fixture, but that only marks a profile / fixture. It does not make Sinan a core dependency.
+- `capabilities.*` must remain false for POC-1 static artifact packages.
+
 ## Artifact Rules
 
 - Paths inside package manifest are package-relative.
-- Source paths inside JSON artifacts should remain workspace-relative unless a specific producer already emits absolute paths; Round 3 should define normalization and privacy rules.
-- Artifacts must be deterministic for the same source/config inputs.
+- Source paths inside JSON artifacts should be workspace-relative when producers support it. Producers that currently emit absolute paths must be treated as legacy / implementation detail by external consumers.
+- Artifacts must be deterministic for the same source and config inputs.
 - Artifacts must be diffable with stable ordering where producers can control ordering.
 - Reports must carry source locations when they refer to source content.
-- Package readers must not infer parser semantics from source text when Project IR or Usage Manifest already provides structured data.
+- Package readers must not infer parser semantics from source text when Project IR, Usage Manifest or Audit already provides structured data.
+- Unknown optional artifacts must be ignored by consumers unless `manifest.json` marks them required.
+- Missing required artifacts produce package status `missing`, not a partial runtime fallback.
+
+## Current Manual Assembly
+
+Round 2 does not implement a package command. The current package can be assembled manually from existing commands:
+
+```powershell
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- compile-project samples -o graph\project-ir.json
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- inspect-usage-project samples -o usage\usage.json
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- inspect-host-schema-project samples -o host\host-schema-capabilities.json
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- audit-host-integration-project samples -o host\host-integration-audit.json
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- extract-l10n-project samples -o localization\l10n.csv
+```
+
+A future package command may wrap these steps. That command must still preserve the same artifact boundaries.
+
+## Narrative Graph Connection
+
+`graph/project-ir.json` must follow [Narrative Graph IR External Contract](narrative-graph-ir-external-contract.md). Package importers may rely on the stable subset documented there and must ignore undocumented fields.
+
+Source graph to source location connection:
+
+- `graph.project-ir` currently carries source objects on nodes, lines, choices, options and edges.
+- Those source objects use Compiler coordinates: `sourcePath`, `line`, `column`, all 1-based.
+- Round 3 will define whether package-level `source-map/source-locations.json` indexes those locations or only supplements artifacts that lack embedded source locations.
+- External consumers must not re-parse `.inscape` to recover locations that are already present in artifacts.
+
+## Package Status States
+
+Package-level validation and reports should be able to represent:
+
+- `ready`: artifact exists and passed shape checks.
+- `missing`: required artifact not produced.
+- `invalid`: artifact is present but cannot be parsed or has wrong format.
+- `unsupported`: script uses a feature the partner profile does not support.
+- `incompatible`: artifact format version is not accepted.
+- `blocked`: dry-run cannot proceed until a manual mapping or missing input is supplied.
+
+## Compatibility Rules
+
+- Consumers must reject unknown `manifest.format`.
+- Consumers must reject `manifest.formatVersion` greater than the highest supported major version.
+- Consumers must ignore unknown optional fields and unknown optional artifacts.
+- Producers may add optional fields without bumping `formatVersion`.
+- Producers must bump `formatVersion` before removing or changing the meaning of stable required fields.
+- Exact diagnostic text, object ordering outside documented stable arrays and local absolute paths are not compatibility guarantees.
 
 ## Boundary Rules
 
@@ -106,31 +210,6 @@ Round 1 only defines the package shape. It does not implement a packaging comman
 - Host Bridge is confirmed mapping; Host Bridge Candidate is unconfirmed evidence.
 - Partner dry-run report is partner-owned evidence, not Inscape core truth.
 - Runtime State / Runtime Substate are not part of POC-1 package.
-
-## Current Producers
-
-The current package can be assembled manually from existing commands:
-
-```powershell
-dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- compile-project samples -o graph\project-ir.json
-dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- inspect-usage-project samples -o usage\usage.json
-dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- inspect-host-schema-project samples -o host\host-schema-capabilities.json
-dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- audit-host-integration-project samples -o host\host-integration-audit.json
-dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- extract-l10n-project samples -o localization\l10n.csv
-```
-
-A future package command may wrap these steps, but Round 1 does not introduce it.
-
-## Required Status States
-
-Package-level reports should be able to represent:
-
-- `ready`: artifact exists and passed shape checks.
-- `missing`: required artifact not produced.
-- `invalid`: artifact is present but cannot be parsed or has wrong format.
-- `unsupported`: script uses a feature the partner profile does not support.
-- `incompatible`: artifact format version is not accepted.
-- `blocked`: dry-run cannot proceed until a manual mapping or missing input is supplied.
 
 ## Sinan Profile Boundary
 
@@ -152,10 +231,9 @@ it means only:
 - The package may include Sinan-facing planning notes or profile assumptions.
 - The package still cannot require Sinan Runtime, Sinan TypeScript modules, Sinan data directory writes or Sinan-specific DSL semantics.
 
-## Open Questions For Later Rounds
+## Deferred To Later Rounds
 
-- Should a package command copy source files or reference workspace-relative source paths only?
-- Should source locations remain embedded in each artifact, or also be indexed in a separate `source-locations.json`?
-- Should Host Schema capabilities be included in every package, or only in readiness / audit packages?
-- How should Host Bridge candidate reports record confidence, conflict and generated ownership?
-- Which static fixture directory should become the long-term canonical readiness fixture set?
+- Round 3: source location external contract and localization anchor export contract.
+- Round 4: Host Bridge candidate contract and static artifact fixtures.
+- Round 5: static artifact smoke, readiness report shape, Sinan Static Artifact POC planning note and POC-1 checklist.
+- Round 6: final validation report and docs closure.
