@@ -21,6 +21,8 @@
 4. [Inscape Review for Sinan Technical Lead](inscape-review-for-sinan-technical-lead-2026-06-20.md)
 5. [Host Integration Partner Readiness 决策简报](host-integration-partner-readiness-decision-brief-2026-06-21.md)
 6. [Host Integration Partner Readiness 商务反馈口径](host-integration-partner-readiness-business-response-2026-06-21.md)
+7. [Host Integration Partner Readiness Goal 模式执行指南](../host-integration-partner-readiness-goal-mode-execution-guide.md)
+8. [Host Integration Partner Readiness Baseline Audit](../host-integration-partner-readiness-baseline-audit.md)
 
 边界规则：
 

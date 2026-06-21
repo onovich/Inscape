@@ -1,12 +1,21 @@
 # Agent 接手指南
 
-状态：P5 SelfHostedEditor Runtime authoring / productization 已通过 final validation；Host Integration Partner Readiness 已批准为下一短阶段，范围仅限 contract / fixture / report / planning
+状态：P5 SelfHostedEditor Runtime authoring / productization 已通过 final validation；Host Integration Partner Readiness Round 1 已完成，范围仍限 contract / fixture / report / planning
 
 最后更新：2026-06-21
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-21 Host Integration Partner Readiness Round 1 快照
+
+Host Integration Partner Readiness 已完成 Round 1 Baseline Audit / Artifact Inventory。
+- Round 1 审计见 [Host Integration Partner Readiness Baseline Audit](host-integration-partner-readiness-baseline-audit.md)。
+- Integration package 初稿见 [Host Integration Package Contract](host-integration-package-contract.md)。
+- 本轮确认现有 `compile-project`、`inspect-host-schema-project`、`inspect-usage-project`、`audit-host-integration-project` 与 `extract-l10n-project` 已能产出 POC-1 所需的基础静态 artifact。
+- 当前缺口仍包括 Narrative Graph IR external contract、source location external contract、localization anchor export contract、Host Bridge candidate contract、static fixture set、Sinan Static Artifact POC planning note、POC-1 checklist 和 final validation report。
+- 下一轮进入 Round 2：Integration Package + Narrative Graph IR External Contract；继续禁止 Sinan Runtime Integration、Runtime Preview Bridge、hard dependency、Sinan-specific core semantics、完整 host save、Rollback / Trace Replay / Flashback、Presentation IR 或 Host Schema action policy 扩张。
 
 ### 2026-06-21 Host Integration Partner Readiness GO 快照
 
@@ -16,7 +25,8 @@
 - Sinan 可以作为第一批真实 partner profile / fixture，用来验证通用 Host Integration contract；不得成为 Inscape core dependency。
 - 当前批准范围仅限 integration package contract、Narrative Graph IR external contract、source location contract、localization anchor export contract、Usage / Host Integration Audit 职责、Host Bridge candidate contract、static artifact fixtures 与 Sinan Static Artifact POC planning note。
 - 继续 HOLD / NO：Sinan Runtime Integration、Runtime Preview Bridge、hard dependency、Sinan-specific core semantics、bidirectional edit、直接写 Sinan `data/**/*.json`、Sinan 专用 DSL 语法。
-- 下一步应输出该阶段独立 goal-mode execution guide，约束轮数、每轮 Debug 自检、架构自检、验证通过后提交推送，再进入下一轮。
+- 独立 goal-mode execution guide 已输出，见 [Host Integration Partner Readiness Goal 模式执行指南](host-integration-partner-readiness-goal-mode-execution-guide.md)；执行预算为 6 轮：4 轮主工作、1 轮缓冲 / 收口、1 轮 final validation。
+- 下一步应让执行者按该指南进入 goal 模式推进，每轮 Debug 自检、架构自检、验证通过后提交推送，再进入下一轮。
 
 ### 2026-06-20 Post-P5 下一方向决策门完成快照
 
@@ -25,7 +35,7 @@ P5 已通过 final validation；Post-P5 下一方向决策 brief 已完成。202
 - 决策 brief 见 [Post-P5 Next Direction Decision Brief](post-p5-next-direction-decision-brief.md)。
 - Brief 比较了 Unity / Host SDK 第一刀、高级运行时调试、Presentation IR / 跨引擎 / 独立 Runtime、Host Bridge / Schema 自动化四个候选方向。
 - 推荐下一步原本是先批准 Host Bridge / Host Schema 自动化与代码生成收口的 scoping first slice；该建议已被具体化为 Host Integration Partner Readiness。
-- 本阶段只做决策资料和推荐，没有做产品开发；用户已批准后，仍应为 Host Integration Partner Readiness 单独输出新的 goal-mode execution guide。
+- 本阶段只做决策资料和推荐，没有做产品开发；用户已批准后，已为 Host Integration Partner Readiness 单独输出新的 goal-mode execution guide。
 - 不能由 agent 自动扩张到 runtime integration、preview bridge、hard dependency 或 Sinan-specific core semantics。
 
 ### 2026-06-20 P5 Final Validation PASS 快照
@@ -1837,9 +1847,11 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 
 建议优先做小而闭环的任务，不要直接跳到大规模重构。
 
-1. 为 Host Integration Partner Readiness 输出下一阶段 goal-mode execution guide。
+1. 继续 Host Integration Partner Readiness Round 2。
    - P5 Runtime authoring / productization 已 PASS，见 [SelfHostedEditor P5 Final Validation Report](self-hosted-editor-p5-final-validation-report.md)。
    - 用户已批准 Host Integration Partner Readiness 作为下一短阶段；范围仅限 contract / fixture / report / planning。
+   - 执行指南见 [Host Integration Partner Readiness Goal 模式执行指南](host-integration-partner-readiness-goal-mode-execution-guide.md)，总预算 6 轮。
+   - Round 1 已完成 baseline audit 与 integration package contract 初稿；下一轮应收口 package contract 并输出 Narrative Graph IR external contract。
    - 不要自动进入 Sinan Runtime Integration、Runtime Preview Bridge、Unity / Host SDK、Rollback / Trace Replay / Flashback、Presentation IR、完整 host save 或 Host Schema action policy 扩张。
 
 2. 继续推进 Stable Node ID / 本地化主线。
