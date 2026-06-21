@@ -7,6 +7,7 @@
 当前已拍板：
 
 - `Host Integration Partner Readiness: GO`
+- `Host Integration Partner Readiness final validation: PASS`
 - `Sinan Static Artifact POC planning: GO`
 - `Sinan Runtime Integration: HOLD`
 - `Runtime Preview Bridge: HOLD`
@@ -33,6 +34,7 @@
 16. [Host Integration Partner Readiness Fixtures](../host-integration-partner-readiness-fixtures.md)
 17. [Host Integration Partner Readiness POC-1 Checklist](../host-integration-partner-readiness-poc-1-checklist.md)
 18. [Sinan Static Artifact POC Planning Note](sinan-static-artifact-poc-planning-note.md)
+19. [Host Integration Partner Readiness Final Validation Report](../host-integration-partner-readiness-final-validation-report.md)
 
 边界规则：
 
@@ -42,3 +44,4 @@
 - Runtime 不复制 Sinan execution semantics。
 - Sinan 只能作为 partner profile / fixture 验证通用契约。
 - 第一阶段只做 static artifact、dry-run、report、Host Bridge candidate、fixture 和 planning。
+- 下一候选方向必须由用户批准，不自动进入 Sinan Runtime Integration、Runtime Preview Bridge、Host SDK、完整 host save、Rollback / Trace Replay / Flashback、Presentation IR 或 generated apply。

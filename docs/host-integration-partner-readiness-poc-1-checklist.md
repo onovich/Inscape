@@ -2,7 +2,7 @@
 
 日期：2026-06-21
 
-状态：Round 5 acceptance checklist baseline；用于 POC-1 static artifact exchange / dry-run readiness。
+状态：Final validation PASS；用于 POC-1 static artifact exchange / dry-run readiness。
 
 ## Contract Readiness
 
@@ -42,9 +42,9 @@
 - [x] No Presentation IR work is part of POC-1.
 - [x] No Host Schema action policy fields such as `rollbackPolicy`, `replayPolicy`, `failurePolicy` or `timeoutPolicy` are added.
 
-## Remaining Before Final Validation
+## Final Validation Closure
 
-- [ ] Run Round 6 final validation matrix.
-- [ ] Write final validation report.
-- [ ] Sync `docs/agent-handoff.md`, `docs/todo.md`, `docs/README.md` after Round 6.
-- [ ] Commit and push final PASS/FAIL closure.
+- [x] Run Round 6 final validation matrix.
+- [x] Write [Host Integration Partner Readiness Final Validation Report](host-integration-partner-readiness-final-validation-report.md).
+- [x] Sync `docs/agent-handoff.md`, `docs/todo.md`, `docs/README.md` and `docs/sinan-cooperation/README.md` after Round 6.
+- [x] Commit and push final PASS/FAIL closure.

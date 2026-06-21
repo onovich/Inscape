@@ -2,7 +2,7 @@
 
 日期：2026-06-21
 
-状态：Round 5 contract baseline；readiness report、static artifact smoke 与 POC-1 planning 已收口，final validation 留给 Round 6。
+状态：Final validation PASS；readiness report、static artifact smoke、POC-1 planning 与 final validation 已收口。
 
 ## 目标
 

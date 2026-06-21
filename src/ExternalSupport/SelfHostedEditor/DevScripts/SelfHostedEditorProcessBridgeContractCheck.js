@@ -51,7 +51,7 @@ try {
     command: process.execPath,
   }, "process bridge timeout contract", {
     outputPreviewCharacterLimit: 24,
-    timeoutMilliseconds: 50,
+    timeoutMilliseconds: 500,
   });
 } catch (error) {
   timedOutError = error;
