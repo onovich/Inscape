@@ -13,7 +13,8 @@
 - 执行 P4 goal：读 [P4 Runtime Playable MVP Goal 模式执行指南](self-hosted-editor-p4-goal-mode-execution-guide.md)，再读 [P4 Final Validation Report](self-hosted-editor-p4-final-validation-report.md)，从 P3 final validation 接上 Runtime playable MVP，不要把 P4 扩成编辑器产品化、Rollback / Trace / Flashback、Presentation IR 或 Unity / Host SDK。
 - 执行 P5 goal：读 [P5 SelfHostedEditor Runtime Authoring Goal 模式执行指南](self-hosted-editor-p5-goal-mode-execution-guide.md)，再读 [P5 Baseline Audit](self-hosted-editor-p5-baseline-audit.md)、[P5 Runtime Authoring Contract](self-hosted-editor-p5-runtime-authoring-contract.md)、[P5 Runtime Session Audit](self-hosted-editor-p5-runtime-session-audit.md)、[P5 Mock Query Model Audit](self-hosted-editor-p5-mock-query-model-audit.md) 与 [P5 Mock Query UI Audit](self-hosted-editor-p5-mock-query-ui-audit.md)，从 P4 final validation 接上 SelfHostedEditor Runtime authoring / productization；每轮必须 Debug 自检、架构自检、验证通过后提交推送，再进入下一轮。
 - P5 Runtime authoring / productization 已完成 final validation：读 [P5 Final Validation Report](self-hosted-editor-p5-final-validation-report.md)、[P5 Final Validation / PASS-FAIL Goal 模式执行指南](self-hosted-editor-p5-final-validation-goal-mode-execution-guide.md) 和 [P5 Integration Audit](self-hosted-editor-p5-integration-audit.md)。下一候选方向必须由用户批准，不能自动进入 Unity / Host SDK、Rollback / Trace Replay / Flashback、Presentation IR 或完整 host save。
-- Post-P5 下一方向决策已完成：读 [Post-P5 Next Direction Decision Brief](post-p5-next-direction-decision-brief.md) 和 [Post-P5 Next Direction Decision Goal 模式执行指南](post-p5-next-direction-decision-goal-mode-execution-guide.md)。当前只记录候选方向比较和推荐，不代表新研发 phase 已获批准。
+- Post-P5 下一方向决策已完成：读 [Post-P5 Next Direction Decision Brief](post-p5-next-direction-decision-brief.md) 和 [Post-P5 Next Direction Decision Goal 模式执行指南](post-p5-next-direction-decision-goal-mode-execution-guide.md)。2026-06-21 已批准其推荐方向的具体化版本：`Host Integration Partner Readiness`，但范围仅限 contract / fixture / report / planning。
+- Sinan / Host Integration Partner Readiness 合作线：读 [Sinan Cooperation Notes](sinan-cooperation/README.md)、[Host Integration Partner Readiness 决策简报](sinan-cooperation/host-integration-partner-readiness-decision-brief-2026-06-21.md) 和 [商务反馈口径](sinan-cooperation/host-integration-partner-readiness-business-response-2026-06-21.md)。Sinan 只能作为 partner profile / fixture，不得成为 core dependency。
 
 ## 阅读路径
 
@@ -151,6 +152,9 @@ docs/
   self-hosted-editor-p5-final-validation-report.md P5 Runtime authoring 最终验证报告
   post-p5-next-direction-decision-goal-mode-execution-guide.md Post-P5 下一方向决策门 goal 模式执行指南
   post-p5-next-direction-decision-brief.md Post-P5 下一候选方向决策 brief
+  sinan-cooperation/README.md Sinan / Inscape 合作资料索引
+  sinan-cooperation/host-integration-partner-readiness-decision-brief-2026-06-21.md Host Integration Partner Readiness 决策简报
+  sinan-cooperation/host-integration-partner-readiness-business-response-2026-06-21.md Host Integration Partner Readiness 商务反馈口径
   vscode-tooling.md      VSCode 阶段的轻工具链设计与使用方式
   cli-command-reference.md CLI 命令、参数、产物和验证命令速查
   l10n-extraction.md     CSV 本地化提取命令与字段说明

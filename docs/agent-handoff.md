@@ -1,22 +1,32 @@
 # Agent 接手指南
 
-状态：P5 SelfHostedEditor Runtime authoring / productization 已通过 final validation；Post-P5 下一方向决策 brief 已完成，下一候选方向仍必须由用户批准
+状态：P5 SelfHostedEditor Runtime authoring / productization 已通过 final validation；Host Integration Partner Readiness 已批准为下一短阶段，范围仅限 contract / fixture / report / planning
 
-最后更新：2026-06-20
+最后更新：2026-06-21
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
 
+### 2026-06-21 Host Integration Partner Readiness GO 快照
+
+用户已批准 Post-P5 推荐方向的具体化版本：`Host Integration Partner Readiness`。这是下一短阶段，但不是 Sinan Runtime 接入，也不是 Sinan 专属功能开发。
+- 决策简报见 [Host Integration Partner Readiness 决策简报](sinan-cooperation/host-integration-partner-readiness-decision-brief-2026-06-21.md)。
+- 商务反馈口径见 [Host Integration Partner Readiness 商务反馈口径](sinan-cooperation/host-integration-partner-readiness-business-response-2026-06-21.md)。
+- Sinan 可以作为第一批真实 partner profile / fixture，用来验证通用 Host Integration contract；不得成为 Inscape core dependency。
+- 当前批准范围仅限 integration package contract、Narrative Graph IR external contract、source location contract、localization anchor export contract、Usage / Host Integration Audit 职责、Host Bridge candidate contract、static artifact fixtures 与 Sinan Static Artifact POC planning note。
+- 继续 HOLD / NO：Sinan Runtime Integration、Runtime Preview Bridge、hard dependency、Sinan-specific core semantics、bidirectional edit、直接写 Sinan `data/**/*.json`、Sinan 专用 DSL 语法。
+- 下一步应输出该阶段独立 goal-mode execution guide，约束轮数、每轮 Debug 自检、架构自检、验证通过后提交推送，再进入下一轮。
+
 ### 2026-06-20 Post-P5 下一方向决策门完成快照
 
-P5 已通过 final validation；Post-P5 下一方向决策 brief 已完成；当前仍没有已批准的新研发 phase。下一步应等待用户批准一个候选方向，而不是自动启动 Unity / Host SDK、Rollback / Trace Replay / Flashback、Presentation IR 或完整 host save。
+P5 已通过 final validation；Post-P5 下一方向决策 brief 已完成。2026-06-21 用户已批准其推荐方向的具体化版本：`Host Integration Partner Readiness`，但该批准只覆盖 contract / fixture / report / planning，不自动启动 Unity / Host SDK、Rollback / Trace Replay / Flashback、Presentation IR 或完整 host save。
 - Post-P5 决策门执行指南见 [Post-P5 Next Direction Decision Goal 模式执行指南](post-p5-next-direction-decision-goal-mode-execution-guide.md)。
 - 决策 brief 见 [Post-P5 Next Direction Decision Brief](post-p5-next-direction-decision-brief.md)。
 - Brief 比较了 Unity / Host SDK 第一刀、高级运行时调试、Presentation IR / 跨引擎 / 独立 Runtime、Host Bridge / Schema 自动化四个候选方向。
-- 推荐下一步是先批准 Host Bridge / Host Schema 自动化与代码生成收口的 scoping first slice，再用它降低 Unity / Host SDK 第一刀风险；这只是建议，不是已批准 phase。
-- 本阶段只做决策资料和推荐，没有做产品开发；如果用户批准某个方向，应为该方向单独输出新的 goal-mode execution guide。
-- 下一候选方向仍必须由用户批准，不能由 agent 自动扩张。
+- 推荐下一步原本是先批准 Host Bridge / Host Schema 自动化与代码生成收口的 scoping first slice；该建议已被具体化为 Host Integration Partner Readiness。
+- 本阶段只做决策资料和推荐，没有做产品开发；用户已批准后，仍应为 Host Integration Partner Readiness 单独输出新的 goal-mode execution guide。
+- 不能由 agent 自动扩张到 runtime integration、preview bridge、hard dependency 或 Sinan-specific core semantics。
 
 ### 2026-06-20 P5 Final Validation PASS 快照
 
@@ -1827,9 +1837,10 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 
 建议优先做小而闭环的任务，不要直接跳到大规模重构。
 
-1. P5 后续方向选择需先由用户批准。
+1. 为 Host Integration Partner Readiness 输出下一阶段 goal-mode execution guide。
    - P5 Runtime authoring / productization 已 PASS，见 [SelfHostedEditor P5 Final Validation Report](self-hosted-editor-p5-final-validation-report.md)。
-   - 不要自动进入 Unity / Host SDK、Rollback / Trace Replay / Flashback、Presentation IR 或完整 host save；若要继续其中任一方向，先产出新的 goal-mode execution guide 并重新声明边界。
+   - 用户已批准 Host Integration Partner Readiness 作为下一短阶段；范围仅限 contract / fixture / report / planning。
+   - 不要自动进入 Sinan Runtime Integration、Runtime Preview Bridge、Unity / Host SDK、Rollback / Trace Replay / Flashback、Presentation IR、完整 host save 或 Host Schema action policy 扩张。
 
 2. 继续推进 Stable Node ID / 本地化主线。
    - ADR 0013、sidecar 闭环、保守自动重命名识别、VSCode 显式 `Update Stable Node Map` 入口、插入标题后的自动同步、标题重命名人工确认 / 冲突报告、本地化 alignment / audit report，以及相似文本人工候选第一版都已落地。
