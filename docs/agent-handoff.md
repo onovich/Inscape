@@ -1,12 +1,22 @@
 # Agent 接手指南
 
-状态：P5 SelfHostedEditor Runtime authoring / productization 已通过 final validation；Host Integration Partner Readiness 已完成 final validation；Host Integration Package CLI 已通过 final validation；Host Integration Readiness Report Generator 已完成 final validation；Host Integration Static Artifact POC Partner Handoff Kit 已完成 final validation，结论为 `Host Integration Static Artifact POC Partner Handoff Kit: PASS`
+状态：P5 SelfHostedEditor Runtime authoring / productization 已通过 final validation；Host Integration Partner Readiness 已完成 final validation；Host Integration Package CLI 已通过 final validation；Host Integration Readiness Report Generator 已完成 final validation；Host Integration Static Artifact POC Partner Handoff Kit 已完成 final validation，结论为 `Host Integration Static Artifact POC Partner Handoff Kit: PASS`；用户已批准 `Host Bridge Candidate Generator First Slice` 作为下一阶段，执行指南已输出
 
 最后更新：2026-06-22
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-22 Host Bridge Candidate Generator First Slice Goal Guide 快照
+
+用户已批准 `Host Bridge Candidate Generator First Slice` 作为 Static Artifact POC Partner Handoff Kit 之后的下一阶段。
+- 执行指南见 [Host Bridge Candidate Generator First Slice Goal 模式执行指南](host-bridge-candidate-generator-goal-mode-execution-guide.md)。
+- 执行预算为 6 轮：Round 1 baseline / command contract / source-of-truth audit，Round 2 shared Tooling candidate domain / package reader integration，Round 3 CLI command / diagnostics / output guard，Round 4 smoke fixture / determinism / docs hardening，Round 5 buffer / edge-case hardening / compatibility closure，Round 6 final validation / PASS-FAIL closure。
+- 本阶段定位是 standalone package candidate generator first slice：从既有 Host Integration Package artifact 生成 review-only Host Bridge Candidate evidence。
+- `export-host-integration-package-project` 默认仍不得自动生成 `host/host-bridge-candidate.json`；readiness report 可以读取已有 candidate summary，但不得代替 generator 生成 candidate。
+- 本阶段不写 confirmed Host Bridge，不做 generated apply，不做 POC-2 catalog projection，不接 Runtime Preview Bridge / Sinan Runtime / Unity / Host SDK / 完整 host save，不做 Rollback / Trace Replay / Flashback / Presentation IR / Host Schema action policy expansion。
+- 执行者每轮必须 Debug 自检、架构自检、验证通过后提交推送，再进入下一轮。
 
 ### 2026-06-22 Static Artifact POC Partner Handoff Kit Final Validation 快照
 
@@ -1986,16 +1996,16 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 
 建议优先做小而闭环的任务，不要直接跳到大规模重构。
 
-1. 执行 Static Artifact POC Partner Handoff Kit。
+1. 执行 Host Bridge Candidate Generator First Slice。
    - P5 Runtime authoring / productization 已 PASS，见 [SelfHostedEditor P5 Final Validation Report](self-hosted-editor-p5-final-validation-report.md)。
    - Host Integration Partner Readiness 已 PASS，见 [Host Integration Partner Readiness Final Validation Report](host-integration-partner-readiness-final-validation-report.md)。
    - Host Integration Package CLI 已 PASS，见 [Host Integration Package CLI Final Validation Report](host-integration-package-cli-final-validation-report.md)。
    - Host Integration Readiness Report Generator 已 PASS，见 [Host Integration Readiness Report Generator Final Validation Report](host-integration-readiness-report-generator-final-validation-report.md)。
-   - 用户已批准下一阶段：`Static Artifact POC Partner Handoff Kit`，执行指南见 [Static Artifact POC Partner Handoff Kit Goal 模式执行指南](host-integration-static-artifact-poc-partner-handoff-goal-mode-execution-guide.md)。
-   - 执行预算为 4 轮：handoff kit contract、partner feedback schema / fixture、handoff smoke / docs hardening、final validation。
-   - 当前可用命令：`generate-host-integration-readiness-report-package <package-dir> -o <report.json>`。
-   - 新增 smoke：`node docs\host-integration-static-fixtures\HostIntegrationReadinessReportSmoke.js`。
-   - 本阶段不要进入 Host Bridge Candidate Generator、POC-2 catalog projection、Sinan Runtime Integration、Runtime Preview Bridge、Unity / Host SDK、generated apply、完整 host save、Rollback / Trace Replay / Flashback、Presentation IR 或 Host Schema action policy 扩张。
+   - Host Integration Static Artifact POC Partner Handoff Kit 已 PASS，见 [Host Integration Static Artifact POC Partner Handoff Final Validation Report](host-integration-static-artifact-poc-partner-handoff-final-validation-report.md)。
+   - 用户已批准下一阶段：`Host Bridge Candidate Generator First Slice`，执行指南见 [Host Bridge Candidate Generator First Slice Goal 模式执行指南](host-bridge-candidate-generator-goal-mode-execution-guide.md)。
+   - 执行预算为 6 轮：baseline / command contract、shared Tooling candidate domain、CLI command / output guard、smoke / docs hardening、buffer / compatibility closure、final validation。
+   - 目标命令建议为 `generate-host-bridge-candidate-package <package-dir> -o <candidate.json>`。
+   - 本阶段不要进入 confirmed Host Bridge、POC-2 catalog projection、Sinan Runtime Integration、Runtime Preview Bridge、Unity / Host SDK、generated apply、完整 host save、Rollback / Trace Replay / Flashback、Presentation IR 或 Host Schema action policy 扩张。
 
 2. 继续推进 Stable Node ID / 本地化主线。
    - ADR 0013、sidecar 闭环、保守自动重命名识别、VSCode 显式 `Update Stable Node Map` 入口、插入标题后的自动同步、标题重命名人工确认 / 冲突报告、本地化 alignment / audit report，以及相似文本人工候选第一版都已落地。
