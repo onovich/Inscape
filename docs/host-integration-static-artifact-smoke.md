@@ -93,6 +93,40 @@ Coverage:
 The smoke does not run Runtime, connect Unity / Host SDK / Sinan Runtime, write
 host data, generate host apply output, or confirm Host Bridge mappings.
 
+## Host Bridge Candidate Generator Smoke
+
+`HostBridgeCandidateGeneratorSmoke.js` covers the standalone Host Bridge
+Candidate generator added after the package and readiness report CLI baselines:
+
+```powershell
+node --check docs\host-integration-static-fixtures\HostBridgeCandidateGeneratorSmoke.js
+node docs\host-integration-static-fixtures\HostBridgeCandidateGeneratorSmoke.js
+```
+
+The smoke creates a temporary workspace, exports a Host Integration Package, and
+then calls:
+
+```powershell
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- generate-host-bridge-candidate-package <package-dir> -o <candidate.json>
+```
+
+Coverage:
+
+- package export still does not generate `host/host-bridge-candidate.json` by
+  default;
+- candidate output shape, UTF-8 without BOM and repeated generation
+  determinism;
+- id-binding, action-handler and query-handler candidates for declared schema
+  gaps;
+- blocked schema-capability evidence for unknown action/query usage;
+- no fake handler candidate for unknown action usage;
+- `writesHostData = false` and `generatedOwnership = "candidate-only"`;
+- missing `-o` and output-directory guard.
+
+The smoke does not run Runtime, connect Unity / Host SDK / Sinan Runtime, write
+host data, generate host apply output, confirm Host Bridge mappings or project a
+partner catalog.
+
 ## Partner Handoff Kit Smoke
 
 `PartnerHandoffKitSmoke.js` covers the generic partner feedback fixture added

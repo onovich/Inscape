@@ -22,7 +22,7 @@
 
 本 handoff kit 不实现：
 
-- Host Bridge Candidate Generator。
+- Host Bridge Candidate Generator（作为 handoff kit 自身能力）。后续已批准的独立阶段可以提供显式 candidate generator 命令，但 package export 与 readiness report generation 仍不得隐式生成 candidate。
 - POC-2 catalog projection。
 - generated apply。
 - Runtime Preview Bridge。
@@ -64,6 +64,14 @@ dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- export-h
 ```powershell
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- generate-host-integration-readiness-report-package <package-dir> -o <package-dir>\reports\readiness-report.regenerated.json
 ```
+
+如需生成 review-only Host Bridge Candidate evidence，必须显式调用独立命令：
+
+```powershell
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- generate-host-bridge-candidate-package <package-dir> -o <package-dir>\host\host-bridge-candidate.json
+```
+
+该命令只读取既有 package artifacts，输出 candidate-only JSON；它不写 confirmed Host Bridge，不做 generated apply，也不替代 partner / owner manual review gate。
 
 交接前 producer 应确认：
 
@@ -183,6 +191,8 @@ node --check docs\host-integration-static-fixtures\HostIntegrationPackageCliSmok
 node docs\host-integration-static-fixtures\HostIntegrationPackageCliSmoke.js
 node --check docs\host-integration-static-fixtures\HostIntegrationReadinessReportSmoke.js
 node docs\host-integration-static-fixtures\HostIntegrationReadinessReportSmoke.js
+node --check docs\host-integration-static-fixtures\HostBridgeCandidateGeneratorSmoke.js
+node docs\host-integration-static-fixtures\HostBridgeCandidateGeneratorSmoke.js
 ```
 
 ## Round 1 Self-Check

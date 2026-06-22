@@ -138,6 +138,9 @@ Rules:
 - Unknown action/query usage must stay `schema-capability` or `blocked` until Host Schema is updated.
 - Conflict and unsupported candidates must remain manual review evidence.
 - Accepted review decisions must name a separate confirmed artifact if one exists.
+- Readiness report generation does not call `generate-host-bridge-candidate-package`
+  and must not create `host/host-bridge-candidate.json`; candidate generation is
+  a separate explicit command.
 
 ## Validation Rules
 
@@ -191,6 +194,12 @@ invalid > incompatible > missing required artifact > error diagnostics / blocked
 The generator preserves the same negative boundary flags as package export:
 `runtimeIntegration = false`, `previewBridge = false`, `writesHostData = false`
 and no Host Bridge candidate generation.
+
+Standalone candidate generation is covered separately by:
+
+```powershell
+node docs\host-integration-static-fixtures\HostBridgeCandidateGeneratorSmoke.js
+```
 
 Current smoke coverage lives in:
 

@@ -220,6 +220,18 @@ Candidate rules:
 
 Round 4 static artifact fixtures are documented in [Host Integration Partner Readiness Fixtures](host-integration-partner-readiness-fixtures.md), with the JSON fixture pack at [host-integration-static-fixtures/fixtures.json](host-integration-static-fixtures/fixtures.json).
 
+Current standalone generator:
+
+```powershell
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- generate-host-bridge-candidate-package <package-dir> -o <candidate.json>
+```
+
+The generator reads existing package artifacts through shared Tooling and writes
+review-only `inscape.host-bridge-candidate` JSON. Package export still does not
+generate `host/host-bridge-candidate.json` by default; the artifact appears only
+when a producer explicitly runs the standalone candidate command or supplies
+manual partner evidence.
+
 ## Readiness Report Connection
 
 `reports/readiness-report.json` must follow [Host Integration Readiness Report Contract](host-integration-readiness-report-contract.md).
