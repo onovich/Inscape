@@ -1,6 +1,6 @@
 # Agent 接手指南
 
-状态：P5 SelfHostedEditor Runtime authoring / productization 已通过 final validation；Host Integration Partner Readiness 已完成 final validation；Host Integration Package CLI 已通过 final validation；下一阶段已批准为 Host Integration Readiness Report Generator
+状态：P5 SelfHostedEditor Runtime authoring / productization 已通过 final validation；Host Integration Partner Readiness 已完成 final validation；Host Integration Package CLI 已通过 final validation；Host Integration Readiness Report Generator 已完成 final validation，结论为 `Host Integration Readiness Report Generator: PASS`；下一候选方向必须由用户批准
 
 最后更新：2026-06-22
 
@@ -8,15 +8,20 @@
 
 ## 当前项目快照
 
-### 2026-06-22 Host Integration Readiness Report Generator Goal Guide 快照
+### 2026-06-22 Host Integration Readiness Report Generator Final Validation 快照
 
-用户已通过 `GoalNext` 批准下一阶段：`Host Integration Readiness Report Generator`。本阶段目标不是 partner handoff，也不是 Host Bridge candidate generator，而是把 Host Integration Package CLI 中的最小 `reports/readiness-report.json` 升级为可独立复用的 package readiness report generator。
+Host Integration Readiness Report Generator 已完成 Round 5 Final Validation / PASS-FAIL closure，结论为 `Host Integration Readiness Report Generator: PASS`。
+- Final validation report 见 [Host Integration Readiness Report Generator Final Validation Report](host-integration-readiness-report-generator-final-validation-report.md)。
 - 执行指南见 [Host Integration Readiness Report Generator Goal 模式执行指南](host-integration-readiness-report-generator-goal-mode-execution-guide.md)。
-- 预算为 5 轮会话：Round 1 baseline / report generator contract，Round 2 shared report domain / package reader，Round 3 CLI command / diagnostics aggregation，Round 4 fixtures / smoke / docs hardening，Round 5 final validation / PASS-FAIL closure。
-- 建议目标命令为 `generate-host-integration-readiness-report-package <package-dir> -o <report.json>`，读取已有 Host Integration Package 并输出 deterministic readiness report。
-- 本阶段必须让 package export 和独立 report command 复用同一个 Tooling report generator，避免两套 report 语义。
-- 本阶段继续禁止 Host Bridge Candidate Generator、Static Artifact POC partner handoff、POC-2 catalog projection、Sinan Runtime Integration、Runtime Preview Bridge、Unity / Host SDK、generated apply、完整 host save、Rollback / Trace Replay / Flashback、Presentation IR、Host Schema action policy 扩张或任何 Sinan / Unity / Bird hard dependency 进入 `src/Internal`。
-- 执行者每轮必须 Debug 自检、架构自检、验证通过后提交推送，再进入下一轮。
+- Round 1 审计见 [Host Integration Readiness Report Generator Baseline Audit](host-integration-readiness-report-generator-baseline-audit.md)；Round 2 审计见 [Host Integration Readiness Report Generator Shared Domain Audit](host-integration-readiness-report-generator-shared-domain-audit.md)；Round 3 审计见 [Host Integration Readiness Report Generator CLI Audit](host-integration-readiness-report-generator-cli-audit.md)；Round 4 审计见 [Host Integration Readiness Report Generator Smoke Audit](host-integration-readiness-report-generator-smoke-audit.md)。
+- 新命令为 `generate-host-integration-readiness-report-package <package-dir> -o <report.json>`，读取已有 Host Integration Package 并输出 deterministic readiness report。
+- `export-host-integration-package-project` 与独立 report command 复用同一个 `Inscape.Tooling` report generator；CLI 只做参数、调用、文件输出与 exit code 映射。
+- package reader / report generator 会检查 manifest、required artifacts、JSON parse、`format` / `formatVersion`、source refs、compiler diagnostics、Host Integration Audit diagnostics 与 boundary flags。
+- 新增 [HostIntegrationReadinessReportSmoke.js](host-integration-static-fixtures/HostIntegrationReadinessReportSmoke.js)，覆盖真实 package report generation、missing required artifact、invalid JSON artifact、output path guard、重复生成 determinism、`writesHostData = false`、无 Runtime integration、无 preview bridge、无 Host Bridge candidate generation。
+- `CliCore.WriteOrPrint` 已改为无 BOM UTF-8 输出，确保新 report JSON 可被 Node / partner tooling 直接解析。
+- 最终验证矩阵、StaticArtifactFixtureSmoke、HostIntegrationPackageCliSmoke、HostIntegrationReadinessReportSmoke、VSCode baseline check、`git diff --check` 与边界扫描均通过；`rg` 无输出按“无命中即通过”记录。
+- 本阶段没有实现 Host Bridge Candidate Generator、Static Artifact POC partner handoff、POC-2 catalog projection、Sinan Runtime Integration、Runtime Preview Bridge、Unity / Host SDK、generated apply、完整 host save、Rollback / Trace Replay / Flashback、Presentation IR 或 Host Schema action policy 扩张。
+- 下一候选方向必须由用户批准，不能自动进入 Host Bridge Candidate Generator、Static Artifact POC partner handoff、POC-2 catalog projection、Runtime / Host SDK、generated apply、完整 host save、Rollback / Trace Replay / Flashback、Presentation IR 或 Host Schema action policy 扩张。
 
 ### 2026-06-22 Host Integration Package CLI Final Validation 快照
 
@@ -1934,14 +1939,14 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 
 建议优先做小而闭环的任务，不要直接跳到大规模重构。
 
-1. 执行 Host Integration Readiness Report Generator 阶段。
+1. 等待用户批准 Host Integration 后的下一候选方向。
    - P5 Runtime authoring / productization 已 PASS，见 [SelfHostedEditor P5 Final Validation Report](self-hosted-editor-p5-final-validation-report.md)。
    - Host Integration Partner Readiness 已 PASS，见 [Host Integration Partner Readiness Final Validation Report](host-integration-partner-readiness-final-validation-report.md)。
    - Host Integration Package CLI 已 PASS，见 [Host Integration Package CLI Final Validation Report](host-integration-package-cli-final-validation-report.md)。
-   - 下一阶段已批准为 [Host Integration Readiness Report Generator Goal 模式执行指南](host-integration-readiness-report-generator-goal-mode-execution-guide.md)，预算 5 轮会话。
-   - 目标是新增独立 package readiness report generator，并让 package export 复用同一个 shared Tooling report generator。
-   - 每轮必须 Debug 自检、架构自检、验证通过后提交推送，再进入下一轮。
-   - 不要自动进入 Host Bridge Candidate Generator、Static Artifact POC partner handoff、POC-2 catalog projection、Sinan Runtime Integration、Runtime Preview Bridge、Unity / Host SDK、generated apply、完整 host save、Rollback / Trace Replay / Flashback、Presentation IR 或 Host Schema action policy 扩张。
+   - Host Integration Readiness Report Generator 已 PASS，见 [Host Integration Readiness Report Generator Final Validation Report](host-integration-readiness-report-generator-final-validation-report.md)。
+   - 当前可用命令：`generate-host-integration-readiness-report-package <package-dir> -o <report.json>`。
+   - 新增 smoke：`node docs\host-integration-static-fixtures\HostIntegrationReadinessReportSmoke.js`。
+   - 下一候选方向必须由用户批准；不要自动进入 Host Bridge Candidate Generator、Static Artifact POC partner handoff、POC-2 catalog projection、Sinan Runtime Integration、Runtime Preview Bridge、Unity / Host SDK、generated apply、完整 host save、Rollback / Trace Replay / Flashback、Presentation IR 或 Host Schema action policy 扩张。
 
 2. 继续推进 Stable Node ID / 本地化主线。
    - ADR 0013、sidecar 闭环、保守自动重命名识别、VSCode 显式 `Update Stable Node Map` 入口、插入标题后的自动同步、标题重命名人工确认 / 冲突报告、本地化 alignment / audit report，以及相似文本人工候选第一版都已落地。
