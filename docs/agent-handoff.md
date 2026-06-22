@@ -1924,14 +1924,13 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 
 建议优先做小而闭环的任务，不要直接跳到大规模重构。
 
-1. 执行 Host Integration Package CLI 阶段。
+1. 等待用户批准下一候选方向；不要自动开启新阶段。
    - P5 Runtime authoring / productization 已 PASS，见 [SelfHostedEditor P5 Final Validation Report](self-hosted-editor-p5-final-validation-report.md)。
    - Host Integration Partner Readiness 已 PASS，见 [Host Integration Partner Readiness Final Validation Report](host-integration-partner-readiness-final-validation-report.md)。
-   - 下一阶段已批准为 [Host Integration Package CLI Goal 模式执行指南](host-integration-package-cli-goal-mode-execution-guide.md)，预算 6 轮会话。
-   - Round 1 已完成 baseline / command contract，见 [Host Integration Package CLI Baseline Audit](host-integration-package-cli-baseline-audit.md)。
-   - 下一轮进入 Round 2：Package Domain / Manifest Writer；目标是新增共享 Tooling domain、manifest model、artifact index writer 和 path guard。
-   - 每轮必须 Debug 自检、架构自检、验证通过后提交推送，再进入下一轮。
-   - 不要自动进入 Host Bridge candidate generator、generated apply、Sinan Runtime Integration、Runtime Preview Bridge、Unity / Host SDK、Rollback / Trace Replay / Flashback、Presentation IR、完整 host save 或 Host Schema action policy 扩张。
+   - Host Integration Package CLI 已 PASS，见 [Host Integration Package CLI Final Validation Report](host-integration-package-cli-final-validation-report.md)。
+   - 当前没有已批准的下一阶段 goal-mode execution guide；`DoNextGoal` 不应继续执行旧的 Host Integration Package CLI guide。
+   - 下一候选方向必须由用户重新批准。
+   - 不要自动进入 Host Bridge Candidate Generator、Static Artifact POC partner handoff、POC-2 catalog projection、Sinan Runtime Integration、Runtime Preview Bridge、Unity / Host SDK、generated apply、完整 host save、Rollback / Trace Replay / Flashback、Presentation IR 或 Host Schema action policy 扩张。
 
 2. 继续推进 Stable Node ID / 本地化主线。
    - ADR 0013、sidecar 闭环、保守自动重命名识别、VSCode 显式 `Update Stable Node Map` 入口、插入标题后的自动同步、标题重命名人工确认 / 冲突报告、本地化 alignment / audit report，以及相似文本人工候选第一版都已落地。
