@@ -2,7 +2,7 @@
 
 日期：2026-06-22
 
-状态：Round 1 contract baseline；面向 Host Integration Package CLI 与 Readiness Report Generator 的 POC-1 partner dry-run 交接。
+状态：Final validation PASS baseline；面向 Host Integration Package CLI 与 Readiness Report Generator 的 POC-1 partner dry-run 交接。
 
 ## 目标
 

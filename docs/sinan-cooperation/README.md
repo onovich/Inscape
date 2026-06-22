@@ -9,7 +9,7 @@
 - `Host Integration Partner Readiness: GO`
 - `Host Integration Partner Readiness final validation: PASS`
 - `Sinan Static Artifact POC planning: GO`
-- `Static Artifact POC Partner Handoff Kit: IN PROGRESS`
+- `Host Integration Static Artifact POC Partner Handoff Kit final validation: PASS`
 - `Sinan Runtime Integration: HOLD`
 - `Runtime Preview Bridge: HOLD`
 - `Hard Dependency: NO`
@@ -38,6 +38,7 @@
 19. [Host Integration Partner Readiness Final Validation Report](../host-integration-partner-readiness-final-validation-report.md)
 20. [Static Artifact POC Partner Handoff Kit](../host-integration-static-artifact-poc-partner-handoff-kit.md)
 21. [Static Artifact POC Partner Feedback Schema](../host-integration-static-artifact-poc-partner-feedback-schema.md)
+22. [Host Integration Static Artifact POC Partner Handoff Final Validation Report](../host-integration-static-artifact-poc-partner-handoff-final-validation-report.md)
 
 边界规则：
 

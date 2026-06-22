@@ -1,12 +1,21 @@
 # Agent 接手指南
 
-状态：P5 SelfHostedEditor Runtime authoring / productization 已通过 final validation；Host Integration Partner Readiness 已完成 final validation；Host Integration Package CLI 已通过 final validation；Host Integration Readiness Report Generator 已完成 final validation，结论为 `Host Integration Readiness Report Generator: PASS`；`Static Artifact POC Partner Handoff Kit` 已进入执行，Round 3 handoff smoke / docs hardening 已输出
+状态：P5 SelfHostedEditor Runtime authoring / productization 已通过 final validation；Host Integration Partner Readiness 已完成 final validation；Host Integration Package CLI 已通过 final validation；Host Integration Readiness Report Generator 已完成 final validation；Host Integration Static Artifact POC Partner Handoff Kit 已完成 final validation，结论为 `Host Integration Static Artifact POC Partner Handoff Kit: PASS`
 
 最后更新：2026-06-22
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-22 Static Artifact POC Partner Handoff Kit Final Validation 快照
+
+Host Integration Static Artifact POC Partner Handoff Kit 已完成 Round 4 final validation / PASS-FAIL closure，结论为 `Host Integration Static Artifact POC Partner Handoff Kit: PASS`。
+- Final validation report 见 [Host Integration Static Artifact POC Partner Handoff Final Validation Report](host-integration-static-artifact-poc-partner-handoff-final-validation-report.md)。
+- 本阶段交付 [Static Artifact POC Partner Handoff Kit](host-integration-static-artifact-poc-partner-handoff-kit.md)、[Static Artifact POC Partner Feedback Schema](host-integration-static-artifact-poc-partner-feedback-schema.md)、[partner-feedback.generic.json](host-integration-static-fixtures/partner-feedback.generic.json) 与 [PartnerHandoffKitSmoke.js](host-integration-static-fixtures/PartnerHandoffKitSmoke.js)。
+- 最终验证矩阵、四个 static / package / readiness / handoff smoke、VSCode baseline check、`git diff --check` 与边界扫描均通过；`rg` 无输出按“无命中即通过”记录。
+- 本阶段没有提交 generated package / zip / reports，没有实现 Host Bridge Candidate Generator、POC-2 catalog projection、generated apply、Runtime Preview Bridge、Sinan Runtime、Unity / Host SDK、完整 host save、Rollback / Trace Replay / Flashback、Presentation IR 或 Host Schema action policy 扩张。
+- 下一候选方向必须由用户批准，不能自动进入 Host Bridge Candidate Generator、POC-2 catalog projection、generated apply、Runtime Preview Bridge、Sinan Runtime、Unity / Host SDK、完整 host save、Rollback / Trace Replay / Flashback、Presentation IR 或 Host Schema action policy expansion。
 
 ### 2026-06-22 Static Artifact POC Partner Handoff Kit Round 3 快照
 
