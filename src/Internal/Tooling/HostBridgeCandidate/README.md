@@ -19,6 +19,6 @@ Non-scope:
 
 - Does not write or confirm `inscape.host.bridge` data.
 - Does not apply generated mappings.
-- Does not call Unity, a Host SDK, Runtime Preview, Sinan Runtime, or partner
+- Does not call Unity, a Host SDK, Runtime Preview, partner runtime, or partner
   services.
 - Does not project POC-2 catalog entries.
