@@ -270,6 +270,113 @@ Narrator: Hello package.
             }
         }
 
+        static void CliHostBridgeCandidatePackageWritesCandidate() {
+            string directory = Path.Combine(Path.GetTempPath(), "inscape-cli-host-bridge-candidate-" + Guid.NewGuid().ToString("N"));
+            string configDirectory = Path.Combine(directory, "config");
+            Directory.CreateDirectory(configDirectory);
+            try {
+                File.WriteAllText(Path.Combine(directory, "inscape.config.json"), """
+{
+  "hostSchema": "config/inscape.host.schema.json",
+  "hostBridge": "config/inscape.host.bridge.json"
+}
+""", Encoding.UTF8);
+                File.WriteAllText(Path.Combine(configDirectory, "inscape.host.schema.json"), """
+{
+  "format": "inscape.host-schema",
+  "formatVersion": 1,
+  "queries": [
+    { "name": "player.name", "returnType": "string", "isAsync": false, "parameters": [] }
+  ],
+  "actions": [
+    { "name": "play_timeline", "mode": "wait", "parameters": [{ "name": "timelineId", "type": "string", "idKind": "timeline", "required": true }] }
+  ]
+}
+""", Encoding.UTF8);
+                File.WriteAllText(Path.Combine(configDirectory, "inscape.host.bridge.json"), """
+{
+  "format": "inscape.host-bridge",
+  "formatVersion": 1,
+  "ids": [],
+  "actions": [],
+  "queries": []
+}
+""", Encoding.UTF8);
+                File.WriteAllText(Path.Combine(directory, "story.inscape"), """
+# start
+@entry
+@emit play_timeline "intro_cutscene"
+Narrator: [player.name].
+""", Encoding.UTF8);
+
+                string packageDirectory = Path.Combine(directory, "package");
+                RunCliForOutput(new[] { "export-host-integration-package-project", directory, "-o", packageDirectory });
+
+                (int ExitCode, string Stdout, string Stderr) missingOutput = RunCliForFailure(new[] { "generate-host-bridge-candidate-package", packageDirectory });
+                AssertEqual(2, missingOutput.ExitCode, "Candidate command without -o should be usage error.");
+                AssertEqual("", missingOutput.Stdout.Trim(), "Candidate command without -o should not write stdout.");
+                AssertTrue(missingOutput.Stderr.Contains("requires -o <candidate.json>"), "Candidate command without -o should explain required output.");
+
+                (int ExitCode, string Stdout, string Stderr) directoryOutput = RunCliForFailure(new[] { "generate-host-bridge-candidate-package", packageDirectory, "-o", directory });
+                AssertEqual(2, directoryOutput.ExitCode, "Candidate command should reject directory output path.");
+                AssertEqual("", directoryOutput.Stdout.Trim(), "Candidate command with directory output should not write stdout.");
+                AssertTrue(directoryOutput.Stderr.Contains("output path must be a file"), "Candidate output guard should explain directory output.");
+
+                string candidatePath = Path.Combine(directory, "host-bridge-candidate.json");
+                string output = RunCliForOutput(new[] { "generate-host-bridge-candidate-package", packageDirectory, "-o", candidatePath }).Trim();
+                AssertEqual(Path.GetFullPath(candidatePath), output, "Candidate generator should print candidate path.");
+                AssertTrue(File.Exists(candidatePath), "Candidate generator should write output file.");
+                AssertNoUtf8Bom(candidatePath);
+                AssertHostBridgeCandidate(candidatePath, "ready", 3);
+
+                string repeatedCandidatePath = Path.Combine(directory, "host-bridge-candidate.repeated.json");
+                string repeatedOutput = RunCliForOutput(new[] { "generate-host-bridge-candidate-package", packageDirectory, "-o", repeatedCandidatePath }).Trim();
+                AssertEqual(Path.GetFullPath(repeatedCandidatePath), repeatedOutput, "Repeated candidate generator should print repeated candidate path.");
+                AssertEqual(File.ReadAllText(candidatePath, Encoding.UTF8),
+                            File.ReadAllText(repeatedCandidatePath, Encoding.UTF8),
+                            "Repeated candidate generation should be byte-stable.");
+
+                (int ExitCode, string Stdout, string Stderr) missingPackage = RunCliForFailure(new[] {
+                    "generate-host-bridge-candidate-package",
+                    Path.Combine(directory, "missing-package"),
+                    "-o",
+                    Path.Combine(directory, "missing-package-candidate.json"),
+                });
+                AssertEqual(3, missingPackage.ExitCode, "Candidate command should reject missing package directory.");
+                AssertEqual("", missingPackage.Stdout.Trim(), "Missing package should not write stdout.");
+                AssertTrue(missingPackage.Stderr.Contains("Host Integration Package directory not found"), "Missing package should explain missing directory.");
+
+                string invalidCandidatePath = Path.Combine(directory, "host-bridge-candidate.invalid.json");
+                File.WriteAllText(Path.Combine(packageDirectory, "usage", "usage.json"), "{ invalid json" + Environment.NewLine, Encoding.UTF8);
+                string invalidOutput = RunCliForOutput(new[] { "generate-host-bridge-candidate-package", packageDirectory, "-o", invalidCandidatePath }).Trim();
+                AssertEqual(Path.GetFullPath(invalidCandidatePath), invalidOutput, "Invalid package artifact should still write candidate diagnostic artifact.");
+                AssertHostBridgeCandidate(invalidCandidatePath, "invalid", 0);
+
+                File.WriteAllText(Path.Combine(packageDirectory, "manifest.json"), """
+{
+  "format": "inscape.integration-package",
+  "formatVersion": 2,
+  "artifacts": []
+}
+""", Encoding.UTF8);
+                string unsupportedCandidatePath = Path.Combine(directory, "host-bridge-candidate.unsupported.json");
+                (int ExitCode, string Stdout, string Stderr) unsupportedPackage = RunCliForFailure(new[] {
+                    "generate-host-bridge-candidate-package",
+                    packageDirectory,
+                    "-o",
+                    unsupportedCandidatePath,
+                });
+                AssertEqual(3, unsupportedPackage.ExitCode, "Candidate command should reject unsupported package manifest formatVersion.");
+                AssertEqual("", unsupportedPackage.Stdout.Trim(), "Unsupported package should not write stdout.");
+                AssertFalse(File.Exists(unsupportedCandidatePath), "Unsupported manifest should not write candidate file.");
+                AssertTrue(unsupportedPackage.Stderr.Contains("Unsupported Host Integration Package manifest formatVersion"), "Unsupported package should explain manifest version.");
+            } finally {
+                if (Directory.Exists(directory)) {
+                    Directory.Delete(directory, true);
+                }
+            }
+        }
+
         static void AssertPackageJsonFormat(string path, string expectedFormat, string message) {
             AssertTrue(File.Exists(path), message + " exists");
             using JsonDocument document = JsonDocument.Parse(File.ReadAllText(path, Encoding.UTF8));
@@ -309,6 +416,60 @@ Narrator: Hello package.
             AssertFalse(root.GetProperty("boundary").GetProperty("previewBridge").GetBoolean(), "Package readiness preview boundary");
             AssertFalse(root.GetProperty("boundary").GetProperty("writesHostData").GetBoolean(), "Package readiness write boundary");
             AssertTrue(root.GetProperty("artifactChecks").GetArrayLength() >= 8, "Package readiness report should include artifact checks.");
+        }
+
+        static void AssertHostBridgeCandidate(string path,
+                                              string expectedResult,
+                                              int expectedCandidateCount) {
+            using JsonDocument document = JsonDocument.Parse(File.ReadAllText(path, Encoding.UTF8));
+            JsonElement root = document.RootElement;
+            AssertEqual("inscape.host-bridge-candidate", root.GetProperty("format").GetString(), "Host Bridge candidate format");
+            AssertEqual(1, root.GetProperty("formatVersion").GetInt32(), "Host Bridge candidate format version");
+            JsonElement summary = root.GetProperty("summary");
+            AssertEqual(expectedResult, summary.GetProperty("result").GetString(), "Host Bridge candidate result");
+            AssertEqual(expectedCandidateCount, summary.GetProperty("candidateCount").GetInt32(), "Host Bridge candidate count");
+            AssertFalse(summary.GetProperty("writesHostData").GetBoolean(), "Host Bridge candidate summary writesHostData");
+
+            if (expectedResult == "ready") {
+                JsonElement candidates = root.GetProperty("candidates");
+                AssertTrue(ContainsCandidateJson(candidates, "id-binding", "timeline", "intro_cutscene"), "Candidate output should include timeline id-binding.");
+                AssertTrue(ContainsCandidateJson(candidates, "action-handler", "action", "play_timeline"), "Candidate output should include action-handler.");
+                AssertTrue(ContainsCandidateJson(candidates, "query-handler", "query", "player.name"), "Candidate output should include query-handler.");
+                for (int i = 0; i < candidates.GetArrayLength(); i += 1) {
+                    JsonElement candidate = candidates[i];
+                    AssertTrue(candidate.GetProperty("review").GetProperty("required").GetBoolean(), "Candidate output should require review.");
+                    AssertEqual("candidate-only",
+                                candidate.GetProperty("ownership").GetProperty("generatedOwnership").GetString(),
+                                "Candidate output generated ownership");
+                    AssertFalse(candidate.GetProperty("ownership").GetProperty("writesHostData").GetBoolean(), "Candidate output writesHostData");
+                }
+            }
+        }
+
+        static bool ContainsCandidateJson(JsonElement candidates,
+                                          string candidateKind,
+                                          string subjectKind,
+                                          string subjectName) {
+            for (int i = 0; i < candidates.GetArrayLength(); i += 1) {
+                JsonElement candidate = candidates[i];
+                JsonElement subject = candidate.GetProperty("subject");
+                if (candidate.GetProperty("candidateKind").GetString() == candidateKind
+                    && subject.GetProperty("kind").GetString() == subjectKind
+                    && subject.GetProperty("name").GetString() == subjectName) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        static void AssertNoUtf8Bom(string path) {
+            byte[] bytes = File.ReadAllBytes(path);
+            bool hasBom = bytes.Length >= 3
+                          && bytes[0] == 239
+                          && bytes[1] == 187
+                          && bytes[2] == 191;
+            AssertFalse(hasBom, "File should be UTF-8 without BOM: " + path);
         }
 
         static bool ContainsPackageArtifactJson(JsonElement artifacts,

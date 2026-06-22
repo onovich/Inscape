@@ -106,6 +106,7 @@ namespace Inscape.Tests {
                 ("cli inspect-usage-project emits json", CliInspectUsageProjectEmitsJson),
                 ("cli audit-host-integration-project emits json", CliAuditHostIntegrationProjectEmitsJson),
                 ("cli host integration package writes manifest", CliHostIntegrationPackageWritesManifest),
+                ("cli host bridge candidate package writes candidate", CliHostBridgeCandidatePackageWritesCandidate),
                 ("cli update-node-map-project writes stable node map", CliUpdateNodeMapProjectWritesStableNodeMap),
                 ("cli update-node-map-project writes review report", CliUpdateNodeMapProjectWritesReviewReport),
                 ("cli apply-node-map-candidate-project writes shared review decision", CliApplyNodeMapCandidateProjectWritesSharedReviewDecision),

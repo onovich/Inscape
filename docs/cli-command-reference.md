@@ -78,7 +78,7 @@ dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- generate
 
 `generate-host-integration-readiness-report-package` 只读取已有 package，不重新编译 workspace，不解析 `.inscape` source，不运行 Runtime，不写 host data，也不生成 Host Bridge candidate。它复用 `Inscape.Tooling` package reader / readiness report generator，检查 manifest、required artifacts、JSON parse、`format` / `formatVersion`、diagnostics source refs 和 boundary flags。输出 JSON 使用无 BOM UTF-8，便于 Node / partner importer 直接解析。
 
-`generate-host-bridge-candidate-package` 是 Host Bridge Candidate Generator First Slice 的独立入口。Round 1 已注册 command contract 和 help；后续轮次会把 shared Tooling generator 接入该命令。最终命令只写 `inscape.host-bridge-candidate` review evidence，保持 `writesHostData = false`，不写 confirmed Host Bridge，不做 generated apply，不重新编译 workspace，不进入 Runtime / Host SDK / Unity / Sinan Runtime。
+`generate-host-bridge-candidate-package` 是 Host Bridge Candidate Generator First Slice 的独立入口，当前已接入 shared `Inscape.Tooling` candidate generator。该命令只读取既有 Host Integration Package artifacts，写出 `inscape.host-bridge-candidate` review evidence，保持 `writesHostData = false`，不写 confirmed Host Bridge，不做 generated apply，不重新编译 workspace，不进入 Runtime / Host SDK / Unity / Sinan Runtime。输出 JSON 使用 UTF-8 without BOM；缺少 `-o`、输出路径为目录、missing package、unsupported manifest version 等错误会通过 stderr / exit code 明确报告。
 
 当前 smoke 覆盖见 `docs\host-integration-static-fixtures\HostIntegrationReadinessReportSmoke.js`：
 
