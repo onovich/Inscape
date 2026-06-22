@@ -199,7 +199,11 @@ namespace Inscape.Tooling {
             HostIntegrationPackageManifestDomain.TrySetArtifactStatus(manifest, ReadinessReportPath, "ready");
             WriteJsonArtifact(fullOutputPath,
                               ReadinessReportPath,
-                              HostIntegrationPackageReadinessReportDomain.CreateFromManifest(manifest, createdAtUtc),
+                              HostIntegrationPackageReadinessReportDomain.CreateFromManifest(manifest,
+                                                                                             createdAtUtc,
+                                                                                             HostIntegrationPackageReadinessReportDomain.CreateDiagnostics(context.Compilation.Diagnostics,
+                                                                                                                                                            context.Audit.Diagnostics,
+                                                                                                                                                            sourcePath => CreatePackageSourcePath(context, sourcePath))),
                               jsonOptions,
                               manifest,
                               writtenArtifacts);

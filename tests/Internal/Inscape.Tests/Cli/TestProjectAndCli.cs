@@ -75,6 +75,7 @@ Narrator: Start.
             AssertTrue(text.Contains("inspect-usage-project"), "Commands should list usage manifest inspection command.");
             AssertTrue(text.Contains("audit-host-integration-project"), "Commands should list host integration audit command.");
             AssertTrue(text.Contains("export-host-integration-package-project"), "Commands should list host integration package export command.");
+            AssertTrue(text.Contains("generate-host-integration-readiness-report-package"), "Commands should list host integration readiness report command.");
             AssertTrue(text.Contains("update-node-map-project"), "Commands should list node map update command.");
             AssertTrue(text.Contains("apply-node-map-candidate-project"), "Commands should list node map candidate apply command.");
             AssertFalse(text.Contains("export-unity-sample-role-template"), "Internal CLI should not list UnitySample role template command.");
@@ -127,6 +128,30 @@ Narrator: Start.
             AssertTrue(text.Contains("export-host-integration-package-project"), "Help should include package command name.");
             AssertTrue(text.Contains("-o package-dir"), "Help should document required package output directory.");
             AssertTrue(text.Contains("Round 4 writes the manifest, copied source files"), "Help should state Round 4 package assembly boundary.");
+        }
+
+        static void CliHelpEmitsHostIntegrationReadinessReportDetails() {
+            TextWriter originalOut = Console.Out;
+            TextWriter originalError = Console.Error;
+            StringWriter output = new StringWriter();
+            StringWriter error = new StringWriter();
+
+            int exitCode;
+            try {
+                Console.SetOut(output);
+                Console.SetError(error);
+                exitCode = CliCore.Main(new[] { "help", "generate-host-integration-readiness-report-package" });
+            } finally {
+                Console.SetOut(originalOut);
+                Console.SetError(originalError);
+            }
+
+            string text = output.ToString();
+            AssertEqual(0, exitCode, "Host integration readiness report help exit code");
+            AssertEqual("", error.ToString().Trim(), "Host integration readiness report help stderr");
+            AssertTrue(text.Contains("generate-host-integration-readiness-report-package"), "Help should include readiness report command name.");
+            AssertTrue(text.Contains("-o report.json"), "Help should document required report output file.");
+            AssertTrue(text.Contains("does not recompile"), "Help should state package reader boundary.");
         }
 
         static void CliHostIntegrationPackageWritesManifest() {
@@ -196,6 +221,13 @@ Narrator: Hello package.
                 AssertPackageAnchorMap(Path.Combine(outputDirectory, "localization", "anchor-map.json"));
                 AssertPackageReadinessReport(Path.Combine(outputDirectory, "reports", "readiness-report.json"));
 
+                string regeneratedReportPath = Path.Combine(directory, "readiness-report.regenerated.json");
+                string regeneratedOutput = RunCliForOutput(new[] { "generate-host-integration-readiness-report-package", outputDirectory, "-o", regeneratedReportPath }).Trim();
+                AssertEqual(Path.GetFullPath(regeneratedReportPath), regeneratedOutput, "Readiness report generator should print report path.");
+                AssertTrue(File.Exists(regeneratedReportPath), "Readiness report generator should write report file.");
+                AssertPackageJsonFormat(regeneratedReportPath, "inscape.host-integration.readiness-report", "Regenerated readiness report artifact format");
+                AssertPackageReadinessReport(regeneratedReportPath);
+
                 string secondOutput = RunCliForOutput(new[] { "export-host-integration-package-project", directory, "-o", outputDirectory }).Trim();
                 string secondManifest = File.ReadAllText(manifestPath, Encoding.UTF8);
                 AssertEqual(output, secondOutput, "Repeated package export should print the same manifest path.");
@@ -246,6 +278,7 @@ Narrator: Hello package.
             AssertEqual("ready", root.GetProperty("summary").GetProperty("result").GetString(), "Package readiness report result");
             AssertEqual(10, root.GetProperty("summary").GetProperty("artifactCount").GetInt32(), "Package readiness report artifact count");
             AssertEqual(10, root.GetProperty("summary").GetProperty("readyCount").GetInt32(), "Package readiness report ready count");
+            AssertEqual(0, root.GetProperty("summary").GetProperty("diagnosticCount").GetInt32(), "Package readiness report diagnostic count");
             AssertFalse(root.GetProperty("summary").GetProperty("writesHostData").GetBoolean(), "Package readiness report writesHostData");
             AssertFalse(root.GetProperty("boundary").GetProperty("runtimeIntegration").GetBoolean(), "Package readiness runtime boundary");
             AssertFalse(root.GetProperty("boundary").GetProperty("previewBridge").GetBoolean(), "Package readiness preview boundary");

@@ -23,6 +23,10 @@ namespace Inscape.Cli {
                 return RunHostIntegrationPackageExport(rootPath, args, outputPath, jsonOptions);
             }
 
+            if (command == "generate-host-integration-readiness-report-package") {
+                return RunHostIntegrationReadinessReportPackage(rootPath, outputPath, jsonOptions);
+            }
+
             if (command == "inspect-host-schema-project") {
                 return RunHostSchemaInspection(rootPath, args, outputPath, jsonOptions);
             }
@@ -728,6 +732,34 @@ namespace Inscape.Cli {
             }
 
             Console.WriteLine(result.ManifestPath);
+            return 0;
+        }
+
+        static int RunHostIntegrationReadinessReportPackage(string packageDirectoryPath,
+                                                            string? outputPath,
+                                                            JsonSerializerOptions jsonOptions) {
+            if (string.IsNullOrWhiteSpace(outputPath)) {
+                Console.Error.WriteLine("generate-host-integration-readiness-report-package requires -o <report.json>.");
+                return 2;
+            }
+
+            string fullOutputPath = Path.GetFullPath(outputPath);
+            if (Directory.Exists(fullOutputPath)) {
+                Console.Error.WriteLine("Host Integration readiness report output path must be a file, not a directory: " + fullOutputPath);
+                return 2;
+            }
+
+            if (!HostIntegrationPackageReadinessReportDomain.TryCreateFromPackage(packageDirectoryPath,
+                                                                                  jsonOptions,
+                                                                                  out HostIntegrationPackageReadinessReportModel report,
+                                                                                  out string? errorMessage,
+                                                                                  out int exitCode)) {
+                Console.Error.WriteLine(errorMessage);
+                return exitCode;
+            }
+
+            CliCore.WriteOrPrint(outputPath, JsonSerializer.Serialize(report, jsonOptions));
+            Console.WriteLine(fullOutputPath);
             return 0;
         }
 

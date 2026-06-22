@@ -1,19 +1,32 @@
 using System.Text.Json;
+using Inscape.Compiler.Diagnostics;
 
 namespace Inscape.Tooling {
 
     public static class HostIntegrationPackageReadinessReportDomain {
 
         const string ManifestFileName = "manifest.json";
+        const string ProjectIrPath = "graph/project-ir.json";
+        const string HostIntegrationAuditPath = "host/host-integration-audit.json";
+        const string SourceLocationsPath = "source-map/source-locations.json";
 
         public static HostIntegrationPackageReadinessReportModel CreateFromManifest(HostIntegrationPackageManifestModel manifest,
                                                                                    string createdAtUtc) {
+            return CreateFromManifest(manifest,
+                                      createdAtUtc,
+                                      new List<HostIntegrationPackageReadinessDiagnosticModel>());
+        }
+
+        public static HostIntegrationPackageReadinessReportModel CreateFromManifest(HostIntegrationPackageManifestModel manifest,
+                                                                                   string createdAtUtc,
+                                                                                   IReadOnlyList<HostIntegrationPackageReadinessDiagnosticModel> diagnostics) {
             HostIntegrationPackageReadinessReportModel report = CreateBaseReport(manifest, createdAtUtc);
             for (int i = 0; i < manifest.Artifacts.Count; i += 1) {
                 HostIntegrationPackageArtifactModel artifact = manifest.Artifacts[i];
                 report.ArtifactChecks.Add(CreateArtifactCheck(artifact, artifact.Status));
             }
 
+            AddDiagnostics(report, diagnostics);
             FinalizeSummary(report);
             return report;
         }
@@ -32,11 +45,12 @@ namespace Inscape.Tooling {
                 return false;
             }
 
-            report = CreateFromPackage(package);
+            report = CreateFromPackage(package, jsonOptions);
             return true;
         }
 
-        public static HostIntegrationPackageReadinessReportModel CreateFromPackage(HostIntegrationPackageReadResultModel package) {
+        public static HostIntegrationPackageReadinessReportModel CreateFromPackage(HostIntegrationPackageReadResultModel package,
+                                                                                  JsonSerializerOptions jsonOptions) {
             string createdAtUtc = string.IsNullOrWhiteSpace(package.Manifest.CreatedAtUtc)
                 ? string.Empty
                 : package.Manifest.CreatedAtUtc;
@@ -46,8 +60,40 @@ namespace Inscape.Tooling {
                 report.ArtifactChecks.Add(CreateArtifactCheck(read.Artifact, read.Status));
             }
 
+            AddDiagnostics(report, CreateDiagnostics(package, jsonOptions));
             FinalizeSummary(report);
             return report;
+        }
+
+        public static List<HostIntegrationPackageReadinessDiagnosticModel> CreateDiagnostics(IReadOnlyList<DiagnosticModel> compilerDiagnostics,
+                                                                                            IReadOnlyList<HostIntegrationAuditDiagnosticModel> hostIntegrationDiagnostics,
+                                                                                            Func<string, string> sourcePathMapper) {
+            List<HostIntegrationPackageReadinessDiagnosticModel> diagnostics = new List<HostIntegrationPackageReadinessDiagnosticModel>();
+            for (int i = 0; i < compilerDiagnostics.Count; i += 1) {
+                DiagnosticModel diagnostic = compilerDiagnostics[i];
+                diagnostics.Add(new HostIntegrationPackageReadinessDiagnosticModel {
+                    Code = diagnostic.Code,
+                    Severity = diagnostic.Severity.ToString().ToLowerInvariant(),
+                    Message = diagnostic.Message,
+                    Source = CreateSourceRef(sourcePathMapper(diagnostic.SourcePath),
+                                             diagnostic.Line,
+                                             diagnostic.Column),
+                });
+            }
+
+            for (int i = 0; i < hostIntegrationDiagnostics.Count; i += 1) {
+                HostIntegrationAuditDiagnosticModel diagnostic = hostIntegrationDiagnostics[i];
+                diagnostics.Add(new HostIntegrationPackageReadinessDiagnosticModel {
+                    Code = diagnostic.Code,
+                    Severity = diagnostic.Severity,
+                    Message = diagnostic.Message,
+                    Source = CreateSourceRef(sourcePathMapper(diagnostic.Source.Path),
+                                             diagnostic.Source.Line,
+                                             diagnostic.Source.Column),
+                });
+            }
+
+            return diagnostics;
         }
 
         static HostIntegrationPackageReadinessReportModel CreateBaseReport(HostIntegrationPackageManifestModel manifest,
@@ -90,6 +136,64 @@ namespace Inscape.Tooling {
             };
         }
 
+        static List<HostIntegrationPackageReadinessDiagnosticModel> CreateDiagnostics(HostIntegrationPackageReadResultModel package,
+                                                                                    JsonSerializerOptions jsonOptions) {
+            List<HostIntegrationPackageReadinessDiagnosticModel> diagnostics = new List<HostIntegrationPackageReadinessDiagnosticModel>();
+            HostIntegrationPackageSourceLocationsModel? sourceLocations = null;
+            HostIntegrationPackageReaderDomain.TryReadJsonArtifact(package.PackageDirectoryPath,
+                                                                   SourceLocationsPath,
+                                                                   jsonOptions,
+                                                                   out sourceLocations,
+                                                                   out _);
+
+            if (HostIntegrationPackageReaderDomain.TryReadJsonArtifact(package.PackageDirectoryPath,
+                                                                       ProjectIrPath,
+                                                                       jsonOptions,
+                                                                       out HostIntegrationPackageProjectIrArtifactModel? projectIr,
+                                                                       out _)
+                && projectIr != null) {
+                for (int i = 0; i < projectIr.Diagnostics.Count; i += 1) {
+                    DiagnosticModel diagnostic = projectIr.Diagnostics[i];
+                    diagnostics.Add(new HostIntegrationPackageReadinessDiagnosticModel {
+                        Code = diagnostic.Code,
+                        Severity = diagnostic.Severity.ToString().ToLowerInvariant(),
+                        Message = diagnostic.Message,
+                        Source = CreateSourceRef(MapSourcePath(diagnostic.SourcePath, sourceLocations),
+                                                 diagnostic.Line,
+                                                 diagnostic.Column),
+                    });
+                }
+            }
+
+            if (HostIntegrationPackageReaderDomain.TryReadJsonArtifact(package.PackageDirectoryPath,
+                                                                       HostIntegrationAuditPath,
+                                                                       jsonOptions,
+                                                                       out HostIntegrationAuditModel? audit,
+                                                                       out _)
+                && audit != null) {
+                for (int i = 0; i < audit.Diagnostics.Count; i += 1) {
+                    HostIntegrationAuditDiagnosticModel diagnostic = audit.Diagnostics[i];
+                    diagnostics.Add(new HostIntegrationPackageReadinessDiagnosticModel {
+                        Code = diagnostic.Code,
+                        Severity = diagnostic.Severity,
+                        Message = diagnostic.Message,
+                        Source = CreateSourceRef(MapSourcePath(diagnostic.Source.Path, sourceLocations),
+                                                 diagnostic.Source.Line,
+                                                 diagnostic.Source.Column),
+                    });
+                }
+            }
+
+            return diagnostics;
+        }
+
+        static void AddDiagnostics(HostIntegrationPackageReadinessReportModel report,
+                                   IReadOnlyList<HostIntegrationPackageReadinessDiagnosticModel> diagnostics) {
+            for (int i = 0; i < diagnostics.Count; i += 1) {
+                report.Diagnostics.Add(diagnostics[i]);
+            }
+        }
+
         static void FinalizeSummary(HostIntegrationPackageReadinessReportModel report) {
             report.Summary.ArtifactCount = report.ArtifactChecks.Count;
             report.Summary.WritesHostData = false;
@@ -111,12 +215,27 @@ namespace Inscape.Tooling {
                 }
             }
 
+            for (int i = 0; i < report.Diagnostics.Count; i += 1) {
+                HostIntegrationPackageReadinessDiagnosticModel diagnostic = report.Diagnostics[i];
+                report.Summary.DiagnosticCount += 1;
+                if (diagnostic.Severity == "error") {
+                    report.Summary.ErrorCount += 1;
+                } else if (diagnostic.Severity == "warning") {
+                    report.Summary.WarningCount += 1;
+                } else if (diagnostic.Severity == "info") {
+                    report.Summary.InfoCount += 1;
+                }
+            }
+
             if (report.Summary.InvalidCount > 0) {
                 report.Summary.Result = "invalid";
             } else if (report.Summary.IncompatibleCount > 0) {
                 report.Summary.Result = "incompatible";
             } else if (HasMissingRequiredArtifact(report)) {
                 report.Summary.Result = "missing";
+            } else if (report.Summary.ErrorCount > 0) {
+                report.Summary.BlockedCount += report.Summary.ErrorCount;
+                report.Summary.Result = "blocked";
             } else if (report.Summary.BlockedCount > 0) {
                 report.Summary.Result = "blocked";
             } else if (report.Summary.UnsupportedCount > 0) {
@@ -135,6 +254,65 @@ namespace Inscape.Tooling {
             }
 
             return false;
+        }
+
+        static HostIntegrationPackageSourceRefModel CreateSourceRef(string path,
+                                                                    int line,
+                                                                    int column) {
+            return new HostIntegrationPackageSourceRefModel {
+                Path = path,
+                Line = line,
+                Column = column,
+                CoordinateSystem = "compiler-1-based",
+            };
+        }
+
+        static string MapSourcePath(string sourcePath, HostIntegrationPackageSourceLocationsModel? sourceLocations) {
+            string normalized = NormalizePathText(sourcePath);
+            if (string.IsNullOrWhiteSpace(normalized)) {
+                return string.Empty;
+            }
+
+            if (normalized.StartsWith("source/", StringComparison.Ordinal)) {
+                return HostIntegrationPackagePathDomain.NormalizeKnownArtifactPath(normalized);
+            }
+
+            if (sourceLocations != null) {
+                for (int i = 0; i < sourceLocations.Sources.Count; i += 1) {
+                    HostIntegrationPackageSourceLocationSourceModel source = sourceLocations.Sources[i];
+                    string workspacePath = NormalizePathText(source.WorkspacePath);
+                    if (!string.IsNullOrWhiteSpace(workspacePath)
+                        && (string.Equals(normalized, workspacePath, StringComparison.OrdinalIgnoreCase)
+                            || normalized.EndsWith("/" + workspacePath, StringComparison.OrdinalIgnoreCase))) {
+                        return HostIntegrationPackagePathDomain.NormalizeKnownArtifactPath(source.Path);
+                    }
+
+                    string packagePath = NormalizePathText(source.Path);
+                    if (!string.IsNullOrWhiteSpace(packagePath)
+                        && (string.Equals(normalized, packagePath, StringComparison.Ordinal)
+                            || normalized.EndsWith("/" + packagePath, StringComparison.OrdinalIgnoreCase))) {
+                        return HostIntegrationPackagePathDomain.NormalizeKnownArtifactPath(source.Path);
+                    }
+                }
+            }
+
+            string fileName = ExtractFileName(normalized);
+            return string.IsNullOrWhiteSpace(fileName)
+                ? normalized
+                : HostIntegrationPackagePathDomain.NormalizeKnownArtifactPath("source/" + fileName);
+        }
+
+        static string NormalizePathText(string path) {
+            return string.IsNullOrWhiteSpace(path)
+                ? string.Empty
+                : path.Replace('\\', '/').Trim();
+        }
+
+        static string ExtractFileName(string normalizedPath) {
+            int index = normalizedPath.LastIndexOf('/');
+            return index >= 0 && index + 1 < normalizedPath.Length
+                ? normalizedPath.Substring(index + 1)
+                : normalizedPath;
         }
 
     }

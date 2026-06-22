@@ -62,6 +62,14 @@ namespace Inscape.Tooling {
 
         public bool WritesHostData { get; set; }
 
+        public int DiagnosticCount { get; set; }
+
+        public int ErrorCount { get; set; }
+
+        public int WarningCount { get; set; }
+
+        public int InfoCount { get; set; }
+
     }
 
     public sealed class HostIntegrationPackageReadinessArtifactCheckModel {

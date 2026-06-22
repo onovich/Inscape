@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Inscape.Tooling;
 
 namespace Inscape.Tests {
@@ -136,6 +137,47 @@ namespace Inscape.Tests {
             }
         }
 
+        static void HostIntegrationPackageReadinessReportAggregatesDiagnostics() {
+            string packageDirectory = Path.Combine(Path.GetTempPath(), "inscape-package-reader-diagnostics-" + Guid.NewGuid().ToString("N"));
+            try {
+                CreateMinimalReadyPackage(packageDirectory);
+                WriteJson(packageDirectory,
+                          "source-map/source-locations.json",
+                          """{"format":"inscape.source-locations","formatVersion":1,"coordinateSystem":"compiler-1-based","sources":[{"id":"src_001","path":"source/story.inscape","workspacePath":"story.inscape","availability":"packaged"}],"locations":[]}""");
+                WriteJson(packageDirectory,
+                          "graph/project-ir.json",
+                          """{"format":"inscape.project-ir","formatVersion":1,"diagnostics":[{"code":"INS020","severity":"Error","message":"Missing target.","sourcePath":"story.inscape","line":4,"column":3}]}""");
+                WriteJson(packageDirectory,
+                          "host/host-integration-audit.json",
+                          """{"format":"inscape.host-integration.audit","formatVersion":1,"diagnostics":[{"severity":"error","code":"HIA002","category":"action","message":"Unknown action play_cutscene.","subjectKind":"action","subjectName":"play_cutscene","source":{"path":"story.inscape","line":2,"column":1,"length":27}}]}""");
+                JsonSerializerOptions jsonOptions = CreatePackageJsonOptions();
+
+                bool created = HostIntegrationPackageReadinessReportDomain.TryCreateFromPackage(packageDirectory,
+                                                                                                jsonOptions,
+                                                                                                out HostIntegrationPackageReadinessReportModel report,
+                                                                                                out string? errorMessage,
+                                                                                                out int exitCode);
+
+                AssertTrue(created, errorMessage ?? "Readiness report should aggregate package diagnostics.");
+                AssertEqual(0, exitCode, "Diagnostic package report exit code");
+                AssertEqual("blocked", report.Summary.Result, "Diagnostic package report result");
+                AssertEqual(2, report.Summary.DiagnosticCount, "Diagnostic package diagnostic count");
+                AssertEqual(2, report.Summary.ErrorCount, "Diagnostic package error count");
+                AssertTrue(ContainsReadinessDiagnostic(report, "INS020", "source/story.inscape"), "Report should include compiler diagnostic source.");
+                AssertTrue(ContainsReadinessDiagnostic(report, "HIA002", "source/story.inscape"), "Report should include host integration diagnostic source.");
+            } finally {
+                if (Directory.Exists(packageDirectory)) {
+                    Directory.Delete(packageDirectory, true);
+                }
+            }
+        }
+
+        static JsonSerializerOptions CreatePackageJsonOptions() {
+            JsonSerializerOptions jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+            jsonOptions.Converters.Add(new JsonStringEnumConverter());
+            return jsonOptions;
+        }
+
         static bool ContainsPackageArtifact(HostIntegrationPackageManifestModel manifest,
                                             string kind,
                                             string path,
@@ -160,6 +202,19 @@ namespace Inscape.Tests {
             for (int i = 0; i < report.ArtifactChecks.Count; i += 1) {
                 HostIntegrationPackageReadinessArtifactCheckModel artifact = report.ArtifactChecks[i];
                 if (artifact.Path == path && artifact.Status == status) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        static bool ContainsReadinessDiagnostic(HostIntegrationPackageReadinessReportModel report,
+                                                string code,
+                                                string sourcePath) {
+            for (int i = 0; i < report.Diagnostics.Count; i += 1) {
+                HostIntegrationPackageReadinessDiagnosticModel diagnostic = report.Diagnostics[i];
+                if (diagnostic.Code == code && diagnostic.Source.Path == sourcePath) {
                     return true;
                 }
             }

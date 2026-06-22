@@ -265,8 +265,21 @@ function assertPackage(outputRoot) {
   );
 
   invariant(readiness.format === "inscape.host-integration.readiness-report", "readiness format mismatch");
-  invariant(readiness.summary.result === "ready", "readiness should report static package ready");
+  invariant(readiness.summary.result === "blocked", "readiness should report diagnostic-blocked package");
   invariant(readiness.summary.readyCount === readiness.summary.artifactCount, "readiness should mark all artifacts ready");
+  invariant(readiness.summary.diagnosticCount >= 2, "readiness should aggregate compiler and host diagnostics");
+  invariant(
+    readiness.diagnostics.some(
+      (diagnostic) => diagnostic.code === "INS020" && diagnostic.source.path === "source/story.inscape"
+    ),
+    "readiness should preserve compiler diagnostic source ref"
+  );
+  invariant(
+    readiness.diagnostics.some(
+      (diagnostic) => diagnostic.code === "HIA002" && diagnostic.source.path === "source/story.inscape"
+    ),
+    "readiness should preserve host integration diagnostic source ref"
+  );
   invariant(readiness.summary.writesHostData === false, "readiness must not write host data");
   invariant(readiness.boundary.runtimeIntegration === false, "readiness must not claim runtime integration");
   invariant(readiness.boundary.previewBridge === false, "readiness must not claim preview bridge");

@@ -71,6 +71,37 @@ namespace Inscape.Tooling {
             return true;
         }
 
+        public static bool TryReadJsonArtifact<T>(string packageDirectoryPath,
+                                                  string packagePath,
+                                                  JsonSerializerOptions jsonOptions,
+                                                  out T? artifact,
+                                                  out string? errorMessage) {
+            artifact = default;
+            errorMessage = null;
+
+            if (!HostIntegrationPackagePathDomain.TryNormalizeArtifactPath(packagePath,
+                                                                           out string normalizedPath,
+                                                                           out errorMessage)) {
+                return false;
+            }
+
+            string fullPackagePath = Path.GetFullPath(packageDirectoryPath);
+            string artifactPath = ResolvePackagePath(fullPackagePath, normalizedPath);
+            if (!File.Exists(artifactPath)) {
+                errorMessage = "Package artifact is missing: " + normalizedPath;
+                return false;
+            }
+
+            try {
+                artifact = JsonSerializer.Deserialize<T>(File.ReadAllText(artifactPath, Encoding.UTF8),
+                                                         jsonOptions);
+                return artifact != null;
+            } catch (JsonException ex) {
+                errorMessage = "Package artifact is not valid JSON: " + normalizedPath + " (" + ex.Message + ")";
+                return false;
+            }
+        }
+
         static HostIntegrationPackageArtifactReadModel ReadArtifact(string fullPackagePath,
                                                                     HostIntegrationPackageArtifactModel artifact) {
             HostIntegrationPackageArtifactReadModel result = new HostIntegrationPackageArtifactReadModel {
