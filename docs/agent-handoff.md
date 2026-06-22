@@ -1,12 +1,22 @@
 # Agent 接手指南
 
-状态：P5 SelfHostedEditor Runtime authoring / productization 已通过 final validation；Host Integration Partner Readiness 已完成 final validation；Host Integration Package CLI 已通过 final validation；Host Integration Readiness Report Generator 已完成 final validation，结论为 `Host Integration Readiness Report Generator: PASS`；`Static Artifact POC Partner Handoff Kit` 已进入执行，Round 1 handoff kit contract / exchange workflow 已输出
+状态：P5 SelfHostedEditor Runtime authoring / productization 已通过 final validation；Host Integration Partner Readiness 已完成 final validation；Host Integration Package CLI 已通过 final validation；Host Integration Readiness Report Generator 已完成 final validation，结论为 `Host Integration Readiness Report Generator: PASS`；`Static Artifact POC Partner Handoff Kit` 已进入执行，Round 2 partner feedback schema / fixture 已输出
 
 最后更新：2026-06-22
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-22 Static Artifact POC Partner Handoff Kit Round 2 快照
+
+Static Artifact POC Partner Handoff Kit 已完成 Round 2：partner feedback schema / fixture。
+- Feedback schema 见 [Static Artifact POC Partner Feedback Schema](host-integration-static-artifact-poc-partner-feedback-schema.md)。
+- Generic feedback fixture 见 [partner-feedback.generic.json](host-integration-static-fixtures/partner-feedback.generic.json)。
+- Round 2 审计见 [Static Artifact POC Partner Handoff Kit Round 2 Audit](host-integration-static-artifact-poc-partner-feedback-audit.md)。
+- Feedback artifact 明确分离 `partnerEvidence`、`candidateEvidence` 与 `confirmedTruth`；generic fixture 中 confirmed truth 为空，所有 write / apply / runtime / host save boundary flags 均为 false。
+- 本轮没有新增代码，没有提交 generated package / zip / reports，没有实现 Host Bridge Candidate Generator、POC-2 catalog projection、generated apply、Runtime Preview Bridge、Sinan Runtime、Unity / Host SDK、完整 host save、Rollback / Trace Replay / Flashback、Presentation IR 或 Host Schema action policy 扩张。
+- 下一轮进入 Round 3：handoff smoke / docs hardening，预计新增 `PartnerHandoffKitSmoke.js`。
 
 ### 2026-06-22 Static Artifact POC Partner Handoff Kit Round 1 快照
 

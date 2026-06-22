@@ -1,0 +1,219 @@
+{
+  "format": "inscape.host-integration.partner-feedback",
+  "formatVersion": 1,
+  "createdAtUtc": "2026-06-22T00:00:00Z",
+  "profile": {
+    "kind": "partner-profile",
+    "partner": "generic",
+    "purpose": "static-artifact-poc"
+  },
+  "sourcePackage": {
+    "packageId": "generic-static-artifact-poc-package",
+    "manifest": "manifest.json",
+    "readinessReport": "reports/readiness-report.json",
+    "packageRoot": "."
+  },
+  "summary": {
+    "status": "needs-review",
+    "feedbackItemCount": 4,
+    "candidateEvidenceCount": 2,
+    "confirmedTruthChangeCount": 0,
+    "writesHostData": false
+  },
+  "boundary": {
+    "writesHostData": false,
+    "generatedApply": false,
+    "confirmedHostBridge": false,
+    "runtimeIntegration": false,
+    "hostSave": false
+  },
+  "artifactsReviewed": [
+    {
+      "path": "manifest.json",
+      "status": "read",
+      "format": "inscape.host-integration.package-manifest",
+      "notes": []
+    },
+    {
+      "path": "usage/usage.json",
+      "status": "read",
+      "format": "inscape.usage",
+      "notes": []
+    },
+    {
+      "path": "host/host-integration-audit.json",
+      "status": "read",
+      "format": "inscape.host-integration.audit",
+      "notes": [
+        "Unknown action remains blocked until Host Schema is updated."
+      ]
+    },
+    {
+      "path": "host/host-bridge-candidate.json",
+      "status": "read",
+      "format": "inscape.host-bridge-candidate",
+      "notes": [
+        "Candidates are review evidence only."
+      ]
+    },
+    {
+      "path": "reports/readiness-report.json",
+      "status": "read",
+      "format": "inscape.host-integration.readiness-report",
+      "notes": []
+    }
+  ],
+  "partnerEvidence": [
+    {
+      "id": "evidence_package_readiness_readable",
+      "kind": "package-validation",
+      "status": "observed",
+      "sourceArtifacts": [
+        "manifest.json",
+        "reports/readiness-report.json"
+      ],
+      "summary": "Package manifest and readiness report were readable by the generic dry-run reviewer.",
+      "sourceRefs": [],
+      "writesHostData": false
+    },
+    {
+      "id": "evidence_unknown_action_blocked",
+      "kind": "diagnostic-review",
+      "status": "observed",
+      "sourceArtifacts": [
+        "usage/usage.json",
+        "host/host-integration-audit.json"
+      ],
+      "summary": "Unknown action remains blocked because Host Schema has not declared it.",
+      "sourceRefs": [
+        {
+          "path": "source/unknown-action.inscape",
+          "line": 3,
+          "column": 1,
+          "length": 28,
+          "coordinateSystem": "compiler-1-based"
+        }
+      ],
+      "writesHostData": false
+    },
+    {
+      "id": "evidence_localization_anchor_preserved",
+      "kind": "localization-review",
+      "status": "accepted-evidence",
+      "sourceArtifacts": [
+        "localization/l10n.csv",
+        "localization/anchor-map.json",
+        "source-map/source-locations.json"
+      ],
+      "summary": "Localization anchors remain Inscape anchors and are not replaced by host runtime localization ids.",
+      "sourceRefs": [
+        {
+          "path": "source/localization.inscape",
+          "line": 3,
+          "column": 1,
+          "length": 43,
+          "coordinateSystem": "compiler-1-based"
+        }
+      ],
+      "writesHostData": false
+    },
+    {
+      "id": "evidence_partner_catalog_speaker_mira",
+      "kind": "catalog-match",
+      "status": "needs-review",
+      "sourceArtifacts": [
+        "host/host-bridge-candidate.json"
+      ],
+      "summary": "Partner catalog has a plausible speaker id for Mira, but the mapping still requires manual review.",
+      "partnerCatalog": {
+        "kind": "speaker",
+        "id": "speaker.mira",
+        "displayName": "Mira"
+      },
+      "sourceRefs": [
+        {
+          "path": "source/missing-speaker.inscape",
+          "line": 3,
+          "column": 1,
+          "length": 4,
+          "coordinateSystem": "compiler-1-based"
+        }
+      ],
+      "writesHostData": false
+    }
+  ],
+  "candidateEvidence": [
+    {
+      "id": "candidate_feedback_speaker_mira",
+      "relatedCandidateId": "cand_speaker_mira",
+      "candidateKind": "id-binding",
+      "status": "needs-review",
+      "subject": {
+        "kind": "speaker",
+        "name": "Mira"
+      },
+      "sourceArtifacts": [
+        "host/host-bridge-candidate.json",
+        "source-map/source-locations.json"
+      ],
+      "partnerEvidenceRefs": [
+        "evidence_partner_catalog_speaker_mira"
+      ],
+      "proposedMappingEvidence": {
+        "bridgeTarget": "ids[]",
+        "partnerCatalog": {
+          "speakerId": "speaker.mira"
+        }
+      },
+      "review": {
+        "required": true,
+        "decision": "unreviewed",
+        "owner": "inscape-and-partner"
+      },
+      "ownership": {
+        "generatedOwnership": "candidate-only",
+        "writesHostData": false
+      }
+    },
+    {
+      "id": "candidate_feedback_unknown_action",
+      "relatedCandidateId": "cand_action_play_cutscene",
+      "candidateKind": "schema-capability",
+      "status": "needs-schema",
+      "subject": {
+        "kind": "action",
+        "name": "play_cutscene"
+      },
+      "sourceArtifacts": [
+        "usage/usage.json",
+        "host/host-integration-audit.json"
+      ],
+      "partnerEvidenceRefs": [
+        "evidence_unknown_action_blocked"
+      ],
+      "proposedMappingEvidence": null,
+      "review": {
+        "required": true,
+        "decision": "needs-schema",
+        "owner": "inscape"
+      },
+      "ownership": {
+        "generatedOwnership": "candidate-only",
+        "writesHostData": false
+      }
+    }
+  ],
+  "confirmedTruth": {
+    "hasConfirmedChanges": false,
+    "artifacts": [],
+    "note": "POC-1 feedback carries evidence only. Confirmed Host Bridge or adapter changes require a later approved phase."
+  },
+  "openQuestions": [
+    {
+      "id": "question_partner_catalog_share",
+      "owner": "partner",
+      "summary": "Which partner catalog export is safe to share for future dry-run matching?",
+      "blocks": "poc-2-catalog-projection"
+    }
+  ]
+}

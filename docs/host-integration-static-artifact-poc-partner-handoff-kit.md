@@ -135,7 +135,7 @@ Partner feedback 是外部 review evidence。它可以包含：
 - runtime execution trace。
 - Host Schema policy expansion。
 
-Round 2 会补充 `partner-feedback.generic.json` 与 feedback schema contract。Round 1 仅固定 feedback ownership 与交换边界。
+Feedback schema 见 [Static Artifact POC Partner Feedback Schema](host-integration-static-artifact-poc-partner-feedback-schema.md)。Generic fixture 见 [partner-feedback.generic.json](host-integration-static-fixtures/partner-feedback.generic.json)。
 
 ## Manual Review Gate
 

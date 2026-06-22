@@ -5,11 +5,12 @@ This directory contains static fixture data for Host Integration Partner Readine
 Current files:
 
 - `fixtures.json`: Round 4 fixture pack covering minimal dialogue, branching, localization, missing speaker, unknown action, unsupported feature and source diagnostic scenarios.
+- `partner-feedback.generic.json`: Round 2 generic partner feedback fixture for the Static Artifact POC Partner Handoff Kit. It separates partner evidence, candidate evidence and confirmed truth, and keeps all write / apply / runtime flags false.
 - `StaticArtifactFixtureSmoke.js`: Round 5 static smoke that parses the fixture pack and checks deterministic/diffable artifact rules.
 - `HostIntegrationPackageCliSmoke.js`: Round 5 CLI smoke that creates a temporary workspace, runs `export-host-integration-package-project`, checks package structure / determinism / source refs, and verifies forbidden host candidate generation remains absent.
 - `HostIntegrationReadinessReportSmoke.js`: Readiness report generator smoke that exports a temporary package, runs `generate-host-integration-readiness-report-package`, checks diagnostics aggregation, missing artifact / invalid JSON reporting, output path guards and deterministic repeated generation.
 
-These fixtures are documentation/test evidence only. They are not runtime samples, generated host data, Unity assets, Sinan data, or confirmed Host Bridge mappings.
+These fixtures are documentation/test evidence only. They are not runtime samples, generated host data, Unity assets, Sinan data, generated apply output, or confirmed Host Bridge mappings.
 
 Run the smoke from the repository root:
 
