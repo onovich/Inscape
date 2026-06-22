@@ -1,12 +1,24 @@
 # Agent 接手指南
 
-状态：P5 SelfHostedEditor Runtime authoring / productization 已通过 final validation；Host Integration Partner Readiness 已完成 final validation；Host Integration Package CLI 已通过 final validation；Host Integration Readiness Report Generator 已完成 final validation；Host Integration Static Artifact POC Partner Handoff Kit 已完成 final validation，结论为 `Host Integration Static Artifact POC Partner Handoff Kit: PASS`；`Host Bridge Candidate Generator First Slice` 已进入执行，Round 4 smoke fixture / determinism / docs hardening 已完成
+状态：P5 SelfHostedEditor Runtime authoring / productization 已通过 final validation；Host Integration Partner Readiness 已完成 final validation；Host Integration Package CLI 已通过 final validation；Host Integration Readiness Report Generator 已完成 final validation；Host Integration Static Artifact POC Partner Handoff Kit 已完成 final validation，结论为 `Host Integration Static Artifact POC Partner Handoff Kit: PASS`；`Host Bridge Candidate Generator First Slice` 已进入执行，Round 5 buffer / edge-case hardening / compatibility closure 已完成
 
 最后更新：2026-06-22
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-22 Host Bridge Candidate Generator Round 5 快照
+
+Host Bridge Candidate Generator First Slice 已完成 Round 5：buffer / edge-case hardening / compatibility closure。
+- Round 5 审计见 [Host Bridge Candidate Generator Compatibility Audit](host-bridge-candidate-generator-compatibility-audit.md)。
+- `HostIntegrationPackageReadinessReportDomain` 现在只读汇总已存在的 `host/host-bridge-candidate.json`，填充 `hostBridgeCandidate.status`、`candidateCount` 与 `writesHostData`；blocked / invalid / incompatible / host-writing candidate evidence 会影响 readiness `summary.result`。
+- Readiness report generator 仍不调用 `generate-host-bridge-candidate-package`，不创建、不重写、不接受、不 apply candidate evidence。
+- `HostBridgeCandidateGenerationDomain` 明确忽略无关 optional `reports/readiness-report.json` 破损，candidate 语义输入仍限于 `usage/usage.json`、`host/host-schema-capabilities.json`、`host/host-integration-audit.json`。
+- `HostIntegrationReadinessReportSmoke.js` 已扩展 existing candidate summary 覆盖：在 package 副本上显式运行 candidate generator，然后验证 readiness report 只汇总且不改写 candidate。
+- 新增 internal tests：`host integration package readiness report summarizes existing candidate` 与 `host bridge candidate generation ignores invalid optional readiness report`。
+- 本轮没有写 confirmed Host Bridge，没有实现 generated apply、POC-2 catalog projection、Runtime Preview Bridge、Sinan Runtime、Unity / Host SDK、完整 host save、Rollback / Trace Replay / Flashback、Presentation IR 或 Host Schema action policy expansion。
+- 下一轮进入 Round 6：final validation / PASS-FAIL closure。
 
 ### 2026-06-22 Host Bridge Candidate Generator Round 4 快照
 
@@ -2046,7 +2058,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
    - Host Integration Readiness Report Generator 已 PASS，见 [Host Integration Readiness Report Generator Final Validation Report](host-integration-readiness-report-generator-final-validation-report.md)。
    - Host Integration Static Artifact POC Partner Handoff Kit 已 PASS，见 [Host Integration Static Artifact POC Partner Handoff Final Validation Report](host-integration-static-artifact-poc-partner-handoff-final-validation-report.md)。
    - 用户已批准下一阶段：`Host Bridge Candidate Generator First Slice`，执行指南见 [Host Bridge Candidate Generator First Slice Goal 模式执行指南](host-bridge-candidate-generator-goal-mode-execution-guide.md)。
-   - 执行预算为 6 轮：baseline / command contract、shared Tooling candidate domain、CLI command / output guard、smoke / docs hardening、buffer / compatibility closure、final validation；Round 4 已完成，下一步进入 Round 5 buffer / edge-case hardening / compatibility closure。
+   - 执行预算为 6 轮：baseline / command contract、shared Tooling candidate domain、CLI command / output guard、smoke / docs hardening、buffer / compatibility closure、final validation；Round 5 已完成，下一步进入 Round 6 final validation / PASS-FAIL closure。
    - 目标命令建议为 `generate-host-bridge-candidate-package <package-dir> -o <candidate.json>`。
    - 本阶段不要进入 confirmed Host Bridge、POC-2 catalog projection、Sinan Runtime Integration、Runtime Preview Bridge、Unity / Host SDK、generated apply、完整 host save、Rollback / Trace Replay / Flashback、Presentation IR 或 Host Schema action policy 扩张。
 

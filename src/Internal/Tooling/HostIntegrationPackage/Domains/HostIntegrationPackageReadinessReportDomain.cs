@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json;
 using Inscape.Compiler.Diagnostics;
 
@@ -9,6 +10,7 @@ namespace Inscape.Tooling {
         const string ProjectIrPath = "graph/project-ir.json";
         const string HostIntegrationAuditPath = "host/host-integration-audit.json";
         const string SourceLocationsPath = "source-map/source-locations.json";
+        const string HostBridgeCandidatePath = "host/host-bridge-candidate.json";
 
         public static HostIntegrationPackageReadinessReportModel CreateFromManifest(HostIntegrationPackageManifestModel manifest,
                                                                                    string createdAtUtc) {
@@ -60,6 +62,7 @@ namespace Inscape.Tooling {
                 report.ArtifactChecks.Add(CreateArtifactCheck(read.Artifact, read.Status));
             }
 
+            ApplyHostBridgeCandidateSummary(report, package, jsonOptions);
             AddDiagnostics(report, CreateDiagnostics(package, jsonOptions));
             FinalizeSummary(report);
             return report;
@@ -116,12 +119,129 @@ namespace Inscape.Tooling {
                     ContainsHostDependency = manifest.Capabilities.ContainsHostDependency,
                 },
                 HostBridgeCandidate = new HostIntegrationPackageReadinessHostBridgeCandidateModel {
-                    Path = "host/host-bridge-candidate.json",
+                    Path = HostBridgeCandidatePath,
                     Status = "missing",
                     CandidateCount = 0,
                     WritesHostData = false,
                 },
             };
+        }
+
+        static void ApplyHostBridgeCandidateSummary(HostIntegrationPackageReadinessReportModel report,
+                                                    HostIntegrationPackageReadResultModel package,
+                                                    JsonSerializerOptions jsonOptions) {
+            string candidatePath = Path.Combine(package.PackageDirectoryPath,
+                                                HostBridgeCandidatePath.Replace('/', Path.DirectorySeparatorChar));
+            if (!File.Exists(candidatePath)) {
+                return;
+            }
+
+            if (!TryReadHostBridgeCandidate(candidatePath,
+                                            jsonOptions,
+                                            out HostBridgeCandidateModel? candidate,
+                                            out string status)) {
+                report.HostBridgeCandidate.Status = status;
+                report.HostBridgeCandidate.CandidateCount = 0;
+                report.HostBridgeCandidate.WritesHostData = false;
+                return;
+            }
+
+            if (candidate == null) {
+                report.HostBridgeCandidate.Status = "invalid";
+                report.HostBridgeCandidate.CandidateCount = 0;
+                report.HostBridgeCandidate.WritesHostData = false;
+                return;
+            }
+
+            report.HostBridgeCandidate.Status = NormalizeHostBridgeCandidateStatus(candidate.Summary.Result);
+            report.HostBridgeCandidate.CandidateCount = candidate.Summary.CandidateCount;
+            report.HostBridgeCandidate.WritesHostData = CandidateWritesHostData(candidate);
+            if (report.HostBridgeCandidate.WritesHostData
+                && (report.HostBridgeCandidate.Status == "ready" || report.HostBridgeCandidate.Status == "empty")) {
+                report.HostBridgeCandidate.Status = "blocked";
+            }
+        }
+
+        static bool TryReadHostBridgeCandidate(string candidatePath,
+                                               JsonSerializerOptions jsonOptions,
+                                               out HostBridgeCandidateModel? candidate,
+                                               out string status) {
+            candidate = null;
+            status = "invalid";
+
+            string json;
+            try {
+                json = File.ReadAllText(candidatePath, Encoding.UTF8);
+            } catch (IOException) {
+                return false;
+            }
+
+            try {
+                using (JsonDocument document = JsonDocument.Parse(json)) {
+                    JsonElement root = document.RootElement;
+                    if (root.ValueKind != JsonValueKind.Object) {
+                        status = "invalid";
+                        return false;
+                    }
+
+                    if (!root.TryGetProperty("format", out JsonElement formatElement)
+                        || formatElement.ValueKind != JsonValueKind.String
+                        || formatElement.GetString() != "inscape.host-bridge-candidate") {
+                        status = "invalid";
+                        return false;
+                    }
+
+                    if (!root.TryGetProperty("formatVersion", out JsonElement versionElement)
+                        || versionElement.ValueKind != JsonValueKind.Number
+                        || !versionElement.TryGetInt32(out int formatVersion)) {
+                        status = "invalid";
+                        return false;
+                    }
+
+                    if (formatVersion > 1) {
+                        status = "incompatible";
+                        return false;
+                    }
+
+                    if (formatVersion != 1) {
+                        status = "invalid";
+                        return false;
+                    }
+                }
+
+                candidate = JsonSerializer.Deserialize<HostBridgeCandidateModel>(json, jsonOptions);
+                return candidate != null;
+            } catch (JsonException) {
+                status = "invalid";
+                return false;
+            }
+        }
+
+        static string NormalizeHostBridgeCandidateStatus(string status) {
+            if (status == "ready"
+                || status == "empty"
+                || status == "invalid"
+                || status == "blocked"
+                || status == "incompatible"
+                || status == "unsupported") {
+                return status;
+            }
+
+            return "invalid";
+        }
+
+        static bool CandidateWritesHostData(HostBridgeCandidateModel candidate) {
+            if (candidate.Summary.WritesHostData) {
+                return true;
+            }
+
+            for (int i = 0; i < candidate.Candidates.Count; i += 1) {
+                if (candidate.Candidates[i].Ownership.WritesHostData) {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         static HostIntegrationPackageReadinessArtifactCheckModel CreateArtifactCheck(HostIntegrationPackageArtifactModel artifact,
@@ -227,18 +347,20 @@ namespace Inscape.Tooling {
                 }
             }
 
-            if (report.Summary.InvalidCount > 0) {
+            if (report.Summary.InvalidCount > 0 || report.HostBridgeCandidate.Status == "invalid") {
                 report.Summary.Result = "invalid";
-            } else if (report.Summary.IncompatibleCount > 0) {
+            } else if (report.Summary.IncompatibleCount > 0 || report.HostBridgeCandidate.Status == "incompatible") {
                 report.Summary.Result = "incompatible";
             } else if (HasMissingRequiredArtifact(report)) {
                 report.Summary.Result = "missing";
             } else if (report.Summary.ErrorCount > 0) {
                 report.Summary.BlockedCount += report.Summary.ErrorCount;
                 report.Summary.Result = "blocked";
-            } else if (report.Summary.BlockedCount > 0) {
+            } else if (report.Summary.BlockedCount > 0
+                       || report.HostBridgeCandidate.Status == "blocked"
+                       || report.HostBridgeCandidate.WritesHostData) {
                 report.Summary.Result = "blocked";
-            } else if (report.Summary.UnsupportedCount > 0) {
+            } else if (report.Summary.UnsupportedCount > 0 || report.HostBridgeCandidate.Status == "unsupported") {
                 report.Summary.Result = "unsupported";
             } else {
                 report.Summary.Result = "ready";

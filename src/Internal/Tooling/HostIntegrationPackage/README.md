@@ -15,6 +15,8 @@ Current package export scope:
 Package export still does not generate `host/host-bridge-candidate.json` by
 default. The standalone Host Bridge Candidate generator must use a separate
 Tooling domain and command, and the candidate remains review-only evidence.
+Readiness report generation may summarize an existing candidate artifact, but
+does not create or rewrite it.
 
 This module does not write confirmed Host Bridge data, run generated apply, call
 a host SDK, save host data, or add runtime / preview bridge behavior.

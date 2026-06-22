@@ -138,6 +138,9 @@ Rules:
 - Unknown action/query usage must stay `schema-capability` or `blocked` until Host Schema is updated.
 - Conflict and unsupported candidates must remain manual review evidence.
 - Accepted review decisions must name a separate confirmed artifact if one exists.
+- If `host/host-bridge-candidate.json` already exists, readiness report
+  generation may summarize its `status`, `candidateCount` and
+  `writesHostData` fields only.
 - Readiness report generation does not call `generate-host-bridge-candidate-package`
   and must not create `host/host-bridge-candidate.json`; candidate generation is
   a separate explicit command.
@@ -193,7 +196,8 @@ invalid > incompatible > missing required artifact > error diagnostics / blocked
 
 The generator preserves the same negative boundary flags as package export:
 `runtimeIntegration = false`, `previewBridge = false`, `writesHostData = false`
-and no Host Bridge candidate generation.
+and no Host Bridge candidate generation. When existing candidate evidence is
+present, the report summarizes it without rewriting the candidate artifact.
 
 Standalone candidate generation is covered separately by:
 

@@ -131,6 +131,22 @@ function generateReport(packageRoot, outputPath) {
   ]);
 }
 
+function generateCandidate(packageRoot, outputPath) {
+  const result = runCli([
+    "generate-host-bridge-candidate-package",
+    packageRoot,
+    "-o",
+    outputPath
+  ]);
+
+  invariant(result.status === 0, `candidate generation failed: ${result.stderr || result.stdout}`);
+  invariant(result.stderr.trim() === "", `candidate generation wrote stderr: ${result.stderr}`);
+  invariant(
+    canonicalExistingPath(result.stdout.trim()) === canonicalExistingPath(outputPath),
+    `candidate generator should print output path: ${result.stdout.trim()}`
+  );
+}
+
 function assertReportRunSucceeded(result, outputPath) {
   invariant(result.status === 0, `readiness report generation failed: ${result.stderr || result.stdout}`);
   invariant(result.stderr.trim() === "", `readiness report generation wrote stderr: ${result.stderr}`);
@@ -140,13 +156,16 @@ function assertReportRunSucceeded(result, outputPath) {
   );
 }
 
-function assertBoundary(report) {
+function assertBoundary(report, expectedCandidateStatus = "missing") {
   invariant(report.summary.writesHostData === false, "summary must not write host data");
   invariant(report.boundary.runtimeIntegration === false, "report must not claim runtime integration");
   invariant(report.boundary.previewBridge === false, "report must not claim preview bridge");
   invariant(report.boundary.writesHostData === false, "report boundary must not write host data");
   invariant(report.boundary.containsHostDependency === false, "report must not claim host dependency");
-  invariant(report.hostBridgeCandidate.status === "missing", "host bridge candidate must stay missing");
+  invariant(
+    report.hostBridgeCandidate.status === expectedCandidateStatus,
+    `host bridge candidate status should be ${expectedCandidateStatus}`
+  );
   invariant(report.hostBridgeCandidate.writesHostData === false, "host bridge candidate must not write host data");
 }
 
@@ -210,6 +229,38 @@ function assertInvalidJsonArtifact(originalPackageRoot, tempRoot) {
   assertBoundary(report);
 }
 
+function assertExistingCandidateSummary(originalPackageRoot, tempRoot) {
+  const packageRoot = path.join(tempRoot, "package-existing-candidate");
+  const outputPath = path.join(tempRoot, "reports", "existing-candidate.json");
+  const candidatePath = path.join(packageRoot, "host", "host-bridge-candidate.json");
+  copyPackage(originalPackageRoot, packageRoot);
+
+  invariant(!fs.existsSync(candidatePath), "copied package should not already contain candidate evidence");
+  generateCandidate(packageRoot, candidatePath);
+  const candidateBytes = fs.readFileSync(candidatePath);
+  const candidateHash = sha256(candidateBytes);
+  const candidate = JSON.parse(candidateBytes.toString("utf8"));
+  invariant(candidate.summary.result === "blocked", "fixture candidate should be blocked by unknown action");
+  invariant(candidate.summary.candidateCount >= 1, "fixture candidate should contain review evidence");
+  invariant(candidate.summary.writesHostData === false, "fixture candidate must not write host data");
+
+  const result = generateReport(packageRoot, outputPath);
+  assertReportRunSucceeded(result, outputPath);
+  const report = readJson(outputPath);
+  invariant(report.summary.result === "blocked", "existing blocked candidate should drive readiness result");
+  invariant(report.hostBridgeCandidate.status === candidate.summary.result, "report should summarize candidate status");
+  invariant(
+    report.hostBridgeCandidate.candidateCount === candidate.summary.candidateCount,
+    "report should summarize candidate count"
+  );
+  invariant(report.hostBridgeCandidate.writesHostData === false, "report candidate summary must not write host data");
+  invariant(
+    sha256(fs.readFileSync(candidatePath)) === candidateHash,
+    "readiness report generator must not rewrite existing candidate evidence"
+  );
+  assertBoundary(report, "blocked");
+}
+
 function assertOutputGuards(packageRoot, tempRoot) {
   const outputDirectory = path.join(tempRoot, "reports");
   const directoryResult = generateReport(packageRoot, outputDirectory);
@@ -258,9 +309,15 @@ function main() {
     createWorkspace(workspaceRoot);
     exportPackage(workspaceRoot, packageRoot);
 
+    invariant(
+      !fs.existsSync(path.join(packageRoot, "host", "host-bridge-candidate.json")),
+      "package export must not generate host bridge candidates"
+    );
+
     const reportHash = assertDeterminism(packageRoot, tempRoot);
     assertMissingArtifact(packageRoot, tempRoot);
     assertInvalidJsonArtifact(packageRoot, tempRoot);
+    assertExistingCandidateSummary(packageRoot, tempRoot);
     assertOutputGuards(packageRoot, tempRoot);
 
     invariant(
@@ -276,11 +333,13 @@ function main() {
           readinessReportSha256: reportHash,
           missingArtifactCovered: true,
           invalidJsonCovered: true,
+          existingCandidateCovered: true,
           outputGuardCovered: true,
           writesHostData: false,
           runtimeIntegration: false,
           previewBridge: false,
-          hostBridgeCandidateGenerated: false
+          hostBridgeCandidateGenerated: false,
+          readinessGeneratedCandidate: false
         },
         null,
         2

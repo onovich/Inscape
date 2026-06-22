@@ -172,6 +172,35 @@ namespace Inscape.Tests {
             }
         }
 
+        static void HostIntegrationPackageReadinessReportSummarizesExistingCandidate() {
+            string packageDirectory = Path.Combine(Path.GetTempPath(), "inscape-package-reader-candidate-" + Guid.NewGuid().ToString("N"));
+            try {
+                CreateMinimalReadyPackage(packageDirectory);
+                WriteJson(packageDirectory,
+                          "host/host-bridge-candidate.json",
+                          """{"format":"inscape.host-bridge-candidate","formatVersion":1,"summary":{"result":"blocked","candidateCount":2,"blockedCount":1,"writesHostData":false},"candidates":[]}""");
+                JsonSerializerOptions jsonOptions = CreatePackageJsonOptions();
+
+                bool created = HostIntegrationPackageReadinessReportDomain.TryCreateFromPackage(packageDirectory,
+                                                                                                jsonOptions,
+                                                                                                out HostIntegrationPackageReadinessReportModel report,
+                                                                                                out string? errorMessage,
+                                                                                                out int exitCode);
+
+                AssertTrue(created, errorMessage ?? "Readiness report should summarize existing Host Bridge candidate evidence.");
+                AssertEqual(0, exitCode, "Existing candidate package report exit code");
+                AssertEqual("blocked", report.Summary.Result, "Existing blocked candidate should drive readiness result");
+                AssertEqual("host/host-bridge-candidate.json", report.HostBridgeCandidate.Path, "Existing candidate report path");
+                AssertEqual("blocked", report.HostBridgeCandidate.Status, "Existing candidate status");
+                AssertEqual(2, report.HostBridgeCandidate.CandidateCount, "Existing candidate count");
+                AssertFalse(report.HostBridgeCandidate.WritesHostData, "Existing candidate summary must not write host data.");
+            } finally {
+                if (Directory.Exists(packageDirectory)) {
+                    Directory.Delete(packageDirectory, true);
+                }
+            }
+        }
+
         static void HostBridgeCandidateGenerationReportsEmptyPackage() {
             string packageDirectory = Path.Combine(Path.GetTempPath(), "inscape-bridge-candidate-empty-" + Guid.NewGuid().ToString("N"));
             try {
@@ -257,6 +286,32 @@ namespace Inscape.Tests {
                 AssertTrue(ContainsCandidate(candidate, "schema-capability", "query", "player.rank", "blocked"), "Unknown query should become schema capability evidence.");
                 AssertTrue(ContainsCandidate(candidate, "schema-capability", "action", "award_badge", "blocked"), "Unknown action should become schema capability evidence.");
                 AssertFalse(ContainsCandidate(candidate, "action-handler", "action", "award_badge", "candidate"), "Unknown action must not become a fake action-handler candidate.");
+                AssertCandidateOnlyOwnership(candidate);
+            } finally {
+                if (Directory.Exists(packageDirectory)) {
+                    Directory.Delete(packageDirectory, true);
+                }
+            }
+        }
+
+        static void HostBridgeCandidateGenerationIgnoresInvalidOptionalReadinessReport() {
+            string packageDirectory = Path.Combine(Path.GetTempPath(), "inscape-bridge-candidate-optional-report-" + Guid.NewGuid().ToString("N"));
+            try {
+                CreateMinimalReadyPackage(packageDirectory);
+                WriteText(packageDirectory, "reports/readiness-report.json", "{ invalid json" + Environment.NewLine);
+                JsonSerializerOptions jsonOptions = CreatePackageJsonOptions();
+
+                bool created = HostBridgeCandidateGenerationDomain.TryCreateFromPackage(packageDirectory,
+                                                                                        jsonOptions,
+                                                                                        out HostBridgeCandidateModel candidate,
+                                                                                        out string? errorMessage,
+                                                                                        out int exitCode);
+
+                AssertTrue(created, errorMessage ?? "Host Bridge candidate should ignore unrelated optional readiness report JSON.");
+                AssertEqual(0, exitCode, "Optional readiness report compatibility candidate exit code");
+                AssertEqual("empty", candidate.Summary.Result, "Optional readiness report should not block candidate generation");
+                AssertEqual(0, candidate.Summary.CandidateCount, "Optional readiness report should not create candidates");
+                AssertEqual(0, candidate.Diagnostics.Count, "Optional readiness report should not create candidate diagnostics");
                 AssertCandidateOnlyOwnership(candidate);
             } finally {
                 if (Directory.Exists(packageDirectory)) {

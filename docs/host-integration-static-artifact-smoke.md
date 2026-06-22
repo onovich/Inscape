@@ -85,13 +85,16 @@ Coverage:
 - compiler and Host Integration Audit diagnostic aggregation;
 - missing required artifact result;
 - invalid JSON artifact result;
+- existing `host/host-bridge-candidate.json` summary without generating or
+  rewriting candidate evidence;
 - missing `-o` and output-directory guard;
 - repeated generation byte determinism;
 - `writesHostData = false`, no Runtime integration, no preview bridge, no Host
   Bridge candidate generation.
 
 The smoke does not run Runtime, connect Unity / Host SDK / Sinan Runtime, write
-host data, generate host apply output, or confirm Host Bridge mappings.
+host data, generate host apply output, generate candidate evidence through the
+readiness report path, or confirm Host Bridge mappings.
 
 ## Host Bridge Candidate Generator Smoke
 

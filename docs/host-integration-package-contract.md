@@ -241,7 +241,7 @@ Report rules:
 - Readiness reports are static package / partner dry-run evidence, not Runtime reports.
 - Reports must be deterministic, diffable and source-ref aware.
 - Report diagnostics should use package/workspace-relative source refs and `compiler-1-based` coordinates.
-- Host Bridge Candidate summary remains unconfirmed review evidence with `writesHostData = false`.
+- Host Bridge Candidate summary remains unconfirmed review evidence with `writesHostData = false`; reports may summarize an existing `host/host-bridge-candidate.json` but must not generate or rewrite it.
 - Partner-specific fields may appear only as partner report / candidate evidence, not in Compiler, Host Schema, Narrative Graph IR or source localization truth.
 - Missing or blocked artifacts produce explicit report status, not Runtime fallback.
 
