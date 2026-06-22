@@ -56,7 +56,7 @@
                                      "Export a static Host Integration Package from an Inscape project.",
                                      "inscape export-host-integration-package-project <root> [--config inscape.config.json] -o package-dir",
                                      "dotnet run --project src\\Internal\\Cli\\Inscape.Cli\\Inscape.Cli.csproj -- export-host-integration-package-project samples -o artifacts\\host-integration-package-smoke",
-                                     "Round 1 only registers the command contract. Package assembly starts in the shared Tooling domain during the next round."),
+                                     "Round 2 writes the package manifest and artifact index from the shared Tooling domain. Later rounds assemble graph, usage, audit, localization, source-map, and report artifacts."),
             new CliCommandModel("update-node-map-project", "Project", true,
                                       "Create or update inscape.node-map.json for the current project.",
                                       "inscape update-node-map-project <root> [--config inscape.config.json] [-o inscape.node-map.json]",

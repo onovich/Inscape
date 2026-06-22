@@ -126,54 +126,81 @@ Narrator: Start.
             AssertEqual("", error.ToString().Trim(), "Host integration package help stderr");
             AssertTrue(text.Contains("export-host-integration-package-project"), "Help should include package command name.");
             AssertTrue(text.Contains("-o package-dir"), "Help should document required package output directory.");
-            AssertTrue(text.Contains("Package assembly starts in the shared Tooling domain"), "Help should state Round 1 boundary.");
+            AssertTrue(text.Contains("Round 2 writes the package manifest and artifact index"), "Help should state Round 2 manifest boundary.");
         }
 
-        static void CliHostIntegrationPackageSkeletonReportsDeferredImplementation() {
+        static void CliHostIntegrationPackageWritesManifest() {
             string directory = Path.Combine(Path.GetTempPath(), "inscape-cli-host-integration-package-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(directory);
             try {
-                TextWriter originalOut = Console.Out;
-                TextWriter originalError = Console.Error;
-                StringWriter missingOutput = new StringWriter();
-                StringWriter missingError = new StringWriter();
-
-                int missingExitCode;
-                try {
-                    Console.SetOut(missingOutput);
-                    Console.SetError(missingError);
-                    missingExitCode = CliCore.Main(new[] { "export-host-integration-package-project", directory });
-                } finally {
-                    Console.SetOut(originalOut);
-                    Console.SetError(originalError);
-                }
-
-                AssertEqual(2, missingExitCode, "Package skeleton without -o should be usage error.");
-                AssertEqual("", missingOutput.ToString().Trim(), "Package skeleton without -o should not write stdout.");
-                AssertTrue(missingError.ToString().Contains("requires -o <out-dir>"), "Package skeleton without -o should explain required output.");
+                (int ExitCode, string Stdout, string Stderr) missingOutput = RunCliForFailure(new[] { "export-host-integration-package-project", directory });
+                AssertEqual(2, missingOutput.ExitCode, "Package export without -o should be usage error.");
+                AssertEqual("", missingOutput.Stdout.Trim(), "Package export without -o should not write stdout.");
+                AssertTrue(missingOutput.Stderr.Contains("requires -o <out-dir>"), "Package export without -o should explain required output.");
 
                 string outputDirectory = Path.Combine(directory, "package");
-                StringWriter deferredOutput = new StringWriter();
-                StringWriter deferredError = new StringWriter();
-                int deferredExitCode;
-                try {
-                    Console.SetOut(deferredOutput);
-                    Console.SetError(deferredError);
-                    deferredExitCode = CliCore.Main(new[] { "export-host-integration-package-project", directory, "-o", outputDirectory });
-                } finally {
-                    Console.SetOut(originalOut);
-                    Console.SetError(originalError);
+                string output = RunCliForOutput(new[] { "export-host-integration-package-project", directory, "-o", outputDirectory }).Trim();
+                string manifestPath = Path.Combine(outputDirectory, "manifest.json");
+                AssertEqual(Path.GetFullPath(manifestPath), output, "Package export should print manifest path.");
+                AssertTrue(File.Exists(manifestPath), "Package export should write manifest.json.");
+
+                string firstManifest = File.ReadAllText(manifestPath, Encoding.UTF8);
+                using (JsonDocument document = JsonDocument.Parse(firstManifest)) {
+                    JsonElement root = document.RootElement;
+                    AssertEqual("inscape.integration-package", root.GetProperty("format").GetString(), "Package manifest format");
+                    AssertEqual(1, root.GetProperty("formatVersion").GetInt32(), "Package manifest format version");
+                    AssertEqual(new DirectoryInfo(directory).Name, root.GetProperty("workspace").GetProperty("name").GetString(), "Package manifest workspace name");
+                    AssertFalse(root.GetProperty("capabilities").GetProperty("runtimeIntegration").GetBoolean(), "Package manifest runtimeIntegration flag");
+                    AssertFalse(root.GetProperty("capabilities").GetProperty("previewBridge").GetBoolean(), "Package manifest previewBridge flag");
+                    AssertFalse(root.GetProperty("capabilities").GetProperty("writesHostData").GetBoolean(), "Package manifest writesHostData flag");
+                    AssertFalse(root.GetProperty("capabilities").GetProperty("containsHostDependency").GetBoolean(), "Package manifest containsHostDependency flag");
+
+                    JsonElement artifacts = root.GetProperty("artifacts");
+                    AssertTrue(artifacts.GetArrayLength() >= 8, "Package manifest should contain artifact index.");
+                    AssertTrue(ContainsPackageArtifactJson(artifacts, "manifest", "manifest.json", true, "ready"), "Package manifest should index manifest.json as ready.");
+                    AssertTrue(ContainsPackageArtifactJson(artifacts, "narrative-graph-ir", "graph/project-ir.json", true, "missing"), "Package manifest should index graph IR as missing.");
+                    AssertTrue(ContainsPackageArtifactJson(artifacts, "host-schema-capabilities", "host/host-schema-capabilities.json", false, "missing"), "Package manifest should index host schema capabilities as optional.");
+                    for (int i = 0; i < artifacts.GetArrayLength(); i += 1) {
+                        string artifactPath = artifacts[i].GetProperty("path").GetString() ?? string.Empty;
+                        AssertFalse(Path.IsPathRooted(artifactPath), "Package artifact path must be package-relative.");
+                        AssertFalse(artifactPath.Contains("\\"), "Package artifact path must not leak platform separators.");
+                        AssertFalse(artifactPath.Contains(".."), "Package artifact path must not traverse.");
+                    }
                 }
 
-                AssertEqual(2, deferredExitCode, "Package skeleton should return deferred implementation code.");
-                AssertEqual("", deferredOutput.ToString().Trim(), "Package skeleton should not write stdout before implementation.");
-                AssertTrue(deferredError.ToString().Contains("Package assembly starts in Round 2"), "Package skeleton should state deferred implementation.");
-                AssertFalse(Directory.Exists(outputDirectory), "Package skeleton should not create output directory.");
+                string secondOutput = RunCliForOutput(new[] { "export-host-integration-package-project", directory, "-o", outputDirectory }).Trim();
+                string secondManifest = File.ReadAllText(manifestPath, Encoding.UTF8);
+                AssertEqual(output, secondOutput, "Repeated package export should print the same manifest path.");
+                AssertEqual(firstManifest, secondManifest, "Repeated package export should keep manifest bytes stable.");
+
+                File.WriteAllText(Path.Combine(outputDirectory, "unexpected.txt"), "outside package", Encoding.UTF8);
+                (int ExitCode, string Stdout, string Stderr) dirtyOutput = RunCliForFailure(new[] { "export-host-integration-package-project", directory, "-o", outputDirectory });
+                AssertEqual(2, dirtyOutput.ExitCode, "Package export should reject non-package output directory content.");
+                AssertEqual("", dirtyOutput.Stdout.Trim(), "Rejected package export should not write stdout.");
+                AssertTrue(dirtyOutput.Stderr.Contains("contains non-package files"), "Rejected package export should explain non-package output content.");
             } finally {
                 if (Directory.Exists(directory)) {
                     Directory.Delete(directory, true);
                 }
             }
+        }
+
+        static bool ContainsPackageArtifactJson(JsonElement artifacts,
+                                                string kind,
+                                                string path,
+                                                bool required,
+                                                string status) {
+            for (int i = 0; i < artifacts.GetArrayLength(); i += 1) {
+                JsonElement artifact = artifacts[i];
+                if (artifact.GetProperty("kind").GetString() == kind
+                    && artifact.GetProperty("path").GetString() == path
+                    && artifact.GetProperty("required").GetBoolean() == required
+                    && artifact.GetProperty("status").GetString() == status) {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         static void CliExportHostSchemaTemplateEmitsJson() {

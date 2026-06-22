@@ -2,7 +2,7 @@
 
 Owns reusable toolchain use cases shared by CLI, VSCode, future LanguageServer, and development workflows.
 
-Allowed business areas: `DslScriptSources`, `ToolConfig`, `Preview`, `Localization`, `HostSchema`, `HostBinding`, `UsageManifest`, and `HostIntegrationAudit`.
+Allowed business areas: `DslScriptSources`, `ToolConfig`, `Preview`, `Localization`, `HostSchema`, `HostBinding`, `UsageManifest`, `HostIntegrationAudit`, and `HostIntegrationPackage`.
 
 Allowed resource boundary: `Resources/Preview` owns static preview templates while Tooling remains the reusable project root. Do not create generic resource buckets outside concrete module roots.
 

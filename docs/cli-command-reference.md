@@ -2,7 +2,7 @@
 
 状态：基线
 
-最后更新：2026-05-19
+最后更新：2026-06-22
 
 本文集中记录 Inscape CLI 的常用命令。README 只保留开发入口示例；具体命令、产物和用途以后优先维护本文。
 
@@ -72,9 +72,9 @@ dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- audit-ho
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- export-host-integration-package-project samples -o artifacts\host-integration-package-smoke
 ```
 
-Round 1 状态：命令已进入 `commands` / `help`，但当前只提供 command contract skeleton。真实 package assembly 从后续 Round 2 开始落到 `Inscape.Tooling` shared domain；当前 skeleton 不创建输出目录、不写 package 文件。
+Round 2 状态：命令已进入 `commands` / `help`，并通过 `Inscape.Tooling` shared domain 写出 package `manifest.json` 与 artifact index。当前只写 manifest；后续 Round 3-5 继续装配 graph、usage、host schema capabilities、host integration audit、localization、source-map、anchor-map 与 readiness report。
 
-目标 package 结构见 [Host Integration Package Contract](host-integration-package-contract.md) 和 [Host Integration Package CLI Baseline Audit](host-integration-package-cli-baseline-audit.md)。本命令不得实现 Host Bridge candidate generator、generated apply、Sinan Runtime Integration、Runtime Preview Bridge、Unity / Host SDK、完整 host save、Rollback / Trace Replay / Flashback、Presentation IR 或 Host Schema action policy 扩张。
+目标 package 结构见 [Host Integration Package Contract](host-integration-package-contract.md)、[Host Integration Package CLI Baseline Audit](host-integration-package-cli-baseline-audit.md) 和 [Host Integration Package CLI Manifest Audit](host-integration-package-cli-manifest-audit.md)。本命令不得实现 Host Bridge candidate generator、generated apply、Sinan Runtime Integration、Runtime Preview Bridge、Unity / Host SDK、完整 host save、Rollback / Trace Replay / Flashback、Presentation IR 或 Host Schema action policy 扩张。
 
 ## 单文件命令
 
