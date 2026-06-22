@@ -19,6 +19,10 @@ namespace Inscape.Cli {
                 return RunHostIntegrationAudit(rootPath, args, outputPath, jsonOptions);
             }
 
+            if (command == "export-host-integration-package-project") {
+                return RunHostIntegrationPackageExportSkeleton(rootPath, outputPath);
+            }
+
             if (command == "inspect-host-schema-project") {
                 return RunHostSchemaInspection(rootPath, args, outputPath, jsonOptions);
             }
@@ -702,6 +706,27 @@ namespace Inscape.Cli {
                                                                               hostBindingCatalog);
             CliCore.WriteOrPrint(outputPath, JsonSerializer.Serialize(audit, jsonOptions));
             return 0;
+        }
+
+        static int RunHostIntegrationPackageExportSkeleton(string rootPath, string? outputPath) {
+            if (!Directory.Exists(rootPath)) {
+                Console.Error.WriteLine("Project root not found: " + rootPath);
+                return 3;
+            }
+
+            if (string.IsNullOrWhiteSpace(outputPath)) {
+                Console.Error.WriteLine("export-host-integration-package-project requires -o <out-dir>.");
+                return 2;
+            }
+
+            string fullOutputPath = Path.GetFullPath(outputPath);
+            if (File.Exists(fullOutputPath)) {
+                Console.Error.WriteLine("Host Integration Package output path must be a directory, not a file: " + fullOutputPath);
+                return 2;
+            }
+
+            Console.Error.WriteLine("export-host-integration-package-project is registered for Host Integration Package CLI Round 1. Package assembly starts in Round 2; no files were written.");
+            return 2;
         }
 
         static int RunQueryInterpolationAudit(string rootPath, string[] args, string? outputPath, JsonSerializerOptions jsonOptions) {

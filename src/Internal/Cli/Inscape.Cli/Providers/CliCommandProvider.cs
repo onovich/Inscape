@@ -52,6 +52,11 @@
                                      "inscape audit-host-integration-project <root> [--config inscape.config.json] [-o audit.json]",
                                      "dotnet run --project src\\Internal\\Cli\\Inscape.Cli\\Inscape.Cli.csproj -- audit-host-integration-project samples -o artifacts\\host-integration-audit.json",
                                      "The audit reports integration gaps. It does not compile runtime behavior or call host handlers."),
+            new CliCommandModel("export-host-integration-package-project", "Host integration", true,
+                                     "Export a static Host Integration Package from an Inscape project.",
+                                     "inscape export-host-integration-package-project <root> [--config inscape.config.json] -o package-dir",
+                                     "dotnet run --project src\\Internal\\Cli\\Inscape.Cli\\Inscape.Cli.csproj -- export-host-integration-package-project samples -o artifacts\\host-integration-package-smoke",
+                                     "Round 1 only registers the command contract. Package assembly starts in the shared Tooling domain during the next round."),
             new CliCommandModel("update-node-map-project", "Project", true,
                                       "Create or update inscape.node-map.json for the current project.",
                                       "inscape update-node-map-project <root> [--config inscape.config.json] [-o inscape.node-map.json]",
@@ -106,6 +111,7 @@
         static readonly string[] CategoryOrder = new[] {
             "Single-file",
             "Host schema",
+            "Host integration",
             "Project",
         };
 
@@ -125,6 +131,7 @@
             Console.WriteLine("  inscape inspect-host-schema-project <root> [-o capabilities.json]");
             Console.WriteLine("  inscape inspect-usage-project <root> [--config inscape.config.json] [-o usage.json]");
             Console.WriteLine("  inscape audit-host-integration-project <root> [--config inscape.config.json] [-o audit.json]");
+            Console.WriteLine("  inscape export-host-integration-package-project <root> [--config inscape.config.json] -o package-dir");
             Console.WriteLine("  inscape update-node-map-project <root> [--config inscape.config.json] [-o inscape.node-map.json]");
             Console.WriteLine("  inscape apply-node-map-candidate-project <root> --current-id node_NEW --current-title title --candidate-id node_OLD [--dry-run preview.json] [--result apply-result.json] [--config inscape.config.json] [-o inscape.node-map.json]");
             Console.WriteLine("  inscape audit-l10n-alignment-project <root> --from old.csv [--format json|text] [--config inscape.config.json] [-o l10n-review.json]");

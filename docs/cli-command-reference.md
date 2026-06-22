@@ -62,6 +62,20 @@ dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- audit-ho
 `inspect-usage-project` 已按 [Usage Manifest Contract](usage-manifest-contract.md) 输出 `inscape.usage` 最小 JSON。当前实现扫描 `.inscape` 脚本里的 `[]` query 插值、`@emit` action / legacy event 与 `@timeline...` hook，记录字面量参数、source location 与可由 Host Schema `idKind` 推导的 `requiredIds`。未知 query / action 仍会进入 usage，不导致非零退出码；条件 context 会在条件 parser 落地后接入。
 `audit-host-integration-project` 输出 `inscape.host-integration.audit` JSON，对账 Usage Manifest、Host Schema capability catalog 与 Host Bridge capability catalog。当前实现报告 unknown query / action、legacy event usage、参数数量 / 字面量类型不匹配、缺失 Host Bridge `ids[]` 映射，以及缺失 Host Bridge `actions[]` / `queries[]` handler 映射。该命令不执行 Runtime、不调用宿主 handler。
 
+## Host Integration Package CLI
+
+| 命令 | 用途 | 常用输出 |
+| --- | --- | --- |
+| `export-host-integration-package-project` | 将项目导出为静态 Host Integration Package | 输出目录 |
+
+```powershell
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- export-host-integration-package-project samples -o artifacts\host-integration-package-smoke
+```
+
+Round 1 状态：命令已进入 `commands` / `help`，但当前只提供 command contract skeleton。真实 package assembly 从后续 Round 2 开始落到 `Inscape.Tooling` shared domain；当前 skeleton 不创建输出目录、不写 package 文件。
+
+目标 package 结构见 [Host Integration Package Contract](host-integration-package-contract.md) 和 [Host Integration Package CLI Baseline Audit](host-integration-package-cli-baseline-audit.md)。本命令不得实现 Host Bridge candidate generator、generated apply、Sinan Runtime Integration、Runtime Preview Bridge、Unity / Host SDK、完整 host save、Rollback / Trace Replay / Flashback、Presentation IR 或 Host Schema action policy 扩张。
+
 ## 单文件命令
 
 | 命令 | 用途 | 常用输出 |

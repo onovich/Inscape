@@ -1,12 +1,31 @@
 # Agent 接手指南
 
-状态：P5 SelfHostedEditor Runtime authoring / productization 已通过 final validation；Host Integration Partner Readiness 已完成 final validation，结论 PASS
+状态：P5 SelfHostedEditor Runtime authoring / productization 已通过 final validation；Host Integration Partner Readiness 已完成 final validation；Host Integration Package CLI Round 1 已完成
 
-最后更新：2026-06-21
+最后更新：2026-06-22
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-22 Host Integration Package CLI Round 1 快照
+
+Host Integration Package CLI 已完成 Round 1 Baseline / Command Contract。
+- Round 1 审计见 [Host Integration Package CLI Baseline Audit](host-integration-package-cli-baseline-audit.md)。
+- `export-host-integration-package-project <workspace> -o <out-dir>` 已进入 Internal CLI `commands` / `help`，并有 skeleton guard；当前执行会返回 deferred implementation，不创建输出目录、不写 package 文件。
+- 本轮确认后续 package assembly 必须落在 `Inscape.Tooling` shared domain，CLI 入口只保留参数解析、调用、stdout/stderr 与退出码映射。
+- 本轮没有生成 package artifact，没有实现 manifest writer、source copy、source-map、anchor-map、readiness report writer、Host Bridge candidate generator、generated apply、Sinan Runtime Integration、Runtime Preview Bridge、Unity / Host SDK、完整 host save、Rollback / Trace Replay / Flashback、Presentation IR 或 Host Schema action policy 扩张。
+- 下一轮进入 Round 2：Package Domain / Manifest Writer。应新增 package assembly domain、manifest model、artifact index writer 和 package path guard，并固定 `runtimeIntegration = false`、`previewBridge = false`、`writesHostData = false`、`containsHostDependency = false`。
+
+### 2026-06-22 Host Integration Package CLI Goal Guide 快照
+
+用户已批准近期计划的第一阶段：`Host Integration Package CLI`。本阶段目标不是再写契约，而是把 Host Integration Partner Readiness 阶段确认的静态 artifact 收成真实 CLI package 导出命令。
+- 执行指南见 [Host Integration Package CLI Goal 模式执行指南](host-integration-package-cli-goal-mode-execution-guide.md)。
+- 预算为 6 轮会话：Round 1 baseline / command contract，Round 2 package domain / manifest writer，Round 3 existing artifact assembly，Round 4 source copy / source-map / anchor-map / minimal report，Round 5 smoke / determinism / docs，Round 6 final validation / PASS-FAIL closure。
+- 目标命令为 `export-host-integration-package-project <workspace> -o <out-dir>`，输出 `manifest.json`、`source/`、`graph/project-ir.json`、`usage/usage.json`、`host/host-schema-capabilities.json`、`host/host-integration-audit.json`、`localization/l10n.csv`、`localization/anchor-map.json`、`source-map/source-locations.json` 与 `reports/readiness-report.json`。
+- 本阶段允许做最小 package-level readiness report，但不做完整 readiness report generator 产品化；下一阶段若继续，应重新批准。
+- 本阶段继续禁止 Host Bridge candidate generator、generated apply、Sinan Runtime Integration、Runtime Preview Bridge、Unity / Host SDK、完整 host save、Rollback / Trace Replay / Flashback、Presentation IR、Host Schema action policy 扩张或任何 Sinan / Unity / Bird hard dependency 进入 `src/Internal`。
+- 执行者每轮必须 Debug 自检、架构自检、验证通过后提交推送，再进入下一轮。
 
 ### 2026-06-21 Host Integration Partner Readiness Final Validation 快照
 
@@ -1900,12 +1919,14 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 
 建议优先做小而闭环的任务，不要直接跳到大规模重构。
 
-1. 等待用户批准下一候选方向；不要自动开启新阶段。
+1. 执行 Host Integration Package CLI 阶段。
    - P5 Runtime authoring / productization 已 PASS，见 [SelfHostedEditor P5 Final Validation Report](self-hosted-editor-p5-final-validation-report.md)。
    - Host Integration Partner Readiness 已 PASS，见 [Host Integration Partner Readiness Final Validation Report](host-integration-partner-readiness-final-validation-report.md)。
-   - 本阶段只覆盖 contract / fixture / report / planning；Sinan 仍只是 partner profile / fixture / dry-run planning 输入。
-   - 下一候选方向必须重新获得用户批准。
-   - 不要自动进入 Sinan Runtime Integration、Runtime Preview Bridge、Unity / Host SDK、Rollback / Trace Replay / Flashback、Presentation IR、完整 host save、Host Schema action policy 扩张或 generated apply。
+   - 下一阶段已批准为 [Host Integration Package CLI Goal 模式执行指南](host-integration-package-cli-goal-mode-execution-guide.md)，预算 6 轮会话。
+   - Round 1 已完成 baseline / command contract，见 [Host Integration Package CLI Baseline Audit](host-integration-package-cli-baseline-audit.md)。
+   - 下一轮进入 Round 2：Package Domain / Manifest Writer；目标是新增共享 Tooling domain、manifest model、artifact index writer 和 path guard。
+   - 每轮必须 Debug 自检、架构自检、验证通过后提交推送，再进入下一轮。
+   - 不要自动进入 Host Bridge candidate generator、generated apply、Sinan Runtime Integration、Runtime Preview Bridge、Unity / Host SDK、Rollback / Trace Replay / Flashback、Presentation IR、完整 host save 或 Host Schema action policy 扩张。
 
 2. 继续推进 Stable Node ID / 本地化主线。
    - ADR 0013、sidecar 闭环、保守自动重命名识别、VSCode 显式 `Update Stable Node Map` 入口、插入标题后的自动同步、标题重命名人工确认 / 冲突报告、本地化 alignment / audit report，以及相似文本人工候选第一版都已落地。

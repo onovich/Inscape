@@ -68,11 +68,13 @@ Narrator: Start.
             AssertEqual("", error.ToString().Trim(), "Commands command stderr");
             AssertTrue(text.Contains("Single-file:"), "Commands should list single-file group.");
             AssertTrue(text.Contains("Host schema:"), "Commands should list host schema group.");
+            AssertTrue(text.Contains("Host integration:"), "Commands should list host integration group.");
             AssertTrue(text.Contains("export-host-schema-template"), "Commands should list host schema template command.");
             AssertTrue(text.Contains("audit-query-interpolation-project"), "Commands should list query interpolation audit command.");
             AssertTrue(text.Contains("inspect-host-schema-project"), "Commands should list host schema inspection command.");
             AssertTrue(text.Contains("inspect-usage-project"), "Commands should list usage manifest inspection command.");
             AssertTrue(text.Contains("audit-host-integration-project"), "Commands should list host integration audit command.");
+            AssertTrue(text.Contains("export-host-integration-package-project"), "Commands should list host integration package export command.");
             AssertTrue(text.Contains("update-node-map-project"), "Commands should list node map update command.");
             AssertTrue(text.Contains("apply-node-map-candidate-project"), "Commands should list node map candidate apply command.");
             AssertFalse(text.Contains("export-unity-sample-role-template"), "Internal CLI should not list UnitySample role template command.");
@@ -101,6 +103,77 @@ Narrator: Start.
             AssertTrue(text.Contains("export-host-schema-template"), "Help should include command name.");
             AssertTrue(text.Contains("host schema template"), "Help should include host schema description.");
             AssertTrue(text.Contains("inscape.host.schema.json"), "Help should include output file name.");
+        }
+
+        static void CliHelpEmitsHostIntegrationPackageDetails() {
+            TextWriter originalOut = Console.Out;
+            TextWriter originalError = Console.Error;
+            StringWriter output = new StringWriter();
+            StringWriter error = new StringWriter();
+
+            int exitCode;
+            try {
+                Console.SetOut(output);
+                Console.SetError(error);
+                exitCode = CliCore.Main(new[] { "help", "export-host-integration-package-project" });
+            } finally {
+                Console.SetOut(originalOut);
+                Console.SetError(originalError);
+            }
+
+            string text = output.ToString();
+            AssertEqual(0, exitCode, "Host integration package help exit code");
+            AssertEqual("", error.ToString().Trim(), "Host integration package help stderr");
+            AssertTrue(text.Contains("export-host-integration-package-project"), "Help should include package command name.");
+            AssertTrue(text.Contains("-o package-dir"), "Help should document required package output directory.");
+            AssertTrue(text.Contains("Package assembly starts in the shared Tooling domain"), "Help should state Round 1 boundary.");
+        }
+
+        static void CliHostIntegrationPackageSkeletonReportsDeferredImplementation() {
+            string directory = Path.Combine(Path.GetTempPath(), "inscape-cli-host-integration-package-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory);
+            try {
+                TextWriter originalOut = Console.Out;
+                TextWriter originalError = Console.Error;
+                StringWriter missingOutput = new StringWriter();
+                StringWriter missingError = new StringWriter();
+
+                int missingExitCode;
+                try {
+                    Console.SetOut(missingOutput);
+                    Console.SetError(missingError);
+                    missingExitCode = CliCore.Main(new[] { "export-host-integration-package-project", directory });
+                } finally {
+                    Console.SetOut(originalOut);
+                    Console.SetError(originalError);
+                }
+
+                AssertEqual(2, missingExitCode, "Package skeleton without -o should be usage error.");
+                AssertEqual("", missingOutput.ToString().Trim(), "Package skeleton without -o should not write stdout.");
+                AssertTrue(missingError.ToString().Contains("requires -o <out-dir>"), "Package skeleton without -o should explain required output.");
+
+                string outputDirectory = Path.Combine(directory, "package");
+                StringWriter deferredOutput = new StringWriter();
+                StringWriter deferredError = new StringWriter();
+                int deferredExitCode;
+                try {
+                    Console.SetOut(deferredOutput);
+                    Console.SetError(deferredError);
+                    deferredExitCode = CliCore.Main(new[] { "export-host-integration-package-project", directory, "-o", outputDirectory });
+                } finally {
+                    Console.SetOut(originalOut);
+                    Console.SetError(originalError);
+                }
+
+                AssertEqual(2, deferredExitCode, "Package skeleton should return deferred implementation code.");
+                AssertEqual("", deferredOutput.ToString().Trim(), "Package skeleton should not write stdout before implementation.");
+                AssertTrue(deferredError.ToString().Contains("Package assembly starts in Round 2"), "Package skeleton should state deferred implementation.");
+                AssertFalse(Directory.Exists(outputDirectory), "Package skeleton should not create output directory.");
+            } finally {
+                if (Directory.Exists(directory)) {
+                    Directory.Delete(directory, true);
+                }
+            }
         }
 
         static void CliExportHostSchemaTemplateEmitsJson() {
