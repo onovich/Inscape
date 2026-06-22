@@ -167,6 +167,13 @@ git diff --check
 rg -n "host-integration-static-artifact-poc-partner-handoff|Static Artifact POC Partner Handoff|PartnerHandoffKitSmoke|partner-feedback.generic" docs
 ```
 
+Partner handoff feedback smoke：
+
+```powershell
+node --check docs\host-integration-static-fixtures\PartnerHandoffKitSmoke.js
+node docs\host-integration-static-fixtures\PartnerHandoffKitSmoke.js
+```
+
 现有静态 artifact smoke：
 
 ```powershell
@@ -177,8 +184,6 @@ node docs\host-integration-static-fixtures\HostIntegrationPackageCliSmoke.js
 node --check docs\host-integration-static-fixtures\HostIntegrationReadinessReportSmoke.js
 node docs\host-integration-static-fixtures\HostIntegrationReadinessReportSmoke.js
 ```
-
-Round 3 会新增 `PartnerHandoffKitSmoke.js` 覆盖 feedback fixture parse 与 handoff boundary。
 
 ## Round 1 Self-Check
 

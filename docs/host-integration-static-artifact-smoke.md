@@ -92,3 +92,28 @@ Coverage:
 
 The smoke does not run Runtime, connect Unity / Host SDK / Sinan Runtime, write
 host data, generate host apply output, or confirm Host Bridge mappings.
+
+## Partner Handoff Kit Smoke
+
+`PartnerHandoffKitSmoke.js` covers the generic partner feedback fixture added
+for the Static Artifact POC Partner Handoff Kit:
+
+```powershell
+node --check docs\host-integration-static-fixtures\PartnerHandoffKitSmoke.js
+node docs\host-integration-static-fixtures\PartnerHandoffKitSmoke.js
+```
+
+Coverage:
+
+- parses `partner-feedback.generic.json`;
+- verifies `format = inscape.host-integration.partner-feedback`;
+- checks `partnerEvidence`, `candidateEvidence` and `confirmedTruth`
+  separation;
+- requires every write / apply / runtime / host save boundary flag to be false;
+- rejects Host Schema action policy expansion keys;
+- checks candidate evidence references existing partner evidence;
+- checks source refs use `compiler-1-based`.
+
+The smoke does not generate package artifacts, call partner tooling, run
+Runtime, connect Unity / Host SDK / Sinan Runtime, write host data, generate
+host apply output or confirm Host Bridge mappings.
