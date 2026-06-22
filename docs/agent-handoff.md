@@ -2062,16 +2062,15 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 
 建议优先做小而闭环的任务，不要直接跳到大规模重构。
 
-1. 执行 Host Bridge Candidate Generator First Slice。
+1. Host Bridge Candidate Generator First Slice 已完成；等待用户批准下一候选方向。
    - P5 Runtime authoring / productization 已 PASS，见 [SelfHostedEditor P5 Final Validation Report](self-hosted-editor-p5-final-validation-report.md)。
    - Host Integration Partner Readiness 已 PASS，见 [Host Integration Partner Readiness Final Validation Report](host-integration-partner-readiness-final-validation-report.md)。
    - Host Integration Package CLI 已 PASS，见 [Host Integration Package CLI Final Validation Report](host-integration-package-cli-final-validation-report.md)。
    - Host Integration Readiness Report Generator 已 PASS，见 [Host Integration Readiness Report Generator Final Validation Report](host-integration-readiness-report-generator-final-validation-report.md)。
    - Host Integration Static Artifact POC Partner Handoff Kit 已 PASS，见 [Host Integration Static Artifact POC Partner Handoff Final Validation Report](host-integration-static-artifact-poc-partner-handoff-final-validation-report.md)。
-   - 用户已批准下一阶段：`Host Bridge Candidate Generator First Slice`，执行指南见 [Host Bridge Candidate Generator First Slice Goal 模式执行指南](host-bridge-candidate-generator-goal-mode-execution-guide.md)。
-   - 执行预算为 6 轮：baseline / command contract、shared Tooling candidate domain、CLI command / output guard、smoke / docs hardening、buffer / compatibility closure、final validation；Round 6 已完成，结论为 `Host Bridge Candidate Generator First Slice: PASS`。
-   - 目标命令建议为 `generate-host-bridge-candidate-package <package-dir> -o <candidate.json>`。
-   - 本阶段不要进入 confirmed Host Bridge、POC-2 catalog projection、Sinan Runtime Integration、Runtime Preview Bridge、Unity / Host SDK、generated apply、完整 host save、Rollback / Trace Replay / Flashback、Presentation IR 或 Host Schema action policy 扩张。
+   - Host Bridge Candidate Generator First Slice 已完成 final validation，见 [Host Bridge Candidate Generator Final Validation Report](host-bridge-candidate-generator-final-validation-report.md)，结论为 `Host Bridge Candidate Generator First Slice: PASS`。
+   - 已交付命令：`generate-host-bridge-candidate-package <package-dir> -o <candidate.json>`。
+   - 下一候选方向必须由用户批准；不要自动进入 confirmed Host Bridge、POC-2 catalog projection、Sinan Runtime Integration、Runtime Preview Bridge、Unity / Host SDK、generated apply、完整 host save、Rollback / Trace Replay / Flashback、Presentation IR 或 Host Schema action policy 扩张。
 
 2. 继续推进 Stable Node ID / 本地化主线。
    - ADR 0013、sidecar 闭环、保守自动重命名识别、VSCode 显式 `Update Stable Node Map` 入口、插入标题后的自动同步、标题重命名人工确认 / 冲突报告、本地化 alignment / audit report，以及相似文本人工候选第一版都已落地。
