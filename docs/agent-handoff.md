@@ -1,6 +1,6 @@
 # Agent 接手指南
 
-状态：P5 SelfHostedEditor Runtime authoring / productization 已通过 final validation；Host Integration Partner Readiness 已完成 final validation；Host Integration Package CLI Round 5 已完成
+状态：P5 SelfHostedEditor Runtime authoring / productization 已通过 final validation；Host Integration Partner Readiness 已完成 final validation；Host Integration Package CLI 已通过 final validation
 
 最后更新：2026-06-22
 
@@ -8,17 +8,19 @@
 
 ## 当前项目快照
 
-### 2026-06-22 Host Integration Package CLI Round 5 快照
+### 2026-06-22 Host Integration Package CLI Final Validation 快照
 
-Host Integration Package CLI 已完成 Round 5 Smoke Fixtures / Determinism / Docs。
+Host Integration Package CLI 已完成 Round 6 Final Validation / PASS-FAIL closure，结论为 `Host Integration Package CLI: PASS`。
+- Final validation report 见 [Host Integration Package CLI Final Validation Report](host-integration-package-cli-final-validation-report.md)。
 - Round 1 审计见 [Host Integration Package CLI Baseline Audit](host-integration-package-cli-baseline-audit.md)；Round 2 审计见 [Host Integration Package CLI Manifest Audit](host-integration-package-cli-manifest-audit.md)；Round 3 审计见 [Host Integration Package CLI Artifact Assembly Audit](host-integration-package-cli-artifact-assembly-audit.md)；Round 4 审计见 [Host Integration Package CLI Source Map Report Audit](host-integration-package-cli-source-map-report-audit.md)；Round 5 审计见 [Host Integration Package CLI Smoke Determinism Audit](host-integration-package-cli-smoke-determinism-audit.md)。
 - `export-host-integration-package-project <workspace> -o <out-dir>` 现在会写出 `manifest.json`、`source/`、`graph/project-ir.json`、`usage/usage.json`、`host/host-schema-capabilities.json`、`host/host-integration-audit.json`、`localization/l10n.csv`、`localization/anchor-map.json`、`source-map/source-locations.json` 和 `reports/readiness-report.json`。
 - 新增 [HostIntegrationPackageCliSmoke.js](host-integration-static-fixtures/HostIntegrationPackageCliSmoke.js)，真实创建临时 workspace 并验证 package parse / structure、source refs、unknown action audit、compiler diagnostic、重复导出 byte-stable determinism 和 output directory guard。
 - artifact assembly 位于 `Inscape.Tooling`，直接复用 compiler / Tooling shared domains；CLI 入口只传 workspace、`--config`、`-o` 并映射 stdout/stderr/exit code。
 - manifest 会把上述 package artifact 标记为 `ready`；readiness report 只做 artifact presence / shape / static boundary 汇总，并保持 `writesHostData = false`。
 - 输出目录递归拒绝非 package-owned 文件，允许重复写入当前 Round 5 package 产物；smoke 已覆盖嵌套未知文件拒绝。
-- 本轮没有实现 Host Bridge candidate generator、generated apply、Sinan Runtime Integration、Runtime Preview Bridge、Unity / Host SDK、完整 host save、Rollback / Trace Replay / Flashback、Presentation IR 或 Host Schema action policy 扩张。
-- 下一轮进入 Round 6：Final Validation / PASS-FAIL Closure。
+- final validation matrix、package CLI smoke、VSCode baseline check、`git diff --check` 和边界扫描均通过；`rg` 无输出按“无命中即通过”记录。
+- 本阶段没有实现 Host Bridge candidate generator、generated apply、Sinan Runtime Integration、Runtime Preview Bridge、Unity / Host SDK、完整 host save、Rollback / Trace Replay / Flashback、Presentation IR 或 Host Schema action policy 扩张。
+- 下一候选方向必须由用户批准，不能自动进入 Host Bridge Candidate Generator、Static Artifact POC partner handoff、POC-2 catalog projection、Sinan Runtime Integration、Runtime Preview Bridge、Unity / Host SDK、generated apply、完整 host save、Rollback / Trace Replay / Flashback、Presentation IR 或 Host Schema action policy 扩张。
 
 ### 2026-06-22 Host Integration Package CLI Goal Guide 快照
 
