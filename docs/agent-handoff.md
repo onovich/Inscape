@@ -1,12 +1,22 @@
 # Agent 接手指南
 
-状态：P5 SelfHostedEditor Runtime authoring / productization 已通过 final validation；Host Integration Partner Readiness 已完成 final validation；Host Integration Package CLI 已通过 final validation
+状态：P5 SelfHostedEditor Runtime authoring / productization 已通过 final validation；Host Integration Partner Readiness 已完成 final validation；Host Integration Package CLI 已通过 final validation；下一阶段已批准为 Host Integration Readiness Report Generator
 
 最后更新：2026-06-22
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-22 Host Integration Readiness Report Generator Goal Guide 快照
+
+用户已通过 `GoalNext` 批准下一阶段：`Host Integration Readiness Report Generator`。本阶段目标不是 partner handoff，也不是 Host Bridge candidate generator，而是把 Host Integration Package CLI 中的最小 `reports/readiness-report.json` 升级为可独立复用的 package readiness report generator。
+- 执行指南见 [Host Integration Readiness Report Generator Goal 模式执行指南](host-integration-readiness-report-generator-goal-mode-execution-guide.md)。
+- 预算为 5 轮会话：Round 1 baseline / report generator contract，Round 2 shared report domain / package reader，Round 3 CLI command / diagnostics aggregation，Round 4 fixtures / smoke / docs hardening，Round 5 final validation / PASS-FAIL closure。
+- 建议目标命令为 `generate-host-integration-readiness-report-package <package-dir> -o <report.json>`，读取已有 Host Integration Package 并输出 deterministic readiness report。
+- 本阶段必须让 package export 和独立 report command 复用同一个 Tooling report generator，避免两套 report 语义。
+- 本阶段继续禁止 Host Bridge Candidate Generator、Static Artifact POC partner handoff、POC-2 catalog projection、Sinan Runtime Integration、Runtime Preview Bridge、Unity / Host SDK、generated apply、完整 host save、Rollback / Trace Replay / Flashback、Presentation IR、Host Schema action policy 扩张或任何 Sinan / Unity / Bird hard dependency 进入 `src/Internal`。
+- 执行者每轮必须 Debug 自检、架构自检、验证通过后提交推送，再进入下一轮。
 
 ### 2026-06-22 Host Integration Package CLI Final Validation 快照
 
@@ -1924,12 +1934,13 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
 
 建议优先做小而闭环的任务，不要直接跳到大规模重构。
 
-1. 等待用户批准下一候选方向；不要自动开启新阶段。
+1. 执行 Host Integration Readiness Report Generator 阶段。
    - P5 Runtime authoring / productization 已 PASS，见 [SelfHostedEditor P5 Final Validation Report](self-hosted-editor-p5-final-validation-report.md)。
    - Host Integration Partner Readiness 已 PASS，见 [Host Integration Partner Readiness Final Validation Report](host-integration-partner-readiness-final-validation-report.md)。
    - Host Integration Package CLI 已 PASS，见 [Host Integration Package CLI Final Validation Report](host-integration-package-cli-final-validation-report.md)。
-   - 当前没有已批准的下一阶段 goal-mode execution guide；`DoNextGoal` 不应继续执行旧的 Host Integration Package CLI guide。
-   - 下一候选方向必须由用户重新批准。
+   - 下一阶段已批准为 [Host Integration Readiness Report Generator Goal 模式执行指南](host-integration-readiness-report-generator-goal-mode-execution-guide.md)，预算 5 轮会话。
+   - 目标是新增独立 package readiness report generator，并让 package export 复用同一个 shared Tooling report generator。
+   - 每轮必须 Debug 自检、架构自检、验证通过后提交推送，再进入下一轮。
    - 不要自动进入 Host Bridge Candidate Generator、Static Artifact POC partner handoff、POC-2 catalog projection、Sinan Runtime Integration、Runtime Preview Bridge、Unity / Host SDK、generated apply、完整 host save、Rollback / Trace Replay / Flashback、Presentation IR 或 Host Schema action policy 扩张。
 
 2. 继续推进 Stable Node ID / 本地化主线。
