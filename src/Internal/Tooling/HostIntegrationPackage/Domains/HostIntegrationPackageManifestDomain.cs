@@ -44,6 +44,20 @@ namespace Inscape.Tooling {
             return manifest;
         }
 
+        public static bool TrySetArtifactStatus(HostIntegrationPackageManifestModel manifest,
+                                                string path,
+                                                string status) {
+            string normalizedPath = HostIntegrationPackagePathDomain.NormalizeKnownArtifactPath(path);
+            for (int i = 0; i < manifest.Artifacts.Count; i += 1) {
+                if (manifest.Artifacts[i].Path == normalizedPath) {
+                    manifest.Artifacts[i].Status = status;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         static void AddArtifact(HostIntegrationPackageManifestModel manifest,
                                 string kind,
                                 string path,

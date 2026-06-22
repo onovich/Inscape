@@ -6,6 +6,8 @@ namespace Inscape.Tooling {
 
         public string OutputDirectoryPath { get; set; } = string.Empty;
 
+        public string? ConfiguredConfigPath { get; set; }
+
     }
 
     public sealed class HostIntegrationPackageExportResultModel {

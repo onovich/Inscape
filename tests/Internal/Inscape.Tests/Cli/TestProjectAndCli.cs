@@ -126,13 +126,19 @@ Narrator: Start.
             AssertEqual("", error.ToString().Trim(), "Host integration package help stderr");
             AssertTrue(text.Contains("export-host-integration-package-project"), "Help should include package command name.");
             AssertTrue(text.Contains("-o package-dir"), "Help should document required package output directory.");
-            AssertTrue(text.Contains("Round 2 writes the package manifest and artifact index"), "Help should state Round 2 manifest boundary.");
+            AssertTrue(text.Contains("Round 3 writes the manifest, graph, usage"), "Help should state Round 3 artifact assembly boundary.");
         }
 
         static void CliHostIntegrationPackageWritesManifest() {
             string directory = Path.Combine(Path.GetTempPath(), "inscape-cli-host-integration-package-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(directory);
             try {
+                File.WriteAllText(Path.Combine(directory, "story.inscape"), """
+# start
+@entry
+Narrator: Hello package.
+""", Encoding.UTF8);
+
                 (int ExitCode, string Stdout, string Stderr) missingOutput = RunCliForFailure(new[] { "export-host-integration-package-project", directory });
                 AssertEqual(2, missingOutput.ExitCode, "Package export without -o should be usage error.");
                 AssertEqual("", missingOutput.Stdout.Trim(), "Package export without -o should not write stdout.");
@@ -158,8 +164,12 @@ Narrator: Start.
                     JsonElement artifacts = root.GetProperty("artifacts");
                     AssertTrue(artifacts.GetArrayLength() >= 8, "Package manifest should contain artifact index.");
                     AssertTrue(ContainsPackageArtifactJson(artifacts, "manifest", "manifest.json", true, "ready"), "Package manifest should index manifest.json as ready.");
-                    AssertTrue(ContainsPackageArtifactJson(artifacts, "narrative-graph-ir", "graph/project-ir.json", true, "missing"), "Package manifest should index graph IR as missing.");
-                    AssertTrue(ContainsPackageArtifactJson(artifacts, "host-schema-capabilities", "host/host-schema-capabilities.json", false, "missing"), "Package manifest should index host schema capabilities as optional.");
+                    AssertTrue(ContainsPackageArtifactJson(artifacts, "narrative-graph-ir", "graph/project-ir.json", true, "ready"), "Package manifest should index graph IR as ready.");
+                    AssertTrue(ContainsPackageArtifactJson(artifacts, "usage-manifest", "usage/usage.json", true, "ready"), "Package manifest should index usage manifest as ready.");
+                    AssertTrue(ContainsPackageArtifactJson(artifacts, "host-schema-capabilities", "host/host-schema-capabilities.json", false, "ready"), "Package manifest should index host schema capabilities as ready.");
+                    AssertTrue(ContainsPackageArtifactJson(artifacts, "host-integration-audit", "host/host-integration-audit.json", true, "ready"), "Package manifest should index host integration audit as ready.");
+                    AssertTrue(ContainsPackageArtifactJson(artifacts, "localization-csv", "localization/l10n.csv", true, "ready"), "Package manifest should index localization CSV as ready.");
+                    AssertTrue(ContainsPackageArtifactJson(artifacts, "source-locations", "source-map/source-locations.json", true, "missing"), "Package manifest should leave source locations for Round 4.");
                     for (int i = 0; i < artifacts.GetArrayLength(); i += 1) {
                         string artifactPath = artifacts[i].GetProperty("path").GetString() ?? string.Empty;
                         AssertFalse(Path.IsPathRooted(artifactPath), "Package artifact path must be package-relative.");
@@ -168,12 +178,19 @@ Narrator: Start.
                     }
                 }
 
+                AssertPackageJsonFormat(Path.Combine(outputDirectory, "graph", "project-ir.json"), "inscape.project-ir", "Package graph artifact format");
+                AssertPackageJsonFormat(Path.Combine(outputDirectory, "usage", "usage.json"), "inscape.usage", "Package usage artifact format");
+                AssertPackageJsonFormat(Path.Combine(outputDirectory, "host", "host-schema-capabilities.json"), "inscape.host-schema.capabilities", "Package host schema artifact format");
+                AssertPackageJsonFormat(Path.Combine(outputDirectory, "host", "host-integration-audit.json"), "inscape.host-integration.audit", "Package host integration audit artifact format");
+                string localizationCsv = File.ReadAllText(Path.Combine(outputDirectory, "localization", "l10n.csv"), Encoding.UTF8);
+                AssertTrue(localizationCsv.Contains("anchor"), "Package localization CSV should contain header.");
+
                 string secondOutput = RunCliForOutput(new[] { "export-host-integration-package-project", directory, "-o", outputDirectory }).Trim();
                 string secondManifest = File.ReadAllText(manifestPath, Encoding.UTF8);
                 AssertEqual(output, secondOutput, "Repeated package export should print the same manifest path.");
                 AssertEqual(firstManifest, secondManifest, "Repeated package export should keep manifest bytes stable.");
 
-                File.WriteAllText(Path.Combine(outputDirectory, "unexpected.txt"), "outside package", Encoding.UTF8);
+                File.WriteAllText(Path.Combine(outputDirectory, "graph", "unexpected.json"), "outside package", Encoding.UTF8);
                 (int ExitCode, string Stdout, string Stderr) dirtyOutput = RunCliForFailure(new[] { "export-host-integration-package-project", directory, "-o", outputDirectory });
                 AssertEqual(2, dirtyOutput.ExitCode, "Package export should reject non-package output directory content.");
                 AssertEqual("", dirtyOutput.Stdout.Trim(), "Rejected package export should not write stdout.");
@@ -183,6 +200,12 @@ Narrator: Start.
                     Directory.Delete(directory, true);
                 }
             }
+        }
+
+        static void AssertPackageJsonFormat(string path, string expectedFormat, string message) {
+            AssertTrue(File.Exists(path), message + " exists");
+            using JsonDocument document = JsonDocument.Parse(File.ReadAllText(path, Encoding.UTF8));
+            AssertEqual(expectedFormat, document.RootElement.GetProperty("format").GetString(), message);
         }
 
         static bool ContainsPackageArtifactJson(JsonElement artifacts,

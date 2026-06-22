@@ -20,7 +20,7 @@ namespace Inscape.Cli {
             }
 
             if (command == "export-host-integration-package-project") {
-                return RunHostIntegrationPackageExport(rootPath, outputPath, jsonOptions);
+                return RunHostIntegrationPackageExport(rootPath, args, outputPath, jsonOptions);
             }
 
             if (command == "inspect-host-schema-project") {
@@ -709,11 +709,13 @@ namespace Inscape.Cli {
         }
 
         static int RunHostIntegrationPackageExport(string rootPath,
+                                                   string[] args,
                                                    string? outputPath,
                                                    JsonSerializerOptions jsonOptions) {
             HostIntegrationPackageExportRequestModel request = new HostIntegrationPackageExportRequestModel {
                 WorkspaceRootPath = rootPath,
                 OutputDirectoryPath = outputPath ?? string.Empty,
+                ConfiguredConfigPath = CliCore.ReadOption(args, "--config"),
             };
 
             if (!HostIntegrationPackageExportDomain.TryWriteManifest(request,

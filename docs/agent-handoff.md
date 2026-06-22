@@ -1,6 +1,6 @@
 # Agent 接手指南
 
-状态：P5 SelfHostedEditor Runtime authoring / productization 已通过 final validation；Host Integration Partner Readiness 已完成 final validation；Host Integration Package CLI Round 2 已完成
+状态：P5 SelfHostedEditor Runtime authoring / productization 已通过 final validation；Host Integration Partner Readiness 已完成 final validation；Host Integration Package CLI Round 3 已完成
 
 最后更新：2026-06-22
 
@@ -8,15 +8,16 @@
 
 ## 当前项目快照
 
-### 2026-06-22 Host Integration Package CLI Round 2 快照
+### 2026-06-22 Host Integration Package CLI Round 3 快照
 
-Host Integration Package CLI 已完成 Round 2 Package Domain / Manifest Writer。
-- Round 1 审计见 [Host Integration Package CLI Baseline Audit](host-integration-package-cli-baseline-audit.md)；Round 2 审计见 [Host Integration Package CLI Manifest Audit](host-integration-package-cli-manifest-audit.md)。
-- `export-host-integration-package-project <workspace> -o <out-dir>` 现在会在 `Inscape.Tooling` shared domain 写出 `manifest.json`，CLI 入口只保留参数解析、调用、stdout/stderr 与退出码映射。
-- manifest 包含稳定 artifact index 和 package-relative path guard；`runtimeIntegration`、`previewBridge`、`writesHostData`、`containsHostDependency` 均固定为 `false`。
-- 输出目录不存在时创建；空目录或仅包含 package-owned `manifest.json` 时允许重复写入；存在其他文件或目录时拒绝。
-- 本轮没有装配 graph、usage、host schema capabilities、host integration audit、l10n、source-map、anchor-map、readiness report，也没有实现 Host Bridge candidate generator、generated apply、Sinan Runtime Integration、Runtime Preview Bridge、Unity / Host SDK、完整 host save、Rollback / Trace Replay / Flashback、Presentation IR 或 Host Schema action policy 扩张。
-- 下一轮进入 Round 3：Existing Artifact Assembly。应复用既有 `compile-project` / `inspect-usage-project` / `inspect-host-schema-project` / `audit-host-integration-project` / `extract-l10n-project` 生产逻辑，把 artifact 写入 package 目录并更新 manifest status；仍禁止 Host Bridge candidate generator / runtime / host save / policy 扩张。
+Host Integration Package CLI 已完成 Round 3 Existing Artifact Assembly。
+- Round 1 审计见 [Host Integration Package CLI Baseline Audit](host-integration-package-cli-baseline-audit.md)；Round 2 审计见 [Host Integration Package CLI Manifest Audit](host-integration-package-cli-manifest-audit.md)；Round 3 审计见 [Host Integration Package CLI Artifact Assembly Audit](host-integration-package-cli-artifact-assembly-audit.md)。
+- `export-host-integration-package-project <workspace> -o <out-dir>` 现在会写出 `manifest.json`、`graph/project-ir.json`、`usage/usage.json`、`host/host-schema-capabilities.json`、`host/host-integration-audit.json` 和 `localization/l10n.csv`。
+- artifact assembly 位于 `Inscape.Tooling`，直接复用 compiler / Tooling shared domains；CLI 入口只传 workspace、`--config`、`-o` 并映射 stdout/stderr/exit code。
+- manifest 会把上述核心 artifact 标记为 `ready`；`source/`、`localization/anchor-map.json`、`source-map/source-locations.json` 和 `reports/readiness-report.json` 仍为 `missing`。
+- 输出目录递归拒绝非 package-owned 文件，允许重复写入当前 Round 3 产物。
+- 本轮没有复制 source、生成 source-map / anchor-map / readiness report，也没有实现 Host Bridge candidate generator、generated apply、Sinan Runtime Integration、Runtime Preview Bridge、Unity / Host SDK、完整 host save、Rollback / Trace Replay / Flashback、Presentation IR 或 Host Schema action policy 扩张。
+- 下一轮进入 Round 4：Source Copy / Source Map / Anchor Map / Minimal Report。
 
 ### 2026-06-22 Host Integration Package CLI Goal Guide 快照
 
