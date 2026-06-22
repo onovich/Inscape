@@ -126,7 +126,7 @@ Narrator: Start.
             AssertEqual("", error.ToString().Trim(), "Host integration package help stderr");
             AssertTrue(text.Contains("export-host-integration-package-project"), "Help should include package command name.");
             AssertTrue(text.Contains("-o package-dir"), "Help should document required package output directory.");
-            AssertTrue(text.Contains("Round 3 writes the manifest, graph, usage"), "Help should state Round 3 artifact assembly boundary.");
+            AssertTrue(text.Contains("Round 4 writes the manifest, copied source files"), "Help should state Round 4 package assembly boundary.");
         }
 
         static void CliHostIntegrationPackageWritesManifest() {
@@ -169,7 +169,10 @@ Narrator: Hello package.
                     AssertTrue(ContainsPackageArtifactJson(artifacts, "host-schema-capabilities", "host/host-schema-capabilities.json", false, "ready"), "Package manifest should index host schema capabilities as ready.");
                     AssertTrue(ContainsPackageArtifactJson(artifacts, "host-integration-audit", "host/host-integration-audit.json", true, "ready"), "Package manifest should index host integration audit as ready.");
                     AssertTrue(ContainsPackageArtifactJson(artifacts, "localization-csv", "localization/l10n.csv", true, "ready"), "Package manifest should index localization CSV as ready.");
-                    AssertTrue(ContainsPackageArtifactJson(artifacts, "source-locations", "source-map/source-locations.json", true, "missing"), "Package manifest should leave source locations for Round 4.");
+                    AssertTrue(ContainsPackageArtifactJson(artifacts, "source-files", "source", true, "ready"), "Package manifest should index source files as ready.");
+                    AssertTrue(ContainsPackageArtifactJson(artifacts, "source-locations", "source-map/source-locations.json", true, "ready"), "Package manifest should index source locations as ready.");
+                    AssertTrue(ContainsPackageArtifactJson(artifacts, "localization-anchor-map", "localization/anchor-map.json", true, "ready"), "Package manifest should index localization anchor map as ready.");
+                    AssertTrue(ContainsPackageArtifactJson(artifacts, "readiness-report", "reports/readiness-report.json", false, "ready"), "Package manifest should index readiness report as ready.");
                     for (int i = 0; i < artifacts.GetArrayLength(); i += 1) {
                         string artifactPath = artifacts[i].GetProperty("path").GetString() ?? string.Empty;
                         AssertFalse(Path.IsPathRooted(artifactPath), "Package artifact path must be package-relative.");
@@ -184,6 +187,14 @@ Narrator: Hello package.
                 AssertPackageJsonFormat(Path.Combine(outputDirectory, "host", "host-integration-audit.json"), "inscape.host-integration.audit", "Package host integration audit artifact format");
                 string localizationCsv = File.ReadAllText(Path.Combine(outputDirectory, "localization", "l10n.csv"), Encoding.UTF8);
                 AssertTrue(localizationCsv.Contains("anchor"), "Package localization CSV should contain header.");
+                AssertTrue(localizationCsv.Contains("source/story.inscape"), "Package localization CSV should use package source paths.");
+                AssertTrue(File.Exists(Path.Combine(outputDirectory, "source", "story.inscape")), "Package export should copy source files.");
+                AssertPackageJsonFormat(Path.Combine(outputDirectory, "source-map", "source-locations.json"), "inscape.source-locations", "Package source map artifact format");
+                AssertPackageJsonFormat(Path.Combine(outputDirectory, "localization", "anchor-map.json"), "inscape.localization-anchor-map", "Package anchor map artifact format");
+                AssertPackageJsonFormat(Path.Combine(outputDirectory, "reports", "readiness-report.json"), "inscape.host-integration.readiness-report", "Package readiness report artifact format");
+                AssertPackageSourceMap(Path.Combine(outputDirectory, "source-map", "source-locations.json"));
+                AssertPackageAnchorMap(Path.Combine(outputDirectory, "localization", "anchor-map.json"));
+                AssertPackageReadinessReport(Path.Combine(outputDirectory, "reports", "readiness-report.json"));
 
                 string secondOutput = RunCliForOutput(new[] { "export-host-integration-package-project", directory, "-o", outputDirectory }).Trim();
                 string secondManifest = File.ReadAllText(manifestPath, Encoding.UTF8);
@@ -206,6 +217,40 @@ Narrator: Hello package.
             AssertTrue(File.Exists(path), message + " exists");
             using JsonDocument document = JsonDocument.Parse(File.ReadAllText(path, Encoding.UTF8));
             AssertEqual(expectedFormat, document.RootElement.GetProperty("format").GetString(), message);
+        }
+
+        static void AssertPackageSourceMap(string path) {
+            using JsonDocument document = JsonDocument.Parse(File.ReadAllText(path, Encoding.UTF8));
+            JsonElement root = document.RootElement;
+            AssertEqual("compiler-1-based", root.GetProperty("coordinateSystem").GetString(), "Package source map coordinate system");
+            AssertTrue(root.GetProperty("sources").GetArrayLength() > 0, "Package source map should contain sources.");
+            AssertEqual("source/story.inscape", root.GetProperty("sources")[0].GetProperty("path").GetString(), "Package source map source path");
+            AssertTrue(root.GetProperty("locations").GetArrayLength() > 0, "Package source map should contain locations.");
+            AssertEqual("packaged", root.GetProperty("sources")[0].GetProperty("availability").GetString(), "Package source map source availability");
+        }
+
+        static void AssertPackageAnchorMap(string path) {
+            using JsonDocument document = JsonDocument.Parse(File.ReadAllText(path, Encoding.UTF8));
+            JsonElement root = document.RootElement;
+            AssertEqual("localization/l10n.csv", root.GetProperty("csv").GetString(), "Package anchor map csv path");
+            AssertTrue(root.GetProperty("entries").GetArrayLength() > 0, "Package anchor map should contain entries.");
+            JsonElement firstEntry = root.GetProperty("entries")[0];
+            AssertEqual("source/story.inscape", firstEntry.GetProperty("source").GetProperty("path").GetString(), "Package anchor map source path");
+            AssertEqual("graph/project-ir.json", firstEntry.GetProperty("graphRef").GetProperty("artifact").GetString(), "Package anchor map graph artifact path");
+            AssertEqual("missing", firstEntry.GetProperty("lineIdentity").GetProperty("status").GetString(), "Package anchor map line identity status");
+        }
+
+        static void AssertPackageReadinessReport(string path) {
+            using JsonDocument document = JsonDocument.Parse(File.ReadAllText(path, Encoding.UTF8));
+            JsonElement root = document.RootElement;
+            AssertEqual("ready", root.GetProperty("summary").GetProperty("result").GetString(), "Package readiness report result");
+            AssertEqual(10, root.GetProperty("summary").GetProperty("artifactCount").GetInt32(), "Package readiness report artifact count");
+            AssertEqual(10, root.GetProperty("summary").GetProperty("readyCount").GetInt32(), "Package readiness report ready count");
+            AssertFalse(root.GetProperty("summary").GetProperty("writesHostData").GetBoolean(), "Package readiness report writesHostData");
+            AssertFalse(root.GetProperty("boundary").GetProperty("runtimeIntegration").GetBoolean(), "Package readiness runtime boundary");
+            AssertFalse(root.GetProperty("boundary").GetProperty("previewBridge").GetBoolean(), "Package readiness preview boundary");
+            AssertFalse(root.GetProperty("boundary").GetProperty("writesHostData").GetBoolean(), "Package readiness write boundary");
+            AssertTrue(root.GetProperty("artifactChecks").GetArrayLength() >= 8, "Package readiness report should include artifact checks.");
         }
 
         static bool ContainsPackageArtifactJson(JsonElement artifacts,

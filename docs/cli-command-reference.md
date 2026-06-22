@@ -72,9 +72,9 @@ dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- audit-ho
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- export-host-integration-package-project samples -o artifacts\host-integration-package-smoke
 ```
 
-Round 3 状态：命令已进入 `commands` / `help`，并通过 `Inscape.Tooling` shared domain 写出 package `manifest.json`、`graph/project-ir.json`、`usage/usage.json`、`host/host-schema-capabilities.json`、`host/host-integration-audit.json` 与 `localization/l10n.csv`。后续 Round 4-5 继续装配 source copy、source-map、anchor-map 与 readiness report。
+Round 4 状态：命令已进入 `commands` / `help`，并通过 `Inscape.Tooling` shared domain 写出 package `manifest.json`、`source/`、`graph/project-ir.json`、`usage/usage.json`、`host/host-schema-capabilities.json`、`host/host-integration-audit.json`、`localization/l10n.csv`、`localization/anchor-map.json`、`source-map/source-locations.json` 与 `reports/readiness-report.json`。后续 Round 5 继续补 package smoke、determinism 与 docs 收口。
 
-目标 package 结构见 [Host Integration Package Contract](host-integration-package-contract.md)、[Host Integration Package CLI Baseline Audit](host-integration-package-cli-baseline-audit.md)、[Host Integration Package CLI Manifest Audit](host-integration-package-cli-manifest-audit.md) 和 [Host Integration Package CLI Artifact Assembly Audit](host-integration-package-cli-artifact-assembly-audit.md)。本命令不得实现 Host Bridge candidate generator、generated apply、Sinan Runtime Integration、Runtime Preview Bridge、Unity / Host SDK、完整 host save、Rollback / Trace Replay / Flashback、Presentation IR 或 Host Schema action policy 扩张。
+目标 package 结构见 [Host Integration Package Contract](host-integration-package-contract.md)、[Host Integration Package CLI Baseline Audit](host-integration-package-cli-baseline-audit.md)、[Host Integration Package CLI Manifest Audit](host-integration-package-cli-manifest-audit.md)、[Host Integration Package CLI Artifact Assembly Audit](host-integration-package-cli-artifact-assembly-audit.md) 和 [Host Integration Package CLI Source Map Report Audit](host-integration-package-cli-source-map-report-audit.md)。本命令不得实现 Host Bridge candidate generator、generated apply、Sinan Runtime Integration、Runtime Preview Bridge、Unity / Host SDK、完整 host save、Rollback / Trace Replay / Flashback、Presentation IR 或 Host Schema action policy 扩张。
 
 ## 单文件命令
 

@@ -2,6 +2,8 @@ using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using Inscape.Compiler.Compilation;
+using Inscape.Compiler.Localization;
+using Inscape.Compiler.Model;
 
 namespace Inscape.Tooling {
 
@@ -13,6 +15,10 @@ namespace Inscape.Tooling {
         const string HostSchemaCapabilitiesPath = "host/host-schema-capabilities.json";
         const string HostIntegrationAuditPath = "host/host-integration-audit.json";
         const string LocalizationCsvPath = "localization/l10n.csv";
+        const string SourceRootPath = "source";
+        const string SourceLocationsPath = "source-map/source-locations.json";
+        const string LocalizationAnchorMapPath = "localization/anchor-map.json";
+        const string ReadinessReportPath = "reports/readiness-report.json";
 
         public static bool TryWriteManifest(HostIntegrationPackageExportRequestModel request,
                                             JsonSerializerOptions jsonOptions,
@@ -42,25 +48,29 @@ namespace Inscape.Tooling {
                 return false;
             }
 
+            if (!TryCreateAssemblyContext(request,
+                                          jsonOptions,
+                                          out HostIntegrationPackageAssemblyContext context,
+                                          out errorMessage,
+                                          out exitCode)) {
+                return false;
+            }
+
             string manifestPath = Path.Combine(fullOutputPath, ManifestFileName);
             string createdAtUtc = ResolveCreatedAtUtc(manifestPath, jsonOptions);
             HostIntegrationPackageManifestModel manifest = HostIntegrationPackageManifestDomain.Create(request.WorkspaceRootPath,
                                                                                                       createdAtUtc);
-            HashSet<string> writableArtifactPaths = CreateWritableArtifactPathSet();
+            HashSet<string> writableArtifactPaths = CreateWritableArtifactPathSet(context);
             if (!EnsureWritablePackageDirectory(fullOutputPath, writableArtifactPaths, out errorMessage)) {
                 exitCode = 2;
                 return false;
             }
 
-            if (!TryAssembleCoreArtifacts(request,
-                                          fullOutputPath,
-                                          jsonOptions,
-                                          manifest,
-                                          out List<string> writtenArtifacts,
-                                          out errorMessage,
-                                          out exitCode)) {
-                return false;
-            }
+            List<string> writtenArtifacts = WritePackageArtifacts(context,
+                                                                  fullOutputPath,
+                                                                  jsonOptions,
+                                                                  manifest,
+                                                                  createdAtUtc);
 
             string json = JsonSerializer.Serialize(manifest, jsonOptions);
             File.WriteAllText(manifestPath, json + Environment.NewLine, new UTF8Encoding(false));
@@ -75,14 +85,12 @@ namespace Inscape.Tooling {
             return true;
         }
 
-        static bool TryAssembleCoreArtifacts(HostIntegrationPackageExportRequestModel request,
-                                             string fullOutputPath,
+        static bool TryCreateAssemblyContext(HostIntegrationPackageExportRequestModel request,
                                              JsonSerializerOptions jsonOptions,
-                                             HostIntegrationPackageManifestModel manifest,
-                                             out List<string> writtenArtifacts,
+                                             out HostIntegrationPackageAssemblyContext context,
                                              out string? errorMessage,
                                              out int exitCode) {
-            writtenArtifacts = new List<string>();
+            context = new HostIntegrationPackageAssemblyContext();
             errorMessage = null;
             exitCode = 0;
 
@@ -102,39 +110,100 @@ namespace Inscape.Tooling {
                 return false;
             }
 
-            string fullWorkspacePath = Path.GetFullPath(request.WorkspaceRootPath);
+            context.WorkspaceRootPath = Path.GetFullPath(request.WorkspaceRootPath);
+            context.ConfiguredConfigPath = request.ConfiguredConfigPath;
+            context.Config = config;
+            context.Sources = sources;
+
             StoryGraphCompilerDomain compiler = new StoryGraphCompilerDomain();
-            StoryGraphCompilationResultModel compilation = compiler.Compile(sources, fullWorkspacePath);
-            HostIntegrationPackageProjectIrArtifactModel projectIr = CreateProjectIrArtifact(compilation);
-            WriteJsonArtifact(fullOutputPath, ProjectIrPath, projectIr, jsonOptions, manifest, writtenArtifacts);
+            context.Compilation = compiler.Compile(sources, context.WorkspaceRootPath);
 
-            HostSchemaCapabilityCatalogModel hostSchemaCatalog = HostSchemaCapabilityCatalogDomain.Read(request.WorkspaceRootPath,
-                                                                                                       config.HostSchema,
-                                                                                                       jsonOptions);
-            WriteJsonArtifact(fullOutputPath, HostSchemaCapabilitiesPath, hostSchemaCatalog, jsonOptions, manifest, writtenArtifacts);
+            context.HostSchemaCatalog = HostSchemaCapabilityCatalogDomain.Read(request.WorkspaceRootPath,
+                                                                               config.HostSchema,
+                                                                               jsonOptions);
 
-            UsageManifestModel usage = UsageManifestDomain.Inspect(request.WorkspaceRootPath,
-                                                                   request.ConfiguredConfigPath,
-                                                                   sources,
-                                                                   hostSchemaCatalog);
-            WriteJsonArtifact(fullOutputPath, UsageManifestPath, usage, jsonOptions, manifest, writtenArtifacts);
+            context.Usage = UsageManifestDomain.Inspect(request.WorkspaceRootPath,
+                                                        request.ConfiguredConfigPath,
+                                                        sources,
+                                                        context.HostSchemaCatalog);
 
-            HostBindingCapabilityCatalogModel hostBindingCatalog = HostBindingCapabilityCatalogDomain.Read(request.WorkspaceRootPath,
-                                                                                                           config.HostBridge,
-                                                                                                           sources);
-            HostIntegrationAuditModel audit = HostIntegrationAuditDomain.Audit(request.WorkspaceRootPath,
-                                                                              request.ConfiguredConfigPath,
-                                                                              usage,
-                                                                              hostSchemaCatalog,
-                                                                              hostBindingCatalog);
-            WriteJsonArtifact(fullOutputPath, HostIntegrationAuditPath, audit, jsonOptions, manifest, writtenArtifacts);
+            context.HostBindingCatalog = HostBindingCapabilityCatalogDomain.Read(request.WorkspaceRootPath,
+                                                                                 config.HostBridge,
+                                                                                 sources);
+            context.Audit = HostIntegrationAuditDomain.Audit(request.WorkspaceRootPath,
+                                                             request.ConfiguredConfigPath,
+                                                             context.Usage,
+                                                             context.HostSchemaCatalog,
+                                                             context.HostBindingCatalog);
 
-            WriteTextArtifact(fullOutputPath,
-                              LocalizationCsvPath,
-                              LocalizationCsvFlowDomain.Extract(compilation.Graph),
+            LocalizationExtractorDomain localizationExtractor = new LocalizationExtractorDomain();
+            context.LocalizationEntries = localizationExtractor.Extract(context.Compilation.Graph);
+            context.PackagedLocalizationEntries = CreatePackagedLocalizationEntries(context);
+            return true;
+        }
+
+        static List<string> WritePackageArtifacts(HostIntegrationPackageAssemblyContext context,
+                                                  string fullOutputPath,
+                                                  JsonSerializerOptions jsonOptions,
+                                                  HostIntegrationPackageManifestModel manifest,
+                                                  string createdAtUtc) {
+            List<string> writtenArtifacts = new List<string>();
+
+            WriteJsonArtifact(fullOutputPath,
+                              ProjectIrPath,
+                              CreateProjectIrArtifact(context.Compilation),
+                              jsonOptions,
                               manifest,
                               writtenArtifacts);
-            return true;
+            WriteJsonArtifact(fullOutputPath,
+                              HostSchemaCapabilitiesPath,
+                              context.HostSchemaCatalog,
+                              jsonOptions,
+                              manifest,
+                              writtenArtifacts);
+            WriteJsonArtifact(fullOutputPath,
+                              UsageManifestPath,
+                              context.Usage,
+                              jsonOptions,
+                              manifest,
+                              writtenArtifacts);
+            WriteJsonArtifact(fullOutputPath,
+                              HostIntegrationAuditPath,
+                              context.Audit,
+                              jsonOptions,
+                              manifest,
+                              writtenArtifacts);
+
+            LocalizationCsvWriterDomain localizationCsvWriter = new LocalizationCsvWriterDomain();
+            WriteTextArtifact(fullOutputPath,
+                              LocalizationCsvPath,
+                              localizationCsvWriter.Write(context.PackagedLocalizationEntries),
+                              manifest,
+                              writtenArtifacts);
+
+            WriteSourceArtifacts(context, fullOutputPath, manifest, writtenArtifacts);
+            HostIntegrationPackageSourceLocationsModel sourceLocations = CreateSourceLocations(context);
+            WriteJsonArtifact(fullOutputPath,
+                              SourceLocationsPath,
+                              sourceLocations,
+                              jsonOptions,
+                              manifest,
+                              writtenArtifacts);
+            WriteJsonArtifact(fullOutputPath,
+                              LocalizationAnchorMapPath,
+                              CreateLocalizationAnchorMap(context),
+                              jsonOptions,
+                              manifest,
+                              writtenArtifacts);
+
+            HostIntegrationPackageManifestDomain.TrySetArtifactStatus(manifest, ReadinessReportPath, "ready");
+            WriteJsonArtifact(fullOutputPath,
+                              ReadinessReportPath,
+                              CreateReadinessReport(manifest, createdAtUtc),
+                              jsonOptions,
+                              manifest,
+                              writtenArtifacts);
+            return writtenArtifacts;
         }
 
         static HostIntegrationPackageProjectIrArtifactModel CreateProjectIrArtifact(StoryGraphCompilationResultModel result) {
@@ -148,6 +217,262 @@ namespace Inscape.Tooling {
                 Diagnostics = result.Diagnostics,
                 HasErrors = result.HasErrors,
             };
+        }
+
+        static List<LocalizationEntryModel> CreatePackagedLocalizationEntries(HostIntegrationPackageAssemblyContext context) {
+            List<LocalizationEntryModel> entries = new List<LocalizationEntryModel>();
+            for (int i = 0; i < context.LocalizationEntries.Count; i += 1) {
+                LocalizationEntryModel entry = context.LocalizationEntries[i];
+                entries.Add(new LocalizationEntryModel {
+                    Anchor = entry.Anchor,
+                    NodeName = entry.NodeName,
+                    Kind = entry.Kind,
+                    Speaker = entry.Speaker,
+                    Text = entry.Text,
+                    Translation = entry.Translation,
+                    Status = entry.Status,
+                    Source = new SourceSpanModel(CreatePackageSourcePath(context, entry.Source.SourcePath),
+                                                 entry.Source.Line,
+                                                 entry.Source.Column),
+                });
+            }
+
+            return entries;
+        }
+
+        static void WriteSourceArtifacts(HostIntegrationPackageAssemblyContext context,
+                                         string fullOutputPath,
+                                         HostIntegrationPackageManifestModel manifest,
+                                         List<string> writtenArtifacts) {
+            for (int i = 0; i < context.Sources.Count; i += 1) {
+                DslScriptSourceModel source = context.Sources[i];
+                string packagePath = CreatePackageSourcePath(context, source.SourcePath);
+                string artifactPath = ResolvePackageFilePath(fullOutputPath, packagePath);
+                Directory.CreateDirectory(Path.GetDirectoryName(artifactPath) ?? fullOutputPath);
+                File.WriteAllText(artifactPath, source.Source, new UTF8Encoding(false));
+                writtenArtifacts.Add(packagePath);
+            }
+
+            HostIntegrationPackageManifestDomain.TrySetArtifactStatus(manifest, SourceRootPath, "ready");
+        }
+
+        static HostIntegrationPackageSourceLocationsModel CreateSourceLocations(HostIntegrationPackageAssemblyContext context) {
+            HostIntegrationPackageSourceLocationsModel model = new HostIntegrationPackageSourceLocationsModel();
+            Dictionary<string, string> sourceIdsByFullPath = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            for (int i = 0; i < context.Sources.Count; i += 1) {
+                DslScriptSourceModel source = context.Sources[i];
+                string id = CreateSequentialId("src", model.Sources.Count + 1);
+                string fullSourcePath = Path.GetFullPath(source.SourcePath);
+                sourceIdsByFullPath[fullSourcePath] = id;
+                model.Sources.Add(new HostIntegrationPackageSourceLocationSourceModel {
+                    Id = id,
+                    Path = CreatePackageSourcePath(context, source.SourcePath),
+                    WorkspacePath = CreateWorkspaceRelativePath(context.WorkspaceRootPath, source.SourcePath),
+                    Availability = "packaged",
+                });
+            }
+
+            for (int nodeIndex = 0; nodeIndex < context.Compilation.Graph.Nodes.Count; nodeIndex += 1) {
+                StoryGraphNodeModel node = context.Compilation.Graph.Nodes[nodeIndex];
+                AddSourceLocation(model,
+                                  sourceIdsByFullPath,
+                                  context,
+                                  node.Source,
+                                  "graph-node",
+                                  "narrative-graph-ir",
+                                  ProjectIrPath,
+                                  null,
+                                  "graph.nodes[" + nodeIndex.ToString(CultureInfo.InvariantCulture) + "]",
+                                  Math.Max(node.Name.Length, 1));
+            }
+
+            for (int entryIndex = 0; entryIndex < context.LocalizationEntries.Count; entryIndex += 1) {
+                LocalizationEntryModel entry = context.LocalizationEntries[entryIndex];
+                AddSourceLocation(model,
+                                  sourceIdsByFullPath,
+                                  context,
+                                  entry.Source,
+                                  "localization-row",
+                                  "localization-csv",
+                                  LocalizationCsvPath,
+                                  entry.Anchor,
+                                  null,
+                                  Math.Max(entry.Text.Length, 1));
+            }
+
+            return model;
+        }
+
+        static void AddSourceLocation(HostIntegrationPackageSourceLocationsModel model,
+                                      Dictionary<string, string> sourceIdsByFullPath,
+                                      HostIntegrationPackageAssemblyContext context,
+                                      SourceSpanModel source,
+                                      string role,
+                                      string artifactKind,
+                                      string artifactPath,
+                                      string? rowKey,
+                                      string? objectPath,
+                                      int length) {
+            if (string.IsNullOrWhiteSpace(source.SourcePath) || source.Line <= 0 || source.Column <= 0) {
+                return;
+            }
+
+            string sourceId = ResolveSourceId(model, sourceIdsByFullPath, context, source.SourcePath);
+            model.Locations.Add(new HostIntegrationPackageSourceLocationModel {
+                Id = CreateSequentialId("loc", model.Locations.Count + 1),
+                SourceId = sourceId,
+                Line = source.Line,
+                Column = source.Column,
+                Length = Math.Max(length, 1),
+                Role = role,
+                Artifact = new HostIntegrationPackageSourceLocationArtifactModel {
+                    Kind = artifactKind,
+                    Path = HostIntegrationPackagePathDomain.NormalizeKnownArtifactPath(artifactPath),
+                    RowKey = rowKey,
+                    ObjectPath = objectPath,
+                },
+            });
+        }
+
+        static string ResolveSourceId(HostIntegrationPackageSourceLocationsModel model,
+                                      Dictionary<string, string> sourceIdsByFullPath,
+                                      HostIntegrationPackageAssemblyContext context,
+                                      string sourcePath) {
+            string fullSourcePath = Path.GetFullPath(sourcePath);
+            if (sourceIdsByFullPath.TryGetValue(fullSourcePath, out string? sourceId)) {
+                return sourceId;
+            }
+
+            string id = CreateSequentialId("src", model.Sources.Count + 1);
+            sourceIdsByFullPath[fullSourcePath] = id;
+            model.Sources.Add(new HostIntegrationPackageSourceLocationSourceModel {
+                Id = id,
+                Path = CreatePackageSourcePath(context, sourcePath),
+                WorkspacePath = CreateWorkspaceRelativePath(context.WorkspaceRootPath, sourcePath),
+                Availability = "packaged",
+            });
+            return id;
+        }
+
+        static HostIntegrationPackageLocalizationAnchorMapModel CreateLocalizationAnchorMap(HostIntegrationPackageAssemblyContext context) {
+            HostIntegrationPackageLocalizationAnchorMapModel model = new HostIntegrationPackageLocalizationAnchorMapModel {
+                Csv = LocalizationCsvPath,
+            };
+
+            for (int i = 0; i < context.PackagedLocalizationEntries.Count; i += 1) {
+                LocalizationEntryModel entry = context.PackagedLocalizationEntries[i];
+                model.Entries.Add(new HostIntegrationPackageLocalizationAnchorEntryModel {
+                    Anchor = entry.Anchor,
+                    NodeTitle = entry.NodeName,
+                    Kind = entry.Kind,
+                    Speaker = entry.Speaker,
+                    Text = entry.Text,
+                    Source = new HostIntegrationPackageSourceRefModel {
+                        Path = entry.Source.SourcePath,
+                        Line = entry.Source.Line,
+                        Column = entry.Source.Column,
+                        CoordinateSystem = "compiler-1-based",
+                    },
+                    GraphRef = new HostIntegrationPackageLocalizationGraphRefModel {
+                        Artifact = ProjectIrPath,
+                        NodeName = entry.NodeName,
+                        LineAnchor = entry.Anchor,
+                    },
+                    LineIdentity = new HostIntegrationPackageLocalizationLineIdentityModel {
+                        Status = "missing",
+                    },
+                    PartnerRefs = new List<object>(),
+                });
+            }
+
+            return model;
+        }
+
+        static HostIntegrationPackageReadinessReportModel CreateReadinessReport(HostIntegrationPackageManifestModel manifest,
+                                                                               string createdAtUtc) {
+            HostIntegrationPackageReadinessReportModel report = new HostIntegrationPackageReadinessReportModel {
+                CreatedAtUtc = createdAtUtc,
+                Profile = new HostIntegrationPackageReadinessProfileModel {
+                    Kind = "partner-profile",
+                    Partner = string.IsNullOrWhiteSpace(manifest.Profile.Partner) ? "generic" : manifest.Profile.Partner!,
+                    Purpose = manifest.Profile.Purpose,
+                },
+                Package = new HostIntegrationPackageReadinessPackageModel {
+                    Manifest = ManifestFileName,
+                    FixtureSet = "host-integration-package-cli",
+                },
+                Boundary = new HostIntegrationPackageCapabilitiesModel {
+                    RuntimeIntegration = manifest.Capabilities.RuntimeIntegration,
+                    PreviewBridge = manifest.Capabilities.PreviewBridge,
+                    WritesHostData = manifest.Capabilities.WritesHostData,
+                    ContainsHostDependency = manifest.Capabilities.ContainsHostDependency,
+                },
+                HostBridgeCandidate = new HostIntegrationPackageReadinessHostBridgeCandidateModel {
+                    Path = "host/host-bridge-candidate.json",
+                    Status = "missing",
+                    CandidateCount = 0,
+                    WritesHostData = false,
+                },
+            };
+
+            for (int i = 0; i < manifest.Artifacts.Count; i += 1) {
+                HostIntegrationPackageArtifactModel artifact = manifest.Artifacts[i];
+                report.ArtifactChecks.Add(new HostIntegrationPackageReadinessArtifactCheckModel {
+                    Kind = artifact.Kind,
+                    Path = artifact.Path,
+                    Required = artifact.Required,
+                    Status = artifact.Status,
+                    Format = artifact.Format,
+                    FormatVersion = artifact.FormatVersion,
+                });
+            }
+
+            FinalizeReadinessSummary(report);
+            return report;
+        }
+
+        static void FinalizeReadinessSummary(HostIntegrationPackageReadinessReportModel report) {
+            report.Summary.ArtifactCount = report.ArtifactChecks.Count;
+            report.Summary.WritesHostData = false;
+
+            for (int i = 0; i < report.ArtifactChecks.Count; i += 1) {
+                HostIntegrationPackageReadinessArtifactCheckModel artifact = report.ArtifactChecks[i];
+                if (artifact.Status == "ready") {
+                    report.Summary.ReadyCount += 1;
+                } else if (artifact.Status == "missing") {
+                    report.Summary.MissingCount += 1;
+                } else if (artifact.Status == "invalid") {
+                    report.Summary.InvalidCount += 1;
+                } else if (artifact.Status == "unsupported") {
+                    report.Summary.UnsupportedCount += 1;
+                } else if (artifact.Status == "blocked") {
+                    report.Summary.BlockedCount += 1;
+                }
+            }
+
+            if (report.Summary.InvalidCount > 0) {
+                report.Summary.Result = "invalid";
+            } else if (HasMissingRequiredArtifact(report)) {
+                report.Summary.Result = "missing";
+            } else if (report.Summary.BlockedCount > 0) {
+                report.Summary.Result = "blocked";
+            } else if (report.Summary.UnsupportedCount > 0) {
+                report.Summary.Result = "unsupported";
+            } else {
+                report.Summary.Result = "ready";
+            }
+        }
+
+        static bool HasMissingRequiredArtifact(HostIntegrationPackageReadinessReportModel report) {
+            for (int i = 0; i < report.ArtifactChecks.Count; i += 1) {
+                HostIntegrationPackageReadinessArtifactCheckModel artifact = report.ArtifactChecks[i];
+                if (artifact.Required && artifact.Status == "missing") {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         static void WriteJsonArtifact(string fullOutputPath,
@@ -188,6 +513,25 @@ namespace Inscape.Tooling {
             }
 
             return candidate;
+        }
+
+        static string CreatePackageSourcePath(HostIntegrationPackageAssemblyContext context, string sourcePath) {
+            return HostIntegrationPackagePathDomain.NormalizeKnownArtifactPath(SourceRootPath + "/" + CreateWorkspaceRelativePath(context.WorkspaceRootPath, sourcePath));
+        }
+
+        static string CreateWorkspaceRelativePath(string workspaceRootPath, string sourcePath) {
+            string fullWorkspacePath = Path.GetFullPath(workspaceRootPath);
+            string fullSourcePath = Path.GetFullPath(sourcePath);
+            string relativePath = Path.GetRelativePath(fullWorkspacePath, fullSourcePath);
+            if (relativePath.StartsWith("..", StringComparison.Ordinal) || Path.IsPathRooted(relativePath)) {
+                relativePath = Path.GetFileName(fullSourcePath);
+            }
+
+            return HostIntegrationPackagePathDomain.NormalizeKnownArtifactPath(relativePath);
+        }
+
+        static string CreateSequentialId(string prefix, int value) {
+            return prefix + "_" + value.ToString("000", CultureInfo.InvariantCulture);
         }
 
         static bool EnsureWritablePackageDirectory(string fullOutputPath,
@@ -236,15 +580,24 @@ namespace Inscape.Tooling {
             return false;
         }
 
-        static HashSet<string> CreateWritableArtifactPathSet() {
-            return new HashSet<string>(StringComparer.Ordinal) {
+        static HashSet<string> CreateWritableArtifactPathSet(HostIntegrationPackageAssemblyContext context) {
+            HashSet<string> paths = new HashSet<string>(StringComparer.Ordinal) {
                 HostIntegrationPackagePathDomain.NormalizeKnownArtifactPath(ManifestFileName),
                 HostIntegrationPackagePathDomain.NormalizeKnownArtifactPath(ProjectIrPath),
                 HostIntegrationPackagePathDomain.NormalizeKnownArtifactPath(UsageManifestPath),
                 HostIntegrationPackagePathDomain.NormalizeKnownArtifactPath(HostSchemaCapabilitiesPath),
                 HostIntegrationPackagePathDomain.NormalizeKnownArtifactPath(HostIntegrationAuditPath),
                 HostIntegrationPackagePathDomain.NormalizeKnownArtifactPath(LocalizationCsvPath),
+                HostIntegrationPackagePathDomain.NormalizeKnownArtifactPath(SourceLocationsPath),
+                HostIntegrationPackagePathDomain.NormalizeKnownArtifactPath(LocalizationAnchorMapPath),
+                HostIntegrationPackagePathDomain.NormalizeKnownArtifactPath(ReadinessReportPath),
             };
+
+            for (int i = 0; i < context.Sources.Count; i += 1) {
+                paths.Add(CreatePackageSourcePath(context, context.Sources[i].SourcePath));
+            }
+
+            return paths;
         }
 
         static string ResolveCreatedAtUtc(string manifestPath, JsonSerializerOptions jsonOptions) {
@@ -261,6 +614,32 @@ namespace Inscape.Tooling {
             }
 
             return DateTimeOffset.UtcNow.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture);
+        }
+
+        sealed class HostIntegrationPackageAssemblyContext {
+
+            public string WorkspaceRootPath { get; set; } = string.Empty;
+
+            public string? ConfiguredConfigPath { get; set; }
+
+            public ToolConfigModel Config { get; set; } = new ToolConfigModel();
+
+            public List<DslScriptSourceModel> Sources { get; set; } = new List<DslScriptSourceModel>();
+
+            public StoryGraphCompilationResultModel Compilation { get; set; } = null!;
+
+            public HostSchemaCapabilityCatalogModel HostSchemaCatalog { get; set; } = new HostSchemaCapabilityCatalogModel();
+
+            public UsageManifestModel Usage { get; set; } = new UsageManifestModel();
+
+            public HostBindingCapabilityCatalogModel HostBindingCatalog { get; set; } = new HostBindingCapabilityCatalogModel();
+
+            public HostIntegrationAuditModel Audit { get; set; } = new HostIntegrationAuditModel();
+
+            public List<LocalizationEntryModel> LocalizationEntries { get; set; } = new List<LocalizationEntryModel>();
+
+            public List<LocalizationEntryModel> PackagedLocalizationEntries { get; set; } = new List<LocalizationEntryModel>();
+
         }
 
     }
