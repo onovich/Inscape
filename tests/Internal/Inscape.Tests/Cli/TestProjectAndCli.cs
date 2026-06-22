@@ -76,6 +76,7 @@ Narrator: Start.
             AssertTrue(text.Contains("audit-host-integration-project"), "Commands should list host integration audit command.");
             AssertTrue(text.Contains("export-host-integration-package-project"), "Commands should list host integration package export command.");
             AssertTrue(text.Contains("generate-host-integration-readiness-report-package"), "Commands should list host integration readiness report command.");
+            AssertTrue(text.Contains("generate-host-bridge-candidate-package"), "Commands should list host bridge candidate command.");
             AssertTrue(text.Contains("update-node-map-project"), "Commands should list node map update command.");
             AssertTrue(text.Contains("apply-node-map-candidate-project"), "Commands should list node map candidate apply command.");
             AssertFalse(text.Contains("export-unity-sample-role-template"), "Internal CLI should not list UnitySample role template command.");
@@ -152,6 +153,30 @@ Narrator: Start.
             AssertTrue(text.Contains("generate-host-integration-readiness-report-package"), "Help should include readiness report command name.");
             AssertTrue(text.Contains("-o report.json"), "Help should document required report output file.");
             AssertTrue(text.Contains("does not recompile"), "Help should state package reader boundary.");
+        }
+
+        static void CliHelpEmitsHostBridgeCandidateDetails() {
+            TextWriter originalOut = Console.Out;
+            TextWriter originalError = Console.Error;
+            StringWriter output = new StringWriter();
+            StringWriter error = new StringWriter();
+
+            int exitCode;
+            try {
+                Console.SetOut(output);
+                Console.SetError(error);
+                exitCode = CliCore.Main(new[] { "help", "generate-host-bridge-candidate-package" });
+            } finally {
+                Console.SetOut(originalOut);
+                Console.SetError(originalError);
+            }
+
+            string text = output.ToString();
+            AssertEqual(0, exitCode, "Host Bridge candidate help exit code");
+            AssertEqual("", error.ToString().Trim(), "Host Bridge candidate help stderr");
+            AssertTrue(text.Contains("generate-host-bridge-candidate-package"), "Help should include Host Bridge candidate command name.");
+            AssertTrue(text.Contains("-o candidate.json"), "Help should document required candidate output file.");
+            AssertTrue(text.Contains("candidate-only evidence"), "Help should state candidate-only boundary.");
         }
 
         static void CliHostIntegrationPackageWritesManifest() {

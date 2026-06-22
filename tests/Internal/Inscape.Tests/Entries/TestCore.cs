@@ -95,6 +95,7 @@ namespace Inscape.Tests {
                 ("cli help emits command details", CliHelpEmitsCommandDetails),
                 ("cli help emits host integration package details", CliHelpEmitsHostIntegrationPackageDetails),
                 ("cli help emits host integration readiness report details", CliHelpEmitsHostIntegrationReadinessReportDetails),
+                ("cli help emits host bridge candidate details", CliHelpEmitsHostBridgeCandidateDetails),
                 ("cli audit-query-interpolation-project emits json", CliAuditQueryInterpolationProjectEmitsJson),
                 ("cli inspect-host-schema-project emits json", CliInspectHostSchemaProjectEmitsJson),
                 ("cli inspect-usage-project emits json", CliInspectUsageProjectEmitsJson),

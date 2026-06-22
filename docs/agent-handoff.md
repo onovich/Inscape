@@ -1,12 +1,22 @@
 # Agent 接手指南
 
-状态：P5 SelfHostedEditor Runtime authoring / productization 已通过 final validation；Host Integration Partner Readiness 已完成 final validation；Host Integration Package CLI 已通过 final validation；Host Integration Readiness Report Generator 已完成 final validation；Host Integration Static Artifact POC Partner Handoff Kit 已完成 final validation，结论为 `Host Integration Static Artifact POC Partner Handoff Kit: PASS`；用户已批准 `Host Bridge Candidate Generator First Slice` 作为下一阶段，执行指南已输出
+状态：P5 SelfHostedEditor Runtime authoring / productization 已通过 final validation；Host Integration Partner Readiness 已完成 final validation；Host Integration Package CLI 已通过 final validation；Host Integration Readiness Report Generator 已完成 final validation；Host Integration Static Artifact POC Partner Handoff Kit 已完成 final validation，结论为 `Host Integration Static Artifact POC Partner Handoff Kit: PASS`；`Host Bridge Candidate Generator First Slice` 已进入执行，Round 1 baseline / command contract / source-of-truth audit 已完成
 
 最后更新：2026-06-22
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-22 Host Bridge Candidate Generator Round 1 快照
+
+Host Bridge Candidate Generator First Slice 已完成 Round 1：baseline / command contract / source-of-truth audit。
+- Round 1 审计见 [Host Bridge Candidate Generator Baseline Audit](host-bridge-candidate-generator-baseline-audit.md)。
+- CLI 已注册 `generate-host-bridge-candidate-package <package-dir> -o <candidate.json>`，`commands` 与 `help generate-host-bridge-candidate-package` 可见；直接执行目前仍返回 guarded not-yet-wired 错误，避免把命令骨架误认为已完成生成器。
+- Source-of-truth 已固定为既有 Host Integration Package artifact：manifest、usage、host schema capabilities、host integration audit、source locations，以及后续可用的 package-declared Host Bridge evidence；generator 不重新编译 workspace，不解析 `.inscape` source text。
+- `export-host-integration-package-project` 默认仍不生成 `host/host-bridge-candidate.json`，readiness report generator 仍不代替 candidate generator。
+- 本轮没有实现 shared candidate generation domain，没有写 confirmed Host Bridge，没有 generated apply / POC-2 catalog projection / Runtime Preview Bridge / Sinan Runtime / Unity / Host SDK / 完整 host save / Rollback / Trace Replay / Flashback / Presentation IR / Host Schema action policy expansion。
+- 下一轮进入 Round 2：shared Tooling candidate domain / package reader integration。
 
 ### 2026-06-22 Host Bridge Candidate Generator First Slice Goal Guide 快照
 

@@ -27,6 +27,10 @@ namespace Inscape.Cli {
                 return RunHostIntegrationReadinessReportPackage(rootPath, outputPath, jsonOptions);
             }
 
+            if (command == "generate-host-bridge-candidate-package") {
+                return RunHostBridgeCandidatePackage(rootPath, outputPath);
+            }
+
             if (command == "inspect-host-schema-project") {
                 return RunHostSchemaInspection(rootPath, args, outputPath, jsonOptions);
             }
@@ -761,6 +765,28 @@ namespace Inscape.Cli {
             CliCore.WriteOrPrint(outputPath, JsonSerializer.Serialize(report, jsonOptions));
             Console.WriteLine(fullOutputPath);
             return 0;
+        }
+
+        static int RunHostBridgeCandidatePackage(string packageDirectoryPath,
+                                                 string? outputPath) {
+            if (string.IsNullOrWhiteSpace(outputPath)) {
+                Console.Error.WriteLine("generate-host-bridge-candidate-package requires -o <candidate.json>.");
+                return 2;
+            }
+
+            if (string.IsNullOrWhiteSpace(packageDirectoryPath) || !Directory.Exists(packageDirectoryPath)) {
+                Console.Error.WriteLine("Host Integration Package directory not found: " + packageDirectoryPath);
+                return 3;
+            }
+
+            string fullOutputPath = Path.GetFullPath(outputPath);
+            if (Directory.Exists(fullOutputPath)) {
+                Console.Error.WriteLine("Host Bridge candidate output path must be a file, not a directory: " + fullOutputPath);
+                return 2;
+            }
+
+            Console.Error.WriteLine("generate-host-bridge-candidate-package is registered for Host Bridge Candidate Generator First Slice; shared Tooling generation lands in the next rounds.");
+            return 2;
         }
 
         static int RunQueryInterpolationAudit(string rootPath, string[] args, string? outputPath, JsonSerializerOptions jsonOptions) {

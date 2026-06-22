@@ -62,6 +62,11 @@
                                      "inscape generate-host-integration-readiness-report-package <package-dir> -o report.json",
                                      "dotnet run --project src\\Internal\\Cli\\Inscape.Cli\\Inscape.Cli.csproj -- generate-host-integration-readiness-report-package artifacts\\host-integration-package-smoke -o artifacts\\host-integration-package-smoke\\reports\\readiness-report.regenerated.json",
                                      "The command reads package manifest and artifacts through Inscape.Tooling. It does not recompile the source workspace, generate Host Bridge candidates, run Runtime, or write host data."),
+            new CliCommandModel("generate-host-bridge-candidate-package", "Host integration", true,
+                                     "Generate review-only Host Bridge Candidate evidence from an existing Host Integration Package.",
+                                     "inscape generate-host-bridge-candidate-package <package-dir> -o candidate.json",
+                                     "dotnet run --project src\\Internal\\Cli\\Inscape.Cli\\Inscape.Cli.csproj -- generate-host-bridge-candidate-package artifacts\\host-integration-package-smoke -o artifacts\\host-integration-package-smoke\\host\\host-bridge-candidate.json",
+                                     "The command will read existing package artifacts through Inscape.Tooling and write candidate-only evidence. It must not write confirmed Host Bridge data, generated apply output, Runtime state, or host data."),
             new CliCommandModel("update-node-map-project", "Project", true,
                                       "Create or update inscape.node-map.json for the current project.",
                                       "inscape update-node-map-project <root> [--config inscape.config.json] [-o inscape.node-map.json]",
@@ -138,6 +143,7 @@
             Console.WriteLine("  inscape audit-host-integration-project <root> [--config inscape.config.json] [-o audit.json]");
             Console.WriteLine("  inscape export-host-integration-package-project <root> [--config inscape.config.json] -o package-dir");
             Console.WriteLine("  inscape generate-host-integration-readiness-report-package <package-dir> -o report.json");
+            Console.WriteLine("  inscape generate-host-bridge-candidate-package <package-dir> -o candidate.json");
             Console.WriteLine("  inscape update-node-map-project <root> [--config inscape.config.json] [-o inscape.node-map.json]");
             Console.WriteLine("  inscape apply-node-map-candidate-project <root> --current-id node_NEW --current-title title --candidate-id node_OLD [--dry-run preview.json] [--result apply-result.json] [--config inscape.config.json] [-o inscape.node-map.json]");
             Console.WriteLine("  inscape audit-l10n-alignment-project <root> --from old.csv [--format json|text] [--config inscape.config.json] [-o l10n-review.json]");
