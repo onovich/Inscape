@@ -158,3 +158,42 @@ Static package smoke / partner dry-run importers should check:
 - Report diagnostics can jump back to source.
 - Report shape does not introduce Runtime, Sinan Runtime, Unity / Host SDK, full host save, Rollback, Trace Replay, Flashback, Presentation IR or Host Schema policy expansion.
 - Sinan can appear only as partner profile / fixture context, not as core dependency.
+
+## Package Generator Semantics
+
+The standalone package generator reads an existing Host Integration Package and
+writes a deterministic readiness report:
+
+```powershell
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- generate-host-integration-readiness-report-package <package-dir> -o <report.json>
+```
+
+The generator:
+
+- reads `manifest.json` and package artifacts through the shared
+  `Inscape.Tooling` package reader;
+- does not recompile the original workspace or parse `.inscape` source text;
+- validates required artifact presence, JSON parseability, expected `format` and
+  supported `formatVersion`;
+- aggregates compiler diagnostics from `graph/project-ir.json` and Host
+  Integration Audit diagnostics from `host/host-integration-audit.json`;
+- maps source refs back to package-relative `source/*.inscape` paths when the
+  package source map is available;
+- writes UTF-8 without BOM so downstream JSON tooling can parse the report
+  directly.
+
+Summary severity order remains:
+
+```text
+invalid > incompatible > missing required artifact > error diagnostics / blocked > unsupported > ready
+```
+
+The generator preserves the same negative boundary flags as package export:
+`runtimeIntegration = false`, `previewBridge = false`, `writesHostData = false`
+and no Host Bridge candidate generation.
+
+Current smoke coverage lives in:
+
+```powershell
+node docs\host-integration-static-fixtures\HostIntegrationReadinessReportSmoke.js
+```

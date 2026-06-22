@@ -67,9 +67,20 @@ dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- audit-ho
 | 命令 | 用途 | 常用输出 |
 | --- | --- | --- |
 | `export-host-integration-package-project` | 将项目导出为静态 Host Integration Package | 输出目录 |
+| `generate-host-integration-readiness-report-package` | 读取已有 Host Integration Package 并生成 deterministic readiness report | JSON |
 
 ```powershell
 dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- export-host-integration-package-project samples -o artifacts\host-integration-package-smoke
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- generate-host-integration-readiness-report-package artifacts\host-integration-package-smoke -o artifacts\host-integration-package-smoke\reports\readiness-report.regenerated.json
+```
+
+`generate-host-integration-readiness-report-package` 只读取已有 package，不重新编译 workspace，不解析 `.inscape` source，不运行 Runtime，不写 host data，也不生成 Host Bridge candidate。它复用 `Inscape.Tooling` package reader / readiness report generator，检查 manifest、required artifacts、JSON parse、`format` / `formatVersion`、diagnostics source refs 和 boundary flags。输出 JSON 使用无 BOM UTF-8，便于 Node / partner importer 直接解析。
+
+当前 smoke 覆盖见 `docs\host-integration-static-fixtures\HostIntegrationReadinessReportSmoke.js`：
+
+```powershell
+node --check docs\host-integration-static-fixtures\HostIntegrationReadinessReportSmoke.js
+node docs\host-integration-static-fixtures\HostIntegrationReadinessReportSmoke.js
 ```
 
 Final 状态：命令已通过 Host Integration Package CLI final validation，并通过 `Inscape.Tooling` shared domain 写出 package `manifest.json`、`source/`、`graph/project-ir.json`、`usage/usage.json`、`host/host-schema-capabilities.json`、`host/host-integration-audit.json`、`localization/l10n.csv`、`localization/anchor-map.json`、`source-map/source-locations.json` 与 `reports/readiness-report.json`。`HostIntegrationPackageCliSmoke.js` 覆盖真实 CLI package export、artifact parse / structure、重复导出 determinism、unknown action audit、compiler diagnostic 和 output directory guard；最终结论见 [Host Integration Package CLI Final Validation Report](host-integration-package-cli-final-validation-report.md)。

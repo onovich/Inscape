@@ -61,3 +61,34 @@ This smoke does not:
 Latest local result is PASS when the command exits `0` and prints a JSON object with `status = "pass"`. The canonical hash is intentionally produced by the command rather than copied into this document as a normative value, so future fixture changes can update the hash without editing this contract first.
 
 Buffer use: none. Round 5 used the planned smoke / report / POC planning scope and did not consume the buffer for feature fixes.
+
+## Readiness Report Generator Smoke
+
+`HostIntegrationReadinessReportSmoke.js` covers the standalone package report
+generator added after the package CLI baseline:
+
+```powershell
+node --check docs\host-integration-static-fixtures\HostIntegrationReadinessReportSmoke.js
+node docs\host-integration-static-fixtures\HostIntegrationReadinessReportSmoke.js
+```
+
+The smoke creates a temporary workspace, exports a Host Integration Package, and
+then calls:
+
+```powershell
+dotnet run --project src\Internal\Cli\Inscape.Cli\Inscape.Cli.csproj -- generate-host-integration-readiness-report-package <package-dir> -o <report.json>
+```
+
+Coverage:
+
+- real package report generation;
+- compiler and Host Integration Audit diagnostic aggregation;
+- missing required artifact result;
+- invalid JSON artifact result;
+- missing `-o` and output-directory guard;
+- repeated generation byte determinism;
+- `writesHostData = false`, no Runtime integration, no preview bridge, no Host
+  Bridge candidate generation.
+
+The smoke does not run Runtime, connect Unity / Host SDK / Sinan Runtime, write
+host data, generate host apply output, or confirm Host Bridge mappings.

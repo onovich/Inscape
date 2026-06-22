@@ -11,10 +11,12 @@ namespace Inscape.Cli {
 
     public static class CliCore {
 
+        static readonly Encoding Utf8NoBom = new UTF8Encoding(false);
+
         static readonly JsonSerializerOptions JsonOptions = CreateJsonOptions();
 
         public static int Main(string[] args) {
-            Console.OutputEncoding = new UTF8Encoding(false);
+            Console.OutputEncoding = Utf8NoBom;
 
             if (CliTopLevelCommand.TryRun(args, JsonOptions, out int exitCode)) {
                 return exitCode;
@@ -60,7 +62,7 @@ namespace Inscape.Cli {
             if (!string.IsNullOrEmpty(directory)) {
                 Directory.CreateDirectory(directory);
             }
-            File.WriteAllText(fullPath, content, Encoding.UTF8);
+            File.WriteAllText(fullPath, content, Utf8NoBom);
         }
 
         internal static string? ReadOption(string[] args, string optionName) {
