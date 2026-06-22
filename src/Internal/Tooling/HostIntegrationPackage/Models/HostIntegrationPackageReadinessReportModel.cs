@@ -54,6 +54,8 @@ namespace Inscape.Tooling {
 
         public int InvalidCount { get; set; }
 
+        public int IncompatibleCount { get; set; }
+
         public int UnsupportedCount { get; set; }
 
         public int BlockedCount { get; set; }

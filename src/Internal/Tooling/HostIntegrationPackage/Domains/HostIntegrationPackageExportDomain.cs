@@ -199,7 +199,7 @@ namespace Inscape.Tooling {
             HostIntegrationPackageManifestDomain.TrySetArtifactStatus(manifest, ReadinessReportPath, "ready");
             WriteJsonArtifact(fullOutputPath,
                               ReadinessReportPath,
-                              CreateReadinessReport(manifest, createdAtUtc),
+                              HostIntegrationPackageReadinessReportDomain.CreateFromManifest(manifest, createdAtUtc),
                               jsonOptions,
                               manifest,
                               writtenArtifacts);
@@ -387,92 +387,6 @@ namespace Inscape.Tooling {
             }
 
             return model;
-        }
-
-        static HostIntegrationPackageReadinessReportModel CreateReadinessReport(HostIntegrationPackageManifestModel manifest,
-                                                                               string createdAtUtc) {
-            HostIntegrationPackageReadinessReportModel report = new HostIntegrationPackageReadinessReportModel {
-                CreatedAtUtc = createdAtUtc,
-                Profile = new HostIntegrationPackageReadinessProfileModel {
-                    Kind = "partner-profile",
-                    Partner = string.IsNullOrWhiteSpace(manifest.Profile.Partner) ? "generic" : manifest.Profile.Partner!,
-                    Purpose = manifest.Profile.Purpose,
-                },
-                Package = new HostIntegrationPackageReadinessPackageModel {
-                    Manifest = ManifestFileName,
-                    FixtureSet = "host-integration-package-cli",
-                },
-                Boundary = new HostIntegrationPackageCapabilitiesModel {
-                    RuntimeIntegration = manifest.Capabilities.RuntimeIntegration,
-                    PreviewBridge = manifest.Capabilities.PreviewBridge,
-                    WritesHostData = manifest.Capabilities.WritesHostData,
-                    ContainsHostDependency = manifest.Capabilities.ContainsHostDependency,
-                },
-                HostBridgeCandidate = new HostIntegrationPackageReadinessHostBridgeCandidateModel {
-                    Path = "host/host-bridge-candidate.json",
-                    Status = "missing",
-                    CandidateCount = 0,
-                    WritesHostData = false,
-                },
-            };
-
-            for (int i = 0; i < manifest.Artifacts.Count; i += 1) {
-                HostIntegrationPackageArtifactModel artifact = manifest.Artifacts[i];
-                report.ArtifactChecks.Add(new HostIntegrationPackageReadinessArtifactCheckModel {
-                    Kind = artifact.Kind,
-                    Path = artifact.Path,
-                    Required = artifact.Required,
-                    Status = artifact.Status,
-                    Format = artifact.Format,
-                    FormatVersion = artifact.FormatVersion,
-                });
-            }
-
-            FinalizeReadinessSummary(report);
-            return report;
-        }
-
-        static void FinalizeReadinessSummary(HostIntegrationPackageReadinessReportModel report) {
-            report.Summary.ArtifactCount = report.ArtifactChecks.Count;
-            report.Summary.WritesHostData = false;
-
-            for (int i = 0; i < report.ArtifactChecks.Count; i += 1) {
-                HostIntegrationPackageReadinessArtifactCheckModel artifact = report.ArtifactChecks[i];
-                if (artifact.Status == "ready") {
-                    report.Summary.ReadyCount += 1;
-                } else if (artifact.Status == "missing") {
-                    report.Summary.MissingCount += 1;
-                } else if (artifact.Status == "invalid") {
-                    report.Summary.InvalidCount += 1;
-                } else if (artifact.Status == "unsupported") {
-                    report.Summary.UnsupportedCount += 1;
-                } else if (artifact.Status == "blocked") {
-                    report.Summary.BlockedCount += 1;
-                }
-            }
-
-            if (report.Summary.InvalidCount > 0) {
-                report.Summary.Result = "invalid";
-            } else if (HasMissingRequiredArtifact(report)) {
-                report.Summary.Result = "missing";
-            } else if (report.Summary.BlockedCount > 0) {
-                report.Summary.Result = "blocked";
-            } else if (report.Summary.UnsupportedCount > 0) {
-                report.Summary.Result = "unsupported";
-            } else {
-                report.Summary.Result = "ready";
-            }
-        }
-
-        static bool HasMissingRequiredArtifact(HostIntegrationPackageReadinessReportModel report) {
-            for (int i = 0; i < report.ArtifactChecks.Count; i += 1) {
-                HostIntegrationPackageReadinessArtifactCheckModel artifact = report.ArtifactChecks[i];
-                if (artifact.Required && artifact.Status == "missing") {
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         static void WriteJsonArtifact(string fullOutputPath,
