@@ -1,6 +1,6 @@
 # TODO
 
-状态：持续维护，P5 SelfHostedEditor Runtime authoring / productization 已通过 final validation；Host Integration Partner Readiness 已完成 final validation，结论为 `Host Integration Partner Readiness: PASS`，见 [Host Integration Partner Readiness Final Validation Report](host-integration-partner-readiness-final-validation-report.md)。`Host Integration Package CLI` 已完成 final validation，结论为 `Host Integration Package CLI: PASS`，见 [Host Integration Package CLI Final Validation Report](host-integration-package-cli-final-validation-report.md)。`Host Integration Readiness Report Generator` 已完成 final validation，结论为 `Host Integration Readiness Report Generator: PASS`，见 [Host Integration Readiness Report Generator Final Validation Report](host-integration-readiness-report-generator-final-validation-report.md)。用户已批准 `Static Artifact POC Partner Handoff Kit` 作为下一阶段，见 [Static Artifact POC Partner Handoff Kit Goal 模式执行指南](host-integration-static-artifact-poc-partner-handoff-goal-mode-execution-guide.md)，执行预算为 4 轮；Sinan 仍只作为 partner profile / fixture / dry-run planning 输入。不要自动进入 Host Bridge candidate generator、POC-2 catalog projection、generated apply、Sinan Runtime Integration、Runtime Preview Bridge、Unity / Host SDK、Rollback / Trace Replay / Flashback、Presentation IR、完整 host save 或 Host Schema action policy 扩张。
+状态：持续维护，P5 SelfHostedEditor Runtime authoring / productization 已通过 final validation；Host Integration Partner Readiness 已完成 final validation，结论为 `Host Integration Partner Readiness: PASS`，见 [Host Integration Partner Readiness Final Validation Report](host-integration-partner-readiness-final-validation-report.md)。`Host Integration Package CLI` 已完成 final validation，结论为 `Host Integration Package CLI: PASS`，见 [Host Integration Package CLI Final Validation Report](host-integration-package-cli-final-validation-report.md)。`Host Integration Readiness Report Generator` 已完成 final validation，结论为 `Host Integration Readiness Report Generator: PASS`，见 [Host Integration Readiness Report Generator Final Validation Report](host-integration-readiness-report-generator-final-validation-report.md)。`Static Artifact POC Partner Handoff Kit` 已进入执行，Round 1 handoff kit contract / exchange workflow 已完成，见 [Static Artifact POC Partner Handoff Kit](host-integration-static-artifact-poc-partner-handoff-kit.md) 与 [Round 1 Audit](host-integration-static-artifact-poc-partner-handoff-audit.md)；执行预算为 4 轮，下一轮进入 partner feedback schema / fixture。Sinan 仍只作为 partner profile / fixture / dry-run planning 输入。不要自动进入 Host Bridge candidate generator、POC-2 catalog projection、generated apply、Sinan Runtime Integration、Runtime Preview Bridge、Unity / Host SDK、Rollback / Trace Replay / Flashback、Presentation IR、完整 host save 或 Host Schema action policy 扩张。
 
 SelfHostedEditor regression invariant: Preview choice clicks must advance the reading Preview to the target block and reveal the target block title in the editor. Compiler-project Preview data must never silently lose `previewLines`: if a returned Compiler graph has source lines but missing or mismatched `previewLines`, Preview must report a compiler graph contract error instead of falling back to the UI-only draft model. `npm --prefix src\ExternalSupport\SelfHostedEditor run check:model` covers both invariants so future Runtime / navigation work does not regress them.
 
@@ -9,6 +9,15 @@ SelfHostedEditor regression invariant: Preview choice clicks must advance the re
 本文件记录已经能执行或需要调研的工作。仍未形成共识的问题放在 [待确认问题](open-questions.md)，已经形成长期决策的问题放在 [ADR](adr/README.md)。
 
 当前目录迁移与不符合项总蓝图见 [目录优先重构蓝图](directory-first-reframe-plan.md)。当前后续执行面板见 [/goal 后续目标计划](goal-plan.md)。
+
+## 2026-06-22 Static Artifact POC Partner Handoff Kit
+
+目标：把现有 Host Integration Package CLI 与 Readiness Report Generator 收成 generic first 的 POC-1 partner handoff kit。Sinan 只作为 partner profile / fixture / dry-run planning 示例，不成为 Inscape core dependency。
+
+- [x] Round 1 handoff kit contract / exchange workflow：新增 [Static Artifact POC Partner Handoff Kit](host-integration-static-artifact-poc-partner-handoff-kit.md) 与 [Round 1 Audit](host-integration-static-artifact-poc-partner-handoff-audit.md)，固定 producer package generation、readiness report、partner dry-run、feedback evidence 与 manual review gate。
+- [ ] Round 2 partner feedback schema / fixture：输出 feedback schema contract 与 `docs/host-integration-static-fixtures/partner-feedback.generic.json`。
+- [ ] Round 3 handoff smoke / docs hardening：输出 `docs/host-integration-static-fixtures/PartnerHandoffKitSmoke.js`，并对接 static fixture / package CLI / readiness report smoke。
+- [ ] Round 4 final validation / PASS-FAIL closure：输出 final validation report，同步 handoff / TODO / README，验证通过后提交推送并报告 planner。
 
 ## 2026-06-15 接下来项目 TODO（整合版）
 

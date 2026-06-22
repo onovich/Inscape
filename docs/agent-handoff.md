@@ -1,12 +1,22 @@
 # Agent 接手指南
 
-状态：P5 SelfHostedEditor Runtime authoring / productization 已通过 final validation；Host Integration Partner Readiness 已完成 final validation；Host Integration Package CLI 已通过 final validation；Host Integration Readiness Report Generator 已完成 final validation，结论为 `Host Integration Readiness Report Generator: PASS`；用户已批准 `Static Artifact POC Partner Handoff Kit` 作为下一阶段，执行指南已输出
+状态：P5 SelfHostedEditor Runtime authoring / productization 已通过 final validation；Host Integration Partner Readiness 已完成 final validation；Host Integration Package CLI 已通过 final validation；Host Integration Readiness Report Generator 已完成 final validation，结论为 `Host Integration Readiness Report Generator: PASS`；`Static Artifact POC Partner Handoff Kit` 已进入执行，Round 1 handoff kit contract / exchange workflow 已输出
 
 最后更新：2026-06-22
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-22 Static Artifact POC Partner Handoff Kit Round 1 快照
+
+Static Artifact POC Partner Handoff Kit 已完成 Round 1：handoff kit contract / exchange workflow。
+- Handoff kit 见 [Static Artifact POC Partner Handoff Kit](host-integration-static-artifact-poc-partner-handoff-kit.md)。
+- Round 1 审计见 [Static Artifact POC Partner Handoff Kit Round 1 Audit](host-integration-static-artifact-poc-partner-handoff-audit.md)。
+- 本轮固定 POC-1 静态交换路径：Inscape producer 生成 Host Integration Package 与 readiness report，partner 读取静态 artifact 做 dry-run，再以 partner feedback artifact 回传 evidence。
+- Partner feedback 与 Host Bridge Candidate 都只是 review evidence；accepted evidence 仍需后续明确批准阶段由 owner 转写到 confirmed Host Bridge 或 adapter artifact。
+- 本轮没有新增代码，没有提交 generated package / zip / reports，没有实现 Host Bridge Candidate Generator、POC-2 catalog projection、generated apply、Runtime Preview Bridge、Sinan Runtime、Unity / Host SDK、完整 host save、Rollback / Trace Replay / Flashback、Presentation IR 或 Host Schema action policy 扩张。
+- 下一轮进入 Round 2：partner feedback schema / fixture。
 
 ### 2026-06-22 Static Artifact POC Partner Handoff Kit Goal Guide 快照
 
