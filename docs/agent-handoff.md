@@ -1,12 +1,23 @@
 # Agent 接手指南
 
-状态：P5 SelfHostedEditor Runtime authoring / productization 已通过 final validation；Host Integration Partner Readiness 已完成 final validation；Host Integration Package CLI 已通过 final validation；Host Integration Readiness Report Generator 已完成 final validation；Host Integration Static Artifact POC Partner Handoff Kit 已完成 final validation，结论为 `Host Integration Static Artifact POC Partner Handoff Kit: PASS`；`Host Bridge Candidate Generator First Slice` 已进入执行，Round 1 baseline / command contract / source-of-truth audit 已完成
+状态：P5 SelfHostedEditor Runtime authoring / productization 已通过 final validation；Host Integration Partner Readiness 已完成 final validation；Host Integration Package CLI 已通过 final validation；Host Integration Readiness Report Generator 已完成 final validation；Host Integration Static Artifact POC Partner Handoff Kit 已完成 final validation，结论为 `Host Integration Static Artifact POC Partner Handoff Kit: PASS`；`Host Bridge Candidate Generator First Slice` 已进入执行，Round 2 shared Tooling candidate domain / package reader integration 已完成
 
 最后更新：2026-06-22
 
 本文用于让未来继续维护 Inscape 的 agent 快速恢复项目上下文。它不是替代完整文档，而是入口、索引和工作协议。
 
 ## 当前项目快照
+
+### 2026-06-22 Host Bridge Candidate Generator Round 2 快照
+
+Host Bridge Candidate Generator First Slice 已完成 Round 2：shared Tooling candidate domain / package reader integration。
+- Round 2 审计见 [Host Bridge Candidate Generator Domain Audit](host-bridge-candidate-generator-domain-audit.md)。
+- 新增 `src/Internal/Tooling/HostBridgeCandidate/` shared 模块，生成 `inscape.host-bridge-candidate` 内存模型；CLI 文件输出仍留给 Round 3。
+- Candidate generator 只读取既有 Host Integration Package artifacts：`usage/usage.json`、`host/host-schema-capabilities.json` 和 `host/host-integration-audit.json`，不重新编译 workspace，不解析 `.inscape` source text。
+- 已覆盖 `empty`、`ready`、`blocked`、`invalid`、`incompatible` 状态；未知 action/query 只产 blocked `schema-capability` evidence，只有 Host Schema 已声明的 action/query 才产 handler candidate。
+- 所有 candidate 继续保持 `review.required = true`、`ownership.generatedOwnership = "candidate-only"`、`ownership.writesHostData = false` 与 `summary.writesHostData = false`。
+- 本轮没有写 confirmed Host Bridge，没有实现 CLI output wiring、generated apply、POC-2 catalog projection、Runtime Preview Bridge、Sinan Runtime、Unity / Host SDK、完整 host save、Rollback / Trace Replay / Flashback、Presentation IR 或 Host Schema action policy expansion。
+- 下一轮进入 Round 3：CLI command / diagnostics / output guard。
 
 ### 2026-06-22 Host Bridge Candidate Generator Round 1 快照
 
@@ -2013,7 +2024,7 @@ Inscape 当前处于第一阶段：DSL 与轻工具链已经形成可运行原�
    - Host Integration Readiness Report Generator 已 PASS，见 [Host Integration Readiness Report Generator Final Validation Report](host-integration-readiness-report-generator-final-validation-report.md)。
    - Host Integration Static Artifact POC Partner Handoff Kit 已 PASS，见 [Host Integration Static Artifact POC Partner Handoff Final Validation Report](host-integration-static-artifact-poc-partner-handoff-final-validation-report.md)。
    - 用户已批准下一阶段：`Host Bridge Candidate Generator First Slice`，执行指南见 [Host Bridge Candidate Generator First Slice Goal 模式执行指南](host-bridge-candidate-generator-goal-mode-execution-guide.md)。
-   - 执行预算为 6 轮：baseline / command contract、shared Tooling candidate domain、CLI command / output guard、smoke / docs hardening、buffer / compatibility closure、final validation。
+   - 执行预算为 6 轮：baseline / command contract、shared Tooling candidate domain、CLI command / output guard、smoke / docs hardening、buffer / compatibility closure、final validation；Round 2 已完成，下一步进入 Round 3 CLI command / diagnostics / output guard。
    - 目标命令建议为 `generate-host-bridge-candidate-package <package-dir> -o <candidate.json>`。
    - 本阶段不要进入 confirmed Host Bridge、POC-2 catalog projection、Sinan Runtime Integration、Runtime Preview Bridge、Unity / Host SDK、generated apply、完整 host save、Rollback / Trace Replay / Flashback、Presentation IR 或 Host Schema action policy 扩张。
 
